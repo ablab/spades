@@ -69,25 +69,26 @@ namespace nrps {
         for (auto v : single_candidate) {
             stat_file << delimeter;
             delimeter = "-";
-            if (this->data(v).GetType() == "AMP") {
+            std::string type = this->data(v).GetType();
+            if (type == "AMP") {
                 stat_file << "A";
                 is_nrps = true;
-            } else if (this->data(v).GetType() == "CStart") {
+            } else if (type == "CStart") {
                 stat_file << "C";
                 is_nrps = true;
-            } else if (this->data(v).GetType() == "AT") {
+            } else if (type == "AT") {
                 stat_file << "AT";
                 is_pks = true;
-            } else if (this->data(v).GetType() == "TE") {
+            } else if (type == "TE") {
                 stat_file << "TE";
-            } else if (this->data(v).GetType() == "KR") {
+            } else if (type == "KR") {
                 stat_file << "KR";
                 is_pks = true;
-            } else if (this->data(v).GetType() == "KS") {
+            } else if (type == "KS") {
                 stat_file << "KS";
                 is_pks = true;
             } else {
-                stat_file << this->data(v).GetType();
+                stat_file << type;
             }
         }
         stat_file << std::endl;
@@ -104,18 +105,18 @@ namespace nrps {
         stat_file << std::endl;
         stat_file << "Domain cordinates:" << std::endl;
         size_t current_coord = 0;
-        path_extend::BidirectionalPath *p = new path_extend::BidirectionalPath(g_);
+        path_extend::BidirectionalPath p(g_);
         for (size_t i = 0; i < single_candidate.size(); ++i) {
             auto v = single_candidate[i];
             DEBUG("Translating vertex " << this->GetVertexName(v));
             for (auto e : this->GetDomainEdges(v)) {
-                if (p->Size() == 0 || p->Back() != e) {
+                if (p.Size() == 0 || p.Back() != e) {
                     int gap = 0;
-                    if (p->Size() != 0 &&
-                        p->graph().EdgeEnd(p->Back()) != p->graph().EdgeStart(e)) {
+                    if (p.Size() != 0 &&
+                        p.graph().EdgeEnd(p.Back()) != g_.EdgeStart(e)) {
                         gap = 100;
                     }
-                    p->PushBack(e, path_extend::Gap(gap));
+                    p.PushBack(e, path_extend::Gap(gap));
                     current_coord += g_.length(e) + gap;
                 }
             }
@@ -126,7 +127,7 @@ namespace nrps {
             }
 
             stat_file << this->data(v).GetStartCoord() + current_coord - sum << " ";
-            stat_file << this->data(v).GetEndCoord() + current_coord - g_.length(p->Back()) << std::endl;
+            stat_file << this->data(v).GetEndCoord() + current_coord - g_.length(p.Back()) << std::endl;
             //TODO: check if can be improved
             if (i != single_candidate.size() - 1) {
                 auto next_edges = this->GetEdgesBetween(v, single_candidate[i + 1]);
@@ -135,13 +136,13 @@ namespace nrps {
                 }
                 EdgeId next_edge = next_edges[0];
                 for (auto e : this->data(next_edge).GetDeBruijnEdges()) {
-                    if (p->Size() == 0 || p->Back() != e) {
+                    if (p.Size() == 0 || p.Back() != e) {
                         int gap = 0;
-                        if (p->Size() != 0 &&
-                            g_.EdgeEnd(p->Back()) != g_.EdgeStart(e)) {
+                        if (p.Size() != 0 &&
+                            g_.EdgeEnd(p.Back()) != g_.EdgeStart(e)) {
                             gap = 100;
                         }
-                        p->PushBack(e, path_extend::Gap(gap));
+                        p.PushBack(e, path_extend::Gap(gap));
                         current_coord += g_.length(e) + gap;
                     }
                 }
