@@ -9,6 +9,7 @@
 #include "assembly_graph/core/graph.hpp"
 #include "common/pipeline/graph_pack.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
+#include "assembly_graph/components/graph_component.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 #include <unordered_set>
 #include <unordered_map>
