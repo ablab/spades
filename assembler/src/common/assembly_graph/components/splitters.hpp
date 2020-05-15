@@ -365,7 +365,7 @@ private:
             return edge_summary_length_;
         }
 
-        size_t EdgeSummaryLength() const {
+        size_t CumulativeEdgeLength() const {
             return edge_summary_length_;
         }
     };
@@ -388,9 +388,9 @@ public:
         return GraphComponent<Graph>::FromEdges(this->graph(), result, false);
     }
 
-    size_t EdgeSummaryLength(VertexId v) const {
+    size_t CumulativeEdgeLength(VertexId v) const {
         size_t result = dfs_helper.Fill(v);
-        DEBUG("Summary edge length for vertex " << v.int_id() << " is " << result);
+        DEBUG("Total edge length for vertex " << v.int_id() << " is " << result);
         return result;
     }
 

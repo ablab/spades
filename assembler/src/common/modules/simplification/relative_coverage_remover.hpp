@@ -254,7 +254,7 @@ public:
         DEBUG("Max local coverage outgoing  - " << rel_helper_.MaxLocalCoverage(this->g().OutgoingEdges(v), v));
         return rel_helper_.AnyHighlyCoveredOnBothSides(v, coverage_edge_around_v) &&
                 HighCoverageComponentFinder<Graph>(this->g(), this->g().coverage(e) * diff_mult_, min_neighbourhood_size_)
-                       .EdgeSummaryLength(v) >= min_neighbourhood_size_;
+                       .CumulativeEdgeLength(v) >= min_neighbourhood_size_;
     }
 
 private:
