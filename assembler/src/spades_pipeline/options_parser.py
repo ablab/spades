@@ -295,7 +295,7 @@ def add_basic_args(pgroup_basic):
                               action="store_true")
     pgroup_basic.add_argument("--meta",
                               dest="meta",
-                              help="this flag is required for metagenomic sample data"
+                              help="this flag is required for metagenomic data"
                               if not help_hidden else argparse.SUPPRESS,
                               action="store_true")
     pgroup_basic.add_argument("--bio",
@@ -638,6 +638,13 @@ def add_advanced_args(pgroup_advanced):
                                       "[default: auto-detect]",
                                  action="store")
 
+    pgroup_advanced.add_argument("--custom-hmms",
+                                 metavar="<dirname>",
+                                 dest="custom_hmms",
+                                 help="directory with custom hmms that replace default ones,\n"
+                                      "[default: None]",
+                                 action="store")
+
 
 def add_hidden_args(pgroup_hidden):
     show_help_hidden = ("--help-hidden" in sys.argv)
@@ -830,6 +837,13 @@ def add_to_option(args, log, skip_output_dir):
         support.check_path_is_ascii(tmp_dir, "directory for temporary files")
         args.tmp_dir = tmp_dir
 
+    if args.custom_hmms is not None:
+        if not args.bio:
+            support.error("you can provide custom HMMs only in biosyntheticSPAdes mode!", log)
+        custom_hmms = abspath(expanduser(args.custom_hmms))
+        support.check_path_is_ascii(custom_hmms, "directory with custom hmms")
+        args.custom_hmms = custom_hmms
+
     if "reference" in args and args.reference is not None:
         args.developer_mode = True
 
@@ -893,12 +907,18 @@ def add_to_cfg(cfg, log, bin_home, spades_home, args):
     if args.series_analysis:
         cfg["common"].__dict__["series_analysis"] = args.series_analysis
     if args.bio:
-        biosyntheticspades_hmms_path = os.path.join(spades_home, options_storage.biosyntheticspades_hmms)
+        if args.custom_hmms is None:
+            biosyntheticspades_hmms_path = os.path.join(spades_home, options_storage.biosyntheticspades_hmms)
+        else:
+            biosyntheticspades_hmms_path = args.custom_hmms
         is_hmmfile = lambda hmmfile: os.path.isfile(os.path.join(biosyntheticspades_hmms_path, hmmfile)) \
                                      and (hmmfile.endswith("hmm") or hmmfile.endswith("hmm.gz"))
-        cfg["common"].__dict__["set_of_hmms"] = ",".join([os.path.join(biosyntheticspades_hmms_path, hmmfile)
-                                                          for hmmfile in os.listdir(biosyntheticspades_hmms_path)
-                                                          if is_hmmfile(hmmfile)])
+        hmms = ",".join([os.path.join(biosyntheticspades_hmms_path, hmmfile)
+                        for hmmfile in os.listdir(biosyntheticspades_hmms_path)
+                        if is_hmmfile(hmmfile)])
+        if hmms == "":
+            support.error("Custom HMM folder does not contain any HMMs. They should have .hmm or .hmm.gz extension.", log)
+        cfg["common"].__dict__["set_of_hmms"] = hmms
 
     # dataset section
     cfg["dataset"].__dict__["yaml_filename"] = args.dataset_yaml_filename
