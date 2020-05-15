@@ -39,6 +39,8 @@ class Sequence {
         }
 
       public:
+        void operator delete(void *p) { ::operator delete(p); }
+
         static ManagedNuclBuffer *create(size_t nucls) {
             void *mem = ::operator new(totalSizeToAlloc<ST>(Sequence::DataSize(nucls)));
             return new (mem) ManagedNuclBuffer();
