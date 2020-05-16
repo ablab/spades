@@ -506,6 +506,8 @@ Notes:</p>
     Read coverage cutoff value. Must be a positive float value, or "auto", or "off". Default value is "off". When set to "auto" SPAdes automatically computes coverage threshold using conservative strategy. Note, that this option is not supported by metaSPAdes.</p>
 <p><code>--phred-offset &lt;33 or 64&gt;</code><br>
     PHRED quality offset for the input reads, can be either 33 or 64. It will be auto-detected if it is not specified.</p>
+<p><code>--custom-hmms &lt;dir_name&gt;</code><br>
+        Path to the directory with user-defined set of hmms that replaces the default ones. Can be used for genome mining of any multidomain BGCs. Folder should contain files with .hmm of .hmm.gz extensions. Works only with biosyntheticSPAdes mode.</p>
 <p><a name="examples"></a></p>
 <h3>Examples</h3>
 <p>To test the toy data set, you can also run the following command from the SPAdes <code>bin</code> directory:</p>
