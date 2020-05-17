@@ -7,9 +7,9 @@
 
 #pragma once
 
+#include "assembly_graph/core/basic_graph_stats.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
-#include "assembly_graph/core/basic_graph_stats.hpp"
 #include "io/reads/single_read.hpp"
 
 #include "sequence/sequence_tools.hpp"
@@ -308,8 +308,8 @@ class BasicSequenceMapper: public AbstractSequenceMapper<Graph> {
         position.second + 1 < range_mappings.back().mapped_range.end_pos) {
         passed.push_back(position.first);
 
-        range_mappings.push_back(MappingRange(Range(kmer_pos, kmer_pos + 1),
-                                              Range(position.second, position.second + 1)));
+        range_mappings.emplace_back(Range(kmer_pos, kmer_pos + 1),
+                                    Range(position.second, position.second + 1));
     } else {
         range_mappings.back().initial_range.end_pos = kmer_pos + 1;
         range_mappings.back().mapped_range.end_pos = position.second + 1;
@@ -323,7 +323,8 @@ class BasicSequenceMapper: public AbstractSequenceMapper<Graph> {
     EdgeId last_edge = passed.back();
     size_t end_pos = range_mappings.back().mapped_range.end_pos;
     if (end_pos < g_.length(last_edge)) {
-      if (g_.EdgeNucls(last_edge)[end_pos + k_ - 1] == kmer[k_ - 1]) {
+      const Sequence &seq = g_.EdgeNucls(last_edge);
+      if (seq[end_pos + k_ - 1] == kmer[k_ - 1]) {
         range_mappings.back().initial_range.end_pos++;
         range_mappings.back().mapped_range.end_pos++;
         return true;
@@ -335,13 +336,12 @@ class BasicSequenceMapper: public AbstractSequenceMapper<Graph> {
           if (g_.OutgoingEdgeCount(v) > 1)
               return false;
 
-      for (auto I = g_.out_begin(v), E = g_.out_end(v); I != E; ++I) {
-        EdgeId edge = *I;
-        if (g_.EdgeNucls(edge)[k_ - 1] == kmer[k_ - 1]) {
+      for (EdgeId edge : g_.OutgoingEdges(v)) {
+        const Sequence &seq = g_.EdgeNucls(edge);
+        if (seq[k_ - 1] == kmer[k_ - 1]) {
           passed.push_back(edge);
-          range_mappings.push_back(
-              MappingRange(Range(kmer_pos, kmer_pos + 1),
-                           Range(0, 1)));
+          range_mappings.emplace_back(Range(kmer_pos, kmer_pos + 1),
+                                      Range(0, 1));
           return true;
         }
       }

@@ -5,16 +5,8 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * paired_library.hpp
- *
- *  Created on: Feb 19, 2012
- *      Author: andrey
- */
-
 #pragma once
 
-#include "pipeline/graph_pack.hpp"
 #include "pipeline/config_struct.hpp"
 #include "paired_info/paired_info.hpp"
 #include "ideal_pair_info.hpp"

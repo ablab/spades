@@ -10,7 +10,6 @@
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/graph_support/chimera_stats.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
-#include "assembly_graph/stats/picture_dump.hpp"
 #include "assembly_graph/graph_support/parallel_processing.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
 
@@ -28,9 +27,9 @@
 
 #include "pipeline/config_struct.hpp"
 
-#include "visualization/graph_colorer.hpp"
-
 #include "utils/perf/timetracer.hpp"
+
+#include <boost/algorithm/string.hpp>
 
 namespace debruijn {
 

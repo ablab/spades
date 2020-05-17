@@ -5,7 +5,6 @@
 
 #include "modules/path_extend/extension_chooser.hpp"
 #include "connection_condition2015.hpp"
-#include "modules/genome_consistance_checker.hpp"
 #include "utils/logger/logger.hpp"
 #include <map>
 #include <set>

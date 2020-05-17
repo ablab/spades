@@ -9,6 +9,8 @@
 
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
+#include "assembly_graph/stats/picture_dump.hpp"
+
 #include "modules/simplification/cleaner.hpp"
 
 #include "stages/simplification_pipeline/simplification_settings.hpp"

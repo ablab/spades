@@ -1,12 +1,13 @@
 #pragma once
 
 #include "assembly_graph/core/graph.hpp"
-#include "pipeline/graph_pack.hpp"
-#include "utils/logger/logger.hpp"
-//FIXME
 #include "modules/path_extend/pe_utils.hpp"
 #include "modules/path_extend/pe_config_struct.hpp"
 #include "modules/path_extend/paired_library.hpp"
+
+//FIXME: layering violation
+#include "pipeline/graph_pack.hpp"
+#include "utils/logger/logger.hpp"
 
 namespace path_extend {
 typedef debruijn_graph::EdgeId EdgeId;

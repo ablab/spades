@@ -1,11 +1,10 @@
 #pragma once
-#include "modules/genome_consistance_checker.hpp"
-#include "utils/logger/logger.hpp"
-#include "modules/path_extend/paired_library.hpp"
-#include "assembly_graph/graph_support/scaff_supplementary.hpp"
-#include "modules/alignment/long_read_storage.hpp"
-#include "modules/path_extend/pe_utils.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
+#include "assembly_graph/graph_support/scaff_supplementary.hpp"
+#include "modules/path_extend/paired_library.hpp"
+#include "modules/path_extend/pe_utils.hpp"
+#include "modules/alignment/long_read_storage.hpp"
+#include "utils/logger/logger.hpp"
 #include <map>
 #include <set>
 

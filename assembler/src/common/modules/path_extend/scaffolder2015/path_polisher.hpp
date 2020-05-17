@@ -13,7 +13,6 @@
 #include "modules/path_extend/paired_library.hpp"
 #include "modules/path_extend/path_extender.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
-#include "pipeline/graph_pack.hpp"
 
 namespace path_extend {
 
@@ -121,7 +120,7 @@ public:
 class PathPolisher {
     static const size_t MAX_POLISH_ATTEMPTS = 5;
 
-    const GraphPack &gp_;
+    const Graph &g_;
     std::vector<std::shared_ptr<PathGapCloser>> gap_closers_;
 
     void InfoAboutGaps(const PathContainer& result);
@@ -130,9 +129,9 @@ class PathPolisher {
     DECL_LOGGER("PathPolisher")
 
 public:
-    PathPolisher(const GraphPack &gp,
+    PathPolisher(const Graph &g,
                  const std::vector<std::shared_ptr<PathGapCloser>> &gap_closers):
-            gp_(gp), gap_closers_(gap_closers) {
+            g_(g), gap_closers_(gap_closers) {
     }
 
     PathContainer PolishPaths(const PathContainer &paths);

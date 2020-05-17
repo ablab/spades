@@ -4,15 +4,17 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-#include "assembly_graph/core/graph_iterators.hpp"
-#include "assembly_graph/graph_support/contig_output.hpp"
-#include "stages/simplification_pipeline/graph_simplification.hpp"
-#include "assembly_graph/core/basic_graph_stats.hpp"
 #include "chromosome_remover.hpp"
-#include "common/paired_info/paired_info.hpp"
-#include "pipeline/config_struct.hpp"
-#include "assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
 
+#include "assembly_graph/core/graph_iterators.hpp"
+#include "assembly_graph/core/basic_graph_stats.hpp"
+#include "assembly_graph/graph_support/contig_output.hpp"
+#include "assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
+#include "stages/simplification_pipeline/graph_simplification.hpp"
+#include "paired_info/paired_info.hpp"
+#include "pipeline/config_struct.hpp"
+#include "sequence/genome_storage.hpp"
+#include "visualization/position_filler.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "math/xmath.h"
 

@@ -4,11 +4,12 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include <io/dataset_support/read_converter.hpp>
+#include "ss_edge_split.hpp"
+
 #include <modules/alignment/sequence_mapper_notifier.hpp>
 #include <modules/alignment/sequence_mapper.hpp>
 #include <modules/alignment/rna/ss_coverage_filler.hpp>
-#include "ss_edge_split.hpp"
+#include <io/dataset_support/read_converter.hpp>
 
 namespace debruijn_graph {
 

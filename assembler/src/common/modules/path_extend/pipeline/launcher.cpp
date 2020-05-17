@@ -468,7 +468,7 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
 //    }
 //FIXME: uncomment cover_map 
 
-    PathPolisher polisher(gp_, gap_closers);
+    PathPolisher polisher(gp_.get<Graph>(), gap_closers);
     result = polisher.PolishPaths(paths);
     result.SortByLength();
     INFO("Gap closing completed")

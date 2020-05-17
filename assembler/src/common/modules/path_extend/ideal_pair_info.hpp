@@ -5,20 +5,10 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * ideal_pair_info.hpp
- *
- *  Created on: Oct 10, 2013
- *      Author: ira
- */
-
 #pragma once
 
-#include "pipeline/graph_pack.hpp"
 #include "assembly_graph/core/graph.hpp"
-
 #include <vector>
-
 
 namespace path_extend {
 
