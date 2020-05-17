@@ -113,6 +113,11 @@ public:
         vector_.set_size(size_);
     }
 
+    void shrink(size_t sz) {
+        size_ = sz;
+        vector_.set_size(size_);
+    }
+
     void shrink_to_fit() {
         capacity_ = std::max(size_, size_t(1));
         vector_.set_data(realloc());
@@ -134,6 +139,10 @@ public:
         return vector_.end();
     }
 
+    reference back() {
+        return vector_[size_-1];
+    }
+    
     const ElTy *data() const {
         return storage_;
     }
