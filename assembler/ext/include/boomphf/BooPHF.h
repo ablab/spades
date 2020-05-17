@@ -1292,16 +1292,18 @@ class mphf {
             t_arg.it_p = std::static_pointer_cast<void>(std::make_shared<diskit_hash128_t>(data_iterator_level.begin()));
             t_arg.until_p = std::static_pointer_cast<void>(std::make_shared<diskit_hash128_t>(data_iterator_level.end()));
 
-            for (int ii=0;ii<_num_thread;ii++)
-                pthread_create(&tab_threads[ii], NULL, thread_processLevel<Hasher_t, Range, diskit_hash128_t>, &t_arg); //&t_arg[ii]
+            if (_num_thread > 1) {
+                for (int ii=0;ii<_num_thread;ii++)
+                    pthread_create(&tab_threads[ii], NULL, thread_processLevel<Hasher_t, Range, diskit_hash128_t>, &t_arg); //&t_arg[ii]
 
 
-            //must join here before the block is closed and file_binary is destroyed (and closes the file)
-            for(int ii=0;ii<_num_thread;ii++)
-            {
-                pthread_join(tab_threads[ii], NULL);
-            }
-
+                //must join here before the block is closed and file_binary is destroyed (and closes the file)
+                for(int ii=0;ii<_num_thread;ii++)
+                {
+                    pthread_join(tab_threads[ii], NULL);
+                }
+            } else
+                thread_processLevel<Hasher_t, Range, diskit_hash128_t>(&t_arg); //&t_arg[ii]
         } else {
             if (_fastmode && i >= (_fastModeLevel+1)) {
                 //   we'd like to do t_arg.it = data_iterator.begin() but types are different;
@@ -1313,18 +1315,26 @@ class mphf {
                 //       we'd like to do t_arg.it = data_iterator.begin() but types are different;
                 //       so, casting to (void*) because of that; and we remember the type in the template
 
-                for (int ii=0;ii<_num_thread;ii++)
-                    pthread_create (&tab_threads[ii], NULL,  thread_processLevel<Hasher_t, Range, vectorit_hash128_t>, &t_arg); //&t_arg[ii]
-
+                if (_num_thread > 1) {
+                    for (int ii=0;ii<_num_thread;ii++)
+                        pthread_create (&tab_threads[ii], NULL,  thread_processLevel<Hasher_t, Range, vectorit_hash128_t>, &t_arg); //&t_arg[ii]
+                } else {
+                    thread_processLevel<Hasher_t, Range, vectorit_hash128_t>(&t_arg); //&t_arg[ii]
+                }
             } else {
                 //printf(" _ _ basic mode \n");
-                for(int ii=0;ii<_num_thread;ii++)
-                    pthread_create (&tab_threads[ii], NULL,  thread_processLevel<Hasher_t, Range, decltype(input_range.begin())>, &t_arg); //&t_arg[ii]
+                if (_num_thread > 1) {
+                    for(int ii=0;ii<_num_thread;ii++)
+                        pthread_create (&tab_threads[ii], NULL,  thread_processLevel<Hasher_t, Range, decltype(input_range.begin())>, &t_arg); //&t_arg[ii]
+                } else
+                    thread_processLevel<Hasher_t, Range, decltype(input_range.begin())>(&t_arg); //&t_arg[ii]
             }
             //joining
-            for(int ii=0;ii<_num_thread;ii++)
-            {
-                pthread_join(tab_threads[ii], NULL);
+            if (_num_thread > 1) {
+                for(int ii=0;ii<_num_thread;ii++)
+                {
+                    pthread_join(tab_threads[ii], NULL);
+                }
             }
         }
 
