@@ -26,6 +26,7 @@ template<class It, class Cmp>
 class loser_tree {
 public:
     typedef typename std::iterator_traits<It>::value_type value_type;
+    typedef typename std::iterator_traits<It>::reference reference;
 
 private:
     size_t log_k_;
@@ -173,6 +174,15 @@ public:
         return res;
     }
 
+    reference top() {
+        size_t winner_index = entry_[0];
+        return *runs_[winner_index].begin();
+    }
+
+    void replay() {
+        size_t winner_index = entry_[0];
+        entry_[0] = replay(winner_index);
+    }
 
 private:
     std::vector<adt::iterator_range<It>> runs_;
