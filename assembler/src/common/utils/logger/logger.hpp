@@ -142,12 +142,29 @@ inline const char* __scope_source_name() {
     }                                                                   \
   } while(0);
 
+#define LOG_EXPR(l, expr)                                               \
+    do {                                                                \
+        std::shared_ptr<logging::logger> &__lg__ = logging::__logger(); \
+        if (__lg__.get() == NULL) {                                     \
+            std::cerr << "WARNING: Try to use logger before create one. Level=" << level_name(l); \
+            fflush(stderr);                                             \
+            break;                                                      \
+        }                                                               \
+        if (__lg__->need_log((l), __scope_source_name())) {             \
+            expr;                                                       \
+        }                                                               \
+    } while (0);
+
 #ifdef SPADES_DEBUG_LOGGING
-# define DEBUG(message)                      LOG_MSG(logging::L_DEBUG, message)
-# define TRACE(message)                      LOG_MSG(logging::L_TRACE, message)
+# define DEBUG(message)                     LOG_MSG(logging::L_DEBUG, message)
+# define DEBUG_EXPR(expr)                   LOG_EXPR(logging::L_DEBUG, expr)
+# define TRACE(message)                     LOG_MSG(logging::L_TRACE, message)
+# define TRACE_EXPR(expr)                   LOG_EXPR(logging::L_TRACE, expr)
 #else
-# define DEBUG(message)                      /* No trace */
-# define TRACE(message)                      /* No trace */
+# define DEBUG(message)                     /* No trace */
+# define DEBUG_EXPR(expr)                   /* No trace */
+# define TRACE(message)                     /* No trace */
+# define TRACE_EXPR(expr)                   /* No trace */
 #endif
 #define INFO(message)                       LOG_MSG(logging::L_INFO , message)
 #define START_BANNER(description)                                       \
