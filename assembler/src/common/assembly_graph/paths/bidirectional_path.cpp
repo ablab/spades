@@ -22,9 +22,11 @@ std::vector<std::string> BidirectionalPath::PrintLines() const {
 }
 
 void BidirectionalPath::PrintDEBUG() const {
-    for (const auto& s: PrintLines()) {
-        DEBUG(s);
-    }
+    DEBUG_EXPR( // This will not execute PrintLines() if DEBUG level is not reached.
+        for (const auto& s: PrintLines()) {
+            DEBUG(s);
+        }
+    );
 }
 
 void BidirectionalPath::PrintINFO() const {
