@@ -227,18 +227,30 @@ private:
 
       // Write it down!
       adt::KMerVector<Seq> buf(k_, 1024*1024);
-      auto pval = tree.pop();
       size_t total = 0;
       while (!tree.empty()) {
           buf.clear();
-          for (size_t cnt = 0; cnt < buf.capacity() && !tree.empty(); ) {
-              auto cval = tree.pop();
-              if (!adt::array_equal_to<typename Seq::DataType>()(pval, cval)) {
-                  buf.push_back(pval);
-                  pval = cval;
-                  cnt += 1;
-              }
+          buf.push_back(tree.pop());
+          size_t cnt = 1;
+
+          while (cnt < buf.capacity()) {
+            while (!tree.empty() &&
+                   adt::array_equal_to<typename Seq::DataType>()(buf.back(), tree.top()))
+              tree.replay();
+
+            if (tree.empty())
+              break;
+            
+            buf.push_back(tree.top());
+            tree.replay();
+            cnt += 1;
           }
+
+          // Handle the last value
+          while (!tree.empty() &&
+                 adt::array_equal_to<typename Seq::DataType>()(buf.back(), tree.top()))
+            tree.replay();
+
           total += buf.size();
 
           FILE *g = fopen(ofname.c_str(), "ab");
@@ -248,18 +260,6 @@ private:
           if (res != buf.size())
             FATAL_ERROR("I/O error! Incomplete write! Reason: " << strerror(errno) << ". Error code: " << errno);
           fclose(g);
-      }
-
-      // Handle very last value
-      {
-        FILE *g = fopen(ofname.c_str(), "ab");
-        if (!g)
-          FATAL_ERROR("Cannot open temporary file " << ofname << " for writing");
-        size_t res = fwrite(pval.data(), pval.data_size(), 1, g);
-        if (res != 1)
-          FATAL_ERROR("I/O error! Incomplete write! Reason: " << strerror(errno) << ". Error code: " << errno);
-        fclose(g);
-        total += 1;
       }
 
       return total;
