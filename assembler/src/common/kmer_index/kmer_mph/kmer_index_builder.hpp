@@ -26,7 +26,7 @@
 
 #include <boomphf/BooPHF.h>
 
-#include <libcxx/sort.hpp>
+#include <pdqsort/pdqsort.h>
 
 #include <algorithm>
 #ifdef USE_GLIBCXX_PARALLEL
@@ -367,7 +367,7 @@ private:
       return total;
     } else {
       // Sort the stuff
-      libcxx::sort(ins.begin(), ins.end(), adt::array_less<typename Seq::DataType>());
+      pdqsort_branchless(ins.begin(), ins.end(), adt::array_less<typename Seq::DataType>());
 
       // FIXME: Use something like parallel version of unique_copy but with explicit
       // resizing.

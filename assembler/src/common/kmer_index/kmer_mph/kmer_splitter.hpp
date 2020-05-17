@@ -14,7 +14,7 @@
 #include "utils/memory_limit.hpp"
 #include "utils/logger/logger.hpp"
 
-#include <libcxx/sort.hpp>
+#include <pdqsort/pdqsort.h>
 #include <string>
 #include <cstdio>
 
@@ -134,7 +134,7 @@ protected:
                 for (size_t j = 0; j < buffer.size(); ++j)
                     SortBuffer.push_back(buffer[j]);
             }
-            libcxx::sort(SortBuffer.begin(), SortBuffer.end(), typename adt::KMerVector<Seq>::less2_fast());
+            pdqsort_branchless(SortBuffer.begin(), SortBuffer.end(), typename adt::KMerVector<Seq>::less2_fast());
             auto it = std::unique(SortBuffer.begin(), SortBuffer.end(), typename adt::KMerVector<Seq>::equal_to());
 
 #     pragma omp critical
