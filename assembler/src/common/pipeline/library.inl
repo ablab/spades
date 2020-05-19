@@ -15,6 +15,20 @@ struct SequenceTraits<std::vector<Library<Data> >>  {
     }
 };
 
+template <class Data>
+struct SequenceTraits<io::DataSet<Data>>  {
+    static size_t size(IO &, io::DataSet<Data> &seq) {
+        return seq.lib_count();
+    }
+    static Library<Data>&
+    element(IO &, io::DataSet<Data> &seq, size_t index) {
+        if (index >= seq.lib_count())
+            seq.push_back(Library<Data>());
+        return seq[index];
+    }
+};
+
+
 template<class Data>
 void MappingTraits<Library<Data>>::mapping(yaml::IO &io, Library<Data> &lib) {
     lib.yamlize(io);
@@ -30,10 +44,6 @@ StringRef MappingTraits<Library<Data>>::validate(yaml::IO &io, Library<Data> &li
     return res;
 }
 
-template<class Data>
-void MappingTraits<io::DataSet<Data>>::mapping(yaml::IO &io, io::DataSet<Data> &ds) {
-    ds.yamlize(io);
-}
 }}
 
 template<class Data>
@@ -47,12 +57,6 @@ template<class Data>
 void io::SequencingLibrary<Data>::validate(llvm::yaml::IO &io, llvm::StringRef &res) {
     // Simply ask base class to validate for us
     SequencingLibraryBase::validate(io, res);
-}
-
-template<class Data>
-void io::DataSet<Data>::yamlize(yaml::IO &io) {
-    yaml::EmptyContext Ctx;
-    llvm::yaml::yamlize(io, libraries_, true, Ctx);
 }
 
 template<class Data>

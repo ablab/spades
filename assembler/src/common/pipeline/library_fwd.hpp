@@ -60,9 +60,4 @@ struct MappingTraits<io::SequencingLibrary<Data> > {
     static StringRef validate(llvm::yaml::IO &io, io::SequencingLibrary<Data> &lib);
 };
 
-template <class Data>
-struct MappingTraits<io::DataSet<Data> > {
-    static void mapping(llvm::yaml::IO &io, io::DataSet<Data> &lib);
-};
-
 }}

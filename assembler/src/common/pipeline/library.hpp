@@ -273,9 +273,6 @@ public:
     void load(const std::string &filename);
     void save(const std::string &filename);
 
-    void yamlize(llvm::yaml::IO &io);
-    void validate(llvm::yaml::IO &io, llvm::StringRef &res);
-
     void clear() { libraries_.clear(); }
     void push_back(const Library &lib) {
         libraries_.push_back(lib);
