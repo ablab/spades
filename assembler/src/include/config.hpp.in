@@ -3,6 +3,7 @@
 
 #cmakedefine SPADES_USE_JEMALLOC
 #cmakedefine SPADES_USE_TCMALLOC
+#cmakedefine SPADES_USE_MIMALLOC
 #cmakedefine SPADES_DEBUG_LOGGING
 #cmakedefine SPADES_ENABLE_EXPENSIVE_CHECKS
 

@@ -15,6 +15,7 @@
 #include "utils/logger/logger.hpp"
 #include "utils/perf/memory.hpp"
 #include "utils/memory_limit.hpp"
+#include "utils/parallel/openmp_wrapper.h"
 
 #include "config.hpp"
 
@@ -99,13 +100,12 @@ bool logger::need_log(level desired_level, const char* source) const {
     return desired_level >= source_level;
 }
 
-
 void logger::log(level desired_level, const char* file, size_t line_num, const char* source, const char* msg) {
   double time = timer_.time();
   size_t mem = -1ull;
-  size_t max_rss;
+  size_t max_rss = -1ull;
 
-#ifdef SPADES_USE_JEMALLOC
+#if defined(SPADES_USE_JEMALLOC)
   // Cannot use FATAL_ERROR here, we're inside logger
 
   // Update statisitcs cached by mallctl
@@ -129,6 +129,12 @@ void logger::log(level desired_level, const char* file, size_t line_num, const c
       }
       mem = (cmem + 1023)/ 1024;
   }
+  max_rss = utils::get_max_rss();
+  if (mem > max_rss)
+      max_rss = mem;
+#elif defined(SPADES_USE_MIMALLOC)
+  mem = (utils::get_used_memory() + 1023) / 1024;
+  // FIXME: we may need to refine here
   max_rss = utils::get_max_rss();
   if (mem > max_rss)
       max_rss = mem;

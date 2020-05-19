@@ -390,6 +390,13 @@ void mi_thread_stats_print_out(mi_output_fun* out, void* arg) mi_attr_noexcept {
   _mi_stats_print(mi_stats_get_default(), out, arg);
 }
 
+size_t mi_stats_total_mem() mi_attr_noexcept {
+  mi_stat_count_t total = { 0,0,0,0 };
+  mi_stat_add(&total, &_mi_stats_main.normal, 1);
+  mi_stat_add(&total, &_mi_stats_main.huge, 1);
+  mi_stat_add(&total, &_mi_stats_main.giant, 1);
+  return total.current;
+}
 
 // ----------------------------------------------------------------
 // Basic timer for convenience; use milli-seconds to avoid doubles

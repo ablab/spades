@@ -147,6 +147,7 @@ mi_decl_export void mi_stats_reset(void)      mi_attr_noexcept;
 mi_decl_export void mi_stats_merge(void)      mi_attr_noexcept;
 mi_decl_export void mi_stats_print(void* out) mi_attr_noexcept;  // backward compatibility: `out` is ignored and should be NULL
 mi_decl_export void mi_stats_print_out(mi_output_fun* out, void* arg) mi_attr_noexcept;
+mi_decl_export size_t mi_stats_total_mem(void) mi_attr_noexcept;
 
 mi_decl_export void mi_process_init(void)     mi_attr_noexcept;
 mi_decl_export void mi_thread_init(void)      mi_attr_noexcept;
