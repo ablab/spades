@@ -18,7 +18,7 @@ namespace debruijn_graph {
 class GapCloserPairedIndexFiller : public SequenceMapperListener {
 private:
     const Graph &graph_;
-    typedef std::unordered_map<EdgeId, std::pair<EdgeId, int>> TipMap;
+    typedef std::unordered_map<EdgeId, EdgeId> TipMap;
     omnigraph::de::PairedInfoIndexT<Graph> &paired_index_;
     omnigraph::de::ConcurrentPairedInfoBuffer<Graph> buffer_pi_;
     TipMap out_tip_map_, in_tip_map_;
@@ -45,8 +45,8 @@ private:
                     continue;
                 }
 
-                auto e1 = OutTipIter->second.first;
-                auto e2 = InTipIter->second.first;
+                auto e1 = OutTipIter->second;
+                auto e2 = InTipIter->second;
                 //FIXME: Normalize fake points
                 auto sp = std::make_pair(e1, e2);
                 auto cp = buffer_pi_.ConjugatePair(e1, e2);
@@ -66,37 +66,36 @@ private:
             TipMap local_in_tip_map, local_out_tip_map;
             for (EdgeId edge : ranges[i]) {
                 if (graph_.IsDeadStart(graph_.EdgeStart(edge))) {
-                    local_in_tip_map.insert({edge, {edge, 0}});
-                    std::stack<std::pair<EdgeId, int>> edge_stack;
-                    edge_stack.push({edge, 0});
+                    local_in_tip_map.emplace(edge, edge);
+                    std::stack<EdgeId> edge_stack;
+                    edge_stack.push(edge);
                     while (!edge_stack.empty()) {
                         auto checking_pair = edge_stack.top();
                         edge_stack.pop();
-                        if (graph_.CheckUniqueIncomingEdge(graph_.EdgeEnd(checking_pair.first))) {
-                            for (EdgeId e : graph_.OutgoingEdges(graph_.EdgeEnd(checking_pair.first))) {
-                                local_in_tip_map.insert({e, {edge, graph_.length(checking_pair.first) +
-                                                        checking_pair.second}});
-                                edge_stack.push({e, graph_.length(checking_pair.first) + checking_pair.second});
-
+                        VertexId end = graph_.EdgeEnd(checking_pair);
+                        if (graph_.CheckUniqueIncomingEdge(end)) {
+                            for (EdgeId e : graph_.OutgoingEdges(end)) {
+                                local_in_tip_map.emplace(e, edge);
+                                edge_stack.push(e);
                             }
                         }
                     }
                 }
 
                 if (graph_.IsDeadEnd(graph_.EdgeEnd(edge))) {
-                    local_out_tip_map.insert({edge, {edge, 0}});
-                    std::stack<std::pair<EdgeId, int>> edge_stack;
-                    edge_stack.push({edge, 0});
+                    local_out_tip_map.emplace(edge, edge);
+                    std::stack<EdgeId> edge_stack;
+                    edge_stack.push(edge);
                     while (!edge_stack.empty()) {
                         auto checking_pair = edge_stack.top();
                         edge_stack.pop();
-                        if (graph_.CheckUniqueOutgoingEdge(graph_.EdgeStart(checking_pair.first))) {
-                            for (EdgeId e : graph_.IncomingEdges(graph_.EdgeStart(checking_pair.first))) {
-                                local_out_tip_map.insert({e, {edge, graph_.length(e) + checking_pair.second}});
-                                edge_stack.push({e, graph_.length(e) + checking_pair.second});
+                        VertexId start = graph_.EdgeStart(checking_pair);
+                        if (graph_.CheckUniqueOutgoingEdge(start)) {
+                            for (EdgeId e : graph_.IncomingEdges(start)) {
+                                local_out_tip_map.emplace(e, edge);
+                                edge_stack.push(e);
                             }
                         }
-
                     }
                 }
             }
