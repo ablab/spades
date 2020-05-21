@@ -35,15 +35,13 @@ private:
     void ProcessPairedRead(const MappingPath<EdgeId> &path1, const MappingPath<EdgeId> &path2) {
         for (size_t i = 0; i < path1.size(); ++i) {
             auto OutTipIter = out_tip_map_.find(path1[i].first);
-            if (OutTipIter == out_tip_map_.cend()) {
+            if (OutTipIter == out_tip_map_.cend())
                 continue;
-            }
 
             for (size_t j = 0; j < path2.size(); ++j) {
                 auto InTipIter = in_tip_map_.find(path2[j].first);
-                if (InTipIter == in_tip_map_.cend()) {
+                if (InTipIter == in_tip_map_.cend())
                     continue;
-                }
 
                 auto e1 = OutTipIter->second;
                 auto e2 = InTipIter->second;
@@ -73,11 +71,12 @@ private:
                         auto checking_pair = edge_stack.top();
                         edge_stack.pop();
                         VertexId end = graph_.EdgeEnd(checking_pair);
-                        if (graph_.CheckUniqueIncomingEdge(end)) {
-                            for (EdgeId e : graph_.OutgoingEdges(end)) {
-                                local_in_tip_map.emplace(e, edge);
-                                edge_stack.push(e);
-                            }
+                        if (!graph_.CheckUniqueIncomingEdge(end))
+                            continue;
+
+                        for (EdgeId e : graph_.OutgoingEdges(end)) {
+                            local_in_tip_map.emplace(e, edge);
+                            edge_stack.push(e);
                         }
                     }
                 }
@@ -90,11 +89,12 @@ private:
                         auto checking_pair = edge_stack.top();
                         edge_stack.pop();
                         VertexId start = graph_.EdgeStart(checking_pair);
-                        if (graph_.CheckUniqueOutgoingEdge(start)) {
-                            for (EdgeId e : graph_.IncomingEdges(start)) {
-                                local_out_tip_map.emplace(e, edge);
-                                edge_stack.push(e);
-                            }
+                        if (!graph_.CheckUniqueOutgoingEdge(start))
+                            continue;
+
+                        for (EdgeId e : graph_.IncomingEdges(start)) {
+                            local_out_tip_map.emplace(e, edge);
+                            edge_stack.push(e);
                         }
                     }
                 }
