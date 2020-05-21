@@ -11,6 +11,8 @@
 #include "modules/alignment/sequence_mapper_notifier.hpp"
 #include "paired_info/concurrent_pair_info_buffer.hpp"
 #include "io/dataset_support/read_converter.hpp"
+
+#include <parallel_hashmap/phmap.h>
 #include <stack>
 
 namespace debruijn_graph {
@@ -18,7 +20,7 @@ namespace debruijn_graph {
 class GapCloserPairedIndexFiller : public SequenceMapperListener {
 private:
     const Graph &graph_;
-    typedef std::unordered_map<EdgeId, EdgeId> TipMap;
+    typedef phmap::parallel_flat_hash_map<EdgeId, EdgeId> TipMap;
     omnigraph::de::PairedInfoIndexT<Graph> &paired_index_;
     omnigraph::de::ConcurrentPairedInfoBuffer<Graph> buffer_pi_;
     TipMap out_tip_map_, in_tip_map_;
