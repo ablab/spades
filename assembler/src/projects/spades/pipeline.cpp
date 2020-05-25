@@ -7,6 +7,7 @@
 #include "gap_closer.hpp"
 #include "mismatch_correction.hpp"
 #include "pair_info_count.hpp"
+#include "pipeline/library.hpp"
 #include "second_phase_setup.hpp"
 #include "repeat_resolving.hpp"
 #include "distance_estimation.hpp"
@@ -36,20 +37,24 @@ namespace spades {
 
 static bool MetaCompatibleLibraries() {
     const auto& libs = cfg::get().ds.reads;
-    if (libs[0].type() != io::LibraryType::PairedEnd)
-        return false;
     if (libs.lib_count() > 2)
         return false;
-    if (libs.lib_count() == 2 &&
-        libs[1].type() != io::LibraryType::TSLReads &&
-        libs[1].type() != io::LibraryType::PacBioReads &&
-        libs[1].type() != io::LibraryType::NanoporeReads)
-        return false;
-    return true;
+
+    size_t paired_end_libs = 0, long_read_libs = 0;
+    for (const auto &lib : libs) {
+        auto type = lib.type();
+        paired_end_libs += (type == io::LibraryType::PairedEnd);
+        long_read_libs +=
+            (type == io::LibraryType::TSLReads ||
+             type == io::LibraryType::PacBioReads ||
+             type == io::LibraryType::NanoporeReads);
+    }
+
+    return (paired_end_libs == 1 && long_read_libs <= 1);
 }
 
 static bool HybridLibrariesPresent() {
-    for (const auto &lib : cfg::get().ds.reads.libraries())
+    for (const auto &lib : cfg::get().ds.reads)
         if (lib.is_hybrid_lib())
             return true;
 
@@ -57,7 +62,7 @@ static bool HybridLibrariesPresent() {
 }
 
 static bool AssemblyGraphPresent() {
-    for (const auto &lib : cfg::get().ds.reads.libraries())
+    for (const auto &lib : cfg::get().ds.reads)
         if (lib.is_assembly_graph())
             return true;
 
