@@ -25,9 +25,12 @@ void LoadGraph::run(GraphPack &gp, const char*) {
     
     gfa::GFAReader gfa(path);
     INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-    VERIFY_MSG(gfa.k() != -1U, "Failed to determine k-mer length");
-    VERIFY_MSG(gfa.k() % 2 == 1, "k-mer length must be odd");
-    VERIFY_MSG(gfa.k() == gp.k(), "k-mer length must match the command line settings");
+    if (gfa.k() == -1U)
+        FATAL_ERROR("Failed to determine GFA k-mer length");
+    if (gfa.k() % 2 != 1)
+        FATAL_ERROR("GFA used k-mer length must be odd (k=" << gfa.k() << ")");
+    if (gfa.k() != gp.k())
+        FATAL_ERROR("GFA used k-mer length (k=" << gfa.k() << ") must match the command line settings (k=" << gp.k() <<")");
     gfa.to_graph(gp.get_mutable<Graph>());
 }
 
