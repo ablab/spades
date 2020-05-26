@@ -13,6 +13,7 @@
 #include "io/dataset_support/read_converter.hpp"
 
 #include <parallel_hashmap/phmap.h>
+#include <numeric>
 #include <stack>
 
 namespace debruijn_graph {
@@ -24,15 +25,6 @@ private:
     omnigraph::de::PairedInfoIndexT<Graph> &paired_index_;
     omnigraph::de::ConcurrentPairedInfoBuffer<Graph> buffer_pi_;
     TipMap out_tip_map_, in_tip_map_;
-
-    size_t CorrectLength(Path<EdgeId> path, size_t idx) const {
-        size_t answer = graph_.length(path[idx]);
-        if (idx == 0)
-            answer -= path.start_pos();
-        if (idx == path.size() - 1)
-            answer -= graph_.length(path[idx]) - path.end_pos();
-        return answer;
-    }
 
     void ProcessPairedRead(const MappingPath<EdgeId> &path1, const MappingPath<EdgeId> &path2) {
         for (size_t i = 0; i < path1.size(); ++i) {
@@ -111,6 +103,14 @@ private:
                 OutTipMap.insert(std::make_move_iterator(local_out_tip_map.begin()), std::make_move_iterator(local_out_tip_map.end()));
             }
         }
+
+        size_t in_length = 0, out_length = 0;
+        const auto sum_length = [this](size_t val, const std::pair<EdgeId, EdgeId> &p) { return val + graph_.length(p.first); };
+        in_length = std::accumulate(InTipMap.begin(), InTipMap.end(), 0, sum_length);
+        out_length = std::accumulate(OutTipMap.begin(), OutTipMap.end(), 0, sum_length);
+
+        INFO("Total edges in incoming tip neighborhood: " << InTipMap.size() << ", length: " << in_length);
+        INFO("Total edges in outgoing tip neighborhood: " << OutTipMap.size() << ", length: " << out_length);
     }
 
 public:
