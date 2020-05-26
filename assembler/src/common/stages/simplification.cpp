@@ -27,16 +27,6 @@ namespace debruijn_graph {
 using namespace debruijn::simplification;
 using namespace config;
 
-template<class graph_pack>
-std::shared_ptr<visualization::graph_colorer::GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
-    const graph_pack& gp) {
-    io::SingleRead genome("ref", gp.genome.str());
-    auto mapper = MapperInstance(gp);
-    auto path1 = mapper->MapRead(genome).path();
-    auto path2 = mapper->MapRead(!genome).path();
-    return visualization::graph_colorer::DefaultColorer(gp.g, path1, path2);
-}
-
 SimplifInfoContainer CreateInfoContainer(const GraphPack &gp) {
     SimplifInfoContainer info_container(cfg::get().mode);
     info_container.set_read_length(cfg::get().ds.RL)
@@ -81,22 +71,6 @@ class GraphSimplifier {
         return true;
     }
 
-    size_t RemoveShortPolyATEdges(HandlerF removal_handler, size_t chunk_cnt) {
-        INFO("Removing short polyAT");
-        EdgeRemover<Graph> er(g_, removal_handler);
-        ATCondition<Graph> condition(g_, 0.8, false);
-        size_t cnt = 0;
-        for (auto iter = g_.SmartEdgeBegin(/*canonical only*/true); !iter.IsEnd(); ++iter){
-            if (g_.length(*iter) == 1 && condition.Check(*iter)) {
-                er.DeleteEdgeNoCompress(*iter);
-                cnt++;
-            }
-        }
-        omnigraph::CompressAllVertices(g_, chunk_cnt);
-        omnigraph::CleanIsolatedVertices(g_, chunk_cnt);
-        return cnt;
-    }
-
     bool FinalRemoveErroneousEdges() {
         CountingCallback<Graph> counting_callback;
         HandlerF handler = [&] (EdgeId e) {
@@ -128,10 +102,31 @@ public:
               printer_(printer) {
     }
 
+    void InitialCleaningRNA() {
+        INFO("PROCEDURE == Initial cleaning");
+        TIME_TRACE_SCOPE("Initial cleaing (RNA)");
+
+        printer_(info_printer_pos::before_raw_simplification);
+
+        CompositeAlgorithm<Graph> algo(g_);
+
+        algo.AddAlgo(LowComplexityShortEdgeRemoverInstance(g_, removal_handler_, info_container_.chunk_cnt()),
+                     "poly A/T short edge remover");
+        algo.AddAlgo(LowComplexityTipClipperInstance(g_, removal_handler_, info_container_.chunk_cnt()),
+                     "poly A/T tip clipper");
+
+        //Currently need force_primary_launch = true for correct behavior of looped TipClipper
+        algo.Run(/*force primary launch*/true);
+
+        const auto &flanking_cov = gp_.get<FlankingCoverage<Graph>>();
+        RemoveHiddenLoopEC(g_, flanking_cov, info_container_.detected_coverage_bound(),
+                           simplif_cfg_.her.relative_threshold, removal_handler_);
+    }
+
     void InitialCleaning() {
         INFO("PROCEDURE == Initial cleaning");
         TIME_TRACE_SCOPE("Initial cleaing");
-        
+
         printer_(info_printer_pos::before_raw_simplification);
 
         CompositeAlgorithm<Graph> algo(g_);
@@ -142,23 +137,6 @@ public:
                                                  simplif_cfg_.init_clean.self_conj_condition,
                                                  info_container_, removal_handler_),
                 "Self conjugate edge remover");
-
-        if (info_container_.mode() == config::pipeline_type::rna) {
-            algo.AddAlgo<AdapterAlgorithm<Graph>>(
-                    "Remover of short poly-AT edges", g_,
-                    [=]() {
-                        return RemoveShortPolyATEdges(removal_handler_,
-                                                      info_container_.chunk_cnt());
-                    });
-
-            algo.AddAlgo<omnigraph::ParallelEdgeRemovingAlgorithm<Graph>>("Short PolyA/T Edges", g_,
-                                                                          func::And(LengthUpperBound<Graph>(g_, 1),
-                                                                                    ATCondition<Graph>(g_, 0.8, false)),
-                                                                          info_container_.chunk_cnt(), removal_handler_,
-                                                                          true);
-
-            algo.AddAlgo(ATTipClipperInstance(g_, removal_handler_, info_container_.chunk_cnt()), "AT Tips");
-        }
 
         if (PerformInitCleaning()) {
             algo.AddAlgo(
@@ -190,11 +168,6 @@ public:
 
         //Currently need force_primary_launch = true for correct behavior of looped TipClipper
         algo.Run(/*force primary launch*/true);
-
-        if (info_container_.mode() == config::pipeline_type::rna) {
-            RemoveHiddenLoopEC(g_, flanking_cov, info_container_.detected_coverage_bound(),
-                               simplif_cfg_.her.relative_threshold, removal_handler_);
-        }
     }
 
     void PostSimplification() {
@@ -218,7 +191,7 @@ public:
         //            //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
         //            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
         //            boost::ref(qual_removal_handler), _1);
-        
+
         //visualization::visualization_utils::LocalityPrintingRH<Graph> drawing_handler(gp_.g, labeler, colorer, "/home/snurk/pics");
         //auto printing_handler=[&] (EdgeId e) {
         //    std::cout << "Edge:" << g_.str(e) << "; cov: " << g_.coverage(e) << "; start " << g_.str(g_.EdgeStart(e)) << "; end " << g_.str(g_.EdgeEnd(e)) << std::endl;
@@ -324,9 +297,9 @@ public:
                                                                removal_handler_);
         }
 
-        if (info_container_.mode() == config::pipeline_type::rna) {
-            algo.AddAlgo(ATTipClipperInstance(g_, removal_handler_, info_container_.chunk_cnt()), "AT Tips");
-        }
+        // TODO: better configuration
+        if (info_container_.mode() == config::pipeline_type::rna)
+            algo.AddAlgo(LowComplexityTipClipperInstance(g_, removal_handler_, info_container_.chunk_cnt()), "AT Tips");
 
         algo.AddAlgo(
                 LowCoverageEdgeRemoverInstance(g_,
@@ -458,7 +431,10 @@ void RawSimplification::run(GraphPack &gp, const char*) {
                                preliminary_ ? *cfg::get().preliminary_simp : cfg::get().simp,
                                nullptr/*removal_handler_f*/,
                                printer);
-    simplifier.InitialCleaning();
+    if (cfg::get().mode == config::pipeline_type::rna)
+        simplifier.InitialCleaningRNA();
+    else
+        simplifier.InitialCleaning();
 }
 
 void Simplification::run(GraphPack &gp, const char*) {

@@ -449,13 +449,13 @@ AlgoPtr<Graph> RelativelyLowCoverageDisconnectorInstance(Graph &g,
         INFO("Disconnection of relatively low covered edges disabled");
         return nullptr;
     }
+
     using Condition=omnigraph::simplification::relative_coverage::RelativeCovDisconnectionCondition<Graph>;
 
     func::TypedPredicate<EdgeId> condition = Condition(g, flanking_cov, rced_config.diff_mult, rced_config.edge_sum);
 
-    if (math::gr(rced_config.unconditional_diff_mult, 0.)) {
+    if (math::gr(rced_config.unconditional_diff_mult, 0.))
         condition = func::Or(Condition(g, flanking_cov, rced_config.unconditional_diff_mult, 0), condition);
-    }
 
     return std::make_shared<omnigraph::DisconnectionAlgorithm<Graph>>(g,
             condition,
@@ -501,9 +501,9 @@ AlgoPtr<Graph> IsolatedEdgeRemoverInstance(Graph &g,
                                            config::debruijn_config::simplification::isolated_edge_remover ier,
                                            const SimplifInfoContainer &info,
                                            EdgeRemovalHandlerF<Graph> removal_handler = 0) {
-    if (!ier.enabled) {
+    if (!ier.enabled)
         return nullptr;
-    }
+
     size_t max_length_any_cov = ier.use_rl_for_max_length_any_cov ?
                                 std::max(info.read_length() + ier.rl_threshold_increase, ier.max_length_any_cov) :
                                 ier.max_length_any_cov;
@@ -578,12 +578,11 @@ AlgoPtr<Graph> TipClipperInstance(Graph &g,
     auto condition = parser();
     auto algo = TipClipperInstance(g, condition, info, removal_handler);
     VERIFY_MSG(parser.requested_iterations() != 0, "To disable tip clipper pass empty string");
-    if (parser.requested_iterations() == 1) {
+    if (parser.requested_iterations() == 1)
         return algo;
-    } else {
-        return std::make_shared<LoopedAlgorithm<Graph>>(g, algo, 1, size_t(parser.requested_iterations()),
-                /*force primary for all*/ true);
-    }
+
+    return std::make_shared<LoopedAlgorithm<Graph>>(g, algo, 1, size_t(parser.requested_iterations()),
+                                                    /*force primary for all*/ true);
 }
 
 template<class Graph>
@@ -666,22 +665,22 @@ AlgoPtr<Graph> LowFlankDisconnectorInstance(Graph &g,
     }
 
     auto condition = [&,cov_bound] (EdgeId e) {
-        return g.OutgoingEdgeCount(g.EdgeStart(e)) > 1
-               && math::le(flanking_cov.CoverageOfStart(e), cov_bound);
+        return g.OutgoingEdgeCount(g.EdgeStart(e)) > 1 &&
+                math::le(flanking_cov.CoverageOfStart(e), cov_bound);
     };
 
     return std::make_shared<omnigraph::DisconnectionAlgorithm<Graph>>(g, condition,
-                                                                 info.chunk_cnt(),
-                                                                 removal_handler);
+                                                                      info.chunk_cnt(),
+                                                                      removal_handler);
 }
 
 template<class Graph>
 AlgoPtr<Graph> LowCoverageEdgeRemoverInstance(Graph &g,
                                               const config::debruijn_config::simplification::low_covered_edge_remover &lcer_config,
                                               const SimplifInfoContainer &info) {
-    if (!lcer_config.enabled) {
+    if (!lcer_config.enabled)
         return nullptr;
-    }
+
     VERIFY(info.read_length() > g.k());
     double threshold = lcer_config.coverage_threshold * double(info.read_length() - g.k()) / double(info.read_length());
     INFO("Low coverage edge removal (LCER) activated and will remove edges of coverage lower than " << threshold);
