@@ -87,18 +87,21 @@ public:
     double AvgCoverage() const {
         double cov = 0;
         double length = 0;
-        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            cov += graph_.coverage(*it) * (double) graph_.length(*it);
-            length += (double) graph_.length(*it);
+        for (EdgeId e : graph_.edges()) {
+            double l = double(graph_.length(e));
+            cov += graph_.coverage(e) * l;
+            length += l;
         }
         return cov / length;
     }
 
     Histogram ConstructHistogram() const {
         Histogram result;
-        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            if (IsInteresting(*it))
-                result[(size_t)graph_.coverage(*it)]++;
+        for (EdgeId e : graph_.edges()) {
+            if (!IsInteresting(e))
+                continue;
+
+            result[size_t(graph_.coverage(e))]++;
         }
         return result;
     }

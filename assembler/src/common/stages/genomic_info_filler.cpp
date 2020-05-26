@@ -14,20 +14,16 @@
 using namespace debruijn_graph;
 
 static std::vector<size_t> extract(const std::map<size_t, size_t> &hist) {
-    std::map<size_t, size_t> tmp = hist;
-
-    size_t maxcov = 0;
-    for (auto it = tmp.cbegin(), et = tmp.cend(); it != et; ++it)
-        maxcov = std::max(maxcov, it->first);
-
-    // Touch all the values until maxcov to make sure all the values exist in the map
-    for (size_t i = 0; i <= maxcov; ++i)
-        tmp[i];
+    size_t maxcov = (hist.size() ? hist.rbegin()->first : 0);
 
     // Extract the values
     std::vector<size_t> res(maxcov);
-    for (size_t i = 0; i < maxcov; ++i)
-        res[i] = tmp[i + 1];
+    for (const auto &entry : hist) {
+        if (entry.first < 1 || entry.first > maxcov)
+            continue;
+
+        res[entry.first - 1] = entry.second;
+    }
 
     return res;
 }
