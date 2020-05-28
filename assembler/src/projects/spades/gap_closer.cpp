@@ -313,19 +313,37 @@ class GapCloser {
         for (int gap = 1; gap <= k_ - (int) min_intersection_; ++gap) {
             int overlap = k_ - gap;
             size_t hamming_distance = LimitedHammingDistance(seq1.Last(overlap), seq2.First(overlap), hamming_dist_bound_);
-            if (hamming_distance <= hamming_dist_bound_) {
-                DEBUG("For edges " << g_.str(first) << " and " << g_.str(second)
-                      << ". For gap value " << gap << " (overlap " << overlap << "bp) hamming distance was " <<
-                      hamming_distance);
-                //        DEBUG("Sequences of distance " << tip_distance << " :"
-                //                << seq1.Subseq(seq1.size() - k).str() << "  "
-                //                << seq2.Subseq(0, k).str());
+            if (hamming_distance > hamming_dist_bound_)
+                continue;
 
-                if (hamming_distance > 0) {
-                    return HandlePositiveHammingDistanceCase(first, second, overlap);
-                } else {
-                    return HandleSimpleCase(first, second, overlap);
+            {
+                // Perform complexity check. At minimum overlap (10 bp by default)
+                // we do not allow perfect poly-nucl overlaps and at maximum (k-1)
+                // we disregard overlaps with at least 80% identical nucls.
+                Sequence oseq = seq1.Last(overlap);
+                std::array<size_t, 4> counts = std::array<size_t, 4>();
+
+                for (size_t i = 0; i < size_t(overlap); ++i)
+                    counts[oseq[i]] += 1;
+                size_t curm = *std::max_element(counts.begin(), counts.end());
+                double ratio = 0.8 + 0.2 * double(gap - 1)/double(k_-min_intersection_-1);
+                if (math::gr(double(curm), ratio * double(overlap))) {
+                    DEBUG("Disregard low-complexity overlap: " << oseq);
+                    return false;
                 }
+            }
+
+            DEBUG("For edges " << g_.str(first) << " and " << g_.str(second)
+                  << ". For gap value " << gap << " (overlap " << overlap << "bp) hamming distance was " <<
+                  hamming_distance);
+            //        DEBUG("Sequences of distance " << tip_distance << " :"
+            //                << seq1.Subseq(seq1.size() - k).str() << "  "
+            //                << seq2.Subseq(0, k).str());
+
+            if (hamming_distance > 0) {
+                return HandlePositiveHammingDistanceCase(first, second, overlap);
+            } else {
+                return HandleSimpleCase(first, second, overlap);
             }
         }
         return false;
