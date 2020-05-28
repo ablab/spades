@@ -433,8 +433,12 @@ void RawSimplification::run(GraphPack &gp, const char*) {
                                printer);
     if (cfg::get().mode == config::pipeline_type::rna)
         simplifier.InitialCleaningRNA();
-    else
+    else if (cfg::get().mode == config::pipeline_type::rnaviral) {
+        simplifier.InitialCleaningRNA();
         simplifier.InitialCleaning();
+    } else {
+        simplifier.InitialCleaning();
+    }
 }
 
 void Simplification::run(GraphPack &gp, const char*) {
