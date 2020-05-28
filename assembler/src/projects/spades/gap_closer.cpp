@@ -181,18 +181,17 @@ class GapCloser {
         return answer;
     }
 
-    size_t HammingDistance(const Sequence &s1, const Sequence &s2) const {
+    size_t LimitedHammingDistance(const Sequence &s1, const Sequence &s2, size_t bound) const {
         VERIFY(s1.size() == s2.size());
         size_t dist = 0;
-        for (size_t i = 0; i < s1.size(); ++i)
-            if (s1[i] != s2[i])
-                dist++;
+        for (size_t i = 0; i < s1.size(); ++i) {
+            dist += (s1[i] != s2[i]);
+            if (dist > bound)
+                return dist;
+        }
+
         return dist;
     }
-
-    //  size_t HammingDistance(const Sequence& s1, const Sequence& s2) const {
-    //    return DiffPos(s1, s2).size();
-    //  }
 
     std::vector<size_t> PosThatCanCorrect(size_t overlap_length/*in nucls*/, const MismatchPos &mismatch_pos,
                                           size_t edge_length/*in nucls*/, bool left_edge) const {
@@ -309,13 +308,11 @@ class GapCloser {
             return false;
         }
 
-        Sequence seq1 = g_.EdgeNucls(first);
-        Sequence seq2 = g_.EdgeNucls(second);
+        Sequence seq1 = g_.EdgeNucls(first), seq2 = g_.EdgeNucls(second);
         TRACE("Checking possible gaps from 1 to " << k_ - min_intersection_);
         for (int gap = 1; gap <= k_ - (int) min_intersection_; ++gap) {
             int overlap = k_ - gap;
-            size_t hamming_distance = HammingDistance(g_.EdgeNucls(first).Last(overlap),
-                                                      g_.EdgeNucls(second).First(overlap));
+            size_t hamming_distance = LimitedHammingDistance(seq1.Last(overlap), seq2.First(overlap), hamming_dist_bound_);
             if (hamming_distance <= hamming_dist_bound_) {
                 DEBUG("For edges " << g_.str(first) << " and " << g_.str(second)
                       << ". For gap value " << gap << " (overlap " << overlap << "bp) hamming distance was " <<
