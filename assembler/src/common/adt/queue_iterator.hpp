@@ -16,10 +16,12 @@
 #include <vector>
 #include <algorithm>
 
+namespace {
 template<typename T>
 inline void hash_combine(std::size_t& seed, const T& val) {
     std::hash<T> hasher;
     seed ^= hasher(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
 }
 
 //  taken from https://stackoverflow.com/a/7222201/916549
@@ -118,16 +120,18 @@ private:
         }
     }
 public:
-    /*
-     * Be careful! This constructor requires Priority to have default constructor even if you call it with
-     * specified priority. In this case just create default constructor with VERIFY(false) inside it.
-     * TODO Fix it
-     */
-    erasable_priority_queue_key_dirty_heap(const Priority &priority = Priority()) : priority_(priority) {}
+    erasable_priority_queue_key_dirty_heap() {}
+    erasable_priority_queue_key_dirty_heap(Priority priority)
+            : priority_(std::move(priority)) {}
 
     template<typename InputIterator>
+    erasable_priority_queue_key_dirty_heap(InputIterator begin, InputIterator end) {
+        insert(begin, end);
+    }
+    template<typename InputIterator>
     erasable_priority_queue_key_dirty_heap(InputIterator begin, InputIterator end,
-                                           const Priority &priority) : priority_(priority) {
+                                           Priority priority)
+            : priority_(std::move(priority)) {
         insert(begin, end);
     }
 
@@ -154,7 +158,8 @@ public:
         auto p = get_stored(key);
         bool res = set_.erase(p) > 0;
         skip();
-        if (2 * set_.size() < queue_.size()) compress();
+        if (2 * set_.size() < queue_.size())
+            compress();
         return res;
     }
 
@@ -192,16 +197,18 @@ private:
     btree::btree_set<std::pair<PriorityValue, T>> storage_;
     Priority priority_;
 public:
-    /*
-     * Be careful! This constructor requires Priority to have default constructor even if you call it with
-     * specified priority. In this case just create default constructor with VERIFY(false) inside it.
-     * TODO Fix it
-     */
-    erasable_priority_queue_key(const Priority &priority = Priority()) : priority_(priority) {}
+    erasable_priority_queue_key() {}
+    erasable_priority_queue_key(Priority priority)
+            : priority_(std::move(priority)) {}
 
     template<typename InputIterator>
+    erasable_priority_queue_key(InputIterator begin, InputIterator end) {
+        insert(begin, end);
+    }
+    template<typename InputIterator>
     erasable_priority_queue_key(InputIterator begin, InputIterator end,
-                                const Priority &priority) : priority_(priority) {
+                                Priority priority)
+            : priority_(std::move(priority)) {
         insert(begin, end);
     }
 
@@ -244,24 +251,26 @@ public:
     }
 };
 
-template<typename T, typename Comparator>
+template<typename T, typename Comparator = std::less<T>>
 class erasable_priority_queue {
 private:
+    Comparator cmp_;
     btree::btree_set<T, Comparator> storage_;
 public:
-    /*
-     * Be careful! This constructor requires Comparator to have default constructor even if you call it with
-     * specified comparator. In this case just create default constructor with VERIFY(false) inside it.
-     */
-    erasable_priority_queue(const Comparator &comparator = Comparator()) :
-        storage_(comparator) {
-    }
+    erasable_priority_queue()
+            : cmp_(), storage_(cmp_) {}
+
+    erasable_priority_queue(Comparator comparator)
+            : cmp_(std::move(comparator)), storage_(cmp_) {}
+
+    template<typename InputIterator>
+    erasable_priority_queue(InputIterator begin, InputIterator end)
+            : cmp_(), storage_(begin, end, cmp_) {}
 
     template<typename InputIterator>
     erasable_priority_queue(InputIterator begin, InputIterator end,
-            const Comparator &comparator = Comparator()) :
-        storage_(begin, end, comparator) {
-    }
+                            Comparator comparator)
+            : cmp_(std::move(comparator)), storage_(begin, end, cmp_) {}
 
     void pop() {
         VERIFY(!storage_.empty());
@@ -302,25 +311,15 @@ public:
 };
 
 
-template<typename T, typename Comparator>
+template<typename T, typename Comparator = std::less<T>>
 class indexed_heap_erasable_priority_queue {
 private:
     std::vector<T> heap_;
     phmap::flat_hash_map<T, size_t> map_;
     Comparator cmp_;
-public:
-    /*
-     * Be careful! This constructor requires Comparator to have default constructor even if you call it with
-     * specified comparator. In this case just create default constructor with VERIFY(false) inside it.
-     */
-    indexed_heap_erasable_priority_queue(const Comparator &comparator = Comparator()) :
-        cmp_(comparator) {
-    }
 
     template<typename InputIterator>
-    indexed_heap_erasable_priority_queue(InputIterator begin, InputIterator end,
-            const Comparator &comparator = Comparator()) :
-        cmp_(comparator) {
+    void init(InputIterator begin, InputIterator end) {
         for (; begin != end; ++begin) {
             if (map_.insert({*begin, size_t(-1)}).second) {
                 heap_.push(*begin);
@@ -332,6 +331,22 @@ public:
             map_[heap_[i]] = i;
         }
         VERIFY(heap_.size() == map_.size());
+    }
+public:
+    indexed_heap_erasable_priority_queue() {}
+    indexed_heap_erasable_priority_queue(Comparator comparator = Comparator())
+            : cmp_(std::move(comparator)) {}
+
+    template<typename InputIterator>
+    indexed_heap_erasable_priority_queue(InputIterator begin, InputIterator end) {
+        init(begin, end);
+    }
+
+    template<typename InputIterator>
+    indexed_heap_erasable_priority_queue(InputIterator begin, InputIterator end,
+                                         Comparator comparator)
+            : cmp_(std::move(comparator)) {
+        init(begin, end);
     }
 
     void pop() {
