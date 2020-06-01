@@ -81,23 +81,23 @@ private:
 
     template <typename This>
     struct TrivialFunctions {
-        static const T& top_impl(const This *p) {
-            return p->queue_.top();
+        static const T& top_impl(const This &p) {
+            return p.queue_.top();
         }
 
-        static const StoredType get_stored(const This*, const T &key) {
+        static const StoredType get_stored(const This&, const T &key) {
             return key;
         }
     };
 
     template <typename This>
     struct NontrivialFunctions {
-        static const T& top_impl(const This *p) {
-            return p->queue_.top().second;
+        static const T& top_impl(const This &p) {
+            return p.queue_.top().second;
         }
 
-        static const StoredType get_stored(const This *p, const T &key) {
-            return std::make_pair(p->priority_(key), key);
+        static const StoredType get_stored(const This &p, const T &key) {
+            return std::make_pair(p.priority_(key), key);
         }
     };
 
@@ -105,11 +105,11 @@ private:
     using Functions = std::conditional_t<is_trivial, TrivialFunctions<Queue>, NontrivialFunctions<Queue>>;
 
     const T& top_impl() const {
-        return Functions::top_impl(this);
+        return Functions::top_impl(*this);
     }
 
     StoredType get_stored(const T &key) const {
-        return Functions::get_stored(this, key);
+        return Functions::get_stored(*this, key);
     }
 
     void skip() {
