@@ -449,19 +449,17 @@ private:
     }
 };
 
-template<typename T, typename Priority = identity>
-class DynamicQueueIteratorKey {
-
+template<typename T, typename Queue>
+class DynamicQueueIteratorBase {
     bool current_actual_;
     bool current_deleted_;
     T current_;
-    erasable_priority_queue_key_dirty_heap<T, Priority> queue_;
-
+    Queue queue_;
 public:
-
-    DynamicQueueIteratorKey(const Priority &priority = Priority()) :
-        current_actual_(false), current_deleted_(false), queue_(priority) {
-    }
+    template<class... Args>
+    DynamicQueueIteratorBase(Args&&... args)
+            :  current_actual_(false), current_deleted_(false),
+               queue_(std::forward<Args>(args)...) {}
 
     template<typename InputIterator>
     void insert(InputIterator begin, InputIterator end) {
@@ -518,74 +516,22 @@ public:
     }
 };
 
-template<typename T, typename Comparator = std::less<T>>
-class DynamicQueueIterator {
-
-    bool current_actual_;
-    bool current_deleted_;
-    T current_;
-    indexed_heap_erasable_priority_queue<T, Comparator> queue_;
-
+// Iterator over queue that is ordered using Priority
+template<typename T, typename Priority = identity>
+class DynamicQueueIteratorKey : public DynamicQueueIteratorBase<T, erasable_priority_queue_key_dirty_heap<T, Priority>> {
+    using base = DynamicQueueIteratorBase<T, erasable_priority_queue_key_dirty_heap<T, Priority>>;
 public:
+    DynamicQueueIteratorKey(const Priority &priority = Priority())
+            : base(priority) {}
+};
 
-    DynamicQueueIterator(const Comparator &comparator = Comparator()) :
-        current_actual_(false), current_deleted_(false), queue_(comparator) {
-    }
-
-    template<typename InputIterator>
-    void insert(InputIterator begin, InputIterator end) {
-        queue_.insert(begin, end);
-    }
-
-    void push(const T &to_add) {
-        queue_.push(to_add);
-    }
-
-    void erase(const T &to_remove) {
-        if (current_actual_ && to_remove == current_) {
-            current_deleted_ = true;
-        }
-        queue_.erase(to_remove);
-    }
-
-    void clear() {
-        queue_.clear();
-        current_actual_ = false;
-        current_deleted_ = false;
-    }
-
-    bool IsEnd() const {
-        return queue_.empty();
-    }
-
-    size_t size() const {
-        return queue_.size();
-    }
-
-    const T& operator*() {
-        VERIFY(!queue_.empty());
-        if (!current_actual_ || current_deleted_) {
-            current_ = queue_.top();
-            current_actual_ = true;
-            current_deleted_ = false;
-        }
-        return current_;
-    }
-
-    void operator++() {
-        if (!current_actual_) {
-            queue_.pop();
-        } else if (!current_deleted_) {
-            queue_.erase(current_);
-        }
-        current_actual_ = false;
-    }
-
-    //use carefully!
-    void ReleaseCurrent() {
-        current_actual_ = false;
-    }
-
+// Iterator over quuue that is ordered using Comparator
+template<typename T, typename Comparator = std::less<T>>
+class DynamicQueueIterator : public DynamicQueueIteratorBase<T, indexed_heap_erasable_priority_queue<T, Comparator>> {
+    using base = DynamicQueueIteratorBase<T, indexed_heap_erasable_priority_queue<T, Comparator>>;
+public:
+    DynamicQueueIterator(const Comparator &comparator = Comparator())
+            : base(comparator) {}
 };
 } //adt
 
