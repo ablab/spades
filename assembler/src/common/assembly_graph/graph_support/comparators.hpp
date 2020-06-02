@@ -17,6 +17,11 @@ public:
     /**
      * Standard comparator function as used in collections.
      */
+    double operator()(EdgeId edge) const {
+        const Graph &g = graph_;
+        return static_cast<double>(g.kmer_multiplicity(edge)) / g.length(edge);
+    }
+
     bool operator()(EdgeId edge1, EdgeId edge2) const {
         const Graph &g = graph_;
 
@@ -44,6 +49,11 @@ struct LengthComparator {
     /**
      * Standard comparator function as used in collections.
      */
+    size_t operator()(EdgeId edge) const {
+        const Graph &g = graph_;
+        return g.length(edge);
+    }
+
     bool operator()(EdgeId edge1, EdgeId edge2) const {
         const Graph &g = graph_;
 

@@ -53,10 +53,10 @@ class EdgeProcessingAlgorithm {
 //        return conjugate_symmetry_;
 //    }
 
-    template<class Comparator = std::less<EdgeId>>
-    bool Run(const Comparator& comp = Comparator(), ProceedConditionT proceed_condition = func::AlwaysTrue<EdgeId>()) {
+    template<class Priority = adt::identity>
+    bool Run(const Priority& priority = Priority(), ProceedConditionT proceed_condition = func::AlwaysTrue<EdgeId>()) {
         bool triggered = false;
-        for (auto it = g_.SmartEdgeBegin(comp, conjugate_symmetry_); !it.IsEnd(); ++it) {
+        for (auto it = g_.SmartEdgeBegin(priority, conjugate_symmetry_); !it.IsEnd(); ++it) {
             EdgeId e = *it;
             TRACE("Current edge " << g_.str(e));
             if (!proceed_condition(e)) {

@@ -138,7 +138,7 @@ public:
                       size_t chunk_cnt,
                       const std::string &pics_folder = "" ,
                       HandlerF removal_handler = nullptr) :
-            base(g, nullptr, false, std::less<VertexId>(), /*track changes*/false),
+            base(g, nullptr, false, adt::identity(), /*track changes*/false),
             pics_folder_(pics_folder),
             finder_(g, relative_coverage, max_edge_len, max_path_len),
             component_remover_(g, removal_handler) {

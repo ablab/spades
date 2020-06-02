@@ -181,12 +181,12 @@ SmartEdgeSet<Container, Graph> make_smart_edge_set(const Graph &g, Container &c,
 /**
  * SmartIterator is able to iterate through collection content of which can be changed in process of
  * iteration. And as GraphActionHandler SmartIterator can change collection contents with respect to the
- * way graph is changed. Also one can define order of iteration by specifying Comparator.
+ * way graph is changed. Also one can define order of iteration by specifying Priority.
  */
-template<class Graph, typename ElementId, typename Comparator = std::less<ElementId>>
+template<class Graph, typename ElementId, typename Priority = adt::identity>
 class SmartIterator : public GraphActionHandler<Graph> {
     typedef GraphActionHandler<Graph> base;
-    typedef adt::DynamicQueueIterator<ElementId, Comparator> DynamicQueueIterator;
+    typedef adt::DynamicQueueIteratorKey<ElementId, Priority> DynamicQueueIterator;
     DynamicQueueIterator inner_it_;
     bool add_new_;
     bool canonical_only_;
@@ -220,10 +220,10 @@ protected:
     }
 
     SmartIterator(const Graph &g, const std::string &name, bool add_new,
-                  const Comparator& comparator, bool canonical_only,
+                  const Priority& priority, bool canonical_only,
                   func::TypedPredicate<ElementId> add_condition = func::AlwaysTrue<ElementId>())
             : base(g, name),
-              inner_it_(comparator),
+              inner_it_(priority),
               add_new_(add_new),
               canonical_only_(canonical_only),
               add_condition_(add_condition) {
@@ -271,29 +271,29 @@ public:
  * SmartIterator is abstract class which acts both as QueueIterator and GraphActionHandler. As QueueIterator
  * SmartIterator is able to iterate through collection content of which can be changed in process of
  * iteration. And as GraphActionHandler SmartIterator can change collection contents with respect to the
- * way graph is changed. Also one can define order of iteration by specifying Comparator.
+ * way graph is changed. Also one can define order of iteration by specifying Priority.
  */
 template<class Graph, typename ElementId,
-         typename Comparator = std::less<ElementId>>
-class SmartSetIterator : public SmartIterator<Graph, ElementId, Comparator> {
-    typedef SmartIterator<Graph, ElementId, Comparator> base;
+         typename Priority = adt::identity>
+class SmartSetIterator : public SmartIterator<Graph, ElementId, Priority> {
+    typedef SmartIterator<Graph, ElementId, Priority> base;
 
 public:
     SmartSetIterator(const Graph &g,
                      bool add_new = false,
-                     const Comparator& comparator = Comparator(),
+                     const Priority& priority = Priority(),
                      bool canonical_only = false,
                      func::TypedPredicate<ElementId> add_condition = func::AlwaysTrue<ElementId>())
-            : base(g, "SmartSet", add_new, comparator, canonical_only, add_condition) {
+            : base(g, "SmartSet", add_new, priority, canonical_only, add_condition) {
     }
 
     template<class Iterator>
     SmartSetIterator(const Graph &g, Iterator begin, Iterator end,
                      bool add_new = false,
-                     const Comparator& comparator = Comparator(),
+                     const Priority& priority = Priority(),
                      bool canonical_only = false,
                      func::TypedPredicate<ElementId> add_condition = func::AlwaysTrue<ElementId>())
-            : SmartSetIterator(g, add_new, comparator, canonical_only, add_condition) {
+            : SmartSetIterator(g, add_new, priority, canonical_only, add_condition) {
         insert(begin, end);
     }
 
@@ -314,13 +314,13 @@ public:
 /**
  * SmartVertexIterator iterates through vertices of graph. It listens to AddVertex/DeleteVertex graph events
  * and correspondingly edits the set of vertices to iterate through. Note: high level event handlers are
- * triggered before low level event handlers like H>andleAdd/HandleDelete. Thus if Comparator uses certain
+ * triggered before low level event handlers like H>andleAdd/HandleDelete. Thus if Priority uses certain
  * structure which is also updated with handlers make sure that all information is updated in high level
  * event handlers.
  */
-template<class Graph, typename Comparator = std::less<typename Graph::VertexId> >
+template<class Graph, typename Priority = adt::identity >
 class SmartVertexIterator : public SmartIterator<Graph,
-                                                 typename Graph::VertexId, Comparator> {
+                                                 typename Graph::VertexId, Priority> {
   public:
     typedef typename Graph::VertexId VertexId;
 
@@ -330,11 +330,11 @@ class SmartVertexIterator : public SmartIterator<Graph,
     }
 
   public:
-    SmartVertexIterator(const Graph &g, const Comparator& comparator =
-                        Comparator(), bool canonical_only = false)
-            : SmartIterator<Graph, VertexId, Comparator>(
+    SmartVertexIterator(const Graph &g, const Priority& priority =
+                        Priority(), bool canonical_only = false)
+            : SmartIterator<Graph, VertexId, Priority>(
                 g, "SmartVertexIterator " + std::to_string(get_id()), true,
-                comparator, canonical_only) {
+                priority, canonical_only) {
         this->insert(g.begin(), g.end());
     }
 
@@ -439,12 +439,12 @@ class ConstEdgeIterator {
 /**
  * SmartEdgeIterator iterates through edges of graph. It listens to AddEdge/DeleteEdge graph events
  * and correspondingly edits the set of edges to iterate through. Note: high level event handlers are
- * triggered before low level event handlers like HandleAdd/HandleDelete. Thus if Comparator uses certain
+ * triggered before low level event handlers like HandleAdd/HandleDelete. Thus if Priority uses certain
  * structure which is also updated with handlers make sure that all information is updated in high level
  * event handlers.
  */
-template<class Graph, typename Comparator = std::less<typename Graph::EdgeId> >
-class SmartEdgeIterator : public SmartIterator<Graph, typename Graph::EdgeId, Comparator> {
+template<class Graph, typename Priority = adt::identity>
+class SmartEdgeIterator : public SmartIterator<Graph, typename Graph::EdgeId, Priority> {
     typedef GraphEdgeIterator<Graph> EdgeIt;
   public:
     typedef typename Graph::EdgeId EdgeId;
@@ -455,11 +455,11 @@ class SmartEdgeIterator : public SmartIterator<Graph, typename Graph::EdgeId, Co
     }
 
   public:
-    SmartEdgeIterator(const Graph &g, Comparator comparator = Comparator(),
+    SmartEdgeIterator(const Graph &g, Priority priority = Priority(),
                       bool canonical_only = false)
-            : SmartIterator<Graph, EdgeId, Comparator>(
+            : SmartIterator<Graph, EdgeId, Priority>(
                 g, "SmartEdgeIterator " + std::to_string(get_id()), true,
-                comparator, canonical_only) {
+                priority, canonical_only) {
         this->insert(EdgeIt(g, g.begin()), EdgeIt(g, g.end()));
 
 //        for (auto it = graph.begin(); it != graph.end(); ++it) {
