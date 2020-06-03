@@ -24,7 +24,7 @@ private:
     typedef phmap::parallel_flat_hash_map<EdgeId, EdgeId> TipMap;
     omnigraph::de::PairedInfoIndexT<Graph> &paired_index_;
     omnigraph::de::ConcurrentPairedInfoBuffer<Graph> buffer_pi_;
-    TipMap out_tip_map_, in_tip_map_;
+    TipMap out_tip_map_;
 
     void ProcessPairedRead(const MappingPath<EdgeId> &path1, const MappingPath<EdgeId> &path2) {
         for (size_t i = 0; i < path1.size(); ++i) {
@@ -33,84 +33,61 @@ private:
                 continue;
 
             for (size_t j = 0; j < path2.size(); ++j) {
-                auto InTipIter = in_tip_map_.find(path2[j].first);
-                if (InTipIter == in_tip_map_.cend())
+                auto InTipIter = out_tip_map_.find(graph_.conjugate(path2[j].first));
+                if (InTipIter == out_tip_map_.cend())
                     continue;
 
                 auto e1 = OutTipIter->second;
-                auto e2 = InTipIter->second;
+                auto e2 = graph_.conjugate(InTipIter->second);
                 //FIXME: Normalize fake points
                 auto sp = std::make_pair(e1, e2);
                 auto cp = buffer_pi_.ConjugatePair(e1, e2);
                 auto ip = std::min(sp, cp);
-                buffer_pi_.Add(ip.first, ip.second, omnigraph::de::RawPoint(1000000., 1.));
+                buffer_pi_.Add(ip.first, ip.second, omnigraph::de::RawPoint(0, 1.));
             }
         }
     }
 
-    void PrepareShiftMaps(TipMap &OutTipMap, TipMap &InTipMap) const {
+    void PrepareTipMap(TipMap &OutTipMap) const {
         size_t nthreads = omp_get_max_threads();
 
         omnigraph::IterationHelper<Graph, EdgeId> edges(graph_);
         auto ranges = edges.Ranges(nthreads);
 #pragma omp parallel for
         for (size_t i = 0; i < ranges.size(); ++i) {
-            TipMap local_in_tip_map, local_out_tip_map;
+            TipMap local_out_tip_map;
             for (EdgeId edge : ranges[i]) {
-                if (graph_.IsDeadStart(graph_.EdgeStart(edge))) {
-                    local_in_tip_map.emplace(edge, edge);
-                    std::stack<EdgeId> edge_stack;
-                    edge_stack.push(edge);
-                    while (!edge_stack.empty()) {
-                        auto checking_pair = edge_stack.top();
-                        edge_stack.pop();
-                        VertexId end = graph_.EdgeEnd(checking_pair);
-                        if (!graph_.CheckUniqueIncomingEdge(end))
-                            continue;
+                if (!graph_.IsDeadEnd(graph_.EdgeEnd(edge)))
+                    continue;
 
-                        for (EdgeId e : graph_.OutgoingEdges(end)) {
-                            local_in_tip_map.emplace(e, edge);
-                            edge_stack.push(e);
-                        }
-                    }
-                }
+                local_out_tip_map.emplace(edge, edge);
+                std::stack<EdgeId> edge_stack;
+                edge_stack.push(edge);
+                while (!edge_stack.empty()) {
+                    auto checking_pair = edge_stack.top();
+                    edge_stack.pop();
+                    VertexId start = graph_.EdgeStart(checking_pair);
+                    if (!graph_.CheckUniqueOutgoingEdge(start))
+                        continue;
 
-                if (graph_.IsDeadEnd(graph_.EdgeEnd(edge))) {
-                    local_out_tip_map.emplace(edge, edge);
-                    std::stack<EdgeId> edge_stack;
-                    edge_stack.push(edge);
-                    while (!edge_stack.empty()) {
-                        auto checking_pair = edge_stack.top();
-                        edge_stack.pop();
-                        VertexId start = graph_.EdgeStart(checking_pair);
-                        if (!graph_.CheckUniqueOutgoingEdge(start))
-                            continue;
-
-                        for (EdgeId e : graph_.IncomingEdges(start)) {
-                            local_out_tip_map.emplace(e, edge);
-                            edge_stack.push(e);
-                        }
+                    for (EdgeId e : graph_.IncomingEdges(start)) {
+                        local_out_tip_map.emplace(e, edge);
+                        edge_stack.push(e);
                     }
                 }
             }
 
-#pragma omp critical
-            {
-                InTipMap.insert(std::make_move_iterator(local_in_tip_map.begin()), std::make_move_iterator(local_in_tip_map.end()));
-            }
 #pragma omp critical
             {
                 OutTipMap.insert(std::make_move_iterator(local_out_tip_map.begin()), std::make_move_iterator(local_out_tip_map.end()));
             }
         }
 
-        size_t in_length = 0, out_length = 0;
-        const auto sum_length = [this](size_t val, const std::pair<EdgeId, EdgeId> &p) { return val + graph_.length(p.first); };
-        in_length = std::accumulate(InTipMap.begin(), InTipMap.end(), 0, sum_length);
-        out_length = std::accumulate(OutTipMap.begin(), OutTipMap.end(), 0, sum_length);
+        size_t out_length =
+                std::accumulate(OutTipMap.begin(), OutTipMap.end(), 0,
+                                [this](size_t val, const std::pair<EdgeId, EdgeId> &p) { return val + graph_.length(p.first); });
 
-        INFO("Total edges in incoming tip neighborhood: " << InTipMap.size() << ", length: " << in_length);
-        INFO("Total edges in outgoing tip neighborhood: " << OutTipMap.size() << ", length: " << out_length);
+        INFO("Total edges in tip neighborhood: " << OutTipMap.size() << ", length: " << out_length);
     }
 
 public:
@@ -119,15 +96,14 @@ public:
 
     void StartProcessLibrary(size_t /* threads_count */) override {
         paired_index_.clear();
-        INFO("Preparing shift maps");
-        PrepareShiftMaps(out_tip_map_, in_tip_map_);
+        INFO("Preparing tip map");
+        PrepareTipMap(out_tip_map_);
     }
 
     void StopProcessLibrary() override {
         paired_index_.Merge(buffer_pi_);
         buffer_pi_.clear();
         out_tip_map_.clear();
-        in_tip_map_.clear();
     }
 
     void ProcessPairedRead(size_t /* thread_index */, const io::PairedRead&  /* pr */,
