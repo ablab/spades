@@ -11,7 +11,7 @@
 #include "utils/extension_index/kmer_extension_index.hpp"
 #include "utils/ph_map/perfect_hash_map.hpp"
 #include "utils/kmer_mph/kmer_index.hpp"
-
+#include "math/xmath.h"
 #include <array>
 #include <numeric>
 
@@ -85,6 +85,22 @@ private:
     Index &index_;
     size_t length_bound_;
 
+    size_t RemoveInconsistentForwardLinks(const KeyWithHash &kh) {
+        size_t count = 0;
+        auto mask = index_.get_value(kh);
+        for (char c = 0; c < 4; ++c) {
+            if (!mask.CheckOutgoing(c))
+                continue;
+
+            auto next_kh = index_.GetOutgoing(kh, c);
+            if (!index_.CheckIncoming(next_kh, kh[0])) {
+                index_.DeleteOutgoing(kh, c);
+                count += 1;
+            }
+        }
+        return count;
+    }
+
     /*
      * This method starts from the kmer that is second in the tip counting from the junction vertex
      * It records all kmers of a tip into tip vector
@@ -138,24 +154,107 @@ private:
         auto iters = index_.kmer_begin(n_chunks);
         return ClipTips(iters);
     }
-
-    size_t RemoveInconsistentForwardLinks(const KeyWithHash &kh) {
-        size_t count = 0;
-        auto mask = index_.get_value(kh);
-        for (char c = 0; c < 4; ++c) {
-            if (mask.CheckOutgoing(c)) {
-                KeyWithHash next_kh = index_.GetOutgoing(kh, c);
-                if (!index_.CheckIncoming(next_kh, kh[0])) {
-                    index_.DeleteOutgoing(kh, c);
-                    ++count;
-                }
-            }
-        }
-        return count;
-    }
-
 protected:
     DECL_LOGGER("Early tip clipping");
+};
+
+
+class EarlyLowComplexityClipperProcessor {
+public:
+    typedef utils::DeBruijnExtensionIndex<> Index;
+    typedef Index::KMer Kmer;
+    typedef Index::KeyWithHash KeyWithHash;
+
+    EarlyLowComplexityClipperProcessor(Index &index, double ratio_)
+            : index_(index), thr_(index_.k() * ratio_) {}
+
+    // Methods return the number of removed edges
+    size_t RemoveATEdges() {
+        INFO("Remove short poly A/T edges");
+        auto iters = index_.kmer_begin(10 * omp_get_max_threads());
+        size_t result = RemoveATEdges(iters);
+        INFO(result << " " << (index_.k() + 1) << "-mers were removed by early poly A/T remover");
+        return result;
+    }
+
+    size_t RemoveATEdges(std::vector<Index::kmer_iterator> &iters) {
+        std::vector<std::vector<std::pair<KeyWithHash, char>>> at_edges(iters.size());
+#pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < iters.size(); i++) {
+            for (Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
+                auto seq = RtSeq(index_.k(), *it);
+                for (const auto &s : {seq, !seq}) {  // The file stores only canonical (i.e., s > !s) k-mers
+                    KeyWithHash kh = index_.ConstructKWH(s);
+                    auto extensions = index_.get_value(kh);
+
+                    // Start from junction
+                    if (!extensions.IsJunction())
+                        continue;
+
+                    // See, if this is a low-complexity k-mer
+                    std::array<size_t, 4> counts = std::array<size_t, 4>();
+                    for (size_t i = 0; i < index_.k(); ++i)
+                        counts[s[i]] += 1;
+
+                    size_t curm = *std::max_element(counts.begin(), counts.end());
+                    if (math::ls(double(curm), thr_))
+                        continue;
+
+                    for (char c = 0; c < 4; ++c) {
+                        if (!extensions.CheckOutgoing(c))
+                            continue;
+
+                        auto next = index_.get_value(index_.GetOutgoing(kh, c));
+                        // See, if this edge of length 1: the next should be junction or dead-end
+                        if (!next.IsJunction() && !next.IsDeadEnd())
+                            continue;
+
+                        at_edges[i].emplace_back(kh, c);
+                    }
+                }
+            }
+
+        }
+
+        size_t n_edges = std::accumulate(at_edges.cbegin(), at_edges.cend(),
+                                         size_t(0),
+                                         [](size_t sum, const auto &v) { return sum + v.size(); });
+
+        size_t removed_links = 0;
+        // Now, iterate over all A/T vertices removing incoming / outgoing links
+#pragma omp parallel for schedule(guided) reduction(+:removed_links)
+        for (size_t i = 0; i < at_edges.size(); ++i) {
+            for (auto &edge : at_edges[i]) {
+                if (!index_.CheckOutgoing(edge.first, edge.second))
+                    continue;
+
+                auto next = index_.GetOutgoing(edge.first, edge.second);
+                index_.DeleteOutgoing(edge.first, edge.second);
+                index_.DeleteIncoming(next, edge.first[0]);
+                removed_links += 2;
+            }
+        }
+
+        for (size_t i = 0; i < at_edges.size(); ++i) {
+            for (auto &edge : at_edges[i]) {
+                VERIFY(!index_.CheckOutgoing(edge.first, edge.second));
+                auto next = index_.GetOutgoing(edge.first, edge.second);
+                VERIFY(!index_.CheckIncoming(next, edge.first[0]));
+            }
+        }
+
+        INFO("Links removed: " << removed_links);
+        return n_edges;
+    }
+
+
+private:
+    typedef std::array<std::vector<KeyWithHash>, 4> TipsArray;
+    Index &index_;
+    double thr_;
+
+protected:
+    DECL_LOGGER("Early A/T remover");
 };
 
 }  // namespace debruijn_graph

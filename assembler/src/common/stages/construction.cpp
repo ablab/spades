@@ -317,6 +317,30 @@ public:
     }
 };
 
+class EarlyATClipper : public Construction::Phase {
+public:
+    EarlyATClipper()
+            : Construction::Phase("Early A/T remover", "early_at_remover") { }
+
+    virtual ~EarlyATClipper() = default;
+
+    void run(debruijn_graph::GraphPack &, const char*) override {
+        EarlyLowComplexityClipperProcessor(storage().ext_index, 0.8).RemoveATEdges();
+    }
+
+    void load(debruijn_graph::GraphPack&,
+              const std::string &,
+              const char*) override {
+        VERIFY_MSG(false, "implement me");
+    }
+
+    void save(const debruijn_graph::GraphPack&,
+              const std::string &,
+              const char*) const override {
+        // VERIFY_MSG(false, "implement me");
+    }
+};
+
 class GraphCondenser : public Construction::Phase {
 public:
     GraphCondenser()
@@ -448,6 +472,7 @@ Construction::Construction()
     add<KMerCounting>();
 
     add<ExtensionIndexBuilder>();
+    add<EarlyATClipper>();
     if (cfg::get().con.early_tc.enable && !cfg::get().gap_closer_enable)
         add<EarlyTipClipper>();
     add<GraphCondenser>();
