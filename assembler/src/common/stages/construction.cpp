@@ -16,6 +16,8 @@
 
 #include "io/dataset_support/dataset_readers.hpp"
 #include "io/dataset_support/read_converter.hpp"
+#include "io/graph/fastg_writer.hpp"
+#include "io/graph/gfa_writer.hpp"
 #include "io/reads/coverage_filtering_read_wrapper.hpp"
 #include "io/reads/multifile_reader.hpp"
 
@@ -325,7 +327,9 @@ public:
     virtual ~EarlyATClipper() = default;
 
     void run(debruijn_graph::GraphPack &, const char*) override {
-        EarlyLowComplexityClipperProcessor(storage().ext_index, 0.8).RemoveATEdges();
+        EarlyLowComplexityClipperProcessor at_processor(storage().ext_index, 0.8);
+        at_processor.RemoveATEdges();
+        at_processor.RemoveATTips();
     }
 
     void load(debruijn_graph::GraphPack&,

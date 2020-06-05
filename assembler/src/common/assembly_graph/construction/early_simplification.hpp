@@ -17,6 +17,23 @@
 
 namespace debruijn_graph {
 
+static size_t RemoveInconsistentForwardLinks(utils::DeBruijnExtensionIndex<> &index,
+                                             const utils::DeBruijnExtensionIndex<>::KeyWithHash &kh) {
+    size_t count = 0;
+    auto mask = index.get_value(kh);
+    for (char c = 0; c < 4; ++c) {
+        if (!mask.CheckOutgoing(c))
+            continue;
+
+        auto next_kh = index.GetOutgoing(kh, c);
+        if (!index.CheckIncoming(next_kh, kh[0])) {
+            index.DeleteOutgoing(kh, c);
+            count += 1;
+        }
+    }
+    return count;
+}
+
 class EarlyTipClipperProcessor {
 public:
     typedef utils::DeBruijnExtensionIndex<> Index;
@@ -70,7 +87,7 @@ public:
 #pragma omp parallel for schedule(guided) reduction(+:clipped_tips)
         for (size_t i = 0; i < tipped_junctions.size(); i++) {
             for (const KeyWithHash &kh : tipped_junctions[i]) {
-                clipped_tips += RemoveInconsistentForwardLinks(kh);
+                clipped_tips += RemoveInconsistentForwardLinks(index_, kh);
             }
         }
         INFO("Clipped tips: " << clipped_tips);
@@ -84,22 +101,6 @@ private:
     typedef std::array<std::vector<KeyWithHash>, 4> TipsArray;
     Index &index_;
     size_t length_bound_;
-
-    size_t RemoveInconsistentForwardLinks(const KeyWithHash &kh) {
-        size_t count = 0;
-        auto mask = index_.get_value(kh);
-        for (char c = 0; c < 4; ++c) {
-            if (!mask.CheckOutgoing(c))
-                continue;
-
-            auto next_kh = index_.GetOutgoing(kh, c);
-            if (!index_.CheckIncoming(next_kh, kh[0])) {
-                index_.DeleteOutgoing(kh, c);
-                count += 1;
-            }
-        }
-        return count;
-    }
 
     /*
      * This method starts from the kmer that is second in the tip counting from the junction vertex
@@ -165,8 +166,8 @@ public:
     typedef Index::KMer Kmer;
     typedef Index::KeyWithHash KeyWithHash;
 
-    EarlyLowComplexityClipperProcessor(Index &index, double ratio_)
-            : index_(index), thr_(index_.k() * ratio_) {}
+    EarlyLowComplexityClipperProcessor(Index &index, double ratio)
+            : index_(index), ratio_(ratio) {}
 
     // Methods return the number of removed edges
     size_t RemoveATEdges() {
@@ -179,6 +180,7 @@ public:
 
     size_t RemoveATEdges(std::vector<Index::kmer_iterator> &iters) {
         std::vector<std::vector<std::pair<KeyWithHash, char>>> at_edges(iters.size());
+        double thr = index_.k() * ratio_;
 #pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < iters.size(); i++) {
             for (Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
@@ -197,7 +199,7 @@ public:
                         counts[s[i]] += 1;
 
                     size_t curm = *std::max_element(counts.begin(), counts.end());
-                    if (math::ls(double(curm), thr_))
+                    if (math::ls(double(curm), thr))
                         continue;
 
                     for (char c = 0; c < 4; ++c) {
@@ -208,6 +210,8 @@ public:
                         // See, if this edge of length 1: the next should be junction or dead-end
                         if (!next.IsJunction() && !next.IsDeadEnd())
                             continue;
+
+                        DEBUG("Removing edge: " << kh << "," << nucl(c) << "cnt: " << curm << ", thr: " << thr);
 
                         at_edges[i].emplace_back(kh, c);
                     }
@@ -248,10 +252,86 @@ public:
     }
 
 
+    // Methods return the number of removed edges
+    size_t RemoveATTips() {
+        INFO("Remove poly A/T tips");
+        auto iters = index_.kmer_begin(10 * omp_get_max_threads());
+        size_t result = RemoveATTips(iters);
+        INFO(result << " " << (index_.k() + 1) << "-mers were removed by early poly A/T tip clipper");
+        return result;
+    }
+
+    size_t RemoveATTips(std::vector<Index::kmer_iterator> &iters) {
+        std::vector<std::vector<KeyWithHash>> at_edges(iters.size());
+        size_t removed_kmers = 0;
+        #pragma omp parallel for schedule(guided) reduction(+:removed_kmers)
+        for (size_t i = 0; i < iters.size(); i++) {
+            std::vector<KeyWithHash> tip;
+            tip.reserve(200);
+            for (Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
+                auto seq = RtSeq(index_.k(), *it);
+                for (const auto &s : {seq, !seq}) {  // The file stores only canonical (i.e., s > !s) k-mers
+                    KeyWithHash kh = index_.ConstructKWH(s);
+                    auto extensions = index_.get_value(kh);
+
+                    // Start from tip ends
+                    if (!extensions.IsDeadEnd() || !extensions.CheckUniqueIncoming())
+                        continue;
+
+                    // Go backward until the junction point counting the complexity
+                    std::array<size_t, 4> counts = { 0, 0, 0, 0 };
+                    tip.clear();
+
+                    do {
+                        tip.push_back(kh);
+                        counts[kh[index_.k() - 1]] += 1;
+                        kh = index_.GetUniqueIncoming(kh);
+                    } while (tip.size() < 200 && !index_.IsJunction(kh));
+
+                    // Now kh is a junction point (possible dead start) or still unique extension
+                    // Bail out in the second case, as this tip is too long
+                    if (!index_.IsDeadEnd(kh) && !index_.IsJunction(kh))
+                        continue;
+
+                    // If the tip is short, calculate the complexity up to min_len bp
+                    size_t min_len = 10;
+                    for (size_t i = tip.size() - 1; i < min_len; ++i)
+                        counts[kh[index_.k() - 1 - i]] += 1;
+
+                    // See, if this is a low-complexity tip
+                    size_t curm = *std::max_element(counts.begin(), counts.end());
+                    double thr = double(std::max(tip.size(), min_len)) * ratio_;
+                    if (math::ls(double(curm), thr))
+                        continue;
+
+                    at_edges[i].push_back(kh);
+                    removed_kmers += tip.size();
+                    for (const KeyWithHash &tip_kh : tip) {
+                        index_.IsolateVertex(tip_kh);
+                    }
+                }
+            }
+
+        }
+
+        // Remove inconsistent links leading to removed tips
+        // Tips are already removed but their roots still store phantom extensions
+        size_t clipped_tips = 0;
+        #pragma omp parallel for schedule(guided) reduction(+:clipped_tips)
+        for (size_t i = 0; i < at_edges.size(); i++) {
+            for (const KeyWithHash &kh : at_edges[i]) {
+                clipped_tips += RemoveInconsistentForwardLinks(index_, kh);
+            }
+        }
+        INFO("Clipped tips: " << clipped_tips);
+
+        return removed_kmers;
+    }
+
 private:
     typedef std::array<std::vector<KeyWithHash>, 4> TipsArray;
     Index &index_;
-    double thr_;
+    double ratio_;
 
 protected:
     DECL_LOGGER("Early A/T remover");
