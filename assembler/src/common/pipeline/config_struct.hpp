@@ -49,10 +49,10 @@ enum class pipeline_type : char {
 };
 
 class PipelineHelper {
-
 public:
     static bool IsPlasmidPipeline(const pipeline_type pipeline);
     static bool IsMetagenomicPipeline(const pipeline_type pipeline);
+    static bool IsRNAPipeline(const pipeline_type pipeline);
 };
 
 

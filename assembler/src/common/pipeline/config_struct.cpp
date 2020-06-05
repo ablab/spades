@@ -49,7 +49,20 @@ bool PipelineHelper::IsPlasmidPipeline(const pipeline_type pipeline) {
 }
 
 bool PipelineHelper::IsMetagenomicPipeline(const pipeline_type pipeline) {
-    return pipeline == pipeline_type::meta || pipeline == pipeline_type::metaplasmid || pipeline == pipeline_type::bgc;
+    switch (pipeline) {
+        default:
+            return false;
+        case pipeline_type::meta:
+        case pipeline_type::metaplasmid:
+        case pipeline_type::bgc:
+            return true;
+    }
+
+    return false;
+}
+
+bool PipelineHelper::IsRNAPipeline(const pipeline_type pipeline) {
+    return pipeline == pipeline_type::rna;
 }
 
 template<typename mode_t>

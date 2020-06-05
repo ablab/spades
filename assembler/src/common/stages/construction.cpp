@@ -16,8 +16,6 @@
 
 #include "io/dataset_support/dataset_readers.hpp"
 #include "io/dataset_support/read_converter.hpp"
-#include "io/graph/fastg_writer.hpp"
-#include "io/graph/gfa_writer.hpp"
 #include "io/reads/coverage_filtering_read_wrapper.hpp"
 #include "io/reads/multifile_reader.hpp"
 
@@ -327,7 +325,7 @@ public:
     virtual ~EarlyATClipper() = default;
 
     void run(debruijn_graph::GraphPack &, const char*) override {
-        EarlyLowComplexityClipperProcessor at_processor(storage().ext_index, 0.8);
+        EarlyLowComplexityClipperProcessor at_processor(storage().ext_index, 0.8, 10, 200);
         at_processor.RemoveATEdges();
         at_processor.RemoveATTips();
     }
@@ -476,7 +474,8 @@ Construction::Construction()
     add<KMerCounting>();
 
     add<ExtensionIndexBuilder>();
-    add<EarlyATClipper>();
+    if (config::PipelineHelper::IsRNAPipeline(cfg::get().mode))
+        add<EarlyATClipper>();
     if (cfg::get().con.early_tc.enable && !cfg::get().gap_closer_enable)
         add<EarlyTipClipper>();
     add<GraphCondenser>();

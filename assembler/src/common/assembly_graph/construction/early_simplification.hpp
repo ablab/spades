@@ -166,8 +166,9 @@ public:
     typedef Index::KMer Kmer;
     typedef Index::KeyWithHash KeyWithHash;
 
-    EarlyLowComplexityClipperProcessor(Index &index, double ratio)
-            : index_(index), ratio_(ratio) {}
+    EarlyLowComplexityClipperProcessor(Index &index,
+                                       double at_ratio, size_t min_length, size_t max_length)
+            : index_(index), ratio_(at_ratio), min_len_(min_length), max_len_(max_length) {}
 
     // Methods return the number of removed edges
     size_t RemoveATEdges() {
@@ -267,7 +268,7 @@ public:
         #pragma omp parallel for schedule(guided) reduction(+:removed_kmers)
         for (size_t i = 0; i < iters.size(); i++) {
             std::vector<KeyWithHash> tip;
-            tip.reserve(200);
+            tip.reserve(max_len_);
             for (Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
                 auto seq = RtSeq(index_.k(), *it);
                 for (const auto &s : {seq, !seq}) {  // The file stores only canonical (i.e., s > !s) k-mers
@@ -286,7 +287,7 @@ public:
                         tip.push_back(kh);
                         counts[kh[index_.k() - 1]] += 1;
                         kh = index_.GetUniqueIncoming(kh);
-                    } while (tip.size() < 200 && !index_.IsJunction(kh));
+                    } while (tip.size() < max_len_ && !index_.IsJunction(kh));
 
                     // Now kh is a junction point (possible dead start) or still unique extension
                     // Bail out in the second case, as this tip is too long
@@ -294,13 +295,12 @@ public:
                         continue;
 
                     // If the tip is short, calculate the complexity up to min_len bp
-                    size_t min_len = 10;
-                    for (size_t i = tip.size() - 1; i < min_len; ++i)
+                    for (size_t i = tip.size() - 1; i < min_len_; ++i)
                         counts[kh[index_.k() - 1 - i]] += 1;
 
                     // See, if this is a low-complexity tip
                     size_t curm = *std::max_element(counts.begin(), counts.end());
-                    double thr = double(std::max(tip.size(), min_len)) * ratio_;
+                    double thr = double(std::max(tip.size(), min_len_)) * ratio_;
                     if (math::ls(double(curm), thr))
                         continue;
 
@@ -332,6 +332,8 @@ private:
     typedef std::array<std::vector<KeyWithHash>, 4> TipsArray;
     Index &index_;
     double ratio_;
+    size_t min_len_;
+    size_t max_len_;
 
 protected:
     DECL_LOGGER("Early A/T remover");
