@@ -113,9 +113,11 @@ def show_sqn(file):
 
 #---- Edge coverage ------------------------------------------------------------
 def show_cvr(file):
-    edge_cnt = read_int(file)
-    for _ in range(edge_cnt):
-        edge, coverage = read_int(file), read_int(file)
+    while True:
+        edge = read_int(file)
+        if not edge: # null-term
+            break
+        coverage = read_int(file)
         print(edge, coverage, ".")
 
 #---- Long reads paths ---------------------------------------------------------
