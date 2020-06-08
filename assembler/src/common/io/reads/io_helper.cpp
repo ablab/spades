@@ -33,7 +33,9 @@ SingleStream EasyStream(const std::string& filename, bool followed_by_rc,
 PairedStream EasyWrapPairedStream(PairedStream stream,
                                   bool followed_by_rc,
                                   LibraryOrientation orientation) {
-    PairedStream reader{OrientationChangingWrapper<PairedRead>(std::move(stream), orientation)};
+    PairedStream reader{std::move(stream)};
+    if (orientation != LibraryOrientation::Undefined)
+        reader = OrientationChangingWrapper<PairedRead>(std::move(reader), orientation);
     reader = LongestValidWrap<PairedRead>(std::move(reader));
     if (followed_by_rc)
         reader = RCWrap<PairedRead>(std::move(reader));
