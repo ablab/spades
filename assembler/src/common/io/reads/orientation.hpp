@@ -8,7 +8,6 @@
 #pragma once
 
 #include "pipeline/library_fwd.hpp"
-
 #include <functional>
 
 namespace io {
@@ -26,22 +25,24 @@ static inline std::pair<bool, bool> GetRCFlags(LibraryOrientation orientation) {
     }
 }
 
-template<typename ReadType>
-ReadType GetRCRead(const ReadType &read, bool rc) {
-    return rc ? !read : read;
-}
+class OrientationChanger {
+  public:
+    OrientationChanger(LibraryOrientation orientation) {
+        std::tie(rc_left_, rc_right_) = GetRCFlags(orientation);
+    }
 
-template<class ReadType>
-using OrientationF = std::function<ReadType (const ReadType&)>;
+    template<class ReadType>
+    void operator()(ReadType &read) const {
+        // FIXME: do this inplace
+        if (rc_left_)
+            read.first() = !read.first();
+        if (rc_right_)
+            read.second() = !read.second();
+    }
 
-template<typename ReadType>
-OrientationF<ReadType> GetOrientationChanger(LibraryOrientation orientation) {
-    auto rc_flags = GetRCFlags(orientation);
-    return [=](const ReadType &r) {
-        return ReadType(GetRCRead(r.first(), rc_flags.first),
-                        GetRCRead(r.second(), rc_flags.second),
-                        r.orig_insert_size());
-    };
-}
+  private:
+    bool rc_left_ = false;
+    bool rc_right_ = false;
+};
 
 }

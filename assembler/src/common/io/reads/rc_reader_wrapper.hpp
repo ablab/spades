@@ -71,18 +71,17 @@ class OrientationChangingWrapper: public DelegatingWrapper<ReadType> {
 public:
 
     OrientationChangingWrapper(typename base::ReadStreamT reader,
-                               LibraryOrientation orientation) :
-            base(std::move(reader)), changer_(GetOrientationChanger<ReadType>(orientation)) {
-    }
+                               LibraryOrientation orientation)
+            : base(std::move(reader)), changer_(orientation) {}
 
     OrientationChangingWrapper& operator>>(ReadType& read) {
         base::operator >>(read);
-        read = changer_(read);
+        changer_(read);
         return (*this);
     }
 
 private:
-    OrientationF<ReadType> changer_;
+    OrientationChanger changer_;
 };
 
 }
