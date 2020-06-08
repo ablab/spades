@@ -59,7 +59,10 @@ class Reader:
             result.append(self.Top().strip())
             cnt += len(self.Top().strip())
             self.TrashCash()
-        assert (cnt == buf_size)
+        if cnt != buf_size:
+            raise Exception('The sequence and quality strings for one of reads have different length in file {FILE}. '
+                            'Please check the correctness of the file')
+
         return "".join(result)
 
     def EOF(self):

@@ -136,9 +136,12 @@ def check_file_not_empty(input_filename, message="", log=None):
     if (file_type == 'bam'):
         return
     
-    reads_iterator = SeqIO.parse(SeqIO.Open(filename, "r"), file_type)
-    if next(reads_iterator, None) is None:
-        error("file is empty: %s (%s)" % (filename, message), log=log)
+    try:
+        reads_iterator = SeqIO.parse(SeqIO.Open(filename, "r"), file_type)
+        if next(reads_iterator, None) is None:
+            error("file is empty: %s (%s)" % (filename, message), log=log)
+    except Exception as inst:
+        error(inst.args[0].format(FILE=filename), log=log)
 
 
 def check_dir_existence(input_dirname, message="", log=None):
@@ -679,9 +682,14 @@ def get_reads_files(dataset_data, log, ignored_types, used_types=None):
 
 def get_max_reads_length(reads_file, log, num_checked):
     file_type = get_read_file_type(reads_file, log)
-    max_reads_length = max(
-        [len(rec) for rec in itertools.islice(SeqIO.parse(SeqIO.Open(reads_file, "r"), file_type), num_checked)])
-    log.info("%s: max reads length: %s" % (reads_file, str(max_reads_length)))
+    max_reads_length = 0
+    try:
+        max_reads_length = max(
+            [len(rec) for rec in itertools.islice(SeqIO.parse(SeqIO.Open(reads_file, "r"), file_type), num_checked)])
+    except Exception as inst:
+        error(inst.args[0].format(FILE=reads_file), log=log)
+    else:
+        log.info("%s: max reads length: %s" % (reads_file, str(max_reads_length)))
     return max_reads_length
 
 
