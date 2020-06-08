@@ -33,7 +33,7 @@ class SeparatePairedReadStream {
    */
   explicit SeparatePairedReadStream(const std::string& filename1, const std::string& filename2,
                                     size_t insert_size,
-                                    OffsetType offset_type = PhredOffset,
+                                    FileReadFlags flags = FileReadFlags(),
                                     ThreadPool::ThreadPool *pool = nullptr);
 
   /*
@@ -106,7 +106,7 @@ class InterleavingPairedReadStream {
    */
   explicit InterleavingPairedReadStream(const std::string& filename,
                                         size_t insert_size,
-                                        OffsetType offset_type = PhredOffset,
+                                        FileReadFlags flags = FileReadFlags(),
                                         ThreadPool::ThreadPool *pool = nullptr);
   /*
    * Check whether the stream is opened.

@@ -73,20 +73,20 @@ void ReadConverter::ConvertToBinary(SequencingLibraryT& lib,
     INFO("Converting paired reads");
     BinaryWriter paired_converter(data.binary_reads_info.paired_read_prefix);
 
-    PairedStream paired_reader = paired_easy_reader(lib, false, 0, false, PhredOffset, pool);
-    ReadStreamStat read_stat = paired_converter.ToBinary(paired_reader, lib.orientation(),
-                                                         pool);
+    FileReadFlags flags{ PhredOffset, /* use name */ false, /* use quality */ false };
+    PairedStream paired_reader = paired_easy_reader(lib, false, 0, false, flags, pool);
+    ReadStreamStat read_stat = paired_converter.ToBinary(paired_reader, lib.orientation(), pool);
     read_stat.read_count *= 2;
 
     INFO("Converting single reads");
     BinaryWriter single_converter(data.binary_reads_info.single_read_prefix);
-    SingleStream single_reader = single_easy_reader(lib, false, false, true, PhredOffset, pool);
+    SingleStream single_reader = single_easy_reader(lib, false, false, true, flags, pool);
     read_stat.merge(single_converter.ToBinary(single_reader, pool));
 
     data.unmerged_read_length = read_stat.max_len;
     INFO("Converting merged reads");
     BinaryWriter merged_converter(data.binary_reads_info.merged_read_prefix);
-    SingleStream merged_reader = merged_easy_reader(lib, false, true, PhredOffset, pool);
+    SingleStream merged_reader = merged_easy_reader(lib, false, true, flags, pool);
     auto merged_stats = merged_converter.ToBinary(merged_reader, pool);
 
     data.merged_read_length = merged_stats.max_len;

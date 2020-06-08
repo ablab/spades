@@ -17,17 +17,17 @@ namespace io {
 
 SeparatePairedReadStream::SeparatePairedReadStream(const std::string& filename1, const std::string& filename2,
                                                    size_t insert_size,
-                                                   OffsetType offset_type,
+                                                   FileReadFlags flags,
                                                    ThreadPool::ThreadPool *pool)
         : insert_size_(insert_size),
           filename1_(filename1),
           filename2_(filename2) {
     if (pool) {
-        first_ = make_async_stream<FileReadStream>(*pool, filename1, offset_type);
-        second_ = make_async_stream<FileReadStream>(*pool, filename2, offset_type);
+        first_ = make_async_stream<FileReadStream>(*pool, filename1, flags);
+        second_ = make_async_stream<FileReadStream>(*pool, filename2, flags);
     } else {
-        first_ = FileReadStream(filename1, offset_type);
-        second_ = FileReadStream(filename2, offset_type);
+        first_ = FileReadStream(filename1, flags);
+        second_ = FileReadStream(filename2, flags);
     }
 }
 
@@ -52,14 +52,13 @@ SeparatePairedReadStream& SeparatePairedReadStream::operator>>(PairedRead& paire
 
 InterleavingPairedReadStream::InterleavingPairedReadStream(const std::string& filename,
                                                            size_t insert_size,
-                                                           OffsetType offset_type,
+                                                           FileReadFlags flags,
                                                            ThreadPool::ThreadPool *pool)
-        : filename_(filename), insert_size_(insert_size)
-{
+        : filename_(filename), insert_size_(insert_size) {
     if (pool) {
-        single_ = make_async_stream<FileReadStream>(*pool, filename_, offset_type);
+        single_ = make_async_stream<FileReadStream>(*pool, filename_, flags);
     } else {
-        single_ = FileReadStream(filename_, offset_type);
+        single_ = FileReadStream(filename_, flags);
     }
 }
 

@@ -93,7 +93,6 @@ private:
         }
         eof_ = true;
     }
-
 };
 
 template<class ReadType>

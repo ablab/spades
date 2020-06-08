@@ -17,11 +17,12 @@
 namespace io {
 
 SingleStream EasyStream(const std::string& filename, bool followed_by_rc,
-                        bool handle_Ns, OffsetType offset_type,
+                        bool handle_Ns,
+                        FileReadFlags flags,
                         ThreadPool::ThreadPool *pool) {
     SingleStream reader  = (pool ?
-                            make_async_stream<FileReadStream>(*pool, filename, offset_type) :
-                            FileReadStream(filename, offset_type));
+                            make_async_stream<FileReadStream>(*pool, filename, flags) :
+                            FileReadStream(filename, flags));
     if (handle_Ns)
         reader = LongestValidWrap<SingleRead>(std::move(reader));
     if (followed_by_rc)
@@ -46,9 +47,9 @@ PairedStream EasyWrapPairedStream(PairedStream stream,
 PairedStream PairedEasyStream(const std::string& filename1, const std::string& filename2,
                               bool followed_by_rc, size_t insert_size,
                               bool use_orientation, LibraryOrientation orientation,
-                              OffsetType offset_type,
+                              FileReadFlags flags,
                               ThreadPool::ThreadPool *pool) {
-    return EasyWrapPairedStream(SeparatePairedReadStream(filename1, filename2, insert_size, offset_type,
+    return EasyWrapPairedStream(SeparatePairedReadStream(filename1, filename2, insert_size, flags,
                                                          pool),
                                 followed_by_rc,
                                 use_orientation ? orientation : LibraryOrientation::Undefined);
@@ -57,9 +58,9 @@ PairedStream PairedEasyStream(const std::string& filename1, const std::string& f
 PairedStream PairedEasyStream(const std::string& filename, bool followed_by_rc,
                               size_t insert_size,
                               bool use_orientation, LibraryOrientation orientation,
-                              OffsetType offset_type,
+                              FileReadFlags flags,
                               ThreadPool::ThreadPool *pool) {
-    return EasyWrapPairedStream(InterleavingPairedReadStream(filename, insert_size, offset_type, pool), followed_by_rc,
+    return EasyWrapPairedStream(InterleavingPairedReadStream(filename, insert_size, flags, pool), followed_by_rc,
                                 use_orientation ? orientation : LibraryOrientation::Undefined);
 }
 

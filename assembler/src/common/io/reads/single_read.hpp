@@ -7,48 +7,31 @@
 
 #pragma once
 
-#include "utils/verify.hpp"
+#include "file_read_flags.hpp"
 #include "sequence/quality.hpp"
 #include "sequence/sequence.hpp"
 #include "sequence/nucl.hpp"
 #include "sequence/sequence_tools.hpp"
+#include "utils/verify.hpp"
 #include "utils/stl_utils.hpp"
 
 #include <string>
 
 namespace io {
 
-/*
-* This enumerate contains offset type.
-* UnknownOffset is equal to "offset = 0".
-* PhredOffset is equal to "offset = 33".
-* SolexaOffset is equal to "offset = 64".
-*/
-//todo change to enum class
-enum OffsetType {
-    UnknownOffset = 0,
-    PhredOffset = 33,
-    SolexaOffset = 64
-};
-
 //todo extract code about offset from here
 typedef uint16_t SequenceOffsetT;
 
 class SingleRead {
 public:
-
-    static std::string EmptyQuality(const std::string &seq) {
-        return std::string(seq.size(), (char) PhredOffset);
-    }
-
-    SingleRead() :
-            name_(""), seq_(""), qual_(""), left_offset_(0), right_offset_(0), valid_(false) {
-    }
+    SingleRead()
+            : name_(), seq_(), qual_(), left_offset_(0), right_offset_(0), valid_(false) { }
 
     SingleRead(const std::string &name, const std::string &seq,
                const std::string &qual, OffsetType offset,
-               SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0) :
-            name_(name), seq_(seq), qual_(qual), left_offset_(left_offset), right_offset_(right_offset) {
+               SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0)
+            : name_(name), seq_(seq), qual_(qual),
+              left_offset_(left_offset), right_offset_(right_offset) {
         Init();
         for (size_t i = 0; i < qual_.size(); ++i) {
             qual_[i] = (char) (qual_[i] - offset);
@@ -58,14 +41,22 @@ public:
     SingleRead(const std::string &name, const std::string &seq,
                const std::string &qual,
                SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0) :
-            name_(name), seq_(seq), qual_(qual), left_offset_(left_offset), right_offset_(right_offset) {
+            name_(name), seq_(seq), qual_(qual),
+            left_offset_(left_offset), right_offset_(right_offset) {
         Init();
     }
 
     SingleRead(const std::string &name, const std::string &seq,
                SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0) :
-            name_(name), seq_(seq), qual_(EmptyQuality(seq_)), left_offset_(left_offset),
-            right_offset_(right_offset) {
+            name_(name), seq_(seq), qual_(),
+            left_offset_(left_offset), right_offset_(right_offset) {
+        Init();
+    }
+
+    SingleRead(const std::string &seq,
+               SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0) :
+            name_(), seq_(seq), qual_(),
+            left_offset_(left_offset), right_offset_(right_offset) {
         Init();
     }
 
@@ -89,6 +80,10 @@ public:
 
     size_t size() const {
         return seq_.size();
+    }
+
+    size_t qual_size() const {
+        return qual_.size();
     }
 
     size_t nucl_count() const {
@@ -128,16 +123,17 @@ public:
         std::string new_name;
         if (name_.length() >= 3 && name_.substr(name_.length() - 3) == "_RC") {
             new_name = name_.substr(0, name_.length() - 3);
-        } else {
+        } else if (name_.size()) {
             new_name = name_ + "_RC";
         }
-        //        TODO make naming nicer
-        //        if (name_ == "" || name_[0] != '!') {
-        //            new_name = '!' + name_;
-        //        } else {
-        //            new_name = name_.substr(1, name_.length());
-        //        }
-        return SingleRead(new_name, ReverseComplement(seq_), Reverse(qual_), right_offset_, left_offset_);
+
+        // Decide on ctor to call
+        if (qual_.size())
+            return SingleRead(new_name, ReverseComplement(seq_), Reverse(qual_), right_offset_, left_offset_);
+        else if (new_name.size())
+            return SingleRead(new_name, ReverseComplement(seq_), right_offset_, left_offset_);
+        else
+            return SingleRead(ReverseComplement(seq_), right_offset_, left_offset_);
     }
 
     SingleRead Substr(size_t from, size_t to) const {
@@ -161,10 +157,10 @@ public:
     }
 
     static bool IsValid(const std::string &seq) {
-        for (size_t i = 0; i < seq.size(); ++i) {
-            if (!is_nucl(seq[i])) {
+        size_t sz = seq.size();
+        for (size_t i = 0; i < sz; ++i) {
+            if (!is_nucl(seq[i]))
                 return false;
-            }
         }
         return true;
     }
@@ -219,7 +215,7 @@ private:
     bool valid_;
 
     void Init() {
-        VERIFY_MSG(seq_.size() == qual_.size(),
+        VERIFY_MSG(!qual_.size() || seq_.size() == qual_.size(),
                    "Invalid read: length of sequence should equal to length of quality line");
         valid_ = SingleRead::IsValid(seq_);
     }
@@ -232,19 +228,27 @@ private:
         if (name_.length() >= 3 && name_.substr(name_.length() - 3) == "_RC") {
             new_name = name_.substr(0, name_.length() - 3) + "_SUBSTR(" + std::to_string(size() - to) + "," +
                        std::to_string(size() - from) + ")" + "_RC";
-        } else {
+        } else if (name_.length()) {
             new_name = name_ + "_SUBSTR(" + std::to_string(from) + "," + std::to_string(to) + ")";
         }
-        return SingleRead(new_name, seq_.substr(from, len), qual_.substr(from, len),
-                          SequenceOffsetT(from + (size_t) left_offset_),
-                          SequenceOffsetT(size() - to + (size_t) right_offset_));
+
+        if (qual_.length())
+            return SingleRead(new_name, seq_.substr(from, len), qual_.substr(from, len),
+                              SequenceOffsetT(from + (size_t) left_offset_),
+                              SequenceOffsetT(size() - to + (size_t) right_offset_));
+        else if (new_name.length())
+            return SingleRead(new_name, seq_.substr(from, len),
+                              SequenceOffsetT(from + (size_t) left_offset_),
+                              SequenceOffsetT(size() - to + (size_t) right_offset_));
+        else
+            return SingleRead(seq_.substr(from, len),
+                              SequenceOffsetT(from + (size_t) left_offset_),
+                              SequenceOffsetT(size() - to + (size_t) right_offset_));
     }
-
-
 };
 
 inline std::ostream &operator<<(std::ostream &os, const SingleRead &read) {
-    os << "Single read name=" << read.name() << " sequence=" << read.GetSequenceString() << std::endl;
+    os << "Single read name=" << (read.name().length() ? read.name() : "(empty)") << " sequence=" << read.GetSequenceString() << std::endl;
     return os;
 }
 
@@ -317,7 +321,6 @@ private:
 
     //Left and right offsets with respect to original sequence
     SequenceOffsetT left_offset_;
-
     SequenceOffsetT right_offset_;
 };
 

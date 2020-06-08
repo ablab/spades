@@ -33,7 +33,8 @@ typedef ReadStream<PairedReadSeq> BinaryPairedStream;
 typedef ReadStreamList<PairedReadSeq> BinaryPairedStreams;
 
 SingleStream EasyStream(const std::string& filename, bool followed_by_rc,
-                        bool handle_Ns = true, OffsetType offset_type = PhredOffset,
+                        bool handle_Ns = true,
+                        FileReadFlags flags = FileReadFlags(),
                         ThreadPool::ThreadPool *pool = nullptr);
 PairedStream EasyWrapPairedStream(PairedStream stream,
                                   bool followed_by_rc,
@@ -41,11 +42,11 @@ PairedStream EasyWrapPairedStream(PairedStream stream,
 PairedStream PairedEasyStream(const std::string& filename1, const std::string& filename2,
                               bool followed_by_rc, size_t insert_size,
                               bool use_orientation = true, LibraryOrientation orientation = LibraryOrientation::FR,
-                              OffsetType offset_type = PhredOffset,
+                              FileReadFlags flags = FileReadFlags(),
                               ThreadPool::ThreadPool *pool = nullptr);
 PairedStream PairedEasyStream(const std::string& filename, bool followed_by_rc,
                               size_t insert_size,
                               bool use_orientation = true, LibraryOrientation orientation = LibraryOrientation::FR,
-                              OffsetType offset_type = PhredOffset,
+                              FileReadFlags flags = FileReadFlags(),
                               ThreadPool::ThreadPool *pool = nullptr);
 }

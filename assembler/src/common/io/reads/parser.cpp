@@ -25,9 +25,11 @@
  * according to extension.
  */
 
+#include "parser.hpp"
+
+#include "file_read_flags.hpp"
 #include "single_read.hpp"
 #include "fasta_fastq_gz_parser.hpp"
-#include "parser.hpp"
 #include "io/sam/bam_parser.hpp"
 
 namespace io {
@@ -63,12 +65,12 @@ std::string GetExtension(const std::string& filename) {
  * offset.
  */
 Parser* SelectParser(const std::string& filename,
-                     OffsetType offset_type /*= PhredOffset*/) {
+                     FileReadFlags flags) {
   std::string ext = GetExtension(filename);
   if (ext == "bam")
-      return new BAMParser(filename, offset_type);
+      return new BAMParser(filename, flags);
 
-  return new FastaFastqGzParser(filename, offset_type);
+  return new FastaFastqGzParser(filename, flags);
   /*
   if ((ext == "fastq") || (ext == "fastq.gz") ||
       (ext == "fasta") || (ext == "fasta.gz") ||

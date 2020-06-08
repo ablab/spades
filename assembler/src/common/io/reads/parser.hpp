@@ -26,8 +26,9 @@
 #ifndef COMMON_IO_PARSER_HPP
 #define COMMON_IO_PARSER_HPP
 
-#include <string>
 #include "single_read.hpp"
+#include "file_read_flags.hpp"
+#include <string>
 
 namespace io {
 
@@ -40,8 +41,8 @@ public:
      * @param offset The offset of the read quality.
      */
     Parser(const std::string &filename,
-           OffsetType offset_type = PhredOffset)
-            : filename_(filename), offset_type_(offset_type),
+           FileReadFlags flags = FileReadFlags() )
+            : filename_(filename), flags_(flags),
               is_open_(false), eof_(true) { }
 
     /*
@@ -96,9 +97,9 @@ protected:
      */
     std::string filename_;
     /*
-     * @variable Quality offset type.
+     * @variable Reading flags
      */
-    OffsetType offset_type_;
+    FileReadFlags flags_;
     /*
      * @variable Flag that shows whether the stream is opened.
      */
@@ -135,7 +136,7 @@ std::string GetExtension(const std::string &filename);
 * offset.
 */
 Parser *SelectParser(const std::string &filename,
-                     OffsetType offset_type = PhredOffset);
+                     FileReadFlags flags = FileReadFlags());
 
 }
 

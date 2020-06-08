@@ -35,10 +35,10 @@ public:
      * @param offset The offset of the read quality.
      */
     explicit FileReadStream(const std::string &filename,
-                            OffsetType offset_type = PhredOffset)
-            : filename_(filename), offset_type_(offset_type), parser_(nullptr) {
+                            FileReadFlags flags = FileReadFlags())
+            : filename_(filename), flags_(flags), parser_(nullptr) {
         fs::CheckFileExistenceFATAL(filename_);
-        parser_.reset(SelectParser(filename_, offset_type_));
+        parser_.reset(SelectParser(filename_, flags_));
     }
 
     /*
@@ -103,8 +103,8 @@ public:
 private:
     /* @variable The name of the file which stream reads from. */
     std::string filename_;
-    /* @variable Quality offset type. */
-    OffsetType offset_type_;
+    /* @variable Flags */
+    FileReadFlags flags_;
     /* @variable Internal stream that reads from file. */
     std::unique_ptr<Parser> parser_;
 
