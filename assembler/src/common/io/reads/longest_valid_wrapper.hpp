@@ -48,7 +48,7 @@ inline void LongestValid(SingleRead& r) {
     if (newsize == 0)
         r = SingleRead();
     else if (newsize < r.size())
-        r = r.Substr(from, to); // FIXME: do inplace
+        r = r.Substr(from, to, /* validate */ false); // FIXME: do inplace
 }
 
 inline void LongestValid(PairedRead& r) {
