@@ -72,7 +72,7 @@ public:
 
 template<class ReadType>
 ReadStream<ReadType> LongestValidWrap(ReadStream<ReadType> reader_ptr) {
-    return FilteringWrap<ReadType>(LongestValidRetainingWrapper<ReadType>(std::move(reader_ptr)));
+    return LongestValidRetainingWrapper<ReadType>(std::move(reader_ptr));
 }
 
 template<class ReadType>
@@ -81,7 +81,7 @@ ReadStreamList<ReadType> LongestValidWrap(ReadStreamList<ReadType> readers) {
     for (auto &reader : readers)
         answer.push_back(LongestValidWrap<ReadType>(reader));
 
-    return FilteringWrap<ReadType>(answer);
+    return answer;
 }
 
 }

@@ -25,13 +25,17 @@ struct FileReadFlags {
     OffsetType offset : 8;
     bool use_name     : 1;
     bool use_quality  : 1;
+    bool validate     : 1;
 
     FileReadFlags()
-            : offset(PhredOffset), use_name(true), use_quality(true) {}
+            : offset(PhredOffset), use_name(true), use_quality(true), validate(true) {}
     FileReadFlags(OffsetType o)
             : offset(o), use_name(true), use_quality(true) {}
     FileReadFlags(OffsetType o, bool n, bool q)
             : offset(o), use_name(n), use_quality(q) {}
+    FileReadFlags(OffsetType o, bool n, bool q, bool v)
+            : offset(o), use_name(n), use_quality(q), validate(v) {}
+
 };
 
 }

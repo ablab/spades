@@ -29,10 +29,12 @@ public:
 
     SingleRead(const std::string &name, const std::string &seq,
                const std::string &qual, OffsetType offset,
-               SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0)
+               SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0,
+               bool validate = true)
             : name_(name), seq_(seq), qual_(qual),
-              left_offset_(left_offset), right_offset_(right_offset) {
-        Init();
+              left_offset_(left_offset), right_offset_(right_offset),
+              valid_(false) {
+        Init(validate);
         for (size_t i = 0; i < qual_.size(); ++i) {
             qual_[i] = (char) (qual_[i] - offset);
         }
@@ -40,32 +42,40 @@ public:
 
     SingleRead(const std::string &name, const std::string &seq,
                const std::string &qual,
-               SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0) :
-            name_(name), seq_(seq), qual_(qual),
-            left_offset_(left_offset), right_offset_(right_offset) {
-        Init();
+               SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0,
+               bool validate = true)
+            : name_(name), seq_(seq), qual_(qual),
+              left_offset_(left_offset), right_offset_(right_offset), valid_(false) {
+        Init(validate);
     }
 
     SingleRead(const std::string &name, const std::string &seq,
-               SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0) :
-            name_(name), seq_(seq), qual_(),
-            left_offset_(left_offset), right_offset_(right_offset) {
-        Init();
+               SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0,
+               bool validate = true)
+            : name_(name), seq_(seq), qual_(),
+              left_offset_(left_offset), right_offset_(right_offset), valid_(false) {
+        Init(validate);
     }
 
     SingleRead(const std::string &seq,
-               SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0) :
-            name_(), seq_(seq), qual_(),
-            left_offset_(left_offset), right_offset_(right_offset) {
-        Init();
+               SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0,
+               bool validate = true)
+            : name_(), seq_(seq), qual_(),
+              left_offset_(left_offset), right_offset_(right_offset), valid_(false) {
+        Init(validate);
     }
 
     bool IsValid() const {
         return valid_;
     }
 
+    void validate() {
+        VERIFY_MSG(!qual_.size() || seq_.size() == qual_.size(),
+                   "Invalid read: length of sequence should equal to length of quality line");
+        valid_ = SingleRead::IsValid(seq_);
+    }
+
     Sequence sequence(bool rc = false) const {
-        VERIFY(valid_);
         return Sequence(seq_, rc);
     }
 
@@ -136,7 +146,7 @@ public:
             return SingleRead(ReverseComplement(seq_), right_offset_, left_offset_);
     }
 
-    SingleRead Substr(size_t from, size_t to) const {
+    SingleRead Substr(size_t from, size_t to, bool validate = true) const {
         VERIFY(from <= to && to <= size());
         size_t len = to - from;
         if (len == size())
@@ -145,7 +155,7 @@ public:
         if (len == 0)
             return SingleRead();
 
-        return SubstrStrict(from, to);
+        return SubstrStrict(from, to, validate);
     }
 
     bool operator==(const SingleRead &singleread) const {
@@ -214,13 +224,12 @@ private:
 
     bool valid_;
 
-    void Init() {
-        VERIFY_MSG(!qual_.size() || seq_.size() == qual_.size(),
-                   "Invalid read: length of sequence should equal to length of quality line");
-        valid_ = SingleRead::IsValid(seq_);
+    void Init(bool v) {
+        if (v)
+            validate();
     }
 
-    SingleRead SubstrStrict(size_t from, size_t to) const {
+    SingleRead SubstrStrict(size_t from, size_t to, bool validate = true) const {
         size_t len = to - from;
         //        return SingleRead(name_, seq_.substr(from, len), qual_.substr(from, len));
         //        TODO remove naming?
@@ -235,15 +244,18 @@ private:
         if (qual_.length())
             return SingleRead(new_name, seq_.substr(from, len), qual_.substr(from, len),
                               SequenceOffsetT(from + (size_t) left_offset_),
-                              SequenceOffsetT(size() - to + (size_t) right_offset_));
+                              SequenceOffsetT(size() - to + (size_t) right_offset_),
+                              validate);
         else if (new_name.length())
             return SingleRead(new_name, seq_.substr(from, len),
                               SequenceOffsetT(from + (size_t) left_offset_),
-                              SequenceOffsetT(size() - to + (size_t) right_offset_));
+                              SequenceOffsetT(size() - to + (size_t) right_offset_),
+                              validate);
         else
             return SingleRead(seq_.substr(from, len),
                               SequenceOffsetT(from + (size_t) left_offset_),
-                              SequenceOffsetT(size() - to + (size_t) right_offset_));
+                              SequenceOffsetT(size() - to + (size_t) right_offset_),
+                              validate);
     }
 };
 
