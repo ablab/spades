@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2020 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
 #include <llvm/ADT/iterator.h>

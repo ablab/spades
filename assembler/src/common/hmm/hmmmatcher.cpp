@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2020 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "hmmmatcher.hpp"
 
 extern "C" {

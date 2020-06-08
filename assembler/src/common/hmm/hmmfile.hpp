@@ -1,4 +1,10 @@
-#include "ErrorOr.hpp"
+//***************************************************************************
+//* Copyright (c) 2020 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
+#include <llvm/Support/ErrorOr.h>
 
 #include <memory>
 #include <string>
@@ -10,7 +16,7 @@ namespace hmmer {
 
 class HMMFile;
 
-ErrorOr<HMMFile> open_file(const std::string &hmmfile);
+llvm::ErrorOr<HMMFile> open_file(const std::string &hmmfile);
 
 class HMM {
   public:
@@ -53,7 +59,7 @@ class HMMFile {
     HMMFile(const std::string &name);
     HMMFile(P7_HMMFILE *f);
 
-    ErrorOr<HMM> read();
+    llvm::ErrorOr<HMM> read();
     bool valid() const { return (bool)hmmfile_; }
     P7_HMMFILE *get() const { return hmmfile_.get(); }
 

@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2020 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "hmmfile.hpp"
 #include <iostream>
 extern "C" {
@@ -19,7 +25,7 @@ static OpenErrc to_OpenErrc(int err) {
     return OpenErrc::Unknown;
 }
 
-ErrorOr<HMMFile> open_file(const std::string &hmmfile) {
+llvm::ErrorOr<HMMFile> open_file(const std::string &hmmfile) {
     int status  = eslOK;
     P7_HMMFILE *hfp  = NULL;
 
@@ -79,7 +85,7 @@ static ReadErrc to_ReadErrc(int err) {
     return ReadErrc::Unknown;
 }
 
-ErrorOr<HMM> HMMFile::read() {
+llvm::ErrorOr<HMM> HMMFile::read() {
     ESL_ALPHABET *abc = NULL;
     P7_HMM *rhmm = NULL;
 
