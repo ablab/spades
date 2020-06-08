@@ -143,12 +143,12 @@ public:
     SingleRead Substr(size_t from, size_t to) const {
         VERIFY(from <= to && to <= size());
         size_t len = to - from;
-        if (len == size()) {
+        if (len == size())
             return *this;
-        }
-        if (len == 0) {
+
+        if (len == 0)
             return SingleRead();
-        }
+
         return SubstrStrict(from, to);
     }
 
