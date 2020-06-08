@@ -14,7 +14,7 @@ fastq_ext = ['.fq', '.fastq']
 
 
 def Open(f, mode):
-    if f.endswith(".gz") or f.endswith(".gzip"):
+    if f.lower().endswith((".gz", ".gzip")):
         return codecs.getreader('UTF-8')(gzip.open(f, mode))
     else:
         return codecs.open(f, mode, encoding='utf-8')
@@ -159,9 +159,10 @@ def RemoveNs(input_handler, output_handler):
 
 
 def check_extension(fname, extension_list):
+    fname = fname.lower()
     # "reads.fastq", ".gz"
     basename_plus_innerext, outer_ext = os.path.splitext(fname)
-    if not outer_ext in ['.gz', '.gzip']:
+    if outer_ext not in ['.gz', '.gzip']:
         basename_plus_innerext, outer_ext = fname, ''  # not an archive
 
     # "reads", ".fastq"
