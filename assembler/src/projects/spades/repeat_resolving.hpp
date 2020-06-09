@@ -19,9 +19,8 @@ public:
                             preliminary ? "repeat_resolving_preliminary" : "repeat_resolving"),
               preliminary_(preliminary) { }
 
-    void load(GraphPack &, const std::string &, const char *) { }
-
-    void save(const GraphPack &, const std::string &, const char *) const { }
+    void load(GraphPack &, const std::string &, const char *);
+    void save(const GraphPack &, const std::string &, const char *) const;
 
     void run(GraphPack &gp, const char *);
 };

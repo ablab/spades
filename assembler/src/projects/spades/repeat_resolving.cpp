@@ -41,6 +41,24 @@ static bool HasValidLibs() {
     return false;
 }
 
+
+void RepeatResolution::load(GraphPack &gp, const std::string &load_from, const char *prefix) {
+    // Do nothing in final mode, otherwise - produce saves
+    if (!preliminary_)
+        return;
+
+    AssemblyStage::load(gp, load_from, prefix);
+}
+
+
+void RepeatResolution::save(const GraphPack &gp, const std::string &save_to, const char *prefix) const {
+    // Do nothing in final mode, otherwise - produce saves
+    if (!preliminary_)
+        return;
+
+    AssemblyStage::save(gp, save_to, prefix);
+}
+
 void RepeatResolution::run(GraphPack &gp, const char*) {
     if (cfg::get().developer_mode)
         stats::PrepareForDrawing(gp);
