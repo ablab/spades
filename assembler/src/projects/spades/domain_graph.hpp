@@ -66,7 +66,7 @@ namespace nrps {
         void SetNearStartCoord() { near_contig_start_ = true; }
         void SetNearEndCoord() { near_contig_end_ = true; }
 
-        std::string GetType() const { return domain_type_; }
+        const std::string &GetType() const { return domain_type_; }
 
         size_t GetMaxVisited() const { return max_visited_; }
         void SetMaxVisited(size_t value) { max_visited_ = value; }
@@ -175,11 +175,11 @@ namespace nrps {
         void SetVisited(VertexId v);
         void OutputStat(std::set<VertexId> &preliminary_visited, std::ofstream &stat_file) const;
         size_t GetMaxVisited(VertexId v, double base_coverage) const;
-        void SetCopynumber(std::set<VertexId> &preliminary_visited);
+        void SetCopynumber(const std::set<VertexId> &preliminary_visited);
         void OutputStatArrangement(std::vector<VertexId> single_candidate, int id, std::ofstream &stat_file);
         void FindBasicStatistic(std::ofstream &stat_stream);
         void PrelimDFS(VertexId v, std::set<VertexId> &preliminary_visited);
-        std::string PathToSequence(path_extend::BidirectionalPath *p, std::vector<VertexId> &answer);
+        std::string PathToSequence(path_extend::BidirectionalPath *p, const std::vector<VertexId> &answer);
         void FindAllPossibleArrangements(VertexId v, std::vector<std::vector<VertexId>> &answer, std::ofstream &stat_file);
         void FinalDFS(VertexId v, std::vector<VertexId> &current, std::set<VertexId> preliminary_visited,
                                    std::vector<std::vector<VertexId>> &answer, size_t component_size, size_t &iteration_number);
@@ -198,7 +198,7 @@ namespace nrps {
         VertexId AddVertex();
         VertexId AddVertex(const std::string &name, const omnigraph::MappingPath<EdgeId> &mapping_path,
                            size_t start_coord, size_t end_coord, std::string type);
-        std::string GetVertexName(VertexId v) const;
+        const std::string &GetVertexName(VertexId v) const;
         EdgeId AddEdge(VertexId from, VertexId to, bool strong, const std::vector<EdgeId> &edges, size_t length);
         bool HasStrongEdge(VertexId v);
         size_t StrongEdgeCount(VertexId v) const;

@@ -5,6 +5,7 @@
 //***************************************************************************
 
 #include "domain_graph.hpp"
+#include "utils/filesystem/path_helper.hpp"
 namespace nrps {
     void DomainGraph::SetVisited(VertexId v) {
         this->data(v).SetVisited();
@@ -14,16 +15,16 @@ namespace nrps {
     void DomainGraph::OutputStat(std::set<VertexId> &preliminary_visited, std::ofstream &stat_file) const {
         stat_file << "# domains in the component - ";
         stat_file << preliminary_visited.size() << std::endl;
-        int strong_edge_count =
+        unsigned strong_edge_count =
                 std::accumulate(preliminary_visited.begin(), preliminary_visited.end(),
-                                0, [&](int prev, VertexId v) {
-                            return prev + (this->StrongEdgeCount(v));
-                        });
-        int weak_edge_count =
+                                0, [&](unsigned prev, VertexId v) {
+                                       return prev + StrongEdgeCount(v);
+                                   });
+        unsigned weak_edge_count =
                 std::accumulate(preliminary_visited.begin(), preliminary_visited.end(),
-                                0, [&](int prev, VertexId v) {
-                            return prev + (this->WeakEdgeCount(v));
-                        });
+                                0, [&](unsigned prev, VertexId v) {
+                                       return prev + WeakEdgeCount(v);
+                                   });
 
         stat_file << "# Strong/weak edges in the component - ";
         stat_file << strong_edge_count << "/" << weak_edge_count << std::endl;
@@ -37,7 +38,7 @@ namespace nrps {
         return size_t(round(low_coverage / base_coverage));
     }
 
-    void DomainGraph::SetCopynumber(std::set<VertexId> &preliminary_visited) {
+    void DomainGraph::SetCopynumber(const std::set<VertexId> &preliminary_visited) {
         double base_coverage = std::numeric_limits<double>::max();
         for (auto v : preliminary_visited) {
             for (auto e : this->GetDomainEdges(v)) {
@@ -181,7 +182,7 @@ namespace nrps {
     }
 
     std::string DomainGraph::PathToSequence(path_extend::BidirectionalPath *p,
-                               std::vector<VertexId> &answer) {
+                                            const std::vector<VertexId> &answer) {
         std::stringstream ss;
         DEBUG("Translating " << p->GetId() << " to sequnece");
         for (size_t i = 0; i < answer.size(); ++i) {
@@ -225,7 +226,7 @@ namespace nrps {
     }
 
     void DomainGraph::FindAllPossibleArrangements(VertexId v, std::vector<std::vector<VertexId>> &answer,
-                                     std::ofstream &stat_file) {
+                                                  std::ofstream &stat_file) {
         DEBUG("Starting from " << this->GetVertexName(v));
         std::set<VertexId> preliminary_visited;
         preliminary_visited.insert(v);
@@ -312,14 +313,14 @@ namespace nrps {
     }
 
     DomainGraph::VertexId DomainGraph::AddVertex(const std::string &name, const omnigraph::MappingPath<EdgeId> &mapping_path,
-                       size_t start_coord, size_t end_coord, std::string type) {
+                                                 size_t start_coord, size_t end_coord, std::string type) {
         auto v = AddVertex(VertexData(mapping_path, type, start_coord, end_coord));
         from_id_to_name[v] = name;
         from_id_to_name[conjugate(v)] = name + "_rc";
         return v;
     }
 
-    std::string DomainGraph::GetVertexName(DomainGraph::VertexId v) const {
+    const std::string &DomainGraph::GetVertexName(DomainGraph::VertexId v) const {
         return this->from_id_to_name.at(v);
     }
 
