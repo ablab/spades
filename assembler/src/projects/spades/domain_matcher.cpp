@@ -18,6 +18,7 @@
 #include "sequence/aa.hpp"
 #include "io/reads/osequencestream.hpp"
 #include "utils/filesystem/path_helper.hpp"
+#include "utils/parallel/openmp_wrapper.h"
 
 #include <boost/algorithm/string.hpp>
 
@@ -54,7 +55,10 @@ static void match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::Bidi
             seqpos.second = seqpos.second * 3  + shift;
 
             std::string name(hit.name());
-            oss_contig << io::SingleRead(name, path_string);
+#pragma omp critical
+            {
+                oss_contig << io::SingleRead(name, path_string);
+            }
             DEBUG(name);
             DEBUG("First - " << seqpos.first << ", second - " << seqpos.second);
             res.push_back({type, name, unsigned(seqpos.first), unsigned(seqpos.second), path_string.substr(seqpos.first, seqpos.second - seqpos.first)});
@@ -103,7 +107,11 @@ ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::GraphPack &gp,
     path_extend::ScaffoldBreaker(int(gp.k())).Break(gp.get<path_extend::PathContainer>(), broken_scaffolds);
 
     io::OFastaReadStream oss_contig(output_dir + "/temp_anti/restricted_edges.fasta");
-    for (const auto &file : hmms) {
+
+#   pragma omp parallel for
+    for (size_t i = 0; i < hmms.size(); ++i) {
+        ContigAlnInfo local_res;
+        std::string file = hmms[i];
         auto hmmf = hmmer::open_file(file);
         if (std::error_code ec = hmmf.getError()) {
             FATAL_ERROR("Error opening HMM file "<< file << ", reason: " << ec.message());
@@ -114,7 +122,10 @@ ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::GraphPack &gp,
             FATAL_ERROR("Error reading HMM file "<< file << ", reason: " << ec.message());
         }
 
-        INFO("Matching contigs with " << file);
+#       pragma omp critical
+        {
+            INFO("Matching contigs with " << file);
+        }
 
         std::string type = fs::filename(file);
         size_t dot = type.find_first_of(".");
@@ -123,9 +134,16 @@ ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::GraphPack &gp,
 
         match_contigs(broken_scaffolds, scaffold_maker,
                       type, hmmw.get(), hcfg,
-                      res, oss_contig);
+                      local_res, oss_contig);
+
+#       pragma omp critical
+        {
+            INFO("Matches for '" << type << "': " << local_res.size());
+            res.insert(res.end(), std::make_move_iterator(local_res.begin()), std::make_move_iterator(local_res.end()));
+        }
     }
 
+    INFO("Total domain matches: " << res.size());
     return res;
 }
 
