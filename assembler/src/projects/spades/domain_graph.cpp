@@ -8,8 +8,97 @@
 #include "utils/filesystem/path_helper.hpp"
 namespace nrps {
     void DomainGraph::SetVisited(VertexId v) {
-        this->data(v).SetVisited();
-        this->data(this->conjugate(v)).SetVisited();
+        data(v).SetVisited();
+        data(conjugate(v)).SetVisited();
+    }
+
+    void DomainGraph::SetMaxVisited(VertexId v, size_t value) {
+        data(v).SetMaxVisited(value);
+    }
+
+    size_t DomainGraph::GetMaxVisited(VertexId v) const {
+        return data(v).GetMaxVisited();
+    }
+
+    const std::string &DomainGraph::GetType(VertexId v) const {
+        return data(v).GetType();
+    }
+
+    bool DomainGraph::HasStrongEdge(VertexId v) {
+        for (auto e : OutgoingEdges(v)) {
+            if (strong(e))
+                return true;
+        }
+
+        return false;
+    }
+
+    size_t DomainGraph::StrongEdgeCount(VertexId v) const {
+        return std::count_if(this->OutgoingEdges(v).begin(), OutgoingEdges(v).end(),
+                             [&](EdgeId e) { return strong(e); });
+    }
+
+    size_t DomainGraph::WeakEdgeCount(VertexId v) const {
+        return std::count_if(this->OutgoingEdges(v).begin(), OutgoingEdges(v).end(),
+                             [&](EdgeId e) { return !strong(e); });
+    }
+
+    bool DomainGraph::HasStrongIncomingEdge(VertexId v) const {
+        for (auto e : IncomingEdges(v)) {
+            if (strong(e))
+                return true;
+        }
+
+        return false;
+    }
+
+    bool DomainGraph::NearContigStart(VertexId v) const {
+        return data(v).GetNearContigStart();
+    }
+
+    bool DomainGraph::NearContigEnd(VertexId v) const {
+        return data(v).GetNearContigEnd();
+    }
+
+    bool DomainGraph::Visited(VertexId v) const {
+        return data(v).Visited();
+    }
+
+    const std::vector<DomainGraph::EdgeId> &DomainGraph::domain_edges(VertexId v) const {
+        return data(v).domain_edges();
+    }
+
+    bool DomainGraph::strong(EdgeId e) const {
+        return data(e).strong();
+    }
+
+    void DomainGraph::SetContigNearEnd(VertexId v) {
+        data(v).SetNearEndCoord();
+        data(conjugate(v)).SetNearStartCoord();
+    }
+
+    size_t DomainGraph::GetCurrentVisited(VertexId v) const {
+        return data(v).GetCurrentVisited();
+    }
+
+    size_t DomainGraph::GetStartCoord(VertexId v) const {
+        return data(v).GetStartCoord();
+    }
+
+    size_t DomainGraph::GetEndCoord(VertexId v) const {
+        return data(v).GetEndCoord();
+    }
+
+    const std::vector<debruijn_graph::EdgeId> &DomainGraph::debruijn_edges(EdgeId e) const {
+        return data(e).debruijn_edges();
+    }
+
+    void DomainGraph::IncrementVisited(VertexId v) {
+        data(v).IncrementVisited();
+    }
+
+    void DomainGraph::DecrementVisited(VertexId v) {
+        data(v).DecrementVisited();
     }
 
     void DomainGraph::OutputStat(std::set<VertexId> &preliminary_visited, std::ofstream &stat_file) const {
@@ -32,7 +121,7 @@ namespace nrps {
 
     size_t DomainGraph::GetMaxVisited(VertexId v, double base_coverage) const  {
         double low_coverage = std::numeric_limits<double>::max();
-        for (auto e : this->GetDomainEdges(v))
+        for (auto e : domain_edges(v))
             low_coverage = std::min(low_coverage, g_.coverage(e));
 
         return size_t(round(low_coverage / base_coverage));
@@ -41,7 +130,7 @@ namespace nrps {
     void DomainGraph::SetCopynumber(const std::set<VertexId> &preliminary_visited) {
         double base_coverage = std::numeric_limits<double>::max();
         for (auto v : preliminary_visited) {
-            for (auto e : this->GetDomainEdges(v)) {
+            for (auto e : this->domain_edges(v)) {
                 if (g_.length(e) > 500) {
                     base_coverage = std::min(base_coverage, g_.coverage(e));
                 }
@@ -53,11 +142,11 @@ namespace nrps {
 
         for (auto v : preliminary_visited) {
             size_t value = std::max(size_t(1), GetMaxVisited(v, base_coverage));
-            if (this->data(v).GetMaxVisited() != value) {
-                DEBUG(this->GetVertexName(v) << " copynumber has changed from " << this->data(v).GetMaxVisited()
-                                             << " to " << value);
+            if (GetMaxVisited(v) != value) {
+                DEBUG(GetVertexName(v) << " copynumber has changed from " << GetMaxVisited(v)
+                      << " to " << value);
             }
-            this->data(v).SetMaxVisited(value);
+            SetMaxVisited(v, value);
         }
     }
 
@@ -70,7 +159,7 @@ namespace nrps {
         for (auto v : single_candidate) {
             stat_file << delimeter;
             delimeter = "-";
-            std::string type = this->data(v).GetType();
+            const std::string &type = GetType(v);
             if (type == "AMP") {
                 stat_file << "A";
                 is_nrps = true;
@@ -110,7 +199,7 @@ namespace nrps {
         for (size_t i = 0; i < single_candidate.size(); ++i) {
             auto v = single_candidate[i];
             DEBUG("Translating vertex " << this->GetVertexName(v));
-            for (auto e : this->GetDomainEdges(v)) {
+            for (EdgeId e : domain_edges(v)) {
                 if (p.Size() == 0 || p.Back() != e) {
                     int gap = 0;
                     if (p.Size() != 0 &&
@@ -123,12 +212,12 @@ namespace nrps {
             }
 
             size_t sum = 0;
-            for (auto e2 : this->GetDomainEdges(v)) {
+            for (EdgeId e2 : domain_edges(v)) {
                 sum += g_.length(e2);
             }
 
-            stat_file << this->data(v).GetStartCoord() + current_coord - sum << " ";
-            stat_file << this->data(v).GetEndCoord() + current_coord - g_.length(p.Back()) << std::endl;
+            stat_file << GetStartCoord(v) + current_coord - sum << " ";
+            stat_file << GetEndCoord(v) + current_coord - g_.length(p.Back()) << std::endl;
             //TODO: check if can be improved
             if (i != single_candidate.size() - 1) {
                 auto next_edges = this->GetEdgesBetween(v, single_candidate[i + 1]);
@@ -136,7 +225,7 @@ namespace nrps {
                     continue;
                 }
                 EdgeId next_edge = next_edges[0];
-                for (auto e : this->data(next_edge).GetDeBruijnEdges()) {
+                for (auto e : debruijn_edges(next_edge)) {
                     if (p.Size() == 0 || p.Back() != e) {
                         int gap = 0;
                         if (p.Size() != 0 &&
@@ -161,8 +250,9 @@ namespace nrps {
         stat_stream << std::endl;
 
         std::map<std::string, int> domain_count;
-        for (auto iter = this->SmartVertexBegin(); ! iter.IsEnd(); ++iter)
-            domain_count[this->data(*iter).GetType()]++;
+        for (VertexId v : vertices()) {
+            domain_count[GetType(v)]++;
+        }
 
         for (auto domain_type : domain_count) {
             stat_stream << "# " << domain_type.first << "-domains - "
@@ -172,8 +262,8 @@ namespace nrps {
     }
 
     void DomainGraph::PrelimDFS(VertexId v, std::set<VertexId> &preliminary_visited) {
-        for (auto e : this->OutgoingEdges(v)) {
-            VertexId to = this->EdgeEnd(e);
+        for (auto e : OutgoingEdges(v)) {
+            VertexId to = EdgeEnd(e);
             if (preliminary_visited.find(to) == preliminary_visited.end()) {
                 preliminary_visited.insert(to);
                 PrelimDFS(to, preliminary_visited);
@@ -189,8 +279,8 @@ namespace nrps {
             auto v = answer[i];
             DEBUG("Translating vertex " << this->GetVertexName(v));
             p->PrintDEBUG();
-            DEBUG(this->GetDomainEdges(v));
-            for (auto e : this->GetDomainEdges(v)) {
+            DEBUG(this->domain_edges(v));
+            for (auto e : this->domain_edges(v)) {
                 if (p->Size() == 0 || p->Back() != e) {
                     int gap = 0;
                     if (p->Size() != 0 &&
@@ -210,7 +300,7 @@ namespace nrps {
                 }
 
                 EdgeId next_edge = next_edges[0];
-                for (auto e : this->data(next_edge).GetDeBruijnEdges()) {
+                for (auto e : debruijn_edges(next_edge)) {
                     if (p->Size() == 0 || p->Back() != e) {
                         int gap = 0;
                         if (p->Size() != 0 &&
@@ -253,14 +343,14 @@ namespace nrps {
                                size_t component_size, size_t &iteration_number) {
         iteration_number++;
         current.push_back(v);
-        this->data(v).IncrementVisited();
+        IncrementVisited(v);
         if (answer.size() > 50 || iteration_number > 10000000)
             return;
 
         bool was_extended = false;
         if (this->HasStrongEdge(v)) {
             for (EdgeId e : this->OutgoingEdges(v)) {
-                if (this->Strong(e)) {
+                if (this->strong(e)) {
                     VertexId to = this->EdgeEnd(e);
                     if (preliminary_visited.find(to) != preliminary_visited.end())
                         continue;
@@ -271,7 +361,7 @@ namespace nrps {
         } else {
             for (EdgeId e : this->OutgoingEdges(v)) {
                 VertexId to = this->EdgeEnd(e);
-                if (this->data(to).GetCurrentVisited() >= this->data(to).GetMaxVisited())
+                if (GetCurrentVisited(to) >= GetMaxVisited(to))
                     continue;
 
                 if (preliminary_visited.find(to) != preliminary_visited.end())
@@ -281,10 +371,10 @@ namespace nrps {
                 FinalDFS(to, current, preliminary_visited, answer, component_size, iteration_number);
             }
         }
-        if (current.size() >= component_size && was_extended == false) {
+        if (current.size() >= component_size && !was_extended)
             answer.push_back(current);
-        }
-        this->data(v).DecrementVisited();
+
+        DecrementVisited(v);
         current.pop_back();
     }
 
@@ -328,83 +418,23 @@ namespace nrps {
         return AddEdge(from, to, EdgeData(strong, edges, length));
     }
 
-    bool DomainGraph::HasStrongEdge(VertexId v) {
-        auto edges = this->OutgoingEdges(v);
-        for (auto e : edges) {
-            if (this->Strong(e)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    size_t DomainGraph::StrongEdgeCount(VertexId v) const {
-        return std::count_if(this->OutgoingEdges(v).begin(), this->OutgoingEdges(v).end(),
-                             [&](EdgeId e) { return this->Strong(e); });
-    }
-
-    size_t DomainGraph::WeakEdgeCount(VertexId v) const {
-        return std::count_if(this->OutgoingEdges(v).begin(), this->OutgoingEdges(v).end(),
-                             [&](EdgeId e) { return !(this->Strong(e)); });
-    }
-
-    bool DomainGraph::HasStrongIncomingEdge(VertexId v) const {
-        auto edges = this->IncomingEdges(v);
-        for (auto e : edges) {
-            if (this->Strong(e)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    bool DomainGraph::NearContigStart(VertexId v) const {
-        return this->data(v).GetNearContigStart();
-    }
-
-    bool DomainGraph::NearContigEnd(VertexId v) const {
-        return this->data(v).GetNearContigEnd();
-    }
-
-    bool DomainGraph::Visited(VertexId v) const {
-        return this->data(v).Visited();
-    }
-
-    std::vector<DomainGraph::EdgeId> DomainGraph::GetDomainEdges(VertexId v) const {
-        return this->data(v).GetDomainEdges();
-    }
-
-    bool DomainGraph::Strong(EdgeId e) const {
-        return this->data(e).Strong();
-    }
-
-    void DomainGraph::SetContigNearEnd(VertexId v) {
-        this->data(v).SetNearEndCoord();
-        this->data(this->conjugate(v)).SetNearStartCoord();
-    }
-
     void DomainGraph::ExportToDot(const std::string &output_path) const {
         std::ofstream out(output_path);
         out << "digraph domain_graph {" << std::endl;
-        for (auto iter = this->SmartVertexBegin(); ! iter.IsEnd(); ++iter) {
-            VertexId v = (*iter);
-            out << "\"" << this->GetVertexName(v) << "\""
-                << " [label=\"" << this->data(v).GetType() << " " << this->GetVertexName(v) << " "
-                << this->data(v).GetMaxVisited() << "\"];" << std::endl;
+        for (VertexId v : vertices()) {
+            out << "\"" << GetVertexName(v) << "\""
+                << " [label=\"" << GetType(v) << " " << GetVertexName(v) << " "
+                << GetMaxVisited(v) << "\"];" << std::endl;
         }
 
-        for (auto iter = this->SmartEdgeBegin(); ! iter.IsEnd(); ++iter) {
-            EdgeId e = (*iter);
-            out << "\"" << this->GetVertexName(this->EdgeStart(e)) << "\""
+        for (EdgeId e : edges()) {
+            out << "\"" << GetVertexName(EdgeStart(e)) << "\""
                 << " -> "
-                << "\"" << this->GetVertexName(this->EdgeEnd(e)) << "\"";
-            out << " [label=";
-            out << this->length(e);
-            if (this->Strong(e)) {
-                out << " style=bold];" << std::endl;
-            } else {
-                out << " style=dotted];" << std::endl;
-            }
+                << "\"" << GetVertexName(EdgeEnd(e)) << "\""
+                << " [label="
+                << length(e)
+                << " style=" << (strong(e) ? "bold" : "dotted")
+                << "];" << std::endl;
         }
         out << "}";
     }
@@ -412,48 +442,45 @@ namespace nrps {
     void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp,
                                           const std::string &output_filename, const std::string &output_dir) {
         const auto &graph = gp.get<debruijn_graph::Graph>();
-        std::ofstream stat_stream(output_dir + "/bgc_statistics.txt");
+        std::ofstream stat_stream(fs::append_path(output_dir, "bgc_statistics.txt"));
         FindBasicStatistic(stat_stream);
         path_extend::ContigWriter writer(graph, path_extend::MakeContigNameGenerator(cfg::get().mode, gp));
-        std::set<VertexId> nodes_with_incoming;
-        for (auto iter = this->SmartEdgeBegin(); ! iter.IsEnd(); ++iter)
-            nodes_with_incoming.insert(this->EdgeEnd(*iter));
+
         std::set<VertexId> start_nodes;
-        for (auto iter = this->SmartVertexBegin(); ! iter.IsEnd(); ++iter) {
-            VertexId v = *iter;
-            if (nodes_with_incoming.find(v) == nodes_with_incoming.end() &&
-                this->OutgoingEdgeCount(v)) {
+        for (VertexId v : vertices()) {
+            if (IsDeadStart(v) && !IsDeadEnd(v))
                 start_nodes.insert(v);
-            }
         }
-        io::osequencestream_bgc oss(output_dir + "/" + output_filename);
+
+        io::osequencestream_bgc oss(fs::append_path(output_dir, output_filename));
         path_extend::ScaffoldSequenceMaker seq_maker(graph);
         std::vector<std::vector<VertexId>> answer;
         int ordering_id = 1;
         int component_id = 1;
 
         for (auto v : start_nodes) {
-            if (!this->Visited(v)) {
-                stat_stream << "BGC subgraph " << component_id << std::endl;
-                FindAllPossibleArrangements(v, answer, stat_stream);
-                ordering_id = 1;
-                for (auto vec : answer) {
-                    OutputStatArrangement(vec, ordering_id, stat_stream);
-                    path_extend::BidirectionalPath *p =
-                            new path_extend::BidirectionalPath(graph);
-                    std::string outputstring = PathToSequence(p, vec);
-                    path_extend::BidirectionalPath *conjugate =
-                            new path_extend::BidirectionalPath(p->Conjugate());
-                    contig_paths_.AddPair(p, conjugate);
-                    OutputComponent(p, component_id, ordering_id);
-                    outputstring = seq_maker.MakeSequence(*p);
-                    oss.SetCluster(component_id, ordering_id);
-                    oss << outputstring;
-                    ordering_id++;
-                }
-                answer.clear();
-                component_id++;
+            if (Visited(v))
+                continue;
+
+            stat_stream << "BGC subgraph " << component_id << std::endl;
+            FindAllPossibleArrangements(v, answer, stat_stream);
+            ordering_id = 1;
+            for (const auto &vec : answer) {
+                OutputStatArrangement(vec, ordering_id, stat_stream);
+                path_extend::BidirectionalPath *p =
+                        new path_extend::BidirectionalPath(graph);
+                std::string outputstring = PathToSequence(p, vec);
+                path_extend::BidirectionalPath *conjugate =
+                        new path_extend::BidirectionalPath(p->Conjugate());
+                contig_paths_.AddPair(p, conjugate);
+                OutputComponent(p, component_id, ordering_id);
+                outputstring = seq_maker.MakeSequence(*p);
+                oss.SetCluster(component_id, ordering_id);
+                oss << outputstring;
+                ordering_id++;
             }
+            answer.clear();
+            component_id++;
         }
     }
 }

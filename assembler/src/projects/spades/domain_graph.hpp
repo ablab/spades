@@ -78,10 +78,10 @@ namespace nrps {
         bool Visited() const { return visited_; }
         void SetVisited() { visited_ = true; }
 
-        std::vector<EdgeId> GetDomainEdges() const {
+        const std::vector<EdgeId> &domain_edges() const {
             return mapping_path_.simple_path();
         }
-        omnigraph::MappingPath<EdgeId>& GetMappingPath() {
+        const omnigraph::MappingPath<EdgeId>& mapping_path() const {
             return mapping_path_;
         }
 
@@ -117,12 +117,9 @@ namespace nrps {
         explicit DomainEdgeData(bool strong, const std::vector<EdgeId> &edges, size_t length)
                 : strong_(strong), edges_(edges), length_(length) {}
         
-        bool Strong() const { return strong_; }
+        bool strong() const { return strong_; }
         size_t length(const debruijn_graph::Graph &) const { return length_; }
-        
-        std::vector<EdgeId> GetDeBruijnEdges() const {
-            return edges_;
-        }
+        const std::vector<EdgeId> &debruijn_edges() const { return edges_;  }
 
         DomainEdgeData conjugate(const debruijn_graph::Graph &g) const {
             std::vector<EdgeId> rc;
@@ -173,6 +170,15 @@ namespace nrps {
         path_extend::PathContainer contig_paths_;
 
         void SetVisited(VertexId v);
+        void SetMaxVisited(VertexId v, size_t value);
+        size_t GetMaxVisited(VertexId v) const;
+        size_t GetCurrentVisited(VertexId v) const;
+        size_t GetStartCoord(VertexId v) const;
+        size_t GetEndCoord(VertexId v) const;
+        const std::vector<EdgeId> &debruijn_edges(EdgeId) const;
+        void IncrementVisited(VertexId v);
+        void DecrementVisited(VertexId v);
+
         void OutputStat(std::set<VertexId> &preliminary_visited, std::ofstream &stat_file) const;
         size_t GetMaxVisited(VertexId v, double base_coverage) const;
         void SetCopynumber(const std::set<VertexId> &preliminary_visited);
@@ -207,8 +213,10 @@ namespace nrps {
         bool NearContigStart(VertexId v) const;
         bool NearContigEnd(VertexId v) const;
         bool Visited(VertexId v) const;
-        std::vector<EdgeId> GetDomainEdges(VertexId v) const;
-        bool Strong(EdgeId e) const;
+        const std::string &GetType(VertexId v) const;
+
+        const std::vector<EdgeId>& domain_edges(VertexId v) const;
+        bool strong(EdgeId e) const;
         void SetContigNearEnd(VertexId v);
         void ExportToDot(const std::string &output_path) const;
         void FindDomainOrderings(debruijn_graph::GraphPack &gp,
