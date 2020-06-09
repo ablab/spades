@@ -15,6 +15,10 @@
 #include <unordered_map>
 #include <numeric>
 
+namespace debruijn_graph {
+    class DomainGraphConstructor;
+}
+
 namespace nrps {
     class DomainGraphDataMaster;
 
@@ -216,11 +220,14 @@ namespace nrps {
         const std::string &GetType(VertexId v) const;
 
         const std::vector<EdgeId>& domain_edges(VertexId v) const;
+        const omnigraph::MappingPath<EdgeId>& mapping_path(VertexId v) const;
         bool strong(EdgeId e) const;
         void SetContigNearEnd(VertexId v);
         void ExportToDot(const std::string &output_path) const;
         void FindDomainOrderings(debruijn_graph::GraphPack &gp,
                                  const std::string &output_filename, const std::string &output_dir);
+
+        friend class debruijn_graph::DomainGraphConstructor;
     protected:
         DECL_LOGGER("DomainGraph");
     };

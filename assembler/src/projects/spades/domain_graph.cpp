@@ -68,6 +68,10 @@ namespace nrps {
         return data(v).domain_edges();
     }
 
+    const omnigraph::MappingPath<debruijn_graph::EdgeId>& DomainGraph::mapping_path(VertexId v) const {
+        return data(v).mapping_path();
+    }
+
     bool DomainGraph::strong(EdgeId e) const {
         return data(e).strong();
     }
