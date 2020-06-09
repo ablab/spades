@@ -224,6 +224,9 @@ const HMMMatcher::HitIterator HMMMatcher::hit_begin() const {
 const HMMMatcher::HitIterator HMMMatcher::hit_end() const {
     return { th_->hit + th_->N };
 }
+void HMMMatcher::reset_top_hits() {
+    th_.reset(p7_tophits_Create());
+}
 
 HMMMatcher::Hit::DomainIterator &HMMMatcher::Hit::DomainIterator::operator++() {
     ++d_;

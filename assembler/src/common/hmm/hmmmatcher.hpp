@@ -138,6 +138,7 @@ class HMMMatcher {
     llvm::iterator_range<HitIterator> hits() const {
         return llvm::make_range(hit_begin(), hit_end());
     }
+    void reset_top_hits();
 
   private:
     P7_PIPELINE*
