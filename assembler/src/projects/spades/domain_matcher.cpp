@@ -60,6 +60,7 @@ static void match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::Bidi
             res.push_back({type, name, unsigned(seqpos.first), unsigned(seqpos.second), path_string.substr(seqpos.first, seqpos.second - seqpos.first)});
         }
     }
+    matcher.reset_top_hits();
 }
 
 static void match_contigs(const path_extend::PathContainer &contig_paths, const path_extend::ScaffoldSequenceMaker &scaffold_maker,
@@ -67,8 +68,8 @@ static void match_contigs(const path_extend::PathContainer &contig_paths, const 
                           ContigAlnInfo &res, io::OFastaReadStream &oss_contig) {
     DEBUG("Total contigs: " << contig_paths.size());
     DEBUG("Model length - " << hmm.length());
+    hmmer::HMMMatcher matcher(hmm, cfg);
     for (auto iter = contig_paths.begin(); iter != contig_paths.end(); ++iter) {
-        hmmer::HMMMatcher matcher(hmm, cfg);
         path_extend::BidirectionalPath* path = iter.get();
         if (path->Length() <= 0)
             continue;
