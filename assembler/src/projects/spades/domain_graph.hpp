@@ -21,7 +21,6 @@ namespace nrps {
     class DomainVertexData {
         friend class DomainDataMaster;
         typedef debruijn_graph::EdgeId EdgeId;
-        const debruijn_graph::Graph &g_;
         omnigraph::MappingPath<EdgeId> mapping_path_;
         std::string domain_type_;
         size_t start_coord_;
@@ -32,20 +31,19 @@ namespace nrps {
         bool near_contig_end_;
         bool near_contig_start_;
 
-    omnigraph::MappingRange conjugate(omnigraph::MappingRange m, EdgeId e) const {
+        omnigraph::MappingRange conjugate(omnigraph::MappingRange m, EdgeId e, const debruijn_graph::Graph &g) const {
         return omnigraph::MappingRange(m.initial_range.start_pos, m.initial_range.end_pos,
-                                       g_.length(e) - m.mapped_range.end_pos, g_.length(e) - m.mapped_range.start_pos);
+                                       g.length(e) - m.mapped_range.end_pos, g.length(e) - m.mapped_range.start_pos);
     }
 
     public:
-        DomainVertexData(const debruijn_graph::Graph &g)
-                : g_(g), domain_type_("None"),
+        DomainVertexData()
+                : domain_type_("None"),
                   start_coord_(0), end_coord_(0),
                   max_visited_(0), current_visited_(0), visited_(false) {
         }
 
-        DomainVertexData(const debruijn_graph::Graph &g,
-                         const omnigraph::MappingPath<EdgeId> &mapping_path,
+        DomainVertexData(const omnigraph::MappingPath<EdgeId> &mapping_path,
                          const std::string &domain_type,
                          size_t start_coord,
                          size_t end_coord,
@@ -54,7 +52,7 @@ namespace nrps {
                          bool near_contig_end = false,
                          bool near_contig_start = false,
                          bool visited = false)
-        : g_(g), mapping_path_(mapping_path), domain_type_(domain_type),
+        : mapping_path_(mapping_path), domain_type_(domain_type),
           start_coord_(start_coord), end_coord_(end_coord),
           max_visited_(max_visited), current_visited_(current_visited), visited_(visited),
           near_contig_end_(near_contig_end), near_contig_start_(near_contig_start) {}
@@ -87,72 +85,73 @@ namespace nrps {
             return mapping_path_;
         }
 
-        DomainVertexData ConstructConjugate() const {
+        DomainVertexData conjugate(const debruijn_graph::Graph &g) const {
             omnigraph::MappingPath<EdgeId> conjugate_rc;
             if (mapping_path_.size() != 0) {
                 for (auto i = mapping_path_.size(); i != 0; --i) {
-                    conjugate_rc.push_back(g_.conjugate(mapping_path_.edge_at(i - 1)),
+                    conjugate_rc.push_back(g.conjugate(mapping_path_.edge_at(i - 1)),
                                            conjugate(mapping_path_.mapping_at(i - 1),
-                                                     g_.conjugate(mapping_path_.edge_at(i - 1))));
+                                                     g.conjugate(mapping_path_.edge_at(i - 1)), g));
                 }
             }
-            return  DomainVertexData(g_, conjugate_rc, domain_type_, g_.length(conjugate_rc.front().first) - end_coord_,
-                                     g_.length(conjugate_rc.back().first) - start_coord_, max_visited_,
-                                     current_visited_, near_contig_start_, near_contig_end_, visited_);
+            return DomainVertexData(conjugate_rc, domain_type_, g.length(conjugate_rc.front().first) - end_coord_,
+                                    g.length(conjugate_rc.back().first) - start_coord_, max_visited_,
+                                    current_visited_, near_contig_start_, near_contig_end_, visited_);
         }
 
-        size_t length() const {
+        size_t length(const debruijn_graph::Graph &g) const {
             auto simple_path = mapping_path_.simple_path();
-            return  std::accumulate(simple_path.begin(), simple_path.end(), 0,
-                                    [&](size_t a, EdgeId b){return a + g_.length(b);}) - start_coord_ - end_coord_;
+            return std::accumulate(simple_path.begin(), simple_path.end(), 0,
+                                    [&](size_t a, EdgeId b){return a + g.length(b);}) - start_coord_ - end_coord_;
         }
     };
 
     class DomainEdgeData {
         friend class DomainGraphDataMaster;
         typedef debruijn_graph::EdgeId EdgeId;
-        const debruijn_graph::Graph &g_;
         bool strong_;
         std::vector<EdgeId> edges_;
         size_t length_;
     public:
 
-        explicit DomainEdgeData(const debruijn_graph::Graph &g, bool strong, const std::vector<EdgeId> &edges, size_t length)
-                : g_(g), strong_(strong), edges_(edges), length_(length) {}
+        explicit DomainEdgeData(bool strong, const std::vector<EdgeId> &edges, size_t length)
+                : strong_(strong), edges_(edges), length_(length) {}
         
         bool Strong() const { return strong_; }
-        size_t length() const { return length_; }
+        size_t length(const debruijn_graph::Graph &) const { return length_; }
         
         std::vector<EdgeId> GetDeBruijnEdges() const {
             return edges_;
         }
 
-        DomainEdgeData ConstructConjugate() const {
+        DomainEdgeData conjugate(const debruijn_graph::Graph &g) const {
             std::vector<EdgeId> rc;
             for (auto it = edges_.rbegin(); it != edges_.rend(); ++it) {
-                rc.push_back(g_.conjugate(*it));
+                rc.push_back(g.conjugate(*it));
             }
-            return DomainEdgeData(g_, strong_, rc, length_);
+            return DomainEdgeData(strong_, rc, length_);
         }
     };
 
     class DomainGraphDataMaster {
+        const debruijn_graph::Graph &g_;
     public:
         typedef DomainVertexData VertexData;
         typedef DomainEdgeData EdgeData;
 
-        DomainGraphDataMaster() { }
+        DomainGraphDataMaster(const debruijn_graph::Graph &g)
+                : g_(g) { }
 
         EdgeData conjugate(const EdgeData &data) const {
-            return data.ConstructConjugate();
+            return data.conjugate(g_);
         }
 
         VertexData conjugate(const VertexData &data) const {
-            return data.ConstructConjugate();
+            return data.conjugate(g_);
         }
 
         size_t length(const EdgeData& data) const {
-            return data.length();
+            return data.length(g_);
         }
 
         bool isSelfConjugate(const EdgeData &) const {
@@ -160,7 +159,7 @@ namespace nrps {
         }
 
         size_t length(const VertexData& data) const {
-            return data.length();
+            return data.length(g_);
         }
     };
 
@@ -189,7 +188,7 @@ namespace nrps {
 
     public:
         DomainGraph(const debruijn_graph::Graph &g) :
-                base(DomainGraphDataMaster()), g_(g) {}
+                base(DomainGraphDataMaster(g)), g_(g) {}
 
         using base::AddVertex;
         using base::AddEdge;

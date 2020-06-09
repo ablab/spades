@@ -61,7 +61,7 @@ namespace nrps {
     }
 
     void DomainGraph::OutputStatArrangement(std::vector<VertexId> single_candidate,
-                               int id, std::ofstream &stat_file) {
+                                            int id, std::ofstream &stat_file) {
         stat_file << "BGC candidate " << id << std::endl;
         std::string delimeter = "";
         bool is_nrps = false;
@@ -247,9 +247,9 @@ namespace nrps {
     }
 
     void DomainGraph::FinalDFS(VertexId v, std::vector<VertexId> &current,
-                  std::set<VertexId> preliminary_visited,
-                  std::vector<std::vector<VertexId>> &answer,
-                  size_t component_size, size_t &iteration_number) {
+                               std::set<VertexId> preliminary_visited,
+                               std::vector<std::vector<VertexId>> &answer,
+                               size_t component_size, size_t &iteration_number) {
         iteration_number++;
         current.push_back(v);
         this->data(v).IncrementVisited();
@@ -296,10 +296,10 @@ namespace nrps {
     }
 
     void DomainGraph::OutputComponent(path_extend::BidirectionalPath *p, int component_id,
-                         int ordering_id) {
+                                      int ordering_id) {
         auto edges = CollectEdges(p);
         auto comp = omnigraph::GraphComponent<debruijn_graph::Graph>::FromEdges(g_, edges.begin(),
-                                                                     edges.end(), true);
+                                                                                edges.end(), true);
         std::ofstream os(cfg::get().output_dir + "/bgc_in_gfa/" +
                          std::to_string(component_id) + "_" + std::to_string(ordering_id) +
                          ".gfa");
@@ -308,12 +308,12 @@ namespace nrps {
     }
 
     DomainGraph::VertexId DomainGraph::AddVertex() {
-        return AddVertex(VertexData(g_));
+        return AddVertex(VertexData());
     }
 
     DomainGraph::VertexId DomainGraph::AddVertex(const std::string &name, const omnigraph::MappingPath<EdgeId> &mapping_path,
                        size_t start_coord, size_t end_coord, std::string type) {
-        auto v = AddVertex(VertexData(g_, mapping_path, type, start_coord, end_coord));
+        auto v = AddVertex(VertexData(mapping_path, type, start_coord, end_coord));
         from_id_to_name[v] = name;
         from_id_to_name[conjugate(v)] = name + "_rc";
         return v;
@@ -324,7 +324,7 @@ namespace nrps {
     }
 
     DomainGraph::EdgeId DomainGraph::AddEdge(VertexId from, VertexId to, bool strong, const std::vector<EdgeId> &edges, size_t length) {
-        return AddEdge(from, to, EdgeData(g_, strong, edges, length));
+        return AddEdge(from, to, EdgeData(strong, edges, length));
     }
 
     bool DomainGraph::HasStrongEdge(VertexId v) {
@@ -409,7 +409,7 @@ namespace nrps {
     }
 
     void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp,
-                             const std::string &output_filename, const std::string &output_dir) {
+                                          const std::string &output_filename, const std::string &output_dir) {
         const auto &graph = gp.get<debruijn_graph::Graph>();
         std::ofstream stat_stream(output_dir + "/bgc_statistics.txt");
         FindBasicStatistic(stat_stream);
