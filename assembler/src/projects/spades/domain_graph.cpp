@@ -266,7 +266,7 @@ namespace nrps {
     }
 
     void DomainGraph::PrelimDFS(VertexId v, std::set<VertexId> &preliminary_visited) {
-        for (auto e : OutgoingEdges(v)) {
+        for (EdgeId e : OutgoingEdges(v)) {
             VertexId to = EdgeEnd(e);
             if (preliminary_visited.find(to) == preliminary_visited.end()) {
                 preliminary_visited.insert(to);
