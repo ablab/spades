@@ -570,6 +570,10 @@ public:
         return id_;
     }
 
+    bool IsCanonical() const {
+        return id_ < this->conj_path_->GetId();
+    }
+
     void PushBack(EdgeId e, Gap gap = Gap()) {
         VERIFY(!edges_.empty() || gap == Gap());
         if (IsCycle()) {

@@ -315,6 +315,9 @@ private:
         std::set<VertexId> removed_vertices;
         for (auto p : mappings_for_path) {
             DEBUG("Processing path " << p.first);
+            if (from_id_to_path[p.first]->IsCanonical())
+                continue;
+
             std::pair<std::pair<int, int>, std::pair<VertexId, std::vector<EdgeId>>> prev(std::make_pair(-1, -1), std::make_pair(VertexId(0), std::vector<EdgeId>()));
             for (const auto& maps : p.second) {
                 DEBUG("Processing mapping " << maps.second.first);
