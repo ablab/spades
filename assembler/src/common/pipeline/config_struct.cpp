@@ -54,7 +54,6 @@ bool PipelineHelper::IsMetagenomicPipeline(const pipeline_type pipeline) {
             return false;
         case pipeline_type::meta:
         case pipeline_type::metaplasmid:
-        case pipeline_type::bgc:
             return true;
     }
 
@@ -94,7 +93,6 @@ std::vector<std::string> PipelineTypeNames() {
                     {"isolate", pipeline_type::isolate},
                     {"mda", pipeline_type::mda},
                     {"meta", pipeline_type::meta},
-                    {"bgc", pipeline_type::bgc},
                     {"moleculo", pipeline_type::moleculo},
                     {"rna", pipeline_type::rna},
                     {"plasmid", pipeline_type::plasmid},

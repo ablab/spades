@@ -39,7 +39,6 @@ enum class pipeline_type : char {
     isolate,
     mda,
     meta,
-    bgc,
     moleculo,
     rna,
     plasmid,

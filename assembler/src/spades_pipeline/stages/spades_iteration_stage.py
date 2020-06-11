@@ -19,7 +19,7 @@ from process_cfg import bool_to_str
 
 
 # FIXME double with scaffold correction stage
-def add_configs(command, configs_dir):
+def add_configs(command, configs_dir, cfg):
     # Order matters here!
     mode_config_mapping = [("isolate", "isolate_mode"),
                            ("single_cell", "mda_mode"),
@@ -27,8 +27,7 @@ def add_configs(command, configs_dir):
                            ("truseq_mode", "moleculo_mode"),
                            ("rna", "rna_mode"),
                            ("large_genome", "large_genome_mode"),
-                           ("plasmid", "plasmid_mode"),
-                           ("bio", "bgc_mode")]
+                           ("plasmid", "plasmid_mode")]
     # ("careful", "careful_mode"),
     for (mode, config) in mode_config_mapping:
         if options_storage.args.__dict__[mode]:
@@ -40,6 +39,9 @@ def add_configs(command, configs_dir):
             command.append(os.path.join(configs_dir, "careful_mda_mode.info"))
         else:
             command.append(os.path.join(configs_dir, "careful_mode.info"))
+    print options_storage
+    if "set_of_hmms" in cfg.__dict__:
+            command.append(os.path.join(configs_dir, "hmm_mode.info"))
 
 
 def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one, execution_home):
@@ -150,7 +152,7 @@ class IterationStage(stage.Stage):
                                           {"scaffolding_mode": cfg.scaffolding_mode}, self.log)
 
         prepare_config_rnaspades(os.path.join(dst_configs, "rna_mode.info"), self.log)
-        prepare_config_bgcspades(os.path.join(dst_configs, "bgc_mode.info"), cfg, self.log)
+        prepare_config_bgcspades(os.path.join(dst_configs, "hmm_mode.info"), cfg, self.log)
         prepare_config_construction(os.path.join(dst_configs, "construction.info"), self.log)
         cfg_fn = os.path.join(dst_configs, "config.info")
         prepare_config_spades(cfg_fn, cfg, self.log, additional_contigs_dname, self.K, self.get_stage(self.short_name),
@@ -161,7 +163,7 @@ class IterationStage(stage.Stage):
         dst_configs = os.path.join(data_dir, "configs")
         cfg_fn = os.path.join(dst_configs, "config.info")
         args = [cfg_fn]
-        add_configs(args, dst_configs)
+        add_configs(args, dst_configs, cfg)
 
         command = [commands_parser.Command(
             STAGE="K%d" % self.K,

@@ -130,6 +130,10 @@ static debruijn_graph::ContigOutput::OutputList GetFinalStageOutput() {
     };
 }
 
+static bool HasBGCHMMs() {
+    return cfg::get().hmm_set.size() > 0;
+}
+
 static void AddPreliminarySimplificationStages(StageManager &SPAdes) {
     using namespace debruijn_graph::config;
     pipeline_type mode = cfg::get().mode;
@@ -143,12 +147,12 @@ static void AddPreliminarySimplificationStages(StageManager &SPAdes) {
               .add<debruijn_graph::DistanceEstimation>(true)
               .add<debruijn_graph::RepeatResolution>(true);
 
-        if (mode == pipeline_type::bgc)
+        if (HasBGCHMMs())
             SPAdes.add<debruijn_graph::ExtractDomains>();
 
         SPAdes.add<debruijn_graph::ContigOutput>(GetPreliminaryStageOutput())
               .add<debruijn_graph::SecondPhaseSetup>();
-        if (mode == pipeline_type::bgc)
+        if (HasBGCHMMs())
             SPAdes.add<debruijn_graph::RestrictedEdgesFilling>();
     }
 }
@@ -216,8 +220,8 @@ void assemble_genome() {
         FATAL_ERROR("Sorry, current version of metaSPAdes can work either with single library (paired-end only) "
                     "or in hybrid paired-end + (TSLR or PacBio or Nanopore) mode.");
     } else if (AssemblyGraphPresent() &&
-               (mode != pipeline_type::metaplasmid && mode != pipeline_type::bgc &&
-                mode != pipeline_type::plasmid)) {
+               (mode != pipeline_type::metaplasmid && mode != pipeline_type::plasmid &&
+                !HasBGCHMMs())) {
         // Disallow generic assembly graph inputs for now
         FATAL_ERROR("Assembly graph inputs are supported only for plasmid / metaplasmid and / bgc modes!");
     }
@@ -275,7 +279,7 @@ void assemble_genome() {
         else
             SPAdes.add<debruijn_graph::ContigOutput>(GetFinalStageOutput());
 
-        if (mode == pipeline_type::bgc)
+        if (HasBGCHMMs())
             SPAdes.add<debruijn_graph::DomainGraphConstruction>();
     }
 
