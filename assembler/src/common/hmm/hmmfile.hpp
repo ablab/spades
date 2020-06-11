@@ -26,6 +26,9 @@ class HMM {
     P7_HMM *get() const { return hmm_.get(); }
     ESL_ALPHABET *abc() const { return abc_.get(); }
     unsigned length() const;
+    const char *name() const;
+    const char *acc() const;
+    const char *desc() const;
 
   private:
     friend class HMMFile;

@@ -62,11 +62,33 @@ HMM::HMM(P7_HMM *hmm, ESL_ALPHABET *abc)
 {}
 
 unsigned HMM::length() const {
-    if (hmm_)
-        return hmm_->M;
+    if (!hmm_)
+        return 0;
 
-    return 0;
+    return hmm_->M;
 }
+
+const char* HMM::name() const {
+    if (!hmm_)
+        return nullptr;
+
+    return hmm_->name;
+}
+
+const char* HMM::desc() const {
+    if (!hmm_)
+        return nullptr;
+
+    return hmm_->desc;
+}
+
+const char* HMM::acc() const {
+    if (!hmm_)
+        return nullptr;
+
+    return hmm_->acc;
+}
+
 
 static ReadErrc to_ReadErrc(int err) {
     switch (err) {
