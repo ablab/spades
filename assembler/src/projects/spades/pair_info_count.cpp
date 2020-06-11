@@ -172,14 +172,16 @@ bool ShouldObtainLibCoverage() {
 //todo improve logic
 bool ShouldObtainSingleReadsPaths(size_t ilib) {
     using config::single_read_resolving_mode;
+    using config::PipelineHelper;
     switch (cfg::get().single_reads_rr) {
         case single_read_resolving_mode::all:
             return true;
         case single_read_resolving_mode::only_single_libs:
-            //Map when no PacBio/paried libs or only mate-pairs or single lib itself
+            // Map when no PacBio/paried libs or only mate-pairs or single lib itself
             if (!HasGoodRRLibs() || HasOnlyMP() ||
                 cfg::get().ds.reads[ilib].type() == io::LibraryType::SingleReads) {
-                if (!debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(cfg::get().mode)) {
+                if (!PipelineHelper::IsMetagenomicPipeline(cfg::get().mode) ||
+                    cfg::get().mode == config::pipeline_type::rnaviral) {
                     return true;
                 } else {
                     WARN("Single reads are not used in metagenomic mode");
