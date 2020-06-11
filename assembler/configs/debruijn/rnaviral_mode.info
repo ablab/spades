@@ -22,5 +22,6 @@ simp
          enabled true
          diff_mult  2.5
          unconditional_diff_mult 50.
+         edge_sum 0
      }
 }

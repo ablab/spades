@@ -307,7 +307,7 @@ private:
 
         // FIXME: Get rid of recursion, it's ugly!
         void Fill(EdgeId edge, phmap::flat_hash_set<EdgeId> &processed) const {
-            if (edge_summary_length_ > edge_summary_length_limit_)
+            if (edge_summary_length_ >= edge_summary_length_limit_)
                 return;
 
             if (processed.size() > edge_limit_)
