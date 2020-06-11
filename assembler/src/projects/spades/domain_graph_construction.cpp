@@ -388,7 +388,7 @@ private:
             DEBUG("Adding vertex " << name);
 
             VertexId v = domain_graph_.AddVertex(name, edges, edges.front().second.mapped_range.start_pos,
-                                                 edges.back().second.mapped_range.end_pos, aln.type);
+                                                 edges.back().second.mapped_range.end_pos, aln.type, aln.desc);
             id++;
             mappings[domain_graph_.GetVertexName(v)] = edges;
             mappings[domain_graph_.GetVertexName(domain_graph_.conjugate(v))] = rc_edges;

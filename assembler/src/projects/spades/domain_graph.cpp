@@ -20,8 +20,11 @@ namespace nrps {
         return data(v).GetMaxVisited();
     }
 
-    const std::string &DomainGraph::GetType(VertexId v) const {
-        return data(v).GetType();
+    const std::string &DomainGraph::GetDomainName(VertexId v) const {
+        return data(v).GetDomainName();
+    }
+    const std::string &DomainGraph::GetDomainDesc(VertexId v) const {
+        return data(v).GetDomainDesc();
     }
 
     bool DomainGraph::HasStrongEdge(VertexId v) {
@@ -163,26 +166,26 @@ namespace nrps {
         for (auto v : single_candidate) {
             stat_file << delimeter;
             delimeter = "-";
-            const std::string &type = GetType(v);
-            if (type == "AMP") {
+            const std::string &name = GetDomainName(v);
+            if (name == "AMP") {
                 stat_file << "A";
                 is_nrps = true;
-            } else if (type == "CStart") {
+            } else if (name == "CStart") {
                 stat_file << "C";
                 is_nrps = true;
-            } else if (type == "AT") {
+            } else if (name == "AT") {
                 stat_file << "AT";
                 is_pks = true;
-            } else if (type == "TE") {
+            } else if (name == "TE") {
                 stat_file << "TE";
-            } else if (type == "KR") {
+            } else if (name == "KR") {
                 stat_file << "KR";
                 is_pks = true;
-            } else if (type == "KS") {
+            } else if (name == "KS") {
                 stat_file << "KS";
                 is_pks = true;
             } else {
-                stat_file << type;
+                stat_file << name;
             }
         }
         stat_file << std::endl;
@@ -245,17 +248,17 @@ namespace nrps {
     }
 
     void DomainGraph::FindBasicStatistic(std::ofstream &stat_stream) {
-        stat_stream << "A - Adenylation domain" << std::endl;
-        stat_stream << "AT - Acyltransferase domain" << std::endl;
-        stat_stream << "C - Condensation domain" << std::endl;
-        stat_stream << "KR - Keto-reductase domain" << std::endl;
-        stat_stream << "KS - Keto-synthase domain" << std::endl;
-        stat_stream << "TE - Termination domain" << std::endl;
-        stat_stream << std::endl;
+        // FIXME: ugly, have common source of domain information!
+        std::map<std::string, std::string> domains;
+        for (VertexId v : vertices())
+            domains[GetDomainName(v)] = GetDomainDesc(v);
 
-        std::map<std::string, int> domain_count;
+        for (const auto &entry : domains)
+            stat_stream << entry.first << " - " << entry.second << std::endl;
+
+        std::map<std::string, unsigned> domain_count;
         for (VertexId v : vertices()) {
-            domain_count[GetType(v)]++;
+            domain_count[GetDomainName(v)] += 1;
         }
 
         for (auto domain_type : domain_count) {
@@ -406,11 +409,12 @@ namespace nrps {
         return AddVertex(VertexData());
     }
 
-    DomainGraph::VertexId DomainGraph::AddVertex(const std::string &name, const omnigraph::MappingPath<EdgeId> &mapping_path,
-                                                 size_t start_coord, size_t end_coord, std::string type) {
-        auto v = AddVertex(VertexData(mapping_path, type, start_coord, end_coord));
-        from_id_to_name[v] = name;
-        from_id_to_name[conjugate(v)] = name + "_rc";
+    DomainGraph::VertexId DomainGraph::AddVertex(const std::string &vname, const omnigraph::MappingPath<EdgeId> &mapping_path,
+                                                 size_t start_coord, size_t end_coord,
+                                                 const std::string &name, const std::string &desc) {
+        auto v = AddVertex(VertexData(mapping_path, name, desc, start_coord, end_coord));
+        from_id_to_name[v] = vname;
+        from_id_to_name[conjugate(v)] = vname + "_rc";
         return v;
     }
 
@@ -427,7 +431,7 @@ namespace nrps {
         out << "digraph domain_graph {" << std::endl;
         for (VertexId v : vertices()) {
             out << "\"" << GetVertexName(v) << "\""
-                << " [label=\"" << GetType(v) << " " << GetVertexName(v) << " "
+                << " [label=\"" << GetDomainName(v) << " " << GetVertexName(v) << " "
                 << GetMaxVisited(v) << "\"];" << std::endl;
         }
 

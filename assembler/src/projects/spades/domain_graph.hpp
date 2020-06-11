@@ -26,7 +26,8 @@ namespace nrps {
         friend class DomainDataMaster;
         typedef debruijn_graph::EdgeId EdgeId;
         omnigraph::MappingPath<EdgeId> mapping_path_;
-        std::string domain_type_;
+        std::string domain_name_;
+        std::string domain_desc_;
         size_t start_coord_;
         size_t end_coord_;
         size_t max_visited_;
@@ -42,13 +43,14 @@ namespace nrps {
 
     public:
         DomainVertexData()
-                : domain_type_("None"),
+                : domain_name_("None"),
                   start_coord_(0), end_coord_(0),
                   max_visited_(0), current_visited_(0), visited_(false) {
         }
 
         DomainVertexData(const omnigraph::MappingPath<EdgeId> &mapping_path,
-                         const std::string &domain_type,
+                         const std::string &domain_name,
+                         const std::string &domain_desc,
                          size_t start_coord,
                          size_t end_coord,
                          size_t max_visited = 0,
@@ -56,7 +58,8 @@ namespace nrps {
                          bool near_contig_end = false,
                          bool near_contig_start = false,
                          bool visited = false)
-        : mapping_path_(mapping_path), domain_type_(domain_type),
+        : mapping_path_(mapping_path),
+          domain_name_(domain_name), domain_desc_(domain_desc),
           start_coord_(start_coord), end_coord_(end_coord),
           max_visited_(max_visited), current_visited_(current_visited), visited_(visited),
           near_contig_end_(near_contig_end), near_contig_start_(near_contig_start) {}
@@ -70,7 +73,8 @@ namespace nrps {
         void SetNearStartCoord() { near_contig_start_ = true; }
         void SetNearEndCoord() { near_contig_end_ = true; }
 
-        const std::string &GetType() const { return domain_type_; }
+        const std::string &GetDomainName() const { return domain_name_; }
+        const std::string &GetDomainDesc() const { return domain_desc_; }
 
         size_t GetMaxVisited() const { return max_visited_; }
         void SetMaxVisited(size_t value) { max_visited_ = value; }
@@ -98,7 +102,8 @@ namespace nrps {
                                                      g.conjugate(mapping_path_.edge_at(i - 1)), g));
                 }
             }
-            return DomainVertexData(conjugate_rc, domain_type_, g.length(conjugate_rc.front().first) - end_coord_,
+            return DomainVertexData(conjugate_rc, domain_name_, domain_desc_,
+                                    g.length(conjugate_rc.front().first) - end_coord_,
                                     g.length(conjugate_rc.back().first) - start_coord_, max_visited_,
                                     current_visited_, near_contig_start_, near_contig_end_, visited_);
         }
@@ -206,8 +211,9 @@ namespace nrps {
         using base::VertexId;
 
         VertexId AddVertex();
-        VertexId AddVertex(const std::string &name, const omnigraph::MappingPath<EdgeId> &mapping_path,
-                           size_t start_coord, size_t end_coord, std::string type);
+        VertexId AddVertex(const std::string &vname, const omnigraph::MappingPath<EdgeId> &mapping_path,
+                           size_t start_coord, size_t end_coord,
+                           const std::string &name, const std::string &desc);
         const std::string &GetVertexName(VertexId v) const;
         EdgeId AddEdge(VertexId from, VertexId to, bool strong, const std::vector<EdgeId> &edges, size_t length);
         bool HasStrongEdge(VertexId v);
@@ -217,7 +223,8 @@ namespace nrps {
         bool NearContigStart(VertexId v) const;
         bool NearContigEnd(VertexId v) const;
         bool Visited(VertexId v) const;
-        const std::string &GetType(VertexId v) const;
+        const std::string &GetDomainName(VertexId v) const;
+        const std::string &GetDomainDesc(VertexId v) const;
 
         const std::vector<EdgeId>& domain_edges(VertexId v) const;
         const omnigraph::MappingPath<EdgeId>& mapping_path(VertexId v) const;

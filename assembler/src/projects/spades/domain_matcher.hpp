@@ -17,8 +17,9 @@ typedef DeBruijnGraph ConjugateDeBruijnGraph;
 namespace nrps {
 
 struct AlnInfo {
-    std::string type;
     std::string name;
+    std::string type;
+    std::string desc;
     unsigned posl, posr;
     std::string seq;
 };

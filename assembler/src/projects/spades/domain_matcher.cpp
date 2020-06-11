@@ -29,7 +29,8 @@ namespace nrps {
 
 static void match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::BidirectionalPath* path,
                                    const std::string &path_string,
-                                   const std::string &type, ContigAlnInfo &res, io::OFastaReadStream &oss_contig, size_t model_length) {
+                                   const std::string &type, const std::string &desc,
+                                   ContigAlnInfo &res, io::OFastaReadStream &oss_contig, size_t model_length) {
     for (size_t shift = 0; shift < 3; ++shift) {
         std::string ref_shift = std::to_string(path->GetId()) + "_" + std::to_string(shift);
         std::string seq_aas = aa::translate(path_string.c_str() + shift);
@@ -57,14 +58,14 @@ static void match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::Bidi
             }
             DEBUG(name);
             DEBUG("First - " << seqpos.first << ", second - " << seqpos.second);
-            res.push_back({type, name, unsigned(seqpos.first), unsigned(seqpos.second), path_string.substr(seqpos.first, seqpos.second - seqpos.first)});
+            res.push_back({name, type, desc, unsigned(seqpos.first), unsigned(seqpos.second), path_string.substr(seqpos.first, seqpos.second - seqpos.first)});
         }
     }
     matcher.reset_top_hits();
 }
 
 static void match_contigs(const path_extend::PathContainer &contig_paths, const path_extend::ScaffoldSequenceMaker &scaffold_maker,
-                          const std::string &type, const hmmer::HMM &hmm, const hmmer::hmmer_cfg &cfg,
+                          const hmmer::HMM &hmm, const hmmer::hmmer_cfg &cfg,
                           ContigAlnInfo &res, io::OFastaReadStream &oss_contig) {
     DEBUG("Total contigs: " << contig_paths.size());
     DEBUG("Model length - " << hmm.length());
@@ -74,13 +75,17 @@ static void match_contigs(const path_extend::PathContainer &contig_paths, const 
         if (path->Length() <= 0)
             continue;
         std::string path_string = scaffold_maker.MakeSequence(*path);
-        match_contigs_internal(matcher, path, path_string, type, res, oss_contig, hmm.length());
+        match_contigs_internal(matcher, path, path_string,
+                               hmm.name(), hmm.desc() ? hmm.desc() : "",
+                               res, oss_contig, hmm.length());
 
         path_extend::BidirectionalPath* conj_path = path->GetConjPath();
         if (conj_path->Length() <= 0)
             continue;
         std::string path_string_conj = scaffold_maker.MakeSequence(*conj_path);
-        match_contigs_internal(matcher, conj_path, path_string_conj, type, res, oss_contig, hmm.length());
+        match_contigs_internal(matcher, conj_path, path_string_conj,
+                               hmm.name(), hmm.desc() ? hmm.desc() : "",
+                               res, oss_contig, hmm.length());
     }
 }
 
@@ -132,7 +137,7 @@ ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::GraphPack &gp,
         }
 
         match_contigs(broken_scaffolds, scaffold_maker,
-                      name, hmms[i], hcfg,
+                      hmms[i], hcfg,
                       local_res, oss_contig);
 
 #       pragma omp critical
