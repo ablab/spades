@@ -180,7 +180,7 @@ class SpadesCopyFileStage(stage.Stage):
         return options_storage.args.rna and self.always_copy(output_file, latest, cfg)
 
     def only_bio(self, output_file, latest, cfg):
-        return options_storage.args.bio
+        return options_storage.args.bio or options_storage.args.custom_hmms
 
     def correct_scaffolds_copy(self, output_file, latest, cfg):
         return cfg.correct_scaffolds

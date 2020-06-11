@@ -39,7 +39,6 @@ def add_configs(command, configs_dir, cfg):
             command.append(os.path.join(configs_dir, "careful_mda_mode.info"))
         else:
             command.append(os.path.join(configs_dir, "careful_mode.info"))
-    print options_storage
     if "set_of_hmms" in cfg.__dict__:
             command.append(os.path.join(configs_dir, "hmm_mode.info"))
 
@@ -101,7 +100,7 @@ def prepare_config_rnaspades(filename, log):
     process_cfg.substitute_params(filename, subst_dict, log)
 
 def prepare_config_bgcspades(filename, cfg, log):
-    if not options_storage.args.bio:
+    if not "set_of_hmms" in cfg.__dict__:
         return
     subst_dict = dict()
     subst_dict["set_of_hmms"] = cfg.set_of_hmms

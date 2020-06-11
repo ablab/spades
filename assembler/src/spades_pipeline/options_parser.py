@@ -904,16 +904,23 @@ def add_to_cfg(cfg, log, bin_home, spades_home, args):
     cfg["common"].__dict__["time_tracer"] = args.time_tracer
     if args.series_analysis:
         cfg["common"].__dict__["series_analysis"] = args.series_analysis
-    if args.bio:
-        if args.custom_hmms is None:
-            biosyntheticspades_hmms_path = os.path.join(spades_home, options_storage.biosyntheticspades_hmms)
-        else:
-            biosyntheticspades_hmms_path = args.custom_hmms
-        is_hmmfile = lambda hmmfile: os.path.isfile(os.path.join(biosyntheticspades_hmms_path, hmmfile)) \
-                                     and (hmmfile.endswith("hmm") or hmmfile.endswith("hmm.gz"))
-        hmms = ",".join([os.path.join(biosyntheticspades_hmms_path, hmmfile)
-                        for hmmfile in os.listdir(biosyntheticspades_hmms_path)
-                        if is_hmmfile(hmmfile)])
+
+    hmms_path = None
+    if args.custom_hmms is not None:
+        hmms_path = args.custom_hmms
+    elif args.bio:
+        hmms_path = os.path.join(spades_home, options_storage.biosyntheticspades_hmms)
+    if hmms_path is not None:
+        hmms = ""
+        if os.path.isdir(hmms_path):
+            is_hmmfile = lambda hmmfile: os.path.isfile(os.path.join(hmms_path, hmmfile)) \
+                                       and (hmmfile.endswith("hmm") or hmmfile.endswith("hmm.gz"))
+            hmms = ",".join([os.path.join(hmms_path, hmmfile)
+                             for hmmfile in os.listdir(hmms_path)
+                             if is_hmmfile(hmmfile)])
+        elif os.path.isfile(hmms_path) and (hmms_path.endswith("hmm") or hmms_path.endswith("hmm.gz")):
+            hmms = hmms_path
+
         if hmms == "":
             support.error("Custom HMM folder does not contain any HMMs. They should have .hmm or .hmm.gz extension.", log)
         cfg["common"].__dict__["set_of_hmms"] = hmms
