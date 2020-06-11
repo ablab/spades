@@ -35,7 +35,7 @@ def get_mode():
 
     if script_basename == "rnaspades.py" or nargs.rna:
         mode = "rna"
-    elif script_basename == "rnaviral.py" or nargs.rna:
+    elif script_basename == "rnaviralspades.py" or nargs.rnaviral or script_basename == "coronaspades.py":
         mode = "rnaviral"
     elif script_basename == "plasmidspades.py" or nargs.plasmid:
         mode = "plasmid"

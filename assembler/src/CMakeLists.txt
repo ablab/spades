@@ -125,6 +125,9 @@ install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../metaviralspades.py"
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../metaplasmidspades.py"
         DESTINATION bin
         COMPONENT runtime)
+install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../rnaviralspades.py"
+        DESTINATION bin
+        COMPONENT runtime)      
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../truspades.py"
         DESTINATION bin
         COMPONENT runtime)
@@ -145,6 +148,9 @@ install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../test_dataset_plasmid"
         DESTINATION share/spades)
 #biosyntheticSPAdes default HMM profiles
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../biosynthetic_spades_hmms"
+        DESTINATION share/spades)
+#coronaSPAdes default HMM profiles
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../coronaspades_hmms"
         DESTINATION share/spades)
 # manual, LICENSE, and GPLv2
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../manual.html"
