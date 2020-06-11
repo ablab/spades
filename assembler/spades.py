@@ -92,6 +92,8 @@ def print_used_values(cfg, log):
             log.info("  IonTorrent data")
         if options_storage.args.bio:
             log.info("  BiosyntheticSPAdes mode")
+        if options_storage.args.rnaviral:
+            log.info("  RNA virus assembly mode")
         if options_storage.args.meta:
             log.info("  Metagenomic mode")
         elif options_storage.args.large_genome:

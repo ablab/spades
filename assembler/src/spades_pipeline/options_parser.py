@@ -30,11 +30,13 @@ def get_mode():
     mode_parser.add_argument("--bio", dest="bio", action="store_true")
     mode_parser.add_argument("--metaviral", dest="metaviral", action="store_true")
     mode_parser.add_argument("--metaplasmid", dest="metaplasmid", action="store_true")
-
+    mode_parser.add_argument("--rnaviral", dest="rnaviral", action="store_true")
     nargs, unknown_args = mode_parser.parse_known_args(options)
 
     if script_basename == "rnaspades.py" or nargs.rna:
         mode = "rna"
+    elif script_basename == "rnaviral.py" or nargs.rna:
+        mode = "rnaviral"
     elif script_basename == "plasmidspades.py" or nargs.plasmid:
         mode = "plasmid"
     elif nargs.bio:
@@ -67,7 +69,9 @@ def add_mode_to_args(args):
         args.meta = True
         args.plasmid = True
         args.metaviral = True
-
+    elif mode == "rnaviral":
+        args.meta = True
+        args.rnaviral = True
 
 
 def version():
@@ -320,7 +324,12 @@ def add_basic_args(pgroup_basic):
                               action="store_true")
     pgroup_basic.add_argument("--metaplasmid",
                               dest="metaplasmid",
-                              help="runs metaplasmidSPAdes pipeline for plasmid detection in metagenomic datasets (equivalent for --meta --plasmid) "
+                              help="runs metaplasmidSPAdes pipeline for plasmid detection in metagenomic datasets (equivalent for --meta --plasmid)"
+                              if not help_hidden else argparse.SUPPRESS,
+                              action="store_true")                              
+    pgroup_basic.add_argument("--rnaviral",
+                              dest="rnaviral",
+                              help="this flag enables virus assembly module from RNA-Seq data"
                               if not help_hidden else argparse.SUPPRESS,
                               action="store_true")
     pgroup_basic.add_argument("--iontorrent",
@@ -516,7 +525,7 @@ def add_input_data_args(pgroup_input_data):
     
 def add_pipeline_args(pgroup_pipeline):
     mode = get_mode()
-    help_hidden = (mode == "rna")
+    help_hidden = (mode == "rna" or mode == "rnaviral")
     pgroup_pipeline.add_argument("--only-error-correction",
                                  dest="only_error_correction",
                                  default=None,
@@ -530,7 +539,7 @@ def add_pipeline_args(pgroup_pipeline):
                                  if not help_hidden else argparse.SUPPRESS,
                                  action="store_true")
 
-    help_hidden = (mode in ["rna", "meta"])
+    help_hidden = (mode in ["rna", "meta", "rnaviral"])
     careful_group = pgroup_pipeline.add_mutually_exclusive_group()
     careful_group.add_argument("--careful",
                                dest="careful",
@@ -555,7 +564,7 @@ def add_pipeline_args(pgroup_pipeline):
 
     restart_from_help = "restart run with updated options and from the specified check-point\n" \
                         "('ec', 'as', 'k<int>', 'mc', '%s')" % options_storage.LAST_STAGE
-    if mode == "rna":
+    if mode in ["rna", "rnaviral"]:
         restart_from_help = "restart run with updated options and from the specified check-point\n" \
                             "('as', 'k<int>', '%s')" % options_storage.LAST_STAGE
     pgroup_pipeline.add_argument("--restart-from",
@@ -628,7 +637,7 @@ def add_advanced_args(pgroup_advanced):
                                       "[default: 'auto']" % (options_storage.MAX_K + 1),
                                  action=ConcatenationAction)
 
-    help_hidden = (mode in ["rna", "meta"])
+    help_hidden = (mode in ["rna", "meta", "rnaviral"])
     pgroup_advanced.add_argument("--cov-cutoff",
                                  metavar="<float>",
                                  type=cov_cutoff,
@@ -860,7 +869,7 @@ def add_to_option(args, log, skip_output_dir):
     if args.only_assembler and args.only_error_correction:
         support.error("you cannot specify --only-error-correction and --only-assembler simultaneously")
 
-    if args.rna and args.only_error_correction:
+    if (args.rna or args.rnaviral) and args.only_error_correction:
         support.error("you cannot specify --only-error-correction in RNA-seq mode!", log)
 
     if args.isolate and args.only_error_correction:
@@ -890,7 +899,7 @@ def add_to_option(args, log, skip_output_dir):
         args.mismatch_corrector = args.careful
     if args.truseq_mode:
         enable_truseq_mode()
-    if (args.isolate or args.rna) and not args.iontorrent:
+    if (args.isolate or args.rna or args.rnaviral) and not args.iontorrent:
         args.only_assembler = True
 
 
@@ -959,7 +968,7 @@ def add_to_cfg(cfg, log, bin_home, spades_home, args):
             args.k_mers = None
         if args.k_mers:
             cfg["assembly"].__dict__["iterative_K"] = args.k_mers
-        elif args.rna:
+        elif (args.rna or args.rnaviral):
             cfg["assembly"].__dict__["iterative_K"] = "auto"
         else:
             cfg["assembly"].__dict__["iterative_K"] = options_storage.K_MERS_SHORT
@@ -995,7 +1004,7 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
             support.add_to_dataset("-1", os.path.join(spades_home, "test_dataset/ecoli_1K_1.fq.gz"), dataset_data)
             support.add_to_dataset("-2", os.path.join(spades_home, "test_dataset/ecoli_1K_2.fq.gz"), dataset_data)
 
-    if args.bio:
+    if args.bio or args.rnaviral:
         args.meta = True
     if not args.output_dir:
         support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).", log)
@@ -1023,12 +1032,12 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
         if args.careful or args.mismatch_corrector or (args.cov_cutoff != "off" and args.cov_cutoff is not None):
             support.error("you cannot specify --careful, --mismatch-correction or --cov-cutoff in metagenomic mode!",
                           log)
-    if args.rna:
+    if args.rna or args.rnaviral:
         if args.careful:
             support.error("you cannot specify --careful in RNA-Seq mode!", log)
 
-    modes_count =  [args.meta, args.large_genome, args.truseq_mode, args.rna, args.plasmid, args.single_cell, args.isolate].count(True)
-    if modes_count > 1 and [args.meta, args.plasmid].count(True) < 2:
+    modes_count =  [args.meta, args.large_genome, args.truseq_mode, args.rna, args.plasmid, args.single_cell, args.isolate, args.rnaviral].count(True)
+    if modes_count > 1 and ([args.meta, args.plasmid].count(True) < 2 and [args.meta, args.bio].count(True) < 2 and [args.meta, args.rnaviral].count(True) < 2):
         support.error("you cannot simultaneously use more than one mode out of "
                       "Isolate, Metagenomic, Large genome, Illumina TruSeq, RNA-Seq, Plasmid, and Single-cell (except combining Metagenomic and Plasmid)!", log)
     elif modes_count == 0:
@@ -1077,7 +1086,7 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
                           ", ".join(options_storage.READS_TYPES_USED_IN_RNA_SEQ) + " in RNA-Seq mode!")
             # if len(support.get_lib_ids_by_type(dataset_data, 'paired-end')) > 1:
             #    support.error('you cannot specify more than one paired-end library in RNA-Seq mode!')
-    if args.meta and not args.only_error_correction:
+    if args.meta and not args.only_error_correction and not args.rnaviral:
         paired_end_libs = max(1, len(support.get_lib_ids_by_type(dataset_data, "paired-end")))
         graph_libs = max(1, len(support.get_lib_ids_by_type(dataset_data, "assembly-graph")))
         long_read_libs = max(1, len(support.get_lib_ids_by_type(dataset_data, ["tslr", "pacbio", "nanopore"])))

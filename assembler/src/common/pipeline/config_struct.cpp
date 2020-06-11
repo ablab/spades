@@ -54,6 +54,7 @@ bool PipelineHelper::IsMetagenomicPipeline(const pipeline_type pipeline) {
             return false;
         case pipeline_type::meta:
         case pipeline_type::metaextrachromosomal:
+        case pipeline_type::rnaviral:
             return true;
     }
 
@@ -61,7 +62,7 @@ bool PipelineHelper::IsMetagenomicPipeline(const pipeline_type pipeline) {
 }
 
 bool PipelineHelper::IsRNAPipeline(const pipeline_type pipeline) {
-    return pipeline == pipeline_type::rna;
+    return pipeline == pipeline_type::rna || pipeline == pipeline_type::rnaviral;
 }
 
 template<typename mode_t>
@@ -98,6 +99,7 @@ std::vector<std::string> PipelineTypeNames() {
                     {"plasmid", pipeline_type::plasmid},
                     {"large_genome", pipeline_type::large_genome},
                     {"metaextrachromosomal", pipeline_type::metaextrachromosomal},
+                    {"rnaviral", pipeline_type::rnaviral}
                     }, pipeline_type::total);
 }
 
@@ -227,7 +229,7 @@ void load(debruijn_config::simplification::bulge_remover& br,
   using config_common::load;
 
   load(br.enabled                           , pt,   "enabled");
-  load(br.main_iteration_only               , pt,   "main_iteration_only"	      , complete);
+  load(br.main_iteration_only               , pt,   "main_iteration_only"         , complete);
   load(br.max_bulge_length_coefficient		, pt,   "max_bulge_length_coefficient", complete);
   load(br.max_additive_length_coefficient	, pt,
        "max_additive_length_coefficient", complete);

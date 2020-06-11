@@ -29,7 +29,8 @@ def add_configs(command, configs_dir, cfg):
                            ("large_genome", "large_genome_mode"),
                            ("plasmid", "plasmid_mode"),
                            ("metaviral", "metaviral_mode"),
-                           ("metaplasmid", "metaplasmid_mode")]
+                           ("metaplasmid", "metaplasmid_mode"),
+                           ("rnaviral", "rnaviral_mode")]
     # ("careful", "careful_mode"),
     for (mode, config) in mode_config_mapping:
         if options_storage.args.__dict__[mode]:

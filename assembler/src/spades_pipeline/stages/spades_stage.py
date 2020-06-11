@@ -114,9 +114,21 @@ def generateK_for_rna(cfg, dataset_data, log):
         log.info("K values to be used: " + str(k_values))
 
 
+def generateK_for_rnaviral(cfg, dataset_data, log):
+    if cfg.iterative_K == "auto":
+        k_values = rna_k_values(support, dataset_data, log)
+        # FIXME: Hack-hack-hack! :)
+        if min(k_values) == options_storage.RNA_MAX_LOWER_K:
+            k_values = [options_storage.K_MERS_RNA[0]] + k_values
+        cfg.iterative_K = k_values
+        log.info("K values to be used: " + str(k_values))
+
+
 def generateK(cfg, log, dataset_data, silent=False):
     if options_storage.args.rna:
         generateK_for_rna(cfg, dataset_data, log)
+    elif options_storage.args.rnaviral:
+        generateK_for_rnaviral(cfg, dataset_data, log)
     elif not options_storage.args.iontorrent:
         RL = support.get_primary_max_reads_length(dataset_data, log, ["merged reads"],
                                                   options_storage.READS_TYPES_USED_IN_CONSTRUCTION)
