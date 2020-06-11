@@ -838,8 +838,6 @@ def add_to_option(args, log, skip_output_dir):
         args.tmp_dir = tmp_dir
 
     if args.custom_hmms is not None:
-        if not args.bio:
-            support.error("you can provide custom HMMs only in biosyntheticSPAdes mode!", log)
         custom_hmms = abspath(expanduser(args.custom_hmms))
         support.check_path_is_ascii(custom_hmms, "directory with custom hmms")
         args.custom_hmms = custom_hmms
