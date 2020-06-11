@@ -1,7 +1,7 @@
 mode    meta
 
 ; two-step pipeline
-two_step_rr false
+two_step_rr true
 min_edge_length_for_is_count 900
 
 ; enables/disables usage of intermediate contigs in two-step pipeline
