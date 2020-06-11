@@ -88,6 +88,20 @@ static void match_contigs(const path_extend::PathContainer &contig_paths, const 
     }
 }
 
+
+static void ParseHMMFile(std::vector<hmmer::HMM> &hmms, const std::string &filename) {
+    auto hmmfile = hmmer::open_file(filename);
+    if (std::error_code ec = hmmfile.getError()) {
+        FATAL_ERROR("Error opening HMM file "<< filename << ", reason: " << ec.message());
+    }
+
+    while (auto hmmw = hmmfile->read()) {
+        if (std::error_code ec = hmmw.getError())
+            FATAL_ERROR("Error reading HMM file "<< filename << ", reason: " << ec.message());
+        hmms.emplace_back(std::move(hmmw.get()));
+    }
+}
+
 ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::GraphPack &gp,
                                           const std::string &hmm_set,
                                           const std::string &output_dir) {
@@ -100,45 +114,34 @@ ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::GraphPack &gp,
     hmmer::hmmer_cfg hcfg;
     hcfg.E = 1.0e-9;
     hcfg.domE = 1.0e-9;
-    std::vector<std::string> hmms;
-    boost::split(hmms, hmm_set, boost::is_any_of(",;"), boost::token_compress_on);
+    std::vector<std::string> hmm_files;
+    boost::split(hmm_files, hmm_set, boost::is_any_of(",;"), boost::token_compress_on);
     path_extend::ScaffoldSequenceMaker scaffold_maker(gp.get<debruijn_graph::Graph>());
     path_extend::PathContainer broken_scaffolds;
     path_extend::ScaffoldBreaker(int(gp.k())).Break(gp.get<path_extend::PathContainer>(), broken_scaffolds);
 
     io::OFastaReadStream oss_contig(output_dir + "/temp_anti/restricted_edges.fasta");
 
+    std::vector<hmmer::HMM> hmms;
+    for (const auto &f : hmm_files)
+        ParseHMMFile(hmms, f);
+    
 #   pragma omp parallel for
     for (size_t i = 0; i < hmms.size(); ++i) {
         ContigAlnInfo local_res;
-        std::string file = hmms[i];
-        auto hmmf = hmmer::open_file(file);
-        if (std::error_code ec = hmmf.getError()) {
-            FATAL_ERROR("Error opening HMM file "<< file << ", reason: " << ec.message());
-        }
-
-        auto hmmw = hmmf->read();
-        if (std::error_code ec = hmmw.getError()) {
-            FATAL_ERROR("Error reading HMM file "<< file << ", reason: " << ec.message());
-        }
-
+        std::string name = hmms[i].name();
 #       pragma omp critical
         {
-            INFO("Matching contigs with " << file);
+            INFO("Matching contigs with " << name);
         }
 
-        std::string type = fs::filename(file);
-        size_t dot = type.find_first_of(".");
-        VERIFY(dot != std::string::npos);
-        type = type.substr(0, dot);
-
         match_contigs(broken_scaffolds, scaffold_maker,
-                      type, hmmw.get(), hcfg,
+                      name, hmms[i], hcfg,
                       local_res, oss_contig);
 
 #       pragma omp critical
         {
-            INFO("Matches for '" << type << "': " << local_res.size());
+            INFO("Matches for '" << name << "': " << local_res.size());
             res.insert(res.end(), std::make_move_iterator(local_res.begin()), std::make_move_iterator(local_res.end()));
         }
     }
