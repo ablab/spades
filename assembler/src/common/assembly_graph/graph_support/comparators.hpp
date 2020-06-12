@@ -19,7 +19,7 @@ public:
      */
     double operator()(EdgeId edge) const {
         const Graph &g = graph_;
-        return static_cast<double>(g.kmer_multiplicity(edge)) / g.length(edge);
+        return double(g.kmer_multiplicity(edge)) / double(g.length(edge));
     }
 
     bool operator()(EdgeId edge1, EdgeId edge2) const {

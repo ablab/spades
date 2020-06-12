@@ -603,19 +603,22 @@ public:
             DEBUG("merging self-conj");
         std::set<EdgeId> forbidden;
         std::map<EdgeId, size_t> shifts;
-        for (auto e: old_edges)  {
+        for (EdgeId e : old_edges)  {
             shifts[e] = shift;
             shift += paired_index_.graph().length(e);
             forbidden.insert(paired_index_.graph().conjugate(e));
         }
 
-        for(auto e: old_edges)
-            DEBUG(e << " " << paired_index_.graph().length(e));
-        for(auto e: old_edges) {
+        DEBUG_EXPR({
+            for (EdgeId e : old_edges)
+                DEBUG(e << " " << paired_index_.graph().length(e));
+        });
+        
+        for (EdgeId e : old_edges) {
             DEBUG("trying " << e);
             typename BaseIndex::EdgeProxy old_e = paired_index_.Get(e);
             std::vector<std::pair<EdgeId, Point>> to_add;
-            for (auto it: old_e) {
+            for (auto it : old_e) {
                 EdgeId next = it.first;
                 if (forbidden.find(next) != forbidden.end()) {
                     DEBUG("skpping self-conjugate merge");
@@ -628,11 +631,11 @@ public:
                     next = new_edge;
                 }
                 DEBUG(e <<" " << next << " "<< it.second.size());
-                for (auto pp: it.second) {
+                for (auto pp : it.second) {
                     Point point (pp);
                     point.d += (double) shifts[e] - double (neg_shift);
                     DEBUG("from "  <<new_edge << " to " << next  <<" old " << e << " old_dist " << pp.d << "new_dist " << point.d << " "  << point.weight);
-                    if (math::gr(paired_index_.graph().length(new_edge), double(point.d)) && new_edge != next) {
+                    if (paired_index_.graph().length(new_edge) > point.d && new_edge != next) {
                         DEBUG("not adding, assert failed");
                     } else {
                         to_add.push_back(std::make_pair(next, point));
@@ -640,14 +643,12 @@ public:
                     }
                 }
             }
-            for (auto p: to_add)  {
+            for (const auto &p : to_add)  {
                 paired_index_.Add(new_edge, p.first, p.second);
             }
 
         }
     }
-
-
 };
 
 /**
