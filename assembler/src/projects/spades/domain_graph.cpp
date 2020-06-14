@@ -271,10 +271,9 @@ namespace nrps {
     void DomainGraph::PrelimDFS(VertexId v, std::set<VertexId> &preliminary_visited) {
         for (EdgeId e : OutgoingEdges(v)) {
             VertexId to = EdgeEnd(e);
-            if (preliminary_visited.find(to) == preliminary_visited.end()) {
-                preliminary_visited.insert(to);
+            auto inserted = preliminary_visited.insert(to);
+            if (inserted.second)
                 PrelimDFS(to, preliminary_visited);
-            }
         }
     }
 
@@ -284,10 +283,10 @@ namespace nrps {
         DEBUG("Translating " << p->GetId() << " to sequnece");
         for (size_t i = 0; i < answer.size(); ++i) {
             auto v = answer[i];
-            DEBUG("Translating vertex " << this->GetVertexName(v));
+            DEBUG("Translating vertex " << GetVertexName(v));
             p->PrintDEBUG();
-            DEBUG(this->domain_edges(v));
-            for (auto e : this->domain_edges(v)) {
+            DEBUG(domain_edges(v));
+            for (EdgeId e : domain_edges(v)) {
                 if (p->Size() == 0 || p->Back() != e) {
                     int gap = 0;
                     if (p->Size() != 0 &&
@@ -298,23 +297,22 @@ namespace nrps {
                 }
             }
             if (i != answer.size() - 1) {
-                std::vector<EdgeId> next_edges = this->GetEdgesBetween(v, answer[i + 1]);
-                DEBUG("Translating edge between " <<
-                                                  this->GetVertexName(v) << " and " << this->GetVertexName(answer[i + 1]));
+                std::vector<EdgeId> next_edges = GetEdgesBetween(v, answer[i + 1]);
+                DEBUG("Translating edge between " << GetVertexName(v) << " and " << GetVertexName(answer[i + 1]));
                 if (next_edges.size() == 0) {
                     DEBUG("Something strange!");
                     continue;
                 }
 
                 EdgeId next_edge = next_edges[0];
-                for (auto e : debruijn_edges(next_edge)) {
-                    if (p->Size() == 0 || p->Back() != e) {
+                for (debruijn_graph::EdgeId de : debruijn_edges(next_edge)) {
+                    if (p->Size() == 0 || p->Back() != de) {
                         int gap = 0;
                         if (p->Size() != 0 &&
-                            g_.EdgeEnd(p->Back()) != g_.EdgeStart(e)) {
+                            g_.EdgeEnd(p->Back()) != g_.EdgeStart(de)) {
                             gap = 100;
                         }
-                        p->PushBack(e, path_extend::Gap(gap));
+                        p->PushBack(de, path_extend::Gap(gap));
                     }
                 }
             }
@@ -324,7 +322,7 @@ namespace nrps {
 
     void DomainGraph::FindAllPossibleArrangements(VertexId v, std::vector<std::vector<VertexId>> &answer,
                                                   std::ofstream &stat_file) {
-        DEBUG("Starting from " << this->GetVertexName(v));
+        DEBUG("Starting from " << GetVertexName(v));
         std::set<VertexId> preliminary_visited;
         preliminary_visited.insert(v);
         PrelimDFS(v, preliminary_visited);
@@ -347,7 +345,7 @@ namespace nrps {
     void DomainGraph::FinalDFS(VertexId v, std::vector<VertexId> &current,
                                std::set<VertexId> preliminary_visited,
                                std::vector<std::vector<VertexId>> &answer,
-                               size_t component_size, size_t &iteration_number) {
+                               size_t accepted_component_size, size_t &iteration_number) {
         iteration_number++;
         current.push_back(v);
         IncrementVisited(v);
@@ -355,19 +353,19 @@ namespace nrps {
             return;
 
         bool was_extended = false;
-        if (this->HasStrongEdge(v)) {
-            for (EdgeId e : this->OutgoingEdges(v)) {
-                if (this->strong(e)) {
-                    VertexId to = this->EdgeEnd(e);
+        if (HasStrongEdge(v)) {
+            for (EdgeId e : OutgoingEdges(v)) {
+                if (strong(e)) {
+                    VertexId to = EdgeEnd(e);
                     if (preliminary_visited.find(to) != preliminary_visited.end())
                         continue;
                     was_extended = true;
-                    FinalDFS(to, current, preliminary_visited, answer, component_size, iteration_number);
+                    FinalDFS(to, current, preliminary_visited, answer, accepted_component_size, iteration_number);
                 }
             }
         } else {
-            for (EdgeId e : this->OutgoingEdges(v)) {
-                VertexId to = this->EdgeEnd(e);
+            for (EdgeId e : OutgoingEdges(v)) {
+                VertexId to = EdgeEnd(e);
                 if (GetCurrentVisited(to) >= GetMaxVisited(to))
                     continue;
 
@@ -375,10 +373,11 @@ namespace nrps {
                     continue;
 
                 was_extended = true;
-                FinalDFS(to, current, preliminary_visited, answer, component_size, iteration_number);
+                FinalDFS(to, current, preliminary_visited, answer, accepted_component_size, iteration_number);
             }
         }
-        if (current.size() >= component_size && !was_extended)
+        
+        if (current.size() >= accepted_component_size && !was_extended)
             answer.push_back(current);
 
         DecrementVisited(v);

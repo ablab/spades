@@ -12,6 +12,7 @@
 #include "modules/alignment/sequence_mapper.hpp"
 #include "domain_graph.hpp"
 #include "domain_matcher.hpp"
+#include "utils/filesystem/path_helper.hpp"
 
 namespace debruijn_graph {
 
@@ -409,7 +410,7 @@ void DomainGraphConstruction::run(GraphPack &gp, const char*) {
     DomainGraphConstructor constructor(gp);
     auto &domain_graph = constructor.ConstructGraph(res);
     domain_graph.FindDomainOrderings(gp, "gene_clusters.fasta", cfg::get().output_dir);
-    domain_graph.ExportToDot(cfg::get().output_dir + "/domain_graph.dot");
+    domain_graph.ExportToDot(fs::append_path(cfg::get().output_dir, "domain_graph.dot"));
 }
 
 }
