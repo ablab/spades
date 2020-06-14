@@ -86,6 +86,13 @@ private:
         inner_index_ = index;
     }
 
+    template<class Index>
+    void Refill(Index *, const std::vector<EdgeId> &edges) {
+        auto index = new Index(this->g());
+        refiller_.Refill(*index, this->g(), edges);
+        inner_index_ = index;
+    }
+
     template<class Writer, class Index>
     void BinWrite(const Index *index, Writer &writer) const {
         index->BinWrite(writer);
@@ -148,6 +155,17 @@ public:
         large_index_ = (max_id > std::numeric_limits<uint32_t>::max());
         INFO("Using " << (large_index_ ? "large" : "small") << " index (max_id = " << max_id << ")");
         DISPATCH_TO(Refill);
+
+        INFO("Index refilled");
+    }
+
+    void Refill(const std::vector<EdgeId> &edges) {
+        clear();
+
+        uint64_t max_id = this->g().max_eid();
+        large_index_ = (max_id > std::numeric_limits<uint32_t>::max());
+        INFO("Using " << (large_index_ ? "large" : "small") << " index (max_id = " << max_id << ")");
+        DISPATCH_TO(Refill, edges);
 
         INFO("Index refilled");
     }

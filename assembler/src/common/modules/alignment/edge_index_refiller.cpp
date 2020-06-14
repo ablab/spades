@@ -40,4 +40,34 @@ template
 void EdgeIndexRefiller::Refill<EdgeIndex32, ConjugateDeBruijnGraph>(EdgeIndex32 &index,
                                                                     const ConjugateDeBruijnGraph &g);
 
+
+template<>
+void EdgeIndexRefiller::Refill(EdgeIndex &index,
+                               const ConjugateDeBruijnGraph &g,
+                               const std::vector<typename ConjugateDeBruijnGraph::EdgeId> &edges) {
+    auto workdir = fs::tmp::make_temp_dir(workdir_, "edge_index");
+
+    typedef GraphPositionFillingIndexBuilder<EdgeIndex> IndexBuilder;
+    IndexBuilder().BuildIndexFromGraph(index, g, edges, workdir);
+}
+
+template<>
+void EdgeIndexRefiller::Refill(EdgeIndex64 &index,
+                               const ConjugateDeBruijnGraph &g,
+                               const std::vector<typename ConjugateDeBruijnGraph::EdgeId> &edges) {
+    auto workdir = fs::tmp::make_temp_dir(workdir_, "edge_index");
+
+    typedef GraphPositionFillingIndexBuilder<EdgeIndex64> IndexBuilder;
+    IndexBuilder().BuildIndexFromGraph(index, g, edges, workdir);
+}
+
+template<>
+void EdgeIndexRefiller::Refill(EdgeIndex32 &index,
+                               const ConjugateDeBruijnGraph &g,
+                               const std::vector<typename ConjugateDeBruijnGraph::EdgeId> &edges) {
+    auto workdir = fs::tmp::make_temp_dir(workdir_, "edge_index");
+
+    typedef GraphPositionFillingIndexBuilder<EdgeIndex32> IndexBuilder;
+    IndexBuilder().BuildIndexFromGraph(index, g, edges, workdir);
+}
 }

@@ -83,6 +83,14 @@ class EdgeInfoUpdater {
         }
     }
 
+    template<class Index>
+    void Update(const Graph &g, Index &index, const std::vector<EdgeId> &edges) {
+#pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < edges.size(); ++i) {
+            UpdateKmers(g, edges[i], index);
+        }
+    }
+
  private:
     DECL_LOGGER("EdgeInfoUpdater")
 };

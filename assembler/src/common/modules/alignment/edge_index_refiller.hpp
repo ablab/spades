@@ -7,6 +7,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 namespace debruijn_graph {
 
@@ -21,6 +22,10 @@ struct EdgeIndexRefiller {
 
     template<class EdgeIndex, class Graph>
     void Refill(EdgeIndex &index, const Graph &g);
+
+    template<class EdgeIndex, class Graph>
+    void Refill(EdgeIndex &index, const Graph &g,
+                const std::vector<typename Graph::EdgeId> &edges);
 };
 
 }
