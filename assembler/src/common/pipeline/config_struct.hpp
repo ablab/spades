@@ -466,6 +466,11 @@ struct debruijn_config {
         bool antisense;
     };
 
+    struct hmm_matching {
+        std::string hmm_set;
+        size_t component_size_part;
+    };
+    
     contig_output co;
 
     boost::optional<scaffold_correction> sc_cor;
@@ -478,8 +483,6 @@ struct debruijn_config {
     bool two_step_rr;
     bool use_intermediate_contigs;
     size_t min_edge_length_for_is_count;
-
-    std::string hmm_set;
 
     single_read_resolving_mode single_reads_rr;
     bool use_single_reads;
@@ -524,6 +527,7 @@ struct debruijn_config {
     kmer_coverage_model kcm;
     bwa_aligner bwa;
     boost::optional<plasmid> pd;
+    boost::optional<hmm_matching> hm;
     size_t flanking_range;
 
     bool calculate_coverage_for_each_lib;

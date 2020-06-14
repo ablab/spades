@@ -560,6 +560,13 @@ void load(debruijn_config::time_tracing& tt,
   load(tt.granularity, pt, "granularity", 500);
 }
 
+void load(debruijn_config::hmm_matching& hm,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+  using config_common::load;
+  load(hm.hmm_set, pt, "set_of_hmms");
+  load(hm.component_size_part, pt, "component_size_part", 1);
+}
+
 void load(dataset &ds,
           boost::property_tree::ptree const &pt,
           const std::string &input_dir) {
@@ -832,8 +839,9 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
         load(*cfg.prelim_pe_params, pt, "prelim_pe", false);
     }
 
-    if (pt.count("set_of_hmms")) {
-        load(cfg.hmm_set, pt, "set_of_hmms");
+    if (pt.count("hmm_match")) {
+        cfg.hm.reset(debruijn_config::hmm_matching());
+        load(*cfg.hm, pt, "hmm_match");
     }
 
     load(cfg.tt, pt, "time_tracer", complete);

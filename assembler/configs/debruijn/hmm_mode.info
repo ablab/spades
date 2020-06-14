@@ -1,1 +1,4 @@
-set_of_hmms none
+hmm_match {
+  set_of_hmms none
+  component_size_part 1
+}

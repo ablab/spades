@@ -104,6 +104,7 @@ def prepare_config_bgcspades(filename, cfg, log):
         return
     subst_dict = dict()
     subst_dict["set_of_hmms"] = cfg.set_of_hmms
+    subst_dict["component_size_part"] = 1 if options_storage.args.bio else 2
     process_cfg.substitute_params(filename, subst_dict, log)
 
 def prepare_config_construction(filename, log):
