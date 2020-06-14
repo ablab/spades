@@ -409,7 +409,8 @@ void DomainGraphConstruction::run(GraphPack &gp, const char*) {
     auto res = nrps::DomainMatcher().MatchDomains(gp, cfg::get().hmm_set, cfg::get().output_dir);
     DomainGraphConstructor constructor(gp);
     auto &domain_graph = constructor.ConstructGraph(res);
-    domain_graph.FindDomainOrderings(gp, "gene_clusters.fasta", cfg::get().output_dir);
+    domain_graph.FindDomainOrderings(gp, 1,
+                                     "gene_clusters.fasta", cfg::get().output_dir);
     domain_graph.ExportToDot(fs::append_path(cfg::get().output_dir, "domain_graph.dot"));
 }
 

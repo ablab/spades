@@ -320,8 +320,9 @@ namespace nrps {
         return ss.str();
     }
 
-    void DomainGraph::FindAllPossibleArrangements(VertexId v, std::vector<std::vector<VertexId>> &answer,
-                                                  std::ofstream &stat_file) {
+void DomainGraph::FindAllPossibleArrangements(VertexId v, size_t component_size_part,
+                                              std::vector<std::vector<VertexId>> &answer,
+                                              std::ofstream &stat_file) {
         DEBUG("Starting from " << GetVertexName(v));
         std::set<VertexId> preliminary_visited;
         preliminary_visited.insert(v);
@@ -339,7 +340,7 @@ namespace nrps {
         }
         preliminary_visited.clear();
         size_t iteration_number = 0;
-        FinalDFS(v, current, preliminary_visited, answer, component_size, iteration_number);
+        FinalDFS(v, current, preliminary_visited, answer, component_size / component_size_part, iteration_number);
     }
 
     void DomainGraph::FinalDFS(VertexId v, std::vector<VertexId> &current,
@@ -446,8 +447,8 @@ namespace nrps {
         out << "}";
     }
 
-    void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp,
-                                          const std::string &output_filename, const std::string &output_dir) {
+void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp, size_t component_size_part,
+                                      const std::string &output_filename, const std::string &output_dir) {
         const auto &graph = gp.get<debruijn_graph::Graph>();
         std::ofstream stat_stream(fs::append_path(output_dir, "bgc_statistics.txt"));
         FindBasicStatistic(stat_stream);
@@ -470,7 +471,7 @@ namespace nrps {
                 continue;
 
             stat_stream << "BGC subgraph " << component_id << std::endl;
-            FindAllPossibleArrangements(v, answer, stat_stream);
+            FindAllPossibleArrangements(v, component_size_part, answer, stat_stream);
             ordering_id = 1;
             for (const auto &vec : answer) {
                 OutputStatArrangement(vec, ordering_id, stat_stream);
