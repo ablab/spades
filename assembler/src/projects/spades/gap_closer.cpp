@@ -392,6 +392,8 @@ void GapClosing::run(GraphPack &gp, const char *) {
         gap_closer.CloseShortGaps();
         INFO("Gap closer done");
     }
+
+    gp.DetachEdgeIndex();
 }
 
 }

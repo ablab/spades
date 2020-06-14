@@ -40,6 +40,7 @@ public:
     void ClearPaths();
 
     void DetachAll();
+    void DetachEdgeIndex();
 
     void PrepareForStage(const char*);
 

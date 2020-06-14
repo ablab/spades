@@ -142,4 +142,9 @@ void GraphPack::PrepareForStage(const char*) {
     get_mutable<Graph>().clear_state();
 }
 
+
+void GraphPack::DetachEdgeIndex() {
+    get_mutable<EdgeIndex<Graph>>().Detach();
+}
+
 } // namespace debruijn_graph
