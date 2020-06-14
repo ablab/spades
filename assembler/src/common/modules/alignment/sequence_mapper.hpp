@@ -405,5 +405,6 @@ class BasicSequenceMapper: public AbstractSequenceMapper<Graph> {
 };
 
 std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> MapperInstance(const GraphPack &gp);
-
+std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> MapperInstance(const GraphPack &gp,
+                                                                             const EdgeIndex<Graph> &index);
 } // namespace debruijn_graph

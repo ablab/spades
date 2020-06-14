@@ -14,5 +14,11 @@ std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> MapperInstance(con
                                                                           gp.get<KmerMapper<Graph>>());
 }
 
+std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> MapperInstance(const GraphPack &gp,
+                                                                             const EdgeIndex<Graph> &index) {
+    return std::make_shared<BasicSequenceMapper<Graph, EdgeIndex<Graph>>>(gp.get<Graph>(),
+                                                                          index,
+                                                                          gp.get<KmerMapper<Graph>>());
+}
 }
 
