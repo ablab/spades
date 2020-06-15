@@ -105,11 +105,11 @@ inline char nucl_complement(char c) {
 inline char nucl(char c) {
     if (likely(c >= 0 && c < 4)) {
         const uint32_t nucl_map = 'A' + ('C' << 8) + ('G' << 16) + ('T' << 24);
-        return char((nucl_map >> (8*c)) & 0xFF);
+        return (char)((nucl_map >> (8*c)) & 0xFF);
     } else if ('A' <= c && c <= 'T')
         return c;
 
-    return char(c - 'a' + 'A');
+    return (char)(c - 'a' + 'A');
 }
 
 /**
@@ -121,7 +121,7 @@ inline char dignucl(char c) {
     if (unlikely(c>= 0 && c < 4)) {
         return c;
     } else if (unlikely('a' <= c && c <= 't')) {
-        c = char(c - 'a' + 'A');
+        c = (char)(c - 'a' + 'A');
     }
 
     return (c <= 'C' ?
