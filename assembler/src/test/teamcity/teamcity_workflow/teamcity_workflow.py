@@ -323,7 +323,7 @@ def etalon_saves(dataset_info, test, output_dir):
     return 0
 
 
-def handle_one_test(test, args, dataset_info, working_dir):
+def handle_one_test(test, args, dataset_info, working_dir, check_test):
     if "name" in test:
         log.log("Start test: " + test["name"])
 
@@ -385,7 +385,7 @@ def handle_one_test(test, args, dataset_info, working_dir):
             ecode = local_ecode
 
     if ecode == 0:
-        ecode = etalon_saves(dataset_info, test, output_dir)
+        ecode = check_test(dataset_info, test, output_dir)
 
     if ecode != 0:
         log.log("TEST NOT PASS")
@@ -394,39 +394,43 @@ def handle_one_test(test, args, dataset_info, working_dir):
 
     return ecode
 
-### main ###
-try:
-    if len(sys.argv) == 1:
-        command = 'python {} -h'.format(sys.argv[0])
-        subprocess.call(command, shell=True)
-        sys.exit(1)
 
-    sys.stderr = sys.stdout
-    exit_code = 0
-    args = parse_args()
-    dataset_info = load_info(args.info)
-    working_dir = os.getcwd()
+def main(check_test):
+    try:
+        if len(sys.argv) == 1:
+            command = 'python {} -h'.format(sys.argv[0])
+            subprocess.call(command, shell=True)
+            sys.exit(1)
 
-    # compile
-    ecode = compile_spades(args, dataset_info, working_dir)
-    if ecode != 0:
-        log.err("Compilation finished abnormally with exit code " + str(ecode))
-        sys.exit(3)
+        sys.stderr = sys.stdout
+        exit_code = 0
+        args = parse_args()
+        dataset_info = load_info(args.info)
+        working_dir = os.getcwd()
 
-    cnt_pass = 0
-    for test in dataset_info["tests"]:
-        local_ecode = handle_one_test(test, args, dataset_info, working_dir)
-        if local_ecode == 0:
-            cnt_pass += 1
-        else:
-            exit_code = local_ecode
-    log.log(str(cnt_pass) + "/" + str(len(dataset_info["tests"])) + " TESTS PASSED")
-    sys.exit(exit_code)
+        # compile
+        ecode = compile_spades(args, dataset_info, working_dir)
+        if ecode != 0:
+            log.err("Compilation finished abnormally with exit code " + str(ecode))
+            sys.exit(3)
 
-except SystemExit:
-    raise
+        cnt_pass = 0
+        for test in dataset_info["tests"]:
+            local_ecode = handle_one_test(test, args, dataset_info, working_dir, check_test)
+            if local_ecode == 0:
+                cnt_pass += 1
+            else:
+                exit_code = local_ecode
+        log.log(str(cnt_pass) + "/" + str(len(dataset_info["tests"])) + " TESTS PASSED")
+        sys.exit(exit_code)
 
-except:
-    log.err("The following unexpected error occured during the run:")
-    print_exc()
-    sys.exit(239)
+    except SystemExit:
+        raise
+
+    except:
+        log.err("The following unexpected error occured during the run:")
+        print_exc()
+        sys.exit(239)
+
+
+main(etalon_saves)
