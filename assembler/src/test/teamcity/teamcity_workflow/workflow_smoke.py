@@ -32,14 +32,19 @@ def check_correct_finish(dataset_info, test, output_dir):
             etalon_file = os.path.join(etalon_dir, filename)
             if os.path.isfile(out_file) and (not os.path.isfile(etalon_file)):
                 log.err(filename + " present in output, but not present in etalon")
+                return 12
 
             if os.path.isfile(etalon_file) and (not os.path.isfile(out_file)):
                 log.err(filename + " present in etalon, but not present in out")
+                return 12
 
             if os.path.isfile(etalon_file) and os.path.isfile(out_file):
-                log.log("Output file size:" + str(os.path.getsize(out_file)))
-                log.log("Etalon file size:" + str(os.path.getsize(etalon_file)))
-
+                if (os.path.getsize(out_file) * 2 < os.path.getsize(etalon_file)) or \
+                        (os.path.getsize(etalon_file) * 2 < os.path.getsize(out_file)):
+                    log.err(filename + " in output and in etalon have different size: " +
+                            str(os.path.getsize(out_file)) + " in output and " +
+                            str(os.path.getsize(etalon_file)) + " in etalon.")
+                    return 12
         return 0
     else:
         log.err("Etalon folder wasn't set in test config!")
