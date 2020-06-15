@@ -15,6 +15,8 @@ namespace adt {
 #define UNLIKELY(EXPR) __builtin_expect((bool)(EXPR), false)
 
 namespace impl {
+// Class holding the data for SmallPOD vector. It is expected that descendants
+// could implement different memory allocation policies.
 template<class T>
 struct SmallPODVectorData {
     typedef size_t size_type;
@@ -106,6 +108,7 @@ struct SmallPODVectorData {
     }
 };
 
+// Allocate all SmallPODvector memory on heap
 template<class T>
 struct HeapAllocatedStorage : public SmallPODVectorData<T> {
     using typename SmallPODVectorData<T>::vector_type;
@@ -162,6 +165,8 @@ struct HeapAllocatedStorage : public SmallPODVectorData<T> {
     }
 };
 
+// Store all data into pre-allocated storage. On overflow bail down to heap
+// allocation
 template<class T, unsigned PreAllocated = 3>
 struct PreAllocatedStorage : public SmallPODVectorData<T> {
     using typename SmallPODVectorData<T>::vector_type;
@@ -238,6 +243,7 @@ struct PreAllocatedStorage : public SmallPODVectorData<T> {
     }
 };
 
+// Hybrid allocation strategy between pre-allocated and heap allocated
 template<class T, unsigned PreAllocated = 3>
 struct HybridAllocatedStorage : public SmallPODVectorData<T> {
     using typename SmallPODVectorData<T>::vector_type;
