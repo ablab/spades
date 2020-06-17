@@ -96,7 +96,7 @@ private:
                 std::accumulate(OutTipMap.begin(), OutTipMap.end(), 0,
                                 [this](size_t val, const std::pair<EdgeId, EdgeId> &p) { return val + graph_.length(p.first); });
 
-        INFO("Total edges in tip neighborhood: " << OutTipMap.size() << ", length: " << out_length);
+        INFO("Total edges in tip neighborhood: " << OutTipMap.size() << " out of " << graph_.e_size() << ", length: " << out_length);
     }
 
 public:

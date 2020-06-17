@@ -189,7 +189,7 @@ private:
                 positions += candidate.second.size();
             }
 
-            INFO("Total " << edges << " edges with " << positions << " potential mismatch positions ("
+            INFO("Total " << edges << " edges (out of " << gp.get<Graph>().e_size() <<  ") with " << positions << " potential mismatch positions ("
                  << double(positions) / double(edges) << " positions per edge)");
         }
     }
