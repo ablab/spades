@@ -46,10 +46,6 @@ static void match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::Bidi
             std::pair<int, int> seqpos2 = domain.hmmpos();
             DEBUG("First - " << seqpos2.first << ", second - " << seqpos2.second);
             DEBUG("First - " << seqpos.first << ", second - " << seqpos.second);
-            if (seqpos2.second - seqpos2.first < model_length / 3) {
-                DEBUG("Fragmented hit");
-                continue;
-            }
             int shift = hit.name()[strlen(hit.name()) - 1] - '0';
             seqpos.first = seqpos.first * 3  + shift;
             seqpos.second = seqpos.second * 3  + shift;
