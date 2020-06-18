@@ -49,40 +49,34 @@ class SetOfForbiddenEdgesPathChooser : public omnigraph::PathProcessor<Graph>::C
     }
 
 public:
-    SetOfForbiddenEdgesPathChooser(const Graph &g, const std::set<std::vector<EdgeId>> &forbidden_edges) :
-            g_(g), forbidden_edges_(forbidden_edges) {
-    }
+    SetOfForbiddenEdgesPathChooser(const Graph &g, const std::set<std::vector<EdgeId>> &forbidden_edges)
+            : g_(g), forbidden_edges_(forbidden_edges) {}
 
     void HandleReversedPath(const std::vector<EdgeId> &reversed_path) override {
         std::vector<EdgeId> forward_path = reversed_path;
         std::reverse(forward_path.begin(), forward_path.end());
-        bool cross_start = false;
-        bool cross_end = false;
 
-        for (auto forbidden_path : forbidden_edges_) {
-            if (forbidden_path.size() != 0) {
-                if (find(std::begin(forward_path), std::end(forward_path), forbidden_path.front()) != forward_path.end()) {
-                    cross_start = true;
-                }
-                if (find(std::begin(forward_path), std::end(forward_path), forbidden_path.back()) != forward_path.end()) {
-                    cross_end = true;
-                }
-                if (cross_end && cross_start) {
-                    return;
-                }
-            }
+        for (const auto& forbidden_path : forbidden_edges_) {
+            if (forbidden_path.empty())
+                continue;
+
+            bool cross_start = std::find(std::begin(forward_path), std::end(forward_path), forbidden_path.front()) != forward_path.end();
+            bool cross_end = find(std::begin(forward_path), std::end(forward_path), forbidden_path.back()) != forward_path.end();
+
+            if (cross_end && cross_start)
+                return;
         }
+
         if (answer_path_.empty()) {
-            if (!CheckCoverageDiff(forward_path)) {
+            if (!CheckCoverageDiff(forward_path))
                return;
-            }
+
             answer_path_ = forward_path;
             return;
         }
 
-        if (!CheckCoverageDiff(forward_path)) {
+        if (!CheckCoverageDiff(forward_path))
             return;
-        }
 
         auto current = path_extend::BidirectionalPath::create(g_, answer_path_);
         auto candidate = path_extend::BidirectionalPath::create(g_, forward_path);
