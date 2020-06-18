@@ -108,24 +108,6 @@ namespace nrps {
         data(v).DecrementVisited();
     }
 
-    void DomainGraph::OutputStat(std::set<VertexId> &preliminary_visited, std::ofstream &stat_file) const {
-        stat_file << "# domains in the component - ";
-        stat_file << preliminary_visited.size() << std::endl;
-        unsigned strong_edge_count =
-                std::accumulate(preliminary_visited.begin(), preliminary_visited.end(),
-                                0, [&](unsigned prev, VertexId v) {
-                                       return prev + StrongEdgeCount(v);
-                                   });
-        unsigned weak_edge_count =
-                std::accumulate(preliminary_visited.begin(), preliminary_visited.end(),
-                                0, [&](unsigned prev, VertexId v) {
-                                       return prev + WeakEdgeCount(v);
-                                   });
-
-        stat_file << "# Strong/weak edges in the component - ";
-        stat_file << strong_edge_count << "/" << weak_edge_count << std::endl;
-    }
-
     size_t DomainGraph::GetMaxVisited(VertexId v, double base_coverage) const  {
         double low_coverage = std::numeric_limits<double>::max();
         for (EdgeId e : domain_edges(v))
@@ -321,10 +303,9 @@ namespace nrps {
         return ss.str();
     }
 
-void DomainGraph::FindAllPossibleArrangements(VertexId v,
-                                              size_t component_size_part, size_t component_min_size,
-                                              std::vector<std::vector<VertexId>> &answer,
-                                              std::ofstream &stat_file) {
+
+DomainGraph::Arrangements DomainGraph::FindAllPossibleArrangements(VertexId v,
+                                                                   size_t component_size_part, size_t component_min_size) {
         DEBUG("Starting from " << GetVertexName(v));
         std::set<VertexId> preliminary_visited;
         preliminary_visited.insert(v);
@@ -332,17 +313,25 @@ void DomainGraph::FindAllPossibleArrangements(VertexId v,
         size_t component_size = preliminary_visited.size();
         DEBUG("Component size " << component_size);
         if (component_size < component_min_size)
-            return;
+            return {};
+
+        DomainGraph::Arrangements result;
+        result.component_size = component_size;
+        for (VertexId v : preliminary_visited) {
+            result.strong_edges += StrongEdgeCount(v);
+            result.weak_edges += WeakEdgeCount(v);
+        }
 
         SetCopynumber(preliminary_visited);
-        OutputStat(preliminary_visited, stat_file);
-        std::vector<VertexId> current;
         for (VertexId v : preliminary_visited)
             SetVisited(v);
 
         preliminary_visited.clear();
+        std::vector<VertexId> current;
         size_t iteration_number = 0;
-        FinalDFS(v, current, preliminary_visited, answer, component_size / component_size_part, iteration_number);
+        FinalDFS(v, current, preliminary_visited, result.arrangements, component_size / component_size_part, iteration_number);
+
+        return result;
     }
 
     void DomainGraph::FinalDFS(VertexId v, std::vector<VertexId> &current,
@@ -360,8 +349,9 @@ void DomainGraph::FindAllPossibleArrangements(VertexId v,
             for (EdgeId e : OutgoingEdges(v)) {
                 if (strong(e)) {
                     VertexId to = EdgeEnd(e);
-                    if (preliminary_visited.find(to) != preliminary_visited.end())
+                    if (preliminary_visited.count(to))
                         continue;
+
                     was_extended = true;
                     FinalDFS(to, current, preliminary_visited, answer, accepted_component_size, iteration_number);
                 }
@@ -372,7 +362,7 @@ void DomainGraph::FindAllPossibleArrangements(VertexId v,
                 if (GetCurrentVisited(to) >= GetMaxVisited(to))
                     continue;
 
-                if (preliminary_visited.find(to) != preliminary_visited.end())
+                if (preliminary_visited.count(to))
                     continue;
 
                 was_extended = true;
@@ -398,11 +388,10 @@ void DomainGraph::FindAllPossibleArrangements(VertexId v,
     void DomainGraph::OutputComponent(path_extend::BidirectionalPath *p, int component_id,
                                       int ordering_id) {
         auto edges = CollectEdges(p);
-        auto comp = omnigraph::GraphComponent<debruijn_graph::Graph>::FromEdges(g_, edges.begin(),
-                                                                                edges.end(), true);
+        auto comp = omnigraph::GraphComponent<debruijn_graph::Graph>::FromEdges(g_,
+                                                                                edges.begin(), edges.end(), true);
         std::ofstream os(cfg::get().output_dir + "/bgc_in_gfa/" +
-                         std::to_string(component_id) + "_" + std::to_string(ordering_id) +
-                         ".gfa");
+                         std::to_string(component_id) + "_" + std::to_string(ordering_id) + ".gfa");
         gfa::GFAComponentWriter writer(comp, os);
         writer.WriteSegmentsAndLinks();
     }
@@ -449,47 +438,68 @@ void DomainGraph::FindAllPossibleArrangements(VertexId v,
         out << "}";
     }
 
+
+void DomainGraph::OutputStat(const DomainGraph::Arrangements &arr, std::ofstream &stat_file) const {
+    stat_file << "# domains in the component - "
+              << arr.component_size << std::endl
+              << "# Strong/weak edges in the component - "
+              << arr.strong_edges << "/" << arr.weak_edges << std::endl;
+}
+
 void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp,
                                       size_t component_size_part, size_t component_min_size,
                                       const std::string &output_filename, const std::string &output_dir) {
-        const auto &graph = gp.get<debruijn_graph::Graph>();
-        std::ofstream stat_stream(fs::append_path(output_dir, "bgc_statistics.txt"));
-        FindBasicStatistic(stat_stream);
-        path_extend::ContigWriter writer(graph, path_extend::MakeContigNameGenerator(cfg::get().mode, gp));
+    const auto &graph = gp.get<debruijn_graph::Graph>();
+    std::ofstream stat_stream(fs::append_path(output_dir, "bgc_statistics.txt"));
+    FindBasicStatistic(stat_stream);
+    path_extend::ContigWriter writer(graph, path_extend::MakeContigNameGenerator(cfg::get().mode, gp));
 
-        std::set<VertexId> start_nodes;
-        for (VertexId v : vertices()) {
-            if (IsDeadStart(v) && !IsDeadEnd(v))
-                start_nodes.insert(v);
-        }
-
-        io::osequencestream_bgc oss(fs::append_path(output_dir, output_filename));
-        path_extend::ScaffoldSequenceMaker seq_maker(graph);
-        std::vector<std::vector<VertexId>> answer;
-        int ordering_id = 1;
-        int component_id = 1;
-
-        for (auto v : start_nodes) {
-            if (Visited(v))
-                continue;
-
-            stat_stream << "BGC subgraph " << component_id << std::endl;
-            FindAllPossibleArrangements(v,
-                                        component_size_part, component_min_size,
-                                        answer, stat_stream);
-            ordering_id = 1;
-            for (const auto &vec : answer) {
-                OutputStatArrangement(vec, ordering_id, stat_stream);
-                auto paths = contig_paths_.CreatePair(graph);
-                std::string outputstring = PathToSequence(&paths.first, vec);
-                OutputComponent(&paths.first, component_id, ordering_id);
-                outputstring = seq_maker.MakeSequence(paths.first);
-                oss.SetCluster(component_id, ordering_id);
-                oss << outputstring;
-                ordering_id++;
-            }
-            answer.clear();
-            component_id++;
-        }
+    std::set<VertexId> start_nodes;
+    for (VertexId v : vertices()) {
+        if (IsDeadStart(v) &&
+            !(component_min_size > 1 && !IsDeadEnd(v)))
+            start_nodes.insert(v);
     }
+
+    INFO("Total start vertices: " << start_nodes.size());
+
+    io::osequencestream_bgc oss(fs::append_path(output_dir, output_filename));
+    path_extend::ScaffoldSequenceMaker seq_maker(graph);
+    std::vector<DomainGraph::Arrangements> answer;
+
+    for (VertexId v : start_nodes) {
+        if (Visited(v))
+            continue;
+
+        auto res = FindAllPossibleArrangements(v,
+                                               component_size_part, component_min_size);
+        if (!res.empty())
+            answer.emplace_back(std::move(res));
+    }
+    std::stable_sort(answer.begin(), answer.end(),
+                     [](const DomainGraph::Arrangements &lhs, const DomainGraph::Arrangements &rhs) {
+                         return lhs.component_size > rhs.component_size;
+                     });
+
+    unsigned ordering_id = 1;
+    unsigned component_id = 1;
+    for (const auto &entry : answer) {
+        stat_stream << "BGC subgraph " << component_id << std::endl;
+        OutputStat(entry, stat_stream);
+
+        ordering_id = 1;
+        for (const auto &vec : entry.arrangements) {
+            OutputStatArrangement(vec, ordering_id, stat_stream);
+            auto paths = contig_paths_.CreatePair(graph);
+            std::string outputstring = PathToSequence(&paths.first, vec);
+            OutputComponent(&paths.first, component_id, ordering_id);
+            outputstring = seq_maker.MakeSequence(paths.first);
+            oss.SetCluster(component_id, ordering_id);
+            oss << outputstring;
+            ordering_id++;
+        }
+        component_id++;
+    }
+}
+
 }

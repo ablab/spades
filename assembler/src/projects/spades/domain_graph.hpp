@@ -125,7 +125,7 @@ namespace nrps {
 
         explicit DomainEdgeData(bool strong, const std::vector<EdgeId> &edges, size_t length)
                 : strong_(strong), edges_(edges), length_(length) {}
-        
+
         bool strong() const { return strong_; }
         size_t length(const debruijn_graph::Graph &) const { return length_; }
         const std::vector<EdgeId> &debruijn_edges() const { return edges_;  }
@@ -170,13 +170,22 @@ namespace nrps {
     };
 
     class DomainGraph : public omnigraph::ObservableGraph<DomainGraphDataMaster> {
+      public:
+        struct Arrangements {
+            size_t component_size = 0;
+            size_t strong_edges = 0;
+            size_t weak_edges = 0;
+            std::vector<std::vector<VertexId>> arrangements;
+
+            bool empty() const {
+                return component_size == 0;
+            }
+        };
+
     private:
         typedef base::VertexData VertexData;
         typedef base::EdgeData EdgeData;
-        const debruijn_graph::Graph &g_;
         typedef omnigraph::ObservableGraph<DomainGraphDataMaster> base;
-        std::unordered_map<VertexId, std::string> from_id_to_name;
-        path_extend::PathContainer contig_paths_;
 
         void SetVisited(VertexId v);
         void SetMaxVisited(VertexId v, size_t value);
@@ -188,16 +197,15 @@ namespace nrps {
         void IncrementVisited(VertexId v);
         void DecrementVisited(VertexId v);
 
-        void OutputStat(std::set<VertexId> &preliminary_visited, std::ofstream &stat_file) const;
+        void OutputStat(const DomainGraph::Arrangements &arr, std::ofstream &stat_file) const;
         size_t GetMaxVisited(VertexId v, double base_coverage) const;
         void SetCopynumber(const std::set<VertexId> &preliminary_visited);
         void OutputStatArrangement(std::vector<VertexId> single_candidate, int id, std::ofstream &stat_file);
         void FindBasicStatistic(std::ofstream &stat_stream);
         void PrelimDFS(VertexId v, std::set<VertexId> &preliminary_visited);
         std::string PathToSequence(path_extend::BidirectionalPath *p, const std::vector<VertexId> &answer);
-        void FindAllPossibleArrangements(VertexId v,
-                                         size_t component_size_part, size_t component_min_size,
-                                         std::vector<std::vector<VertexId>> &answer, std::ofstream &stat_file);
+        DomainGraph::Arrangements FindAllPossibleArrangements(VertexId v,
+                                                              size_t component_size_part, size_t component_min_size);
         void FinalDFS(VertexId v, std::vector<VertexId> &current, std::set<VertexId> preliminary_visited,
                                    std::vector<std::vector<VertexId>> &answer, size_t component_size, size_t &iteration_number);
         std::set<EdgeId> CollectEdges(path_extend::BidirectionalPath *p) const;
@@ -238,7 +246,11 @@ namespace nrps {
                                  const std::string &output_filename, const std::string &output_dir);
 
         friend class debruijn_graph::DomainGraphConstructor;
-    protected:
+      protected:
         DECL_LOGGER("DomainGraph");
+      private:
+        const debruijn_graph::Graph &g_;
+        std::unordered_map<VertexId, std::string> from_id_to_name;
+        path_extend::PathContainer contig_paths_;
     };
 }

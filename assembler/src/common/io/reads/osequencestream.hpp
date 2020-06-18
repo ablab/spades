@@ -83,8 +83,8 @@ public:
 
 class osequencestream_bgc: public osequencestream {
 protected:
-    int cluster_;
-    int candidate_;
+    unsigned cluster_;
+    unsigned candidate_;
 
     virtual void write_header(const std::string& s) {
         // Velvet format: NODE_1_length_24705_cov_358.255249
@@ -96,7 +96,7 @@ public:
     osequencestream_bgc(const std::string& filename)
             : osequencestream(filename), cluster_(0), candidate_(0) { }
 
-    void SetCluster(int cluster, int candidate) {
+    void SetCluster(unsigned cluster, unsigned candidate) {
         cluster_ = cluster;
         candidate_ = candidate;
     }

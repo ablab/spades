@@ -109,11 +109,11 @@ public:
         INFO("Domain graph construction started");
         INFO("Constructing nodes...");
         ConstructNodes(info);
-        INFO("Constructing Strong edges...");
+        INFO("Constructing strong edges...");
         ConstructStrongEdges();
         INFO("Constructing weak edges...");
         ConstructWeakEdges();
-        INFO("Domain graph construction ended");
+        INFO("Domain graph construction constructed, total vertices: " << domain_graph_.size() << ", edges: " << domain_graph_.e_size());
         return domain_graph_;
     }
 
@@ -349,7 +349,7 @@ private:
                     domain_graph_.GetEdgesBetween(prev.second.first, maps.second.first).size() == 0) {
                     DEBUG("Connecting " << prev.second << " and " << maps.second);
                     domain_graph_.AddEdge(prev.second.first, maps.second.first, true,
-                            FindEdgesBetweenMappings(prev.first.second, maps.first.first, from_id_to_path[p.first]), maps.first.first - prev.first.second);
+                                          FindEdgesBetweenMappings(prev.first.second, maps.first.first, from_id_to_path[p.first]), maps.first.first - prev.first.second);
                 }
                 prev = maps;
             }
