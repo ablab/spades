@@ -140,13 +140,13 @@ namespace nrps {
         }
     }
 
-    void DomainGraph::OutputStatArrangement(std::vector<VertexId> single_candidate,
-                                            int id, std::ofstream &stat_file) {
+    void DomainGraph::OutputStatArrangement(const std::vector<VertexId> &single_candidate,
+                                            unsigned id, std::ostream &stat_file) {
         stat_file << "BGC candidate " << id << std::endl;
         std::string delimeter = "";
         bool is_nrps = false;
         bool is_pks = false;
-        for (auto v : single_candidate) {
+        for (VertexId v : single_candidate) {
             stat_file << delimeter;
             delimeter = "-";
             const std::string &name = GetDomainName(v);
@@ -188,7 +188,7 @@ namespace nrps {
         auto p = path_extend::BidirectionalPath::create(g_);
         for (size_t i = 0; i < single_candidate.size(); ++i) {
             auto v = single_candidate[i];
-            DEBUG("Translating vertex " << this->GetVertexName(v));
+            DEBUG("Translating vertex " << GetVertexName(v));
             for (EdgeId e : domain_edges(v)) {
                 if (p->Size() == 0 || p->Back() != e) {
                     int gap = 0;
@@ -230,7 +230,7 @@ namespace nrps {
         }
     }
 
-    void DomainGraph::FindBasicStatistic(std::ofstream &stat_stream) {
+    void DomainGraph::FindBasicStatistic(std::ostream &stat_stream) {
         // FIXME: ugly, have common source of domain information!
         std::map<std::string, std::string> domains;
         for (VertexId v : vertices())
@@ -439,7 +439,7 @@ DomainGraph::Arrangements DomainGraph::FindAllPossibleArrangements(VertexId v,
     }
 
 
-void DomainGraph::OutputStat(const DomainGraph::Arrangements &arr, std::ofstream &stat_file) const {
+void DomainGraph::OutputStat(const DomainGraph::Arrangements &arr, std::ostream &stat_file) const {
     stat_file << "# domains in the component - "
               << arr.component_size << std::endl
               << "# Strong/weak edges in the component - "

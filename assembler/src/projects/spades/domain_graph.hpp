@@ -197,11 +197,11 @@ namespace nrps {
         void IncrementVisited(VertexId v);
         void DecrementVisited(VertexId v);
 
-        void OutputStat(const DomainGraph::Arrangements &arr, std::ofstream &stat_file) const;
+        void OutputStat(const DomainGraph::Arrangements &arr, std::ostream &stat_file) const;
         size_t GetMaxVisited(VertexId v, double base_coverage) const;
         void SetCopynumber(const std::set<VertexId> &preliminary_visited);
-        void OutputStatArrangement(std::vector<VertexId> single_candidate, int id, std::ofstream &stat_file);
-        void FindBasicStatistic(std::ofstream &stat_stream);
+        void OutputStatArrangement(const std::vector<VertexId> &single_candidate, unsigned id, std::ostream &stat_file);
+        void FindBasicStatistic(std::ostream &stat_stream);
         void PrelimDFS(VertexId v, std::set<VertexId> &preliminary_visited);
         std::string PathToSequence(path_extend::BidirectionalPath *p, const std::vector<VertexId> &answer);
         DomainGraph::Arrangements FindAllPossibleArrangements(VertexId v,
