@@ -128,7 +128,7 @@ namespace nrps {
 
     size_t DomainGraph::GetMaxVisited(VertexId v, double base_coverage) const  {
         double low_coverage = std::numeric_limits<double>::max();
-        for (auto e : domain_edges(v))
+        for (EdgeId e : domain_edges(v))
             low_coverage = std::min(low_coverage, g_.coverage(e));
 
         return size_t(round(low_coverage / base_coverage));
@@ -136,18 +136,19 @@ namespace nrps {
 
     void DomainGraph::SetCopynumber(const std::set<VertexId> &preliminary_visited) {
         double base_coverage = std::numeric_limits<double>::max();
-        for (auto v : preliminary_visited) {
-            for (auto e : this->domain_edges(v)) {
-                if (g_.length(e) > 500) {
-                    base_coverage = std::min(base_coverage, g_.coverage(e));
-                }
+        for (VertexId v : preliminary_visited) {
+            for (EdgeId e : this->domain_edges(v)) {
+                if (g_.length(e) <= 500)
+                    continue;
+
+                base_coverage = std::min(base_coverage, g_.coverage(e));
             }
         }
 
         if (math::eq(base_coverage, std::numeric_limits<double>::max()))
             return;
 
-        for (auto v : preliminary_visited) {
+        for (VertexId v : preliminary_visited) {
             size_t value = std::max(size_t(1), GetMaxVisited(v, base_coverage));
             if (GetMaxVisited(v) != value) {
                 DEBUG(GetVertexName(v) << " copynumber has changed from " << GetMaxVisited(v)
@@ -377,7 +378,7 @@ void DomainGraph::FindAllPossibleArrangements(VertexId v, size_t component_size_
                 FinalDFS(to, current, preliminary_visited, answer, accepted_component_size, iteration_number);
             }
         }
-        
+
         if (current.size() >= accepted_component_size && !was_extended)
             answer.push_back(current);
 
