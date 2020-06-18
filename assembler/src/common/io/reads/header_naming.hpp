@@ -35,8 +35,8 @@ inline std::string AddComponentId(const std::string& s, size_t component_id) {
     return s + "_component_" + std::to_string(component_id);
 }
 
-inline std::string AddClusterId(const std::string& s, size_t cluster_id, size_t candidate_id) {
-    return s  + "_cluster_" + std::to_string(cluster_id) + "_candidate_" + std::to_string(candidate_id);
+inline std::string AddClusterId(const std::string& s, size_t cluster_id, size_t candidate_id, size_t num_domains) {
+    return s  + "_cluster_" + std::to_string(cluster_id) + "_candidate_" + std::to_string(candidate_id) + "_domains_" + std::to_string(num_domains);
 }
 
 }

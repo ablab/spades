@@ -85,10 +85,11 @@ class osequencestream_bgc: public osequencestream {
 protected:
     unsigned cluster_;
     unsigned candidate_;
+    unsigned domains_;
 
     virtual void write_header(const std::string& s) {
         // Velvet format: NODE_1_length_24705_cov_358.255249
-        ofstream_ << ">" << AddClusterId(MakeContigId(id_++, s.size()), cluster_, candidate_) << std::endl;
+        ofstream_ << ">" << AddClusterId(MakeContigId(id_++, s.size()), cluster_, candidate_, domains_) << std::endl;
     }
 
 
@@ -96,9 +97,10 @@ public:
     osequencestream_bgc(const std::string& filename)
             : osequencestream(filename), cluster_(0), candidate_(0) { }
 
-    void SetCluster(unsigned cluster, unsigned candidate) {
+    void SetCluster(unsigned cluster, unsigned candidate, unsigned domains) {
         cluster_ = cluster;
         candidate_ = candidate;
+        domains_ = domains;
     }
 
     using osequencestream::operator<<;

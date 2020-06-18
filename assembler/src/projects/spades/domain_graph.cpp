@@ -494,7 +494,7 @@ void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp,
             std::string outputstring = PathToSequence(&paths.first, vec);
             OutputComponent(&paths.first, component_id, ordering_id);
             outputstring = seq_maker.MakeSequence(paths.first);
-            oss.SetCluster(component_id, ordering_id);
+            oss.SetCluster(component_id, ordering_id, vec.size());
             oss << outputstring;
             ordering_id++;
         }
