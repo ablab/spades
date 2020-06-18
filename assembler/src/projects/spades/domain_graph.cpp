@@ -321,7 +321,8 @@ namespace nrps {
         return ss.str();
     }
 
-void DomainGraph::FindAllPossibleArrangements(VertexId v, size_t component_size_part,
+void DomainGraph::FindAllPossibleArrangements(VertexId v,
+                                              size_t component_size_part, size_t component_min_size,
                                               std::vector<std::vector<VertexId>> &answer,
                                               std::ofstream &stat_file) {
         DEBUG("Starting from " << GetVertexName(v));
@@ -330,15 +331,15 @@ void DomainGraph::FindAllPossibleArrangements(VertexId v, size_t component_size_
         PrelimDFS(v, preliminary_visited);
         size_t component_size = preliminary_visited.size();
         DEBUG("Component size " << component_size);
-        if (component_size == 1)
+        if (component_size < component_min_size)
             return;
 
         SetCopynumber(preliminary_visited);
         OutputStat(preliminary_visited, stat_file);
         std::vector<VertexId> current;
-        for (auto v : preliminary_visited) {
+        for (VertexId v : preliminary_visited)
             SetVisited(v);
-        }
+
         preliminary_visited.clear();
         size_t iteration_number = 0;
         FinalDFS(v, current, preliminary_visited, answer, component_size / component_size_part, iteration_number);
@@ -448,7 +449,8 @@ void DomainGraph::FindAllPossibleArrangements(VertexId v, size_t component_size_
         out << "}";
     }
 
-void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp, size_t component_size_part,
+void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp,
+                                      size_t component_size_part, size_t component_min_size,
                                       const std::string &output_filename, const std::string &output_dir) {
         const auto &graph = gp.get<debruijn_graph::Graph>();
         std::ofstream stat_stream(fs::append_path(output_dir, "bgc_statistics.txt"));
@@ -472,7 +474,9 @@ void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp, size_t comp
                 continue;
 
             stat_stream << "BGC subgraph " << component_id << std::endl;
-            FindAllPossibleArrangements(v, component_size_part, answer, stat_stream);
+            FindAllPossibleArrangements(v,
+                                        component_size_part, component_min_size,
+                                        answer, stat_stream);
             ordering_id = 1;
             for (const auto &vec : answer) {
                 OutputStatArrangement(vec, ordering_id, stat_stream);

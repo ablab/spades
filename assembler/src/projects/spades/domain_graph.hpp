@@ -195,7 +195,8 @@ namespace nrps {
         void FindBasicStatistic(std::ofstream &stat_stream);
         void PrelimDFS(VertexId v, std::set<VertexId> &preliminary_visited);
         std::string PathToSequence(path_extend::BidirectionalPath *p, const std::vector<VertexId> &answer);
-        void FindAllPossibleArrangements(VertexId v, size_t component_size_part,
+        void FindAllPossibleArrangements(VertexId v,
+                                         size_t component_size_part, size_t component_min_size,
                                          std::vector<std::vector<VertexId>> &answer, std::ofstream &stat_file);
         void FinalDFS(VertexId v, std::vector<VertexId> &current, std::set<VertexId> preliminary_visited,
                                    std::vector<std::vector<VertexId>> &answer, size_t component_size, size_t &iteration_number);
@@ -232,7 +233,8 @@ namespace nrps {
         bool strong(EdgeId e) const;
         void SetContigNearEnd(VertexId v);
         void ExportToDot(const std::string &output_path) const;
-        void FindDomainOrderings(debruijn_graph::GraphPack &gp, size_t component_size_part,
+        void FindDomainOrderings(debruijn_graph::GraphPack &gp,
+                                 size_t component_size_part, size_t component_min_size,
                                  const std::string &output_filename, const std::string &output_dir);
 
         friend class debruijn_graph::DomainGraphConstructor;
