@@ -23,7 +23,6 @@ class SetOfForbiddenEdgesPathChooser : public omnigraph::PathProcessor<Graph>::C
     const Graph &g_;
     std::set<std::vector<EdgeId>> forbidden_edges_;
     std::vector<EdgeId> answer_path_;
-    std::vector<size_t> peaks;
 
     bool CheckCoverageDiff(const std::vector<EdgeId> &path) const {
         double min_coverage = std::numeric_limits<double>::max();
@@ -39,13 +38,7 @@ class SetOfForbiddenEdgesPathChooser : public omnigraph::PathProcessor<Graph>::C
     bool IsNewPathBetter(const path_extend::BidirectionalPath &current, const path_extend::BidirectionalPath &candidate) const {
         int current_length = (int)current.Length();
         int candidate_length = (int)candidate.Length();
-        int diff_current = std::numeric_limits<int>::max();
-        int diff_cand = std::numeric_limits<int>::max();
-        for (auto peak : peaks) {
-            diff_current = std::min(diff_current, abs((int)peak - current_length));
-            diff_cand = std::min(diff_cand, abs((int)peak - candidate_length));
-        }
-        return diff_cand < diff_current;
+        return candidate_length < current_length;
     }
 
 public:
@@ -92,12 +85,6 @@ public:
     const std::vector<EdgeId>& answer() {
         return answer_path_;
     }
-
-    void set_peaks(size_t first, size_t second) {
-        peaks.clear();
-        peaks.push_back(first);
-        peaks.push_back(second);
-    }
 };
 
 class DomainGraphConstructor {
@@ -130,7 +117,6 @@ private:
             return;
         }
         int min_len = 0;
-        chooser.set_peaks(std::max(0, 500 - last_mapping - first_mapping), std::max(0, 1000 - last_mapping - first_mapping));
         if (g.EdgeEnd(domain_graph_.domain_edges(v1).back()) != g.EdgeStart(domain_graph_.domain_edges(v2).front())) {
             DEBUG("Trying to find paths from " << g.EdgeEnd(domain_graph_.domain_edges(v1).back()) << " to " << g.EdgeStart(domain_graph_.domain_edges(v2).front()));
             ProcessPaths(g, min_len, 4000 - last_mapping - first_mapping, g.EdgeEnd(domain_graph_.domain_edges(v1).back()), g.EdgeStart(domain_graph_.domain_edges(v2).front()), chooser);
@@ -224,14 +210,14 @@ private:
         size_t index = 0;
         const auto &g = gp_.get<Graph>();
         for (;index != res.first; ++index) {
-            start += g.length((*scaffold)[index]);
+            start += g.length((*scaffold)[index]) + (*scaffold).GapAt(index).gap;
         }
 
         start += domain[0].second.mapped_range.start_pos;
         size_t end_index = res.second;
         size_t end = 0;
         for (size_t i = 0; i < end_index; ++i) {
-            end += g.length((*scaffold)[i]);
+            end += g.length((*scaffold)[i]) + (*scaffold).GapAt(i).gap;
         }
         end += domain.back().second.mapped_range.end_pos;
         for (size_t i = index; i <= end_index; ++i) {
@@ -285,16 +271,28 @@ private:
             return std::vector<EdgeId>();
         }
         std::vector<EdgeId> answer;
+        const auto &g = gp_.get<Graph>();
         for (size_t i = first_mapping_end + 1; i < second_mapping_start; ++i) {
+            if (answer.size() != 0 && g.EdgeEnd(answer.back())  != g.EdgeStart((*path)[i])) {
+                auto dijkstra = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(g, 500,
+                                                                                        30, true /* collect traceback */);
+                dijkstra.Run(g.EdgeEnd(answer.back()));
+                auto shortest_path = dijkstra.GetShortestPathTo(g.EdgeStart((*path)[i]));
+                DEBUG("Shortest path");
+                DEBUG(shortest_path);
+                for (auto e : shortest_path)
+                    answer.push_back(e);
+            }
             answer.push_back((*path)[i]);
         }
+
+
         return answer;
     }
 
     void ConstructStrongEdges() {
         const auto &g = gp_.get<Graph>();
-        const auto &contig_paths = gp_.get<path_extend::PathContainer>();
-        path_extend::GraphCoverageMap coverage_map(g, contig_paths);
+        path_extend::GraphCoverageMap coverage_map(g, gp_.get<path_extend::PathContainer>());
         std::map<size_t, std::map<std::pair<int, int>, std::pair<VertexId, std::vector<EdgeId>>, PairComparator>> mappings_for_path;
         std::map<size_t, path_extend::BidirectionalPath*> from_id_to_path;
         for (VertexId current_vertex : domain_graph_.vertices()) {

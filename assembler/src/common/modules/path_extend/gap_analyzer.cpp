@@ -87,6 +87,10 @@ GapDescription LAGapAnalyzer::FixGap(const GapDescription &gap) const {
     //estimated_gap is in k-mers
 
     size_t estimated_overlap = gap.estimated_dist() < 0 ? size_t(abs(gap.estimated_dist())) : 0;
+    DEBUG("SW analyzer");
+    DEBUG(size_t(math::round(double(estimated_overlap) * ESTIMATED_GAP_MULTIPLIER))
+          + GAP_ADDITIONAL_COEFFICIENT);
+
     SWOverlapAnalyzer overlap_analyzer(size_t(math::round(double(estimated_overlap) * ESTIMATED_GAP_MULTIPLIER))
                                        + GAP_ADDITIONAL_COEFFICIENT);
     
@@ -95,6 +99,8 @@ GapDescription LAGapAnalyzer::FixGap(const GapDescription &gap) const {
     
     if (overlap_info.size() < min_la_length_) {
         DEBUG("Low alignment size");
+        DEBUG(min_la_length_);
+        DEBUG(min_la_length_);
         return GapDescription();
     }
 

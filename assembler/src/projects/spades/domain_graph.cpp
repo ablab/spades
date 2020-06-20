@@ -260,25 +260,39 @@ namespace nrps {
         }
     }
 
-    std::string DomainGraph::PathToSequence(path_extend::BidirectionalPath *p,
+    path_extend::Gap DomainGraph::ConvertGapDescription(const path_extend::GapDescription &gap) const {
+        if (gap == path_extend::GapDescription()) {
+            return path_extend::Gap::INVALID();
+        }
+        return path_extend::Gap(gap.estimated_dist() + int(g_.k())
+                   - int(gap.left_trim()) - int(gap.right_trim()),
+                   {uint32_t(gap.left_trim()), uint32_t(gap.right_trim())}, false);
+    }
+
+    void DomainGraph::PathToSequence(path_extend::BidirectionalPath *p,
                                             const std::vector<VertexId> &answer) {
-        std::stringstream ss;
-        DEBUG("Translating " << p->GetId() << " to sequnece");
+        auto &scaf_params = cfg::get().pe_params.param_set.scaffolder_options;
+        path_extend::LAGapAnalyzer gap_analyzer(p->g(), scaf_params.min_overlap_length, scaf_params.flank_multiplication_coefficient,
+                                                scaf_params.flank_addition_coefficient);
+        DEBUG("Translating " << p->GetId() << " to sequence");
         for (size_t i = 0; i < answer.size(); ++i) {
             auto v = answer[i];
             DEBUG("Translating vertex " << GetVertexName(v));
-            p->PrintDEBUG();
             DEBUG(domain_edges(v));
             for (EdgeId e : domain_edges(v)) {
                 if (p->Size() == 0 || p->Back() != e) {
-                    int gap = 0;
-                    if (p->Size() != 0 &&
+                    path_extend::Gap gap;
+                    if (p->Size() != 0 && g_.IsDeadEnd(g_.EdgeEnd(p->Back())) && g_.IsDeadStart(g_.EdgeStart(e)) &&
                         g_.EdgeEnd(p->Back()) != g_.EdgeStart(e)) {
-                        gap = 100;
+                        DEBUG("Fixing gap between " << p->Back() << " and " << e);
+                        omnigraph::GapDescription<debruijn_graph::Graph> gap_description(p->Back(), e, -(int)g_.k());
+                        gap_analyzer.FixGap(gap_description);
+                        gap = ConvertGapDescription(gap_description);
                     }
-                    p->PushBack(e, path_extend::Gap(gap));
+                    p->PushBack(e, gap);
                 }
             }
+
             if (i != answer.size() - 1) {
                 std::vector<EdgeId> next_edges = GetEdgesBetween(v, answer[i + 1]);
                 DEBUG("Translating edge between " << GetVertexName(v) << " and " << GetVertexName(answer[i + 1]));
@@ -288,19 +302,22 @@ namespace nrps {
                 }
 
                 EdgeId next_edge = next_edges[0];
+                DEBUG(debruijn_edges(next_edge));
                 for (debruijn_graph::EdgeId de : debruijn_edges(next_edge)) {
                     if (p->Size() == 0 || p->Back() != de) {
-                        int gap = 0;
+                        path_extend::Gap gap;
                         if (p->Size() != 0 &&
                             g_.EdgeEnd(p->Back()) != g_.EdgeStart(de)) {
-                            gap = 100;
+                            DEBUG("Fixing gap between " << p->Back() << " and " << de);
+                            omnigraph::GapDescription<debruijn_graph::Graph> gap_description(p->Back(), de, -(int)g_.k());
+                            gap_analyzer.FixGap(gap_description);
+                            gap = ConvertGapDescription(gap_description);
                         }
-                        p->PushBack(de, path_extend::Gap(gap));
+                        p->PushBack(de, gap);
                     }
                 }
             }
         }
-        return ss.str();
     }
 
 
@@ -491,9 +508,9 @@ void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp,
         for (const auto &vec : entry.arrangements) {
             OutputStatArrangement(vec, ordering_id, stat_stream);
             auto paths = contig_paths_.CreatePair(graph);
-            std::string outputstring = PathToSequence(&paths.first, vec);
+            PathToSequence(&paths.first, vec);
             OutputComponent(&paths.first, component_id, ordering_id);
-            outputstring = seq_maker.MakeSequence(paths.first);
+            std::string outputstring = seq_maker.MakeSequence(paths.first);
             oss.SetCluster(component_id, ordering_id, vec.size());
             oss << outputstring;
             ordering_id++;
