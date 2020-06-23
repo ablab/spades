@@ -1,5 +1,11 @@
 #pragma once
 
+#include "assembly_graph/paths/mapping_path.hpp"
+
+#include <map>
+#include <vector>
+#include <cstdlib>
+
 namespace debruijn_graph {
 using omnigraph::Path;
 using omnigraph::MappingPath;

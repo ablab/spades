@@ -11,6 +11,7 @@
 //#include "launch.hpp"
 #include "modules/graph_construction.hpp"
 #include "pipeline/graph_pack.hpp"
+#include "pipeline/config_struct.hpp"
 #include "io/reads/rc_reader_wrapper.hpp"
 #include "io/reads/vector_reader.hpp"
 #include "io/reads/converting_reader_wrapper.hpp"

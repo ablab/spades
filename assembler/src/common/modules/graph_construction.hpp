@@ -7,58 +7,22 @@
 
 #pragma once
 
-#include "pipeline/graph_pack.hpp"
 
-#include "io/reads/io_helper.hpp"
 #include "assembly_graph/core/graph.hpp"
 
 #include "assembly_graph/construction/debruijn_graph_constructor.hpp"
 #include "assembly_graph/construction/early_simplification.hpp"
-
-#include "utils/perf/perfcounter.hpp"
-#include "io/dataset_support/read_converter.hpp"
-
-#include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/graph_support/coverage_filling.hpp"
-#include "utils/ph_map/storing_traits.hpp"
 #include "assembly_graph/index/edge_index_builders.hpp"
-#include "utils/parallel/openmp_wrapper.h"
-#include "utils/extension_index/kmer_extension_index_builder.hpp"
 
+// FIXME: layering violation
+#include "pipeline/config_struct.hpp"
+#include "utils/extension_index/kmer_extension_index_builder.hpp"
+#include "utils/perf/perfcounter.hpp"
+
+#include "io/reads/io_helper.hpp"
 
 namespace debruijn_graph {
-
-template<class Graph, class Readers, class Index>
-size_t ConstructGraphUsingOldIndex(Readers& streams, Graph& g,
-        Index& index, io::SingleStream *contigs_stream = nullptr) {
-    INFO("Constructing DeBruijn graph");
-
-    TRACE("Filling indices");
-    size_t rl = 0;
-    VERIFY_MSG(streams.size(), "No input streams specified");
-
-    TRACE("... in parallel");
-    typedef typename Index::InnerIndexT InnerIndex;
-    typedef typename EdgeIndexHelper<InnerIndex>::CoverageFillingEdgeIndexBuilderT IndexBuilder;
-    InnerIndex& debruijn = index.inner_index();
-    //fixme hack
-    rl = IndexBuilder().BuildIndexFromStream(debruijn, streams, contigs_stream);
-
-    VERIFY(g.k() + 1== debruijn.k());
-    // FIXME: output_dir here is damn ugly!
-
-    TRACE("Filled indices");
-
-    INFO("Condensing graph");
-    DeBruijnGraphConstructor<Graph, InnerIndex> g_c(g, debruijn);
-    TRACE("Constructor ok");
-    VERIFY(!index.IsAttached());
-    index.Attach();
-    g_c.ConstructGraph(100, 10000, 1.2); // TODO: move magic constants to config
-    INFO("Graph condensed");
-
-    return rl;
-}
 
 template<class ExtensionIndex>
 void EarlyClipTips(const config::debruijn_config::construction& params, ExtensionIndex& ext) {

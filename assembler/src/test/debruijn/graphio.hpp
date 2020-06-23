@@ -6,8 +6,9 @@
 
 #pragma once
 
-#include "pipeline/graph_pack.hpp"
 #include "assembly_graph/core/construction_helper.hpp"
+#include "assembly_graph/handlers/edges_position_handler.hpp"
+#include "pipeline/graph_pack.hpp"
 
 namespace debruijn_graph {
 
