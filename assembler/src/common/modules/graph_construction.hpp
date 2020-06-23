@@ -15,6 +15,8 @@
 #include "assembly_graph/graph_support/coverage_filling.hpp"
 #include "assembly_graph/index/edge_index_builders.hpp"
 
+#include "modules/alignment/edge_index.hpp"
+
 // FIXME: layering violation
 #include "pipeline/config_struct.hpp"
 #include "utils/extension_index/kmer_extension_index_builder.hpp"
@@ -33,11 +35,10 @@ void EarlyClipTips(const config::debruijn_config::construction& params, Extensio
     EarlyTipClipperProcessor(ext, *params.early_tc.length_bound).ClipTips();
 }
 
-template<class Graph, class Read, class Index>
+template<class Read>
 void ConstructGraphUsingExtensionIndex(const config::debruijn_config::construction &params,
                                        fs::TmpDir workdir,
-                                       io::ReadStreamList<Read>& streams, Graph& g,
-                                       Index& index) {
+                                       io::ReadStreamList<Read>& streams, Graph& g) {
     unsigned k = unsigned(g.k());
     INFO("Constructing DeBruijn graph for k=" << k);
 
@@ -52,9 +53,24 @@ void ConstructGraphUsingExtensionIndex(const config::debruijn_config::constructi
     EarlyClipTips(params, ext);
 
     INFO("Condensing graph");
-    VERIFY(!index.IsAttached());
     DeBruijnGraphExtentionConstructor<Graph> g_c(g, ext);
     g_c.ConstructGraph(params.keep_perfect_loops);
+}
+
+//FIXME these methods are tested, but not used!
+template<class Streams>
+void ConstructGraph(const config::debruijn_config::construction &params,
+                    fs::TmpDir workdir, Streams& streams, Graph& g) {
+    ConstructGraphUsingExtensionIndex(params, workdir, streams, g);
+}
+
+template<class Streams>
+void ConstructGraphWithIndex(const config::debruijn_config::construction &params,
+                             fs::TmpDir workdir, Streams& streams, Graph& g,
+                             EdgeIndex<Graph>& index) {
+    VERIFY(!index.IsAttached());
+
+    ConstructGraph(params, workdir, streams, g);
 
     INFO("Building index with from graph")
     //todo pass buffer size
@@ -63,21 +79,13 @@ void ConstructGraphUsingExtensionIndex(const config::debruijn_config::constructi
 }
 
 //FIXME these methods are tested, but not used!
-template<class Graph, class Index, class Streams>
-void ConstructGraph(const config::debruijn_config::construction &params,
-                    fs::TmpDir workdir, Streams& streams, Graph& g,
-                    Index& index) {
-    ConstructGraphUsingExtensionIndex(params, workdir, streams, g, index);
-}
-
-//FIXME these methods are tested, but not used!
-template<class Graph, class Index, class Streams>
+template<class Streams>
 void ConstructGraphWithCoverage(const config::debruijn_config::construction &params,
                                 fs::TmpDir workdir, Streams &streams, Graph &g,
-                                Index &index, omnigraph::FlankingCoverage<Graph> &flanking_cov) {
-    ConstructGraph(params, workdir, streams, g, index);
+                                EdgeIndex<Graph> &index, omnigraph::FlankingCoverage<Graph> &flanking_cov) {
+    ConstructGraphWithIndex(params, workdir, streams, g, index);
 
-    typedef typename Index::InnerIndex InnerIndex;
+    typedef typename EdgeIndex<Graph>::InnerIndex InnerIndex;
     typedef typename EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
     INFO("Filling coverage index")
     IndexBuilder().ParallelFillCoverage(index.inner_index(), streams);

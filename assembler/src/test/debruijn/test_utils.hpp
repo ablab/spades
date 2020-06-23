@@ -142,11 +142,9 @@ void AssertGraph(size_t k, const std::vector<std::string>& reads, const std::vec
     typedef io::VectorReadStream<io::SingleRead> RawStream;
     Graph g(k);
     auto workdir = fs::tmp::make_temp_dir("tmp", "tests");
-    EdgeIndex<Graph> index(g, *workdir);
-    index.Detach();
 
     io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(RawStream(MakeReads(reads))));
-    ConstructGraph(config::debruijn_config::construction(), workdir, streams, g, index);
+    ConstructGraph(config::debruijn_config::construction(), workdir, streams, g);
 
     AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 }
@@ -223,6 +221,9 @@ void AssertGraph(size_t k, const std::vector<MyPairedRead> &paired_reads, size_t
     ConstructGraphWithCoverage(config::debruijn_config::construction(), workdir,
                                single_stream_vector, graph, index, flanking_cov);
 
+    AssertEdges(graph, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
+    AssertCoverage(graph, AddComplement(etalon_coverage));
+
     gp.InitRRIndices();
     kmer_mapper.Attach();
     gp.EnsureBasicMapping();
@@ -235,10 +236,6 @@ void AssertGraph(size_t k, const std::vector<MyPairedRead> &paired_reads, size_t
     notifier.Subscribe(0, &pif);
     notifier.ProcessLibrary(paired_streams, 0, *MapperInstance(gp));
     
-    AssertEdges(graph, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
-
-    AssertCoverage(graph, AddComplement(etalon_coverage));
-
     AssertPairInfo(graph, paired_indices[0], AddComplement(AddBackward(etalon_pair_info)));
 }
 
@@ -249,7 +246,7 @@ inline void CheckIndex(const std::vector<std::string> &reads, size_t k) {
     auto &index = gp.get_mutable<EdgeIndex<Graph>>();
     auto workdir = fs::tmp::make_temp_dir(gp.workdir(), "tests");
     io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(RawStream(MakeReads(reads))));
-    ConstructGraph(config::debruijn_config::construction(), workdir, streams, graph, index);
+    ConstructGraphWithIndex(config::debruijn_config::construction(), workdir, streams, graph, index);
 
     auto &stream = streams.back();
     stream.reset();
