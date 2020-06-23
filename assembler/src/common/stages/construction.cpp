@@ -425,8 +425,8 @@ class PHMCoverageFiller : public Construction::Phase {
             }
         }
 
-        template<class K, class traits, class StoringType, class Counter, class Streams>
-        void BuildIndex(utils::PerfectHashMap<K, uint32_t, traits, StoringType> &index,
+        template<class Index, class Counter, class Streams>
+        void BuildIndex(Index &index,
                         Counter& counter, size_t bucket_num,
                         Streams &streams,
                         bool save_final = false) const {
