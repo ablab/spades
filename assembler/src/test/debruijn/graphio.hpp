@@ -256,8 +256,7 @@ public:
                 WARN("Cannot load kmer_mapper, information on projected kmers will be missed");
             }
         if (!LoadFlankingCoverage(file_name, flanking_cov)) {
-            WARN("Cannot load flanking coverage, flanking coverage will be recovered from index");
-            flanking_cov.Fill(index.inner_index());
+            FATAL_ERROR("Cannot load flanking coverage");
         }
     }
 

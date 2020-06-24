@@ -75,25 +75,6 @@ public:
         return averaging_range_;
     }
 
-    //left for saves compatibility and tests remove later!
-    template<class CoverageIndex>
-    void Fill(const CoverageIndex& count_index) {
-        TRACE("Filling flanking coverage from index");
-
-        for (auto I = count_index.value_cbegin(), E = count_index.value_cend();
-                I != E; ++I) {
-            const auto& edge_info = *I;
-            if (!edge_info.valid())
-                continue;
-            EdgeId e = edge_info.edge();
-            unsigned offset = edge_info.offset();
-            unsigned count = edge_info.count();
-            if (offset < averaging_range_) {
-                IncRawCoverage(e, count);
-            }
-        }
-    }
-
     void IncRawCoverage(EdgeId e, unsigned count) {
         g_.data(e).inc_flanking_coverage(count);
     }

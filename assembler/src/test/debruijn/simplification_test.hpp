@@ -298,21 +298,6 @@ BOOST_AUTO_TEST_CASE( BigComplexBulge ) {
     BOOST_CHECK_EQUAL(graph.size(), 66u);
 }
 
-// TODO: Remove this hack. We really need to save flcvr!
-template<class Graph, class InnerIndex>
-void FillKmerCoverageWithAvg(const Graph& g, InnerIndex& idx) {
-    for (EdgeId e : g.edges()) {
-        Sequence nucls = g.EdgeNucls(e);
-        double cov = g.coverage(e);
-        auto kpomer = idx.ConstructKWH(RtSeq(g.k() + 1, nucls));
-        kpomer >>= 0;
-        for (size_t i = 0; i < g.length(e); ++i) {
-            kpomer <<= nucls[i + g.k()];
-            idx.get_raw_value_reference(kpomer).count() = unsigned(math::floor(cov)) / 2;
-        }
-    }
-}
-
 //Relative coverage removal tests
 
 void TestRelativeCoverageRemover(const std::string &path, size_t graph_size) {
@@ -323,10 +308,6 @@ void TestRelativeCoverageRemover(const std::string &path, size_t graph_size) {
     auto &index = gp.get_mutable<EdgeIndex<Graph>>();
     auto &flanking_cov = gp.get_mutable<omnigraph::FlankingCoverage<Graph>>();
 
-    if (!fs::FileExists(path + ".flcvr") && !fs::FileExists(path + ".kmidx")) {
-        FillKmerCoverageWithAvg(graph, index.inner_index());
-        flanking_cov.Fill(index.inner_index());
-    }
     auto algo = debruijn::simplification::RelativeCoverageComponentRemoverInstance(graph, flanking_cov,
                                                                                    standard_rcc_config(),
                                                                                    standard_simplif_relevant_info());
