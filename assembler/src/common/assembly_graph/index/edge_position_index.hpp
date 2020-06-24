@@ -17,7 +17,6 @@ namespace debruijn_graph {
 template<class IdType>
 class EdgeInfo {
     IdType edge_id_;
-    uint32_t count_;
 
     typedef folly::PicoSpinLock<uint32_t> OffsetType;
     OffsetType offset_with_lock_;
@@ -26,8 +25,8 @@ class EdgeInfo {
     static constexpr unsigned TOMBSTONE = -2u & ~OffsetType::kLockBitMask_;
 
  public:
-    EdgeInfo(IdType e = IdType(), unsigned o = CLEARED, unsigned c = 0) :
-        edge_id_(e), count_(c) {
+    EdgeInfo(IdType e = IdType(), unsigned o = CLEARED) :
+        edge_id_(e) {
         offset_with_lock_.init();
         offset_with_lock_.setData(o);
         VERIFY(edge_id_ != IdType() || clean());
@@ -36,9 +35,9 @@ class EdgeInfo {
     template<class Graph>
     EdgeInfo conjugate(const Graph &g) const {
         if (!valid())
-            return EdgeInfo(IdType(), CLEARED, count_);
+            return EdgeInfo(IdType(), CLEARED);
 
-        return EdgeInfo(g.conjugate(edge_id_), unsigned(g.length(edge_id_) - offset() - 1), count_);
+        return EdgeInfo(g.conjugate(edge()), unsigned(g.length(edge()) - offset() - 1));
     }
 
     IdType edge() const {
@@ -49,20 +48,16 @@ class EdgeInfo {
     void unlock() { offset_with_lock_.unlock(); }
 
     unsigned offset() const { return offset_with_lock_.getData(); }
-    unsigned count() const { return count_; }
-    unsigned& count() { return count_; }
 
     void clear() {
       offset_with_lock_.setData(CLEARED);
       edge_id_ = IdType();
-      count_ = 0;
     }
     bool clean() const { return offset() == CLEARED; }
 
     void remove() {
       offset_with_lock_.setData(TOMBSTONE);
       edge_id_ = IdType();
-      count_ = 0;
     }
     bool removed() const { return offset() == TOMBSTONE; }
 
@@ -73,7 +68,7 @@ class EdgeInfo {
 
 template<class stream, class IdType>
 stream &operator<<(stream &s, const EdgeInfo<IdType> &info) {
-    return s << "EdgeInfo[" << info.edge() << ", " << info.offset() << ", " << info.count() << "]";
+    return s << "EdgeInfo[" << info.edge() << ", " << info.offset() << "]";
 }
 
 template<class Graph,
@@ -151,7 +146,7 @@ public:
         entry.lock();
         if (entry.clean()) {
             // Note that this releases the lock as well!
-            put_value(kwh, KmerPos(id, (unsigned)offset, entry.count()));
+            put_value(kwh, KmerPos(id, (unsigned)offset));
         } else if (contains(kwh)) {
             entry.remove();
         }
@@ -197,8 +192,6 @@ public:
       this->index_ptr_->serialize(writer);
       size_t sz = this->data_.size();
       writer.write((char*)&sz, sizeof(sz));
-      for (size_t i = 0; i < sz; ++i)
-          writer.write((char*)&(this->data_[i].count), sizeof(this->data_[0].count));
       this->BinWriteKmers(writer);
   }
 
@@ -209,8 +202,6 @@ public:
       size_t sz = 0;
       reader.read((char*)&sz, sizeof(sz));
       this->data_.resize(sz);
-      for (size_t i = 0; i < sz; ++i)
-          reader.read((char*)&(this->data_[i].count), sizeof(this->data_[0].count));
       this->BinReadKmers(reader, FileName);
   }
 
@@ -225,7 +216,7 @@ public:
 
       entry.lock();
       if (entry.clean()) {
-        put_value(kwh, KmerPos(id, (unsigned)offset, entry.count()));
+        put_value(kwh, KmerPos(id, (unsigned)offset));
       } else {
         entry.remove();
       }
