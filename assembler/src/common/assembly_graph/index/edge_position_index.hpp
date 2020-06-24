@@ -14,9 +14,9 @@
 
 namespace debruijn_graph {
 
-template<class IdType>
+template<class IdType, class IdHolder = uint64_t>
 class EdgeInfo {
-    IdType edge_id_;
+    IdHolder edge_id_;
 
     typedef folly::PicoSpinLock<uint32_t> OffsetType;
     OffsetType offset_with_lock_;
@@ -26,10 +26,10 @@ class EdgeInfo {
 
  public:
     EdgeInfo(IdType e = IdType(), unsigned o = CLEARED) :
-        edge_id_(e) {
+        edge_id_(e.int_id()) {
         offset_with_lock_.init();
         offset_with_lock_.setData(o);
-        VERIFY(edge_id_ != IdType() || clean());
+        VERIFY(edge_id_ != IdType().int_id() || clean());
     }
 
     template<class Graph>
@@ -51,13 +51,13 @@ class EdgeInfo {
 
     void clear() {
       offset_with_lock_.setData(CLEARED);
-      edge_id_ = IdType();
+      edge_id_ = IdType().int_id();
     }
     bool clean() const { return offset() == CLEARED; }
 
     void remove() {
       offset_with_lock_.setData(TOMBSTONE);
-      edge_id_ = IdType();
+      edge_id_ = IdType().int_id();
     }
     bool removed() const { return offset() == TOMBSTONE; }
 
