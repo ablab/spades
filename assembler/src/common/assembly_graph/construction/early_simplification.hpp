@@ -8,8 +8,10 @@
 
 #pragma once
 
+#include "utils/extension_index/kmer_extension_index.hpp"
 #include "utils/ph_map/perfect_hash_map.hpp"
 #include "utils/kmer_mph/kmer_index.hpp"
+
 #include <array>
 #include <numeric>
 

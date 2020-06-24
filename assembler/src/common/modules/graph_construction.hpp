@@ -20,6 +20,7 @@
 // FIXME: layering violation
 #include "pipeline/config_struct.hpp"
 #include "utils/extension_index/kmer_extension_index_builder.hpp"
+#include "utils/ph_map/coverage_hash_map_builder.hpp"
 #include "utils/perf/perfcounter.hpp"
 
 #include "io/reads/io_helper.hpp"
@@ -35,10 +36,12 @@ void EarlyClipTips(const config::debruijn_config::construction& params, Extensio
     EarlyTipClipperProcessor(ext, *params.early_tc.length_bound).ClipTips();
 }
 
+using KMerFiles = std::unique_ptr<utils::KMerCounter<RtSeq>>;
+
 template<class Read>
-void ConstructGraphUsingExtensionIndex(const config::debruijn_config::construction &params,
-                                       fs::TmpDir workdir,
-                                       io::ReadStreamList<Read>& streams, Graph& g) {
+KMerFiles ConstructGraphUsingExtensionIndex(const config::debruijn_config::construction &params,
+                                            fs::TmpDir workdir,
+                                            io::ReadStreamList<Read>& streams, Graph& g) {
     unsigned k = unsigned(g.k());
     INFO("Constructing DeBruijn graph for k=" << k);
 
@@ -48,49 +51,55 @@ void ConstructGraphUsingExtensionIndex(const config::debruijn_config::constructi
     TRACE("... in parallel");
     utils::DeBruijnExtensionIndex<> ext(k);
 
-    utils::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromStream(workdir, ext, streams, params.read_buffer_size);
+    KMerFiles kmers = utils::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromStream(workdir, ext, streams, params.read_buffer_size);
 
     EarlyClipTips(params, ext);
 
     INFO("Condensing graph");
     DeBruijnGraphExtentionConstructor<Graph> g_c(g, ext);
     g_c.ConstructGraph(params.keep_perfect_loops);
+
+    return kmers;
 }
 
 //FIXME these methods are tested, but not used!
 template<class Streams>
-void ConstructGraph(const config::debruijn_config::construction &params,
-                    fs::TmpDir workdir, Streams& streams, Graph& g) {
-    ConstructGraphUsingExtensionIndex(params, workdir, streams, g);
+KMerFiles ConstructGraph(const config::debruijn_config::construction &params,
+                         fs::TmpDir workdir, Streams& streams, Graph& g) {
+    return ConstructGraphUsingExtensionIndex(params, workdir, streams, g);
 }
 
 template<class Streams>
-void ConstructGraphWithIndex(const config::debruijn_config::construction &params,
-                             fs::TmpDir workdir, Streams& streams, Graph& g,
-                             EdgeIndex<Graph>& index) {
+KMerFiles ConstructGraphWithIndex(const config::debruijn_config::construction &params,
+                                  fs::TmpDir workdir, Streams& streams, Graph& g,
+                                  EdgeIndex<Graph>& index) {
     VERIFY(!index.IsAttached());
 
-    ConstructGraph(params, workdir, streams, g);
+    KMerFiles kmers = ConstructGraph(params, workdir, streams, g);
 
     INFO("Building index with from graph")
     //todo pass buffer size
     index.Refill();
     index.Attach();
+
+    return kmers;
 }
 
-//FIXME these methods are tested, but not used!
 template<class Streams>
 void ConstructGraphWithCoverage(const config::debruijn_config::construction &params,
                                 fs::TmpDir workdir, Streams &streams, Graph &g,
                                 EdgeIndex<Graph> &index, omnigraph::FlankingCoverage<Graph> &flanking_cov) {
-    ConstructGraphWithIndex(params, workdir, streams, g, index);
+    KMerFiles kmers = ConstructGraphWithIndex(params, workdir, streams, g, index);
 
-    typedef typename EdgeIndex<Graph>::InnerIndex InnerIndex;
-    typedef typename EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
-    INFO("Filling coverage index")
-    IndexBuilder().ParallelFillCoverage(index.inner_index(), streams);
-    INFO("Filling coverage and flanking coverage from index");
-    FillCoverageAndFlanking(index.inner_index(), g, flanking_cov);
+    INFO("Filling coverage index");
+    using CoverageMap = utils::PerfectHashMap<RtSeq, uint32_t, utils::slim_kmer_index_traits<RtSeq>, utils::DefaultStoring>;
+    CoverageMap coverage_map(unsigned(g.k() + 1));
+
+    utils::CoverageHashMapBuilder().BuildIndex(coverage_map,
+                                               *kmers, 16, streams);
+
+    INFO("Filling coverage and flanking coverage from PHM");
+    FillCoverageAndFlankingFromPHM(coverage_map, g, flanking_cov);
 }
 
 }

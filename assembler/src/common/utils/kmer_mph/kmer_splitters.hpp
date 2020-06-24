@@ -116,7 +116,7 @@ protected:
         VERIFY(ostreams.size() == num_files_ && kmer_buffers_[0].size() == num_files_);
 
 #   pragma omp parallel for
-        for (unsigned k = 0; k < num_files_; ++k) {
+        for (size_t k = 0; k < num_files_; ++k) {
             // Below k is thread id!
 
             size_t sz = 0;

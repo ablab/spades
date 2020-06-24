@@ -7,19 +7,20 @@
 
 #include "construction.hpp"
 
+#include "assembly_graph/construction/early_simplification.hpp"
+#include "modules/alignment/edge_index.hpp"
+#include "modules/graph_construction.hpp"
+
+#include "pipeline/graph_pack.hpp"
+#include "pipeline/genomic_info.hpp"
+
 #include "io/dataset_support/dataset_readers.hpp"
 #include "io/dataset_support/read_converter.hpp"
 #include "io/reads/coverage_filtering_read_wrapper.hpp"
 #include "io/reads/multifile_reader.hpp"
 
-#include "modules/alignment/edge_index.hpp"
-#include "modules/graph_construction.hpp"
-/* #include "assembly_graph/construction/early_simplification.hpp" TODO use it */
-
-#include "pipeline/graph_pack.hpp"
-#include "pipeline/genomic_info.hpp"
-
 #include "utils/filesystem/temporary.hpp"
+#include "utils/ph_map/coverage_hash_map_builder.hpp"
 
 
 namespace debruijn_graph {
@@ -368,162 +369,7 @@ public:
     }
 };
 
-class CoverageFiller : public Construction::Phase {
-public:
-    CoverageFiller()
-            : Construction::Phase("Filling coverage indices", "coverage_filling") { }
-
-    virtual ~CoverageFiller() = default;
-
-    void run(debruijn_graph::GraphPack &gp, const char*) override {
-        using InnerIndex = EdgeIndex<Graph>::InnerIndex;
-        using IndexBuilder = EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT;
-        INFO("Filling coverage index");
-        auto &index = gp.get_mutable<EdgeIndex<Graph>>().inner_index();
-        IndexBuilder().ParallelFillCoverage(index, storage().read_streams);
-        INFO("Filling coverage and flanking coverage from index");
-        FillCoverageAndFlanking(index, gp.get_mutable<Graph>(), gp.get_mutable<omnigraph::FlankingCoverage<Graph>>());
-    }
-
-    void load(debruijn_graph::GraphPack&,
-              const std::string &,
-              const char*) override {
-        VERIFY_MSG(false, "implement me");
-    }
-
-    void save(const debruijn_graph::GraphPack&,
-              const std::string &,
-              const char*) const override {
-        // VERIFY_MSG(false, "implement me");
-    }
-};
-
 class PHMCoverageFiller : public Construction::Phase {
-    struct CoverageHashMapBuilder : public utils::PerfectHashMapBuilder {
-        template<class ReadStream, class Index>
-        void FillCoverageFromStream(ReadStream &stream, Index &index) const {
-            typedef typename Index::KeyType Kmer;
-            unsigned k = index.k();
-
-            while (!stream.eof()) {
-                typename ReadStream::ReadT r;
-                stream >> r;
-
-                const Sequence &seq = r.sequence();
-                if (seq.size() < k)
-                    continue;
-
-                typename Index::KeyWithHash kwh = index.ConstructKWH(seq.start<Kmer>(k) >> 'A');
-                for (size_t j = k - 1; j < seq.size(); ++j) {
-                    kwh <<= seq[j];
-                    if (!kwh.is_minimal() || !index.valid(kwh))
-                        continue;
-
-#                   pragma omp atomic
-                    index.get_raw_value_reference(kwh) += 1;
-                }
-            }
-        }
-
-        template<class Index, class Counter, class Streams>
-        void BuildIndex(Index &index,
-                        Counter& counter, size_t bucket_num,
-                        Streams &streams,
-                        bool save_final = false) const {
-            unsigned nthreads = (unsigned)streams.size();
-
-            utils::PerfectHashMapBuilder::BuildIndex(index, counter, bucket_num, nthreads, save_final);
-            INFO("Collecting k-mer coverage information from reads, this takes a while.");
-
-            streams.reset();
-#           pragma omp parallel for num_threads(nthreads)
-            for (size_t i = 0; i < streams.size(); ++i) {
-                FillCoverageFromStream(streams[i], index);
-            }
-        }
-    };
-
-    template<class Graph, class PHM>
-    class GraphCoverageFiller {
-        typedef typename omnigraph::GraphEdgeIterator<Graph> EdgeIt;
-        typedef typename Graph::EdgeId EdgeId;
-        typedef typename adt::iterator_range<EdgeIt> EdgeRange;
-
-        const Graph& g_;
-        const PHM& phm_;
-        omnigraph::FlankingCoverage<Graph>& flanking_coverage_;
-        omnigraph::CoverageIndex<Graph>& coverage_index_;
-        unsigned k_;
-        size_t avg_range_;
-      public:
-        GraphCoverageFiller(const Graph& g, unsigned k, const PHM& phm,
-                            omnigraph::FlankingCoverage<Graph>& flanking_coverage,
-                            omnigraph::CoverageIndex<Graph>& coverage_index)
-                : g_(g),
-                  phm_(phm),
-                  flanking_coverage_(flanking_coverage),
-                  coverage_index_(coverage_index),
-                  k_(k), avg_range_(flanking_coverage_.averaging_range()) {}
-
-        void inc_coverage(EdgeId edge_id, size_t offset, uint32_t value) {
-            coverage_index_.IncRawCoverage(edge_id, value);
-            if (offset < avg_range_)
-                flanking_coverage_.IncRawCoverage(edge_id, value);
-        }
-
-        size_t FillCoverageFromEdges(EdgeRange &r) {
-            size_t seqs = 0;
-            for (auto &it = r.begin(); it != r.end() && seqs < 100000; ++it) {
-                EdgeId e = *it;
-                const Sequence &seq = g_.EdgeNucls(e);
-
-                seqs += 1;
-                RtSeq kmer = seq.start<RtSeq>(this->k_) >> 'A';
-                for (size_t j = this->k_ - 1; j < seq.size(); ++j) {
-                    kmer <<= seq[j];
-
-                    auto kwh = phm_.ConstructKWH(kmer);
-                    uint32_t cov = phm_.get_value(kwh, utils::InvertableStoring::trivial_inverter<uint32_t>());
-                    inc_coverage(e, j - this->k_ + 1, cov);
-                }
-            }
-
-            return seqs;
-        }
-
-
-        void Fill(unsigned nthreads) {
-            omnigraph::IterationHelper<Graph, EdgeId> edges(g_);
-            auto its = edges.Chunks(10*nthreads);
-
-            // Turn chunks into iterator ranges
-            std::vector<EdgeRange> ranges;
-            for (size_t i = 0; i < its.size() - 1; ++i)
-                ranges.emplace_back(its[i], its[i+1]);
-
-            size_t counter = 0, n = 10;
-            while (!std::all_of(ranges.begin(), ranges.end(),
-                                [](const EdgeRange &r) { return r.begin() == r.end(); })) {
-#               pragma omp parallel for num_threads(nthreads) reduction(+ : counter) schedule(guided)
-                for (size_t i = 0; i < ranges.size(); ++i)
-                    counter += FillCoverageFromEdges(ranges[i]);
-
-                if (counter >> n) {
-                    INFO("Processed " << counter << " edges");
-                    n += 1;
-                }
-            }
-        }
-    };
-
-    template<class Graph, class PHM>
-    void FillCoverageAndFlanking(const PHM& phm, Graph& g,
-                                 omnigraph::FlankingCoverage<Graph>& flanking_coverage) {
-        GraphCoverageFiller<Graph, PHM>(g,
-                                        storage().counter->k(), phm,
-                                        flanking_coverage, g.coverage_index()).Fill(omp_get_max_threads());
-    }
-
 public:
     PHMCoverageFiller()
             : Construction::Phase("Filling coverage indices (PHM)", "coverage_filling_phm") {}
@@ -533,10 +379,10 @@ public:
         storage().coverage_map.reset(new ConstructionStorage::CoverageMap(storage().counter->k()));
         auto &coverage_map = *storage().coverage_map;
 
-        CoverageHashMapBuilder().BuildIndex(coverage_map,
-                                            *storage().counter,
-                                            16,
-                                            storage().read_streams);
+        utils::CoverageHashMapBuilder().BuildIndex(coverage_map,
+                                                   *storage().counter,
+                                                   16,
+                                                   storage().read_streams);
         /*
         INFO("Checking the PHM");
 
@@ -554,7 +400,8 @@ public:
         } */
 
         INFO("Filling coverage and flanking coverage from PHM");
-        FillCoverageAndFlanking(coverage_map, gp.get_mutable<Graph>(), gp.get_mutable<omnigraph::FlankingCoverage<Graph>>());
+        FillCoverageAndFlankingFromPHM(coverage_map,
+                                       gp.get_mutable<Graph>(), gp.get_mutable<omnigraph::FlankingCoverage<Graph>>());
 
         std::vector<size_t> hist;
         size_t maxcov = 0;

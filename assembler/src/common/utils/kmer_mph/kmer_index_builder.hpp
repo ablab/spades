@@ -123,9 +123,9 @@ public:
     {
         TIME_TRACE_SCOPE("KMerDiskCounter::Count");
 #       pragma omp parallel for shared(raw_kmers) num_threads(num_threads) schedule(dynamic) reduction(+:kmers)
-        for (unsigned i = 0; i < raw_kmers.size(); ++i) {
-            kmers += MergeKMers(*raw_kmers[i], GetUniqueKMersFname(i));
-            raw_kmers[i].reset();
+        for (size_t i = 0; i < raw_kmers.size(); ++i) {
+          kmers += MergeKMers(*raw_kmers[i], GetUniqueKMersFname(unsigned(i)));
+          raw_kmers[i].reset();
         }
     }
     INFO("K-mer counting done. There are " << kmers << " kmers in total. ");
