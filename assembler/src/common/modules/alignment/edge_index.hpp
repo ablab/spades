@@ -12,6 +12,11 @@
 #include "assembly_graph/index/edge_info_updater.hpp"
 #include "edge_index_refiller.hpp"
 
+namespace io { namespace binary {
+template<class Graph>
+class EdgeIndexIO;
+} }
+
 namespace debruijn_graph {
 
 /**
@@ -21,13 +26,10 @@ namespace debruijn_graph {
  */
 template<class Graph>
 class EdgeIndex: public omnigraph::GraphActionHandler<Graph> {
-
+    using InnerIndex = KmerFreeEdgeIndex<Graph>;
 public:
     typedef typename Graph::EdgeId EdgeId;
-    using InnerIndex = KmerFreeEdgeIndex<Graph>;
-    typedef Graph GraphT;
     typedef typename InnerIndex::KMer KMer;
-    typedef typename InnerIndex::KMerIdx KMerIdx;
     typedef typename InnerIndex::KmerPos Value;
     static constexpr size_t NOT_FOUND = size_t(-1);
 
@@ -35,32 +37,32 @@ private:
     InnerIndex inner_index_;
     EdgeInfoUpdater<InnerIndex, Graph> updater_;
     EdgeIndexRefiller refiller_;
-    bool delete_index_;
 
-public:
-    EdgeIndex(const Graph& g, const std::string &workdir)
-            : omnigraph::GraphActionHandler<Graph>(g, "EdgeIndex"),
-              inner_index_(g),
-              updater_(g, inner_index_),
-              refiller_(workdir),
-              delete_index_(true) {
-    }
-
-    virtual ~EdgeIndex() {
-        TRACE("~EdgeIndex OK")
-    }
-
+    // Available only for loading / saving
     InnerIndex &inner_index() {
         return inner_index_;
-    }
-
-    size_t k() const {
-        return inner_index_.k();
     }
 
     const InnerIndex &inner_index() const {
         VERIFY(this->IsAttached());
         return inner_index_;
+    }
+
+    friend class io::binary::EdgeIndexIO<Graph>;
+    
+public:
+    EdgeIndex(const Graph& g, const std::string &workdir)
+            : omnigraph::GraphActionHandler<Graph>(g, "EdgeIndex"),
+              inner_index_(g),
+              updater_(g, inner_index_),
+              refiller_(workdir) {}
+
+    virtual ~EdgeIndex() {
+        TRACE("~EdgeIndex OK")
+    }
+
+    size_t k() const {
+        return inner_index_.k();
     }
 
     void HandleAdd(EdgeId e) override {
@@ -101,6 +103,9 @@ public:
         inner_index_.clear();
     }
 
+    static bool IsInvertable() {
+        return InnerIndex::storing_type::IsInvertable();
+    }
 };
 
 template<class Graph>

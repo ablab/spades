@@ -29,23 +29,6 @@ inline void DeserializePoint(FILE* file, size_t& e1, size_t& e2, omnigraph::de::
 class LegacyTextIO {
 
 public:
-    bool LoadEdgeIndex(const std::string &file_name, KmerFreeEdgeIndex<Graph> &index) {
-        std::ifstream file;
-        file.open((file_name + ".kmidx").c_str(),
-                  std::ios_base::binary | std::ios_base::in);
-        INFO("Reading kmer index, " << file_name << " started");
-        if (!file.is_open())
-            return false;
-
-        uint32_t k_;
-        file.read((char *) &k_, sizeof(uint32_t));
-        VERIFY_MSG(k_ == index.k(), "Cannot read edge index, different Ks:");
-
-        index.BinRead(file);
-        file.close();
-        return true;
-    }
-
     void LoadGraph(const std::string &file_name, Graph &graph) {
         INFO("Trying to read conjugate de bruijn graph from " << file_name << ".grp");
         FILE* file = fopen((file_name + ".grp").c_str(), "r");
@@ -242,13 +225,10 @@ public:
         auto &kmer_mapper = gp.get_mutable<KmerMapper<Graph>>();
 
         LoadBasicGraph(file_name, graph);
+
         index.Attach();
-        if (LoadEdgeIndex(file_name, index.inner_index())) {
-            index.Update();
-        } else {
-            WARN("Cannot load edge index, kmer coverages will be missed");
-            index.Refill();
-        }
+        index.Refill();
+
         LoadPositions(file_name, edge_pos);
         //load kmer_mapper only if needed
         if (kmer_mapper.IsAttached())
