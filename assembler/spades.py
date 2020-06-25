@@ -556,8 +556,12 @@ def init_parser(args):
         options_storage.first_command_line = args
         check_dir_is_empty(options_parser.get_output_dir_from_args())
     else:
+        output_dir = options_parser.get_output_dir_from_args()
+        if output_dir is None:
+            support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).")
+            
         command_line, options, script, err_msg = get_options_from_params(
-            os.path.join(options_parser.get_output_dir_from_args(), "params.txt"),
+            os.path.join(output_dir, "params.txt"),
             args[0])
 
         if err_msg != "":
