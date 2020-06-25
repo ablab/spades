@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <string>
+
 namespace debruijn_graph {
 
 // The stuff is template here to provide interface w/o including any headers

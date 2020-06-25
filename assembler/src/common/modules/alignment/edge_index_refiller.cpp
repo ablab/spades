@@ -5,7 +5,6 @@
 //***************************************************************************
 
 #include "assembly_graph/index/edge_index_builders.hpp"
-#include "assembly_graph/index/edge_multi_index.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include "utils/filesystem/temporary.hpp"
 
@@ -24,19 +23,8 @@ void EdgeIndexRefiller::Refill(EdgeIndex &index,
                                const ConjugateDeBruijnGraph &g) {
     auto workdir = fs::tmp::make_temp_dir(workdir_, "edge_index");
 
-    typedef typename EdgeIndexHelper<EdgeIndex>::GraphPositionFillingIndexBuilderT IndexBuilder;
+    typedef GraphPositionFillingIndexBuilder<EdgeIndex> IndexBuilder;
     IndexBuilder().BuildIndexFromGraph(index, g, workdir);
-}
-
-using PacIndex = DeBruijnEdgeMultiIndex<ConjugateDeBruijnGraph::EdgeId>;
-
-template<>
-void EdgeIndexRefiller::Refill(PacIndex &index,
-                               const ConjugateDeBruijnGraph &g) {
-    auto workdir = fs::tmp::make_temp_dir(workdir_, "edge_index");
-
-    typedef typename debruijn_graph::EdgeIndexHelper<PacIndex>::GraphPositionFillingIndexBuilderT Builder;
-    Builder().BuildIndexFromGraph(index, g, workdir);
 }
 
 }

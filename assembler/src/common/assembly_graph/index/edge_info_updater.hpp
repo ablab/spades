@@ -7,10 +7,12 @@
 
 #pragma once
 
-#include "assembly_graph/core/graph_iterators.hpp"
-#include "utils/parallel/openmp_wrapper.h"
-#include "sequence/sequence.hpp"
 #include "edge_position_index.hpp"
+
+#include "assembly_graph/core/graph_iterators.hpp"
+#include "sequence/sequence.hpp"
+
+#include "utils/parallel/openmp_wrapper.h"
 
 namespace debruijn_graph {
 
@@ -66,13 +68,11 @@ class EdgeInfoUpdater {
             : g_(g), index_(index) { }
 
     void UpdateKmers(EdgeId e) {
-        const Sequence &nucls = g_.EdgeNucls(e);
-        UpdateKMers(nucls, e);
+        UpdateKMers(g_.EdgeNucls(e), e);
     }
 
     void DeleteKmers(EdgeId e) {
-        Sequence nucls = g_.EdgeNucls(e);
-        DeleteKMers(nucls, e);
+        DeleteKMers(g_.EdgeNucls(e), e);
     }
 
     void UpdateAll() {
