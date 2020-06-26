@@ -1,4 +1,4 @@
-<html> <head>     <title>SPAdes 3.13.1 Manual</title>     <style type="text/css">         .highlight  pre {           background-color: #f0f2f4;           border-radius: 2px;           font-size: 100%;           line-height: 1.45;           overflow: auto;           padding: 16px;         }     </style> </head> <body> <meta charset="UTF-8"> <p><strong>SPAdes 3.14.1 Manual</strong></p>
+<html>     <head>         <title>SPAdes 3.14.1 Manual</title>         <style type="text/css">             .highlight  pre {               background-color: #f0f2f4;               border-radius: 2px;               font-size: 100%;               line-height: 1.45;               overflow: auto;               padding: 16px;             }         </style>     </head>     <body> <meta charset="UTF-8"> <p><strong>SPAdes 3.14.1 Manual</strong></p>
 <ol>
 <li><a href="#sec1">About SPAdes</a> <br>
     1.1. <a href="#sec1.1">Supported data types</a><br>
@@ -435,7 +435,7 @@ Should not be confused with FR and RF strand-specificity for RNA-Seq data (see <
 </ul>
 <p>To properly specify a library you should provide its type and at least one file with reads. Orientation is an optional attribute. Its default value is "fr" (forward-reverse) for paired-end libraries and "rf" (reverse-forward) for mate-pair libraries.</p>
 <p>The value for each attribute is given after a colon. Comma-separated lists of files should be given in square brackets. For each file you should provide its full path in double quotes. Make sure that files with right reads are given in the same order as corresponding files with left reads.</p>
-<p>For example, if you have one paired-end library splitted into two pairs of files:</p>
+<p>For example, if you have one paired-end library split into two pairs of files:</p>
 <div class="highlight highlight-source-shell"><pre>    lib_pe1_left_1.fastq
     lib_pe1_right_1.fastq
     lib_pe1_left_2.fastq
@@ -546,7 +546,7 @@ Notes:</p>
 <div class="highlight highlight-source-shell"><pre>    spades.py --iontorrent -s it_reads.fastq \
     --pacbio pacbio_clr.fastq --trusted-contigs contigs.fastq \
     -o spades_output</pre></div>
-<p>If a single-read library is splitted into several files:</p>
+<p>If a single-read library is split into several files:</p>
 <div class="highlight highlight-source-shell"><pre>    unpaired1_1.fastq
     unpaired1_2.fastq
     unpaired1_3.fasta</pre></div>
@@ -616,7 +616,7 @@ Here <code>3</code> is the number of the contig/scaffold, <code>237403</code> is
 <pre lang="plain"><code>    NODE_5_length_100000_cov_215.651
     2+,5-,3+,5-,4+
 </code></pre>
-<p>Since the current version of Bandage does not accept paths with gaps, paths corresponding contigs/scaffolds jumping over a gap in the assembly graph are splitted by semicolon at the gap positions. For example, the following record</p>
+<p>Since the current version of Bandage does not accept paths with gaps, paths corresponding contigs/scaffolds jumping over a gap in the assembly graph are split by semicolon at the gap positions. For example, the following record</p>
 <pre lang="plain"><code>    NODE_3_length_237403_cov_243.207
     21-,17-,15+,17-,16+;
     31+,23-,22+,23-,4-
