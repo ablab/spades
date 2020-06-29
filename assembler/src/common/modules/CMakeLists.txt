@@ -13,6 +13,7 @@ add_library(modules STATIC
             alignment/gap_info.cpp
             alignment/bwa_index.cpp
             alignment/long_read_mapper.cpp
+            alignment/sequence_mapper.cpp
             alignment/sequence_mapper_notifier.cpp
             alignment/pacbio/gap_filler.cpp
             alignment/pacbio/gap_dijkstra.cpp 

@@ -7,11 +7,12 @@
 
 #pragma once
 
+#include "kmer_map.hpp"
+
+#include "assembly_graph/core/action_handlers.hpp"
+
 #include "sequence/sequence_tools.hpp"
 #include "adt/kmer_vector.hpp"
-#include "edge_index.hpp"
-
-#include "kmer_map.hpp"
 
 #include <set>
 #include <cstdlib>

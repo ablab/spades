@@ -15,8 +15,8 @@
 #include "sequence/sequence_tools.hpp"
 #include "pipeline/graph_pack.hpp"
 
-#include "edge_index.hpp"
 #include "kmer_mapper.hpp"
+#include "edge_index.hpp"
 
 #include <cstdlib>
 
@@ -404,10 +404,6 @@ class BasicSequenceMapper: public AbstractSequenceMapper<Graph> {
   DECL_LOGGER("BasicSequenceMapper");
 };
 
-inline std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> MapperInstance(const GraphPack &gp) {
-    return std::make_shared<BasicSequenceMapper<Graph, EdgeIndex<Graph>>>(gp.get<Graph>(),
-                                                                          gp.get<EdgeIndex<Graph>>(),
-                                                                          gp.get<KmerMapper<Graph>>());
-}
+std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> MapperInstance(const GraphPack &gp);
 
 } // namespace debruijn_graph
