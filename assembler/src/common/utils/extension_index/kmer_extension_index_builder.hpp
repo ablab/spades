@@ -80,7 +80,7 @@ public:
         BuildExtensionIndexFromKPOMers(workdir, index, *counter,
                                        nthreads, read_buffer_size);
 
-        return std::move(counter);
+        return counter;
     }
 
     template<class Index, class Counter>

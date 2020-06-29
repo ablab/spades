@@ -27,7 +27,7 @@ class EdgeInfo {
 
  public:
     EdgeInfo(IdType e = IdType(), unsigned o = CLEARED) :
-        edge_id_(e.int_id()) {
+        edge_id_(IdHolder(e.int_id())) {
         offset_with_lock_.init();
         offset_with_lock_.setData(o);
         VERIFY(edge_id_ != IdType().int_id() || clean());
@@ -52,13 +52,13 @@ class EdgeInfo {
 
     void clear() {
       offset_with_lock_.setData(CLEARED);
-      edge_id_ = IdType().int_id();
+      edge_id_ = IdHolder(IdType().int_id());
     }
     bool clean() const { return offset() == CLEARED; }
 
     void remove() {
       offset_with_lock_.setData(TOMBSTONE);
-      edge_id_ = IdType().int_id();
+      edge_id_ = IdHolder(IdType().int_id());
     }
     bool removed() const { return offset() == TOMBSTONE; }
 
@@ -74,29 +74,29 @@ class EdgeInfo {
     template<class Reader>
     void BinRead(Reader &reader) {
       uint32_t offset;
-      io::binary::BinRead(reader, edge_id_, offset);
+      IdHolder id;
+      io::binary::BinRead(reader, id, offset);
       offset_with_lock_.setData(offset);
+      edge_id_ = id;
     }
-
-};
+} __attribute__((packed));
 
 template<class stream, class IdType>
 stream &operator<<(stream &s, const EdgeInfo<IdType> &info) {
     return s << "EdgeInfo[" << info.edge() << ", " << info.offset() << "]";
 }
 
-template<class Graph,
-         typename IdType = typename Graph::EdgeId>
+template<class Graph>
 struct GraphInverter {
-    const Graph &g_;
+  const Graph &g_;
 
-    GraphInverter(const Graph &g)
-            : g_(g) {}
+  GraphInverter(const Graph &g)
+      : g_(g) {}
 
-    template<class K>
-    EdgeInfo<IdType> operator()(const EdgeInfo<IdType>& v, const K&) const {
-        return v.conjugate(g_);
-    }
+  template<class K, class EI>
+  EI operator()(const EI& v, const K&) const {
+    return v.conjugate(g_);
+  }
 };
 
 
@@ -112,7 +112,7 @@ public:
     typedef StoringType storing_type;
     typedef typename base::KeyType KMer;
     typedef typename base::KeyWithHash KeyWithHash;
-    typedef EdgeInfo<typename Graph::EdgeId> KmerPos;
+    typedef EdgeInfo<typename Graph::EdgeId, IdHolder> KmerPos;
 
 public:
     KmerFreeEdgeIndex(const Graph &graph)

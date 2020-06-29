@@ -415,6 +415,8 @@ public:
 
     size_t size() const { return vstorage_.size(); }
     size_t e_size() const { return estorage_.size(); }
+    size_t max_eid() const { return estorage_.max_id(); }
+    size_t max_vid() const { return vstorage_.max_id(); }
 
     template<class Predicate, bool Canonical = false>
     auto e_begin(Predicate p) const {
