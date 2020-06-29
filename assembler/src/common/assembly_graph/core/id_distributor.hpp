@@ -29,6 +29,7 @@ class ReclaimingIdDistributor {
     size_t size() const {
         return free_map_.size();
     }
+    uint64_t max_id() const { return size() + bias_; }
     bool occupied(uint64_t at) const {
         return !free_map_[at - bias_];
     }

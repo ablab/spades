@@ -264,6 +264,7 @@ private:
 
         id_iterator id_begin() const { return id_distributor_.begin(); }
         id_iterator id_end() const { return id_distributor_.end(); }
+        uint64_t max_id() const { return id_distributor_.max_id(); }
 
         void reserve(size_t sz) {
             if (storage_size_ >= sz + bias_)
