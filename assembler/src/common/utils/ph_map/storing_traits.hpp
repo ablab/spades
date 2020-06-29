@@ -7,55 +7,52 @@
 
 #pragma once
 
-#include "values.hpp"
 #include "utils/verify.hpp"
 
 namespace utils {
 
 struct SimpleStoring {
-    template<class K, class V>
-    static V get_value(const ValueArray<V> &values, const K& key) {
+    template<class K, class Container>
+    static auto get_value(const Container &values, const K& key) {
         return values[key.idx()];
     }
 
-    template<class K, class V>
-    static void set_value(ValueArray<V> &values, const K& key, const V& value) {
+    template<class K, class V, class Container>
+    static void set_value(Container &values, const K& key, const V& value) {
         values[key.idx()] = value;
     }
 
-    static bool IsInvertable() {
+    static constexpr bool IsInvertable() {
         return false;
     }
 };
 
 struct InvertableStoring {
-    template<typename V>
     struct default_inverter {
-        template<typename K>
+        template<typename K, typename V>
         V operator()(const V& v, const K& k) const {
             return v.conjugate(k);
         }
     };
 
-    template<typename V>
     struct trivial_inverter {
-        template<typename K>
+        template<typename K, typename V>
         V operator()(const V& v, const K& /*k*/) const {
             return v;
         }
     };
 
-    template<class K, class V, class F = default_inverter<V>>
-    static V get_value(const ValueArray<V> &values, const K& key,
-                       const F& inverter = F()) {
+    template<class K, class Container, class F = default_inverter>
+    static auto get_value(const Container &values, const K& key,
+                          const F& inverter = F()) {
         if (key.is_minimal())
             return values[key.idx()];
         else
             return inverter(values[key.idx()], key);
     }
 
-    template<class K, class V, class F = default_inverter<V>>
-    static void set_value(ValueArray<V>& values, const K& key, const V& value,
+    template<class K, class V, class Container, class F = default_inverter>
+    static void set_value(Container& values, const K& key, const V& value,
                           const F& inverter = F()) {
         VERIFY(key.idx() < values.size());
         if (key.is_minimal()) {
@@ -65,7 +62,7 @@ struct InvertableStoring {
         }
     }
 
-    static bool IsInvertable() {
+    static constexpr bool IsInvertable() {
         return true;
     }
 };

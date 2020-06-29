@@ -7,14 +7,16 @@
 
 #include "version.hpp"
 
+#include "pipeline/library.hpp"
+
 #include "io/reads/read_processor.hpp"
 #include "io/reads/io_helper.hpp"
 
+#include "utils/ph_map/kmer_maps.hpp"
+#include "utils/kmer_mph/kmer_index_builder.hpp"
+
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
-#include "utils/ph_map/perfect_hash_map.hpp"
-#include "utils/kmer_mph/kmer_index_builder.hpp"
-#include "pipeline/library.hpp"
 
 #include <clipp/clipp.h>
 #include <string>

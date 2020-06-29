@@ -12,6 +12,7 @@
 #include "assembly_graph/index/edge_info_updater.hpp"
 #include "edge_index_refiller.hpp"
 
+
 namespace io { namespace binary {
 template<class Graph>
 class EdgeIndexIO;
@@ -27,35 +28,24 @@ namespace debruijn_graph {
 template<class Graph>
 class EdgeIndex: public omnigraph::GraphActionHandler<Graph> {
     using InnerIndex = KmerFreeEdgeIndex<Graph>;
-public:
+
     typedef typename Graph::EdgeId EdgeId;
-    typedef typename InnerIndex::KMer KMer;
-    typedef typename InnerIndex::KmerPos Value;
+public:
+    typedef RtSeq KMer;
     static constexpr size_t NOT_FOUND = size_t(-1);
 
 private:
     InnerIndex inner_index_;
-    EdgeInfoUpdater<InnerIndex, Graph> updater_;
+    EdgeInfoUpdater<Graph> updater_;
     EdgeIndexRefiller refiller_;
-
-    // Available only for loading / saving
-    InnerIndex &inner_index() {
-        return inner_index_;
-    }
-
-    const InnerIndex &inner_index() const {
-        VERIFY(this->IsAttached());
-        return inner_index_;
-    }
-
-    friend class io::binary::EdgeIndexIO<Graph>;
     
 public:
     EdgeIndex(const Graph& g, const std::string &workdir)
             : omnigraph::GraphActionHandler<Graph>(g, "EdgeIndex"),
               inner_index_(g),
-              updater_(g, inner_index_),
-              refiller_(workdir) {}
+              refiller_(workdir) {
+        INFO("Size of edge index entry: " << sizeof(EdgeInfo<EdgeId>));
+    }
 
     virtual ~EdgeIndex() {
         TRACE("~EdgeIndex OK")
@@ -66,11 +56,11 @@ public:
     }
 
     void HandleAdd(EdgeId e) override {
-        updater_.UpdateKmers(e);
+        updater_.UpdateKmers(this->g(), e, inner_index_);
     }
 
     void HandleDelete(EdgeId e) override {
-        updater_.DeleteKmers(e);
+        updater_.DeleteKmers(this->g(), e, inner_index_);
     }
 
     bool contains(const KMer& kmer) const {
@@ -106,6 +96,17 @@ public:
     static bool IsInvertable() {
         return InnerIndex::storing_type::IsInvertable();
     }
+
+    template<class Writer>
+    void BinWrite(Writer &writer) const {
+        inner_index_.BinWrite(writer);
+    }
+
+    template<class Reader>
+    void BinRead(Reader &reader) {
+        inner_index_.BinRead(reader);
+    }
+
 };
 
 template<class Graph>

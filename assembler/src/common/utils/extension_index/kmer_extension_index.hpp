@@ -9,6 +9,7 @@
 
 #include "sequence/rtseq.hpp"
 #include "utils/ph_map/perfect_hash_map.hpp"
+#include "utils/ph_map/kmer_maps.hpp"
 #include "utils/stl_utils.hpp"
 #include "utils/ph_map/storing_traits.hpp"
 #include <bitset>

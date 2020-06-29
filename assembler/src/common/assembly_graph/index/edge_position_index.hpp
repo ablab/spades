@@ -9,12 +9,13 @@
 
 #include "sequence/rtseq.hpp"
 #include "utils/ph_map/perfect_hash_map.hpp"
+#include "utils/ph_map/kmer_maps.hpp"
 
 #include <folly/SmallLocks.h>
 
 namespace debruijn_graph {
 
-template<class IdType, class IdHolder = uint64_t>
+template<class IdType, class IdHolder = IdType>
 class EdgeInfo {
     IdHolder edge_id_;
 
@@ -64,6 +65,19 @@ class EdgeInfo {
     bool valid() const {
         return !clean() && !removed();
     }
+
+    template<class Writer>
+    void BinWrite(Writer &writer) const {
+      io::binary::BinWrite(writer, edge_id_, offset_with_lock_.getData());
+    }
+
+    template<class Reader>
+    void BinRead(Reader &reader) {
+      uint32_t offset;
+      io::binary::BinRead(reader, edge_id_, offset);
+      offset_with_lock_.setData(offset);
+    }
+
 };
 
 template<class stream, class IdType>
@@ -86,32 +100,27 @@ struct GraphInverter {
 };
 
 
-template<class Graph, class StoringType = utils::DefaultStoring>
-class KmerFreeEdgeIndex :
-      public utils::PerfectHashMap<RtSeq,
-                                   EdgeInfo<typename Graph::EdgeId>,
-                                   utils::kmer_index_traits<RtSeq>, StoringType> {
-    typedef utils::PerfectHashMap<RtSeq, EdgeInfo<typename Graph::EdgeId>,
-            utils::kmer_index_traits<RtSeq>, StoringType> base;
-    const Graph &graph_;
+template<class Graph, class IdHolder = typename Graph::EdgeId, class StoringType = utils::DefaultStoring>
+class KmerFreeEdgeIndex : public utils::PerfectHashMap<RtSeq,
+                                                       EdgeInfo<typename Graph::EdgeId, IdHolder>,
+                                                       utils::kmer_index_traits<RtSeq>, StoringType> {
+  typedef utils::PerfectHashMap<RtSeq, EdgeInfo<typename Graph::EdgeId, IdHolder>,
+                                utils::kmer_index_traits<RtSeq>, StoringType> base;
+  const Graph &graph_;
 
 public:
-    typedef typename base::traits_t traits_t;
     typedef StoringType storing_type;
     typedef typename base::KeyType KMer;
-    typedef typename base::IdxType KMerIdx;
-    typedef Graph GraphT;
-    typedef typename Graph::EdgeId IdType;
     typedef typename base::KeyWithHash KeyWithHash;
     typedef EdgeInfo<typename Graph::EdgeId> KmerPos;
-    using base::valid;
-    using base::ConstructKWH;
 
 public:
-
     KmerFreeEdgeIndex(const Graph &graph)
             : base(unsigned(graph.k() + 1)), graph_(graph) {}
 
+
+    using base::valid;
+    using base::ConstructKWH;
 
     KmerPos get_value(const KeyWithHash &kwh) const {
         return base::get_value(kwh, GraphInverter<Graph>(graph_));
@@ -136,7 +145,7 @@ public:
         return graph_.EdgeNucls(entry.edge()).contains(kwh.key(), entry.offset());
     }
 
-    void PutInIndex(KeyWithHash &kwh, IdType id, size_t offset) {
+    void PutInIndex(KeyWithHash &kwh, typename Graph::EdgeId id, size_t offset) {
         if (!valid(kwh))
             return;
 
@@ -155,11 +164,11 @@ public:
     }
 };
 
-template<class Graph, class StoringType = utils::DefaultStoring>
+template<class Graph, class IdHolder = typename Graph::EdgeId, class StoringType = utils::DefaultStoring>
 class KmerStoringEdgeIndex :
-      public utils::KeyStoringMap<RtSeq, EdgeInfo<typename Graph::EdgeId>,
+      public utils::KeyStoringMap<RtSeq, EdgeInfo<typename Graph::EdgeId, IdHolder>,
                                   utils::kmer_index_traits<RtSeq>, StoringType> {
-  typedef utils::KeyStoringMap<RtSeq, EdgeInfo<typename Graph::EdgeId>,
+  typedef utils::KeyStoringMap<RtSeq, EdgeInfo<typename Graph::EdgeId, IdHolder>,
                                utils::kmer_index_traits<RtSeq>, StoringType> base;
 
 public:
@@ -225,5 +234,6 @@ public:
       entry.unlock();
   }
 };
+
 
 }

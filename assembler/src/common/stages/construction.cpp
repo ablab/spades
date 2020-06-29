@@ -409,7 +409,7 @@ public:
         if (EdgeIndex<Graph>::IsInvertable())
             kmer_per_record = 2;
 
-        for (auto I = coverage_map.value_cbegin(), E = coverage_map.value_cend(); I != E;  ++I) {
+        for (auto I = coverage_map.value_cbegin(), E = coverage_map.value_cend(); I != E; ++I) {
             size_t ccov = *I;
             if (!ccov)
                 continue;

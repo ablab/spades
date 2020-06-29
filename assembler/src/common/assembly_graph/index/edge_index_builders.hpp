@@ -105,8 +105,7 @@ public:
 
         // Now use the index to fill the coverage and EdgeId's
         INFO("Collecting edge information from graph, this takes a while.");
-        EdgeInfoUpdater<Index, Graph> updater(g, index);
-        updater.UpdateAll();
+        EdgeInfoUpdater<Graph>().UpdateAll(g, index);
     }
 
 };

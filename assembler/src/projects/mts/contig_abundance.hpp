@@ -27,7 +27,7 @@ template<typename T> using Profile = std::vector<T>;
 
 class KmerProfileIndex {
 private:
-    typedef typename utils::InvertableStoring::trivial_inverter<Offset> InverterT;
+    typedef typename utils::InvertableStoring::trivial_inverter InverterT;
     typedef utils::KeyStoringMap<RtSeq,
         Offset,
         utils::kmer_index_traits<RtSeq>,
