@@ -15,16 +15,21 @@
 #include <parallel_hashmap/phmap.h>
 #include <numeric>
 #include <stack>
+#include <vector>
+#include <numeric>
 
 namespace debruijn_graph {
 
 class GapCloserPairedIndexFiller : public SequenceMapperListener {
 private:
+    const GraphPack &gp_;
     const Graph &graph_;
     typedef phmap::parallel_flat_hash_map<EdgeId, EdgeId> TipMap;
     omnigraph::de::PairedInfoIndexT<Graph> &paired_index_;
     omnigraph::de::ConcurrentPairedInfoBuffer<Graph> buffer_pi_;
     TipMap out_tip_map_;
+    debruijn_graph::EdgeIndex<ConjugateDeBruijnGraph> index_;
+    std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> mapper_ = nullptr;
 
     void ProcessPairedRead(const MappingPath<EdgeId> &path1, const MappingPath<EdgeId> &path2) {
         for (size_t i = 0; i < path1.size(); ++i) {
@@ -91,13 +96,16 @@ private:
     }
 
 public:
-    GapCloserPairedIndexFiller(const Graph &graph, omnigraph::de::PairedInfoIndexT<Graph> &paired_index)
-            : graph_(graph), paired_index_(paired_index), buffer_pi_(graph) { }
+    GapCloserPairedIndexFiller(const Graph &graph, omnigraph::de::PairedInfoIndexT<Graph> &paired_index,
+                               const GraphPack &gp)
+            : graph_(graph), paired_index_(paired_index), buffer_pi_(graph), gp_(gp), index_(graph, gp.workdir()) { }
 
     void StartProcessLibrary(size_t /* threads_count */) override {
         paired_index_.clear();
-        INFO("Preparing tip map");
-        PrepareTipMap(out_tip_map_);
+        if (out_tip_map_.empty()) {
+            INFO("Preparing tip map");
+            PrepareTipMap(out_tip_map_);
+        }
     }
 
     void StopProcessLibrary() override {
@@ -115,6 +123,21 @@ public:
                            const MappingPath<EdgeId> &path1,
                            const MappingPath<EdgeId> &path2) override {
         ProcessPairedRead(path1, path2);
+    }
+
+    auto GetMapper() {
+        if (mapper_ == nullptr) {
+            PrepareTipMap(out_tip_map_);
+
+            std::vector<EdgeId> edges;
+            for (const auto &entry : out_tip_map_) {
+                edges.push_back(entry.first);
+            }
+
+            index_.Refill(edges);
+            mapper_ = MapperInstance(gp_, index_);
+        }
+        return mapper_;
     }
 };
 
@@ -369,13 +392,11 @@ void GapClosing::run(GraphPack &gp, const char *) {
         return;
     }
 
-    gp.EnsureIndex();
     auto &g = gp.get_mutable<Graph>();
     omnigraph::de::PairedInfoIndexT<Graph> tips_paired_idx(g);
-    GapCloserPairedIndexFiller gcpif(g, tips_paired_idx);
+    GapCloserPairedIndexFiller gcpif(g, tips_paired_idx, gp);
 
     SequenceMapperNotifier notifier(gp, cfg::get().ds.reads.lib_count());
-    auto mapper = MapperInstance(gp);
 
     auto& dataset = cfg::get_writable().ds;
     for (size_t i = 0; i < dataset.reads.lib_count(); ++i) {
@@ -384,7 +405,7 @@ void GapClosing::run(GraphPack &gp, const char *) {
 
         notifier.Subscribe(i, &gcpif);
         io::BinaryPairedStreams paired_streams = paired_binary_readers(dataset.reads[i], false, 0, false);
-        notifier.ProcessLibrary(paired_streams, i, *mapper);
+        notifier.ProcessLibrary(paired_streams, i, *gcpif.GetMapper());
 
         INFO("Initializing gap closer");
         GapCloser gap_closer(g, tips_paired_idx,
@@ -392,8 +413,6 @@ void GapClosing::run(GraphPack &gp, const char *) {
         gap_closer.CloseShortGaps();
         INFO("Gap closer done");
     }
-
-    gp.DetachEdgeIndex();
 }
 
 }
