@@ -19,7 +19,6 @@
 #include "pe_utils.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "modules/alignment/rna/ss_coverage.hpp"
-//#include "scaff_supplementary.hpp"
 
 #include <queue>
 #include <cfloat>
@@ -221,7 +220,7 @@ public:
         }
     }
 
-    bool WeightCounterBased() const {
+    bool WeightCounterBased() const noexcept {
         return wc_ != nullptr;
     }
 
@@ -787,8 +786,9 @@ private:
     DECL_LOGGER("ScaffoldingExtensionChooser");
 };
 
-inline bool EdgeWithWeightCompareReverse(const std::pair<EdgeId, double>& p1,
-                                         const std::pair<EdgeId, double>& p2) {
+template <class T>
+inline bool EdgeWithWeightCompareReverse(const std::pair<T, double>& p1,
+                                         const std::pair<T, double>& p2) {
     return p1.second > p2.second;
 }
 
@@ -1109,7 +1109,7 @@ private:
 
     std::vector<std::pair<EdgeId, double> > MapToSortVector(const std::map<EdgeId, double>& map) const {
         std::vector<std::pair<EdgeId, double> > result(map.begin(), map.end());
-        std::sort(result.begin(), result.end(), EdgeWithWeightCompareReverse);
+        std::sort(result.begin(), result.end(), EdgeWithWeightCompareReverse<EdgeId>);
         return result;
     }
 
@@ -1221,7 +1221,7 @@ private:
 
     std::vector<std::pair<EdgeId, double>> MapToSortVector(const std::map<EdgeId, double>& map) const {
         std::vector<std::pair<EdgeId, double>> result(map.begin(), map.end());
-        std::sort(result.begin(), result.end(), EdgeWithWeightCompareReverse);
+        std::sort(result.begin(), result.end(), EdgeWithWeightCompareReverse<EdgeId>);
         return result;
     }
 
@@ -1234,6 +1234,244 @@ private:
     DECL_LOGGER("LongReadsExtensionChooser");
 };
 
+class TrustedContigsExtensionChooser : public ExtensionChooser {
+public:
+    TrustedContigsExtensionChooser(const Graph& g,
+                                    const GraphCoverageMap& read_paths_cov_map,
+                                    double filtering_threshold,
+                                    double weight_priority_threshold,
+                                    double unique_edge_priority_threshold,
+                                    size_t min_significant_overlap,
+                                    size_t max_repeat_length,
+                                    bool uneven_depth,
+                                    bool use_low_quality_matching = false)
+            : ExtensionChooser(g)
+            , filtering_threshold_(filtering_threshold)
+            , weight_priority_threshold_(weight_priority_threshold)
+            , min_significant_overlap_(min_significant_overlap)
+            , cov_map_(read_paths_cov_map)
+            , unique_edge_analyzer_(g, cov_map_, filtering_threshold,
+                                    unique_edge_priority_threshold,
+                                    max_repeat_length, uneven_depth)
+            , use_low_quality_matching_(use_low_quality_matching)
+    {}
+
+    /* Choose extension as correct only if we have reads that traverse a unique edge from the path and this extension.
+     * Edge is unique if all reads mapped to this edge are consistent.
+     * Two reads are consistent if they can form one path in the graph.
+     */
+    EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
+        auto conj = [th = this](auto id) {
+            return th->g_.conjugate(EdgeId(id)).id_;
+        };
+        auto good_edge = [&conj](auto id) {
+            std::vector<EdgeId> good = {657120, 127385};
+            for (auto x : good) {
+                if (x == id || id == conj(x))
+                    return true;
+            }
+            return false;
+        };
+        auto print_if = [](bool cond, auto msg) {
+            if (cond) {
+                std::cout << msg << std::endl;
+            }
+            return cond;
+        };
+        auto print1 = [&good_edge](auto v) {
+            for (auto const & x : v) {
+                std::cout << x.id_;
+                if (good_edge(x.id_))
+                    std::cout << '!';
+                std::cout << ' ';
+            }
+            std::cout << std::endl;
+        };
+        auto print2 = [&good_edge](auto v) {
+            for (auto const & x : v) {
+                std::cout << x.e_.id_;
+                if (good_edge(x.e_.id_))
+                    std::cout << '!';
+                std::cout << ' ';
+            }
+            std::cout << std::endl;
+        };
+
+        bool b = false;
+        auto get_b = [&] () {
+            std::cout << "Filter called!\n";
+            b|=print_if(good_edge(path.Back().int_id()), "back");
+            
+            for (auto const & x : edges)
+                b |= good_edge(x.e_.id_);
+        };
+
+        // get_b();
+
+        if (b) {
+            std::cout << "path:\n";
+            print1(path);
+            std::cout << "candidates: ";
+            print2(edges);
+        }
+
+        DEBUG("We are in Filter of TrustedContigsExtensionChooser");
+        path.PrintDEBUG();
+        std::map<EdgeWithDistance, double> weights_cands;
+
+        auto filtered_cands = GetHighQualityCandidats(path, weights_cands, b);
+        if (use_low_quality_matching_ && filtered_cands.empty())
+            filtered_cands = GetLowQualityCandidats(path, weights_cands, b);
+
+        DEBUG("Candidates:");
+        for (auto const & iter : weights_cands)
+            DEBUG("Candidate " << g_.int_id(iter.first.e_) << " weight " << iter.second);
+
+        auto sort_res = MapToSortVector(weights_cands);
+        DEBUG("sort res " << sort_res.size() << " tr " << weight_priority_threshold_);
+        if (sort_res.empty() || sort_res[0].second < filtering_threshold_) {
+            filtered_cands.clear();
+        } else if (sort_res.size() > 1) {
+            if (sort_res[0].second > weight_priority_threshold_ * sort_res[1].second) {
+                filtered_cands.clear();
+                filtered_cands.insert(sort_res[0].first);
+            } else {
+                for (size_t i = 0; i < sort_res.size(); ++i) {
+                    if (sort_res[i].second * weight_priority_threshold_ < sort_res[0].second)
+                        filtered_cands.erase(sort_res[i].first);
+                }
+            }
+        }
+        EdgeContainer result(filtered_cands.begin(), filtered_cands.end());
+        if (result.size() != 1) {
+            DEBUG("Trusted contigs don't help =(");
+        }
+
+        if (b) {
+            std::cout << "returned: ";
+            print2(result);
+        }
+        return result;
+    }
+
+private:
+
+    std::pair<bool, std::set<EdgeWithDistance>> GetCandidates(const BidirectionalPath &path,
+                                             std::map<EdgeWithDistance, double> &weights_cands,
+                                             size_t start_pos,
+                                             const std::function<std::pair<bool, size_t>(const BidirectionalPath&, size_t)> &comparator,
+                                             bool b) const
+    {
+        VERIFY(start_pos < path.Size());
+        std::set<EdgeWithDistance> filtered_cands;
+        auto support_paths = cov_map_.GetCoveringPaths(path[start_pos]);
+        DEBUG("Found " << support_paths.size() << " covering paths!!!");
+        for (auto const & it : support_paths) {
+            for (auto pos : it->FindAll(path[start_pos])) {
+                if (b) {
+                    std::cout << "common prefix:\n";
+                    for (size_t j = std::max(0, (int)pos + 1 - (int)path.Size()); j <= pos; ++j) {
+                        std::cout << it->At(j) << ' ';
+                    }
+                    std::cout << '[';
+                    if (pos+1 < it->Size())
+                        std::cout << it->At(pos + 1);
+                    std::cout << ']';
+                    std::cout << '\n';
+                }
+                if (pos + 1 < it->Size()) {
+                    auto tmp = comparator(*it, pos);
+                    auto& is_good_path = tmp.first;
+                    auto& matched_len = tmp.second;
+                    if (is_good_path) {
+                        auto gap = it->GapAt(pos + 1);
+                        EdgeWithDistance next = {it->At(pos + 1), gap.gap, std::move(gap.gap_seq_)};
+                        weights_cands[next] += static_cast<double>(matched_len)*it->GetWeight();
+                        filtered_cands.insert(next);
+                    }
+                }
+            }
+        }
+        return {!support_paths.empty(), std::move(filtered_cands)};
+    }
+
+    std::set<EdgeWithDistance> GetHighQualityCandidats(const BidirectionalPath &path, std::map<EdgeWithDistance, double> &weights_cands, bool b) const {
+        auto start_pos = path.Size() - 1;
+        auto comparator = [&path, start_pos, th = this] (const BidirectionalPath &coverage_path, size_t pos) {
+            auto is_good_path = (FirstNotEqualPosition(path, start_pos, coverage_path, pos, false) == -1ul);
+            auto matched_len = start_pos + 1;
+            auto privilege_scalar = (th->HasUniqueEdge(path, 0, matched_len) ? 3 : 1);
+            return std::pair<bool, size_t>(is_good_path, matched_len * privilege_scalar);
+        };
+        return GetCandidates(path, weights_cands, start_pos, comparator, b).second;
+    }
+
+    std::set<EdgeWithDistance> GetLowQualityCandidats(const BidirectionalPath &path, std::map<EdgeWithDistance, double> &weights_cands, bool b) const {
+        DEBUG("Fallback mode");
+        auto getComparator = [&path, th = this](size_t start_pos){
+            return [&path, start_pos, th] (const BidirectionalPath &coverage_path, size_t pos) {
+                auto pos1 = static_cast<int>(start_pos);
+                auto pos2 = static_cast<int>(pos);
+                auto skippedNonUniqueEdges = 0;
+                while (pos1 >= 0 && pos2 >= 0) {
+                    if (path[pos1] == coverage_path[pos2]) {
+                        skippedNonUniqueEdges = 0;
+                        --pos2;
+                    } else {
+                        ++skippedNonUniqueEdges;
+                        if (th->IsUniqueEdge(path[pos1]) || skippedNonUniqueEdges > 0)
+                            break;
+                    }
+                    --pos1;
+                }
+                auto matched_len = pos-pos2;
+                auto is_good_path = th->HasUniqueEdge(coverage_path, pos2+1, matched_len);
+                return std::pair<bool, size_t>(is_good_path, matched_len);
+            };
+        };
+        bool used_unique_edge = false;
+        for (int i = 0; i < std::min((int)path.Size(), 2) && !used_unique_edge; ++i) {
+            DEBUG("iteration: " << i);
+            auto pos = path.Size() - 1 - i;
+            used_unique_edge = IsUniqueEdge(path[pos]);
+            auto tmp = GetCandidates(path, weights_cands, pos, getComparator(pos), b);
+            auto& coverage_paths_are_found = tmp.first;
+            auto& filtered_cands = tmp.second;
+            if (!filtered_cands.empty() || coverage_paths_are_found)
+                return std::move(filtered_cands);
+        }
+        DEBUG("Fallback mode does not help");
+        return {};
+    }
+
+    bool IsUniqueEdge(EdgeId edge) const {
+        return unique_edge_analyzer_.IsUnique(edge) && g_.length(edge) >= min_significant_overlap_;
+    }
+
+    bool HasUniqueEdge(const BidirectionalPath& path, size_t from, size_t len) const {
+        for (size_t i = 0; i < len; ++i) {
+            auto edge = path.At(from + i);
+            if (IsUniqueEdge(edge))
+                return true;
+        }
+        return false;
+    }
+
+    std::vector<std::pair<EdgeWithDistance, double>> MapToSortVector(const std::map<EdgeWithDistance, double>& map) const {
+        std::vector<std::pair<EdgeWithDistance, double>> result(map.begin(), map.end());
+        std::sort(result.begin(), result.end(), EdgeWithWeightCompareReverse<EdgeWithDistance>);
+        return result;
+    }
+
+    double filtering_threshold_;
+    double weight_priority_threshold_;
+    size_t min_significant_overlap_;
+    const GraphCoverageMap& cov_map_;
+    LongReadsUniqueEdgeAnalyzer unique_edge_analyzer_;
+    bool use_low_quality_matching_;
+
+    DECL_LOGGER("TrustedContigsExtensionChooser");
+};
 
 class CoordinatedCoverageExtensionChooser: public ExtensionChooser {
 public:

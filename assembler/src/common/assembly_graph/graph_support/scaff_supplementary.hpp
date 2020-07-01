@@ -9,6 +9,9 @@
 #include "pipeline/graph_pack.hpp"
 #include "utils/logger/logger.hpp"
 
+#include <unordered_set>
+#include <unordered_map>
+
 namespace path_extend {
 typedef debruijn_graph::EdgeId EdgeId;
 
@@ -105,9 +108,11 @@ public:
 };
 
 class UsedUniqueStorage {
-    std::set<EdgeId> used_;
+    std::unordered_set<EdgeId> used_;
+    std::unordered_map<size_t, std::unordered_set<EdgeId>> used_by_paths_;
     const ScaffoldingUniqueEdgeStorage& unique_;
     const debruijn_graph::ConjugateDeBruijnGraph &g_;
+    const bool use_global_using;
 
 public:
     UsedUniqueStorage(const UsedUniqueStorage&) = delete;
@@ -117,22 +122,37 @@ public:
 
     explicit UsedUniqueStorage(const ScaffoldingUniqueEdgeStorage& unique,
                                const debruijn_graph::ConjugateDeBruijnGraph &g):
-            unique_(unique), g_(g) {}
+            unique_(unique), g_(g), use_global_using(cfg().get().mode != debruijn_graph::config::pipeline_type::meta) {}
 
-    void insert(EdgeId e) {
+    void insert(EdgeId e, size_t path_id) {
         if (!unique_.IsUnique(e))
             return;
 
         used_.insert(e);
         used_.insert(g_.conjugate(e));
+        used_by_paths_[path_id].insert(e);
+        used_by_paths_[path_id].insert(g_.conjugate(e));
     }
 
 //    const ScaffoldingUniqueEdgeStorage& unique_edge_storage() const {
 //        return unique_;
 //    }
 
+    bool IsUsed(EdgeId e, size_t path_id) const {
+        auto it = used_by_paths_.find(path_id);
+        return it != used_by_paths_.end() && it->second.find(e) != it->second.end();
+    }
+
+    bool IsUsed(EdgeId e) const {
+        return used_.find(e) != used_.end();
+    }
+
+    bool IsUsedAndUnique(EdgeId e, size_t path_id) const {
+        return unique_.IsUnique(e) && IsUsed(e, path_id);
+    }
+
     bool IsUsedAndUnique(EdgeId e) const {
-        return (unique_.IsUnique(e) && used_.find(e) != used_.end());
+        return unique_.IsUnique(e) && IsUsed(e);
     }
 
     bool UniqueCheckEnabled() const {
@@ -141,10 +161,19 @@ public:
 
     bool TryUseEdge(BidirectionalPath &path, EdgeId e, const Gap &gap) {
         if (UniqueCheckEnabled()) {
+            // if (use_global_using ? IsUsedAndUnique(e) : IsUsedAndUnique(e, path.GetId())) {
             if (IsUsedAndUnique(e)) {
+                if (used_by_paths_[path.GetId()].count(e) && path.SetCycleOverlapping(path.FindFirst(e))) {
+                    std::cout << "Trying to add edge " << e << " was failed, because this edge is unique and had used before\n";
+                } else {
+                    std::cout << "Wrong edge was detected, trying to add " << e << " with overlapping " << path.FindFirst(e) << " into: ";
+                    for (auto const & x : path)
+                        std::cout << x << ' '; 
+                    std::cout << '\n';
+                }
                 return false;
             } else {
-                insert(e);
+                insert(e, path.GetId());
             }
         }
         path.PushBack(e, gap);

@@ -880,6 +880,8 @@ private:
 
         size_t current = 0;
         while (current < extenders_.size()) {
+            if (path.Back().id_ == 547690)
+                std::cout << "-------------------------------------\n";
             DEBUG("step " << current << " of total " << extenders_.size());
             if (extenders_[current]->MakeGrowStep(path, paths_storage)) {
                 return true;
@@ -901,12 +903,13 @@ private:
                 bool was_used = false;
                 for (size_t ind =0; ind < paths.Get(i)->Size(); ind++) {
                     EdgeId eid = paths.Get(i)->At(ind);
-                    if (used_storage_.IsUsedAndUnique(eid)) {
+                    auto path_id = paths.Get(i)->GetId();
+                    if (used_storage_.IsUsedAndUnique(eid, path_id)) {
                         DEBUG("Used edge " << g_.int_id(eid));
                         was_used = true;
                         break;
                     } else {
-                        used_storage_.insert(eid);
+                        used_storage_.insert(eid, path_id);
                     }
                 }
                 if (was_used) {
@@ -914,7 +917,6 @@ private:
                     continue;
                 }
             }
-
             if (!cover_map_.IsCovered(*paths.Get(i))) {
                 AddPath(result, *paths.Get(i), cover_map_);
                 BidirectionalPath * path = new BidirectionalPath(*paths.Get(i));
@@ -932,6 +934,15 @@ private:
                 } while (count_trying < 10 && (path->Length() != current_path_len));
                 DEBUG("result path " << path->GetId());
                 path->PrintDEBUG();
+
+
+                std::cout << "i: " << i << "\n\tforward:\n";
+                for (auto const & x : *path)
+                    std::cout << x << ' '; 
+                std::cout << "\n\tback:\n";
+                for (auto const & x : path->Conjugate())
+                    std::cout << x << ' ';
+                std::cout << '\n';
             }
         }
     }
@@ -955,6 +966,8 @@ protected:
         if (success) {
             DEBUG("Adding edge. PathId: " << path.GetId() << " path length: " << path.Length() - 1 << ", fixed gap : "
                                           << gap.gap << ", trash length: " << gap.trash.previous << "-" << gap.trash.current);
+        } else {
+            
         }
         return success;
     }
@@ -1002,7 +1015,7 @@ protected:
 
     virtual bool ResolveShortLoopByPI(BidirectionalPath& path) = 0;
 
-    virtual bool CanInvestigateShortLoop() const {
+    virtual bool CanInvestigateShortLoop() const noexcept {
         return false;
     }
 
@@ -1058,6 +1071,9 @@ public:
     }
 
     bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage) override {
+        if (path.IsCycle())
+            return false;
+
         if (is_detector_.InExistingLoop(path)) {
             DEBUG("in existing loop");
             return false;
@@ -1065,31 +1081,31 @@ public:
         DEBUG("un ch enabled " << used_storage_.UniqueCheckEnabled());
         bool result;
         LoopDetector loop_detector(&path, cov_map_);
-        if (DetectCycle(path)) {
-            result = false;
-        } else if (TryToResolveTwoLoops(path)) {
-            result = true;
-        } else if (path.Size() >= 1 && InvestigateShortLoop() && loop_detector.EdgeInShortLoop(path.Back()) && use_short_loop_cov_resolver_) {
-            DEBUG("edge in short loop");
-            result = ResolveShortLoop(path);
-        } else if (InvestigateShortLoop() && loop_detector.PrevEdgeInShortLoop() && use_short_loop_cov_resolver_) {
-            DEBUG("Prev edge in short loop");
-            path.PopBack();
-            result = ResolveShortLoop(path);
-        } else {
-            DEBUG("Making step");
-            result = MakeSimpleGrowStep(path, paths_storage);
-            DEBUG("Made step");
+
+        auto resolveLoops = [&](bool resolve_two_loops = false, bool resolve_short_loop = true) {
             if (DetectCycle(path)) {
                 result = false;
-            } else if (path.Size() >= 1 && InvestigateShortLoop() && loop_detector.EdgeInShortLoop(path.Back())) {
+            } else if (resolve_two_loops && TryToResolveTwoLoops(path)) {
+                result = true;
+            } else if (resolve_short_loop && path.Size() >= 1 && InvestigateShortLoop() && loop_detector.EdgeInShortLoop(path.Back())) {
                 DEBUG("Edge in short loop");
                 result = ResolveShortLoop(path);
-            } else if (InvestigateShortLoop() && loop_detector.PrevEdgeInShortLoop()) {
+            } else if (resolve_short_loop && InvestigateShortLoop() && loop_detector.PrevEdgeInShortLoop()) {
                 DEBUG("Prev edge in short loop");
                 path.PopBack();
                 result = ResolveShortLoop(path);
+            } else {
+                return false;
             }
+            
+            return true;
+        };
+
+        if (!resolveLoops(true, use_short_loop_cov_resolver_)) {
+            DEBUG("Making step");
+            result = MakeSimpleGrowStep(path, paths_storage);
+            DEBUG("Made step");
+            resolveLoops();
         }
         return result;
     }
@@ -1103,7 +1119,7 @@ private:
         }
     }
 
-    bool InvestigateShortLoop() {
+    bool InvestigateShortLoop() const noexcept {
         return investigate_short_loops_ && (use_short_loop_cov_resolver_ || CanInvestigateShortLoop());
     }
 protected:
@@ -1160,7 +1176,7 @@ public:
         return extensionChooser_;
     }
 
-    bool CanInvestigateShortLoop() const override {
+    bool CanInvestigateShortLoop() const noexcept override {
         return extensionChooser_->WeightCounterBased();
     }
 
@@ -1198,6 +1214,7 @@ protected:
         FindFollowingEdges(path, &candidates);
         DEBUG("found candidates");
         DEBUG(candidates.size())
+
         if (candidates.size() == 1) {
             LoopDetector loop_detector(&path, cov_map_);
             if (!investigate_short_loops_ && (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
@@ -1227,7 +1244,7 @@ protected:
         EdgeId eid = candidates.back().e_;
 //In 2015 modes when trying to use already used unique edge, it is not added and path growing stops.
 //That allows us to avoid overlap removal hacks used earlier.
-        Gap gap(candidates.back().d_);
+        Gap gap(candidates.back().d_, std::move(candidates.back().gap_sequence_));
         return TryUseEdge(path, eid, gap);
     }
 
