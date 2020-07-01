@@ -11,10 +11,6 @@
 #include "long_read_storage.hpp"
 #include "sequence_mapper_notifier.hpp"
 
-#include <cassert>
-#include <mutex>
-#include <iomanip>
-
 namespace debruijn_graph {
 
 struct PathWithMappingInfo { 

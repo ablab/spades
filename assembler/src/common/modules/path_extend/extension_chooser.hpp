@@ -1380,7 +1380,9 @@ private:
                     std::cout << '\n';
                 }
                 if (pos + 1 < it->Size()) {
-                    auto[is_good_path, matched_len] = comparator(*it, pos);
+                    auto tmp = comparator(*it, pos);
+                    auto& is_good_path = tmp.first;
+                    auto& matched_len = tmp.second;
                     if (is_good_path) {
                         auto gap = it->GapAt(pos + 1);
                         EdgeWithDistance next = {it->At(pos + 1), gap.gap, std::move(gap.gap_seq_)};
@@ -1432,7 +1434,9 @@ private:
             DEBUG("iteration: " << i);
             auto pos = path.Size() - 1 - i;
             used_unique_edge = IsUniqueEdge(path[pos]);
-            auto[coverage_paths_are_found, filtered_cands] = GetCandidates(path, weights_cands, pos, getComparator(pos), b);
+            auto tmp = GetCandidates(path, weights_cands, pos, getComparator(pos), b);
+            auto& coverage_paths_are_found = tmp.first;
+            auto& filtered_cands = tmp.second;
             if (!filtered_cands.empty() || coverage_paths_are_found)
                 return std::move(filtered_cands);
         }

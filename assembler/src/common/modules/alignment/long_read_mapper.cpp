@@ -5,6 +5,7 @@
 //***************************************************************************
 
 #include "long_read_mapper.hpp"
+#include <iomanip>
 
 namespace debruijn_graph {
 
@@ -22,8 +23,7 @@ protected:
     virtual MappingPath<EdgeId> FilterBadMappings(const std::vector<EdgeId> &corrected_path,
                                           const MappingPath<EdgeId> &mapping_path) const;
 
-    std::vector<PathWithMappingInfo> FindReadPathWithGaps(const MappingPath<EdgeId> &mapping_path,
-                                                          MappingPath<EdgeId> &path) const;
+    std::vector<PathWithMappingInfo> FindReadPathWithGaps(MappingPath<EdgeId> &path) const;
 
     const Graph& g_;
     const MappingPathFixer<Graph> path_fixer_;
@@ -202,7 +202,7 @@ std::vector<PathWithMappingInfo> GappedPathExtractor::operator() (const MappingP
     }
     auto corrected_path = path_fixer_.DeleteSameEdges(mapping.simple_path());
     auto filtered_path = FilterBadMappings(corrected_path, mapping);
-    return FindReadPathWithGaps(mapping, filtered_path);
+    return FindReadPathWithGaps(filtered_path);
 }
 
 MappingPath<EdgeId> GappedPathExtractor::FilterBadMappings(const std::vector<EdgeId> &corrected_path,
@@ -245,11 +245,10 @@ MappingPath<EdgeId> GappedPathExtractorForTrustedContigs::FilterBadMappings(cons
     return new_corrected_path;
 }
 
-std::vector<PathWithMappingInfo> GappedPathExtractor::FindReadPathWithGaps(const MappingPath<EdgeId> &mapping_path,
-                                                                           MappingPath<EdgeId> &path) const
+std::vector<PathWithMappingInfo> GappedPathExtractor::FindReadPathWithGaps(MappingPath<EdgeId> &path) const
 {
     std::vector<PathWithMappingInfo> result;
-    if (mapping_path.empty() || path.empty()) {
+    if (path.empty()) {
         TRACE("read unmapped");
         return result;
     }

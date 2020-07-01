@@ -901,12 +901,13 @@ private:
                 bool was_used = false;
                 for (size_t ind =0; ind < paths.Get(i)->Size(); ind++) {
                     EdgeId eid = paths.Get(i)->At(ind);
-                    if (used_storage_.IsUsedAndUnique(eid)) {
+                    auto path_id = paths.Get(i)->GetId();
+                    if (used_storage_.IsUsedAndUnique(eid, path_id)) {
                         DEBUG("Used edge " << g_.int_id(eid));
                         was_used = true;
                         break;
                     } else {
-                        used_storage_.insert(eid);
+                        used_storage_.insert(eid, path_id);
                     }
                 }
                 if (was_used) {
