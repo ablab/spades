@@ -80,10 +80,7 @@ public:
     }
 
     size_t k() const {
-        if (large_index_)
-            return static_cast<InnerIndex64*>(inner_index_)->k();
-        else
-            return static_cast<InnerIndex32*>(inner_index_)->k();
+        return this->g().k() + 1;
     }
 
     void HandleAdd(EdgeId e) override {
