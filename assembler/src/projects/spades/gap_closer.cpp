@@ -132,7 +132,11 @@ public:
             std::vector<EdgeId> edges;
             for (const auto &entry : out_tip_map_) {
                 edges.push_back(entry.first);
+                edges.push_back(graph_.conjugate(entry.first));
             }
+
+            std::sort(edges.begin(), edges.end());
+            edges.resize(std::unique(edges.begin(), edges.end()) - edges.begin());
 
             index_.Refill(edges);
             mapper_ = MapperInstance(gp_, index_);
