@@ -8,7 +8,6 @@
 
 #include "bidirectional_path.hpp"
 #include "modules/path_extend/path_filter.hpp"
-
 #include <vector>
 #include <set>
 #include <map>

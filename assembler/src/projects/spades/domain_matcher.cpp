@@ -101,10 +101,11 @@ static void ParseHMMFile(std::vector<hmmer::HMM> &hmms, const std::string &filen
 ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::GraphPack &gp,
                                           const std::string &hmm_set,
                                           const std::string &output_dir) {
-    if (fs::check_existence(output_dir + "/temp_anti/"))
-        fs::remove_dir(output_dir + "/temp_anti/");
-    fs::make_dirs(output_dir + "/temp_anti/");
-    fs::make_dirs(output_dir + "/bgc_in_gfa/");
+    std::string tmp_dir = fs::append_path(output_dir, "temp_anti");
+    if (fs::check_existence(tmp_dir))
+        fs::remove_dir(tmp_dir);
+    fs::make_dirs(tmp_dir);
+    fs::make_dirs(fs::append_path(output_dir, "bgc_in_gfa"));
 
     ContigAlnInfo res;
     hmmer::hmmer_cfg hcfg;
@@ -115,7 +116,7 @@ ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::GraphPack &gp,
     path_extend::PathContainer broken_scaffolds;
     path_extend::ScaffoldBreaker(int(gp.k())).Break(gp.get<path_extend::PathContainer>(), broken_scaffolds);
 
-    io::OFastaReadStream oss_contig(output_dir + "/temp_anti/restricted_edges.fasta");
+    io::OFastaReadStream oss_contig(fs::append_path(output_dir, "restricted_edges.fasta"));
 
     std::vector<hmmer::HMM> hmms;
     for (const auto &f : hmm_files)
