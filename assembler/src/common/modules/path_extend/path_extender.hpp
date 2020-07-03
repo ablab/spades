@@ -880,8 +880,6 @@ private:
 
         size_t current = 0;
         while (current < extenders_.size()) {
-            if (path.Back().id_ == 547690)
-                std::cout << "-------------------------------------\n";
             DEBUG("step " << current << " of total " << extenders_.size());
             if (extenders_[current]->MakeGrowStep(path, paths_storage)) {
                 return true;
@@ -934,15 +932,6 @@ private:
                 } while (count_trying < 10 && (path->Length() != current_path_len));
                 DEBUG("result path " << path->GetId());
                 path->PrintDEBUG();
-
-
-                std::cout << "i: " << i << "\n\tforward:\n";
-                for (auto const & x : *path)
-                    std::cout << x << ' '; 
-                std::cout << "\n\tback:\n";
-                for (auto const & x : path->Conjugate())
-                    std::cout << x << ' ';
-                std::cout << '\n';
             }
         }
     }

@@ -1261,67 +1261,13 @@ public:
      * Two reads are consistent if they can form one path in the graph.
      */
     EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
-        auto conj = [th = this](auto id) {
-            return th->g_.conjugate(EdgeId(id)).id_;
-        };
-        auto good_edge = [&conj](auto id) {
-            std::vector<EdgeId> good = {657120, 127385};
-            for (auto x : good) {
-                if (x == id || id == conj(x))
-                    return true;
-            }
-            return false;
-        };
-        auto print_if = [](bool cond, auto msg) {
-            if (cond) {
-                std::cout << msg << std::endl;
-            }
-            return cond;
-        };
-        auto print1 = [&good_edge](auto v) {
-            for (auto const & x : v) {
-                std::cout << x.id_;
-                if (good_edge(x.id_))
-                    std::cout << '!';
-                std::cout << ' ';
-            }
-            std::cout << std::endl;
-        };
-        auto print2 = [&good_edge](auto v) {
-            for (auto const & x : v) {
-                std::cout << x.e_.id_;
-                if (good_edge(x.e_.id_))
-                    std::cout << '!';
-                std::cout << ' ';
-            }
-            std::cout << std::endl;
-        };
-
-        bool b = false;
-        auto get_b = [&] () {
-            std::cout << "Filter called!\n";
-            b|=print_if(good_edge(path.Back().int_id()), "back");
-            
-            for (auto const & x : edges)
-                b |= good_edge(x.e_.id_);
-        };
-
-        // get_b();
-
-        if (b) {
-            std::cout << "path:\n";
-            print1(path);
-            std::cout << "candidates: ";
-            print2(edges);
-        }
-
         DEBUG("We are in Filter of TrustedContigsExtensionChooser");
         path.PrintDEBUG();
         std::map<EdgeWithDistance, double> weights_cands;
 
-        auto filtered_cands = GetHighQualityCandidats(path, weights_cands, b);
+        auto filtered_cands = GetHighQualityCandidats(path, weights_cands);
         if (use_low_quality_matching_ && filtered_cands.empty())
-            filtered_cands = GetLowQualityCandidats(path, weights_cands, b);
+            filtered_cands = GetLowQualityCandidats(path, weights_cands);
 
         DEBUG("Candidates:");
         for (auto const & iter : weights_cands)
@@ -1343,14 +1289,8 @@ public:
             }
         }
         EdgeContainer result(filtered_cands.begin(), filtered_cands.end());
-        if (result.size() != 1) {
+        if (result.size() != 1)
             DEBUG("Trusted contigs don't help =(");
-        }
-
-        if (b) {
-            std::cout << "returned: ";
-            print2(result);
-        }
         return result;
     }
 
@@ -1359,8 +1299,7 @@ private:
     std::pair<bool, std::set<EdgeWithDistance>> GetCandidates(const BidirectionalPath &path,
                                              std::map<EdgeWithDistance, double> &weights_cands,
                                              size_t start_pos,
-                                             const std::function<std::pair<bool, size_t>(const BidirectionalPath&, size_t)> &comparator,
-                                             bool b) const
+                                             const std::function<std::pair<bool, size_t>(const BidirectionalPath&, size_t)> &comparator) const
     {
         VERIFY(start_pos < path.Size());
         std::set<EdgeWithDistance> filtered_cands;
@@ -1368,17 +1307,6 @@ private:
         DEBUG("Found " << support_paths.size() << " covering paths!!!");
         for (auto const & it : support_paths) {
             for (auto pos : it->FindAll(path[start_pos])) {
-                if (b) {
-                    std::cout << "common prefix:\n";
-                    for (size_t j = std::max(0, (int)pos + 1 - (int)path.Size()); j <= pos; ++j) {
-                        std::cout << it->At(j) << ' ';
-                    }
-                    std::cout << '[';
-                    if (pos+1 < it->Size())
-                        std::cout << it->At(pos + 1);
-                    std::cout << ']';
-                    std::cout << '\n';
-                }
                 if (pos + 1 < it->Size()) {
                     auto tmp = comparator(*it, pos);
                     auto& is_good_path = tmp.first;
@@ -1395,7 +1323,7 @@ private:
         return {!support_paths.empty(), std::move(filtered_cands)};
     }
 
-    std::set<EdgeWithDistance> GetHighQualityCandidats(const BidirectionalPath &path, std::map<EdgeWithDistance, double> &weights_cands, bool b) const {
+    std::set<EdgeWithDistance> GetHighQualityCandidats(const BidirectionalPath &path, std::map<EdgeWithDistance, double> &weights_cands) const {
         auto start_pos = path.Size() - 1;
         auto comparator = [&path, start_pos, th = this] (const BidirectionalPath &coverage_path, size_t pos) {
             auto is_good_path = (FirstNotEqualPosition(path, start_pos, coverage_path, pos, false) == -1ul);
@@ -1403,10 +1331,10 @@ private:
             auto privilege_scalar = (th->HasUniqueEdge(path, 0, matched_len) ? 3 : 1);
             return std::pair<bool, size_t>(is_good_path, matched_len * privilege_scalar);
         };
-        return GetCandidates(path, weights_cands, start_pos, comparator, b).second;
+        return GetCandidates(path, weights_cands, start_pos, comparator).second;
     }
 
-    std::set<EdgeWithDistance> GetLowQualityCandidats(const BidirectionalPath &path, std::map<EdgeWithDistance, double> &weights_cands, bool b) const {
+    std::set<EdgeWithDistance> GetLowQualityCandidats(const BidirectionalPath &path, std::map<EdgeWithDistance, double> &weights_cands) const {
         DEBUG("Fallback mode");
         auto getComparator = [&path, th = this](size_t start_pos){
             return [&path, start_pos, th] (const BidirectionalPath &coverage_path, size_t pos) {
@@ -1434,7 +1362,7 @@ private:
             DEBUG("iteration: " << i);
             auto pos = path.Size() - 1 - i;
             used_unique_edge = IsUniqueEdge(path[pos]);
-            auto tmp = GetCandidates(path, weights_cands, pos, getComparator(pos), b);
+            auto tmp = GetCandidates(path, weights_cands, pos, getComparator(pos));
             auto& coverage_paths_are_found = tmp.first;
             auto& filtered_cands = tmp.second;
             if (!filtered_cands.empty() || coverage_paths_are_found)

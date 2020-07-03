@@ -5,7 +5,6 @@
 //***************************************************************************
 
 #include "long_read_mapper.hpp"
-#include <iomanip>
 
 namespace debruijn_graph {
 
@@ -39,12 +38,6 @@ protected:
     MappingPath<EdgeId> FilterBadMappings(const std::vector<EdgeId> &corrected_path,
                                           const MappingPath<EdgeId> &mapping_path) const override;
 };
-
-
-std::string GetNum() {
-    static std::atomic<unsigned long long> cnt(0);
-    return std::to_string(cnt.fetch_add(1));
-}
 
 size_t CountMappedEdgeSize(EdgeId edge, const MappingPath<EdgeId>& mapping_path, size_t& mapping_index, MappingRange& range_of_mapped_edge) {
     while(mapping_path[mapping_index].first != edge)
@@ -195,11 +188,6 @@ GappedPathExtractorForTrustedContigs::GappedPathExtractorForTrustedContigs(const
 {}
 
 std::vector<PathWithMappingInfo> GappedPathExtractor::operator() (const MappingPath<EdgeId>& mapping) const {
-    {
-        std::ofstream out("mapping_dump" + GetNum()); 
-        for (size_t i = 0; i < mapping.size(); ++i)
-            out << mapping[i] << '\n';
-    }
     auto corrected_path = path_fixer_.DeleteSameEdges(mapping.simple_path());
     auto filtered_path = FilterBadMappings(corrected_path, mapping);
     return FindReadPathWithGaps(filtered_path);
@@ -252,8 +240,6 @@ std::vector<PathWithMappingInfo> GappedPathExtractor::FindReadPathWithGaps(Mappi
         TRACE("read unmapped");
         return result;
     }
-    std::ofstream out("path_dump" + GetNum()); 
-    out << std::setw(8) << path[0].first << ' ' << path[0].second << '\n';
     PathWithMappingInfo tmp_path;
     auto setStartPos = [&tmp_path] (auto const & path) {
         tmp_path.MappingRangeOntoRead_.initial_range.start_pos = path.second.initial_range.start_pos;
@@ -273,25 +259,16 @@ std::vector<PathWithMappingInfo> GappedPathExtractor::FindReadPathWithGaps(Mappi
             auto closure = path_fixer_.TryCloseGap(left_vertex, right_vertex);
             if (!closure.empty()) {
                 tmp_path.Path_.insert(tmp_path.Path_.end(), closure.begin(), closure.end());
-                out << "gap is closed!\n";
             } else {
                 setEndPos(path[i-1]);
-                out << "gap is not closed, length of path: " << tmp_path.MappingRangeOntoRead_.initial_range.end_pos - tmp_path.MappingRangeOntoRead_.initial_range.start_pos << '\n';
                 result.push_back(std::move(tmp_path));
                 setStartPos(path[i]);
             }
         }
-        // VERIFY(tmp_path.Path_.empty() || bool(path[i-1].second.end_pos == path[i].second.start_pos));
-        if (!(tmp_path.Path_.empty() || bool(path[i-1].second.initial_range.end_pos == path[i].second.initial_range.start_pos)))
-            out << "OH NO!\n";
         tmp_path.Path_.push_back(path[i].first);
-        out << std::setw(8) << path[i].first << ' ' << path[i].second << '\n';
     }
     setEndPos(path.back());
-    out << "length of path: " << tmp_path.MappingRangeOntoRead_.initial_range.end_pos - tmp_path.MappingRangeOntoRead_.initial_range.start_pos << '\n';
     result.push_back(std::move(tmp_path));
-
-    std::cout << "================DONE====================" << std::endl; 
     return result;
 }
 

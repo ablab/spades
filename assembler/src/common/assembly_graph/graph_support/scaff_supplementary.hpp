@@ -49,9 +49,14 @@ public:
         return unique_edges_.erase(iter);
     }
 
-    size_t size() const {
+    size_t size() const noexcept {
         return unique_edges_.size();
     }
+
+    bool empty() const noexcept {
+        return unique_edges_.empty();
+    }
+
     size_t min_length() const {
         return min_unique_length_;
     }
@@ -112,7 +117,6 @@ class UsedUniqueStorage {
     std::unordered_map<size_t, std::unordered_set<EdgeId>> used_by_paths_;
     const ScaffoldingUniqueEdgeStorage& unique_;
     const debruijn_graph::ConjugateDeBruijnGraph &g_;
-    const bool use_global_using;
 
 public:
     UsedUniqueStorage(const UsedUniqueStorage&) = delete;
@@ -121,8 +125,10 @@ public:
     UsedUniqueStorage(UsedUniqueStorage&&) = default;
 
     explicit UsedUniqueStorage(const ScaffoldingUniqueEdgeStorage& unique,
-                               const debruijn_graph::ConjugateDeBruijnGraph &g):
-            unique_(unique), g_(g), use_global_using(cfg().get().mode != debruijn_graph::config::pipeline_type::meta) {}
+                               const debruijn_graph::ConjugateDeBruijnGraph &g)
+        : unique_(unique)
+        , g_(g) 
+    {}
 
     void insert(EdgeId e, size_t path_id) {
         if (!unique_.IsUnique(e))
@@ -133,10 +139,6 @@ public:
         used_by_paths_[path_id].insert(e);
         used_by_paths_[path_id].insert(g_.conjugate(e));
     }
-
-//    const ScaffoldingUniqueEdgeStorage& unique_edge_storage() const {
-//        return unique_;
-//    }
 
     bool IsUsed(EdgeId e, size_t path_id) const {
         auto it = used_by_paths_.find(path_id);
@@ -156,25 +158,20 @@ public:
     }
 
     bool UniqueCheckEnabled() const {
-        return unique_.size() > 0;
+        return !unique_.empty();
     }
 
     bool TryUseEdge(BidirectionalPath &path, EdgeId e, const Gap &gap) {
         if (UniqueCheckEnabled()) {
-            // if (use_global_using ? IsUsedAndUnique(e) : IsUsedAndUnique(e, path.GetId())) {
             if (IsUsedAndUnique(e)) {
                 if (used_by_paths_[path.GetId()].count(e) && path.SetCycleOverlapping(path.FindFirst(e))) {
-                    std::cout << "Trying to add edge " << e << " was failed, because this edge is unique and had used before\n";
+                    INFO("Trying to add edge " << e << " was failed, because this edge is unique and had used before\n");
                 } else {
-                    std::cout << "Wrong edge was detected, trying to add " << e << " with overlapping " << path.FindFirst(e) << " into: ";
-                    for (auto const & x : path)
-                        std::cout << x << ' '; 
-                    std::cout << '\n';
+                    INFO("Wrong edge was detected, trying to add " << e << " with overlapping " << path.FindFirst(e));
                 }
                 return false;
-            } else {
-                insert(e, path.GetId());
             }
+            insert(e, path.GetId());
         }
         path.PushBack(e, gap);
         return true;
