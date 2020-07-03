@@ -517,7 +517,7 @@ protected:
 
             index--;
         }
-        
+
         //excluding based on presense of ambiguous paired info
         std::map<size_t, unsigned> edge_2_extension_cnt;
         for (size_t i = 0; i < edges.size(); ++i) {
@@ -1256,15 +1256,11 @@ public:
             , use_low_quality_matching_(use_low_quality_matching)
     {}
 
-    /* Choose extension as correct only if we have reads that traverse a unique edge from the path and this extension.
-     * Edge is unique if all reads mapped to this edge are consistent.
-     * Two reads are consistent if they can form one path in the graph.
-     */
     EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
         DEBUG("We are in Filter of TrustedContigsExtensionChooser");
         path.PrintDEBUG();
-        std::map<EdgeWithDistance, double> weights_cands;
 
+        std::map<EdgeWithDistance, double> weights_cands;
         auto filtered_cands = GetHighQualityCandidats(path, weights_cands);
         if (use_low_quality_matching_ && filtered_cands.empty())
             filtered_cands = GetLowQualityCandidats(path, weights_cands);
@@ -1571,7 +1567,7 @@ private:
 
         return EMPTY_CONTAINER;
     }
-    
+
     CoverageAwareIdealInfoProvider provider_;
     const size_t max_edge_length_in_repeat_;
     const double delta_;

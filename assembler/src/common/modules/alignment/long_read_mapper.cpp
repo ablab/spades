@@ -20,7 +20,7 @@ public:
 protected:
 
     virtual MappingPath<EdgeId> FilterBadMappings(const std::vector<EdgeId> &corrected_path,
-                                          const MappingPath<EdgeId> &mapping_path) const;
+                                                  const MappingPath<EdgeId> &mapping_path) const;
 
     std::vector<PathWithMappingInfo> FindReadPathWithGaps(MappingPath<EdgeId> &path) const;
 
@@ -131,15 +131,15 @@ void LongReadMapper::MergeBuffer(size_t thread_index) {
 }
 
 void LongReadMapper::ProcessSingleRead(size_t thread_index,
-                        const io::SingleRead& r,
-                        const MappingPath<EdgeId>& read)
+                                       const io::SingleRead& r,
+                                       const MappingPath<EdgeId>& read)
 {
     ProcessSingleRead(thread_index, read, r);
 }
 
 void LongReadMapper::ProcessSingleRead(size_t thread_index,
-                        const io::SingleReadSeq&,
-                        const MappingPath<EdgeId>& read)
+                                       const io::SingleReadSeq&,
+                                       const MappingPath<EdgeId>& read)
 {
     ProcessSingleRead(thread_index, read);
 }

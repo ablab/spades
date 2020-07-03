@@ -888,7 +888,7 @@ private:
         }
         return false;
     }
-    
+
     void GrowAllPaths(PathContainer& paths, PathContainer& result) {
         for (size_t i = 0; i < paths.size(); ++i) {
             VERBOSE_POWER_T2(i, 100, "Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
@@ -955,8 +955,6 @@ protected:
         if (success) {
             DEBUG("Adding edge. PathId: " << path.GetId() << " path length: " << path.Length() - 1 << ", fixed gap : "
                                           << gap.gap << ", trash length: " << gap.trash.previous << "-" << gap.trash.current);
-        } else {
-            
         }
         return success;
     }
@@ -1086,7 +1084,7 @@ public:
             } else {
                 return false;
             }
-            
+
             return true;
         };
 
