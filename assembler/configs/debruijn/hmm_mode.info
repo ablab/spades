@@ -1,4 +1,5 @@
 hmm_match {
   set_of_hmms none
   component_size_part 1
+  start_only_from_tips false
 }

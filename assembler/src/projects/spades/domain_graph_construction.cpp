@@ -406,7 +406,7 @@ void DomainGraphConstruction::run(GraphPack &gp, const char*) {
     auto &domain_graph = constructor.ConstructGraph(res);
     const auto &hm = *cfg::get().hm;
     domain_graph.FindDomainOrderings(gp,
-                                     hm.component_size_part, 1,
+                                     hm.component_size_part, 1, hm.start_only_from_tips,
                                      "gene_clusters.fasta", cfg::get().output_dir);
     domain_graph.ExportToDot(fs::append_path(cfg::get().output_dir, "domain_graph.dot"));
 }

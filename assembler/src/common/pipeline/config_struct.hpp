@@ -469,6 +469,7 @@ struct debruijn_config {
     struct hmm_matching {
         std::string hmm_set;
         size_t component_size_part;
+        bool start_only_from_tips;
     };
     
     contig_output co;
