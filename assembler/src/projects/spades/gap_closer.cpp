@@ -16,6 +16,7 @@
 #include <numeric>
 #include <stack>
 #include <vector>
+#include <unordered_set>
 #include <numeric>
 
 namespace debruijn_graph {
@@ -98,7 +99,25 @@ private:
 public:
     GapCloserPairedIndexFiller(const Graph &graph, omnigraph::de::PairedInfoIndexT<Graph> &paired_index,
                                const GraphPack &gp)
-            : graph_(graph), paired_index_(paired_index), buffer_pi_(graph), gp_(gp), index_(graph, gp.workdir()) { }
+            : graph_(graph), paired_index_(paired_index), buffer_pi_(graph), gp_(gp), index_(graph, gp.workdir()) {
+        PrepareTipMap(out_tip_map_);
+
+        std::unordered_set<EdgeId> tedges;
+        for (const auto &entry : out_tip_map_) {
+            tedges.insert(entry.first);
+            tedges.insert(graph_.conjugate(entry.first));
+        }
+
+        std::vector<EdgeId> edges;
+        edges.reserve(tedges.size());
+
+        for (const auto& entry: tedges) {
+            edges.push_back(entry);
+        }
+
+        index_.Refill(edges);
+        mapper_ = MapperInstance(gp_, index_);
+    }
 
     void StartProcessLibrary(size_t /* threads_count */) override {
         paired_index_.clear();
@@ -126,21 +145,6 @@ public:
     }
 
     auto GetMapper() {
-        if (mapper_ == nullptr) {
-            PrepareTipMap(out_tip_map_);
-
-            std::vector<EdgeId> edges;
-            for (const auto &entry : out_tip_map_) {
-                edges.push_back(entry.first);
-                edges.push_back(graph_.conjugate(entry.first));
-            }
-
-            std::sort(edges.begin(), edges.end());
-            edges.resize(std::unique(edges.begin(), edges.end()) - edges.begin());
-
-            index_.Refill(edges);
-            mapper_ = MapperInstance(gp_, index_);
-        }
         return mapper_;
     }
 };
