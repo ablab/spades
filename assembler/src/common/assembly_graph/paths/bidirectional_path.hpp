@@ -730,6 +730,7 @@ inline size_t FirstNotEqualPosition(const BidirectionalPath &path1, size_t pos1,
     DEBUG("Equal!!");
     return -1UL;
 }
+
 inline bool EqualBegins(const BidirectionalPath &path1, size_t pos1,
                         const BidirectionalPath &path2, size_t pos2,
                         bool use_gaps) {
@@ -786,6 +787,9 @@ public:
         : g_(g)
     {}
 
+    BidirectionalPathStorage(const BidirectionalPathStorage&) noexcept = default;
+    BidirectionalPathStorage(BidirectionalPathStorage&&) noexcept = default;
+
     void resize(size_t new_size) {
         auto last_size = size();
         base::resize(new_size);
@@ -808,7 +812,16 @@ public:
     }
 };
 
-using TrustedPathsContainer = std::vector<BidirectionalPathStorage>;
+class TrustedPathsContainer : public std::vector<BidirectionalPathStorage> {
+    using base = std::vector<BidirectionalPathStorage>;
+public:
+    TrustedPathsContainer() = default;
+    TrustedPathsContainer(size_t size, const debruijn_graph::Graph& g) {
+        reserve(size);
+        for (size_t i = 0; i < size; ++i)
+            emplace_back(g);
+    }
+};
 
 }  // path extend
 
