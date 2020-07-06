@@ -102,18 +102,20 @@ public:
             : graph_(graph), paired_index_(paired_index), buffer_pi_(graph), gp_(gp), index_(graph, gp.workdir()) {
         PrepareTipMap(out_tip_map_);
 
-        std::unordered_set<EdgeId> tedges;
-        for (const auto &entry : out_tip_map_) {
-            tedges.insert(entry.first);
-            tedges.insert(graph_.conjugate(entry.first));
-        }
-
         std::vector<EdgeId> edges;
-        edges.reserve(tedges.size());
+        edges.reserve(out_tip_map_.size() * 2);
+        for (const auto &entry : out_tip_map_) {
+            edges.push_back(entry.first);
+            if (graph_.IsDeadStart(graph_.EdgeStart(entry.first))) {
+                continue;
+            }
 
-        for (const auto& entry: tedges) {
-            edges.push_back(entry);
+            const auto& conj_id = graph_.conjugate(entry.first);
+            if (entry.first != conj_id)  {
+                edges.push_back(conj_id);
+            }
         }
+        edges.shrink_to_fit();
 
         index_.Refill(edges);
         mapper_ = MapperInstance(gp_, index_);
