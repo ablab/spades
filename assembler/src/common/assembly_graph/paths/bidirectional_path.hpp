@@ -7,8 +7,9 @@
 
 #pragma once
 
-#include "io/binary/binary.hpp"
 #include "assembly_graph/core/graph.hpp"
+#include "io/binary/binary.hpp"
+
 #include <algorithm>
 #include <atomic>
 #include <deque>

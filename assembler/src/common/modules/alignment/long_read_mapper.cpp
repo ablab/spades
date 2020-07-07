@@ -39,19 +39,21 @@ protected:
                                           const MappingPath<EdgeId> &mapping_path) const override;
 };
 
-size_t CountMappedEdgeSize(EdgeId edge, const MappingPath<EdgeId>& mapping_path, size_t& mapping_index, MappingRange& range_of_mapped_edge) {
-    while(mapping_path[mapping_index].first != edge)
+size_t CountMappedEdgeSize(EdgeId edge, const MappingPath<EdgeId>& mapping_path,
+                           size_t& mapping_index, MappingRange& range_of_mapped_edge)
+{
+    while (mapping_path[mapping_index].first != edge)
         ++mapping_index;
     size_t start_idx = mapping_index;
 
-    while(mapping_path[mapping_index].first == edge) {
+    while (mapping_path[mapping_index].first == edge) {
         ++mapping_index;
-        if(mapping_index >= mapping_path.size())
+        if (mapping_index >= mapping_path.size())
             break;
     }
     size_t end_idx = mapping_index;
     size_t total_len = 0;
-    for(size_t i = start_idx; i < end_idx; ++i)
+    for (size_t i = start_idx; i < end_idx; ++i)
         total_len += mapping_path[i].second.initial_range.size();
 
     range_of_mapped_edge.initial_range.start_pos = mapping_path[start_idx].second.initial_range.start_pos;
@@ -69,8 +71,9 @@ PathExtractionF ChooseProperReadPathExtractor(const Graph& g, io::LibraryType li
         };
     }
 
-    if (lib_type == io::LibraryType::PathExtendContigs || lib_type == io::LibraryType::TSLReads 
-        || lib_type == io::LibraryType::UntrustedContigs)
+    if (lib_type == io::LibraryType::PathExtendContigs || 
+        lib_type == io::LibraryType::TSLReads ||
+        lib_type == io::LibraryType::UntrustedContigs)
     {
         return [&] (const MappingPath<EdgeId>& mapping) {
             return GappedPathExtractor(g)(mapping);
@@ -194,7 +197,7 @@ std::vector<PathWithMappingInfo> GappedPathExtractor::operator() (const MappingP
 }
 
 MappingPath<EdgeId> GappedPathExtractor::FilterBadMappings(const std::vector<EdgeId> &corrected_path,
-                                                                            const MappingPath<EdgeId> &mapping_path) const
+                                                           const MappingPath<EdgeId> &mapping_path) const
 {
     MappingPath<EdgeId> new_corrected_path;
     size_t mapping_index = 0;
@@ -202,11 +205,8 @@ MappingPath<EdgeId> GappedPathExtractor::FilterBadMappings(const std::vector<Edg
         MappingRange range_of_mapped_edge;
         size_t mapping_size = CountMappedEdgeSize(edge, mapping_path, mapping_index, range_of_mapped_edge);
         size_t edge_len =  g_.length(edge);
-        if (mapping_size > MIN_MAPPED_LENGTH || 
-            math::gr((double) mapping_size / (double) edge_len, MIN_MAPPED_RATIO))
-        {
+        if (mapping_size > MIN_MAPPED_LENGTH || math::gr((double) mapping_size / (double) edge_len, MIN_MAPPED_RATIO))
             new_corrected_path.push_back(edge, range_of_mapped_edge);
-        }
     }
     return new_corrected_path;
 }
@@ -223,7 +223,10 @@ MappingPath<EdgeId> GappedPathExtractorForTrustedContigs::FilterBadMappings(cons
         if (math::ls((double) mapping_size / (double) edge_len, MIN_MAPPED_RATIO + 1) &&
             math::gr((double) mapping_size / (double) edge_len, MIN_MAPPED_RATIO))
         {
-            if (!new_corrected_path.empty() && new_corrected_path.back().first == edge && new_corrected_path.back().second.mapped_range.end_pos <= range_of_mapped_edge.mapped_range.start_pos) {
+            if (!new_corrected_path.empty() &&
+                new_corrected_path.back().first == edge &&
+                new_corrected_path.back().second.mapped_range.end_pos <= range_of_mapped_edge.mapped_range.start_pos) 
+            {
                 range_of_mapped_edge.mapped_range.start_pos = new_corrected_path.back().second.mapped_range.start_pos;
                 new_corrected_path.pop_back();
             }
@@ -233,8 +236,7 @@ MappingPath<EdgeId> GappedPathExtractorForTrustedContigs::FilterBadMappings(cons
     return new_corrected_path;
 }
 
-std::vector<PathWithMappingInfo> GappedPathExtractor::FindReadPathWithGaps(MappingPath<EdgeId> &path) const
-{
+std::vector<PathWithMappingInfo> GappedPathExtractor::FindReadPathWithGaps(MappingPath<EdgeId> &path) const {
     std::vector<PathWithMappingInfo> result;
     if (path.empty()) {
         TRACE("read unmapped");

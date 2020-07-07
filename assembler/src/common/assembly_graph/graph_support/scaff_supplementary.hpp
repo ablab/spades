@@ -165,9 +165,9 @@ public:
         if (UniqueCheckEnabled()) {
             if (IsUsedAndUnique(e)) {
                 if (used_by_paths_[path.GetId()].count(e) && path.SetCycleOverlapping(path.FindFirst(e))) {
-                    INFO("Trying to add edge " << e << " was failed, because this edge is unique and had used before\n");
+                    DEBUG("Trying to add edge " << e << " was failed, because this edge is unique and had used before\n");
                 } else {
-                    INFO("Wrong edge was detected, trying to add " << e << " with overlapping " << path.FindFirst(e));
+                    DEBUG("Wrong edge was detected, trying to add " << e << " with overlapping " << path.FindFirst(e));
                 }
                 return false;
             }
