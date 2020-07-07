@@ -912,13 +912,14 @@ def add_to_cfg(cfg, log, bin_home, spades_home, args):
         hmms_path = os.path.join(spades_home, options_storage.biosyntheticspades_hmms)
     if hmms_path is not None:
         hmms = ""
+        is_hmmfile= lambda hmmfile: os.path.isfile(hmmfile) \
+            and (hmmfile.endswith("hmm") or hmmfile.endswith("hmm.gz") or \
+                 hmmfile.endswith("aa") or hmmfile.endswith("aa.gz"))
         if os.path.isdir(hmms_path):
-            is_hmmfile = lambda hmmfile: os.path.isfile(os.path.join(hmms_path, hmmfile)) \
-                                       and (hmmfile.endswith("hmm") or hmmfile.endswith("hmm.gz"))
             hmms = ",".join([os.path.join(hmms_path, hmmfile)
                              for hmmfile in os.listdir(hmms_path)
-                             if is_hmmfile(hmmfile)])
-        elif os.path.isfile(hmms_path) and (hmms_path.endswith("hmm") or hmms_path.endswith("hmm.gz")):
+                             if is_hmmfile(os.path.join(hmms_path, hmmfile))])
+        elif is_hmmfile(hmms_path):
             hmms = hmms_path
 
         if hmms == "":

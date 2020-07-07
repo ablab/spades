@@ -25,6 +25,11 @@
 #include <string>
 #include <vector>
 
+extern "C" {
+    #include "easel.h"
+    #include "esl_sqio.h"
+}
+
 namespace nrps {
 
 static void match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::BidirectionalPath* path,
@@ -103,6 +108,41 @@ static void ParseHMMFile(std::vector<hmmer::HMM> &hmms, const std::string &filen
     }
 }
 
+static void ParseFASTAFile(std::vector<hmmer::HMM> &hmms, const std::string &filename) {
+    hmmer::HMMSequenceBuilder builder(hmmer::Alphabet::AMINO, hmmer::ScoreSystem::Default);
+
+    ESL_ALPHABET   *abc  = esl_alphabet_Create(eslAMINO);
+    ESL_SQ         *qsq  = esl_sq_CreateDigital(abc);
+    ESL_SQFILE     *qfp  = NULL;
+    const char *qfile = filename.c_str();
+
+    // Open the query sequence file in FASTA format
+    int status = esl_sqfile_Open(qfile, eslSQFILE_FASTA, NULL, &qfp);
+    if (status == eslENOTFOUND) {
+        FATAL_ERROR("No such file " << filename);
+    } else if (status == eslEFORMAT) {
+        FATAL_ERROR("Format of " << filename << " unrecognized.");
+    } else if (status == eslEINVAL) {
+        FATAL_ERROR("Can't autodetect stdin or .gz.");
+    } else if (status != eslOK) {
+        FATAL_ERROR("Open of " << filename << " failed, code " << status);
+    }
+
+    // For each sequence, build a model and save it.
+    while ((status = esl_sqio_Read(qfp, qsq)) == eslOK) {
+        INFO("Converting " << qsq->name << ", len: " << qsq->n);
+        hmms.push_back(builder.from_string(qsq));
+        esl_sq_Reuse(qsq);
+    }
+    if (status != eslEOF) {
+        FATAL_ERROR("Unexpected error " << status << " reading sequence file " << filename);
+    }
+
+    esl_sq_Destroy(qsq);
+    esl_sqfile_Close(qfp);
+    esl_alphabet_Destroy(abc);
+}
+
 ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::GraphPack &gp,
                                           const std::string &hmm_set,
                                           const std::string &output_dir) {
@@ -124,9 +164,13 @@ ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::GraphPack &gp,
     io::OFastaReadStream oss_contig(fs::append_path(output_dir, "restricted_edges.fasta"));
 
     std::vector<hmmer::HMM> hmms;
-    for (const auto &f : hmm_files)
-        ParseHMMFile(hmms, f);
-    
+    for (const auto &f : hmm_files) {
+        if (utils::ends_with(f, ".aa") || utils::ends_with(f, ".aa.gz"))
+            ParseFASTAFile(hmms, f);
+        else
+            ParseHMMFile(hmms, f);
+    }
+
 #   pragma omp parallel for
     for (size_t i = 0; i < hmms.size(); ++i) {
         ContigAlnInfo local_res;

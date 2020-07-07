@@ -140,17 +140,10 @@ static void ProcessPairedReads(GraphPack &gp,
 }
 #endif
 
-static bool ends_with(const std::string &s, const std::string &p) {
-    if (s.size() < p.size())
-        return false;
-
-    return (s.compare(s.size() - p.size(), p.size(), p) == 0);
-}
-
 void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::string &filename,
                io::IdMapper<std::string> *id_mapper) {
     using namespace debruijn_graph;
-    if (ends_with(filename, ".gfa")) {
+    if (utils::ends_with(filename, ".gfa")) {
         gfa::GFAReader gfa(filename);
         INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
         gfa.to_graph(graph, id_mapper);

@@ -24,7 +24,7 @@ add_library(spades-stages STATIC
             load_graph.cpp
             domain_graph.cpp)
 
-target_link_libraries(spades-stages ConsensusCore)
+target_link_libraries(spades-stages ConsensusCore easel)
           
 add_executable(spades-core
                pipeline.cpp
