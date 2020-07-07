@@ -160,7 +160,7 @@ void LongReadMapper::ProcessSingleRead(size_t thread_index, const MappingPath<Ed
             auto start_pos = paths[i-1].MappingRangeOntoRead_.initial_range.end_pos;
             start_pos += g_.length(paths[i-1].Path_.back()) - paths[i-1].MappingRangeOntoRead_.mapped_range.end_pos;
 
-            unsigned long long end_pos = paths[i].MappingRangeOntoRead_.initial_range.start_pos;
+            size_t end_pos = paths[i].MappingRangeOntoRead_.initial_range.start_pos;
             end_pos -= paths[i].MappingRangeOntoRead_.mapped_range.start_pos;
 
             std::string gap_seq = (end_pos > start_pos ? r.GetSequenceString().substr(start_pos, end_pos-start_pos) : "");
@@ -168,7 +168,8 @@ void LongReadMapper::ProcessSingleRead(size_t thread_index, const MappingPath<Ed
             if ((g_.k() + end_pos < start_pos)) {
                 merged_paths.push_back(std::make_unique<path_extend::BidirectionalPath>(g_, paths[i].Path_));
             } else {
-                merged_paths.back()->PushBack(paths[i].Path_, path_extend::Gap(g_.k() + end_pos - start_pos, std::move(gap_seq)));
+                auto k = static_cast<int>(g_.k() + end_pos - start_pos);
+                merged_paths.back()->PushBack(paths[i].Path_, path_extend::Gap(std::move(gap_seq), k));
             }
         }
         return merged_paths;

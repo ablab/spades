@@ -110,11 +110,11 @@ std::string path_extend::ScaffoldSequenceMaker::MakeSequence(const Bidirectional
         int overlap_after_trim = gap.overlap_after_trim(k_);
         TRACE("Overlap after trim " << overlap_after_trim);
         if (overlap_after_trim < 0) {
-            if (gap.gap_seq_.empty()) {
+            if (!gap.gap_seq_) {
                 answer += std::string(abs(overlap_after_trim), 'N');
             } else {
-                VERIFY(gap.gap_seq_.size() == abs(overlap_after_trim));
-                answer += gap.gap_seq_;
+                VERIFY(gap.gap_seq_->size() == abs(overlap_after_trim));
+                answer += *gap.gap_seq_;
             }
             overlap_after_trim = 0;
         }
@@ -136,7 +136,7 @@ void path_extend::ScaffoldBreaker::SplitPath(const BidirectionalPath &path, Path
         BidirectionalPath *p = new BidirectionalPath(path.graph(), path[i]);
         ++i;
 
-        while (i < path.Size() && (path.GapAt(i).overlap_after_trim(path.graph().k()) >= min_overlap_ || !path.GapAt(i).gap_seq_.empty())) {
+        while (i < path.Size() && (path.GapAt(i).overlap_after_trim(path.graph().k()) >= min_overlap_ || path.GapAt(i).gap_seq_)) {
             p->PushBack(path[i], path.GapAt(i));
             ++i;
         }

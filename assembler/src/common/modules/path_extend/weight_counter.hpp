@@ -50,15 +50,30 @@ struct EdgeWithPairedInfo {
 };
 
 struct EdgeWithDistance {
+    using GapSeqType = std::unique_ptr<std::string>;
     EdgeId e_;
     int d_;
-    std::string gap_sequence_;
+    GapSeqType gap_sequence_;
 
-    EdgeWithDistance(EdgeId e, int d, std::string && gep_sequence = "")
+    EdgeWithDistance(EdgeId e, int d, GapSeqType && gep_sequence = nullptr)
         : e_(e)
         , d_(d)
         , gap_sequence_(std::move(gep_sequence)) 
     {}
+
+    EdgeWithDistance(const EdgeWithDistance& other) 
+        : EdgeWithDistance(other.e_, other.d_, other.copyGapSeq())
+    {}
+
+    EdgeWithDistance& operator = (const EdgeWithDistance& other) {
+        e_ = other.e_;
+        d_ = other.d_;
+        gap_sequence_ = other.copyGapSeq();
+        return *this;
+    }
+
+    EdgeWithDistance(EdgeWithDistance&&) noexcept = default;
+    EdgeWithDistance& operator = (EdgeWithDistance&&) noexcept = default;
 
     struct DistanceComparator {
         bool operator()(const EdgeWithDistance& e1, const EdgeWithDistance& e2) {
@@ -74,7 +89,9 @@ struct EdgeWithDistance {
         return e1.d_ < e2.d_;
     }
 
-    //static DistanceComparator comparator;
+    GapSeqType copyGapSeq() const {
+        return (gap_sequence_ ? std::make_unique<std::string>(*gap_sequence_) : nullptr);
+    }
 };
 
 class IdealInfoProvider {

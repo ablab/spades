@@ -24,10 +24,6 @@ struct Gap {
         uint32_t previous;
         uint32_t current;
 
-        Trash(uint32_t previous_, uint32_t current_) :
-            previous(previous_), current(current_) {
-        }
-
         void BinWrite(std::ostream &str) const {
             using io::binary::BinWrite;
             BinWrite(str, previous);
@@ -40,7 +36,10 @@ struct Gap {
             BinRead(str, current);
         }
     };
-    std::string gap_seq_;
+
+    using GapSeqType = std::unique_ptr<std::string>;
+
+    GapSeqType gap_seq_;
     int gap;
     Trash trash;
 
@@ -49,6 +48,7 @@ struct Gap {
 
     static constexpr int INVALID_GAP = std::numeric_limits<int>::min();
     static constexpr bool IS_FINAL_DEFAULT = true;
+    static constexpr Trash DEFAULT_TRASH{0, 0};
 
     static const Gap& INVALID() {
         static Gap gap = Gap(INVALID_GAP);
@@ -56,35 +56,47 @@ struct Gap {
     }
 
     //gap is in k+1-mers and does not know about "trash" regions
-    template <class T = std::string>
-    explicit Gap(int gap_, Gap::Trash trash_, bool is_final_ = IS_FINAL_DEFAULT, T && gap_seq = "")
-        : gap_seq_(std::forward<T>(gap_seq))
+    Gap(int gap_, Gap::Trash trash_, bool is_final_ = IS_FINAL_DEFAULT, GapSeqType gap_seq = nullptr)
+        : gap_seq_(std::move(gap_seq))
         , gap(gap_)
         , trash(trash_)
         , is_final(is_final_)
-     { }
+    {}
 
-    template <class T = std::string>
-    explicit Gap(int gap_ = 0, bool is_final_ = IS_FINAL_DEFAULT, T && gap_seq = "")
-        : gap_seq_(std::forward<T>(gap_seq))
-        , gap(gap_)
-        , trash{0, 0}
-        , is_final(is_final_)
-    { }
+    explicit Gap(int gap_ = 0, bool is_final_ = IS_FINAL_DEFAULT, GapSeqType gap_seq = nullptr)
+        : Gap(gap_, DEFAULT_TRASH, is_final_, std::move(gap_seq))
+    {}
 
-    template <class T = std::string>
-    explicit Gap(int gap_, T && gap_seq)
-        : gap_seq_(std::forward<T>(gap_seq))
-        , gap(gap_)
-        , trash{0, 0}
-        , is_final(IS_FINAL_DEFAULT)
-    { }
+    Gap(GapSeqType gap_seq, int gap_)
+        : Gap(gap_, DEFAULT_TRASH, IS_FINAL_DEFAULT, std::move(gap_seq))
+    {}
+
+    Gap(std::string gap_seq, int gap_)
+        : Gap(gap_, DEFAULT_TRASH, IS_FINAL_DEFAULT, makeGapSeq(std::move(gap_seq)))
+    {}
+
+    Gap(const Gap& other) 
+        : Gap(other.gap, other.trash, other.is_final, other.copyGapSeq()) 
+    {};
+    
+    Gap& operator=(const Gap& other) {
+        gap_seq_ = other.copyGapSeq();
+        gap = other.gap;
+        trash = other.trash;
+        is_final = other.is_final;
+        return *this;
+    };
+
+    Gap(Gap&&) = default;
+    Gap& operator=(Gap&&) = default;
 
     Gap conjugate() const {
-        auto gap_seq_complement = gap_seq_;
+        if (!gap_seq_)
+            return Gap(gap, {trash.current, trash.previous}, is_final);
+        auto gap_seq_complement = *gap_seq_;
         std::reverse(gap_seq_complement.begin(), gap_seq_complement.end());
         nucl_str_complement(const_cast<char*>(gap_seq_complement.data()), gap_seq_complement.size());
-        return Gap(gap, {trash.current, trash.previous}, is_final, std::move(gap_seq_complement));
+        return Gap(gap, {trash.current, trash.previous}, is_final, makeGapSeq(std::move(gap_seq_complement)));
     }
 
     bool operator==(const Gap &that) const {
@@ -107,6 +119,14 @@ struct Gap {
 
     bool NoTrash() const noexcept {
         return trash.current == 0 && trash.previous == 0;
+    }
+
+    GapSeqType copyGapSeq() const {
+        return (gap_seq_ ? std::make_unique<std::string>(*gap_seq_) : nullptr);
+    }
+
+    static GapSeqType makeGapSeq(std::string && gap_seq) {
+        return (gap_seq.empty() ? nullptr : std::make_unique<std::string>(std::move(gap_seq)));
     }
 
     void BinWrite(std::ostream &str) const {

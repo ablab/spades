@@ -265,8 +265,8 @@ public:
         EdgeContainer answer;
         auto r1 = first_->Filter(path, edges);
         auto r2 = second_->Filter(path, edges);
-        for (auto ewd1 : r1) {
-            for (auto ewd2 : r2) {
+        for (const auto& ewd1 : r1) {
+            for (const auto& ewd2 : r2) {
                 if (ewd1.e_ == ewd2.e_) {
                     VERIFY(ewd1.d_ == ewd2.d_);
                     answer.push_back(ewd1);
@@ -1426,7 +1426,7 @@ public:
         }
         DEBUG("Path coverage is " << path_coverage);
 
-        for (auto e_d : edges) {
+        for (const auto& e_d : edges) {
             if (path.Contains(g_.EdgeEnd(e_d.e_))) {
                 DEBUG("Avoid to create loops");
                 return EdgeContainer();
@@ -1473,7 +1473,7 @@ private:
     EdgeContainer FinalFilter(const EdgeContainer& edges,
             EdgeId edge_to_extend) const {
         EdgeContainer result;
-        for (auto e_with_d : edges) {
+        for (const auto& e_with_d : edges) {
             if (e_with_d.e_ == edge_to_extend) {
                 result.push_back(e_with_d);
             }
@@ -1535,7 +1535,7 @@ private:
 
         std::map<EdgeId, double> good_extension_to_ahead_cov;
 
-        for (auto edge : edges) {
+        for (const auto& edge : edges) {
             DEBUG("Processing candidate extension " << g_.str(edge.e_));
             double analysis_res = AnalyzeExtension(edge.e_, path_coverage);
 

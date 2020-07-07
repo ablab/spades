@@ -1231,7 +1231,7 @@ protected:
         EdgeId eid = candidates.back().e_;
 //In 2015 modes when trying to use already used unique edge, it is not added and path growing stops.
 //That allows us to avoid overlap removal hacks used earlier.
-        Gap gap(candidates.back().d_, std::move(candidates.back().gap_sequence_));
+        Gap gap(std::move(candidates.back().gap_sequence_), candidates.back().d_);
         return TryUseEdge(path, eid, gap);
     }
 
@@ -1268,7 +1268,7 @@ protected:
              //Check for bulge
             auto v = g_.EdgeStart(candidates.front().e_);
             auto u = g_.EdgeEnd(candidates.front().e_);
-            for (auto edge : candidates) {
+            for (const auto& edge : candidates) {
                 if (v != g_.EdgeStart(edge.e_) || u != g_.EdgeEnd(edge.e_))
                     return false;
             }
