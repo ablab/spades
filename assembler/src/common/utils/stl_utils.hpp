@@ -15,10 +15,6 @@
 #include <set>
 #include <vector>
 
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-
 namespace utils {
 
 template<class Container>
@@ -98,6 +94,13 @@ std::string join(const Container &c,
         d = delim;
     }
     return ss.str();
+}
+
+static inline bool ends_with(const std::string &s, const std::string &p) {
+    if (s.size() < p.size())
+        return false;
+
+    return (s.compare(s.size() - p.size(), p.size(), p) == 0);
 }
 
 }

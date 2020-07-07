@@ -20,17 +20,10 @@ static void create_console_logger(logging::level log_level = logging::L_INFO) {
     attach_logger(lg);
 }
 
-static bool ends_with(const std::string &s, const std::string &p) {
-    if (s.size() < p.size())
-        return false;
-
-    return (s.compare(s.size() - p.size(), p.size(), p) == 0);
-}
-
 static io::IdMapper<std::string> *LoadGraph(debruijn_graph::GraphPack &gp, const std::string &filename) {
     auto &graph = gp.get_mutable<debruijn_graph::Graph>();
     io::IdMapper<std::string> *id_mapper = nullptr;
-    if (ends_with(filename, ".gfa")) {
+    if (utils::ends_with(filename, ".gfa")) {
         id_mapper = new io::IdMapper<std::string>();
         gfa::GFAReader gfa(filename);
         INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());

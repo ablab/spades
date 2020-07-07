@@ -5,13 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * cpp_utils.hpp
- *
- *  Created on: Nov 14, 2011
- *      Author: valery
- */
-
 #pragma once
 
 #include <cstddef>
