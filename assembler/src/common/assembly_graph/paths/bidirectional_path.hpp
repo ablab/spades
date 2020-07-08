@@ -264,25 +264,20 @@ public:
     }
 
     bool SetCycleOverlapping(int new_overlapping) noexcept {
-        auto is_cycle = [&](int overlapping) {
-            #define RETURN_IF_FALSE(expr) if (!(expr)) return false
-            RETURN_IF_FALSE(overlapping <= (int)Size());
-            for (int i = 0; i < overlapping; ++i) {
-                RETURN_IF_FALSE(data_[i] == data_[Size() - overlapping + i]);
-                RETURN_IF_FALSE(GapAt(i) == GapAt(Size() - overlapping + i));
-            }
-            return true;
-            #undef RETURN_IF_FALSE
-        };
-        if (is_cycle(new_overlapping)) {
-            cycle_overlapping_ = new_overlapping;
-            if (conj_path_)
-                conj_path_->cycle_overlapping_ = new_overlapping;
-            return true;
+        if (static_cast<int>(Size()) < new_overlapping)
+            return false;
+
+        for (int i = 0; i < new_overlapping; ++i) {
+            if (data_[i] != data_[Size() - new_overlapping + i] || GapAt(i) != GapAt(Size() - new_overlapping + i))
+                return false;
         }
-        return false;
+
+        cycle_overlapping_ = new_overlapping;
+        if (conj_path_)
+            conj_path_->cycle_overlapping_ = new_overlapping;
+        return true;
     }
-    
+
     int GetCycleOverlapping() const noexcept {
         return cycle_overlapping_;
     }
