@@ -269,9 +269,7 @@ public:
 
     int FindLast(EdgeId e) const noexcept {
         auto pos = std::find(edges_.rbegin(), edges_.rend(), e);
-        if (pos == edges_.rend())
-            return -1;
-        return static_cast<int>(pos - edges_.rbegin());
+        return static_cast<int>(edges_.rend() - pos - 1);
     }
 
     bool Contains(EdgeId e) const noexcept {
@@ -408,10 +406,10 @@ public:
         cumulative_len_.resize(Size(), 0);
 
         for (size_t i = 0; i < Size(); ++i)
-            cumulative_len_.front() += g_.length(edges_[i]);
+            cumulative_len_.front() += g_.length(edges_[i]) + gaps_[i].gap;
 
         for (size_t i = 1; i < Size(); ++i)
-            cumulative_len_[i] = cumulative_len_[i - 1] - g_.length(edges_[i - 1]);
+            cumulative_len_[i] = cumulative_len_[i - 1] - g_.length(edges_[i - 1]) - gaps_[i].gap;
     }
 
     BidirectionalPath(const debruijn_graph::Graph& g, std::vector<EdgeId> path)
@@ -541,7 +539,7 @@ public:
         if (edges_.empty())
             return;
 
-        EdgeId e = Front();
+        EdgeId e = edges_.back();
         DecreaseLengths();
         GappedPath::PopBack();
         NotifyBackEdgeRemoved(e);
