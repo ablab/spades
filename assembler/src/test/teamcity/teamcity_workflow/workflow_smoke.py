@@ -17,6 +17,30 @@ output_files = ["assembly_graph.fastg", "assembly_graph_with_scaffolds.gfa",
                 "before_rr.fasta", "contigs.fasta", "contigs.paths",
                 "scaffolds.fasta", "scaffolds.paths"]
 
+
+def check_one_out_folder(output_dir, etalon_dir):
+    log.log("Comparing " + output_dir + " and " + etalon_dir)
+    for filename in output_files:
+        out_file = os.path.join(output_dir, filename)
+        etalon_file = os.path.join(etalon_dir, filename)
+        if os.path.isfile(out_file) and (not os.path.isfile(etalon_file)):
+            log.err(filename + " present in output, but not present in etalon")
+            return 12
+
+        if os.path.isfile(etalon_file) and (not os.path.isfile(out_file)):
+            log.err(filename + " present in etalon, but not present in out")
+            return 12
+
+        if os.path.isfile(etalon_file) and os.path.isfile(out_file):
+            if (os.path.getsize(out_file) * 2 < os.path.getsize(etalon_file)) or \
+                    (os.path.getsize(etalon_file) * 2 < os.path.getsize(out_file)):
+                log.err(filename + " in output and in etalon have different size: " +
+                        str(os.path.getsize(out_file)) + " in output and " +
+                        str(os.path.getsize(etalon_file)) + " in etalon.")
+                return 12
+    return 0
+
+
 def check_correct_finish(dataset_info, test, output_dir):
     if 'etalon_saves' in dataset_info:
         log.log("Checking SPAdes finish correct.")
@@ -24,30 +48,25 @@ def check_correct_finish(dataset_info, test, output_dir):
         if ("name" in test):
             etalon_dir += test["name"]
 
-        output_dir = os.path.join(output_dir, "out")
-        etalon_dir = os.path.join(etalon_dir, "out")
+        if "phases" in test:
+            for i in range(len(test["phases"])):
+                if "name" in test["phases"][i]:
+                    phase_name = test["phases"][i]["name"]
+                else:
+                    phase_name = dataset_info["phases"][i]["name"]
 
-        for filename in output_files:
-            out_file = os.path.join(output_dir, filename)
-            etalon_file = os.path.join(etalon_dir, filename)
-            if os.path.isfile(out_file) and (not os.path.isfile(etalon_file)):
-                log.err(filename + " present in output, but not present in etalon")
-                return 12
-
-            if os.path.isfile(etalon_file) and (not os.path.isfile(out_file)):
-                log.err(filename + " present in etalon, but not present in out")
-                return 12
-
-            if os.path.isfile(etalon_file) and os.path.isfile(out_file):
-                if (os.path.getsize(out_file) * 2 < os.path.getsize(etalon_file)) or \
-                        (os.path.getsize(etalon_file) * 2 < os.path.getsize(out_file)):
-                    log.err(filename + " in output and in etalon have different size: " +
-                            str(os.path.getsize(out_file)) + " in output and " +
-                            str(os.path.getsize(etalon_file)) + " in etalon.")
-                    return 12
-        return 0
+                phase_outputdir = os.path.join(output_dir, phase_name)
+                err_code = check_one_out_folder(phase_outputdir, os.path.join(etalon_dir, phase_name))
+                if err_code != 0:
+                    return err_code
+            return 0
+        else:
+            output_dir = os.path.join(output_dir, "out")
+            etalon_dir = os.path.join(etalon_dir, "out")
+            return check_one_out_folder(output_dir, etalon_dir)
     else:
         log.err("Etalon folder wasn't set in test config!")
         return 12
+
 
 workflow_base.main(check_test=check_correct_finish)
