@@ -508,12 +508,24 @@ template <typename T>
 class Serializer<std::unique_ptr<T>, std::enable_if_t<is_serializable<T>>> {
 public:
     static void Write(std::ostream &os, const std::unique_ptr<T> &v) {
-        VERIFY(v);
+        if (!v) {
+            BinWrite(os, false);
+            return;
+        }
+        BinWrite(os, true);
         BinWrite(os, *v);
     }
 
     static void Read(std::istream &is, std::unique_ptr<T> &v) {
-        VERIFY(v);
+        bool hasValue;
+        BinRead(is, hasValue);
+        if (!hasValue) {
+            v = nullptr;
+            return;
+        }
+
+        if (!v)
+            v.reset(new T());
         BinRead(is, *v);
     }
 };

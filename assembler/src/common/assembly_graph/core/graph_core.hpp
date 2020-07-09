@@ -48,14 +48,14 @@ struct Id {
     Id(uint64_t id = 0)
             : id_(id) {}
 
-    uint64_t int_id() const { return id_; }
-    size_t hash() const { return id_; }
-    explicit operator bool() const { return id_; }
+    uint64_t int_id() const noexcept { return id_; }
+    size_t hash() const noexcept { return id_; }
+    explicit operator bool() const noexcept { return id_; }
 
-    bool operator==(Id other) const { return id_ == other.id_; }
-    bool operator!=(Id other) const { return id_ != other.id_; }
-    bool operator<(Id rhs) const { return id_ < rhs.id_; }
-    bool operator<=(Id rhs) const { return *this < rhs || *this == rhs; }
+    bool operator==(Id other) const noexcept { return id_ == other.id_; }
+    bool operator!=(Id other) const noexcept { return id_ != other.id_; }
+    bool operator<(Id rhs) const noexcept { return id_ < rhs.id_; }
+    bool operator<=(Id rhs) const noexcept { return *this < rhs || *this == rhs; }
 
     template <typename Archive>
     void BinArchive(Archive &ar) {

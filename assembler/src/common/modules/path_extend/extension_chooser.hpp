@@ -1256,7 +1256,7 @@ public:
             , use_low_quality_matching_(use_low_quality_matching)
     {}
 
-    EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
+    EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &) const override {
         DEBUG("We are in Filter of TrustedContigsExtensionChooser");
         path.PrintDEBUG();
 

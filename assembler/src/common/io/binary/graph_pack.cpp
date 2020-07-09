@@ -15,6 +15,7 @@
 #include "ss_coverage.hpp"
 #include "paired_index.hpp"
 #include "positions.hpp"
+#include "trusted_paths.hpp"
 
 namespace io {
 
@@ -290,6 +291,9 @@ void FullPackIO::Save(const std::string &basename, const Type &gp) {
 
     //7. Save SS coverage
     SaveComponent<SSCoverageContainer>(basename, gp);
+
+    //8. Save trusted paths
+    SaveComponent<path_extend::TrustedPathsContainer>(basename, gp);
 }
 
 bool FullPackIO::Load(const std::string &basename, Type &gp) {
@@ -317,6 +321,9 @@ bool FullPackIO::Load(const std::string &basename, Type &gp) {
 
     //7. Load SS coverage
     LoadComponent<SSCoverageContainer>(basename, gp);
+
+    //8. Load trusted paths
+    LoadComponent<path_extend::TrustedPathsContainer>(basename, gp);
 
     return true;
 }

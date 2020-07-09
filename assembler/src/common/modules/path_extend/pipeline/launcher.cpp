@@ -343,8 +343,9 @@ void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_thresho
     if (dataset_info_.reads[lib_index].type() == io::LibraryType::TrustedContigs) {
         auto& trusted_paths = gp_.get_mutable<path_extend::TrustedPathsContainer>()[lib_index];
         for (auto & path : trusted_paths) {
-            auto conj_path = new BidirectionalPath(path->Conjugate());
-            unique_data_.long_reads_paths_[lib_index].AddPair(path.release(), conj_path);
+            auto new_path = std::make_unique<BidirectionalPath>(graph_, std::move(path));
+            auto conj_path = std::make_unique<BidirectionalPath>(new_path->Conjugate());
+            unique_data_.long_reads_paths_[lib_index].AddPair(new_path.release(), conj_path.release());
         }
         DebugOutputPaths(unique_data_.long_reads_paths_[lib_index], "trusted_contigs");
         trusted_paths.clear();
@@ -355,11 +356,11 @@ void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_thresho
             const auto &edges = path.path();
             if (edges.size() <= size_threshold)
                 continue;
-            BidirectionalPath *new_path = new BidirectionalPath(graph_, edges);
-            BidirectionalPath *conj_path = new BidirectionalPath(new_path->Conjugate());
+            auto new_path = std::make_unique<BidirectionalPath>(graph_, std::move(edges));
+            auto conj_path = std::make_unique<BidirectionalPath>(new_path->Conjugate());
             new_path->SetWeight((float) path.weight());
             conj_path->SetWeight((float) path.weight());
-            unique_data_.long_reads_paths_[lib_index].AddPair(new_path, conj_path);
+            unique_data_.long_reads_paths_[lib_index].AddPair(new_path.release(), conj_path.release());
         }
     }
     DEBUG("Long reads paths " << unique_data_.long_reads_paths_[lib_index].size());
