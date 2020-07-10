@@ -24,8 +24,19 @@ elif sys.version.startswith("3."):
     import pyyaml3 as pyyaml
 
 
-def get_kmer_list(path):
-    run_spades_yaml = os.path.join(path, "out", "run_spades.yaml")
+def get_kmer_list(path, dataset_info, test):
+    run_spades_yaml = ""
+    if "phases" in test:
+        for i in range(len(test["phases"])):
+            if "name" in test["phases"][i]:
+                phase_name = test["phases"][i]["name"]
+            else:
+                phase_name = dataset_info["phases"][i]["name"]
+
+            run_spades_yaml = os.path.join(path, phase_name, "run_spades.yaml")
+    else:
+        run_spades_yaml = os.path.join(path, "out", "run_spades.yaml")
+
     stages = pyyaml.load(open(run_spades_yaml))
     kmers = []
     for stage in stages:
@@ -42,10 +53,10 @@ def check_kmer_set(dataset_info, test, output_dir):
         if ("name" in test):
             etalon_folder += test["name"]
 
-        out_klist = get_kmer_list(output_dir)
+        out_klist = get_kmer_list(output_dir, dataset_info, test)
         log.log("Output kmers: " + str(out_klist))
 
-        etalon_klist = get_kmer_list(os.path.join(etalon_folder))
+        etalon_klist = get_kmer_list(etalon_folder, dataset_info, test)
         log.log("Etalon kmers: " + str(etalon_klist))
 
         if out_klist != etalon_klist:
