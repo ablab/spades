@@ -276,6 +276,20 @@ def handle_one_test(test, args, dataset_info, working_dir, check_test):
     return ecode
 
 
+def get_outdirs(dataset_info, test, output_dir):
+    res = []
+    if "phases" in test:
+        for i in range(len(test["phases"])):
+            if "name" in test["phases"][i]:
+                phase_name = test["phases"][i]["name"]
+            else:
+                phase_name = dataset_info["phases"][i]["name"]
+            res.append(os.path.join(output_dir, phase_name))
+    else:
+        res.append(os.path.join(output_dir, "out"))
+    return res
+
+
 def main(check_test):
     try:
         if len(sys.argv) == 1:

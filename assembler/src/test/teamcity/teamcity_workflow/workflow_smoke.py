@@ -48,22 +48,14 @@ def check_correct_finish(dataset_info, test, output_dir):
         if ("name" in test):
             etalon_dir += test["name"]
 
-        if "phases" in test:
-            for i in range(len(test["phases"])):
-                if "name" in test["phases"][i]:
-                    phase_name = test["phases"][i]["name"]
-                else:
-                    phase_name = dataset_info["phases"][i]["name"]
+        out_dirs = workflow_base.get_outdirs(dataset_info, test, output_dir)
+        etalon_dirs = workflow_base.get_outdirs(dataset_info, test, etalon_dir)
 
-                phase_outputdir = os.path.join(output_dir, phase_name)
-                err_code = check_one_out_folder(phase_outputdir, os.path.join(etalon_dir, phase_name))
-                if err_code != 0:
-                    return err_code
-            return 0
-        else:
-            output_dir = os.path.join(output_dir, "out")
-            etalon_dir = os.path.join(etalon_dir, "out")
-            return check_one_out_folder(output_dir, etalon_dir)
+        for i in range(len(out_dirs)):
+            err_code = check_one_out_folder(out_dirs[i], etalon_dirs[i])
+            if err_code != 0:
+                return err_code
+        return 0
     else:
         log.err("Etalon folder wasn't set in test config!")
         return 12
