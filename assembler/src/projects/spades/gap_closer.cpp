@@ -23,6 +23,7 @@ namespace debruijn_graph {
 
 class GapCloserPairedIndexFiller : public SequenceMapperListener {
 private:
+    const int MAX_DIST_TO_TIP = 1000;
     const GraphPack &gp_;
     const Graph &graph_;
     typedef phmap::parallel_flat_hash_map<EdgeId, EdgeId> TipMap;
@@ -67,18 +68,21 @@ private:
                     continue;
 
                 local_out_tip_map.emplace(edge, edge);
-                std::stack<EdgeId> edge_stack;
-                edge_stack.push(edge);
+                std::stack<std::pair<EdgeId, int>> edge_stack;
+                edge_stack.emplace(edge, 0);
                 while (!edge_stack.empty()) {
                     auto checking_pair = edge_stack.top();
                     edge_stack.pop();
-                    VertexId start = graph_.EdgeStart(checking_pair);
-                    if (!graph_.CheckUniqueOutgoingEdge(start))
+                    VertexId start = graph_.EdgeStart(checking_pair.first);
+                    checking_pair.second += graph_.length(checking_pair.first);
+
+                    if (!graph_.CheckUniqueOutgoingEdge(start) || checking_pair.second > MAX_DIST_TO_TIP) {
                         continue;
+                    }
 
                     for (EdgeId e : graph_.IncomingEdges(start)) {
                         local_out_tip_map.emplace(e, edge);
-                        edge_stack.push(e);
+                        edge_stack.emplace(e, checking_pair.second);
                     }
                 }
             }
