@@ -121,7 +121,7 @@ def check_file_existence(input_filename, message="", log=None):
 def get_read_file_type(input_filename, log=None):
     if input_filename in options_storage.dict_of_prefixes:
         ext = options_storage.dict_of_prefixes[input_filename]
-        file_type = SeqIO.get_read_file_type(ext)
+        file_type = SeqIO.get_read_file_type("filename" + ext)
     else:
         file_type = SeqIO.get_read_file_type(input_filename)
 
