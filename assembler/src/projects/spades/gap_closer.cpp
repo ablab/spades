@@ -106,12 +106,9 @@ public:
         edges.reserve(out_tip_map_.size() * 2);
         for (const auto &entry : out_tip_map_) {
             edges.push_back(entry.first);
-            if (graph_.IsDeadStart(graph_.EdgeStart(entry.first))) {
-                continue;
-            }
 
             const auto& conj_id = graph_.conjugate(entry.first);
-            if (entry.first != conj_id)  {
+            if (out_tip_map_.count(conj_id) == 0) {
                 edges.push_back(conj_id);
             }
         }
