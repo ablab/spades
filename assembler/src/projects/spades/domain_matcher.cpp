@@ -165,10 +165,12 @@ ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::GraphPack &gp,
 
     std::vector<hmmer::HMM> hmms;
     for (const auto &f : hmm_files) {
-        if (utils::ends_with(f, ".aa") || utils::ends_with(f, ".aa.gz"))
+        if (utils::ends_with(f, ".aa") || utils::ends_with(f, ".aa.gz")) {
             ParseFASTAFile(hmms, f);
-        else
+            hcfg.E = hcfg.domE = 0.01;
+        } else {
             ParseHMMFile(hmms, f);
+        }
     }
 
 #   pragma omp parallel for
