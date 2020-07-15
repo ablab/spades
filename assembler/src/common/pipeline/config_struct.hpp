@@ -377,6 +377,7 @@ struct debruijn_config {
         bool before_simplify;
         bool after_simplify;
         double weight_threshold;
+        int max_dist_to_tip;
     };
 
     struct ss_coverage_splitter_t {

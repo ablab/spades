@@ -126,6 +126,7 @@ gap_closer
     before_simplify		false
     after_simplify 		true
     weight_threshold		2.0
+    max_dist_to_tip		5000
 }
 
 kmer_coverage_model {

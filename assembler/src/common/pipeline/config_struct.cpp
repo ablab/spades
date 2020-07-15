@@ -495,6 +495,7 @@ void load(debruijn_config::gap_closer& gc,
   load(gc.before_simplify, pt, "before_simplify");
   load(gc.after_simplify, pt, "after_simplify");
   load(gc.weight_threshold, pt, "weight_threshold");
+  load(gc.max_dist_to_tip, pt, "max_dist_to_tip");
 }
 
 void load(debruijn_config::ss_coverage_splitter_t& ss_cs,

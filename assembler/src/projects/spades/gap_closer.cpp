@@ -23,7 +23,6 @@ namespace debruijn_graph {
 
 class GapCloserPairedIndexFiller : public SequenceMapperListener {
 private:
-    const int MAX_DIST_TO_TIP = 1000;
     const GraphPack &gp_;
     const Graph &graph_;
     typedef phmap::parallel_flat_hash_map<EdgeId, EdgeId> TipMap;
@@ -32,6 +31,7 @@ private:
     TipMap out_tip_map_;
     debruijn_graph::EdgeIndex<ConjugateDeBruijnGraph> index_;
     std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> mapper_ = nullptr;
+    const int max_dist_to_tip_;
 
     void ProcessPairedRead(const MappingPath<EdgeId> &path1, const MappingPath<EdgeId> &path2) {
         for (size_t i = 0; i < path1.size(); ++i) {
@@ -76,7 +76,7 @@ private:
                     VertexId start = graph_.EdgeStart(checking_pair.first);
                     checking_pair.second += graph_.length(checking_pair.first);
 
-                    if (!graph_.CheckUniqueOutgoingEdge(start) || checking_pair.second > MAX_DIST_TO_TIP) {
+                    if (!graph_.CheckUniqueOutgoingEdge(start) || checking_pair.second > max_dist_to_tip_) {
                         continue;
                     }
 
@@ -102,8 +102,9 @@ private:
 
 public:
     GapCloserPairedIndexFiller(const Graph &graph, omnigraph::de::PairedInfoIndexT<Graph> &paired_index,
-                               const GraphPack &gp)
-            : graph_(graph), paired_index_(paired_index), buffer_pi_(graph), gp_(gp), index_(graph, gp.workdir()) {
+                               const GraphPack &gp, int max_dist_to_tip)
+            : graph_(graph), paired_index_(paired_index), buffer_pi_(graph), gp_(gp),
+              index_(graph, gp.workdir()), max_dist_to_tip_(max_dist_to_tip) {
         PrepareTipMap(out_tip_map_);
 
         std::vector<EdgeId> edges;
@@ -405,7 +406,7 @@ void GapClosing::run(GraphPack &gp, const char *) {
 
     auto &g = gp.get_mutable<Graph>();
     omnigraph::de::PairedInfoIndexT<Graph> tips_paired_idx(g);
-    GapCloserPairedIndexFiller gcpif(g, tips_paired_idx, gp);
+    GapCloserPairedIndexFiller gcpif(g, tips_paired_idx, gp, cfg::get().gc.max_dist_to_tip);
 
     SequenceMapperNotifier notifier(gp, cfg::get().ds.reads.lib_count());
 
