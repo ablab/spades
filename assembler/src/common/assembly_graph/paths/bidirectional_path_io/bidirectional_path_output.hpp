@@ -15,6 +15,9 @@
 namespace path_extend {
 
 class FastgPathWriter : public io::FastgWriter {
+public:
+    using io::FastgWriter::FastgWriter;
+
     std::string ToPathString(const BidirectionalPath &path) const {
         if (path.Empty())
             return "";
@@ -28,9 +31,6 @@ class FastgPathWriter : public io::FastgWriter {
         }
         return res;
     }
-
-public:
-    using io::FastgWriter::FastgWriter;
 
     void WritePaths(const ScaffoldStorage &scaffold_storage, const std::string &fn) const {
         std::ofstream os(fn);
