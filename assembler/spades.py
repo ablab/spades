@@ -69,12 +69,14 @@ def print_used_values(cfg, log):
 
     # main
     print_value(cfg, "common", "output_dir", "", "")
-    if ("error_correction" in cfg) and (not "assembly" in cfg):
-        log.info("Mode: ONLY read error correction (without assembling)")
-    elif (not "error_correction" in cfg) and ("assembly" in cfg):
-        log.info("Mode: ONLY assembling (without read error correction)")
-    else:
-        log.info("Mode: read error correction and assembling")
+    if not options_storage.args.rna:
+        if ("error_correction" in cfg) and (not "assembly" in cfg):
+            log.info("Mode: ONLY read error correction (without assembling)")
+        elif (not "error_correction" in cfg) and ("assembly" in cfg):
+            log.info("Mode: ONLY assembling (without read error correction)")
+        else:
+            log.info("Mode: read error correction and assembling")
+
     if ("common" in cfg) and ("developer_mode" in cfg["common"].__dict__):
         if cfg["common"].developer_mode:
             log.info("Debug mode is turned ON")

@@ -860,6 +860,9 @@ def add_to_option(args, log, skip_output_dir):
     if args.only_assembler and args.isolate:
         support.warning("Isolate mode already implies --only-assembler, so this option has no effect.")
 
+    if args.only_assembler and args.rna:
+        support.warning("RNA mode already implies --only-assembler, so this option has no effect.")
+
     if args.restart_from is not None:
         args.continue_mode = True
     if args.careful is not None:
