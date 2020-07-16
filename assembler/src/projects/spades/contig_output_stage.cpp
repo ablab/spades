@@ -20,10 +20,6 @@ using namespace debruijn_graph;
 
 static constexpr double LARGE_FRACTION = 0.8;
 
-bool CheckCircularPath(const path_extend::BidirectionalPath* path) {
-    return (path->Size() > 0 && path->g().EdgeStart(path->Front()) == path->g().EdgeEnd(path->Back()));
-}
-
 bool CheckUsedPath(const path_extend::BidirectionalPath* path, std::unordered_set<EdgeId> &used_edges) {
     const Graph& g = path->g();
     size_t used_len = 0;
@@ -50,7 +46,7 @@ path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer
     INFO("banned " << used_edges.size() <<" edges");
     for (auto it = sc_storage.begin(); it != sc_storage.end(); it++) {
 //FIXME: constant
-        if (CheckCircularPath(it->first) && !CheckUsedPath(it->first, used_edges) && it->first->Length() >= 500) {
+        if (it->first->IsCircular() && !CheckUsedPath(it->first, used_edges) && it->first->Length() >= 500) {
             path_extend::BidirectionalPath *p = new path_extend::BidirectionalPath(*it->first);
             path_extend::BidirectionalPath *cp = new path_extend::BidirectionalPath(p->Conjugate());
             res.AddPair(p, cp);

@@ -446,6 +446,11 @@ public:
         return data_.end();
     }
 
+    bool IsCircular() {
+        return (Size() > 0 &&
+                g_.EdgeStart(Front()) == g_.EdgeEnd(Back()));
+    }
+    
     void PrintDEBUG() const;
     void PrintINFO() const;
     void Print(std::ostream &os) const;
