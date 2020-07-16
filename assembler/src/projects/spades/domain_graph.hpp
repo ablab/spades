@@ -203,7 +203,7 @@ namespace nrps {
         void OutputStatArrangement(const std::vector<VertexId> &single_candidate, unsigned id, std::ostream &stat_file);
         void FindBasicStatistic(std::ostream &stat_stream);
         void PrelimDFS(VertexId v, std::set<VertexId> &preliminary_visited);
-        void PathToSequence(path_extend::BidirectionalPath *p, const std::vector<VertexId> &answer);
+        void PathToSequence(path_extend::BidirectionalPath &p, const std::vector<VertexId> &answer);
         DomainGraph::Arrangements FindAllPossibleArrangements(VertexId v,
                                                               size_t component_size_part, size_t component_min_size);
         void FinalDFS(VertexId v, std::vector<VertexId> &current, std::set<VertexId> preliminary_visited,

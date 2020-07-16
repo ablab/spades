@@ -269,27 +269,27 @@ namespace nrps {
                    {uint32_t(gap.left_trim()), uint32_t(gap.right_trim())}, false);
     }
 
-    void DomainGraph::PathToSequence(path_extend::BidirectionalPath *p,
-                                            const std::vector<VertexId> &answer) {
+    void DomainGraph::PathToSequence(path_extend::BidirectionalPath &p,
+                                     const std::vector<VertexId> &answer) {
         auto &scaf_params = cfg::get().pe_params.param_set.scaffolder_options;
-        path_extend::LAGapAnalyzer gap_analyzer(p->g(), scaf_params.min_overlap_length, scaf_params.flank_multiplication_coefficient,
+        path_extend::LAGapAnalyzer gap_analyzer(p.g(), scaf_params.min_overlap_length, scaf_params.flank_multiplication_coefficient,
                                                 scaf_params.flank_addition_coefficient);
-        DEBUG("Translating " << p->GetId() << " to sequence");
+        DEBUG("Translating " << p.GetId() << " to sequence");
         for (size_t i = 0; i < answer.size(); ++i) {
             auto v = answer[i];
             DEBUG("Translating vertex " << GetVertexName(v));
             DEBUG(domain_edges(v));
             for (EdgeId e : domain_edges(v)) {
-                if (p->Size() == 0 || p->Back() != e) {
+                if (p.Size() == 0 || p.Back() != e) {
                     path_extend::Gap gap;
-                    if (p->Size() != 0 && g_.IsDeadEnd(g_.EdgeEnd(p->Back())) && g_.IsDeadStart(g_.EdgeStart(e)) &&
-                        g_.EdgeEnd(p->Back()) != g_.EdgeStart(e)) {
-                        DEBUG("Fixing gap between " << p->Back() << " and " << e);
-                        omnigraph::GapDescription<debruijn_graph::Graph> gap_description(p->Back(), e, -(int)g_.k());
+                    if (p.Size() != 0 && g_.IsDeadEnd(g_.EdgeEnd(p.Back())) && g_.IsDeadStart(g_.EdgeStart(e)) &&
+                        g_.EdgeEnd(p.Back()) != g_.EdgeStart(e)) {
+                        DEBUG("Fixing gap between " << p.Back() << " and " << e);
+                        omnigraph::GapDescription<debruijn_graph::Graph> gap_description(p.Back(), e, -(int)g_.k());
                         gap_analyzer.FixGap(gap_description);
                         gap = ConvertGapDescription(gap_description);
                     }
-                    p->PushBack(e, gap);
+                    p.PushBack(e, gap);
                 }
             }
 
@@ -304,16 +304,16 @@ namespace nrps {
                 EdgeId next_edge = next_edges[0];
                 DEBUG(debruijn_edges(next_edge));
                 for (debruijn_graph::EdgeId de : debruijn_edges(next_edge)) {
-                    if (p->Size() == 0 || p->Back() != de) {
+                    if (p.Size() == 0 || p.Back() != de) {
                         path_extend::Gap gap;
-                        if (p->Size() != 0 &&
-                            g_.EdgeEnd(p->Back()) != g_.EdgeStart(de)) {
-                            DEBUG("Fixing gap between " << p->Back() << " and " << de);
-                            omnigraph::GapDescription<debruijn_graph::Graph> gap_description(p->Back(), de, -(int)g_.k());
+                        if (p.Size() != 0 &&
+                            g_.EdgeEnd(p.Back()) != g_.EdgeStart(de)) {
+                            DEBUG("Fixing gap between " << p.Back() << " and " << de);
+                            omnigraph::GapDescription<debruijn_graph::Graph> gap_description(p.Back(), de, -(int)g_.k());
                             gap_analyzer.FixGap(gap_description);
                             gap = ConvertGapDescription(gap_description);
                         }
-                        p->PushBack(de, gap);
+                        p.PushBack(de, gap);
                     }
                 }
             }
@@ -507,6 +507,8 @@ void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp,
 
     unsigned ordering_id = 1;
     unsigned component_id = 1;
+
+    path_extend::PathWriter path_writer(graph);
     for (const auto &entry : answer) {
         stat_stream << "BGC subgraph " << component_id << std::endl;
         OutputStat(entry, stat_stream);
@@ -515,9 +517,12 @@ void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp,
         for (const auto &vec : entry.arrangements) {
             OutputStatArrangement(vec, ordering_id, stat_stream);
             auto paths = contig_paths_.CreatePair(graph);
-            PathToSequence(&paths.first, vec);
+            path_extend::BidirectionalPath &p = paths.first;
+            PathToSequence(p, vec);
+            stat_stream << "Edge order: \n" << path_writer.ToPathString(p) << "\n"
+                        << "Path is " << (p.IsCircular() ? "circular" : "linear") << "\n";
             OutputComponent(&paths.first, component_id, ordering_id);
-            std::string outputstring = seq_maker.MakeSequence(paths.first);
+            std::string outputstring = seq_maker.MakeSequence(p);
             oss.SetCluster(component_id, ordering_id, vec.size());
             oss << outputstring;
             ordering_id++;
