@@ -14,9 +14,13 @@
 
 namespace path_extend {
 
-class FastgPathWriter : public io::FastgWriter {
-public:
-    using io::FastgWriter::FastgWriter;
+class PathWriter {
+    typedef debruijn_graph::DeBruijnGraph Graph;
+
+  public:
+    PathWriter(const Graph &graph)
+            : graph_(graph),
+              short_namer_(graph) {}
 
     std::string ToPathString(const BidirectionalPath &path) const {
         if (path.Empty())
@@ -32,16 +36,34 @@ public:
         return res;
     }
 
+  private:
+    const Graph &graph_;
+    io::CanonicalEdgeHelper<Graph> short_namer_;
+};
+
+class FastgPathWriter : public io::FastgWriter {
+public:
+    using io::FastgWriter::FastgWriter;
+
+    FastgPathWriter(const Graph &graph,
+                    const std::string &fn,
+                    io::EdgeNamingF<Graph> edge_naming_f = io::BasicNamingF<Graph>())
+            :  io::FastgWriter(graph, fn, edge_naming_f),
+               path_writer_(graph)
+    {}
+
     void WritePaths(const ScaffoldStorage &scaffold_storage, const std::string &fn) const {
         std::ofstream os(fn);
         for (const auto& scaffold_info : scaffold_storage) {
-            os << scaffold_info.name << "\n";
-            os << ToPathString(*scaffold_info.path) << "\n";
-            os << scaffold_info.name << "'" << "\n";
-            os << ToPathString(*scaffold_info.path->GetConjPath()) << "\n";
+            os << scaffold_info.name << "\n"
+               << path_writer_.ToPathString(*scaffold_info.path) << "\n"
+               << scaffold_info.name << "'" << "\n"
+               << path_writer_.ToPathString(*scaffold_info.path->GetConjPath()) << "\n";
         }
     }
 
+  private:
+    PathWriter path_writer_;
 };
 
 
