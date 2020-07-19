@@ -1,0 +1,15 @@
+<html>     <head>         <title>SPAdes 3.15.0-dev Manual</title>         <style type="text/css">             .highlight  pre {               background-color: #f0f2f4;               border-radius: 2px;               font-size: 100%;               line-height: 1.45;               overflow: auto;               padding: 16px;             }         </style>     </head>     <body><p>This is a support software release for metaviralSPAdes publication</p>
+<p>It contains script for viral assembly from metagenomes (assembler/metaviralspades.py), which is based on metaplasmidSPAdes.</p>
+<p>For metaviral release no binary distribution is available now - you should install from source code.</p>
+<ul>
+<li>g++ (version 5.3.1 or higher)</li>
+<li>cmake (version 2.8.12 or higher)</li>
+<li>zlib</li>
+<li>libbz2</li>
+</ul>
+<p>should be installed before metaviralSPAdes.</p>
+<p>To install you'll need to run</p>
+<div class="highlight highlight-source-shell"><pre>    ./assembler/spades_compile.sh</pre></div>
+<p>metaviralSPAdes binaries will be built in the directory <code>./bin</code>.</p>
+<p>Input/output options  are same as in regular SPAdes -- see <a href="http://cab.spbu.ru/files/release3.14.1/manual.html" rel="nofollow">http://cab.spbu.ru/files/release3.14.1/manual.html</a> for details.</p>
+<p>Additional output (results of repeat resolution without any bacterial contigs removed) is available as &lt;Output_folder&gt;/&lt;MAX_K&gt;/before_chromosome_removal.fasta</p><br/><br/><br/><br/><br/> </body> </html>
