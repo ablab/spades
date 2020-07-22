@@ -103,15 +103,36 @@ typename DeBruijnEdgeKMerSplitter<Graph, KmerFilter>::RawKMers
 DeBruijnEdgeKMerSplitter<Graph, KmerFilter>::Split(size_t num_files, unsigned nthreads) {
     auto out = this->PrepareBuffers(num_files, nthreads, this->read_buffer_size_);
 
-    size_t counter = 0;
-#   pragma omp parallel for num_threads(nthreads)
-    for (size_t i = 0; i < edges_.size(); ++i) {
-        const Sequence &nucls = g_.EdgeNucls(edges_[i]);
+    std::vector<std::pair<size_t, size_t>> ranges(nthreads);
+    size_t chunk_size = edges_.size()/nthreads;
+    size_t current_chunk_start = 0;
 
-        counter += 1;
-        this->FillBufferFromSequence(nucls, omp_get_thread_num());
+    for (size_t i = 0; i < nthreads; ++i) {
+        ranges[i] = std::make_pair(current_chunk_start, current_chunk_start + chunk_size);
     }
-    this->DumpBuffers(out);
+    ranges[nthreads - 1].second = edges_.size();
+
+    size_t counter = 0, n = 10;
+    while (!std::all_of(ranges.begin(), ranges.end(),
+                        [](const std::pair<size_t, size_t> &r) { return r.first == r.second; })) {
+#   pragma omp parallel for num_threads(nthreads) reduction(+ : counter)
+        for (size_t chunk_id = 0; chunk_id < ranges.size(); ++chunk_id) {
+            while (ranges[chunk_id].first < ranges[chunk_id].second) {
+                const Sequence &nucls = g_.EdgeNucls(edges_[ranges[chunk_id].first]);
+                ranges[chunk_id].first += 1;
+                counter += 1;
+
+                if (this->FillBufferFromSequence(nucls, omp_get_thread_num())) {
+                    break;
+                }
+            }
+        }
+        this->DumpBuffers(out);
+        if (counter >> n) {
+            INFO("Processed " << counter << " edges");
+            n += 1;
+        }
+    }
 
     INFO("Used " << counter << " sequences.");
 
@@ -119,6 +140,7 @@ DeBruijnEdgeKMerSplitter<Graph, KmerFilter>::Split(size_t num_files, unsigned nt
 
     return out;
 }
+
 
 template<class Index>
 class GraphPositionFillingIndexBuilder {
