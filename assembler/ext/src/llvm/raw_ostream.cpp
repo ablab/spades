@@ -31,6 +31,8 @@
 #include <iterator>
 #include <sys/stat.h>
 #include <system_error>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 
 // <fcntl.h> may provide O_BINARY.
 #if defined(HAVE_FCNTL_H)
