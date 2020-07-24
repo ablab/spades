@@ -9,11 +9,11 @@ class SeriesAnalysis : public spades::AssemblyStage {
 public:
     SeriesAnalysis() : AssemblyStage("Series Analysis", "series_analysis") { }
 
-    void load(GraphPack &, const std::string &, const char *) { }
+    void load(GraphPack &, const std::string &, const char *) override { }
 
-    void save(const GraphPack &, const std::string &, const char *) const { }
+    bool shouldBeSaved() const noexcept override { return false; }
 
-    void run(GraphPack &gp, const char *);
+    void run(GraphPack &gp, const char *) override;
 };
 
 }

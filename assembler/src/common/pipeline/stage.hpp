@@ -33,6 +33,9 @@ public:
     const char *name() const { return name_; }
     const char *id() const { return id_; }
 
+    /// @brief  whether there should be a save after this stage.
+    virtual bool shouldBeSaved() const noexcept { return true; }
+
     virtual void load(debruijn_graph::GraphPack &, const std::string &load_from, const char *prefix = nullptr);
     virtual void save(const debruijn_graph::GraphPack &, const std::string &save_to,
                       const char *prefix = nullptr) const;
@@ -216,7 +219,12 @@ public:
     }
 
 private:
-    std::vector<std::unique_ptr<AssemblyStage> > stages_;
+    using Stages = std::vector<std::unique_ptr<AssemblyStage> >;
+
+    /// @returns the last loadable stage in the range from 'stages_.begin()' to 'stage' (included).
+    Stages::iterator find_loadable_stage(Stages::iterator stage) const noexcept;
+
+    Stages stages_;
     SavesPolicy saves_policy_;
 
     DECL_LOGGER("StageManager");

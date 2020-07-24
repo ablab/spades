@@ -16,7 +16,7 @@ class DomainGraphConstruction : public spades::AssemblyStage {
     DomainGraphConstruction()
         : AssemblyStage("Domain Graph Construction", "domain_graph_construction") {}
 
-    void run(GraphPack &gp, const char*);
+    void run(GraphPack &gp, const char*) override;
 };
 
 }
