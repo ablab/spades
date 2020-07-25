@@ -579,6 +579,7 @@ def add_to_dataset(option, data, dataset_data):
 
     if record_id not in dataset_data:  # setting default values for a new record
         dataset_data[record_id] = {}
+        dataset_data[record_id]["number"] = lib_number
         if lib_type in options_storage.SHORT_READS_TYPES:
             dataset_data[record_id]["type"] = options_storage.SHORT_READS_TYPES[lib_type]
         else:
@@ -700,17 +701,20 @@ def check_dataset_reads(dataset_data, only_assembler, iontorrent, log):
         right_number = 0
         for key, value in reads_library.items():
             if key.endswith("reads"):
+                if "number" not in reads_library:
+                    reads_library["number"] = id + 1
+
                 for reads_file in value:
                     check_file_existence(reads_file,
                                          "%s, library number: %d, library type: %s" %
-                                         (key, id + 1, reads_library["type"]), log)
+                                         (key, reads_library["number"], reads_library["type"]), log)
                     check_reads_file_format(reads_file, "%s, library number: %d, library type: %s" %
-                                            (key, id + 1, reads_library["type"]), only_assembler, iontorrent,
+                                            (key, reads_library["number"], reads_library["type"]), only_assembler, iontorrent,
                                             reads_library["type"], log)
                     if reads_library["type"] in options_storage.READS_TYPES_USED_IN_CONSTRUCTION:
                         check_file_not_empty(reads_file,
                                              "%s, library number: %d, library type: %s" %
-                                             (key, id + 1, reads_library["type"]), log)
+                                             (key, reads_library["number"], reads_library["type"]), log)
 
                     all_files.append(reads_file)
                 if key == "left reads":
