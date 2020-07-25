@@ -724,10 +724,13 @@ public:
         return size_t(pos) != path.Size() - 2;
     }
 
+    /// @returns whether there is more than one inclusion of the path tail that is not shorter than 'min_cycle_len'.
     bool CheckCycled(const BidirectionalPath& path) const {
         return FindCycleStart(path) != -1;
     }
-//first suffix longer than min_cycle_len
+
+    /// @returns the starting position of the first suffix that is longer or equal to 'min_cycle_len'.
+    ///          Returns '-1' if the entire path is shorter than 'min_cycle_len'.
     int FindPosIS(const BidirectionalPath& path) const {
         int i = (int) path.Size() - 1;
         while (i >= 0 && path.LengthAt(i) < min_cycle_len_) {
@@ -735,6 +738,7 @@ public:
         }
         return i;
     }
+
     int FindCycleStart(const BidirectionalPath& path) const {
         TRACE("Looking for IS cycle " << min_cycle_len_);
         int i = FindPosIS(path);
@@ -742,7 +746,6 @@ public:
         if (i < 0) return -1;
 //Tail
         BidirectionalPath last = path.SubPath(i);
-        //last.Print();
 
         int pos = path.FindFirst(last);
 // not cycle
@@ -764,9 +767,8 @@ public:
         VERIFY(last_edge_pos > -1);
         DEBUG("last edge pos " << last_edge_pos);
         VERIFY(last_edge_pos > pos);
-        for (int i = (int) path.Size() - 1; i >= last_edge_pos; --i) {
-            path.PopBack();
-        }
+        path.PopBack(path.Size() - (size_t)last_edge_pos);
+
         VERIFY((int) path.Size() == last_edge_pos);
         VERIFY(pos < (int) path.Size());
         DEBUG("result pos " <<pos);
@@ -824,6 +826,7 @@ public:
             DEBUG("Wrong position in IS cycle");
             return;
         }
+        // TODO: Memory leak; 'p' and 'cp' will never be deleted;
         BidirectionalPath * p = new BidirectionalPath(path.SubPath(pos));
         BidirectionalPath * cp = new BidirectionalPath(p->Conjugate());
         visited_cycles_coverage_map_.Subscribe(p);
@@ -1058,43 +1061,29 @@ public:
     }
 
     bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage) override {
-        if (path.IsCycle())
+        if (path.IsCycle() || is_detector_.InExistingLoop(path) || DetectCycle(path))
             return false;
 
-        if (is_detector_.InExistingLoop(path)) {
-            DEBUG("in existing loop");
-            return false;
-        }
-        DEBUG("un ch enabled " << used_storage_.UniqueCheckEnabled());
-        bool result;
-        LoopDetector loop_detector(&path, cov_map_);
-
-        auto resolveLoops = [&](bool resolve_two_loops = false, bool resolve_short_loop = true) {
-            if (DetectCycle(path)) {
-                result = false;
-            } else if (resolve_two_loops && TryToResolveTwoLoops(path)) {
-                result = true;
-            } else if (resolve_short_loop && path.Size() >= 1 && InvestigateShortLoop() && loop_detector.EdgeInShortLoop(path.Back())) {
-                DEBUG("Edge in short loop");
-                result = ResolveShortLoop(path);
-            } else if (resolve_short_loop && InvestigateShortLoop() && loop_detector.PrevEdgeInShortLoop()) {
-                DEBUG("Prev edge in short loop");
-                path.PopBack();
-                result = ResolveShortLoop(path);
-            } else {
-                return false;
-            }
-
+        if (TryToResolveTwoLoops(path))
             return true;
-        };
 
-        if (!resolveLoops(true, use_short_loop_cov_resolver_)) {
-            DEBUG("Making step");
-            result = MakeSimpleGrowStep(path, paths_storage);
-            DEBUG("Made step");
-            resolveLoops();
+        if (use_short_loop_cov_resolver_) {
+            auto attempt = TryToResolveShortLoop(path);
+            if (attempt)
+                return *attempt;
         }
-        return result;
+
+        DEBUG("Making step");
+        bool path_is_growed = MakeSimpleGrowStep(path, paths_storage);
+        DEBUG("Made step");
+
+        if (DetectCycle(path))
+            return false;
+
+        if (auto attempt = TryToResolveShortLoop(path)) 
+            return *attempt;
+
+        return path_is_growed;
     }
 
 private:
@@ -1109,6 +1098,23 @@ private:
     bool InvestigateShortLoop() const noexcept {
         return investigate_short_loops_ && (use_short_loop_cov_resolver_ || CanInvestigateShortLoop());
     }
+
+    boost::optional<bool> TryToResolveShortLoop(BidirectionalPath& path) {
+        LoopDetector loop_detector(&path, cov_map_);
+        if (!path.Empty() && InvestigateShortLoop()) {
+            if (loop_detector.EdgeInShortLoop(path.Back())) {
+                DEBUG("Edge in short loop");
+                return ResolveShortLoop(path);
+            }
+            if (loop_detector.PrevEdgeInShortLoop()) {
+                DEBUG("Prev edge in short loop");
+                path.PopBack();
+                return ResolveShortLoop(path);
+            }
+        }
+        return {};
+    };
+
 protected:
     DECL_LOGGER("LoopDetectingPathExtender")
 };
