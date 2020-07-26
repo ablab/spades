@@ -12,7 +12,7 @@
 
 namespace omnigraph {
 
-template<class Graph, typename distance_t = size_t>
+template<class Graph, typename distance_t = std::size_t>
 class LengthCalculator {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
@@ -26,7 +26,7 @@ public:
     }
 };
 
-template<class Graph, typename distance_t = size_t>
+template<class Graph, typename distance_t = std::size_t>
 class ComponentLenCalculator {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
@@ -44,7 +44,7 @@ public:
     }
 };
 
-template<class Graph, typename distance_t = size_t>
+template<class Graph, typename distance_t = std::size_t>
 class BoundedEdgeLenCalculator {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
@@ -62,7 +62,7 @@ public:
     }
 };
 
-template<class Graph, typename distance_t = size_t>
+template<class Graph, typename distance_t = std::size_t>
 class AlongPathLengthCalculator {
     typedef LengthCalculator<Graph, distance_t> base;
     typedef typename Graph::VertexId VertexId;
@@ -96,7 +96,7 @@ public:
     }
 };
 
-template<class Graph, typename distance_t = size_t>
+template<class Graph, typename distance_t = std::size_t>
 class PathIgnoringLengthCalculator {
     typedef LengthCalculator<Graph, distance_t> base;
     typedef typename Graph::VertexId VertexId;
