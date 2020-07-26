@@ -43,8 +43,8 @@ print_help() {
   echo "  -j <int>    amount of threads"
   echo
   echo "examples:"
-  echo "  - build SPAdes with internal projects and run all tests, use 5 threads"
-  echo "    $0 -atj5"
+  echo "  - build SPAdes with internal projects and run all tests, use 15 threads"
+  echo "    $0 -atj15"
   echo
   echo "  - build SPAdes and run basic tests, use 9 threads"
   echo "    $0 -j 9 -t"
