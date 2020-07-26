@@ -710,10 +710,6 @@ public:
         min_cycle_len_(is) {
     }
 
-    ~InsertSizeLoopDetector() {
-        path_storage_.DeleteAllPaths();
-    }
-
     bool CheckCycledNonIS(const BidirectionalPath& path) const {
         if (path.Size() <= 2) {
             return false;
@@ -826,13 +822,13 @@ public:
             DEBUG("Wrong position in IS cycle");
             return;
         }
-        // TODO: Memory leak; 'p' and 'cp' will never be deleted;
         BidirectionalPath * p = new BidirectionalPath(path.SubPath(pos));
         BidirectionalPath * cp = new BidirectionalPath(p->Conjugate());
         visited_cycles_coverage_map_.Subscribe(p);
         visited_cycles_coverage_map_.Subscribe(cp);
         DEBUG("add cycle");
         p->PrintDEBUG();
+        path_storage_.AddPair(p, cp);
     }
 };
 
