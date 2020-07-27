@@ -23,7 +23,6 @@ struct Gap {
     struct Trash {
         uint32_t previous;
         uint32_t current;
-
         void BinWrite(std::ostream &str) const {
             using io::binary::BinWrite;
             BinWrite(str, previous);
@@ -48,7 +47,7 @@ struct Gap {
 
     static constexpr int INVALID_GAP = std::numeric_limits<int>::min();
     static constexpr bool IS_FINAL_DEFAULT = true;
-    static constexpr Trash DEFAULT_TRASH{0, 0};
+    #define DEFAULT_TRASH {0, 0}
 
     static const Gap& INVALID() {
         static Gap gap = Gap(INVALID_GAP);
@@ -336,10 +335,11 @@ public:
     GappedPath SubPath(size_t from, size_t to) const {
         VERIFY(from <= to && to <= Size());
         GappedPath result;
-        result.PushBack(edges_[from], Gap());
-        for (size_t i = from + 1; i < to; ++i)
-            result.PushBack(edges_[i], gaps_[i]);
-
+        if (from < to) {
+            result.PushBack(edges_[from], Gap());
+            for (size_t i = from + 1; i < to; ++i)
+                result.PushBack(edges_[i], gaps_[i]);
+        }
         return result;
     }
 
