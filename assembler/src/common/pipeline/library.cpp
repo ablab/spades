@@ -76,6 +76,7 @@ void SequencingLibrary<io::NoData>::validate(llvm::yaml::IO &io, llvm::StringRef
 
 void SequencingLibraryBase::yamlize(llvm::yaml::IO &io) {
     io.mapRequired("type", type_);
+    io.mapOptional("number", number_, -1);
     io.mapOptional("orientation", orientation_, LibraryOrientation::Undefined);
     io.mapOptional("left reads", left_paired_reads_);
     io.mapOptional("right reads", right_paired_reads_);

@@ -232,7 +232,16 @@ public:
         return type_ == io::LibraryType::AssemblyGraph;
     }
 
+    int get_number() const {
+        return number_;
+    }
+
+    void set_number(int number) {
+        number_ = number;
+    }
+
 private:
+    int number_;
     LibraryType type_;
     LibraryOrientation orientation_;
 

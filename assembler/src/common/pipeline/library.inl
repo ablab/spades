@@ -87,6 +87,12 @@ void io::DataSet<Data>::load(const std::string &filename) {
     if (input_dir[input_dir.length() - 1] != '/')
         input_dir += '/';
 
-    for (auto& lib : libraries_)
+    for (int i = 0; i < int(libraries_.size()); ++i) {
+        auto &lib = libraries_[i];
+        if (lib.get_number() == -1) {
+            lib.set_number(i);
+        }
+
         lib.update_relative_reads_filenames(input_dir);
+    }
 }
