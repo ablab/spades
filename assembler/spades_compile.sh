@@ -21,6 +21,7 @@ DEBUG="n"
 RUN_TESTS="n"
 BUILD_INTERNAL="n"
 AMOUNT_OF_THREADS="8"
+REMOVE_CACHE_BEFORE_BUILDING="n"
 ADDITIONAL_FLAGS=
 
 # https://stackoverflow.com/a/16444570
@@ -40,6 +41,7 @@ print_help() {
   echo "  -a          build internal projects"
   echo "  -d          use debug build"
   echo "  -t          run basic tests (with -a runs all tests)"
+  echo "  -r          remove the build cache before rebuilding"
   echo "  -j <int>    amount of threads"
   echo
   echo "examples:"
@@ -50,11 +52,12 @@ print_help() {
   echo "    $0 -j 9 -t"
 }
 
-while getopts "adtj:" opt; do
+while getopts "adtrj:" opt; do
   case $opt in
     (a) BUILD_INTERNAL="y";;
     (d) DEBUG="y";;
     (t) RUN_TESTS="y";;
+    (r) REMOVE_CACHE_BEFORE_BUILDING="y";;
     (j) check_whether_OPTARG_is_an_integer; AMOUNT_OF_THREADS=$OPTARG;;
     (*) print_help; exit 1;;
   esac
@@ -78,6 +81,12 @@ fi
 WORK_DIR="$BASEDIR/$BUILD_DIR"
 mkdir -p "$WORK_DIR"
 set -e
+
+if [ $REMOVE_CACHE_BEFORE_BUILDING = "y" ]; then
+  # we can't remove WORK_DIR itself, because it might be a symbolic link
+  # and we should not remove any ".*" files, because we didn't create them
+  rm -rf "${WORK_DIR:?}/"*
+fi
 
 cd "$WORK_DIR"
 cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$PREFIX" $ADDITIONAL_FLAGS "$BASEDIR/src"
