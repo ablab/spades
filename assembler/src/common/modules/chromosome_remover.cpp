@@ -42,7 +42,7 @@ void ChromosomeRemover::FillForbiddenSet(Graph &g, VertexSet &forbidden) {
     }
 }
 
-size_t ChromosomeRemover::CalculateComponentSize(EdgeId e, Graph &g) {
+size_t ChromosomeRemover::CalculateComponentSize(EdgeId e, const Graph &g) {
     std::unordered_set<EdgeId> next;
     size_t deadend_count = 0;
     next.insert(e);
@@ -217,19 +217,20 @@ void ChromosomeRemover::RemoveNearlyEverythingByCoverage(double cur_limit) {
     PlasmidSimplify(plasmid_config_.long_edge_length);
 }
 
-void ChromosomeRemover::OutputNineComponents (conj_graph_pack &gp, size_t ext_limit_) {
+void ChromosomeRemover::OutputNineComponents (GraphPack &gp, size_t ext_limit_) {
+    const auto& graph = gp_.get<Graph>();
     long_vertex_component_.clear();
     long_component_.clear();
     deadends_count_.clear();
     component_list_.clear();
-    string tmp = std::to_string(ext_limit_);
+    std::string tmp = std::to_string(ext_limit_);
     while (tmp.length() < 4) tmp = "_" + tmp;
     std::string out_file = "final_contigs" + tmp + ".linear_repeat.fasta";
     std::ofstream is(cfg::get().output_dir + out_file);
 
-    for (auto iter = gp.g.ConstEdgeBegin(true); !iter.IsEnd(); ++iter) {
+    for (auto iter = graph.ConstEdgeBegin(true); !iter.IsEnd(); ++iter) {
         if (long_component_.find(*iter) == long_component_.end()) {
-            CalculateComponentSize(*iter, gp.g);
+            CalculateComponentSize(*iter, graph);
         }
     }
     size_t count = 0;
@@ -243,7 +244,7 @@ void ChromosomeRemover::OutputNineComponents (conj_graph_pack &gp, size_t ext_li
                 break;
             int incoming = -1;
             for (size_t i = 0; i < comp.size(); i++) {
-                if (gp.g.IsDeadStart(gp.g.EdgeStart(comp[i])) && gp.g.length(comp[i]) < 0.3 * comp_size) {
+                if (graph.IsDeadStart(graph.EdgeStart(comp[i])) && graph.length(comp[i]) < 0.3 * comp_size) {
                     incoming = i;
                     break;
                 }
@@ -252,21 +253,21 @@ void ChromosomeRemover::OutputNineComponents (conj_graph_pack &gp, size_t ext_li
                 break;
             int next_circular = -1;
             for (size_t i = 0; i < comp.size(); i++) {
-                if (gp.g.EdgeStart(comp[i]) == gp.g.EdgeEnd(comp[i]) && gp.g.EdgeStart(comp[i]) == gp.g.EdgeEnd(comp[incoming])) {
+                if (graph.EdgeStart(comp[i]) == graph.EdgeEnd(comp[i]) && graph.EdgeStart(comp[i]) == graph.EdgeEnd(comp[incoming])) {
                     next_circular = i;
                     break;
                 }
             }
             if (next_circular == -1)
                 break;
-            stringstream ss;
-            ss << gp.g.EdgeNucls(comp[incoming]);
-            ss << gp.g.EdgeNucls(comp[next_circular]).Subseq(gp.g.k());
-            string seq = ss.str();
-            double cov = (gp.g.coverage(comp[incoming]) * gp.g.length(comp[incoming]) + gp.g.coverage(comp[next_circular]) * gp.g.length(comp[next_circular]))/(gp.g.length(comp[incoming]) + gp.g.length(comp[next_circular]));
+            std::stringstream ss;
+            ss << graph.EdgeNucls(comp[incoming]);
+            ss << graph.EdgeNucls(comp[next_circular]).Subseq(graph.k());
+            std::string seq = ss.str();
+            double cov = (graph.coverage(comp[incoming]) * graph.length(comp[incoming]) + graph.coverage(comp[next_circular]) * graph.length(comp[next_circular]))/(graph.length(comp[incoming]) + graph.length(comp[next_circular]));
             is << ">CUTOFF_" << ext_limit_ <<"_NINE_" << count <<
-               "_length_"<< seq.length() <<"_cov_" << cov << "_id_" <<comp[incoming].int_id() << "_" << comp[next_circular].int_id() << endl;
-            is <<seq << endl;
+               "_length_"<< seq.length() <<"_cov_" << cov << "_id_" <<comp[incoming].int_id() << "_" << comp[next_circular].int_id() << std::endl;
+            is <<seq << std::endl;
         }
     }
 }

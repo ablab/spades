@@ -119,6 +119,18 @@ install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../plasmidspades.py"
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../rnaspades.py"
         DESTINATION bin
         COMPONENT runtime)
+install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../rnaviralspades.py"
+        DESTINATION bin
+        COMPONENT runtime)      
+install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../coronaspades.py"
+        DESTINATION bin
+        COMPONENT runtime)      
+install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../metaviralspades.py"
+        DESTINATION bin
+        COMPONENT runtime)
+install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../metaplasmidspades.py"
+        DESTINATION bin
+        COMPONENT runtime)
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../truspades.py"
         DESTINATION bin
         COMPONENT runtime)

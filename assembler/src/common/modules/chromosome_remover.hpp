@@ -40,7 +40,7 @@ private:
     std::string full_name_;
     const size_t max_iteration_count = 30;
 
-    size_t CalculateComponentSize(debruijn_graph::EdgeId e, Graph &g);
+    size_t CalculateComponentSize(debruijn_graph::EdgeId e, const Graph &g);
 
     double RemoveLongGenomicEdges(size_t long_edge_bound, double coverage_limits,
                                   double external_chromosome_coverage = 0);
@@ -52,7 +52,7 @@ private:
     void RemoveNearlyEverythingByCoverage(double limit);
 
     void CoverageFilter(double coverage_cutoff);
-    void OutputNineComponents (conj_graph_pack &gp, size_t ext_limit_);
+    void OutputNineComponents (GraphPack &gp, size_t ext_limit_);
     void OutputSuspiciousComponents ();
 
 //  Not used, for debug purpose only
