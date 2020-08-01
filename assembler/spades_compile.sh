@@ -21,7 +21,7 @@ DEBUG="n"
 RUN_TESTS="n"
 BUILD_INTERNAL="n"
 AMOUNT_OF_THREADS="8"
-REMOVE_CACHE_BEFORE_BUILDING="n"
+REMOVE_BUILD_DIR_BEFORE_BUILDING="n"
 ADDITIONAL_FLAGS=
 
 # https://stackoverflow.com/a/16444570
@@ -41,7 +41,7 @@ print_help() {
   echo "  -a          build internal projects"
   echo "  -d          use debug build"
   echo "  -t          run basic tests (with -a runs all tests)"
-  echo "  -r          remove the build cache before rebuilding"
+  echo "  -r          remove the build directory before rebuilding"
   echo "  -j <int>    amount of threads"
   echo
   echo "examples:"
@@ -57,7 +57,7 @@ while getopts "adtrj:" opt; do
     (a) BUILD_INTERNAL="y";;
     (d) DEBUG="y";;
     (t) RUN_TESTS="y";;
-    (r) REMOVE_CACHE_BEFORE_BUILDING="y";;
+    (r) REMOVE_BUILD_DIR_BEFORE_BUILDING="y";;
     (j) check_whether_OPTARG_is_an_integer; AMOUNT_OF_THREADS=$OPTARG;;
     (*) print_help; exit 1;;
   esac
@@ -82,7 +82,7 @@ WORK_DIR="$BASEDIR/$BUILD_DIR"
 mkdir -p "$WORK_DIR"
 set -e
 
-if [ $REMOVE_CACHE_BEFORE_BUILDING = "y" ]; then
+if [ $REMOVE_BUILD_DIR_BEFORE_BUILDING = "y" ]; then
   # we can't remove WORK_DIR itself, because it might be a symbolic link
   # and we should not remove any ".*" files, because we didn't create them
   rm -rf "${WORK_DIR:?}/"*
