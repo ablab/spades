@@ -10,7 +10,7 @@
 set -e
 
 if [ "x$PREFIX" = "x" ]; then
-  PREFIX=$(pwd)
+  PREFIX="$(pwd)"
 fi
 
 # [misprint detecting] uncomment to check whether all of the used variables is initialized
@@ -156,7 +156,7 @@ if [ $BUILD_INTERNAL = "y" ]; then
 fi
 
 BUILD_DIR=build_spades
-BASEDIR=$(pwd)/$(dirname "$0")
+BASEDIR="$(pwd)"/"$(dirname "$0")"
 
 if [ $DEBUG = "y" ]; then
   BUILD_DIR="${BUILD_DIR}_debug"
