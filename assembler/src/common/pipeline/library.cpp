@@ -79,6 +79,7 @@ void SequencingLibraryBase::yamlize(llvm::yaml::IO &io) {
     io.mapOptional("orientation", orientation_, LibraryOrientation::Undefined);
     io.mapOptional("left reads", left_paired_reads_);
     io.mapOptional("right reads", right_paired_reads_);
+    io.mapOptional("interlaced reads", interlaced_reads_);
     io.mapOptional("merged reads", merged_reads_);
     io.mapOptional("single reads", single_reads_);
 }

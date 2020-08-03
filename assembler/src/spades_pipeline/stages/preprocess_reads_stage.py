@@ -234,7 +234,7 @@ class PreprocessReadsStage(stage.Stage):
         self.dir_for_split_reads = os.path.join(options_storage.args.output_dir, "split_input")
         self.tmp_dir = os.path.join(self.dir_for_split_reads, "tmp")
 
-        if support.dataset_has_interlaced_reads(self.dataset_data):
+        if support.dataset_has_interlaced_reads(self.dataset_data) and (not options_storage.args.only_assembler):
             self.stages.append(PreprocessInterlacedReads(self.dir_for_split_reads, self.tmp_dir, "preprocess_12",
                                                           self.output_files, self.tmp_configs_dir,
                                                           self.dataset_data, self.log,
