@@ -27,10 +27,16 @@ ADDITIONAL_FLAGS=
 # https://stackoverflow.com/a/16444570
 check_whether_OPTARG_is_an_integer() {
   case $OPTARG in
-    (*[!0-9]*|'') echo "The argument for -$opt option must be an integer"; exit 2;;
+    (*[!0-9]*|'') echo "The argument for -j option must be an integer"; exit 2;;
     (*)           ;; # an integer
   esac
 }
+
+# return the argument first character
+str_head() { echo "$(expr substr "$1" 1 1)"; }
+
+# return the argument without the first character
+str_tail() { echo "$(expr substr "$1" 2 $((${#1}-1)))"; }
 
 print_help() {
   echo
@@ -38,11 +44,14 @@ print_help() {
   echo "  $0 [options]"
   echo
   echo "options:"
-  echo "  -a          build internal projects"
-  echo "  -d          use debug build"
-  echo "  -t          run basic tests (with -a runs all tests)"
-  echo "  -r          remove the build directory before rebuilding"
-  echo "  -j <int>    amount of threads"
+  echo "  -a, --all       build internal projects"
+  echo "  -d, --debug     use debug build"
+  echo "  -t, --test      run basic tests (with -a runs all tests)"
+  echo "  -r, --remove    remove the build directory before rebuilding"
+  echo "  -j <int>        amount of threads"
+  echo "  -h, --help      print this help"
+  echo
+  echo "  Any other options will be passed to the cmake!"
   echo
   echo "examples:"
   echo "  - build SPAdes with internal projects and run all tests, use 15 threads"
@@ -52,15 +61,90 @@ print_help() {
   echo "    $0 -j 9 -t"
 }
 
-while getopts "adtrj:" opt; do
-  case $opt in
-    (a) BUILD_INTERNAL="y";;
-    (d) DEBUG="y";;
-    (t) RUN_TESTS="y";;
-    (r) REMOVE_BUILD_DIR_BEFORE_BUILDING="y";;
-    (j) check_whether_OPTARG_is_an_integer; AMOUNT_OF_THREADS=$OPTARG;;
-    (*) print_help; exit 1;;
+opt_a() { BUILD_INTERNAL="y"; }
+opt_d() { DEBUG="y"; }
+opt_t() { RUN_TESTS="y"; }
+opt_r() { REMOVE_BUILD_DIR_BEFORE_BUILDING="y"; }
+opt_h() { print_help; exit 0; }
+opt_j() { check_whether_OPTARG_is_an_integer; AMOUNT_OF_THREADS=$OPTARG; skip_next_iter="y"; }
+unknown_opt() { ADDITIONAL_FLAGS="$ADDITIONAL_FLAGS $opt"; }
+
+parse_long_arg() {
+  case "$1" in
+    (all)    opt_a;;
+    (debug)  opt_d;;
+    (test)   opt_t;;
+    (remove) opt_r;;
+    (help)   opt_h;;
+    (*)      unknown_opt;; # unknown long argument
   esac
+}
+
+# returns "ok" iff the arg contains only allowed characters
+verify_short_args() {
+  if [ -z "$@" ]; then
+    # here the $1 length is zero
+    echo "ok"
+  else
+    # here the $1 length is non-zero
+    case "$(str_head "$1")" in
+      (a) echo "$(verify_short_args "$(str_tail "$1")")";;
+      (d) echo "$(verify_short_args "$(str_tail "$1")")";;
+      (t) echo "$(verify_short_args "$(str_tail "$1")")";;
+      (r) echo "$(verify_short_args "$(str_tail "$1")")";;
+      (h) echo "$(verify_short_args "$(str_tail "$1")")";;
+      (j) echo "ok";; # after 'j' there should be only <int>
+      (*) echo "fail";;
+    esac
+  fi
+}
+
+parse_short_args_handler() {
+  if [ -n "$@" ]; then
+    # here the $1 length is non-zero
+    case "$(str_head "$1")" in
+      (a) opt_a; parse_short_args_handler "$(str_tail "$1")";;
+      (d) opt_d; parse_short_args_handler "$(str_tail "$1")";;
+      (t) opt_t; parse_short_args_handler "$(str_tail "$1")";;
+      (r) opt_r; parse_short_args_handler "$(str_tail "$1")";;
+      (h) opt_h; parse_short_args_handler "$(str_tail "$1")";;
+      (j) OPTARG="$(str_tail "$1")"
+          if [ -z "$OPTARG" ]; then OPTARG="$next_opt"; fi
+          opt_j;;
+      (*) echo "WTF???"; exit 3;;
+    esac
+  fi
+}
+
+parse_short_args() {
+  if [ "$(verify_short_args "$1")" = "ok" ]; then
+    parse_short_args_handler "$1"
+  else
+    unknown_opt
+  fi
+}
+
+skip_next_iter="n"
+opt=
+for next_opt in "$@" ""; do
+  if [ $skip_next_iter != "n" ]; then
+    skip_next_iter="n"
+    opt="$next_opt"
+    continue
+  fi
+  if [ -n "$opt" ]; then
+    if [ "$(str_head "$opt")" != "-" ]; then
+      unknown_opt
+    else
+      opt_tail=$(str_tail "$opt")
+      if [ "$(str_head "$opt_tail")" = "-" ]; then
+        parse_long_arg "$(str_tail "$opt_tail")"
+      else
+        parse_short_args "$opt_tail"
+      fi
+    fi
+  fi
+  opt="$next_opt"
 done
 
 if [ $DEBUG = "y" ]; then
