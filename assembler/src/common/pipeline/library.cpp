@@ -108,13 +108,13 @@ void SequencingLibraryBase::validate(llvm::yaml::IO &, llvm::StringRef &res) {
     case LibraryType::UntrustedContigs:
     case LibraryType::PathExtendContigs:
     case LibraryType::FLRNAReads:
-        if (left_paired_reads_.size() || right_paired_reads_.size()) {
+        if (left_paired_reads_.size() || right_paired_reads_.size() || interlaced_reads_.size()) {
             res = "Paired reads should not be set for this library type";
             return;
         }
       break;
     case LibraryType::AssemblyGraph:
-        if (left_paired_reads_.size() || right_paired_reads_.size()) {
+        if (left_paired_reads_.size() || right_paired_reads_.size() || interlaced_reads_.size()) {
             res = "Paired reads should not be set for this library type";
             return;
         }
@@ -143,6 +143,8 @@ void SequencingLibraryBase::update_relative_reads_filenames(const std::string &i
     std::transform(left_paired_reads_.begin(), left_paired_reads_.end(), left_paired_reads_.begin(),
                    std::bind2nd(update_relative_filename(), input_dir));
     std::transform(right_paired_reads_.begin(), right_paired_reads_.end(), right_paired_reads_.begin(),
+                   std::bind2nd(update_relative_filename(), input_dir));
+    std::transform(interlaced_reads_.begin(), interlaced_reads_.end(), interlaced_reads_.begin(),
                    std::bind2nd(update_relative_filename(), input_dir));
     std::transform(merged_reads_.begin(), merged_reads_.end(), merged_reads_.begin(),
                    std::bind2nd(update_relative_filename(), input_dir));

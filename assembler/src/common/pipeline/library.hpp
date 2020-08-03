@@ -154,7 +154,7 @@ public:
 
     bool has_paired() const {
         VERIFY(left_paired_reads_.size() == right_paired_reads_.size());
-        return !left_paired_reads_.empty();
+        return !left_paired_reads_.empty() || !interlaced_reads_.empty();
     }
 
     bool has_single() const {
