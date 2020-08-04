@@ -699,11 +699,11 @@ def check_dataset_reads(dataset_data, only_assembler, iontorrent, log):
     for id, reads_library in enumerate(dataset_data):
         left_number = 0
         right_number = 0
+        if "number" not in reads_library:
+            reads_library["number"] = id + 1
+
         for key, value in reads_library.items():
             if key.endswith("reads"):
-                if "number" not in reads_library:
-                    reads_library["number"] = id + 1
-
                 for reads_file in value:
                     check_file_existence(reads_file,
                                          "%s, library number: %d, library type: %s" %
