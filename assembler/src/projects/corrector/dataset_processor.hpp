@@ -60,8 +60,7 @@ private:
     void FlushAll(const size_t lib_count);
     void BufferedOutputRead(const std::string &read, const std::string &contig_name, const size_t lib_count);
     void GetAlignedContigs(const std::string &read, std::set<std::string> &contigs) const;
-    void SplitSingleLibrary(const std::string &out_contigs_filename, const size_t lib_count);
-    void SplitPairedLibrary(const std::string &all_reads, const size_t lib_count);
+    void SplitLibrary(const std::string &out_contigs_filename, const size_t lib_count, bool is_paired);
     void GlueSplittedContigs(std::string &out_contigs_filename);
     int RunBwaIndex();
     std::string RunBwaMem(const std::vector<std::string> &reads, const size_t lib, const std::string &params);

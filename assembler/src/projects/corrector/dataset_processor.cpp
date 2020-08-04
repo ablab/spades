@@ -67,18 +67,31 @@ void DatasetProcessor::GetAlignedContigs(const string &read, set<string> &contig
 
 }
 
-void DatasetProcessor::SplitSingleLibrary(const string &all_reads_filename, const size_t lib_count) {
+void DatasetProcessor::SplitLibrary(const string &all_reads_filename, const size_t lib_count, bool is_paired = false) {
+    int reads_cnt = is_paired ? 2 : 1;
     ifstream fs(all_reads_filename);
     while (!fs.eof()) {
         set<string> contigs;
-        string r1;
-        getline(fs, r1);
-        if (r1[0] == '@')
+        std::vector<std::string> reads(reads_cnt);
+        getline(fs, reads[0]);
+        if (reads[0][0] == '@')
             continue;
-        GetAlignedContigs(r1, contigs);
+
+        if (is_paired) {
+            getline(fs, reads[1]);
+        }
+
+        for (int i = 0; i < reads_cnt; ++i) {
+            GetAlignedContigs(reads[i], contigs);
+        }
+
         for (auto &contig : contigs) {
-            VERIFY_MSG(all_contigs_.find(contig) != all_contigs_.end(), "wrong contig name in SAM file header: " + contig);
-            BufferedOutputRead(r1, contig, lib_count);
+            VERIFY_MSG(all_contigs_.find(contig) != all_contigs_.end(),
+                       "wrong contig name in SAM file header: " + contig);
+
+            for (int i = 0; i < reads_cnt; ++i) {
+                BufferedOutputRead(reads[i], contig, lib_count);
+            }
         }
     }
     FlushAll(lib_count);
@@ -105,29 +118,6 @@ void DatasetProcessor::BufferedOutputRead(const string &read, const string &cont
             INFO("processed " << buffered_count_ << "reads, flushing");
         FlushAll(lib_count);
     }
-}
-
-void DatasetProcessor::SplitPairedLibrary(const string &all_reads_filename, const size_t lib_count) {
-    ifstream fs(all_reads_filename);
-    while (!fs.eof()) {
-        set<string> contigs;
-        string r1;
-        string r2;
-        getline(fs, r1);
-        if (r1[0] == '@')
-            continue;
-        getline(fs, r2);
-        GetAlignedContigs(r1, contigs);
-        GetAlignedContigs(r2, contigs);
-        for (const auto &contig : contigs) {
-            VERIFY_MSG(all_contigs_.find(contig) != all_contigs_.end(), "wrong contig name in SAM file header: " + contig);
-            if (all_contigs_.find(contig) != all_contigs_.end()) {
-                BufferedOutputRead(r1, contig, lib_count);
-                BufferedOutputRead(r2, contig, lib_count);
-            }
-        }
-    }
-    FlushAll(lib_count);
 }
 
 int DatasetProcessor::RunBwaIndex() {
@@ -157,7 +147,7 @@ std::string DatasetProcessor::RunBwaMem(const std::vector<std::string> &reads, c
     }
 
     string nthreads_str = to_string(nthreads_);
-    string last_line = bwa_string + string(" mem ") + " -v 1 -t " + params + " " + nthreads_str + " "+ genome_screened + " " + reads_line  + "  > "
+    string last_line = bwa_string + string(" mem ") + " -v 1 -t " + nthreads_str + " " + params + " " + genome_screened + " " + reads_line  + "  > "
         + fs::screen_whitespaces(tmp_sam_filename) ;
     INFO("Running bwa mem ...:" << last_line);
     run_res = system(last_line.c_str());
@@ -203,7 +193,7 @@ void DatasetProcessor::ProcessDataset() {
                     INFO("Adding samfile " << samf);
                     unsplitted_sam_files_.push_back(make_pair(samf, lib_type));
                     PrepareContigDirs(lib_num);
-                    SplitPairedLibrary(samf, lib_num);
+                    SplitLibrary(samf, lib_num,true);
                     lib_num++;
                 } else {
                     FATAL_ERROR("Failed to align paired reads " << left << " and " << right);
@@ -219,7 +209,7 @@ void DatasetProcessor::ProcessDataset() {
                     INFO("Adding samfile " << samf);
                     unsplitted_sam_files_.push_back(make_pair(samf, io::LibraryType::PairedEnd));
                     PrepareContigDirs(lib_num);
-                    SplitPairedLibrary(samf, lib_num);
+                    SplitLibrary(samf, lib_num, true);
                     lib_num++;
                 } else {
                     FATAL_ERROR("Failed to align interlaced reads " << left);
@@ -235,7 +225,7 @@ void DatasetProcessor::ProcessDataset() {
                     INFO("Adding samfile " << samf);
                     unsplitted_sam_files_.push_back(make_pair(samf, io::LibraryType::SingleReads));
                     PrepareContigDirs(lib_num);
-                    SplitSingleLibrary(samf, lib_num);
+                    SplitLibrary(samf, lib_num);
                     lib_num++;
                 } else {
                     FATAL_ERROR("Failed to align single reads " << left);
