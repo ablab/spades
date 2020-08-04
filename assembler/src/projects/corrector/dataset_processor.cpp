@@ -179,6 +179,30 @@ string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib)  {
     return tmp_sam_filename;
 }
 
+string DatasetProcessor::RunInterleadBwa(const string &single, const size_t lib)  {
+    int run_res = 0;
+    string cur_dir = GetLibDir(lib);
+    string tmp_sam_filename = fs::append_path(cur_dir, "tmp.sam");
+    string bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));
+    string genome_screened = fs::screen_whitespaces(genome_file_);
+    string index_line = bwa_string + string(" index ") + genome_screened;
+    INFO("Running bwa index ...: " << index_line);
+    run_res = system(index_line.c_str());
+    if (run_res != 0) {
+        INFO("bwa failed, skipping sublib");
+        return "";
+    }
+    string nthreads_str = to_string(nthreads_);
+    string last_line = bwa_string + " mem "+ " -p -v 1 -t " + nthreads_str + " " + genome_screened + " "  + fs::screen_whitespaces(single)  + "  > " + fs::screen_whitespaces(tmp_sam_filename);
+    INFO("Running bwa mem ...:" << last_line);
+    run_res = system(last_line.c_str());
+    if (run_res != 0) {
+        INFO("bwa failed, skipping sublib");
+        return "";
+    }
+    return tmp_sam_filename;
+}
+
 void DatasetProcessor::PrepareContigDirs(const size_t lib_count) {
     string out_dir = GetLibDir(lib_count);
     for (auto &ac : all_contigs_) {
@@ -215,6 +239,23 @@ void DatasetProcessor::ProcessDataset() {
                     FATAL_ERROR("Failed to align paired reads " << left << " and " << right);
                 }
             }
+
+            for (auto iter = dataset.interlaced_begin(); iter != dataset.interlaced_end(); iter++) {
+                INFO("Processing interlaced sublib of number " << lib_num);
+                string left = *iter;
+                INFO(left);
+                string samf = RunInterleadBwa(left, lib_num);
+                if (samf != "") {
+                    INFO("Adding samfile " << samf);
+                    unsplitted_sam_files_.push_back(make_pair(samf, io::LibraryType::PairedEnd));
+                    PrepareContigDirs(lib_num);
+                    SplitPairedLibrary(samf, lib_num);
+                    lib_num++;
+                } else {
+                    FATAL_ERROR("Failed to align interlaced reads " << left);
+                }
+            }
+
             for (auto iter = dataset.single_begin(); iter != dataset.single_end(); iter++) {
                 INFO("Processing single sublib of number " << lib_num);
                 string left = *iter;

@@ -65,6 +65,7 @@ private:
     void SplitPairedLibrary(const std::string &all_reads, const size_t lib_count);
     void GlueSplittedContigs(std::string &out_contigs_filename);
     std::string RunPairedBwa(const std::string &left, const std::string &right, const size_t lib);
+    std::string RunInterleadBwa(const std::string &single, const size_t lib);
     std::string RunSingleBwa(const std::string &single, const size_t lib);
     void PrepareContigDirs(const size_t lib_count);
     std::string GetLibDir(const size_t lib_count);
