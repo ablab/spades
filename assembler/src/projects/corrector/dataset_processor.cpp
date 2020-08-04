@@ -130,19 +130,26 @@ void DatasetProcessor::SplitPairedLibrary(const string &all_reads_filename, cons
     FlushAll(lib_count);
 }
 
-string DatasetProcessor::RunPairedBwa(const string &left, const string &right, const size_t lib)  {
-    string cur_dir = GetLibDir(lib);
-    int run_res = 0;
-    string tmp_sam_filename = fs::append_path(cur_dir, "tmp.sam");
+int DatasetProcessor::RunBwaIndex() {
     string bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));
     string genome_screened = fs::screen_whitespaces(genome_file_);
     string index_line = bwa_string + string(" index ") + genome_screened;
     INFO("Running bwa index ...: " << index_line);
-    run_res = system(index_line.c_str());
+    int run_res = system(index_line.c_str());
     if (run_res != 0) {
         INFO("bwa failed, skipping sublib");
-        return "";
     }
+
+    return run_res;
+}
+
+string DatasetProcessor::RunPairedBwa(const string &left, const string &right, const size_t lib)  {
+    string cur_dir = GetLibDir(lib);
+    string tmp_sam_filename = fs::append_path(cur_dir, "tmp.sam");
+    string bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));
+    string genome_screened = fs::screen_whitespaces(genome_file_);
+    int run_res = 0;
+
     string nthreads_str = to_string(nthreads_);
     string last_line = bwa_string + string(" mem ") + " -v 1 -t " + nthreads_str + " "+ genome_screened + " " + fs::screen_whitespaces(left) + " " + fs::screen_whitespaces(right)  + "  > "
             + fs::screen_whitespaces(tmp_sam_filename) ;
@@ -156,18 +163,12 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
 }
 
 string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib)  {
-    int run_res = 0;
     string cur_dir = GetLibDir(lib);
     string tmp_sam_filename = fs::append_path(cur_dir, "tmp.sam");
     string bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));
     string genome_screened = fs::screen_whitespaces(genome_file_);
-    string index_line = bwa_string + string(" index ") + genome_screened;
-    INFO("Running bwa index ...: " << index_line);
-    run_res = system(index_line.c_str());
-    if (run_res != 0) {
-        INFO("bwa failed, skipping sublib");
-        return "";
-    }
+    int run_res = 0;
+
     string nthreads_str = to_string(nthreads_);
     string last_line = bwa_string + " mem "+ " -v 1 -t " + nthreads_str + " " + genome_screened + " "  + fs::screen_whitespaces(single)  + "  > " + fs::screen_whitespaces(tmp_sam_filename);
     INFO("Running bwa mem ...:" << last_line);
@@ -180,18 +181,12 @@ string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib)  {
 }
 
 string DatasetProcessor::RunInterleadBwa(const string &single, const size_t lib)  {
-    int run_res = 0;
     string cur_dir = GetLibDir(lib);
     string tmp_sam_filename = fs::append_path(cur_dir, "tmp.sam");
     string bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));
     string genome_screened = fs::screen_whitespaces(genome_file_);
-    string index_line = bwa_string + string(" index ") + genome_screened;
-    INFO("Running bwa index ...: " << index_line);
-    run_res = system(index_line.c_str());
-    if (run_res != 0) {
-        INFO("bwa failed, skipping sublib");
-        return "";
-    }
+    int run_res = 0;
+
     string nthreads_str = to_string(nthreads_);
     string last_line = bwa_string + " mem "+ " -p -v 1 -t " + nthreads_str + " " + genome_screened + " "  + fs::screen_whitespaces(single)  + "  > " + fs::screen_whitespaces(tmp_sam_filename);
     INFO("Running bwa mem ...:" << last_line);
@@ -219,6 +214,11 @@ void DatasetProcessor::ProcessDataset() {
     INFO("Splitting assembly...");
     INFO("Assembly file: " + genome_file_);
     SplitGenome(work_dir_);
+
+    if (RunBwaIndex() != 0) {
+        FATAL_ERROR("Failed to build bwa index for " << genome_file_);
+    }
+
     for (size_t i = 0; i < corr_cfg::get().dataset.lib_count(); ++i) {
         const auto& dataset = corr_cfg::get().dataset[i];
         auto lib_type = dataset.type();

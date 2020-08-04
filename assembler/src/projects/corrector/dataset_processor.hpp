@@ -32,7 +32,6 @@ struct OneContigDescription {
 typedef std::unordered_map<std::string, OneContigDescription> ContigInfoMap;
 
 class DatasetProcessor {
-
     const std::string &genome_file_;
     std::string output_contig_file_;
     ContigInfoMap all_contigs_;
@@ -64,6 +63,7 @@ private:
     void SplitSingleLibrary(const std::string &out_contigs_filename, const size_t lib_count);
     void SplitPairedLibrary(const std::string &all_reads, const size_t lib_count);
     void GlueSplittedContigs(std::string &out_contigs_filename);
+    int RunBwaIndex();
     std::string RunPairedBwa(const std::string &left, const std::string &right, const size_t lib);
     std::string RunInterleadBwa(const std::string &single, const size_t lib);
     std::string RunSingleBwa(const std::string &single, const size_t lib);
