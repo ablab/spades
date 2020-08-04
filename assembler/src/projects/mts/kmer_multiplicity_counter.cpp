@@ -15,6 +15,7 @@
 #include "utils/filesystem/path_helper.hpp"
 #include "utils/stl_utils.hpp"
 #include "utils/ph_map/perfect_hash_map_builder.hpp"
+#include "utils/ph_map/storing_traits.hpp"
 #include "utils/kmer_mph/kmer_splitters.hpp"
 #include "logger.hpp"
 
@@ -25,8 +26,7 @@ const string KMER_PARSED_EXTENSION = ".bin";
 const string KMER_SORTED_EXTENSION = ".sorted";
 
 class KmerMultiplicityCounter {
-
-    size_t k_, sample_cnt_;
+    size_t k_ ;
     std::string file_prefix_;
 
     //TODO: get rid of intermediate .bin file
@@ -156,7 +156,7 @@ class KmerMultiplicityCounter {
 
         //Building kmer->profile offset index
         std::ifstream kmers_in(*kmer_file, std::ios::binary);
-        InvertableStoring::trivial_inverter<Offset> inverter;
+        utils::InvertableStoring::trivial_inverter inverter;
         RtSeq kmer(k_);
         for (Offset offset = 0; ; offset += sample_cnt) {
             kmer.BinRead(kmers_in);
