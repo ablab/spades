@@ -28,8 +28,6 @@ namespace debruijn_graph {
  */
 template<class Graph>
 class EdgeIndex: public omnigraph::GraphActionHandler<Graph> {
-    using InnerIndex = KmerFreeEdgeIndex<Graph>;
-
     using InnerIndex32 = KmerFreeEdgeIndex<Graph, uint32_t>;
     using InnerIndex64 = KmerFreeEdgeIndex<Graph, uint64_t>;
 
@@ -159,7 +157,9 @@ public:
     }
 
     static bool IsInvertable() {
-        return InnerIndex::storing_type::IsInvertable();
+        static_assert(InnerIndex32::storing_type::IsInvertable() == InnerIndex64::storing_type::IsInvertable(),
+                      "Indices must be compatible");
+        return InnerIndex32::storing_type::IsInvertable();
     }
 
     template<class Writer>
