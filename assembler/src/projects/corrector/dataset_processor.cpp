@@ -143,52 +143,22 @@ int DatasetProcessor::RunBwaIndex() {
     return run_res;
 }
 
-string DatasetProcessor::RunPairedBwa(const string &left, const string &right, const size_t lib)  {
+std::string DatasetProcessor::RunBwaMem(const std::vector<std::string> &reads, const size_t lib,
+    const std::string &params = "") {
     string cur_dir = GetLibDir(lib);
     string tmp_sam_filename = fs::append_path(cur_dir, "tmp.sam");
     string bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));
     string genome_screened = fs::screen_whitespaces(genome_file_);
     int run_res = 0;
 
-    string nthreads_str = to_string(nthreads_);
-    string last_line = bwa_string + string(" mem ") + " -v 1 -t " + nthreads_str + " "+ genome_screened + " " + fs::screen_whitespaces(left) + " " + fs::screen_whitespaces(right)  + "  > "
-            + fs::screen_whitespaces(tmp_sam_filename) ;
-    INFO("Running bwa mem ...:" << last_line);
-    run_res = system(last_line.c_str());
-    if (run_res != 0) {
-        INFO("bwa failed, skipping sublib");
-        return "";
+    std::string reads_line = "";
+    for (auto& filename : reads) {
+        reads_line += fs::screen_whitespaces(filename) + " ";
     }
-    return tmp_sam_filename;
-}
-
-string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib)  {
-    string cur_dir = GetLibDir(lib);
-    string tmp_sam_filename = fs::append_path(cur_dir, "tmp.sam");
-    string bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));
-    string genome_screened = fs::screen_whitespaces(genome_file_);
-    int run_res = 0;
 
     string nthreads_str = to_string(nthreads_);
-    string last_line = bwa_string + " mem "+ " -v 1 -t " + nthreads_str + " " + genome_screened + " "  + fs::screen_whitespaces(single)  + "  > " + fs::screen_whitespaces(tmp_sam_filename);
-    INFO("Running bwa mem ...:" << last_line);
-    run_res = system(last_line.c_str());
-    if (run_res != 0) {
-        INFO("bwa failed, skipping sublib");
-        return "";
-    }
-    return tmp_sam_filename;
-}
-
-string DatasetProcessor::RunInterleadBwa(const string &single, const size_t lib)  {
-    string cur_dir = GetLibDir(lib);
-    string tmp_sam_filename = fs::append_path(cur_dir, "tmp.sam");
-    string bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));
-    string genome_screened = fs::screen_whitespaces(genome_file_);
-    int run_res = 0;
-
-    string nthreads_str = to_string(nthreads_);
-    string last_line = bwa_string + " mem "+ " -p -v 1 -t " + nthreads_str + " " + genome_screened + " "  + fs::screen_whitespaces(single)  + "  > " + fs::screen_whitespaces(tmp_sam_filename);
+    string last_line = bwa_string + string(" mem ") + " -v 1 -t " + params + " " + nthreads_str + " "+ genome_screened + " " + reads_line  + "  > "
+        + fs::screen_whitespaces(tmp_sam_filename) ;
     INFO("Running bwa mem ...:" << last_line);
     run_res = system(last_line.c_str());
     if (run_res != 0) {
@@ -228,7 +198,7 @@ void DatasetProcessor::ProcessDataset() {
                 string left = iter->first;
                 string right = iter->second;
                 INFO(left + " " + right);
-                string samf = RunPairedBwa(left, right, lib_num);
+                string samf = RunBwaMem({left, right}, lib_num);
                 if (samf != "") {
                     INFO("Adding samfile " << samf);
                     unsplitted_sam_files_.push_back(make_pair(samf, lib_type));
@@ -244,7 +214,7 @@ void DatasetProcessor::ProcessDataset() {
                 INFO("Processing interlaced sublib of number " << lib_num);
                 string left = *iter;
                 INFO(left);
-                string samf = RunInterleadBwa(left, lib_num);
+                string samf = RunBwaMem({left}, lib_num, "-p");
                 if (samf != "") {
                     INFO("Adding samfile " << samf);
                     unsplitted_sam_files_.push_back(make_pair(samf, io::LibraryType::PairedEnd));
@@ -260,7 +230,7 @@ void DatasetProcessor::ProcessDataset() {
                 INFO("Processing single sublib of number " << lib_num);
                 string left = *iter;
                 INFO(left);
-                string samf = RunSingleBwa(left, lib_num);
+                string samf = RunBwaMem({left}, lib_num);
                 if (samf != "") {
                     INFO("Adding samfile " << samf);
                     unsplitted_sam_files_.push_back(make_pair(samf, io::LibraryType::SingleReads));
