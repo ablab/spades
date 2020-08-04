@@ -179,60 +179,50 @@ void DatasetProcessor::ProcessDataset() {
         FATAL_ERROR("Failed to build bwa index for " << genome_file_);
     }
 
+    auto handle_one_lib = [this, &lib_num](const std::vector<std::string>& reads,
+        const std::string& type, const auto& lib_type){
+        std::string reads_files_str = "";
+        for (const auto& filename : reads) {
+            reads_files_str += filename + " ";
+        }
+
+        INFO("Processing " + type + " sublib of number " << lib_num);
+        INFO(reads_files_str);
+        std::string param = "";
+        if (type == "interlaced") {
+            param = "-p";
+        }
+
+        string samf = RunBwaMem(reads, lib_num, param);
+        if (samf != "") {
+            INFO("Adding samfile " << samf);
+            unsplitted_sam_files_.push_back(make_pair(samf, lib_type));
+            PrepareContigDirs(lib_num);
+            SplitLibrary(samf, lib_num,lib_type !=  io::LibraryType::SingleReads);
+            lib_num++;
+        } else {
+            FATAL_ERROR("Failed to align " + type + " reads " << reads_files_str);
+        }
+    };
+
     for (size_t i = 0; i < corr_cfg::get().dataset.lib_count(); ++i) {
         const auto& dataset = corr_cfg::get().dataset[i];
         auto lib_type = dataset.type();
         if (lib_type == io::LibraryType::PairedEnd || lib_type == io::LibraryType::HQMatePairs || lib_type == io::LibraryType::SingleReads) {
             for (auto iter = dataset.paired_begin(); iter != dataset.paired_end(); iter++) {
-                INFO("Processing paired sublib of number " << lib_num);
-                string left = iter->first;
-                string right = iter->second;
-                INFO(left + " " + right);
-                string samf = RunBwaMem({left, right}, lib_num);
-                if (samf != "") {
-                    INFO("Adding samfile " << samf);
-                    unsplitted_sam_files_.push_back(make_pair(samf, lib_type));
-                    PrepareContigDirs(lib_num);
-                    SplitLibrary(samf, lib_num,true);
-                    lib_num++;
-                } else {
-                    FATAL_ERROR("Failed to align paired reads " << left << " and " << right);
-                }
+                handle_one_lib({iter->first, iter->second}, "paired", lib_type);
             }
 
             for (auto iter = dataset.interlaced_begin(); iter != dataset.interlaced_end(); iter++) {
-                INFO("Processing interlaced sublib of number " << lib_num);
-                string left = *iter;
-                INFO(left);
-                string samf = RunBwaMem({left}, lib_num, "-p");
-                if (samf != "") {
-                    INFO("Adding samfile " << samf);
-                    unsplitted_sam_files_.push_back(make_pair(samf, io::LibraryType::PairedEnd));
-                    PrepareContigDirs(lib_num);
-                    SplitLibrary(samf, lib_num, true);
-                    lib_num++;
-                } else {
-                    FATAL_ERROR("Failed to align interlaced reads " << left);
-                }
+                handle_one_lib({*iter}, "interlaced", lib_type);
             }
 
             for (auto iter = dataset.single_begin(); iter != dataset.single_end(); iter++) {
-                INFO("Processing single sublib of number " << lib_num);
-                string left = *iter;
-                INFO(left);
-                string samf = RunBwaMem({left}, lib_num);
-                if (samf != "") {
-                    INFO("Adding samfile " << samf);
-                    unsplitted_sam_files_.push_back(make_pair(samf, io::LibraryType::SingleReads));
-                    PrepareContigDirs(lib_num);
-                    SplitLibrary(samf, lib_num);
-                    lib_num++;
-                } else {
-                    FATAL_ERROR("Failed to align single reads " << left);
-                }
+                handle_one_lib({*iter}, "single", lib_type);
             }
         }
     }
+
     INFO("Processing contigs");
     vector<pair<size_t, string> > ordered_contigs;
     for (const auto &ac : all_contigs_) {
