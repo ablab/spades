@@ -48,12 +48,12 @@ private:
     template<class Index>
     std::pair<EdgeId, size_t> get(const Index *index, const KMer& kmer) const {
         auto kwh = index->ConstructKWH(kmer);
-        if (!index->contains(kwh)) {
-            return { EdgeId(), NOT_FOUND };
-        } else {
+        if (index->contains(kwh)) {
             auto entry = index->get_value(kwh);
             return { entry.edge(), (size_t)entry.offset() };
         }
+        
+        return { EdgeId(), NOT_FOUND };
     }
 
     template<class Index>
@@ -152,10 +152,6 @@ public:
         DISPATCH_TO(Refill);
 
         INFO("Index refilled");
-    }
-
-    void Update() {
-        updater_.UpdateAll();
     }
 
     void clear() {
