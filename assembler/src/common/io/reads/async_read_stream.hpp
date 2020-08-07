@@ -52,7 +52,9 @@ class AsyncReadStream {
             wait_writing_buffer();
         }
 
-        t = std::move(read_buffer_[read_pos_++]);
+        if (read_pos_ < read_buffer_.size()) {
+            t = std::move(read_buffer_[read_pos_++]);
+        }
 
         if (read_pos_ == read_buffer_.size()) {
             wait_writing_buffer();
