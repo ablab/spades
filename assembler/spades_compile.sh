@@ -21,8 +21,11 @@ DEBUG="n"
 RUN_TESTS="n"
 BUILD_INTERNAL="n"
 AMOUNT_OF_THREADS="8"
-REMOVE_BUILD_DIR_BEFORE_BUILDING="y"
+REMOVE_BUILD_DIR_BEFORE_BUILDING="n"
 ADDITIONAL_FLAGS=
+BUILD_CONFIG_NAME="build_config"
+
+## there are some helpful functions ##
 
 # https://stackoverflow.com/a/16444570
 check_whether_OPTARG_is_an_integer() {
@@ -124,6 +127,42 @@ parse_short_args() {
   fi
 }
 
+get_current_build_params() {
+  echo "$DEBUG $BUILD_INTERNAL $BASEDIR $ADDITIONAL_FLAGS"
+}
+
+read_buid_params() {
+  if [ -z "$1" ]; then
+    # there is no config folder path
+    exit 5
+  fi
+  config_path="$1"/"$BUILD_CONFIG_NAME"
+  if [ -e "$config_path" ]; then
+    echo "$(cat "$config_path")"
+  else
+    echo ""
+  fi
+}
+
+save_build_params() {
+  if [ -z "$1" ]; then
+    # there is no config folder path
+    exit 5
+  fi
+  config_path="$1"/"$BUILD_CONFIG_NAME"
+  echo "$(get_current_build_params)" > "$config_path"
+}
+
+normalize_path() {
+  current_path="$(pwd)"
+  cd "$1"
+  normalized_path="$(pwd)"
+  cd "$current_path"
+  echo "$normalized_path"
+}
+
+## the script's logic begins here ##
+
 skip_next_iter="n"
 opt=
 for next_opt in "$@" ""; do
@@ -156,7 +195,7 @@ if [ $BUILD_INTERNAL = "y" ]; then
 fi
 
 BUILD_DIR=build_spades
-BASEDIR="$(pwd)"/"$(dirname "$0")"
+BASEDIR="$(normalize_path "$(pwd)"/"$(dirname "$0")")"
 
 if [ $DEBUG = "y" ]; then
   BUILD_DIR="${BUILD_DIR}_debug"
@@ -166,11 +205,18 @@ WORK_DIR="$BASEDIR/$BUILD_DIR"
 mkdir -p "$WORK_DIR"
 set -e
 
+last_build_params="$(read_buid_params "$WORK_DIR")"
+if [ "$(get_current_build_params)" != "$last_build_params" ]; then
+  REMOVE_BUILD_DIR_BEFORE_BUILDING="y"
+fi
+
 if [ $REMOVE_BUILD_DIR_BEFORE_BUILDING = "y" ]; then
   # we can't remove WORK_DIR itself, because it might be a symbolic link
   # and we should not remove any ".*" files, because we didn't create them
   rm -rf "${WORK_DIR:?}/"*
 fi
+
+save_build_params "$WORK_DIR"
 
 cd "$WORK_DIR"
 cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$PREFIX" $ADDITIONAL_FLAGS "$BASEDIR/src"
