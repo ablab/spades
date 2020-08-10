@@ -124,7 +124,7 @@ public:
         } else {                                                        \
             return method(static_cast<InnerIndex32*>(inner_index_),##__VA_ARGS__); \
         }                                                               \
-    } while(0);
+    } while(0)
 
     void HandleAdd(EdgeId e) override {
         DISPATCH_TO(UpdateKmers, e);
