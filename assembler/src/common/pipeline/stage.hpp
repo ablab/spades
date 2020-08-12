@@ -174,8 +174,8 @@ public:
     std::string GetLastCheckpoint() const {
         std::string res;
         std::ifstream ifs(fs::append_path(saves_path_, CHECKPOINT_FILE));
-        ifs.exceptions(std::ifstream::failbit);
-        ifs >> res;
+        if (ifs.is_open())
+            ifs >> res;
         return res;
     }
 
