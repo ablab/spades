@@ -21,7 +21,6 @@ public:
 
     void load(GraphPack &, const std::string &, const char *) override;
     void save(const GraphPack &, const std::string &, const char *) const override;
-    bool shouldBeSaved() const noexcept override { return false; }
     void run(GraphPack &gp, const char *) override;
 };
 

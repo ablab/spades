@@ -118,8 +118,8 @@ public:
      */
     bool Load(const std::string &basename, T &value) override {
         std::string filename = basename + this->ext_;
-        VERIFY_MSG(fs::check_existence(filename), "File not found: " + filename);
         std::ifstream file(filename, std::ios::binary);
+        file.exceptions(std::ifstream::failbit);
         //check file is empty
         if (file.peek() == std::ifstream::traits_type::eof()) {
             return false;

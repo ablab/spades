@@ -81,7 +81,9 @@ public:
         : basename(basename)
         , gp(gp)
         , infoStream(basename + ".att")
-    {}
+    {
+        infoStream.exceptions(std::ifstream::failbit);
+    }
 
     /**
      * @brief  Restores the attachment flag of the component. Then loads it only if it was attached.

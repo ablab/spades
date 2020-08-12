@@ -27,19 +27,17 @@ void AssemblyStage::load(debruijn_graph::GraphPack& gp,
     auto dir = fs::append_path(load_from, prefix);
     INFO("Loading current state from " << dir);
 
-    io::ConvertIfNeeded(cfg::get_writable().ds.reads,
-                        cfg::get().max_threads);
-
     auto p = fs::append_path(dir, BASE_NAME);
     io::binary::FullPackIO().Load(p, gp);
     debruijn_graph::config::load_lib_data(p);
+
+    io::ConvertIfNeeded(cfg::get_writable().ds.reads, cfg::get().max_threads);
+
 }
 
 void AssemblyStage::save(const debruijn_graph::GraphPack& gp,
                          const std::string &save_to,
                          const char* prefix) const {
-    if (!shouldBeSaved())
-        return;
     if (!prefix) prefix = id_;
     auto dir = fs::append_path(save_to, prefix);
     INFO("Saving current state to " << dir);
@@ -141,18 +139,6 @@ void AssemblyStage::prepare(debruijn_graph::GraphPack& g,
     g.PrepareForStage(stage);
 }
 
-StageManager::Stages::iterator StageManager::find_loadable_stage(Stages::iterator stage) const noexcept {
-    while (stage != stages_.begin()) {
-        auto prev_stage = std::prev(stage);
-        if ((*prev_stage)->shouldBeSaved())
-            return stage;
-        stage = std::move(prev_stage);
-    }
-    // here stage == stages_.begin()
-    return stage;
-}
-
-
 void StageManager::run(debruijn_graph::GraphPack& g,
                        const char* start_from) {
     auto start_stage = stages_.begin();
@@ -178,11 +164,14 @@ void StageManager::run(debruijn_graph::GraphPack& g,
             }
         }
 
-        start_stage = find_loadable_stage(start_stage);
-
-        if (start_stage != stages_.begin()) {
-            TIME_TRACE_SCOPE("load", saves_policy_.LoadPath());
-            (*std::prev(start_stage))->load(g, saves_policy_.LoadPath());
+        while (start_stage != stages_.begin()) {
+            try {
+                TIME_TRACE_SCOPE("load", saves_policy_.LoadPath());
+                (*std::prev(start_stage))->load(g, saves_policy_.LoadPath());
+                break;
+            } catch (const std::ios_base::failure& fail) {
+                --start_stage;
+            }
         }
     }
 

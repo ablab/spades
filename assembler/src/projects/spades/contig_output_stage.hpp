@@ -29,8 +29,7 @@ public:
             : AssemblyStage("Contig Output", "contig_output"),
               outputs_(std::move(list)) {}
 
-    bool shouldBeSaved() const noexcept override { return false; }
-    void load(GraphPack &, const std::string &, const char *) override { }
+    void save(const debruijn_graph::GraphPack &, const std::string &, const char *) const override { }
     void run(GraphPack &gp, const char *) override;
 
 private:

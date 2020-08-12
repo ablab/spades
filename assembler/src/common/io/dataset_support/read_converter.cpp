@@ -34,6 +34,7 @@ bool ReadConverter::LoadLibIfExists(SequencingLibraryT& lib) {
         return false;
 
     std::ifstream info;
+    info.exceptions(std::ifstream::failbit);
     info.open(data.binary_reads_info.bin_reads_info_file, std::ios_base::in);
     DEBUG("Reading binary information file " << data.binary_reads_info.bin_reads_info_file);
 

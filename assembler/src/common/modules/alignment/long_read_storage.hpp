@@ -275,6 +275,7 @@ public:
 
         INFO("Loading long reads alignment...");
         std::ifstream filestr(s);
+        filestr.exceptions(std::ifstream::failbit);
         INFO("loading from " << s);
         std::map<size_t, EdgeId> tmp_map;
         for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {

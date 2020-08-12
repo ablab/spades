@@ -112,6 +112,7 @@ std::vector<std::string> BrokenScaffoldsModeNames() {
 template<class T>
 void LoadFromYaml(const std::string& filename, T &t) {
     std::ifstream ifs(filename, std::ios::binary);
+    ifs.exceptions(std::ifstream::failbit);
     LoadFromYaml(ifs, t);
 }
 

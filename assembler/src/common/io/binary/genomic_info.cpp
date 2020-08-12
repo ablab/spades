@@ -48,6 +48,7 @@ void GenomicInfo::yamlize(yaml::IO &io) {
 
 bool GenomicInfo::Load(const std::string &filename) {
     std::ifstream ifs(filename, std::ios::binary);
+    ifs.exceptions(std::ifstream::failbit);
     BinRead(ifs);
     return true;
 }
