@@ -123,7 +123,7 @@ void DatasetProcessor::BufferedOutputRead(const string &read, const string &cont
 int DatasetProcessor::RunBwaIndex() {
     string bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));
     string genome_screened = fs::screen_whitespaces(genome_file_);
-    string index_line = bwa_string + string(" index ") + genome_screened;
+    string index_line = bwa_string + " index " + genome_screened;
     INFO("Running bwa index ...: " << index_line);
     int run_res = system(index_line.c_str());
     if (run_res != 0) {
@@ -147,7 +147,7 @@ std::string DatasetProcessor::RunBwaMem(const std::vector<std::string> &reads, c
     }
 
     string nthreads_str = to_string(nthreads_);
-    string last_line = bwa_string + string(" mem ") + " -v 1 -t " + nthreads_str + " " + params + " " + genome_screened + " " + reads_line  + "  > "
+    string last_line = bwa_string + " mem  -v 1 -t " + nthreads_str + " " + params + " " + genome_screened + " " + reads_line  + "  > "
         + fs::screen_whitespaces(tmp_sam_filename) ;
     INFO("Running bwa mem ...:" << last_line);
     run_res = system(last_line.c_str());
