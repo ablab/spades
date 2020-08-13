@@ -144,6 +144,12 @@ public:
         return Add(BidirectionalPath::create(std::forward<Args>(args)...)).first;
     }
 
+    void AddContainer(PathContainer && paths) {
+        data_.reserve(data_.size() + paths.size());
+        std::move(paths.data_.begin(), paths.data_.end(), std::back_inserter(data_));
+        paths.clear();
+    }
+
     void SortByLength(bool desc = true) {
         std::stable_sort(data_.begin(), data_.end(), [=](const PathPair& p1, const PathPair& p2) {
             if (p1.first->Empty() || p2.first->Empty() || p1.first->Length() != p2.first->Length()) {
