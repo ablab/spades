@@ -87,9 +87,9 @@ void io::DataSet<Data>::load(const std::string &filename) {
     if (input_dir[input_dir.length() - 1] != '/')
         input_dir += '/';
 
-    for (int i = 0; i < int(libraries_.size()); ++i) {
+    for (unsigned i = 0; i < libraries_.size(); ++i) {
         auto &lib = libraries_[i];
-        if (lib.get_number() == -1) {
+        if (lib.number() == -1u) {
             lib.set_number(i);
         }
 

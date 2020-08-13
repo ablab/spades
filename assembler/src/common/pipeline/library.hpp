@@ -54,7 +54,7 @@ public:
     typedef typename adt::chained_iterator<std::vector<std::string>::const_iterator> single_reads_iterator;
 
     SequencingLibraryBase()
-            : type_(LibraryType::PairedEnd), orientation_(LibraryOrientation::FR) {}
+            : type_(LibraryType::PairedEnd), orientation_(LibraryOrientation::FR), number_(-1u) {}
 
     // YAML API. Public because we cannot have template friend class.
     void yamlize(llvm::yaml::IO &io);
@@ -64,6 +64,8 @@ public:
     void set_type(LibraryType type) { type_ = type; }
     LibraryOrientation orientation() const { return orientation_; }
     void set_orientation(LibraryOrientation orientation) { orientation_ = orientation; }
+    unsigned number() const { return number_; }
+    void set_number(unsigned number) { number_ = number; }
 
     void clear() {
         left_paired_reads_.clear();
@@ -232,16 +234,8 @@ public:
         return type_ == io::LibraryType::AssemblyGraph;
     }
 
-    int get_number() const {
-        return number_;
-    }
-
-    void set_number(int number) {
-        number_ = number;
-    }
-
 private:
-    int number_;
+    unsigned number_;
     LibraryType type_;
     LibraryOrientation orientation_;
 
