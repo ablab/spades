@@ -72,46 +72,13 @@ private:
         size_t start_after_edge = GetPos(start_pos) + EdgeLen(GetEdge(start_pos));
         if (start_after_edge <= GetPos(end_pos))
             return GetPos(end_pos) - start_after_edge; 
-        WARN("Negative distance between " << graph.int_id(GetEdge(start_pos)) << " and " << graph.int_id(GetEdge(end_pos)));
-        return 0;
+        DEBUG("Negative distance between " << graph.int_id(GetEdge(start_pos)) << " and " << graph.int_id(GetEdge(end_pos)));
+        return -1ull;
+        // return 0;
     }
 
     std::string BackMapping(vector<PathWithBorderEdgesIndexies> const & paths) const;
 };
-
-// std::string SequenceCorrector::BackMapping(vector<PathWithBorderEdgesIndexies> const & paths) const {
-//     stringstream ss;
-//     ScaffoldSequenceMaker seq_maker(graph);
-//     auto current_seq_pos = std::numeric_limits<long long>::min();
-//     for (size_t i = 0; i < paths.size(); ++i) {
-//         auto const & path = paths[i];
-//         size_t should_be_dropped = 0;
-//         auto start_pos = GetPos(path.first_edge_index);
-//         auto end_pos = GetPos(path.last_edge_index) + graph.length(GetEdge(path.first_edge_index)) + graph.k();
-//         auto path_seq = seq_maker.MakeSequence(BidirectionalPath(graph, path.path));
-//         if (current_seq_pos < start_pos) {
-//             if (0 <= current_seq_pos && current_seq_pos < seq.size())
-//                 ss << seq.substr(current_seq_pos, start_pos - current_seq_pos);
-//         } else {
-//             should_be_dropped = current_seq_pos - start_pos;
-//             WARN("The new path prefix with len=" << should_be_dropped << " of " << path_seq.size() << " would be dropped");
-//         }
-//         if (path_seq.size() != end_pos - start_pos) {
-//             DEBUG("Replasing contig part with len=" << end_pos - start_pos << " using path with len=" << path_seq.size());
-//         }
-//         if (should_be_dropped >= path_seq.size()) {
-//             WARN("Oh no! Full path would be dropped");
-//             continue;
-//         }
-
-//         ss << path_seq.substr(should_be_dropped);
-//         current_seq_pos = end_pos;
-//     }
-//     current_seq_pos = std::max(0ll, current_seq_pos);
-//     if (current_seq_pos < seq.size())
-//         ss << seq.substr(current_seq_pos);
-//     return ss.str();
-// }
 
 std::string SequenceCorrector::BackMapping(vector<PathWithBorderEdgesIndexies> const & paths) const {
     stringstream ss;
@@ -121,26 +88,28 @@ std::string SequenceCorrector::BackMapping(vector<PathWithBorderEdgesIndexies> c
         auto const & path = paths[i];
         size_t should_be_dropped = 0;
         BidirectionalPath path_seq(graph, path.path);
-        auto left_shift = path_seq.GapAt(0).gap;
-        auto right_shift = path_seq.LengthAt(path_seq.Size() - 1) - path_seq.GapAt(path_seq.Size() - 1).gap + graph.k();
-        auto start_pos = GetPos(path.first_edge_index) - left_shift;
+        auto new_seq = seq_maker.MakeSequence(path_seq);
+        VERIFY(new_seq.size() == path_seq.Length() + graph.k());
+
+        auto right_shift = graph.length(path_seq.Back()) + graph.k();
+        auto start_pos = GetPos(path.first_edge_index);
         auto end_pos = GetPos(path.last_edge_index) + right_shift;
         if (current_seq_pos < start_pos) {
             if (0 <= current_seq_pos && current_seq_pos < seq.size())
                 ss << seq.substr(current_seq_pos, start_pos - current_seq_pos);
         } else {
             should_be_dropped = current_seq_pos - start_pos;
-            WARN("The new path prefix with len=" << should_be_dropped << " of " << path_seq.Length() + graph.k() << " would be dropped");
+            WARN("The new path prefix with len=" << should_be_dropped << " of " << new_seq.size() << " would be dropped");
         }
-        if (path_seq.Length() + graph.k() != end_pos - start_pos) {
-            DEBUG("Replasing contig part with len=" << end_pos - start_pos << " using path with len=" << path_seq.Length() + graph.k());
+        if (new_seq.size() != end_pos - start_pos) {
+            DEBUG("Replasing contig part with len=" << end_pos - start_pos << " using path with len=" << new_seq.size());
         }
-        if (should_be_dropped >= path_seq.Length() + graph.k()) {
+        if (should_be_dropped >= new_seq.size()) {
             WARN("Oh no! Full path would be dropped");
             continue;
         }
 
-        ss << seq_maker.MakeSequence(path_seq).substr(should_be_dropped);
+        ss << new_seq.substr(should_be_dropped);
         current_seq_pos = end_pos;
     }
     current_seq_pos = std::max(0ll, current_seq_pos);
@@ -151,9 +120,8 @@ std::string SequenceCorrector::BackMapping(vector<PathWithBorderEdgesIndexies> c
 
 pair<std::string, std::vector<PathWithBorderEdgesIndexies>> SequenceCorrector::GetBestSequence() const {
     std::vector<PathWithBorderEdgesIndexies> paths;
-    auto const & path = path_info.edge_set;
     size_t start_pos = 0;
-    while (start_pos + 1 < path.size()) {
+    while (start_pos < Size()) {
         auto path = GetNextPath(start_pos);
         if (path.first.Size() > 1) {
             paths.push_back({std::move(path.first), start_pos, path.second});
@@ -190,6 +158,8 @@ boost::optional<pair<GappedPath, size_t>> SequenceCorrector::FindFiller(size_t s
         }
  
         size_t distance = GetDistance(start_pos, end_pos);
+        if (distance == -1ull)
+            continue;
         current_path = GetBestMachedPath(start_edge, end_edge, distance);
         if (params.use_scaffolds && current_path.Empty())
             current_path = ConnectWithScaffolds(start_edge, end_edge);
@@ -205,27 +175,71 @@ GappedPath SequenceCorrector::GetBestMachedPath(EdgeId start_edge, EdgeId end_ed
     VertexId target_vertex = graph.EdgeStart(end_edge);
     VertexId start_vertex = graph.EdgeEnd(start_edge);
     omnigraph::PathStorageCallback<Graph> path_storage(graph);
-    omnigraph::ProcessPaths(graph, 0, params.max_distance, start_vertex, target_vertex, path_storage);
+    auto min_len = static_cast<size_t>(std::floor((double)distance*(1-params.good_distance_coeff)));
+    auto max_len = params.max_distance;
+    cout << "<1>-----------------------\n";
+    omnigraph::ProcessPaths(graph, min_len, max_len, start_vertex, target_vertex, path_storage);
     const auto& detected_paths = path_storage.paths();
+    cout << "<cut here>----------------\n";
+
+    auto max_len2 = static_cast<size_t>(std::ceil ((double)distance*(1+params.good_distance_coeff)));
+    omnigraph::PathStorageCallback<Graph> path_storage2(graph);
+    cout << "<2>-----------------------\n";
+    omnigraph::ProcessPaths(graph, min_len, max_len2, start_vertex, target_vertex, path_storage2);
+    const auto& detected_paths2 = path_storage2.paths();
+    cout << "<cut here>----------------\n";
+    
     GappedPath answer;
-    if (detected_paths.empty())
-        return answer;
-    if (detected_paths.size() == 1) {
-        answer.PushBack(detected_paths.front());
-        return answer;
-    }
     vector<pair<size_t, size_t>> scores;
-    if (distance > 0 && params.use_distances) {
+    vector<pair<size_t, size_t>> scores2;
+    if (distance > 0) {
         for (size_t i = 0; i < detected_paths.size(); ++i) {
-            size_t difference = (size_t) abs((long long)(CumulativeLength(graph, detected_paths[i])) - (long long)(distance));
+            auto path_len = CumulativeLength(graph, detected_paths[i]);
+            size_t difference = (size_t) abs((long long)(path_len) - (long long)(distance));
             if (math::le(double(difference), double(distance) * params.good_distance_coeff))
                 scores.emplace_back(difference, i);
         }
+        for (size_t i = 0; i < detected_paths2.size(); ++i) {
+            auto path_len = CumulativeLength(graph, detected_paths2[i]);
+            size_t difference = (size_t) abs((long long)(path_len) - (long long)(distance));
+            if (math::le(double(difference), double(distance) * params.good_distance_coeff))
+                scores2.emplace_back(difference, i);
+        }
+        if (scores.size() != scores2.size()) {
+            cout << "wtf, scores1 = " << scores.size() << ", scores2 = " << scores2.size() << "\n";
+            cout << "scores1:\n";
+            for (auto const & x : scores) {
+                cout << "diff = " << x.first << ", len = " << CumulativeLength(graph, detected_paths[x.second]) << "\n";
+            }
+            cout << "scores2:\n";
+            for (auto const & x : scores2) {
+                cout << "diff = " << x.first << ", len = " << CumulativeLength(graph, detected_paths2[x.second]) << '\n';
+            }
+            cout << "max_len = " << max_len << "\n"
+            "max_len2 = " << max_len2 << "\n"
+            "distance = " << distance << "\n"
+            "double(distance) * params.good_distance_coeff = " << double(distance) * params.good_distance_coeff << "\n";
+            cout << "paths1:\n";
+            for (auto const & x : scores) {
+                BidirectionalPath p(graph, detected_paths[x.second]);
+                p.PrintINFO();
+                cout << "====================\n";
+            }
+            cout << "paths2:\n";
+            for (auto const & x : scores2) {
+                BidirectionalPath p(graph, detected_paths2[x.second]);
+                p.PrintINFO();
+                cout << "====================\n";
+            }
+            exit(2);
+        }
+        auto by_dist = [](const std::pair<size_t, size_t>& a, const std::pair<size_t, size_t>& b) { return a.first < b.first; };
+        std::sort(scores.begin(), scores.end(), by_dist);
+        std::sort(scores2.begin(), scores2.end(), by_dist);
+        for (size_t i = 0; i < scores.size(); ++i) {
+            VERIFY_MSG(scores[i].first == scores2[i].first, "d1 = " << scores[i].first << ", d2 = " << scores2[i].first);
+        }
         if (scores.size() > 1) {
-            std::sort(scores.begin(), scores.end(), 
-                [](const std::pair<size_t, size_t>& a, const std::pair<size_t, size_t>& b) {
-                    return a.first < b.first;
-                });
             if (math::le(double(scores[0].first), double(scores[1].first) * params.best_of_good_coeff))
                 scores.erase(scores.begin() + 1, scores.end());
         }
@@ -266,7 +280,8 @@ path_extend::PathContainer Launch(debruijn_graph::GraphPack const & gp,
                                   PathWithEdgePostionsContainer const & input_paths,
                                   std::vector<SeqString> & contigs,
                                   std::vector<std::string> const & paths_names,
-                                  PathContainer const & scaffolds)
+                                  PathContainer const & scaffolds,
+                                  size_t nthreads)
 {
     params.use_scaffolds = !input_paths.empty();
     auto const & graph = gp.get<Graph>();
@@ -274,17 +289,9 @@ path_extend::PathContainer Launch(debruijn_graph::GraphPack const & gp,
     cover_map.AddPaths(scaffolds);
 
     PathContainer total_paths;
-    size_t counter = 0;
     for (size_t i = 0; i < input_paths.size(); ++i) {
-        INFO("Processing path# " << counter << " with " << input_paths[i].edge_set.size() << " edges");
-        if (input_paths[i].edge_set.size() == 0) {
-            INFO("Skipping empty path #" << counter++);
-            continue;
-        }
-        if (input_paths[i].edge_set.size() == 1) {
-            INFO("Skipping almost empty path #" << counter++);
-            continue;
-        }
+        INFO("Processing path# " << i << " with " << input_paths[i].edge_set.size() << " edges");
+
         const auto& path_name = paths_names[i];
         auto & contig = *find_if(contigs.begin(), contigs.end(), [&path_name](SeqString const & contig){return contig.name == path_name;});
         SequenceCorrector corrector(graph, params, cover_map, input_paths[i], contig.seq);
@@ -296,7 +303,6 @@ path_extend::PathContainer Launch(debruijn_graph::GraphPack const & gp,
             auto cp = make_unique<BidirectionalPath>(p->Conjugate());
             total_paths.AddPair(p.release(), cp.release());
         }
-        ++counter;
     }
     INFO("DONE");
     return total_paths;

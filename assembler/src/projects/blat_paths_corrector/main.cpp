@@ -39,7 +39,7 @@ struct gcfg {
     std::string transcript_paths_file;
     std::string paths_save_file;
     std::string output_dir;
-    unsigned nthreads;
+    size_t nthreads;
 };
 
 
@@ -98,7 +98,7 @@ constexpr char BASE_NAME[] = "graph_pack";
 int main(int argc, char* argv[]) {
     utils::segfault_handler sh;
     const size_t GB = 1 << 30;
-    toolchain::create_console_logger();
+    toolchain::create_console_logger(logging::L_TRACE);
 
     gcfg cfg;
 
@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
         if (!cfg.paths_save_file.empty())
             ReadScaffolds(scaffolds, graph, cfg.paths_save_file);
 
-        auto paths = Launch(gp, PathThreadingParams(), input_paths, contigs, paths_names, scaffolds);
+        auto paths = Launch(gp, PathThreadingParams(), input_paths, contigs, paths_names, scaffolds, nthreads);
 
         ContigWriter writer(graph, MakeContigNameGenerator(config::pipeline_type::base, gp));
         writer.OutputPaths(paths, fs::append_path(output_dir, "connected_paths.fasta"));

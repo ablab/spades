@@ -10,7 +10,6 @@
 
 
 struct PathThreadingParams {
-    bool use_distances = true;          //try to fit the distance between edges
     double good_distance_coeff = 0.10;   //a path is considered as good if its distance differs by at most good_distance_coeff
     double best_of_good_coeff = 0.05;   //if there are multiple *good& paths, the best one has to have distance difference < best_of_good_coeff * second_best_distance_difference
     bool extend_unique_paths = false;    //extend ends if possible
@@ -45,6 +44,7 @@ path_extend::PathContainer Launch(debruijn_graph::GraphPack const & gp,
                                   PathWithEdgePostionsContainer const & input_paths,
                                   std::vector<SeqString> & contigs,
                                   std::vector<std::string> const & paths_names,
-                                  path_extend::PathContainer const & scaffolds);
+                                  path_extend::PathContainer const & scaffolds,
+                                  size_t nthreads);
 
 std::vector<SeqString> ReadContigs(std::string const & contigs_file);
