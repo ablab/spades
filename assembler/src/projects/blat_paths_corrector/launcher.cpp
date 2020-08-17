@@ -13,6 +13,7 @@
 #include "common/assembly_graph/paths/path_processor.hpp"
 #include "common/assembly_graph/paths/bidirectional_path_io/io_support.hpp"
 #include "common/modules/path_extend/pe_utils.hpp"
+#include "ssw/ssw_cpp.h"
 
 #include <string>
 #include <unordered_map>
@@ -38,13 +39,15 @@ class SequenceCorrector {
     GraphCoverageMap const & scaffold_coverage_map;
     PathWithEdgePostions const & path_info;
     std::string const & seq;
+    size_t nthreads;
 public:
-    SequenceCorrector(Graph const & graph, PathThreadingParams params, GraphCoverageMap const & scaffold_coverage_map, PathWithEdgePostions const & path_info, std::string const & seq)
+    SequenceCorrector(Graph const & graph, PathThreadingParams params, GraphCoverageMap const & scaffold_coverage_map, PathWithEdgePostions const & path_info, std::string const & seq, size_t nthreads)
         : graph(graph)
         , params(params)
         , scaffold_coverage_map(scaffold_coverage_map)
         , path_info(path_info)
         , seq(seq)
+        , nthreads(nthreads)
     {}
 
     pair<std::string, std::vector<PathWithBorderEdgesIndexies>> GetBestSequence() const;
@@ -53,11 +56,11 @@ private:
     
     boost::optional<pair<GappedPath, size_t>> FindFiller(size_t start_pos) const;
 
-    GappedPath GetBestMachedPath(EdgeId start_edge, EdgeId end_edge, size_t distance) const;
+    GappedPath GetBestMachedPath(EdgeId start_edge, EdgeId end_edge, size_t distance, string const & ref) const;
 
     GappedPath ConnectWithScaffolds(EdgeId start, EdgeId end) const;
 
-    size_t EdgeLen(EdgeId edge) const { return graph.length(edge); }
+    size_t EdgeLen(EdgeId edge) const { return graph.length(edge); + graph.k(); }
 
     EdgeId GetEdge(size_t pos) const { 
         VERIFY_MSG(path_info.edge_set[pos].size() == 1, "alternatives are not supported");
@@ -159,8 +162,9 @@ boost::optional<pair<GappedPath, size_t>> SequenceCorrector::FindFiller(size_t s
  
         size_t distance = GetDistance(start_pos, end_pos);
         if (distance == -1ull)
-            continue;
-        current_path = GetBestMachedPath(start_edge, end_edge, distance);
+            return {};
+        size_t start_after_edge = GetPos(end_pos) - distance;
+        current_path = GetBestMachedPath(start_edge, end_edge, distance, seq.substr(start_after_edge, distance));
         if (params.use_scaffolds && current_path.Empty())
             current_path = ConnectWithScaffolds(start_edge, end_edge);
  
@@ -171,81 +175,80 @@ boost::optional<pair<GappedPath, size_t>> SequenceCorrector::FindFiller(size_t s
     return {};
 }
 
-GappedPath SequenceCorrector::GetBestMachedPath(EdgeId start_edge, EdgeId end_edge, size_t distance) const {
+// GappedPath SequenceCorrector::GetBestMachedPath(EdgeId start_edge, EdgeId end_edge, size_t distance, string const & ref) const {
+//     ScaffoldSequenceMaker seq_maker(graph);
+//     StripedSmithWaterman::Aligner aligner;
+//     aligner.SetReferenceSequence(ref.data(), ref.size());
+//     VertexId target_vertex = graph.EdgeStart(end_edge);
+//     VertexId start_vertex = graph.EdgeEnd(start_edge);
+//     omnigraph::PathStorageCallback<Graph> path_storage(graph);
+//     auto min_len = static_cast<size_t>(std::floor((double)distance*(1-params.good_distance_coeff)));
+//     auto max_len = static_cast<size_t>(std::ceil ((double)distance*(1+params.good_distance_coeff)));
+//     omnigraph::ProcessPaths(graph, min_len, max_len, start_vertex, target_vertex, path_storage);
+//     const auto& detected_paths = path_storage.paths();
+    
+//     GappedPath answer;
+//     vector<pair<size_t, size_t>> scores;
+//     auto alignment = make_unique<StripedSmithWaterman::Alignment>();
+//     if (distance > 0) {
+//         for (size_t i = 0; i < detected_paths.size(); ++i) {
+//             auto path_len = CumulativeLength(graph, detected_paths[i]);
+//             size_t difference = (size_t) abs((long long)(path_len) - (long long)(distance));
+//             if (math::le(double(difference), double(distance) * params.good_distance_coeff))
+//                 scores.emplace_back(difference, i);
+//         }
+//         auto by_dist = [](const std::pair<size_t, size_t>& a, const std::pair<size_t, size_t>& b) { return a.first < b.first; };
+//         std::sort(scores.begin(), scores.end(), by_dist);
+//         if (scores.size() > 1) {
+//             if (math::le(double(scores[0].first), double(scores[1].first) * params.best_of_good_coeff))
+//                 scores.erase(scores.begin() + 1, scores.end());
+//         }
+//     }
+
+//     if (scores.size() == 1) {
+//         size_t index = scores.front().second;
+//         answer.PushBack(detected_paths[index]);
+//     }
+//     return answer;
+// }
+
+GappedPath SequenceCorrector::GetBestMachedPath(EdgeId start_edge, EdgeId end_edge, size_t distance, string const & ref) const {
+    ScaffoldSequenceMaker seq_maker(graph);
+    StripedSmithWaterman::Aligner aligner;
+    aligner.SetReferenceSequence(ref.data(), ref.size());
     VertexId target_vertex = graph.EdgeStart(end_edge);
     VertexId start_vertex = graph.EdgeEnd(start_edge);
     omnigraph::PathStorageCallback<Graph> path_storage(graph);
     auto min_len = static_cast<size_t>(std::floor((double)distance*(1-params.good_distance_coeff)));
-    auto max_len = params.max_distance;
-    cout << "<1>-----------------------\n";
+    auto max_len = static_cast<size_t>(std::ceil ((double)distance*(1+params.good_distance_coeff)));
     omnigraph::ProcessPaths(graph, min_len, max_len, start_vertex, target_vertex, path_storage);
     const auto& detected_paths = path_storage.paths();
-    cout << "<cut here>----------------\n";
-
-    auto max_len2 = static_cast<size_t>(std::ceil ((double)distance*(1+params.good_distance_coeff)));
-    omnigraph::PathStorageCallback<Graph> path_storage2(graph);
-    cout << "<2>-----------------------\n";
-    omnigraph::ProcessPaths(graph, min_len, max_len2, start_vertex, target_vertex, path_storage2);
-    const auto& detected_paths2 = path_storage2.paths();
-    cout << "<cut here>----------------\n";
     
     GappedPath answer;
     vector<pair<size_t, size_t>> scores;
-    vector<pair<size_t, size_t>> scores2;
     if (distance > 0) {
+        #pragma omp parallel for num_threads(nthreads) schedule(dynamic)
         for (size_t i = 0; i < detected_paths.size(); ++i) {
-            auto path_len = CumulativeLength(graph, detected_paths[i]);
-            size_t difference = (size_t) abs((long long)(path_len) - (long long)(distance));
-            if (math::le(double(difference), double(distance) * params.good_distance_coeff))
-                scores.emplace_back(difference, i);
-        }
-        for (size_t i = 0; i < detected_paths2.size(); ++i) {
-            auto path_len = CumulativeLength(graph, detected_paths2[i]);
-            size_t difference = (size_t) abs((long long)(path_len) - (long long)(distance));
-            if (math::le(double(difference), double(distance) * params.good_distance_coeff))
-                scores2.emplace_back(difference, i);
-        }
-        if (scores.size() != scores2.size()) {
-            cout << "wtf, scores1 = " << scores.size() << ", scores2 = " << scores2.size() << "\n";
-            cout << "scores1:\n";
-            for (auto const & x : scores) {
-                cout << "diff = " << x.first << ", len = " << CumulativeLength(graph, detected_paths[x.second]) << "\n";
+            StripedSmithWaterman::Alignment alignment;
+            BidirectionalPath path(graph, detected_paths[i]);
+            auto query_seq = seq_maker.MakeSequence(path);
+            StripedSmithWaterman::Filter filter(false, false, 0, 1 + std::max(ref.size(), query_seq.size()));
+            
+            if (aligner.Align(query_seq.data(), filter, &alignment)) {
+                #pragma omp critical
+                {
+                    scores.emplace_back(alignment.sw_score, i);
+                }
             }
-            cout << "scores2:\n";
-            for (auto const & x : scores2) {
-                cout << "diff = " << x.first << ", len = " << CumulativeLength(graph, detected_paths2[x.second]) << '\n';
-            }
-            cout << "max_len = " << max_len << "\n"
-            "max_len2 = " << max_len2 << "\n"
-            "distance = " << distance << "\n"
-            "double(distance) * params.good_distance_coeff = " << double(distance) * params.good_distance_coeff << "\n";
-            cout << "paths1:\n";
-            for (auto const & x : scores) {
-                BidirectionalPath p(graph, detected_paths[x.second]);
-                p.PrintINFO();
-                cout << "====================\n";
-            }
-            cout << "paths2:\n";
-            for (auto const & x : scores2) {
-                BidirectionalPath p(graph, detected_paths2[x.second]);
-                p.PrintINFO();
-                cout << "====================\n";
-            }
-            exit(2);
         }
-        auto by_dist = [](const std::pair<size_t, size_t>& a, const std::pair<size_t, size_t>& b) { return a.first < b.first; };
-        std::sort(scores.begin(), scores.end(), by_dist);
-        std::sort(scores2.begin(), scores2.end(), by_dist);
-        for (size_t i = 0; i < scores.size(); ++i) {
-            VERIFY_MSG(scores[i].first == scores2[i].first, "d1 = " << scores[i].first << ", d2 = " << scores2[i].first);
-        }
+
         if (scores.size() > 1) {
-            if (math::le(double(scores[0].first), double(scores[1].first) * params.best_of_good_coeff))
-                scores.erase(scores.begin() + 1, scores.end());
+            auto by_score = [](const std::pair<size_t, size_t>& a, const std::pair<size_t, size_t>& b) { return a.first > b.first; };
+            std::sort(scores.begin(), scores.end(), by_score);
         }
     }
 
-    if (scores.size() == 1) {
+    if (!scores.empty() && scores.front().first > 0) {
         size_t index = scores.front().second;
         answer.PushBack(detected_paths[index]);
     }
@@ -289,21 +292,29 @@ path_extend::PathContainer Launch(debruijn_graph::GraphPack const & gp,
     cover_map.AddPaths(scaffolds);
 
     PathContainer total_paths;
+    #pragma omp parallel for num_threads(nthreads) schedule(dynamic)
     for (size_t i = 0; i < input_paths.size(); ++i) {
-        INFO("Processing path# " << i << " with " << input_paths[i].edge_set.size() << " edges");
+        INFO("Processing path# " << i << " (of " << input_paths.size() << ") with " << input_paths[i].edge_set.size() << " edges");
 
         const auto& path_name = paths_names[i];
         auto & contig = *find_if(contigs.begin(), contigs.end(), [&path_name](SeqString const & contig){return contig.name == path_name;});
-        SequenceCorrector corrector(graph, params, cover_map, input_paths[i], contig.seq);
+        SequenceCorrector corrector(graph, params, cover_map, input_paths[i], contig.seq, nthreads);
 
         auto data = corrector.GetBestSequence();
         contig.seq = data.first;
+        PathContainer result;
         for (auto const & path : data.second) {
             auto p = make_unique<BidirectionalPath>(graph, std::move(path.path));
             auto cp = make_unique<BidirectionalPath>(p->Conjugate());
-            total_paths.AddPair(p.release(), cp.release());
+            result.AddPair(p.release(), cp.release());
+        }
+
+        #pragma omp critical
+        {
+            total_paths.AddContainer(std::move(result));
         }
     }
+
     INFO("DONE");
     return total_paths;
 }

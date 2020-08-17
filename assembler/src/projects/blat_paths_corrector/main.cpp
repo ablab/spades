@@ -21,6 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string>
+#include <omp.h>
 
 using namespace std;
 using namespace path_extend;
@@ -98,7 +99,7 @@ constexpr char BASE_NAME[] = "graph_pack";
 int main(int argc, char* argv[]) {
     utils::segfault_handler sh;
     const size_t GB = 1 << 30;
-    toolchain::create_console_logger(logging::L_TRACE);
+    toolchain::create_console_logger(logging::L_INFO);
 
     gcfg cfg;
 
@@ -120,6 +121,7 @@ int main(int argc, char* argv[]) {
 
         nthreads = spades_set_omp_threads(nthreads);
         INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << nthreads);
+        omp_set_nested(true);
 
         fs::make_dir(output_dir);
 
