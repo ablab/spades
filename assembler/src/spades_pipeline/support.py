@@ -39,7 +39,7 @@ only_old_style_options = True
 old_style_single_reads = False
 
 
-def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
+def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE, exit_code = -1):
     binary_name = "SPAdes"
 
     if log:
@@ -59,7 +59,7 @@ def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
         sys.stderr.flush()
     if current_tmp_dir and os.path.isdir(current_tmp_dir):
         shutil.rmtree(current_tmp_dir)
-    sys.exit(1)
+    sys.exit(exit_code)
 
 
 def warning(warn_str, log=None, prefix="== Warning == "):
@@ -304,7 +304,7 @@ def sys_call(cmd, log=None, cwd=None):
                 output += line + "\n"
 
     if proc.returncode:
-        error("system call for: \"%s\" finished abnormally, OS return value: %d" % (cmd, proc.returncode), log)
+        error("system call for: \"%s\" finished abnormally, OS return value: %d" % (cmd, proc.returncode), log, exit_code=proc.returncode)
     return output
 
 
@@ -360,7 +360,7 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
     if err_filename:
         stderr.close()
     if proc.returncode:
-        error("system call for: \"%s\" finished abnormally, OS return value: %d" % (cmd, proc.returncode), log)
+        error("system call for: \"%s\" finished abnormally, OS return value: %d" % (cmd, proc.returncode), log, exit_code=proc.returncode)
 
 
 def save_data_to_file(data, file):
