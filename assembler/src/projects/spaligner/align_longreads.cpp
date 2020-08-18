@@ -187,7 +187,7 @@ class LongReadsAligner {
 void LoadGraph(const string &saves_path, debruijn_graph::ConjugateDeBruijnGraph &g, io::IdMapper<std::string> &id_mapper) {
     if (fs::extension(saves_path) == ".gfa") {
         DEBUG("Load gfa");
-        VERIFY_MSG(fs::is_regular_file(saves_path), "GFA-file " + saves_path + " doesn't exist");
+        CHECK_FATAL_ERROR(fs::is_regular_file(saves_path), "GFA-file " + saves_path + " doesn't exist");
         gfa::GFAReader gfa(saves_path);
         DEBUG("Segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
         gfa.to_graph(g, &id_mapper);
@@ -280,7 +280,7 @@ int main(int argc, char **argv) {
 
     INFO("Loading config from " << cfg)
     auto buf = llvm::MemoryBuffer::getFile(cfg);
-    VERIFY_MSG(buf, "Failed to load config file " + cfg);
+    CHECK_FATAL_ERROR(buf, "Failed to load config file " + cfg);
     llvm::yaml::Input yin(*buf.get());
     yin >> config;
     omp_set_num_threads(nthreads);

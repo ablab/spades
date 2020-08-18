@@ -7,6 +7,7 @@
 
 #include "pe_config_struct.hpp"
 #include "pipeline/config_common.hpp"
+#include "common/utils/logger/logger.hpp"
 
 #include <llvm/ADT/StringSwitch.h>
 
@@ -43,7 +44,7 @@ void load(scaffolding_mode &sm, boost::property_tree::ptree const& pt, std::stri
              .Case("combined", scaffolding_mode::sm_combined)
              .Case("old_pe_2015", scaffolding_mode::sm_old_pe_2015)
              .Default(scaffolding_mode::undefined);
-        VERIFY_MSG(sm != scaffolding_mode::undefined, "Invalid scaffolding mode");
+        CHECK_FATAL_ERROR(sm != scaffolding_mode::undefined, "Invalid scaffolding mode");
     }
 }
 

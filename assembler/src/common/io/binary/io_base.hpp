@@ -124,7 +124,7 @@ public:
         if (file.peek() == std::ifstream::traits_type::eof()) {
             return false;
         }
-        VERIFY_MSG(file, "Failed to read " << filename);
+        CHECK_FATAL_ERROR(file, "Failed to read " << filename);
         DEBUG("Loading " << this->name_ << " from " << filename);
         BinIStream reader(file);
         this->LoadImpl(reader, value);

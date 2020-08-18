@@ -178,7 +178,7 @@ bool FileExists(std::string const &filename) {
 }
 
 void CheckFileExistenceFATAL(std::string const &filename) {
-    VERIFY_MSG(FileExists(filename), "File " << filename << " doesn't exist or can't be read!");
+    CHECK_FATAL_ERROR(FileExists(filename), "File " << filename << " doesn't exist or can't be read!");
 }
 
 void make_dirs(std::string const &path) {

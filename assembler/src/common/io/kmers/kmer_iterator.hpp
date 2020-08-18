@@ -26,8 +26,8 @@ std::vector<raw_kmer_iterator<Seq>> make_raw_kmer_iterator(const std::string &Fi
 
     // Determine the file size
     struct stat buf;
-    VERIFY_MSG(stat(FileName.c_str(), &buf) != -1,
-               "stat(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
+    CHECK_FATAL_ERROR(stat(FileName.c_str(), &buf) != -1,
+                 "stat(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
     size_t file_size = buf.st_size;
 
     // Now start creating the iterators keeping in mind, that offset should be

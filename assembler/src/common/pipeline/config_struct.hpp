@@ -12,6 +12,7 @@
 #include "utils/verify.hpp"
 #include "modules/path_extend/pe_config_struct.hpp"
 #include "configs/aligner_config.hpp"
+#include "common/utils/logger/logger.hpp"
 
 #include <boost/optional.hpp>
 #include "math/xmath.h"
@@ -93,14 +94,14 @@ std::vector<std::string> SingleReadResolveModeNames();
 template<typename mode_t>
 mode_t ModeByName(const std::string& name, const std::vector<std::string>& names) {
     auto it = std::find(names.begin(), names.end(), name);
-    VERIFY_MSG(it != names.end(), "Unrecognized mode name: " << name);
+    CHECK_FATAL_ERROR(it != names.end(), "Unrecognized mode name: " << name);
     return mode_t(it - names.begin());
 }
 
 template<typename mode_t>
 std::string ModeName(const mode_t& mode, const std::vector<std::string>& names) {
     auto mode_id = static_cast<size_t>(mode);
-    VERIFY_MSG(mode_id < names.size(), "Unrecognized mode id: " << mode_id);
+    CHECK_FATAL_ERROR(mode_id < names.size(), "Unrecognized mode id: " << mode_id);
     return names[mode_id];
 }
 

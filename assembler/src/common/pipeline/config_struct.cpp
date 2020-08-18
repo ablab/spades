@@ -66,10 +66,10 @@ bool PipelineHelper::IsRNAPipeline(const pipeline_type pipeline) {
 
 template<typename mode_t>
 std::vector<std::string> CheckedNames(const std::vector<std::pair<std::string, mode_t>>& mapping, mode_t total) {
-    VERIFY_MSG(size_t(total) == mapping.size(), "Names for some modes missing")
+    CHECK_FATAL_ERROR(size_t(total) == mapping.size(), "Names for some modes missing")
     std::vector<std::string> answer;
     for (size_t i = 0; i < mapping.size(); ++i) {
-        VERIFY_MSG(size_t(mapping[i].second) == i, "Id/name mapping error");
+        CHECK_FATAL_ERROR(size_t(mapping[i].second) == i, "Id/name mapping error");
         answer.push_back(mapping[i].first);
     }
     return answer;
@@ -817,24 +817,24 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
 
 
     if (pt.count("plasmid")) {
-        VERIFY_MSG(!cfg.pd, "Option can be loaded only once");
+        CHECK_FATAL_ERROR(!cfg.pd, "Option can be loaded only once");
         cfg.pd.reset(debruijn_config::plasmid());
         load(*cfg.pd, pt, "plasmid");
     }
 
     if (pt.count("sc_cor")) {
-        VERIFY_MSG(!cfg.sc_cor, "Option sc_cor can be loaded only once");
+        CHECK_FATAL_ERROR(!cfg.sc_cor, "Option sc_cor can be loaded only once");
         cfg.sc_cor.reset(debruijn_config::scaffold_correction());
         load(*cfg.sc_cor, pt, "sc_cor");
     }
 
     if (pt.count("preliminary_simp")) {
-        VERIFY_MSG(!cfg.preliminary_simp, "Option preliminary can be loaded only once");
+        CHECK_FATAL_ERROR(!cfg.preliminary_simp, "Option preliminary can be loaded only once");
         cfg.preliminary_simp.reset(cfg.simp);
         load(*cfg.preliminary_simp, pt, "preliminary_simp", false);
     }
     if (pt.count("prelim_pe")) {
-        VERIFY_MSG(!cfg.prelim_pe_params, "Option prelim_pe can be loaded only once");
+        CHECK_FATAL_ERROR(!cfg.prelim_pe_params, "Option prelim_pe can be loaded only once");
         cfg.prelim_pe_params.reset(cfg.pe_params);
         load(*cfg.prelim_pe_params, pt, "prelim_pe", false);
     }
@@ -866,7 +866,7 @@ void init_libs(io::DataSet<LibraryData> &dataset, size_t max_threads,
 }
 
 void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
-    VERIFY_MSG(cfg_fns.size() > 0, "Should provide at least one config file");
+    CHECK_FATAL_ERROR(cfg_fns.size() > 0, "Should provide at least one config file");
     boost::property_tree::ptree base_pt;
     boost::property_tree::read_info(cfg_fns[0], base_pt);
 

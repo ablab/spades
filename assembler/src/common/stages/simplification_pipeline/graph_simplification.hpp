@@ -107,7 +107,7 @@ private:
 
         } else if (next_token_ == "rlmk") {
             //Read length minus k
-            VERIFY_MSG(settings_.read_length() > g_.k(), "Read length was shorter than K");
+            CHECK_FATAL_ERROR(settings_.read_length() > g_.k(), "Read length was shorter than K");
             double length_coeff = std::stod(ReadNext());
             DEBUG("Creating (rl - k) bound. Multiplicative coefficient: " << length_coeff);
             size_t length_bound = size_t(math::round(length_coeff * double(settings_.read_length() - g_.k())));
@@ -116,7 +116,7 @@ private:
             return LengthUpperBound<Graph>(g_, length_bound);
         } else if (next_token_ == "rl") {
             //Read length
-            VERIFY_MSG(settings_.read_length() > 0, "Read was zero");
+            CHECK_FATAL_ERROR(settings_.read_length() > 0, "Read was zero");
             double length_coeff = std::stod(ReadNext());
             DEBUG("Creating rl bound. Multiplicative coefficient: " << length_coeff);
             size_t length_bound = size_t(math::round(length_coeff * double(settings_.read_length())));
@@ -238,7 +238,7 @@ public:
             ReadNext();
         }
 
-        VERIFY_MSG(next_token_ == "{", "Expected \"{\", but next token was " << next_token_);
+        CHECK_FATAL_ERROR(next_token_ == "{", "Expected \"{\", but next token was " << next_token_);
         while (next_token_ == "{") {
             size_t min_length_bound = std::numeric_limits<size_t>::max();
             double min_coverage_bound = std::numeric_limits<double>::max();
@@ -576,7 +576,7 @@ AlgoPtr<Graph> TipClipperInstance(Graph &g,
     ConditionParser<Graph> parser(g, tc_config.condition, info);
     auto condition = parser();
     auto algo = TipClipperInstance(g, condition, info, removal_handler);
-    VERIFY_MSG(parser.requested_iterations() != 0, "To disable tip clipper pass empty string");
+    CHECK_FATAL_ERROR(parser.requested_iterations() != 0, "To disable tip clipper pass empty string");
     if (parser.requested_iterations() == 1)
         return algo;
 

@@ -11,6 +11,7 @@
 #include "adt/pointer_iterator.hpp"
 #include "adt/array_vector.hpp"
 #include "common/utils/verify.hpp"
+#include "common/utils/logger/logger.hpp"
 
 #include <string>
 
@@ -39,7 +40,7 @@ public:
 
     void open(const std::string &FileName) {
         StreamFile = ::open(FileName.c_str(), O_RDWR | O_CREAT | O_TRUNC, (mode_t) 0660);
-        VERIFY_MSG(StreamFile != -1,
+        CHECK_FATAL_ERROR(StreamFile != -1,
                    "open(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
 
         FileOffset = BytesWritten = 0;
@@ -72,11 +73,11 @@ public:
             return;
 
         int res = (int) lseek(StreamFile, amount - 1, SEEK_CUR);
-        VERIFY_MSG(res != -1,
-                   "lseek(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
+        CHECK_FATAL_ERROR(res != -1,
+                          "lseek(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
         res = (int) ::write(StreamFile, "", 1);
-        VERIFY_MSG(res != -1,
-                   "write(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
+        CHECK_FATAL_ERROR(res != -1,
+                          "write(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
 
         // FileOffset here should be aligned to page boundary. Tune the stuff due to this fact.
         int PageSize = getpagesize();
@@ -90,8 +91,8 @@ public:
                 (uint8_t *) mmap(NULL, BytesReserved,
                                  PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED,
                                  StreamFile, FileOffsetAligned);
-        VERIFY_MSG((intptr_t) MappedRegion != -1L,
-                   "mmap(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
+        CHECK_FATAL_ERROR((intptr_t) MappedRegion != -1L,
+                     "mmap(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
     }
 
     size_t size() const { return BytesReserved; }

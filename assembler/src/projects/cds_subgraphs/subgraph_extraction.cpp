@@ -248,7 +248,7 @@ CDSSubgraphExtractor::ProcessPartialCDS(const std::string &partial_cds,
                                         std::set<GraphPos> *stop_codon_poss,
                                         size_t min_len_to_explore,
                                         double frac_to_explore) const {
-    VERIFY_MSG(partial_cds.size() % 3 == 0, "Size of partial CDS prediction not divisible by 3");
+    CHECK_FATAL_ERROR(partial_cds.size() % 3 == 0, "Size of partial CDS prediction not divisible by 3");
     VERIFY(math::le(frac_to_explore, 1.));
     INFO("Original query length " << partial_cds.size());
     INFO("CDS length estimate " << cds_length_estimate);

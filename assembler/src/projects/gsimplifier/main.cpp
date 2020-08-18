@@ -76,7 +76,7 @@ size_t DetermineSampleCnt(const std::string &profile_fn) {
     std::ifstream is(profile_fn);
     std::string line;
     std::getline(is, line);
-    VERIFY_MSG(is, "I/O problem while reading " << profile_fn);
+    CHECK_FATAL_ERROR(is, "I/O problem while reading " << profile_fn);
     std::istringstream ss(line);
     std::string token;
     size_t i = 0;
@@ -219,7 +219,7 @@ int main(int argc, char** argv) {
             INFO("Estimated mean coverage was specified as " << cfg.bin_cov_str)
             if (cfg.bin_cov_str == "auto") {
                 INFO("Trying to determine from coverage of sources and sinks");
-                VERIFY_MSG(!cfg.deadends_fn.empty(),
+                CHECK_FATAL_ERROR(!cfg.deadends_fn.empty(),
                            "Deadends option (-d/--dead-ends) was not specified. "
                            "Can only determine coverage while working with subgraphs!");
                 bin_cov = DetermineAvgCoverage(graph, undeadends);

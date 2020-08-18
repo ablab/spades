@@ -45,7 +45,7 @@ inline std::istream &operator>>(std::istream &is, PartialGeneInfo &pgi) {
         pgi.strand = true;
     else if (strand_symbol == "-")
         pgi.strand = false;
-    else VERIFY_MSG(false, "Unsupported strand symbol");
+    else CHECK_FATAL_ERROR(false, "Unsupported strand symbol");
     return is;
 }
 

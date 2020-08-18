@@ -28,7 +28,7 @@ public:
     void LoadImpl(BinIStream &str, Type &value) override {
         uint32_t k_;
         str >> k_;
-        VERIFY_MSG(k_ == value.k(), "Cannot read edge index, different Ks");
+        CHECK_FATAL_ERROR(k_ == value.k(), "Cannot read edge index, different Ks");
         value.clear();
         str >> value;
     }

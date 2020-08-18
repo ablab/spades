@@ -249,7 +249,7 @@ void SeriesAnalysis::run(GraphPack &gp, const char *) {
     INFO("Series analysis enabled with config " << cfg);
 
     auto buf = llvm::MemoryBuffer::getFile(cfg);
-    VERIFY_MSG(buf, "Failed to load config file " + cfg);
+    CHECK_FATAL_ERROR(buf, "Failed to load config file " + cfg);
 
     llvm::yaml::Input yin(*buf.get());
     SeriesAnalysisConfig config;

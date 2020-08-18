@@ -86,8 +86,8 @@ void DatasetProcessor::SplitLibrary(const string &all_reads_filename, const size
         }
 
         for (auto &contig : contigs) {
-            VERIFY_MSG(all_contigs_.find(contig) != all_contigs_.end(),
-                       "wrong contig name in SAM file header: " + contig);
+            CHECK_FATAL_ERROR(all_contigs_.find(contig) != all_contigs_.end(),
+                              "wrong contig name in SAM file header: " + contig);
 
             for (int i = 0; i < reads_cnt; ++i) {
                 BufferedOutputRead(reads[i], contig, lib_count);
@@ -119,6 +119,7 @@ void DatasetProcessor::BufferedOutputRead(const string &read, const string &cont
         FlushAll(lib_count);
     }
 }
+
 
 int DatasetProcessor::RunBwaIndex() {
     string bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));

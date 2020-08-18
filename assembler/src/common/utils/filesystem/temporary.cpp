@@ -37,7 +37,7 @@ TmpDirImpl::~TmpDirImpl() {
 
 const std::string &TmpDirImpl::release() {
     bool already_released = released_.exchange(true);
-    VERIFY_MSG(!already_released, "Temp dir is already released");
+    CHECK_FATAL_ERROR(!already_released, "Temp dir is already released");
     return dir_;
 }
 
@@ -51,7 +51,7 @@ TmpFileImpl::TmpFileImpl(const std::string &prefix, TmpDir parent)
     if (parent)
         tprefix = fs::append_path(parent->dir(), tprefix);
     char *tempprefix = strdup(tprefix.c_str());
-    VERIFY_MSG(-1 != (fd_ = ::mkstemp(tempprefix)), "Cannot create temporary file");
+    CHECK_FATAL_ERROR(-1 != (fd_ = ::mkstemp(tempprefix)), "Cannot create temporary file");
     file_ = tempprefix;
     free(tempprefix);
     TRACE("Creating " << file_);
@@ -60,7 +60,7 @@ TmpFileImpl::TmpFileImpl(const std::string &prefix, TmpDir parent)
 TmpFileImpl::TmpFileImpl(std::nullptr_t, const std::string &file, TmpDir parent)
         : file_(file), parent_(parent), fd_(-1), released_(false) {
     fd_ = ::open(file_.c_str(), O_CREAT | O_RDWR, 0600);
-    VERIFY_MSG(-1 != fd_, "Cannot open file");
+    CHECK_FATAL_ERROR(-1 != fd_, "Cannot open file");
     TRACE("Acquiring " << file_);
 }
 
@@ -78,7 +78,7 @@ void TmpFileImpl::close() {
 }
 
 const std::string &TmpFileImpl::release() {
-    VERIFY_MSG(!released_.exchange(true), "Temp file is already released");
+    CHECK_FATAL_ERROR(!released_.exchange(true), "Temp file is already released");
     return file_;
 }
 
@@ -101,7 +101,7 @@ DependentTmpFileImpl::~DependentTmpFileImpl() {
 
 const std::string &DependentTmpFileImpl::release() {
     bool already_released = released_.exchange(true);
-    VERIFY_MSG(!already_released, "Temp file is already released");
+    CHECK_FATAL_ERROR(!already_released, "Temp file is already released");
     return file_;
 }
 

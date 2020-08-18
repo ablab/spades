@@ -52,7 +52,7 @@ class EdgeProfileStorage : public omnigraph::GraphActionHandler<Graph> {
         AbundanceVector total(sample_cnt_, 0.);
         for (size_t i = 0; i < sample_cnt_; ++i) {
             is >> total[i];
-            VERIFY_MSG(is, "Unexpected end of stream while reading " << sample_cnt_ << " values");
+            CHECK_FATAL_ERROR(is, "Unexpected end of stream while reading " << sample_cnt_ << " values");
         }
         return total;
     }

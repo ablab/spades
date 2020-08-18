@@ -68,7 +68,7 @@ void EdgeProfileStorage::Load(std::istream &is,
     if (check_consistency) {
         for (auto it = g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
             EdgeId e = *it;
-            VERIFY_MSG(profiles_.count(e) > 0, "Failed to load profile for one of the edges");
+            CHECK_FATAL_ERROR(profiles_.count(e) > 0, "Failed to load profile for one of the edges");
         }
     }
 }
