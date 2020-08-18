@@ -9,6 +9,7 @@
 #include "binary.hpp"
 #include "utils/logger/logger.hpp"
 #include "utils/filesystem/path_helper.hpp"
+#include "utils/filesystem/file_opener.hpp"
 
 #include <fstream>
 #include <memory>
@@ -118,8 +119,7 @@ public:
      */
     bool Load(const std::string &basename, T &value) override {
         std::string filename = basename + this->ext_;
-        std::ifstream file(filename, std::ios::binary);
-        file.exceptions(std::ifstream::failbit);
+        auto file = open_file(filename, std::ios::binary);
         //check file is empty
         if (file.peek() == std::ifstream::traits_type::eof()) {
             return false;

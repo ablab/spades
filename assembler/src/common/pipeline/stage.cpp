@@ -12,6 +12,7 @@
 
 #include "utils/logger/log_writers.hpp"
 #include "utils/perf/timetracer.hpp"
+#include "utils/filesystem/file_opener.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -164,13 +165,16 @@ void StageManager::run(debruijn_graph::GraphPack& g,
             }
         }
 
-        while (start_stage != stages_.begin()) {
-            try {
-                TIME_TRACE_SCOPE("load", saves_policy_.LoadPath());
-                (*std::prev(start_stage))->load(g, saves_policy_.LoadPath());
-                break;
-            } catch (const std::ios_base::failure& fail) {
-                --start_stage;
+        {
+            TIME_TRACE_SCOPE("load", saves_policy_.LoadPath());
+            while (start_stage != stages_.begin()) {
+                try {
+                    (*std::prev(start_stage))->load(g, saves_policy_.LoadPath());
+                    break;
+                } catch (const std::ios_base::failure& fail) {
+                    INFO("Rolling back the loading to the previous stage (from '" << start_stage->get()->name() << "' to '" << std::prev(start_stage)->get()->name() << "'), because: " << fail.what());
+                    --start_stage;
+                }
             }
         }
     }

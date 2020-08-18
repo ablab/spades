@@ -33,7 +33,7 @@ public:
     const char *name() const { return name_; }
     const char *id() const { return id_; }
 
-    /// @throw std::ios_base::failure if load_from does not contain all requaried files
+    /// @throw std::ios_base::failure if load_from does not contain all required files
     virtual void load(debruijn_graph::GraphPack &, const std::string &load_from, const char *prefix = nullptr);
     virtual void save(const debruijn_graph::GraphPack &, const std::string &save_to,
                       const char *prefix = nullptr) const;

@@ -80,10 +80,8 @@ public:
     Loader(const std::string &basename, BasePackIO::Type &gp)
         : basename(basename)
         , gp(gp)
-        , infoStream(basename + ".att")
-    {
-        infoStream.exceptions(std::ifstream::failbit);
-    }
+        , infoStream(open_file(basename + ".att", std::ios::binary))
+    {}
 
     /**
      * @brief  Restores the attachment flag of the component. Then loads it only if it was attached.
