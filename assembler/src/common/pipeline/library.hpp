@@ -66,6 +66,7 @@ public:
     void set_orientation(LibraryOrientation orientation) { orientation_ = orientation; }
     unsigned number() const { return number_; }
     void set_number(unsigned number) { number_ = number; }
+    bool artificial() const { return number_ == -1u; }
 
     void clear() {
         left_paired_reads_.clear();

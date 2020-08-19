@@ -34,7 +34,6 @@ void SecondPhaseSetup::run(GraphPack &gp, const char*) {
     untrusted_contigs.push_back_single(new_pe_contigs_filename);
     untrusted_contigs.set_orientation(io::LibraryOrientation::Undefined);
     untrusted_contigs.set_type(io::LibraryType::PathExtendContigs);
-    untrusted_contigs.set_number(unsigned(cfg::get_writable().ds.reads.lib_count()));
     cfg::get_writable().ds.reads.push_back(untrusted_contigs);
 
     //FIXME get rid of this awful variable
