@@ -114,7 +114,7 @@ void logger::log(level desired_level, const char* file, size_t line_num, const c
       size_t sz = sizeof(epoch);
       if (je_mallctl("epoch", &epoch, &sz, &epoch, sz) != 0) {
           fprintf(stderr, "mallctl() call failed, errno = %d", errno);
-          exit(-1);
+          exit(errno);
       }
   }
 
@@ -125,7 +125,7 @@ void logger::log(level desired_level, const char* file, size_t line_num, const c
       int res = je_mallctl("stats.resident", &cmem, &clen, NULL, 0);
       if (res != 0) {
           fprintf(stderr, "mallctl() call failed, errno = %d", errno);
-          exit(-1);
+          exit(errno);
       }
       mem = (cmem + 1023)/ 1024;
   }
