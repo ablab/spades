@@ -52,9 +52,7 @@ class AsyncReadStream {
             wait_writing_buffer();
         }
 
-        if (read_pos_ < read_buffer_.size()) {
-            t = std::move(read_buffer_[read_pos_++]);
-        }
+        t = std::move(read_buffer_[read_pos_++]);
 
         if (read_pos_ == read_buffer_.size()) {
             wait_writing_buffer();
@@ -103,6 +101,7 @@ class AsyncReadStream {
         VERIFY(is_open());
 
         start_ = true;
+        eof_ = stream_.eof();
     }
 
     void dispatch_write_job() {
