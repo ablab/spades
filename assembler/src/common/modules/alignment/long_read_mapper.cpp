@@ -73,8 +73,7 @@ PathExtractionF ChooseProperReadPathExtractor(const Graph& g, io::LibraryType li
 
     if (lib_type == io::LibraryType::PathExtendContigs || 
         lib_type == io::LibraryType::TSLReads ||
-        lib_type == io::LibraryType::UntrustedContigs)
-    {
+        lib_type == io::LibraryType::UntrustedContigs) {
         return [&] (const MappingPath<EdgeId>& mapping) {
             return GappedPathExtractor(g)(mapping);
         };
