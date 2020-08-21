@@ -78,7 +78,7 @@ void ScaffoldGraphConstructionPipeline::Run() {
     intermediate_results_.emplace_back(initial_graph_ptr, "Initial graph");
     for (const auto &stage: construction_stages_) {
         INFO("Starting " << stage->getName());
-        auto constructor = stage->GetScaffoldGraphConstuctor(params_, *(intermediate_results_.back().first));
+        auto constructor = stage->GetScaffoldGraphConstuctor(*(intermediate_results_.back().first));
         auto next_graph = constructor->Construct();
         intermediate_results_.emplace_back(next_graph, stage->getName());
         INFO(next_graph->VertexCount() << " vertices and " << next_graph->EdgeCount() << " edges in current graph");
@@ -229,17 +229,20 @@ std::vector<std::shared_ptr<IterativeScaffoldGraphConstructorCaller>> FullScaffo
         ConstructSimpleEdgeIndex(scaffold_vertices, barcode_extractor_, params, max_threads_);
 
     std::vector<std::shared_ptr<IterativeScaffoldGraphConstructorCaller>> iterative_constructor_callers;
-    iterative_constructor_callers.push_back(std::make_shared<BarcodeScoreConstructorCaller>(gp_.g, barcode_extractor_,
+    iterative_constructor_callers.push_back(std::make_shared<BarcodeScoreConstructorCaller>(gp_.get<Graph>(),
+                                                                                            max_threads_,
+                                                                                            barcode_extractor_,
                                                                                             scaffold_index_extractor,
-                                                                                            max_threads_));
+                                                                                            params));
     iterative_constructor_callers.push_back(
-        std::make_shared<BarcodeConnectionConstructorCaller>(gp_.g, barcode_extractor_, scaffold_index_extractor,
-                                                             unique_storage_, max_threads_));
+        std::make_shared<BarcodeConnectionConstructorCaller>(gp_.get<Graph>(), barcode_extractor_,
+                                                             scaffold_index_extractor,
+                                                             unique_storage_, params, max_threads_));
     bool scaffolding_mode = false;
     iterative_constructor_callers.push_back(
         std::make_shared<CompositeConnectionConstructorCaller>(gp_, barcode_extractor_, scaffold_index_extractor,
                                                                unique_storage_, search_parameter_pack_,
-                                                               read_cloud_configs_.scaff_con, max_threads_,
+                                                               read_cloud_configs_.scaff_con, params, max_threads_,
                                                                scaffolding_mode));
 
     const size_t min_pipeline_length = read_cloud_configs_.long_edge_length_lower_bound;
@@ -259,7 +262,10 @@ std::vector<std::shared_ptr<IterativeScaffoldGraphConstructorCaller>> FullScaffo
         iterative_constructor_callers.push_back(std::make_shared<EdgeSplitConstructorCaller>(gp_.g,
                                                                                              split_scaffold_index_extractor,
                                                                                              max_threads_));
-        iterative_constructor_callers.push_back(std::make_shared<TransitiveConstructorCaller>(gp_.g, max_threads_));
+        iterative_constructor_callers.push_back(std::make_shared<TransitiveConstructorCaller>(
+            gp_.get<Graph>(),
+            max_threads_,
+            params.transitive_distance_threshold_));
     }
     return iterative_constructor_callers;
 }
@@ -314,8 +320,12 @@ std::vector<std::shared_ptr<IterativeScaffoldGraphConstructorCaller>> MergingSca
         std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(split_scaffold_vertex_index);
     iterative_constructor_callers.push_back(std::make_shared<EdgeSplitConstructorCaller>(g_,
                                                                                          split_scaffold_index_extractor,
+                                                                                         params,
                                                                                          max_threads_));
-    iterative_constructor_callers.push_back(std::make_shared<TransitiveConstructorCaller>(g_, max_threads_));
+    iterative_constructor_callers.push_back(std::make_shared<TransitiveConstructorCaller>(
+        g_,
+        max_threads_,
+        params.transitive_distance_threshold_));
     return iterative_constructor_callers;
 }
 } //path_extend
