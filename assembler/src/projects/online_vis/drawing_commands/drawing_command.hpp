@@ -64,7 +64,7 @@ protected:
         make_dir(directory);
         namestream << label << "_";
 
-        barcode_index::FrameBarcodeIndexInfoExtractor extractor(curr_env.gp_.barcode_mapper_ptr, curr_env.graph());
+        barcode_index::FrameBarcodeIndexInfoExtractor extractor(curr_env.GetBarcodeExtractor(), curr_env.graph());
         vector<barcode_index::BarcodeId> shared_barcodes = extractor.GetSharedBarcodes(edge1, edge2);
         auto barcode_colorer_ptr =
                 make_shared<visualization::graph_colorer::BarcodeCollectionColorer<Graph>>(shared_barcodes,
