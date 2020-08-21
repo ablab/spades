@@ -21,7 +21,7 @@ struct ExtenderTriplet {
 
     }
 
-    int GetPriority(io::LibraryType type) const {
+    static int GetPriority(io::LibraryType type) {
         #define SET_PRIORITY(o) case o: --priority
         using io::LibraryType;
         int priority = 0;

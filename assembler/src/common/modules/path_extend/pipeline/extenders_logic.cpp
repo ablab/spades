@@ -19,7 +19,7 @@ shared_ptr<ExtensionChooser> ExtendersGenerator::MakeLongReadsExtensionChooser(s
     if (dataset_info_.reads[lib_index].type() == io::LibraryType::TrustedContigs) {
         bool is_not_the_first_extender = false;
         for (auto const & lib : dataset_info_.reads)
-            is_not_the_first_extender |= (lib.type() < io::LibraryType::TrustedContigs);
+            is_not_the_first_extender |= (ExtenderTriplet::GetPriority(lib.type()) < ExtenderTriplet::GetPriority(io::LibraryType::TrustedContigs));
 
         return make_shared<TrustedContigsExtensionChooser>(graph_, read_paths_cov_map,
                                                             long_reads_config.filtering,
