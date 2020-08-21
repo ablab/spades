@@ -74,7 +74,7 @@ public:
 
         if (chunk_num < chunk_count) {  // if we start from existing chunk
             // Calculating the absolute offset in the reads file
-            auto offset_stream = open_file(offset_name, std::ios_base::binary | std::ios_base::in);
+            auto offset_stream = fs::open_file(offset_name, std::ios_base::binary | std::ios_base::in);
             offset_stream.seekg(chunk_num * sizeof(size_t));
             offset_stream.read(reinterpret_cast<char *>(&offset_), sizeof(offset_));
             DEBUG("Offset read: " << offset_ << " chunk_count " << chunk_count << " chunk_num " << chunk_num << " portion_count " << portion_count << " portion_num " << portion_num << " prefix " << file_name_prefix << " name " << offset_name);

@@ -119,7 +119,7 @@ public:
      */
     bool Load(const std::string &basename, T &value) override {
         std::string filename = basename + this->ext_;
-        auto file = open_file(filename, std::ios::binary);
+        auto file = fs::open_file(filename, std::ios::binary);
         //check file is empty
         if (file.peek() == std::ifstream::traits_type::eof()) {
             return false;

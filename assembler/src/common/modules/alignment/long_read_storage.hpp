@@ -275,7 +275,7 @@ public:
         fclose(file);
 
         INFO("Loading long reads alignment...");
-        auto filestr = open_file(s);
+        auto filestr = fs::open_file(s);
         INFO("loading from " << s);
         std::map<size_t, EdgeId> tmp_map;
         for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {

@@ -112,7 +112,7 @@ std::vector<std::string> BrokenScaffoldsModeNames() {
 
 template<class T>
 void LoadFromYaml(const std::string& filename, T &t) {
-    auto ifs = open_file(filename, std::ios::binary);
+    auto ifs = fs::open_file(filename, std::ios::binary);
     LoadFromYaml(ifs, t);
 }
 

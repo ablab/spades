@@ -49,7 +49,7 @@ void GenomicInfo::yamlize(yaml::IO &io) {
 }
 
 bool GenomicInfo::Load(const std::string &filename) {
-    auto ifs = open_file(filename, std::ios::binary);
+    auto ifs = fs::open_file(filename, std::ios::binary);
     BinRead(ifs);
     return true;
 }

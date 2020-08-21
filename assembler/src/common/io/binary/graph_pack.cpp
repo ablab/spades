@@ -80,7 +80,7 @@ public:
     Loader(const std::string &basename, BasePackIO::Type &gp)
         : basename(basename)
         , gp(gp)
-        , infoStream(open_file(basename + ".att", std::ios::binary))
+        , infoStream(fs::open_file(basename + ".att", std::ios::binary))
     {}
 
     /**
