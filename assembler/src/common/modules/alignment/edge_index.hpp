@@ -23,8 +23,7 @@ namespace debruijn_graph {
 
 /**
  * EdgeIndex is a structure to store info about location of certain k-mers in graph. It delegates all
- * container procedures to inner_index_ and all handling procedures to
- * renewer_ which is DataHashRenewer.
+ * container procedures to inner_index_ and all handling procedures to updater_.
  */
 template<class Graph>
 class EdgeIndex: public omnigraph::GraphActionHandler<Graph> {
@@ -76,6 +75,7 @@ private:
 
         index->clear();
         delete index;
+        // inner_index_ is always type-erased index here.
         inner_index_ = nullptr;
     }
 
