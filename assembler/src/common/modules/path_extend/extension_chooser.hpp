@@ -1332,18 +1332,18 @@ private:
 
     std::set<EdgeWithDistance> GetLowQualityCandidats(const BidirectionalPath &path, std::map<EdgeWithDistance, double> &weights_cands) const {
         DEBUG("Fallback mode");
-        auto getComparator = [&path, th = this](size_t start_pos){
+        auto get_comparator = [&path, th = this](size_t start_pos){
             return [&path, start_pos, th] (const BidirectionalPath &coverage_path, size_t pos) {
                 auto pos1 = static_cast<int>(start_pos);
                 auto pos2 = static_cast<int>(pos);
-                auto skippedNonUniqueEdges = 0;
+                auto skipped_non_unique_edges = 0;
                 while (pos1 >= 0 && pos2 >= 0) {
                     if (path[pos1] == coverage_path[pos2]) {
-                        skippedNonUniqueEdges = 0;
+                        skipped_non_unique_edges = 0;
                         --pos2;
                     } else {
-                        ++skippedNonUniqueEdges;
-                        if (th->IsUniqueEdge(path[pos1]) || skippedNonUniqueEdges > 0)
+                        ++skipped_non_unique_edges;
+                        if (th->IsUniqueEdge(path[pos1]) || skipped_non_unique_edges > 0)
                             break;
                     }
                     --pos1;
@@ -1358,7 +1358,7 @@ private:
             DEBUG("iteration: " << i);
             auto pos = path.Size() - 1 - i;
             used_unique_edge = IsUniqueEdge(path[pos]);
-            auto tmp = GetCandidates(path, weights_cands, pos, getComparator(pos));
+            auto tmp = GetCandidates(path, weights_cands, pos, get_comparator(pos));
             auto& coverage_paths_are_found = tmp.first;
             auto& filtered_cands = tmp.second;
             if (!filtered_cands.empty() || coverage_paths_are_found)

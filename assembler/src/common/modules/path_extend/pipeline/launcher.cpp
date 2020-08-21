@@ -555,23 +555,14 @@ void PathExtendLauncher::SelectStrandSpecificPaths(PathContainer &paths) const {
 }
 
 void MakeConjugateEdgePairsDump(ConjugateDeBruijnGraph const & graph) {
-    std::unordered_set<uint64_t> ids;
     std::ofstream out(cfg::get().output_dir+"/conjugate_edge_pairs_dump.info");
     if (!out.is_open()) {
-        ERROR("Cannot open conjugate_edge_pairs_dump.info for writing");
+        FATAL_ERROR("Cannot open conjugate_edge_pairs_dump.info for writing");
         return;
     }
 
-    for (auto it = graph.e_begin(); it != graph.e_end(); ++it) {
-        auto conjID = graph.conjugate(EdgeId(*it)).id_;
-        if (!ids.count(*it) && !ids.count(conjID)) {
-            assert(*it == graph.conjugate(graph.conjugate(EdgeId(*it))).id_);
-            ids.insert(*it);
-            ids.insert(conjID);
-            out << *it << ' ' << graph.conjugate(EdgeId(*it)) << '\n';
-        }
-    }
-
+    for (EdgeId e : graph.canonical_edges())
+        out << e << ' ' << graph.conjugate(e) << '\n';
 }
 
 void PathExtendLauncher::Launch() {
@@ -601,8 +592,8 @@ void PathExtendLauncher::Launch() {
     seeds.SortByLength();
     DebugOutputPaths(seeds, "init_paths");
 
-
-    MakeConjugateEdgePairsDump(graph_);
+    if (params_.pe_cfg.debug_output)
+        MakeConjugateEdgePairsDump(graph_);
 
     GraphCoverageMap cover_map(graph_);
     UsedUniqueStorage used_unique_storage(unique_data_.main_unique_storage_, graph_);

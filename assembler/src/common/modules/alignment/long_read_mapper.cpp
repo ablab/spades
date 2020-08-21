@@ -85,6 +85,11 @@ PathExtractionF ChooseProperReadPathExtractor(const Graph& g, io::LibraryType li
     };
 }
 
+template<class T>
+inline bool InBounds(T const & min_value, T const & middle_value, T const & max_value) {
+    return math::ls(min_value, middle_value) && math::ls(middle_value, max_value);
+}
+
 } // namespace
 
 PathWithMappingInfo::PathWithMappingInfo(std::vector<EdgeId> && path, MappingRange && range) 
@@ -216,18 +221,18 @@ MappingPath<EdgeId> GappedPathExtractorForTrustedContigs::FilterBadMappings(cons
                                                                             const MappingPath<EdgeId> &mapping_path) const
 {
     MappingPath<EdgeId> new_corrected_path;
+    MappingRange range_of_mapped_edge;
+    auto is_the_previous_edge_extension = [&new_corrected_path, &range_of_mapped_edge](EdgeId edge) {
+        return !new_corrected_path.empty() &&
+                new_corrected_path.back().first == edge &&
+                new_corrected_path.back().second.mapped_range.end_pos <= range_of_mapped_edge.mapped_range.start_pos;
+    };
     size_t mapping_index = 0;
     for (auto edge : corrected_path) {
-        MappingRange range_of_mapped_edge;
         size_t mapping_size = CountMappedEdgeSize(edge, mapping_path, mapping_index, range_of_mapped_edge);
         size_t edge_len =  g_.length(edge);
-        if (math::ls((double) mapping_size / (double) edge_len, MIN_MAPPED_RATIO + 1) &&
-            math::gr((double) mapping_size / (double) edge_len, MIN_MAPPED_RATIO))
-        {
-            if (!new_corrected_path.empty() &&
-                new_corrected_path.back().first == edge &&
-                new_corrected_path.back().second.mapped_range.end_pos <= range_of_mapped_edge.mapped_range.start_pos) 
-            {
+        if (InBounds(MIN_MAPPED_RATIO, (double) mapping_size / (double) edge_len, MIN_MAPPED_RATIO + 1)) {
+            if (is_the_previous_edge_extension(edge)) {
                 range_of_mapped_edge.mapped_range.start_pos = new_corrected_path.back().second.mapped_range.start_pos;
                 new_corrected_path.pop_back();
             }
