@@ -236,9 +236,9 @@ public:
     }
 
 private:
-    unsigned number_;
     LibraryType type_;
     LibraryOrientation orientation_;
+    unsigned number_;
 
     std::vector<std::string> left_paired_reads_;
     std::vector<std::string> right_paired_reads_;
