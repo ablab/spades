@@ -6,6 +6,8 @@
 
 #include "genomic_info.hpp"
 
+#include "utils/filesystem/file_opener.hpp"
+
 #include "llvm/Support/YAMLTraits.h"
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/FileSystem.h"
@@ -47,7 +49,7 @@ void GenomicInfo::yamlize(yaml::IO &io) {
 }
 
 bool GenomicInfo::Load(const std::string &filename) {
-    std::ifstream ifs(filename, std::ios::binary);
+    auto ifs = fs::open_file(filename, std::ios::binary);
     BinRead(ifs);
     return true;
 }

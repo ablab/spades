@@ -12,6 +12,7 @@
 
 #include "utils/logger/log_writers.hpp"
 #include "utils/perf/timetracer.hpp"
+#include "utils/filesystem/file_opener.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -27,12 +28,12 @@ void AssemblyStage::load(debruijn_graph::GraphPack& gp,
     auto dir = fs::append_path(load_from, prefix);
     INFO("Loading current state from " << dir);
 
-    io::ConvertIfNeeded(cfg::get_writable().ds.reads,
-                        cfg::get().max_threads);
-
     auto p = fs::append_path(dir, BASE_NAME);
     io::binary::FullPackIO().Load(p, gp);
     debruijn_graph::config::load_lib_data(p);
+
+    io::ConvertIfNeeded(cfg::get_writable().ds.reads, cfg::get().max_threads);
+
 }
 
 void AssemblyStage::save(const debruijn_graph::GraphPack& gp,
@@ -163,9 +164,18 @@ void StageManager::run(debruijn_graph::GraphPack& g,
                 exit(-1);
             }
         }
-        if (start_stage != stages_.begin()) {
+
+        {
             TIME_TRACE_SCOPE("load", saves_policy_.LoadPath());
-            (*std::prev(start_stage))->load(g, saves_policy_.LoadPath());
+            while (start_stage != stages_.begin()) {
+                try {
+                    (*std::prev(start_stage))->load(g, saves_policy_.LoadPath());
+                    break;
+                } catch (const std::ios_base::failure& fail) {
+                    INFO("Rolling back the loading to the previous stage (from '" << start_stage->get()->name() << "' to '" << std::prev(start_stage)->get()->name() << "'), because: " << fail.what());
+                    --start_stage;
+                }
+            }
         }
     }
 

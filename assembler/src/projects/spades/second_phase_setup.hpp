@@ -16,7 +16,7 @@ public:
     SecondPhaseSetup()
             : AssemblyStage("Second Phase Setup", "second_phase_setup") { }
 
-    void run(GraphPack &gp, const char *);
+    void run(GraphPack &gp, const char *) override;
 };
 
 }

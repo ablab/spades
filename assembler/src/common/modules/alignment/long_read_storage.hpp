@@ -10,6 +10,7 @@
 #include "io/binary/binary.hpp"
 
 #include "common/utils/logger/logger.hpp"
+#include "utils/filesystem/file_opener.hpp"
 
 #include <string>
 #include <vector>
@@ -274,7 +275,7 @@ public:
         fclose(file);
 
         INFO("Loading long reads alignment...");
-        std::ifstream filestr(s);
+        auto filestr = fs::open_file(s);
         INFO("loading from " << s);
         std::map<size_t, EdgeId> tmp_map;
         for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {

@@ -10,6 +10,7 @@
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/logger/logger.hpp"
 #include "utils/filesystem/path_helper.hpp"
+#include "utils/filesystem/file_opener.hpp"
 #include "utils/verify.hpp"
 #include "io/reads/file_reader.hpp"
 
@@ -111,7 +112,7 @@ std::vector<std::string> BrokenScaffoldsModeNames() {
 
 template<class T>
 void LoadFromYaml(const std::string& filename, T &t) {
-    std::ifstream ifs(filename, std::ios::binary);
+    auto ifs = fs::open_file(filename, std::ios::binary);
     LoadFromYaml(ifs, t);
 }
 

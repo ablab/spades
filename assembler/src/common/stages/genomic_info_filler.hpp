@@ -16,7 +16,7 @@ public:
     GenomicInfoFiller()
             : AssemblyStage("EC Threshold Finding", "ec_threshold_finder") { }
 
-    void run(GraphPack &gp, const char *);
+    void run(GraphPack &gp, const char *) override;
 };
 
 }

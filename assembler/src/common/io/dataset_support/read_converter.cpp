@@ -13,6 +13,7 @@
 #include "io/reads/converting_reader_wrapper.hpp"
 #include "io/reads/edge_sequences_reader.hpp"
 
+#include "utils/filesystem/file_opener.hpp"
 #include "utils/logger/logger.hpp"
 
 #include "threadpool/threadpool.hpp"
@@ -33,8 +34,7 @@ bool ReadConverter::LoadLibIfExists(SequencingLibraryT& lib) {
     if (!CheckBinaryReadsExist(lib))
         return false;
 
-    std::ifstream info;
-    info.open(data.binary_reads_info.bin_reads_info_file, std::ios_base::in);
+    auto info = fs::open_file(data.binary_reads_info.bin_reads_info_file, std::ios_base::in);
     DEBUG("Reading binary information file " << data.binary_reads_info.bin_reads_info_file);
 
     size_t format = 0;

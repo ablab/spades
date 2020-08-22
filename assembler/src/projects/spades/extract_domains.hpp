@@ -15,7 +15,7 @@ public:
     ExtractDomains()
             : AssemblyStage("Extract Domains", "extract_domains") { }
 
-    void run(GraphPack &gp, const char *);
+    void run(GraphPack &gp, const char *) override;
 };
 
 }

@@ -33,6 +33,7 @@ public:
     const char *name() const { return name_; }
     const char *id() const { return id_; }
 
+    /// @throw std::ios_base::failure if load_from does not contain all required files
     virtual void load(debruijn_graph::GraphPack &, const std::string &load_from, const char *prefix = nullptr);
     virtual void save(const debruijn_graph::GraphPack &, const std::string &save_to,
                       const char *prefix = nullptr) const;
@@ -172,7 +173,9 @@ public:
 
     std::string GetLastCheckpoint() const {
         std::string res;
-        std::ifstream(fs::append_path(saves_path_, CHECKPOINT_FILE)) >> res;
+        std::ifstream ifs(fs::append_path(saves_path_, CHECKPOINT_FILE));
+        if (ifs.is_open())
+            ifs >> res;
         return res;
     }
 
@@ -216,7 +219,9 @@ public:
     }
 
 private:
-    std::vector<std::unique_ptr<AssemblyStage> > stages_;
+    using Stages = std::vector<std::unique_ptr<AssemblyStage> >;
+
+    Stages stages_;
     SavesPolicy saves_policy_;
 
     DECL_LOGGER("StageManager");

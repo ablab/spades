@@ -301,7 +301,7 @@ namespace spades {
             return results;
         }
 
-        void run(debruijn_graph::GraphPack &graph_pack, const char *) {
+        void run(debruijn_graph::GraphPack &graph_pack, const char *) override {
             INFO("Correcting scaffolds from " << config_.scaffolds_file);
             scaffold_correction::CarefulPathFixer fixer(graph_pack.get<debruijn_graph::Graph>(), config_.max_cut_length, config_.max_insert);
             scaffold_correction::ScaffoldCorrector corrector(graph_pack, fixer);

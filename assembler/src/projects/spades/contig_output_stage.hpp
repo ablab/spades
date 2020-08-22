@@ -29,9 +29,8 @@ public:
             : AssemblyStage("Contig Output", "contig_output"),
               outputs_(std::move(list)) {}
 
-    void load(GraphPack &, const std::string &, const char *) { }
-    void save(const GraphPack &, const std::string &, const char *) const { }
-    void run(GraphPack &gp, const char *);
+    void save(const debruijn_graph::GraphPack &, const std::string &, const char *) const override { }
+    void run(GraphPack &gp, const char *) override;
 
 private:
     OutputList outputs_;
