@@ -121,7 +121,7 @@ int main(int argc, char* argv[]) {
 
         nthreads = spades_set_omp_threads(nthreads);
         INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << nthreads);
-        omp_set_nested(true);
+        omp_set_nested(false);
 
         fs::make_dir(output_dir);
 
@@ -151,6 +151,8 @@ int main(int argc, char* argv[]) {
         VERIFY(contigs_output.is_open());
 
         for (auto const & contig : contigs) {
+            if (contig.seq.empty())
+                continue;
             contigs_output << '>' << contig.name << " len=" << contig.seq.size() << '\n';
             const auto d_pos = 100;
             for (size_t pos = 0; pos < contig.seq.size(); pos += d_pos)

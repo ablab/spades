@@ -24,7 +24,7 @@ void AddEdgeId(const Graph& graph, const std::string& current_id, const std::uno
             current_alternative.push_back(graph.conjugate(e_iter->second));
 
     } else {
-        ERROR("Edge id " << edgeid << " was not found");
+        FATAL_ERROR("Edge id " << edgeid << " was not found");
     }
 }
 

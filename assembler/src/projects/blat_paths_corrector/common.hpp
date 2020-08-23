@@ -13,10 +13,10 @@ struct PathThreadingParams {
     double good_distance_coeff = 0.10;   //a path is considered as good if its distance differs by at most good_distance_coeff
     double best_of_good_coeff = 0.05;   //if there are multiple *good& paths, the best one has to have distance difference < best_of_good_coeff * second_best_distance_difference
     bool extend_unique_paths = false;    //extend ends if possible
-    bool make_transitive_connections = true; //check next max_steps_forward edges
+    bool use_agressive_filling = false;  //use dijkstra's algorithm for edges connecting
     size_t max_steps_forward = 1;
     size_t max_distance = 50000;        //stop Dijkstra path search when path length exceeds max_distance or there are more than 3000 paths in buffer
-    bool use_scaffolds = true;          //use pre-contructed scaffolds if path was not found
+    bool use_scaffolds = false;          //use pre-contructed scaffolds if path was not found
 };
 
 struct PathWithEdgePostions {
