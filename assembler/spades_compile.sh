@@ -128,7 +128,7 @@ parse_short_args() {
 }
 
 get_current_build_params() {
-  echo "$DEBUG $BUILD_INTERNAL $BASEDIR $ADDITIONAL_FLAGS"
+  echo "$DEBUG $BASEDIR $ADDITIONAL_FLAGS"
 }
 
 read_buid_params() {
@@ -186,14 +186,6 @@ for next_opt in "$@" ""; do
   opt="$next_opt"
 done
 
-if [ $DEBUG = "y" ]; then
-  ADDITIONAL_FLAGS="$ADDITIONAL_FLAGS -DCMAKE_BUILD_TYPE=Debug"
-fi
-
-if [ $BUILD_INTERNAL = "y" ]; then
-  ADDITIONAL_FLAGS="$ADDITIONAL_FLAGS -DSPADES_BUILD_INTERNAL=ON"
-fi
-
 BUILD_DIR=build_spades
 BASEDIR="$(normalize_path "$(pwd)"/"$(dirname "$0")")"
 
@@ -217,6 +209,16 @@ if [ $REMOVE_BUILD_DIR_BEFORE_BUILDING = "y" ]; then
 fi
 
 save_build_params "$WORK_DIR"
+
+if [ $DEBUG = "y" ]; then
+  ADDITIONAL_FLAGS="$ADDITIONAL_FLAGS -DCMAKE_BUILD_TYPE=Debug"
+fi
+
+if [ $BUILD_INTERNAL = "y" ]; then
+  ADDITIONAL_FLAGS="$ADDITIONAL_FLAGS -DSPADES_BUILD_INTERNAL=ON"
+else
+  ADDITIONAL_FLAGS="$ADDITIONAL_FLAGS -DSPADES_BUILD_INTERNAL=OFF"
+fi
 
 cd "$WORK_DIR"
 cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$PREFIX" $ADDITIONAL_FLAGS "$BASEDIR/src"
