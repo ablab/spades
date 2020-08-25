@@ -41,33 +41,28 @@ void EdgeIndexRefiller::Refill<EdgeIndex32, ConjugateDeBruijnGraph>(EdgeIndex32 
                                                                     const ConjugateDeBruijnGraph &g);
 
 
-template<>
+template<class EdgeIndex, class Graph>
 void EdgeIndexRefiller::Refill(EdgeIndex &index,
-                               const ConjugateDeBruijnGraph &g,
-                               const std::vector<typename ConjugateDeBruijnGraph::EdgeId> &edges) {
+                               const Graph &g,
+                               const std::vector<typename Graph::EdgeId> &edges) {
     auto workdir = fs::tmp::make_temp_dir(workdir_, "edge_index");
 
     typedef GraphPositionFillingIndexBuilder<EdgeIndex> IndexBuilder;
     IndexBuilder().BuildIndexFromGraph(index, g, edges, workdir);
 }
 
-template<>
+template
+void EdgeIndexRefiller::Refill(EdgeIndex &index,
+                               const ConjugateDeBruijnGraph &g,
+                               const std::vector<typename ConjugateDeBruijnGraph::EdgeId> &edges);
+
+template
 void EdgeIndexRefiller::Refill(EdgeIndex64 &index,
                                const ConjugateDeBruijnGraph &g,
-                               const std::vector<typename ConjugateDeBruijnGraph::EdgeId> &edges) {
-    auto workdir = fs::tmp::make_temp_dir(workdir_, "edge_index");
+                               const std::vector<typename ConjugateDeBruijnGraph::EdgeId> &edges);
 
-    typedef GraphPositionFillingIndexBuilder<EdgeIndex64> IndexBuilder;
-    IndexBuilder().BuildIndexFromGraph(index, g, edges, workdir);
-}
-
-template<>
+template
 void EdgeIndexRefiller::Refill(EdgeIndex32 &index,
                                const ConjugateDeBruijnGraph &g,
-                               const std::vector<typename ConjugateDeBruijnGraph::EdgeId> &edges) {
-    auto workdir = fs::tmp::make_temp_dir(workdir_, "edge_index");
-
-    typedef GraphPositionFillingIndexBuilder<EdgeIndex32> IndexBuilder;
-    IndexBuilder().BuildIndexFromGraph(index, g, edges, workdir);
-}
+                               const std::vector<typename ConjugateDeBruijnGraph::EdgeId> &edges);
 }
