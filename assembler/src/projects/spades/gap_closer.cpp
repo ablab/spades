@@ -119,8 +119,14 @@ public:
         }
         edges.shrink_to_fit();
 
-        index_.Refill(edges);
-        mapper_ = MapperInstance(gp_, index_);
+        if (edges.size() > 0) {
+            index_.Refill(edges);
+            mapper_ = MapperInstance(gp_, index_);
+        }
+    }
+
+    bool IsTipAreaEmpty() {
+        return (out_tip_map_.size() == 0);
     }
 
     void StartProcessLibrary(size_t /* threads_count */) override {
@@ -407,6 +413,10 @@ void GapClosing::run(GraphPack &gp, const char *) {
     auto &g = gp.get_mutable<Graph>();
     omnigraph::de::PairedInfoIndexT<Graph> tips_paired_idx(g);
     GapCloserPairedIndexFiller gcpif(g, tips_paired_idx, gp, cfg::get().gc.max_dist_to_tip);
+    if (gcpif.IsTipAreaEmpty()) {
+        INFO("No tips in graph, skipping gap closer");
+        return;
+    }
 
     SequenceMapperNotifier notifier(gp, cfg::get().ds.reads.lib_count());
 
