@@ -1407,8 +1407,8 @@ protected:
 
     Gap NormalizeGap(Gap gap) const {
         VERIFY(gap != Gap::INVALID());
-        if (gap.overlap_after_trim(g_.k()) > 0)
-            gap.trash.current += gap.overlap_after_trim(g_.k());
+        if (gap.OverlapAfterTrim(g_.k()) > 0)
+            gap.trash.current += gap.OverlapAfterTrim(g_.k());
         return gap;
     }
 
@@ -1452,7 +1452,7 @@ class RNAScaffoldingPathExtender: public ScaffoldingPathExtender {
 
 protected:
     bool CheckGap(const Gap &gap) const override {
-        return gap.overlap_after_trim(g_.k()) >= min_overlap_;
+        return gap.OverlapAfterTrim(g_.k()) >= min_overlap_;
     }
 
 public:

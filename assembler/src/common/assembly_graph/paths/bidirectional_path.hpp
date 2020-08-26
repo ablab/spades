@@ -38,7 +38,7 @@ struct Gap {
 
     using GapSeqType = std::unique_ptr<std::string>;
 
-    GapSeqType gap_seq_;
+    GapSeqType gap_seq;
     int gap;
     Trash trash;
 
@@ -55,31 +55,31 @@ struct Gap {
     }
 
     //gap is in k+1-mers and does not know about "trash" regions
-    Gap(int gap_, Gap::Trash trash_, bool is_final_ = IS_FINAL_DEFAULT, GapSeqType gap_seq = nullptr)
-        : gap_seq_(std::move(gap_seq))
+    Gap(int gap_, Gap::Trash trash_, bool is_final_ = IS_FINAL_DEFAULT, GapSeqType gap_seq_ = nullptr)
+        : gap_seq(std::move(gap_seq_))
         , gap(gap_)
         , trash(trash_)
         , is_final(is_final_)
     {}
 
-    explicit Gap(int gap_ = 0, bool is_final_ = IS_FINAL_DEFAULT, GapSeqType gap_seq = nullptr)
-        : Gap(gap_, DEFAULT_TRASH, is_final_, std::move(gap_seq))
+    explicit Gap(int gap_ = 0, bool is_final_ = IS_FINAL_DEFAULT, GapSeqType gap_seq_ = nullptr)
+        : Gap(gap_, DEFAULT_TRASH, is_final_, std::move(gap_seq_))
     {}
 
-    Gap(GapSeqType gap_seq, int gap_)
-        : Gap(gap_, DEFAULT_TRASH, IS_FINAL_DEFAULT, std::move(gap_seq))
+    Gap(GapSeqType gap_seq_, int gap_)
+        : Gap(gap_, DEFAULT_TRASH, IS_FINAL_DEFAULT, std::move(gap_seq_))
     {}
 
-    Gap(std::string gap_seq, int gap_)
-        : Gap(gap_, DEFAULT_TRASH, IS_FINAL_DEFAULT, makeGapSeq(std::move(gap_seq)))
+    Gap(std::string gap_seq_, int gap_)
+        : Gap(gap_, DEFAULT_TRASH, IS_FINAL_DEFAULT, MakeGapSeq(std::move(gap_seq_)))
     {}
 
-    Gap(const Gap& other) 
-        : Gap(other.gap, other.trash, other.is_final, other.copyGapSeq()) 
+    Gap(const Gap& other)
+        : Gap(other.gap, other.trash, other.is_final, other.CopyGapSeq())
     {};
-    
+
     Gap& operator=(const Gap& other) {
-        gap_seq_ = other.copyGapSeq();
+        gap_seq = other.CopyGapSeq();
         gap = other.gap;
         trash = other.trash;
         is_final = other.is_final;
@@ -89,13 +89,13 @@ struct Gap {
     Gap(Gap&&) = default;
     Gap& operator=(Gap&&) = default;
 
-    Gap conjugate() const {
-        if (!gap_seq_)
+    Gap Conjugate() const {
+        if (!gap_seq)
             return Gap(gap, {trash.current, trash.previous}, is_final);
-        auto gap_seq_complement = *gap_seq_;
+        auto gap_seq_complement = *gap_seq;
         std::reverse(gap_seq_complement.begin(), gap_seq_complement.end());
         nucl_str_complement(const_cast<char*>(gap_seq_complement.data()), gap_seq_complement.size());
-        return Gap(gap, {trash.current, trash.previous}, is_final, makeGapSeq(std::move(gap_seq_complement)));
+        return Gap(gap, {trash.current, trash.previous}, is_final, MakeGapSeq(std::move(gap_seq_complement)));
     }
 
     bool operator==(const Gap &that) const {
@@ -108,29 +108,29 @@ struct Gap {
         return !(*this == that);
     }
 
-    int overlap(size_t k) const noexcept {
+    int Overlap(size_t k) const noexcept {
         return int(k) - gap;
     }
 
-    int overlap_after_trim(size_t k) const noexcept {
-        return overlap(k) - trash.current - trash.previous;
+    int OverlapAfterTrim(size_t k) const noexcept {
+        return Overlap(k) - trash.current - trash.previous;
     }
 
     bool NoTrash() const noexcept {
         return trash.current == 0 && trash.previous == 0;
     }
 
-    GapSeqType copyGapSeq() const {
-        return (gap_seq_ ? std::make_unique<std::string>(*gap_seq_) : nullptr);
+    GapSeqType CopyGapSeq() const {
+        return (gap_seq ? std::make_unique<std::string>(*gap_seq) : nullptr);
     }
 
-    static GapSeqType makeGapSeq(std::string && gap_seq) {
-        return (gap_seq.empty() ? nullptr : std::make_unique<std::string>(std::move(gap_seq)));
+    static GapSeqType MakeGapSeq(std::string && gap_seq_) {
+        return (gap_seq_.empty() ? nullptr : std::make_unique<std::string>(std::move(gap_seq_)));
     }
 
     void BinWrite(std::ostream &str) const {
         using io::binary::BinWrite;
-        BinWrite(str, gap_seq_);
+        BinWrite(str, gap_seq);
         BinWrite(str, gap);
         BinWrite(str, trash);
         BinWrite(str, is_final);
@@ -138,11 +138,13 @@ struct Gap {
 
     void BinRead(std::istream &str) {
         using io::binary::BinRead;
-        BinRead(str, gap_seq_);
+        BinRead(str, gap_seq);
         BinRead(str, gap);
         BinRead(str, trash);
         BinRead(str, is_final);
     }
+
+    #undef DEFAULT_TRASH
 };
 
 inline std::ostream& operator<<(std::ostream& os, Gap gap) {
@@ -563,7 +565,7 @@ public:
     }
 
     void BackEdgeAdded(EdgeId e, BidirectionalPath*, const Gap& gap) override {
-        PushFront(g_.conjugate(e), gap.conjugate());
+        PushFront(g_.conjugate(e), gap.Conjugate());
     }
 
     void FrontEdgeRemoved(EdgeId, BidirectionalPath*) override {
@@ -606,7 +608,7 @@ public:
         }
         result.PushBack(g_.conjugate(Back()));
         for (int i = ((int) Size()) - 2; i >= 0; --i) {
-            result.PushBack(g_.conjugate(edges_[i]), gaps_[i + 1].conjugate());
+            result.PushBack(g_.conjugate(edges_[i]), gaps_[i + 1].Conjugate());
         }
         result.cycle_overlapping_ = cycle_overlapping_;
         return result;

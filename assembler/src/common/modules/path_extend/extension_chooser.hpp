@@ -1309,7 +1309,7 @@ private:
                     auto& matched_len = tmp.second;
                     if (is_good_path) {
                         auto gap = it->GapAt(pos + 1);
-                        EdgeWithDistance next = {it->At(pos + 1), gap.gap, std::move(gap.gap_seq_)};
+                        EdgeWithDistance next = {it->At(pos + 1), gap.gap, std::move(gap.gap_seq)};
                         weights_cands[next] += static_cast<double>(matched_len)*it->GetWeight();
                         filtered_cands.insert(next);
                     }
