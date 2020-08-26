@@ -49,9 +49,8 @@ struct Gap {
     static constexpr bool IS_FINAL_DEFAULT = true;
     #define DEFAULT_TRASH {0, 0}
 
-    static const Gap& INVALID() {
-        static Gap gap = Gap(INVALID_GAP);
-        return gap;
+    static Gap INVALID() {
+        return Gap(INVALID_GAP);
     }
 
     //gap is in k+1-mers and does not know about "trash" regions
