@@ -104,13 +104,17 @@ DeBruijnEdgeKMerSplitter<Graph, KmerFilter>::Split(size_t num_files, unsigned nt
     auto out = this->PrepareBuffers(num_files, nthreads, this->read_buffer_size_);
 
     std::vector<std::pair<size_t, size_t>> ranges(nthreads);
-    size_t chunk_size = edges_.size()/nthreads;
-    size_t current_chunk_start = 0;
+    size_t chunk_size = std::max(size_t(1), edges_.size()/(10*nthreads));
+    size_t range_begin = 0, range_end = 0;
+    while (range_end < edges_.size()) {
+        range_begin = range_end;
+        range_end += chunk_size;
+        if (range_end > edges_.size()) {
+            range_end = edges_.size();
+        }
 
-    for (size_t i = 0; i < nthreads; ++i) {
-        ranges[i] = std::make_pair(current_chunk_start, current_chunk_start + chunk_size);
+        ranges.push_back({range_begin, range_end});
     }
-    ranges[nthreads - 1].second = edges_.size();
 
     size_t counter = 0, n = 10;
     while (!std::all_of(ranges.begin(), ranges.end(),
