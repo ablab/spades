@@ -7,5 +7,3 @@
 project(mph_index CXX)
 
 add_library(mph_index INTERFACE)
-target_link_libraries(mph_index INTERFACE cityhash)
-

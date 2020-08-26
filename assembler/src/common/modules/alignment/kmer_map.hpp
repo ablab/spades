@@ -12,11 +12,14 @@
 #include <tsl/htrie_map.h>
 #include <boost/iterator/iterator_facade.hpp>
 
+#define XXH_INLINE_ALL
+#include "xxh/xxhash.h"
+
 namespace debruijn_graph {
 class KMerMap {
     struct str_hash {
         std::size_t operator()(const char* key, std::size_t key_size) const {
-            return CityHash64(key, key_size);
+            return XXH3_64bits(key, key_size);
         }
     };
 

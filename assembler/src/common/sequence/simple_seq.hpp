@@ -25,6 +25,10 @@
 #include "nucl.hpp"
 #include "math/log.hpp"
 #include "seq_common.hpp"
+
+#define XXH_INLINE_ALL
+#include "xxh/xxhash.h"
+
 /**
  * @param T is max number of nucleotides, type for storage
  */
@@ -108,7 +112,7 @@ public:
     }
 
     static size_t GetHash(const DataType *data, size_t sz, uint32_t seed = 0) {
-        return CityHash64WithSeed((const char*)data, sz * sizeof(DataType), 0x9E3779B9 ^ seed);
+        return XXH3_64bits_withSeed(data, sz * sizeof(DataType), seed);
     }
 
     size_t GetHash(uint32_t seed = 0) const {

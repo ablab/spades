@@ -8,7 +8,6 @@
 #ifndef __HAMMER_HSEQ_HPP__
 #define __HAMMER_HSEQ_HPP__
 
-#include <city/city.h>
 #include "sequence/nucl.hpp"
 
 #include <array>
@@ -17,6 +16,9 @@
 #include <vector>
 
 #include <cstdint>
+
+#define XXH_INLINE_ALL
+#include "xxh/xxhash.h"
 
 namespace hammer {
 
@@ -257,8 +259,7 @@ class HSeq {
 
   static size_t GetHash(const DataType *data, size_t sz = DataSize,
                         uint32_t seed = 0) {
-    return CityHash64WithSeed((const char *)data, sz * sizeof(DataType),
-                              0x9E3779B9 ^ seed);
+    return XXH3_64bits_withSeed(data, sz * sizeof(DataType), seed);
   }
 
   size_t GetHash(uint32_t seed = 0) const {

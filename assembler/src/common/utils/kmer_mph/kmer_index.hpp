@@ -9,10 +9,12 @@
 #include "kmer_index_traits.hpp"
 
 #include <boomphf/BooPHF.h>
-#include <city/city.h>
 
 #include <vector>
 #include <cmath>
+
+#define XXH_INLINE_ALL
+#include "xxh/xxhash.h"
 
 namespace utils {
 
@@ -31,11 +33,13 @@ public:
 
 private:
   struct hash_function128 {
-    std::pair<uint64_t, uint64_t> operator()(const KMerSeq &k) const{
-      return CityHash128((const char *)k.data(), k.data_size() * sizeof(typename KMerSeq::DataType));
+    std::pair<uint64_t, uint64_t> operator()(const KMerSeq &k) const {
+        auto res = XXH3_128bits(k.data(), k.data_size() * sizeof(typename KMerSeq::DataType));
+        return { res.high64, res.low64 };
     }
     std::pair<uint64_t, uint64_t> operator()(const KMerRawReference k) const {
-      return CityHash128((const char *)k.data(), k.size() * sizeof(typename KMerSeq::DataType));
+        auto res = XXH3_128bits(k.data(), k.size() * sizeof(typename KMerSeq::DataType));
+        return { res.high64, res.low64 };
     }
   };
   typedef KMerIndex __self;

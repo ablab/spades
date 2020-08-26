@@ -28,6 +28,9 @@
 #include <cstring>
 #include <iostream>
 
+#define XXH_INLINE_ALL
+#include "xxh/xxhash.h"
+
 template<size_t max_size_, typename T = seq_element_type>
 class RuntimeSeq {
 public:
@@ -676,7 +679,7 @@ public:
     }
 
     static size_t GetHash(const DataType *data, size_t sz, uint64_t seed = 0) {
-        return CityHash64WithSeed((const char *) data, sz * sizeof(DataType), 0x9E3779B9 ^ seed);
+        return XXH3_64bits_withSeed(data, sz * sizeof(DataType), seed);
     }
 
     size_t GetHash(uint64_t seed = 0) const {

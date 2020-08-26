@@ -20,6 +20,9 @@
 #include "adt/bf.hpp"
 #include "adt/hll.hpp"
 
+#define XXH_INLINE_ALL
+#include "xxh/xxhash.h"
+
 namespace debruijn_graph {
 
 namespace {
@@ -83,7 +86,8 @@ class DEFilter : public SequenceMapperListener {
 class EdgePairCounterFiller : public SequenceMapperListener {
     static uint64_t EdgePairHash(const std::pair<EdgeId, EdgeId> &e) {
         uint64_t h1 = e.first.hash();
-        return CityHash64WithSeeds((const char*)&h1, sizeof(h1), e.second.hash(), 0x0BADF00D);
+
+        return XXH3_64bits_withSeed(&h1, sizeof(h1), e.second.hash());
     }
 
   public:
@@ -377,7 +381,7 @@ void PairInfoCount::run(GraphPack &gp, const char *) {
                 if (filter_threshold && lib.type() == io::LibraryType::PairedEnd) {
                     filter.reset(new PairedInfoFilter([](const std::pair<EdgeId, EdgeId> &e, uint64_t seed) {
                                 uint64_t h1 = e.first.hash();
-                                return CityHash64WithSeeds((const char*)&h1, sizeof(h1), e.second.hash(), seed);
+                                return XXH3_64bits_withSeed(&h1, sizeof(h1), (e.second.hash() * seed) ^ seed);
                             },
                             12 * edgepairs));
 
