@@ -113,7 +113,7 @@ DeBruijnEdgeKMerSplitter<Graph, KmerFilter>::Split(size_t num_files, unsigned nt
             range_end = edges_.size();
         }
 
-        ranges.push_back({range_begin, range_end});
+        ranges.emplace_back(range_begin, range_end);
     }
 
     size_t counter = 0, n = 10;
