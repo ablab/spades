@@ -28,15 +28,7 @@ class AsyncReadStream {
     AsyncReadStream<ReadType> &operator>>(ReadType &t) {
         VERIFY(!eof());
 
-        if (start_) {
-            dispatch_write_job();
-            start_ = false;
-        }
-            
-        if (read_pos_ < read_buffer_.size())
-            t = std::move(read_buffer_[read_pos_++]);
-
-        if (read_pos_ == read_buffer_.size()) {
+        auto wait_writing_buffer = [this]() {
             // Wait for completion of the write task, if any
             bool has_more = false;
             if (write_task_.valid())
@@ -52,6 +44,18 @@ class AsyncReadStream {
 
             // Submit new job
             if (has_more) dispatch_write_job();
+        };
+
+        if (start_) {
+            dispatch_write_job();
+            start_ = false;
+            wait_writing_buffer();
+        }
+
+        t = std::move(read_buffer_[read_pos_++]);
+
+        if (read_pos_ == read_buffer_.size()) {
+            wait_writing_buffer();
         }
 
         return *this;
@@ -97,6 +101,7 @@ class AsyncReadStream {
         VERIFY(is_open());
 
         start_ = true;
+        eof_ = stream_.eof();
     }
 
     void dispatch_write_job() {

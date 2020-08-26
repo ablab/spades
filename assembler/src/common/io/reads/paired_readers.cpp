@@ -65,6 +65,7 @@ InterleavingPairedReadStream::InterleavingPairedReadStream(const std::string& fi
 InterleavingPairedReadStream& InterleavingPairedReadStream::operator>>(PairedRead& pairedread) {
     pairedread.set_orig_insert_size(insert_size_);
     single_ >> pairedread.first();
+    VERIFY(!single_.eof());
     single_ >> pairedread.second();
     return *this;
 }

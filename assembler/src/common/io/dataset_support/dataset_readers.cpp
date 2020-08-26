@@ -26,6 +26,11 @@ PairedStream paired_easy_reader(const SequencingLibraryBase &lib,
         streams.push_back(PairedEasyStream(read_pair.first, read_pair.second, followed_by_rc, insert_size,
                                            use_orientation, lib.orientation(), flags, pool));
     }
+
+    for (const auto &read_pair : lib.interlaced_reads()) {
+        streams.push_back(PairedEasyStream(read_pair, followed_by_rc, insert_size,
+                                           use_orientation, lib.orientation(), flags, pool));
+    }
     return MultifileWrap<PairedRead>(std::move(streams));
 }
 

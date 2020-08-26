@@ -71,6 +71,7 @@ public:
     void clear() {
         left_paired_reads_.clear();
         right_paired_reads_.clear();
+        interlaced_reads_.clear();
         merged_reads_.clear();
         single_reads_.clear();
     }
@@ -102,6 +103,18 @@ public:
         return adt::make_range(paired_begin(), paired_end());
     }
 
+    single_reads_iterator interlaced_begin() const {
+        return single_reads_iterator(interlaced_reads_.begin(), interlaced_reads_.end());
+    }
+
+    single_reads_iterator interlaced_end() const {
+        return single_reads_iterator(interlaced_reads_.end(), interlaced_reads_.end());
+    }
+
+    adt::iterator_range<single_reads_iterator> interlaced_reads() const {
+        return adt::make_range(interlaced_begin(), interlaced_end());
+    }
+
     single_reads_iterator merged_begin() const {
         return single_reads_iterator(merged_reads_.begin(), merged_reads_.end());
     }
@@ -118,6 +131,7 @@ public:
         // NOTE: We have a contract with single_end here. Single reads always go last!
         single_reads_iterator res(left_paired_reads_.begin(), left_paired_reads_.end());
         res.join(right_paired_reads_.begin(), right_paired_reads_.end());
+        res.join(interlaced_reads_.begin(), interlaced_reads_.end());
         res.join(merged_reads_.begin(), merged_reads_.end());
         res.join(single_reads_.begin(), single_reads_.end());
         
@@ -143,7 +157,7 @@ public:
 
     bool has_paired() const {
         VERIFY(left_paired_reads_.size() == right_paired_reads_.size());
-        return !left_paired_reads_.empty();
+        return !left_paired_reads_.empty() || !interlaced_reads_.empty();
     }
 
     bool has_single() const {
@@ -242,6 +256,7 @@ private:
 
     std::vector<std::string> left_paired_reads_;
     std::vector<std::string> right_paired_reads_;
+    std::vector<std::string> interlaced_reads_;
     std::vector<std::string> merged_reads_;
     std::vector<std::string> single_reads_;
 };
