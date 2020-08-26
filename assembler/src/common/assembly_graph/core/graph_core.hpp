@@ -48,14 +48,14 @@ struct Id {
     Id(uint64_t id = 0)
             : id_(id) {}
 
-    uint64_t int_id() const { return id_; }
-    size_t hash() const { return id_; }
-    explicit operator bool() const { return id_; }
+    uint64_t int_id() const noexcept { return id_; }
+    size_t hash() const noexcept { return id_; }
+    explicit operator bool() const noexcept { return id_; }
 
-    bool operator==(Id other) const { return id_ == other.id_; }
-    bool operator!=(Id other) const { return id_ != other.id_; }
-    bool operator<(Id rhs) const { return id_ < rhs.id_; }
-    bool operator<=(Id rhs) const { return *this < rhs || *this == rhs; }
+    bool operator==(Id other) const noexcept { return id_ == other.id_; }
+    bool operator!=(Id other) const noexcept { return id_ != other.id_; }
+    bool operator<(Id rhs) const noexcept { return id_ < rhs.id_; }
+    bool operator<=(Id rhs) const noexcept { return *this < rhs || *this == rhs; }
 
     template <typename Archive>
     void BinArchive(Archive &ar) {
@@ -133,15 +133,15 @@ private:
 
     PairedEdge(PairedEdge &&that) = default;
 
-    EdgeData &data() { return data_; }
-    const EdgeData &data() const { return data_; }
-    void set_data(const EdgeData &data) { data_ = data; }
+    EdgeData &data() noexcept { return data_; }
+    const EdgeData &data() const noexcept { return data_; }
+    void set_data(const EdgeData &data)  noexcept { data_ = data; }
 
-    VertexId end() const { return end_; }
-    void SetEndVertex(VertexId end) { end_ = end; }
+    VertexId end() const noexcept { return end_; }
+    void SetEndVertex(VertexId end) noexcept { end_ = end; }
 
-    EdgeId conjugate() const { return conjugate_; }
-    void set_conjugate(EdgeId conjugate) { conjugate_ = conjugate; }
+    EdgeId conjugate() const noexcept { return conjugate_; }
+    void set_conjugate(EdgeId conjugate) noexcept { conjugate_ = conjugate; }
 };
 
 template<class DataMaster>
@@ -168,10 +168,10 @@ private:
     VertexId conjugate_;
     VertexData data_;
 
-    VertexId conjugate() const { return conjugate_; }
-    void set_conjugate(VertexId conjugate) { conjugate_ = conjugate; }
+    VertexId conjugate() const noexcept { return conjugate_; }
+    void set_conjugate(VertexId conjugate) noexcept { conjugate_ = conjugate; }
 
-    size_t OutgoingEdgeCount() const { return outgoing_edges_.size(); }
+    size_t OutgoingEdgeCount() const noexcept { return outgoing_edges_.size(); }
 
     edge_const_iterator out_begin(const GraphCore<DataMaster> *graph, bool conjugate = false) const {
         return edge_const_iterator(outgoing_edges_.cbegin(), graph, conjugate);
@@ -186,9 +186,9 @@ private:
 
     PairedVertex(PairedVertex &&that) = default;
 
-    VertexData &data() { return data_; }
-    const VertexData &data() const { return data_; }
-    void set_data(VertexData data) { data_ = data; }
+    VertexData &data() noexcept { return data_; }
+    const VertexData &data() const noexcept { return data_; }
+    void set_data(VertexData data) noexcept { data_ = data; }
 
     void AddOutgoingEdge(EdgeId e) {
         outgoing_edges_.insert(std::upper_bound(outgoing_edges_.begin(), outgoing_edges_.end(), e), e);
@@ -275,7 +275,7 @@ private:
         }
 
         // FIXME: Count!
-        size_t size() const { return size_; }
+        size_t size() const noexcept { return size_; }
 
         bool contains(uint64_t id) const {
             return id < storage_size_ && id_distributor_.occupied(id);
@@ -318,7 +318,7 @@ private:
             size_ -= 1;
         }
 
-        T& at(uint64_t id) const {
+        T& at(uint64_t id) const noexcept {
             return storage_[id];
         }
 
@@ -338,17 +338,17 @@ private:
     using EdgeStorage = IdStorage<PairedEdge<DataMaster>>;
     EdgeStorage estorage_;
 
-    PairedVertex<DataMaster>& vertex(VertexId id) const {
+    PairedVertex<DataMaster>& vertex(VertexId id) const noexcept {
         return vstorage_.at(id.int_id());
     }
-    PairedVertex<DataMaster>& cvertex(VertexId id) const {
+    PairedVertex<DataMaster>& cvertex(VertexId id) const noexcept {
         return vertex(conjugate(id));
     }
 
-    PairedEdge<DataMaster>& edge(EdgeId id) const {
+    PairedEdge<DataMaster>& edge(EdgeId id) const noexcept {
         return estorage_.at(id.int_id());
     }
-    PairedEdge<DataMaster>& cedge(EdgeId id) const {
+    PairedEdge<DataMaster>& cedge(EdgeId id) const noexcept {
         return edge(conjugate(id));
     }
 
@@ -356,7 +356,7 @@ private:
         EdgePredicate(const GraphCore<DataMaster> &graph)
                 : graph_(graph) {}
 
-        bool operator()(EdgeId) const;
+        bool operator()(EdgeId) const noexcept;
 
         std::reference_wrapper<const GraphCore<DataMaster>> graph_;
     };
@@ -364,7 +364,7 @@ private:
     struct AllEdges : public EdgePredicate {
         using EdgePredicate::EdgePredicate;
 
-        bool operator()(EdgeId) const {
+        bool operator()(EdgeId) const noexcept {
             return true;
         }
     };
@@ -372,7 +372,7 @@ private:
     struct CanonicalEdges : public EdgePredicate {
         using EdgePredicate::EdgePredicate;
 
-        bool operator()(EdgeId e) const {
+        bool operator()(EdgeId e) const noexcept {
             const GraphCore<DataMaster> &g = this->graph_;
             return e <= g.conjugate(e);
         }
@@ -383,7 +383,7 @@ private:
         And(Predicate1 p1, Predicate2 p2)
                 : p1_(std::move(p1)), p2_(std::move(p2)) {}
 
-        bool operator()(EdgeId e) const {
+        bool operator()(EdgeId e) const noexcept {
             return p1_(e) && p2_(e);
         }
 
@@ -413,8 +413,8 @@ public:
     VertexIt end() const { return vstorage_.id_end(); }
     adt::iterator_range<VertexIt> vertices() const { return { begin(), end()}; }
 
-    size_t size() const { return vstorage_.size(); }
-    size_t e_size() const { return estorage_.size(); }
+    size_t size() const noexcept { return vstorage_.size(); }
+    size_t e_size() const noexcept { return estorage_.size(); }
     size_t max_eid() const { return estorage_.max_id(); }
     size_t max_vid() const { return vstorage_.max_id(); }
 
@@ -607,7 +607,7 @@ public:
     size_t vreserved() const { return vstorage_.reserved(); }
     size_t ereserved() const { return estorage_.reserved(); }
 
-    uint64_t min_id() const { return ID_BIAS; }
+    uint64_t min_id() const noexcept { return ID_BIAS; }
 
     bool contains(VertexId vertex) const {
         return vstorage_.contains(vertex.int_id());
@@ -617,17 +617,17 @@ public:
         return estorage_.contains(edge.int_id());
     }
 
-    size_t int_id(EdgeId edge) const { return edge.int_id(); }
-    size_t int_id(VertexId vertex) const { return vertex.int_id(); }
+    size_t int_id(EdgeId edge) const noexcept { return edge.int_id(); }
+    size_t int_id(VertexId vertex) const noexcept { return vertex.int_id(); }
 
-    const DataMaster& master() const { return master_; }
-    const EdgeData& data(EdgeId e) const { return edge(e).data(); }
-    const VertexData& data(VertexId v) const { return vertex(v).data(); }
-    EdgeData& data(EdgeId e) { return edge(e).data(); }
-    VertexData& data(VertexId v) { return vertex(v).data(); }
+    const DataMaster& master() const noexcept { return master_; }
+    const EdgeData& data(EdgeId e) const noexcept { return edge(e).data(); }
+    const VertexData& data(VertexId v) const noexcept { return vertex(v).data(); }
+    EdgeData& data(EdgeId e) noexcept { return edge(e).data(); }
+    VertexData& data(VertexId v) noexcept { return vertex(v).data(); }
 
-    size_t OutgoingEdgeCount(VertexId v) const { return vertex(v).OutgoingEdgeCount(); }
-    size_t IncomingEdgeCount(VertexId v) const { return cvertex(v).OutgoingEdgeCount(); }
+    size_t OutgoingEdgeCount(VertexId v) const noexcept { return vertex(v).OutgoingEdgeCount(); }
+    size_t IncomingEdgeCount(VertexId v) const noexcept { return cvertex(v).OutgoingEdgeCount(); }
 
     adt::iterator_range<edge_const_iterator> OutgoingEdges(VertexId v) const {
         auto &vertex = this->vertex(v);
@@ -650,16 +650,16 @@ public:
         return result;
     }
 
-    bool RelatedVertices(VertexId v1, VertexId v2) const {
+    bool RelatedVertices(VertexId v1, VertexId v2) const noexcept {
         return v1 == v2 || v1 == conjugate(v2);
     }
 
     //////////////////////// Edge information
-    VertexId EdgeStart(EdgeId edge) const { return conjugate(EdgeEnd(conjugate(edge))); }
-    VertexId EdgeEnd(EdgeId e) const { return edge(e).end(); }
+    VertexId EdgeStart(EdgeId edge) const noexcept { return conjugate(EdgeEnd(conjugate(edge))); }
+    VertexId EdgeEnd(EdgeId e) const noexcept { return edge(e).end(); }
 
-    VertexId conjugate(VertexId v) const { return vertex(v).conjugate(); }
-    EdgeId conjugate(EdgeId e) const { return edge(e).conjugate(); }
+    VertexId conjugate(VertexId v) const noexcept { return vertex(v).conjugate(); }
+    EdgeId conjugate(EdgeId e) const noexcept { return edge(e).conjugate(); }
 
     size_t length(EdgeId edge) const { return master_.length(data(edge)); }
     size_t length(VertexId v) const { return master_.length(data(v)); }
@@ -676,11 +676,11 @@ public:
         VERIFY(CheckUniqueOutgoingEdge(v));
         return *out_begin(v);
     }
-    bool CheckUniqueOutgoingEdge(VertexId v) const {
+    bool CheckUniqueOutgoingEdge(VertexId v) const noexcept {
         return OutgoingEdgeCount(v) == 1;
     }
 
-    bool CheckUniqueIncomingEdge(VertexId v) const {
+    bool CheckUniqueIncomingEdge(VertexId v) const noexcept {
         return IncomingEdgeCount(v) == 1;
     }
     EdgeId GetUniqueIncomingEdge(VertexId v) const {
@@ -688,8 +688,8 @@ public:
         return *in_begin(v);
     }
 
-    bool IsDeadEnd(VertexId v) const { return OutgoingEdgeCount(v) == 0; }
-    bool IsDeadStart(VertexId v) const { return IncomingEdgeCount(v) == 0; }
+    bool IsDeadEnd(VertexId v) const noexcept { return OutgoingEdgeCount(v) == 0; }
+    bool IsDeadStart(VertexId v) const noexcept { return IncomingEdgeCount(v) == 0; }
 
     bool CanCompressVertex(VertexId v) const {
         //      TRACE("Compress vertex check: ");
@@ -765,14 +765,14 @@ namespace std {
 
 template<>
 struct hash<omnigraph::impl::VertexId> {
-    size_t operator()(omnigraph::impl::VertexId v) const {
+    size_t operator()(omnigraph::impl::VertexId v) const noexcept {
         return v.hash();
     }
 };
 
 template<>
 struct hash<omnigraph::impl::EdgeId> {
-    size_t operator()(omnigraph::impl::EdgeId e) const {
+    size_t operator()(omnigraph::impl::EdgeId e) const noexcept {
         return e.hash();
     }
 };
