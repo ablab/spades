@@ -43,6 +43,7 @@ struct ExtenderTriplet {
             SET_PRIORITY(LibraryType::AssemblyGraph);
             // would have the maximum return value
             break;
+            // there is a LibraryType that does not have priority
             default: VERIFY(false);
         };
         return priority;
