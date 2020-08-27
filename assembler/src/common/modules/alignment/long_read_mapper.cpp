@@ -26,9 +26,11 @@ protected:
 
     const Graph& g_;
     const MappingPathFixer<Graph> path_fixer_;
-    constexpr static double MIN_MAPPED_RATIO = 0.3;
+    const static double MIN_MAPPED_RATIO;
     constexpr static size_t MIN_MAPPED_LENGTH = 100;
 };
+
+const double GappedPathExtractor::MIN_MAPPED_RATIO = 0.3;
 
 class GappedPathExtractorForTrustedContigs : public GappedPathExtractor {
 public:
