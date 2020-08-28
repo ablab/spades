@@ -14,13 +14,17 @@ def main(args):
             continue
         if farr[-2] != "circular" and farr[-2] != "linears" and farr[-2] != "linear_repeat":
             continue
+        
         type = farr[-2]
         arr = farr[-3].split("_")
         if len(arr) < 2:
             continue
         cov = arr[-1]
+        if len(cov) > 4: 
+            continue
 
   #  for line in open(os.path.join(dir,file), "r"):
+        print (file)
         for line in open(os.path.join(outdir,file), "r"):
             line = line.strip()
             if len(line) > 0 and line[0] == ">":

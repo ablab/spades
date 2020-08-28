@@ -59,15 +59,17 @@ path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer
     return res;
 }
 
-path_extend::PathContainer GetTipScaffolds(const path_extend::PathContainer &sc_storage,
-                                           const std::unordered_set<VertexId> &forbidden_vertices) {
+path_extend::PathContainer GetTipScaffolds(const path_extend::PathContainer &sc_storage, const std::unordered_set<VertexId> &forbidden_vertices, std::unordered_set<EdgeId> &used_edges) {
     path_extend::PathContainer res;
     for (const auto &entry : sc_storage) {
-        if (entry.first->Length() == 0 ||
-            !forbidden_vertices.count(entry.first->g().EdgeStart(entry.first->Front())) ||
-            !forbidden_vertices.count(entry.first->g().EdgeEnd(entry.first->Back())))
+        const path_extend::BidirectionalPath &path = *entry.first;
+//FIXME: constant
+        if (path.Length() <= 500 ||
+            CheckUsedPath(path, used_edges) ||
+            !forbidden_vertices.count(path.g().EdgeStart(path.Front())) ||
+            !forbidden_vertices.count(path.g().EdgeEnd(path.Back())))
             continue;
-
+        
         res.Create(entry.first);
     }
     INFO("got suspicious linear tips scaffs");
@@ -218,7 +220,7 @@ void ContigOutput::run(GraphPack &gp, const char*) {
                 using ForbiddenVertices = omnigraph::SmartContainer<std::unordered_set<VertexId>, Graph>;
                 PathContainer linears;
                 if (gp.count<ForbiddenVertices>("forbidden_vertices"))
-                    linears = GetTipScaffolds(broken_scaffolds, gp.get<ForbiddenVertices>("forbidden_vertices"));
+                    linears = GetTipScaffolds(broken_scaffolds, gp.get<ForbiddenVertices>("forbidden_vertices"), gp.get_mutable<UsedEdges>("used_edges"));
                 writer.OutputPaths(linears,
                                    CreatePathsWriters(fs::append_path(output_dir, outputs_[Kind::PlasmidContigs] + ".linears"),
                                                       fastg_writer));
