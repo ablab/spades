@@ -378,6 +378,32 @@ private:
         }
     };
 
+    struct VertexPredicate {
+        VertexPredicate(const GraphCore<DataMaster> &graph)
+                : graph_(graph) {}
+
+        bool operator()(VertexId) const;
+
+        std::reference_wrapper<const GraphCore<DataMaster>> graph_;
+    };
+
+    struct AllVertices : public VertexPredicate {
+        using VertexPredicate::VertexPredicate;
+
+        bool operator()(VertexId) const {
+            return true;
+        }
+    };
+
+    struct CanonicalVertices : public VertexPredicate {
+        using VertexPredicate::VertexPredicate;
+
+        bool operator()(VertexId e) const {
+            const GraphCore<DataMaster> &g = this->graph_;
+            return e <= g.conjugate(e);
+        }
+    };
+    
     template<class Predicate1, class Predicate2>
     struct And {
         And(Predicate1 p1, Predicate2 p2)
@@ -409,15 +435,59 @@ public:
         }
     };
 
-    VertexIt begin() const { return vstorage_.id_begin(); }
-    VertexIt end() const { return vstorage_.id_end(); }
-    adt::iterator_range<VertexIt> vertices() const { return { begin(), end()}; }
-
     size_t size() const noexcept { return vstorage_.size(); }
     size_t e_size() const noexcept { return estorage_.size(); }
     size_t max_eid() const { return estorage_.max_id(); }
     size_t max_vid() const { return vstorage_.max_id(); }
 
+    template<class Predicate, bool Canonical = false>
+    auto begin(Predicate p) const {
+        using BasePredicate = typename std::conditional<Canonical, CanonicalVertices, AllVertices>::type;
+        return boost::make_filter_iterator(And<BasePredicate, Predicate>(BasePredicate(*this), std::move(p)),
+                                           vstorage_.id_begin(), vstorage_.id_end());
+    }
+    template<class Predicate, bool Canonical = false>
+    auto end(Predicate p) const {
+        using BasePredicate = typename std::conditional<Canonical, CanonicalVertices, AllVertices>::type;
+        return boost::make_filter_iterator(And<BasePredicate, Predicate>(BasePredicate(*this), std::move(p)),
+                                           vstorage_.id_end(), vstorage_.id_end());
+    }
+    template<class Predicate, bool Canonical = false>
+    auto vertices(Predicate p) const {
+        return adt::make_range(begin<Predicate, Canonical>(std::move(p)),
+                               end<Predicate, Canonical>(std::move(p)));
+    }
+    template<class Predicate>
+    auto canonical_vertices(Predicate p) const {
+        return vertices<Predicate, true>(std::move(p));
+    }
+
+    template<bool Canonical>
+    auto begin(std::enable_if_t<Canonical, int> = 0) const {
+        return boost::make_filter_iterator(CanonicalVertices(*this),
+                                           vstorage_.id_begin(), vstorage_.id_end());
+    }
+    template<bool Canonical>
+    auto end(std::enable_if_t<Canonical, int> = 0) const {
+        return boost::make_filter_iterator(CanonicalVertices(*this),
+                                           vstorage_.id_end(), vstorage_.id_end());
+    }
+    template<bool Canonical = false>
+    VertexIt begin(std::enable_if_t<!Canonical, int> = 0) const {
+        return vstorage_.id_begin();
+    }
+    template<bool Canonical = false>
+    VertexIt end(std::enable_if_t<!Canonical, int> = 0) const {
+        return vstorage_.id_end();
+    }
+    template<bool Canonical = false>
+    auto vertices() const {
+        return adt::make_range(begin<Canonical>(), end<Canonical>());
+    }
+    auto canonical_vertices() const {
+        return vertices<true>();
+    }
+    
     template<class Predicate, bool Canonical = false>
     auto e_begin(Predicate p) const {
         using BasePredicate = typename std::conditional<Canonical, CanonicalEdges, AllEdges>::type;
