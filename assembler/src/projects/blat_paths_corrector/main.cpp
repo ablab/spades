@@ -98,6 +98,26 @@ std::vector<std::string> ReadContigsNames(std::string const & filtered_contigs_n
     return names;
 }
 
+double GetCov(std::string const & edge_name) {
+    std::string cov_pattern = "_cov_";
+    auto pos = edge_name.find(cov_pattern);
+    if (pos == std::string::npos)
+        throw "No cov info at: " + edge_name;
+
+    pos += cov_pattern.size();
+    size_t len = 0;
+    while (pos + len < edge_name.size() && isdigit(edge_name[pos + len]))
+        ++len;
+    if (pos + len + 1 < edge_name.size() && edge_name[pos + len] == '.' && isdigit(edge_name[pos + len + 1])) {
+        len += 2;
+        while (pos + len < edge_name.size() && isdigit(edge_name[pos + len]))
+            ++len;
+    }
+    if (len == 0)
+        throw "Bad cov format at: " + edge_name;
+    return std::stod(edge_name.substr(pos, len));
+}
+
 constexpr char BASE_NAME[] = "graph_pack";
 
 int main(int argc, char* argv[]) {
@@ -185,14 +205,18 @@ int main(int argc, char* argv[]) {
             auto edge_start = stoll(element[Columns::T_start]);
             auto edge_end = stoll(element[Columns::T_end]);
             auto edge_len = stoll(element[Columns::T_size]);
+            auto contig_delta = contig_end - contig_start;
+            auto edge_delta = edge_end - edge_start;
 
-            auto identity = static_cast<double>(matched) / (contig_end - contig_start + 1);
-            auto cov = static_cast<double>(edge_end - edge_start) / edge_len;
+            auto identity = static_cast<double>(matched) / (contig_delta + 1);
+            auto cov = static_cast<double>(edge_delta) / edge_len;
 
             auto contig_first_or_last = contig_start < 10 || (contig_len - contig_end) < 20;
             auto edge_first_or_last = edge_start < 20 || (edge_len - edge_end) < 20;
 
-            return contig_first_or_last && edge_first_or_last || cov > 0.95 && identity > 0.99;
+            return (contig_first_or_last && edge_first_or_last || cov > 0.98 && identity > 0.99 && contig_delta > 99) &&
+                    contig_delta > edge_delta * 0.99 &&
+                    GetCov(element[Columns::T_name]) > 2;
         };
         auto res = Read(blat_output_stream, columns, filter);
 
