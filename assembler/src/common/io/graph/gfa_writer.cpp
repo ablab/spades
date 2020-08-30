@@ -15,11 +15,13 @@ using namespace debruijn_graph;
 
 template class omnigraph::GraphComponent<Graph>;
 
-static void WriteSegment(const std::string& edge_id, const Sequence &seq, double cov,
+static void WriteSegment(const std::string& edge_id, const Sequence &seq,
+                         double cov, uint64_t kmers,
                          std::ostream &os) {
     os << "S\t"
        << edge_id << '\t' << seq.str() << '\t'
-       << "KC:i:" << size_t(math::round(cov)) << '\n';
+       << "DP:f:" << float(cov) << '\t'
+       << "KC:i:" << kmers << '\n';
 }
 
 static void WriteLink(EdgeId e1, EdgeId e2, size_t overlap_size,
@@ -33,7 +35,7 @@ static void WriteLink(EdgeId e1, EdgeId e2, size_t overlap_size,
 void GFAWriter::WriteSegments() {
     for (EdgeId e : graph_.canonical_edges()) {
         WriteSegment(edge_namer_.EdgeString(e), graph_.EdgeNucls(e),
-                     graph_.coverage(e) * double(graph_.length(e)),
+                     graph_.coverage(e), graph_.kmer_multiplicity(e),
                      os_);
     }
 }
@@ -54,7 +56,7 @@ void GFAWriter::WriteSegments(const Component &gc) {
     for (EdgeId e : gc.edges()) {
         if (e <= graph_.conjugate(e)) {
             WriteSegment(edge_namer_.EdgeString(e), graph_.EdgeNucls(e),
-                         graph_.coverage(e) * double(graph_.length(e)),
+                         graph_.coverage(e), graph_.kmer_multiplicity(e),
                          os_);
         }
     }
@@ -74,12 +76,13 @@ void GFAWriter::WriteLinks(const Component &gc) {
     }
 }
 
-                    void GFAComponentWriter::WriteSegments() {
+void GFAComponentWriter::WriteSegments() {
+    const Graph &graph = component_.g();
     for (auto e : component_.edges()) {
-        if (e.int_id() > component_.g().conjugate(e).int_id())
+        if (e.int_id() > graph.conjugate(e).int_id())
             continue;
         WriteSegment(edge_namer_.EdgeString(e), component_.g().EdgeNucls(e),
-                     component_.g().coverage(e) * double(component_.g().length(e)),
+                     graph.coverage(e), graph.kmer_multiplicity(e),
                      os_);
     }
 }
