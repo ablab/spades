@@ -305,7 +305,6 @@ void TestRelativeCoverageRemover(const std::string &path, size_t graph_size) {
     graphio::ScanGraphPack(path, gp);
     INFO("Relative coverage component removal:");
     auto &graph = gp.get_mutable<Graph>();
-    auto &index = gp.get_mutable<EdgeIndex<Graph>>();
     auto &flanking_cov = gp.get_mutable<omnigraph::FlankingCoverage<Graph>>();
 
     auto algo = debruijn::simplification::RelativeCoverageComponentRemoverInstance(graph, flanking_cov,
