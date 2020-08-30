@@ -73,7 +73,7 @@ class SequenceCorrector {
     Graph const & graph;
     PathThreadingParams params;
     GraphCoverageMap const & scaffold_coverage_map;
-    PathWithEdgePostions const & path_info;
+    PathWithEdgePostions path_info;
     std::string const & seq;
     size_t nthreads;
 public:
@@ -84,7 +84,9 @@ public:
         , path_info(path_info)
         , seq(seq)
         , nthreads(nthreads)
-    {}
+    {
+        DropOverlappedEdges();
+    }
 
     pair<std::string, std::vector<PathWithBorderEdgesIndexies>> GetBestSequence() const;
 private:
@@ -116,6 +118,28 @@ private:
         DEBUG("Negative distance between " << graph.int_id(GetEdge(start_pos)) << " and " << graph.int_id(GetEdge(end_pos)));
         return -1ull;
         // return 0;
+    }
+
+    void DropOverlappedEdges() {
+        vector<bool> is_bad_edge(Size(), false);
+        for (size_t i = 0; i + 1 < Size(); ++i) {
+            if (GetPos(i + 1) < GetPos(i) + (long long)EdgeLenInNucl(GetEdge(i))) {
+                is_bad_edge[i] = true;
+                is_bad_edge[i + 1] = true;
+            }
+        }
+        PathWithEdgePostions new_path_info;
+        for (size_t i = 0; i < Size(); ++i) {
+            if (!is_bad_edge[i]) {
+                new_path_info.edge_set.push_back(std::move(path_info.edge_set[i]));
+                new_path_info.positions.push_back(path_info.positions[i]);
+            }
+        }
+        auto dropped_pats_cnt = Size();
+        path_info = std::move(new_path_info);
+        dropped_pats_cnt -= Size();
+        if (dropped_pats_cnt > 0)
+            WARN(dropped_pats_cnt << " edge" << (dropped_pats_cnt != 1 ? "s" : "") << " would be dropped");
     }
 
     std::string BackMappingDropCurrentSuffix(vector<PathWithBorderEdgesIndexies> const & paths) const;
@@ -186,7 +210,7 @@ std::string SequenceCorrector<filler_mode>::BackMappingDropNextPreffix(vector<Pa
     }
     if (mapping_info.size() != paths.size()) {
         size_t dropped_pats_cnt = paths.size() - mapping_info.size();
-        WARN("Oh no! Full " << dropped_pats_cnt << " path" << (dropped_pats_cnt > 1 ? "s" : "") << " would be dropped");
+        WARN("Oh no! Full " << dropped_pats_cnt << " path" << (dropped_pats_cnt != 1 ? "s" : "") << " would be dropped");
     }
 
     return MakeSeq(mapping_info);
@@ -217,7 +241,7 @@ std::string SequenceCorrector<filler_mode>::BackMappingDropCurrentSuffix(vector<
     }
     if (mapping_info.size() != paths.size()) {
         size_t dropped_pats_cnt = paths.size() - mapping_info.size();
-        WARN("Oh no! Full " << dropped_pats_cnt << " path" << (dropped_pats_cnt > 1 ? "s" : "") << " would be dropped");
+        WARN("Oh no! Full " << dropped_pats_cnt << " path" << (dropped_pats_cnt != 1 ? "s" : "") << " would be dropped");
     }
 
     return MakeSeq(mapping_info);
@@ -234,6 +258,7 @@ pair<std::string, std::vector<PathWithBorderEdgesIndexies>> SequenceCorrector<fi
         }
         start_pos = path.second + 1;
     }
+    INFO("Made " << paths.size() << " path" << (paths.size() != 1 ? "s" : ""));
     return {BackMappingDropCurrentSuffix(paths), std::move(paths)};
     // return {BackMappingDropNextPreffix(paths), std::move(paths)};
 }
@@ -391,9 +416,6 @@ GappedPath SequenceCorrector<filler_mode>::ConnectWithScaffolds(EdgeId start, Ed
 }
 
 } // namespase
-
-
-// #define GOOD_NAME "tig00001333"
 
 path_extend::PathContainer Launch(debruijn_graph::GraphPack const & gp,
                                   PathThreadingParams params,

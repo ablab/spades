@@ -8,6 +8,7 @@
 #include "common/assembly_graph/paths/bidirectional_path_container.hpp"
 #include "common/pipeline/graph_pack.hpp"
 
+// #define GOOD_NAME "tig00000194"
 
 struct PathThreadingParams {
     double good_distance_coeff = 0.10;   //a path is considered as good if its distance differs by at most good_distance_coeff
