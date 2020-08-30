@@ -88,14 +88,16 @@ public:
 
   size_t seq_idx(const KMerSeq &s) const {
     size_t bucket = seq_bucket(s);
+    size_t idx = index_[bucket].lookup(s);
 
-    return bucket_starts_[bucket] + index_[bucket].lookup(s);
+    return (idx == -1ULL ? idx : bucket_starts_[bucket] + idx);
   }
 
   size_t raw_seq_idx(const KMerRawReference data) const {
     size_t bucket = raw_seq_bucket(data);
+    size_t idx = index_[bucket].lookup(data);
 
-    return bucket_starts_[bucket] + index_[bucket].lookup(data);
+    return (idx == -1ULL ? idx : bucket_starts_[bucket] + idx);
   }
 
   template<class Writer>
