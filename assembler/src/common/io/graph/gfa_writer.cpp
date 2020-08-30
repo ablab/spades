@@ -39,9 +39,7 @@ void GFAWriter::WriteSegments() {
 }
 
 void GFAWriter::WriteLinks() {
-    //TODO switch to constant vertex iterator
-    for (auto it = graph_.SmartVertexBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
-        VertexId v = *it;
+    for (VertexId v : graph_.canonical_vertices()) {
         for (auto inc_edge : graph_.IncomingEdges(v)) {
             for (auto out_edge : graph_.OutgoingEdges(v)) {
                 WriteLink(inc_edge, out_edge, graph_.k(),
