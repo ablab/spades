@@ -112,8 +112,8 @@ class MinDistRelevantComponentFinder {
     size_t MinExitDist(const DistInfo &s_dist, const DistInfo &e_dist, const BaseDistF &base_dist_f) const {
         size_t min_e_dist = std::numeric_limits<size_t>::max();
         //TODO seems like can be simplified
-        for (const auto s_d : s_dist) {
-            for (const auto e_d : e_dist) {
+        for (const auto &s_d : s_dist) {
+            for (const auto &e_d : e_dist) {
                 if (base_dist_f(s_d.first, e_d.first) >= s_d.second + e_d.second) {
                     if (e_d.second < min_e_dist) {
                         min_e_dist = e_d.second;

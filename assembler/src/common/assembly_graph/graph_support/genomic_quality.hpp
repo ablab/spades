@@ -149,7 +149,7 @@ public:
     std::set<EdgeId> PositiveQualEdges() const {
         std::set<EdgeId> answer;
         for (const auto & e_q : quality_) {
-            if (math::gr(e_q.second, 0.)) {
+            if (e_q.second > 0) {
                 answer.insert(e_q.first);
             }
         }
