@@ -31,8 +31,7 @@ static void WriteLink(EdgeId e1, EdgeId e2, size_t overlap_size,
 }
 
 void GFAWriter::WriteSegments() {
-    for (auto it = graph_.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
-        EdgeId e = *it;
+    for (EdgeId e : graph_.canonical_edges()) {
         WriteSegment(edge_namer_.EdgeString(e), graph_.EdgeNucls(e),
                      graph_.coverage(e) * double(graph_.length(e)),
                      os_);
