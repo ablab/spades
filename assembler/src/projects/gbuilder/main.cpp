@@ -6,10 +6,12 @@
 //***************************************************************************
 
 #include "assembly_graph/construction/debruijn_graph_constructor.hpp"
+#include "assembly_graph/graph_support/coverage_filling.hpp"
 
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
 #include "utils/extension_index/kmer_extension_index_builder.hpp"
+#include "utils/ph_map/coverage_hash_map_builder.hpp"
 
 #include "io/reads/read_processor.hpp"
 #include "io/reads/io_helper.hpp"
@@ -46,7 +48,7 @@ struct gcfg {
     gcfg()
         : k(21), tmpdir("tmp"), outfile("-"),
           nthreads(omp_get_max_threads() / 2 + 1), buff_size(512ULL << 20),
-          mode(output_type::unitigs)
+          mode(output_type::unitigs), coverage(false)
     {}
 
     unsigned k;
@@ -56,6 +58,7 @@ struct gcfg {
     unsigned nthreads;
     size_t buff_size;
     enum output_type mode;
+    bool coverage;
 };
 
 
@@ -66,6 +69,7 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
       cfg.file << value("dataset description (in YAML)"),
       cfg.outfile << value("output filename"),
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
+      (option("-c").set(cfg.coverage)) % "infer coverage",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
       (option("-tmp-dir") & value("dir", cfg.tmpdir)) % "scratch directory to use",
       (option("-b") & integer("value", cfg.buff_size)) % "sorting buffer size, per thread",
@@ -150,8 +154,8 @@ int main(int argc, char* argv[]) {
         VERIFY_MSG(read_streams.size(), "No input streams specified");
         utils::DeBruijnExtensionIndex<> ext_index(k);
 
-        utils::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromStream(workdir, ext_index,
-                                                                             read_streams, buff_size);
+        auto kmers = utils::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromStream(workdir, ext_index,
+                                                                                          read_streams, buff_size);
 
         // Step 2: extract unbranching paths
         bool keep_perfect_loops = true;
@@ -177,6 +181,20 @@ int main(int argc, char* argv[]) {
             INFO("Building graph");
             debruijn_graph::DeBruijnGraph g(k);
             debruijn_graph::FastGraphFromSequencesConstructor<debruijn_graph::DeBruijnGraph>(k, ext_index).ConstructGraph(g, edge_sequences);
+
+            // Step 4: infer coverage
+            if (cfg.coverage) {
+                INFO("Filling coverage index");
+                using CoverageMap = utils::PerfectHashMap<RtSeq, uint32_t, utils::slim_kmer_index_traits<RtSeq>, utils::DefaultStoring>;
+                CoverageMap coverage_map(k + 1);
+                omnigraph::FlankingCoverage<debruijn_graph::DeBruijnGraph> flanking_cov(g, 50);
+
+                utils::CoverageHashMapBuilder().BuildIndex(coverage_map,
+                                                           kmers, read_streams);
+
+                INFO("Filling coverage and flanking coverage from PHM");
+                FillCoverageAndFlankingFromPHM(coverage_map, g, flanking_cov);
+            }
 
             INFO("Saving graph to " << cfg.outfile);
             if (cfg.mode == output_type::gfa) {

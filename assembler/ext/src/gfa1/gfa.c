@@ -120,7 +120,7 @@ static inline int gfa_aux_type2size(int x)
 {
 	if (x == 'C' || x == 'c' || x == 'A') return 1;
 	else if (x == 'S' || x == 's') return 2;
-	else if (x == 'I' || x == 'i' || x == 'f') return 4;
+	else if (x == 'I' || x == 'i' || x == 'f' || x == 'F') return 4;
 	else return 0;
 }
 
