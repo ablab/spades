@@ -185,7 +185,7 @@ public:
         BuildIndex(index, counter, 10 * nthreads, nthreads);
 
         // Now use the index to fill the coverage and EdgeId's
-        INFO("Collecting edge information from graph, this takes a while.");
+        INFO("Update edge information.");
         EdgeInfoUpdater<Graph>().Update(g, index, edges);
     }
 

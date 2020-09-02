@@ -141,6 +141,8 @@ public:
         paired_index_.Merge(buffer_pi_);
         buffer_pi_.clear();
         out_tip_map_.clear();
+        index_.Detach();
+        index_.clear();
     }
 
     void ProcessPairedRead(size_t /* thread_index */, const io::PairedRead&  /* pr */,
