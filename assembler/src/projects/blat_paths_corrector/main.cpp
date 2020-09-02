@@ -181,30 +181,24 @@ int main(int argc, char* argv[]) {
         // if (!cfg.paths_save_file.empty())
         //     ReadScaffolds(scaffolds, graph, cfg.paths_save_file);
 
-
-
         ifstream blat_output_stream(cfg.blat_output);
         if (!blat_output_stream.is_open())
             throw "Cannot open " + cfg.blat_output;
 
-        INFO("Started blat output reading");
-
-        std::array<Columns, 10> columns = {Columns::match, Columns::strand,
-                                           Columns::Q_name, Columns::Q_size, Columns::Q_start, Columns::Q_end,
-                                           Columns::T_name, Columns::T_size, Columns::T_start, Columns::T_end};
-
-        auto filter = [](auto const & element) {
-            VERIFY(element[Columns::strand].size() == 1);
-            if (element[Columns::strand] != "+")
+        FilterType<Columns::match, Columns::strand,
+                    Columns::Q_name, Columns::Q_size, Columns::Q_start, Columns::Q_end,
+                    Columns::T_name, Columns::T_size, Columns::T_start, Columns::T_end
+                    > filter = [](auto const & element) {
+            if (element.template Get<Columns::strand>() != '+')
                 return false;
-            auto matched = stoll(element[Columns::match]);
-            auto contig_start = stoll(element[Columns::Q_start]);
-            auto contig_end = stoll(element[Columns::Q_end]);
-            auto contig_len = stoll(element[Columns::Q_size]);
+            auto matched = element.template Get<Columns::match>();
+            auto contig_start = element.template Get<Columns::Q_start>();
+            auto contig_end = element.template Get<Columns::Q_end>();
+            auto contig_len = element.template Get<Columns::Q_size>();
 
-            auto edge_start = stoll(element[Columns::T_start]);
-            auto edge_end = stoll(element[Columns::T_end]);
-            auto edge_len = stoll(element[Columns::T_size]);
+            auto edge_start = element.template Get<Columns::T_start>();
+            auto edge_end = element.template Get<Columns::T_end>();
+            auto edge_len = element.template Get<Columns::T_size>();
             auto contig_delta = contig_end - contig_start;
             auto edge_delta = edge_end - edge_start;
 
@@ -214,26 +208,29 @@ int main(int argc, char* argv[]) {
             auto contig_first_or_last = contig_start < 10 || (contig_len - contig_end) < 20;
             auto edge_first_or_last = edge_start < 20 || (edge_len - edge_end) < 20;
 
-            return (contig_first_or_last && edge_first_or_last || cov > 0.98 && identity > 0.99 && contig_delta > 99) &&
-                    contig_delta > edge_delta * 0.99 &&
-                    GetCov(element[Columns::T_name]) > 2;
+            return ((contig_first_or_last && edge_first_or_last) || (cov > 0.98 && identity > 0.99 && contig_delta > 99)) &&
+                    (double) contig_delta > (double) edge_delta * 0.99 &&
+                    GetCov(element.template Get<Columns::T_name>()) > 2;
         };
-        auto res = Read(blat_output_stream, columns, filter);
+
+        INFO("Started blat output reading");
+
+        auto res = Read(blat_output_stream, filter);
 
         vector<size_t> tig00000001;
         for (size_t i = 0; i < res.size(); ++i) {
-            if (res[i][Columns::Q_name] == "tig00000001")
+            if (res[i].Get<Columns::Q_name>() == "tig00000001")
                 tig00000001.push_back(i);
         }
 
         std::sort(tig00000001.begin(), tig00000001.end(), [&res](size_t lhs, size_t rhs){
-            return stoll(res[lhs][Columns::Q_start]) < stoll(res[rhs][Columns::Q_start]);
+            return res[lhs].Get<Columns::Q_start>() < res[rhs].Get<Columns::Q_start>();
         });
 
         for (size_t i = 0; i < std::min(tig00000001.size(), size_t(10)); ++i) {
             auto const & line = res[tig00000001[i]];
-            cout << line[Columns::Q_name] << ' ' << line[Columns::Q_size] << ' ' << line[Columns::Q_start] << ' ' << line[Columns::Q_end] << ' '
-                 << line[Columns::T_name] << ' ' << line[Columns::T_size] << ' ' << line[Columns::T_start] << ' ' << line[Columns::T_end] << '\n';
+            cout << line.Get<Columns::Q_name>() << ' ' << line.Get<Columns::Q_size>() << ' ' << line.Get<Columns::Q_start>() << ' ' << line.Get<Columns::Q_end>() << ' '
+                 << line.Get<Columns::T_name>() << ' ' << line.Get<Columns::T_size>() << ' ' << line.Get<Columns::T_start>() << ' ' << line.Get<Columns::T_end>() << '\n';
         }
 
         // auto paths = Launch(gp, PathThreadingParams(), input_paths, contigs, paths_names, scaffolds, nthreads);

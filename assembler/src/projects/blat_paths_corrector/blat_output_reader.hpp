@@ -6,6 +6,8 @@
 #include <string>
 #include <unordered_map>
 #include <functional>
+#include <type_traits>
+#include <tuple>
 
 enum class Columns : size_t {
     match       = 0,
@@ -32,8 +34,90 @@ enum class Columns : size_t {
     TOTAL_COLUMNS_SIZE = 21
 };
 
-template<size_t N>
-using Record = std::array<std::string, N>;
+template<Columns el>
+struct type_getter{
+    using type = std::conditional_t<
+                        el == Columns::Q_name ||
+                        el == Columns::T_name ||
+                        el == Columns::blockSizes ||
+                        el == Columns::qStarts ||
+                        el == Columns::tStarts,
+                        std::string,
+                 std::conditional_t<
+                        el == Columns::strand,
+                        char,
+                 long long>>;
+};
+
+template<Columns el>
+using type_getter_t = typename type_getter<el>::type;
+
+template<class T>
+T CastTo(std::string && t);
+
+template<>
+std::string CastTo<std::string>(std::string && t) {
+    return t;
+}
+
+template<>
+long long CastTo<long long>(std::string && t) {
+    return std::stoll(t);
+}
+
+template<>
+char CastTo<char>(std::string && t) {
+    if (t.size() != 1)
+        throw std::string("blat output file is corrupted");
+    return t.front();
+}
+
+template<Columns ... columns>
+struct Record  {
+    std::tuple<type_getter_t<columns>...> fields;
+
+    template<Columns el>
+    constexpr static bool Contains() {
+        return ContainsHandler<el, columns ...>();
+    }
+
+    template<Columns el, typename = std::enable_if_t<Contains<el>()>>
+    constexpr static size_t GetIndex() {
+        return GetIndexHandler<0, el, columns ...>();
+    }
+
+    template<Columns el, typename = std::enable_if_t<Contains<el>()>>
+    type_getter_t<el> const & Get() const {
+        constexpr auto index = GetIndex<el>();
+        return std::get<index>(fields);
+    }
+
+    template<Columns el, typename = std::enable_if_t<Contains<el>()>>
+    type_getter_t<el> & Get() {
+        constexpr auto index = GetIndex<el>();
+        return std::get<index>(fields);
+    }
+private:
+    template<size_t pos, Columns el, Columns head, Columns ... tail>
+    constexpr static size_t GetIndexHandler() {
+        return (el == head ? pos : GetIndexHandler<pos+1, el, tail ...>());
+    }
+
+    template<size_t pos, Columns el>
+    constexpr static size_t GetIndexHandler() {
+        return -1ull;
+    }
+
+    template<Columns el, Columns head, Columns ... tail>
+    constexpr static bool ContainsHandler() {
+        return (el == head ? true : ContainsHandler<el, tail ...>());
+    }
+
+    template<Columns el>
+    constexpr static bool ContainsHandler() {
+        return false;
+    }
+};
 
 class TokenIterator {
     size_t from;
@@ -72,92 +156,63 @@ private:
     }
 };
 
-template<size_t N>
-class Records {
-    using Indexes = std::array<size_t, static_cast<size_t>(Columns::TOTAL_COLUMNS_SIZE)>;
-    std::vector<Record<N>> records;
-    Indexes complessed_index;
-public:
+template<Columns ... columns>
+using Records = std::vector<Record<columns ...>>;
 
-    class RecordProxy {
-        Indexes const & complessed_index;
-        Record<N>  const & record;
-    public:
-        RecordProxy(Indexes const & complessed_index, Record<N> const & record)
-            : complessed_index(complessed_index)
-            , record(record)
-        {}
-        
-        std::string const & operator [](Columns index) const noexcept {
-            auto real_index = complessed_index[static_cast<size_t>(index)];
-            VERIFY(real_index != static_cast<size_t>(Columns::TOTAL_COLUMNS_SIZE));
-            return record[real_index];
-        }
-    };
+template<Columns ... columns>
+using FilterType = std::function<bool(Record<columns ...> const &)>;
 
-    Records(std::array<Columns, N> const & columns) {
-        complessed_index.fill(static_cast<size_t>(Columns::TOTAL_COLUMNS_SIZE));
-        std::array<bool, static_cast<size_t>(Columns::TOTAL_COLUMNS_SIZE)> used;
-        used.fill(false);
-        for (size_t i = 0; i < columns.size(); ++i) {
-            if (columns[i] == Columns::TOTAL_COLUMNS_SIZE)
-                throw std::string("You cannot use Columns::TOTAL_COLUMNS_SIZE in columns list");
-            auto column_id = static_cast<size_t>(columns[i]);
-            if (used[column_id])
-                throw std::string("Column with index ") + std::to_string(column_id) + std::string(" is specified more than once");
-            used[column_id] = true;
-            complessed_index[column_id] = i;
-        }
-    }
-
-    RecordProxy operator [] (size_t pos) const noexcept {
-        return RecordProxy(complessed_index, records[pos]);
-    }
-
-    size_t size() const noexcept {
-        return records.size();
-    }
-
-    void PushBack(Record<N> && record) {
-        records.push_back(std::move(record));
-    }
-
-    Indexes const & GetIndexes() const noexcept {
-        return complessed_index;
-    }
-
-};
-
-template<size_t N>
-using FilterType = std::function<bool(typename Records<N>::RecordProxy const &)>;
-
-template<size_t N>
+template<Columns ... columns>
 class RecordPusher {
 private:
-    Records<N> & records;
-    FilterType<N> const & filter;
+    Records<columns ...> & records;
+    FilterType<columns ...> const & filter;
 public:
-    RecordPusher(Records<N> & records, FilterType<N> const & filter) 
+    RecordPusher(Records<columns ...> & records, FilterType<columns ...> const & filter) 
         : records(records)
         , filter(filter)
     {}
 
     bool Push(std::string const & line) {
         TokenIterator it(line);
-        Record<N> rd;
-        size_t i = 0;
-        for (size_t used = 0; i < static_cast<size_t>(Columns::TOTAL_COLUMNS_SIZE) && !it.IsEnd() && used < N; ++it, ++i) {
-            if (records.GetIndexes()[i] != static_cast<size_t>(Columns::TOTAL_COLUMNS_SIZE))
-                rd[records.GetIndexes()[i]] = *it;
-        }
-        if ((i < static_cast<size_t>(Columns::TOTAL_COLUMNS_SIZE)) != (!it.IsEnd()))
-            throw std::string("blat output file is corrupted");
-
-        auto should_be_pushed = filter(typename Records<N>::RecordProxy(records.GetIndexes(), rd));
+        Record<columns ...> rd;
+        Fill(it, rd);
+        auto should_be_pushed = filter(rd);
         if (should_be_pushed)
-            records.PushBack(std::move(rd));
+            records.push_back(std::move(rd));
         return should_be_pushed;
     }
+
+private:
+    template<size_t columns_index = 0,
+             size_t used = 0, 
+             typename = std::enable_if_t<columns_index < static_cast<size_t>(Columns::TOTAL_COLUMNS_SIZE) && 
+                                         used < sizeof...(columns)>
+            >
+    void Fill(TokenIterator & it, Record<columns ...> & rd) {
+        if (it.IsEnd())
+            throw std::string("blat output file is corrupted");
+        constexpr auto el = static_cast<Columns>(columns_index);
+        constexpr auto contains = rd.template Contains<el>();
+        PushIfNeeded<contains, el>(it, rd);
+        ++it;
+        Fill<columns_index + 1, used + contains>(it, rd);
+    }
+
+    template<size_t columns_index, size_t used>
+    void Fill(...) {
+        if (used != sizeof...(columns))
+            throw std::string("blat output file is corrupted");
+    }
+
+    template<bool b, Columns el, typename = std::enable_if_t<b>>
+    void PushIfNeeded(TokenIterator const & it, Record<columns ...> & rd) {
+        rd.template Get<el>() = CastTo<type_getter_t<el>>(*it);
+    }
+
+    template<bool b, Columns el>
+    void PushIfNeeded(...) {}
+
 };
 
 bool GetNextNonemptyLine(std::istream & inp, std::string & result) {
@@ -182,13 +237,10 @@ void SkipHeader(std::istream & inp) {
         throw std::string("blat output file is corrupted");
 }
 
-template<size_t N>
-Records<N> Read(std::istream & inp,
-                std::array<Columns, N> const & columns,
-                FilterType<N> const & filter)
-{
-    Records<N> records(columns);
-    RecordPusher<N> pusher(records, filter);
+template<Columns ... columns>
+Records<columns ...> Read(std::istream & inp, FilterType<columns ...> const & filter) {
+    Records<columns ...> records;
+    RecordPusher<columns ...> pusher(records, filter);
     std::string line;
     SkipHeader(inp);
     size_t total_lines = 0;
