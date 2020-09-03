@@ -36,11 +36,10 @@ debruijn_graph::EdgeId GetEdgeId(std::string const & edge_name, debruijn_graph::
     if (len == 0)
         throw "Bad edge format at: " + edge_name;
     debruijn_graph::EdgeId edge_id = std::stoull(edge_name.substr(pos, len));
-    pos = edge_name.find(':');
-    if (pos == 0)
+    pos = edge_name.find_first_of(":;");
+    if (pos == 0 || pos == std::string::npos)
         throw "Bad edge format at: " + edge_name;
-    bool should_be_reversed = ((pos == std::string::npos ? edge_name.back() : edge_name[pos - 1]) == '\'');
-    if (should_be_reversed)
+    if (edge_name[pos - 1] == '\'')
         return graph.conjugate(edge_id);
     return edge_id;
 }
@@ -99,8 +98,10 @@ std::pair<PathWithEdgePostionsContainer, std::vector<std::string>> MakePaths(Rec
             path.positions.push_back(records[index].template Get<Columns::Q_start>());
             path.edge_set.push_back({GetEdgeId(records[index].template Get<Columns::T_name>(), graph)});
         }
-        paths.push_back(std::move(path));
-        paths_names.push_back(contig.first);
+        if (!path.positions.empty()) {
+            paths.push_back(std::move(path));
+            paths_names.push_back(contig.first);
+        }
     }
     return {std::move(paths), std::move(paths_names)};
 }
