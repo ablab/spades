@@ -66,7 +66,7 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
   using namespace clipp;
 
   auto cli = (
-      cfg.file << value("dataset description (in YAML)"),
+      cfg.file << value("dataset description (in YAML) or input FASTA file"),
       cfg.outfile << value("output filename"),
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-c").set(cfg.coverage)) % "infer coverage",
@@ -86,6 +86,19 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
   }
 }
 
+void LoadDataset(io::DataSet<debruijn_graph::config::LibraryData> &dataset,
+                 const std::string &filename) {
+    if (fs::extension(filename) == ".yaml") {
+        dataset.load(filename);
+    } else if (fs::FileExists(filename)) {
+        io::SequencingLibrary<debruijn_graph::config::LibraryData> input;
+        input.push_back_single(filename);
+        input.set_orientation(io::LibraryOrientation::Undefined);
+        input.set_type(io::LibraryType::SingleReads);
+        dataset.push_back(input);
+    } else
+        FATAL_ERROR("Dataset description file: " << filename << " does not exist or is not a valid YAML file");
+}
 
 int main(int argc, char* argv[]) {
     gcfg cfg;
@@ -98,7 +111,7 @@ int main(int argc, char* argv[]) {
     try {
         unsigned nthreads = cfg.nthreads;
         unsigned k = cfg.k;
-        std::string tmpdir = cfg.tmpdir, dataset_desc = cfg.file;
+        std::string tmpdir = cfg.tmpdir;
         size_t buff_size = cfg.buff_size;
 
         create_console_logger();
@@ -132,11 +145,12 @@ int main(int argc, char* argv[]) {
         nthreads = spades_set_omp_threads(nthreads);
         INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << nthreads);
 
+        io::DataSet<debruijn_graph::config::LibraryData> dataset;
+        LoadDataset(dataset, cfg.file);
+
         fs::make_dir(tmpdir);
         auto workdir = fs::tmp::make_temp_dir(tmpdir, "construction");
 
-        io::DataSet<debruijn_graph::config::LibraryData> dataset;
-        dataset.load(dataset_desc);
         // FIXME: Get rid of this "/" junk
         debruijn_graph::config::init_libs(dataset, nthreads, tmpdir + "/");
 
