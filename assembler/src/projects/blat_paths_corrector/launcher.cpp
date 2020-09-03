@@ -258,9 +258,9 @@ pair<std::string, std::vector<PathWithBorderEdgesIndexies>> SequenceCorrector<fi
         }
         start_pos = path.second + 1;
     }
-    INFO("Made " << paths.size() << " path" << (paths.size() != 1 ? "s" : ""));
-    return {BackMappingDropCurrentSuffix(paths), std::move(paths)};
-    // return {BackMappingDropNextPreffix(paths), std::move(paths)};
+    DEBUG("Made " << paths.size() << " path" << (paths.size() != 1 ? "s" : ""));
+    // return {BackMappingDropCurrentSuffix(paths), std::move(paths)};
+    return {BackMappingDropNextPreffix(paths), std::move(paths)};
 }
 
 template<PathFiller filler_mode>
@@ -288,6 +288,7 @@ boost::optional<pair<GappedPath, size_t>> SequenceCorrector<filler_mode>::FindFi
         auto end_edge  = GetEdge(end_pos);
 
         if (graph.EdgeStart(end_edge) == graph.EdgeEnd(start_edge)) {
+            INFO("Connected adjacent edges");
             return {{std::move(current_path), end_pos}};
         }
 

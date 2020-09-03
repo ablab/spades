@@ -6,6 +6,7 @@
 
 #include "common.hpp"
 #include "blat_output_reader.hpp"
+#include "blat_output_postprocessing.hpp"
 
 #include "common/assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 #include "common/toolchain/utils.hpp"
@@ -23,7 +24,6 @@
 #include <sys/stat.h>
 #include <string>
 #include <algorithm>
-#include <omp.h>
 
 using namespace std;
 using namespace path_extend;
@@ -43,7 +43,7 @@ struct gcfg {
     std::string paths_save_file;
     std::string output_dir;
     std::string blat_output;
-    size_t nthreads;
+    unsigned int nthreads;
 };
 
 
@@ -98,26 +98,6 @@ std::vector<std::string> ReadContigsNames(std::string const & filtered_contigs_n
     return names;
 }
 
-double GetCov(std::string const & edge_name) {
-    std::string cov_pattern = "_cov_";
-    auto pos = edge_name.find(cov_pattern);
-    if (pos == std::string::npos)
-        throw "No cov info at: " + edge_name;
-
-    pos += cov_pattern.size();
-    size_t len = 0;
-    while (pos + len < edge_name.size() && isdigit(edge_name[pos + len]))
-        ++len;
-    if (pos + len + 1 < edge_name.size() && edge_name[pos + len] == '.' && isdigit(edge_name[pos + len + 1])) {
-        len += 2;
-        while (pos + len < edge_name.size() && isdigit(edge_name[pos + len]))
-            ++len;
-    }
-    if (len == 0)
-        throw "Bad cov format at: " + edge_name;
-    return std::stod(edge_name.substr(pos, len));
-}
-
 constexpr char BASE_NAME[] = "graph_pack";
 
 int main(int argc, char* argv[]) {
@@ -145,110 +125,68 @@ int main(int argc, char* argv[]) {
 
         nthreads = spades_set_omp_threads(nthreads);
         INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << nthreads);
-        omp_set_nested(false);
 
         fs::make_dir(output_dir);
 
-        // debruijn_graph::GraphPack gp(k, output_dir, 0);
-        // auto p = fs::append_path(cfg.saves_folder, BASE_NAME);
-        // io::binary::FullPackIO().Load(p, gp);
+        debruijn_graph::GraphPack gp(k, output_dir, 0);
+        auto p = fs::append_path(cfg.saves_folder, BASE_NAME);
+        io::binary::FullPackIO().Load(p, gp);
 
-        // auto& graph = gp.get<debruijn_graph::Graph>();
-        // auto input_paths = ParseInputPaths(cfg.transcript_paths_file, graph);
-        // INFO("Scanned " << input_paths.size() << " paths");
-
-        // auto paths_names = ReadContigsNames(cfg.filtered_contigs_names_file);
-        // VERIFY(input_paths.size() == paths_names.size());
-
-        // auto contigs = ReadContigs(cfg.canu_contigs_file);
-        // #ifdef GOOD_NAME
-        // {
-        //     ofstream contigs_output(fs::append_path(output_dir, "canu_contig.fasta"));
-        //     VERIFY(contigs_output.is_open());
-        //     for (auto & contig : contigs) {
-        //         if (contig.name == GOOD_NAME) {
-        //             contigs_output << '>' << contig.name << " len=" << contig.seq.size() << '\n';
-        //             const auto d_pos = 100;
-        //             for (size_t pos = 0; pos < contig.seq.size(); pos += d_pos)
-        //                 contigs_output << contig.seq.substr(pos, d_pos) << '\n';
-        //             break;
-        //         }
-        //     }
-        // }
-        // #endif
-
-        // PathContainer scaffolds;
-        // if (!cfg.paths_save_file.empty())
-        //     ReadScaffolds(scaffolds, graph, cfg.paths_save_file);
-
-        ifstream blat_output_stream(cfg.blat_output);
-        if (!blat_output_stream.is_open())
-            throw "Cannot open " + cfg.blat_output;
-
-        FilterType<Columns::match, Columns::strand,
-                    Columns::Q_name, Columns::Q_size, Columns::Q_start, Columns::Q_end,
-                    Columns::T_name, Columns::T_size, Columns::T_start, Columns::T_end
-                    > filter = [](auto const & element) {
-            if (element.template Get<Columns::strand>() != '+')
-                return false;
-            auto matched = element.template Get<Columns::match>();
-            auto contig_start = element.template Get<Columns::Q_start>();
-            auto contig_end = element.template Get<Columns::Q_end>();
-            auto contig_len = element.template Get<Columns::Q_size>();
-
-            auto edge_start = element.template Get<Columns::T_start>();
-            auto edge_end = element.template Get<Columns::T_end>();
-            auto edge_len = element.template Get<Columns::T_size>();
-            auto contig_delta = contig_end - contig_start;
-            auto edge_delta = edge_end - edge_start;
-
-            auto identity = static_cast<double>(matched) / (contig_delta + 1);
-            auto cov = static_cast<double>(edge_delta) / edge_len;
-
-            auto contig_first_or_last = contig_start < 10 || (contig_len - contig_end) < 20;
-            auto edge_first_or_last = edge_start < 20 || (edge_len - edge_end) < 20;
-
-            return ((contig_first_or_last && edge_first_or_last) || (cov > 0.98 && identity > 0.99 && contig_delta > 99)) &&
-                    (double) contig_delta > (double) edge_delta * 0.99 &&
-                    GetCov(element.template Get<Columns::T_name>()) > 2;
-        };
-
-        INFO("Started blat output reading");
-
-        auto res = Read(blat_output_stream, filter);
-
-        vector<size_t> tig00000001;
-        for (size_t i = 0; i < res.size(); ++i) {
-            if (res[i].Get<Columns::Q_name>() == "tig00000001")
-                tig00000001.push_back(i);
+        auto contigs = ReadContigs(cfg.canu_contigs_file);
+        #ifdef GOOD_NAME
+        {
+            ofstream contigs_output(fs::append_path(output_dir, "canu_contig.fasta"));
+            VERIFY(contigs_output.is_open());
+            for (auto & contig : contigs) {
+                if (contig.name == GOOD_NAME) {
+                    contigs_output << '>' << contig.name << " len=" << contig.seq.size() << '\n';
+                    const auto d_pos = 100;
+                    for (size_t pos = 0; pos < contig.seq.size(); pos += d_pos)
+                        contigs_output << contig.seq.substr(pos, d_pos) << '\n';
+                    break;
+                }
+            }
         }
+        #endif
 
-        std::sort(tig00000001.begin(), tig00000001.end(), [&res](size_t lhs, size_t rhs){
-            return res[lhs].Get<Columns::Q_start>() < res[rhs].Get<Columns::Q_start>();
-        });
+        auto& graph = gp.get<debruijn_graph::Graph>();
+        PathContainer scaffolds;
+        if (!cfg.paths_save_file.empty())
+            ReadScaffolds(scaffolds, graph, cfg.paths_save_file);
 
-        for (size_t i = 0; i < std::min(tig00000001.size(), size_t(10)); ++i) {
-            auto const & line = res[tig00000001[i]];
-            cout << line.Get<Columns::Q_name>() << ' ' << line.Get<Columns::Q_size>() << ' ' << line.Get<Columns::Q_start>() << ' ' << line.Get<Columns::Q_end>() << ' '
-                 << line.Get<Columns::T_name>() << ' ' << line.Get<Columns::T_size>() << ' ' << line.Get<Columns::T_start>() << ' ' << line.Get<Columns::T_end>() << '\n';
-        }
 
-        // auto paths = Launch(gp, PathThreadingParams(), input_paths, contigs, paths_names, scaffolds, nthreads);
+        #ifdef USE_R_SCRIPT
+            auto input_paths = ParseInputPaths(cfg.transcript_paths_file, graph);
+            auto paths_names = ReadContigsNames(cfg.filtered_contigs_names_file);
+            VERIFY(input_paths.size() == paths_names.size());
+        #else
+            ifstream blat_output_stream(cfg.blat_output);
+            if (!blat_output_stream.is_open())
+                throw "Cannot open " + cfg.blat_output;
+            INFO("Started blat output reading");
+            auto res = Read(blat_output_stream, GetFilter());
+            auto paths_data = MakePaths(res, graph);
+            auto const & input_paths = paths_data.first;
+            auto const & paths_names = paths_data.second;
+        #endif
+        INFO("Scanned " << input_paths.size() << " paths");
 
-        // ContigWriter writer(graph, MakeContigNameGenerator(config::pipeline_type::base, gp));
-        // writer.OutputPaths(paths, fs::append_path(output_dir, "connected_paths.fasta"));
+        auto paths = Launch(gp, PathThreadingParams(), input_paths, contigs, paths_names, scaffolds, nthreads);
+
+        ContigWriter writer(graph, MakeContigNameGenerator(config::pipeline_type::base, gp));
+        writer.OutputPaths(paths, fs::append_path(output_dir, "connected_paths.fasta"));
         
-        // ofstream contigs_output(fs::append_path(output_dir, "remapped_paths.fasta"));
-        // VERIFY(contigs_output.is_open());
+        ofstream contigs_output(fs::append_path(output_dir, "remapped_paths.fasta"));
+        VERIFY(contigs_output.is_open());
 
-        // for (auto const & contig : contigs) {
-        //     if (contig.seq.empty())
-        //         continue;
-        //     contigs_output << '>' << contig.name << " len=" << contig.seq.size() << '\n';
-        //     const auto d_pos = 100;
-        //     for (size_t pos = 0; pos < contig.seq.size(); pos += d_pos)
-        //         contigs_output << contig.seq.substr(pos, d_pos) << '\n';
-        // }
+        for (auto const & contig : contigs) {
+            if (contig.seq.empty())
+                continue;
+            contigs_output << '>' << contig.name << " len=" << contig.seq.size() << '\n';
+            const auto d_pos = 100;
+            for (size_t pos = 0; pos < contig.seq.size(); pos += d_pos)
+                contigs_output << contig.seq.substr(pos, d_pos) << '\n';
+        }
     } catch (const std::string &s) {
         std::cerr << s << std::endl;
         return EINTR;
