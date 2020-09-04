@@ -98,10 +98,12 @@ public:
                              fs::TmpDir workdir, size_t read_buffer_size = 0) const {
         unsigned nthreads = omp_get_max_threads();
 
-        DeBruijnGraphKMerSplitter<Graph,
-                                  utils::StoringTypeFilter<typename Index::storing_type>>
-                splitter(workdir, index.k(), g, read_buffer_size);
-        kmers::KMerDiskCounter<RtSeq> counter(workdir, splitter);
+        using Splitter = DeBruijnGraphKMerSplitter<Graph,
+                                                   utils::StoringTypeFilter<typename Index::storing_type>>;
+        
+        kmers::KMerDiskCounter<RtSeq> counter(workdir,
+                                              Splitter(workdir, index.k(), g, read_buffer_size));
+        
         BuildIndex(index, counter, 16, nthreads);
 
         // Now use the index to fill the coverage and EdgeId's

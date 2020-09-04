@@ -236,10 +236,11 @@ public:
         io::ReadStreamList<io::SingleReadSeq> merge_streams = temp_merge_read_streams(read_streams, contigs_streams);
 
         unsigned nthreads = (unsigned)merge_streams.size();
-        utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
-                                        utils::StoringTypeFilter<storing_type>>
-                splitter(storage().workdir, index.k() + 1, 0, merge_streams, buffer_size);
-        storage().counter.reset(new kmers::KMerDiskCounter<RtSeq>(storage().workdir, splitter));
+        using Splitter =  utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
+                                                          utils::StoringTypeFilter<storing_type>>;
+        
+        storage().counter.reset(new kmers::KMerDiskCounter<RtSeq>(storage().workdir,
+                                                                  Splitter(storage().workdir, index.k() + 1, 0, merge_streams, buffer_size)));
         storage().counter->CountAll(nthreads, nthreads, /* merge */false);
     }
 

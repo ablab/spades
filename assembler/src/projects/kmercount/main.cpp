@@ -211,7 +211,7 @@ int main(int argc, char* argv[]) {
                 splitter.push_back(s);
         }
 
-        kmers::KMerDiskCounter<RtSeq> counter(args.workdir, splitter);
+        kmers::KMerDiskCounter<RtSeq> counter(args.workdir, std::move(splitter));
         counter.CountAll(16, args.nthreads);
         auto final_kmers = counter.final_kmers_file();
 

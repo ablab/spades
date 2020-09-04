@@ -274,6 +274,7 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
   // Optionally perform a filtering step
   size_t kmers = 0;
   typename KMerData::traits::ResultFile final_kmers;
+  std::unique_ptr<kmers::KMerDiskCounter<hammer::KMer>> counter;
   if (cfg::get().count_filter_singletons) {
       size_t buffer_size;
       {
@@ -325,20 +326,16 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
       }
       INFO("Total " << processed << " reads processed");
 
-      // FIXME: Reduce code duplication
-      HammerFilteringKMerSplitter splitter(workdir,
-                                           [&] (const KMer &k) { return mcounter.count(k) > 1; });
-      kmers::KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
-
-      kmers = kmers::KMerIndexBuilder<HammerKMerIndex>(num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
-      final_kmers = counter.final_kmers_file();
+      counter.reset(new kmers::KMerDiskCounter<hammer::KMer>(workdir,
+                                                             HammerFilteringKMerSplitter(workdir,
+                                                                                         [&] (const KMer &k) { return mcounter.count(k) > 1; })));
   } else {
-      HammerFilteringKMerSplitter splitter(workdir);
-      kmers::KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
-
-      kmers = kmers::KMerIndexBuilder<HammerKMerIndex>(num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
-      final_kmers = counter.final_kmers_file();
+      counter.reset(new kmers::KMerDiskCounter<hammer::KMer>(workdir,
+                                                             HammerFilteringKMerSplitter(workdir)));
+      
   }
+  kmers = kmers::KMerIndexBuilder<HammerKMerIndex>(num_files_, omp_get_max_threads()).BuildIndex(data.index_, *counter, /* save final */ true);
+  final_kmers = counter->final_kmers_file();
 
   // Check, whether we'll ever have enough memory for running BH and bail out earlier
   double needed = 1.25 * (double)kmers * (sizeof(KMerStat) + sizeof(hammer::KMer));

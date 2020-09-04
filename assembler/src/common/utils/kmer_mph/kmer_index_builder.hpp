@@ -85,15 +85,17 @@ class KMerDiskCounter : public KMerCounter<Seq> {
   typedef typename traits::RawKMerStorage BucketStorage;
   typedef typename traits::ResultFile ResultFile;
 public:
+  template<class Splitter>
   KMerDiskCounter(fs::TmpDir work_dir,
-                  kmers::KMerSplitter<Seq> &splitter)
-      : work_dir_(work_dir), splitter_(splitter), k_(splitter.K()) {
+                  Splitter splitter)
+      : work_dir_(work_dir), splitter_(new Splitter{std::move(splitter)}), k_(splitter_->K()) {
     kmer_prefix_ = work_dir_->tmp_file("kmers");
   }
 
+  template<class Splitter>
   KMerDiskCounter(const std::string &work_dir,
-                  kmers::KMerSplitter<Seq> &splitter)
-      : KMerDiskCounter(fs::tmp::make_temp_dir(work_dir, "kmer_counter"), splitter) {}
+                  Splitter splitter)
+      : KMerDiskCounter(fs::tmp::make_temp_dir(work_dir, "kmer_counter"), std::move(splitter)) {}
 
   ~KMerDiskCounter() {}
 
@@ -115,7 +117,7 @@ public:
     // Split k-mers into buckets.
     INFO("Splitting kmer instances into " << num_files << " files using " << num_threads << " threads. This might take a while.");
     TIME_TRACE_BEGIN("KMerDiskCounter::Split");
-    auto raw_kmers = splitter_.Split(num_files, num_threads);
+    auto raw_kmers = splitter_->Split(num_files, num_threads);
     TIME_TRACE_END;
 
     INFO("Starting k-mer counting.");
@@ -186,7 +188,7 @@ private:
   fs::TmpDir work_dir_;
   fs::TmpFile kmer_prefix_;
   fs::TmpFile final_kmers_;
-  kmers::KMerSplitter<Seq> &splitter_;
+  std::unique_ptr<kmers::KMerSplitter<Seq>> splitter_;
   unsigned k_;
 
   std::string GetUniqueKMersFname(unsigned suffix) const {

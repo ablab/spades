@@ -167,8 +167,7 @@ class KMerDataFiller {
 };
 
 void KMerDataCounter::FillKMerData(KMerData &data) {
-  HammerKMerSplitter splitter(cfg::get().working_dir);
-  kmers::KMerDiskCounter<hammer::HKMer> counter(cfg::get().working_dir, splitter);
+  kmers::KMerDiskCounter<hammer::HKMer> counter(cfg::get().working_dir, HammerKMerSplitter(cfg::get().working_dir));
 
   size_t sz = kmers::KMerIndexBuilder<HammerKMerIndex>(num_files_, cfg::get().max_nthreads).BuildIndex(data.index_, counter);
 
