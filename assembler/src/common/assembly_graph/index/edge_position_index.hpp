@@ -103,9 +103,9 @@ struct GraphInverter {
 template<class Graph, class IdHolder = typename Graph::EdgeId, class StoringType = utils::DefaultStoring>
 class KmerFreeEdgeIndex : public utils::PerfectHashMap<RtSeq,
                                                        EdgeInfo<typename Graph::EdgeId, IdHolder>,
-                                                       utils::kmer_index_traits<RtSeq>, StoringType> {
+                                                       kmers::kmer_index_traits<RtSeq>, StoringType> {
   typedef utils::PerfectHashMap<RtSeq, EdgeInfo<typename Graph::EdgeId, IdHolder>,
-                                utils::kmer_index_traits<RtSeq>, StoringType> base;
+                                kmers::kmer_index_traits<RtSeq>, StoringType> base;
   const Graph &graph_;
 
 public:
@@ -167,9 +167,9 @@ public:
 template<class Graph, class IdHolder = typename Graph::EdgeId, class StoringType = utils::DefaultStoring>
 class KmerStoringEdgeIndex :
       public utils::KeyStoringMap<RtSeq, EdgeInfo<typename Graph::EdgeId, IdHolder>,
-                                  utils::kmer_index_traits<RtSeq>, StoringType> {
+                                  kmers::kmer_index_traits<RtSeq>, StoringType> {
   typedef utils::KeyStoringMap<RtSeq, EdgeInfo<typename Graph::EdgeId, IdHolder>,
-                               utils::kmer_index_traits<RtSeq>, StoringType> base;
+                               kmers::kmer_index_traits<RtSeq>, StoringType> base;
 
 public:
   typedef typename base::traits_t traits_t;

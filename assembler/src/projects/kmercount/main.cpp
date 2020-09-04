@@ -44,7 +44,7 @@ class SimplePerfectHashMap : public utils::KeyIteratingMap<RtSeq, uint32_t> {
             : base(k) {}
 };
 
-class ParallelSortingSplitter : public utils::KMerSortingSplitter<RtSeq> {
+class ParallelSortingSplitter : public kmers::KMerSortingSplitter<RtSeq> {
   using Seq = RtSeq;
 
   std::vector<std::string> files_;
@@ -84,7 +84,7 @@ class ParallelSortingSplitter : public utils::KMerSortingSplitter<RtSeq> {
 
 
   public:
-    using utils::KMerSortingSplitter<RtSeq>::RawKMers;
+    using kmers::KMerSortingSplitter<RtSeq>::RawKMers;
     ParallelSortingSplitter(const std::string &workdir, unsigned K, size_t read_buffer_size = 0)
             : KMerSortingSplitter<Seq>(workdir, K), read_buffer_size_(read_buffer_size) {}
 
@@ -211,7 +211,7 @@ int main(int argc, char* argv[]) {
                 splitter.push_back(s);
         }
 
-        utils::KMerDiskCounter<RtSeq> counter(args.workdir, splitter);
+        kmers::KMerDiskCounter<RtSeq> counter(args.workdir, splitter);
         counter.CountAll(16, args.nthreads);
         auto final_kmers = counter.final_kmers_file();
 

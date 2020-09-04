@@ -24,7 +24,7 @@ struct PerfectHashMapBuilder {
 
         using KMerIndex = typename PerfectHashMap<K, V, traits, StoringType>::KMerIndexT;
 
-        KMerIndexBuilder<KMerIndex> builder((unsigned)bucket_num, (unsigned)thread_num);
+        kmers::KMerIndexBuilder<KMerIndex> builder((unsigned)bucket_num, (unsigned)thread_num);
         size_t sz = builder.BuildIndex(*index.index_ptr_, counter, save_final);
         index.resize(sz);
     }
@@ -52,7 +52,7 @@ struct CQFHashMapBuilder {
         using KMerIndex = typename Index::KMerIndexT;
 
         // Step 1: build PHM
-        utils::KMerIndexBuilder<KMerIndex> builder((unsigned) bucket_num,
+        kmers::KMerIndexBuilder<KMerIndex> builder((unsigned) bucket_num,
                                                    (unsigned) thread_num);
         size_t sz = builder.BuildIndex(*index.index_ptr_, counter, save_final);
 

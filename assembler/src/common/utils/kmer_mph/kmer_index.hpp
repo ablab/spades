@@ -16,7 +16,7 @@
 #define XXH_INLINE_ALL
 #include "xxh/xxhash.h"
 
-namespace utils {
+namespace kmers {
 
 template<class Index>
 class KMerIndexBuilder;

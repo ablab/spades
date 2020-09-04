@@ -10,7 +10,6 @@
 
 #include "io/kmers/mmapped_reader.hpp"
 #include "io/kmers/mmapped_writer.hpp"
-#include "common/adt/kmer_vector.hpp"
 
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/memory_limit.hpp"
@@ -19,6 +18,7 @@
 #include "utils/filesystem/file_limit.hpp"
 #include "utils/perf/timetracer.hpp"
 
+#include "adt/kmer_vector.hpp"
 #include "adt/iterator_range.hpp"
 #include "adt/loser_tree.hpp"
 
@@ -41,9 +41,9 @@
 #include <vector>
 #include <cmath>
 
-#include "kmer_splitters.hpp"
+#include "kmer_splitter.hpp"
 
-namespace utils {
+namespace kmers {
 
 
 template<class Seq, class traits = kmer_index_traits<Seq> >
@@ -86,13 +86,13 @@ class KMerDiskCounter : public KMerCounter<Seq> {
   typedef typename traits::ResultFile ResultFile;
 public:
   KMerDiskCounter(fs::TmpDir work_dir,
-                  KMerSplitter<Seq> &splitter)
+                  kmers::KMerSplitter<Seq> &splitter)
       : work_dir_(work_dir), splitter_(splitter), k_(splitter.K()) {
     kmer_prefix_ = work_dir_->tmp_file("kmers");
   }
 
   KMerDiskCounter(const std::string &work_dir,
-                  KMerSplitter<Seq> &splitter)
+                  kmers::KMerSplitter<Seq> &splitter)
       : KMerDiskCounter(fs::tmp::make_temp_dir(work_dir, "kmer_counter"), splitter) {}
 
   ~KMerDiskCounter() {}
@@ -186,7 +186,7 @@ private:
   fs::TmpDir work_dir_;
   fs::TmpFile kmer_prefix_;
   fs::TmpFile final_kmers_;
-  KMerSplitter<Seq> &splitter_;
+  kmers::KMerSplitter<Seq> &splitter_;
   unsigned k_;
 
   std::string GetUniqueKMersFname(unsigned suffix) const {

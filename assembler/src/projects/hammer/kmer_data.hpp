@@ -16,12 +16,12 @@
 
 #include <vector>
 
-typedef utils::KMerIndex<utils::kmer_index_traits<hammer::KMer> > HammerKMerIndex;
+typedef kmers::KMerIndex<kmers::kmer_index_traits<hammer::KMer> > HammerKMerIndex;
 
 class KMerData {
   typedef std::vector<KMerStat> KMerDataStorageType;
   typedef std::vector<hammer::KMer> KMerStorageType;
-  typedef utils::kmer_index_traits<hammer::KMer> traits;
+  typedef kmers::kmer_index_traits<hammer::KMer> traits;
 
  public:
   KMerData()

@@ -54,7 +54,7 @@ struct KMerStat {
 
 };  // namespace hammer
 
-typedef utils::KMerIndex<utils::kmer_index_traits<hammer::HKMer> > HammerKMerIndex;
+typedef kmers::KMerIndex<kmers::kmer_index_traits<hammer::HKMer> > HammerKMerIndex;
 
 class KMerData {
   typedef std::vector<hammer::KMerStat> KMerDataStorageType;

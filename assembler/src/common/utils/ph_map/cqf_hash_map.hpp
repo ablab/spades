@@ -9,7 +9,7 @@
 #include "adt/cqf.hpp"
 
 namespace utils {
-template<class K, class traits = kmer_index_traits<K>, class StoringType = SimpleStoring>
+template<class K, class traits = kmers::kmer_index_traits<K>, class StoringType = SimpleStoring>
 class CQFHashMap : public IndexWrapper<K, traits> {
 public:
     typedef size_t IdxType;

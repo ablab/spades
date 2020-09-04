@@ -8,7 +8,7 @@
 #include "io/kmers/mmapped_reader.hpp"
 #include "utils/filesystem/temporary.hpp"
 
-namespace utils {
+namespace kmers {
 
 template<class Seq>
 struct kmer_index_traits {

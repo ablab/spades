@@ -100,7 +100,7 @@ public:
         DeBruijnGraphKMerSplitter<Graph,
                                   utils::StoringTypeFilter<typename Index::storing_type>>
                 splitter(workdir, index.k(), g, read_buffer_size);
-        utils::KMerDiskCounter<RtSeq> counter(workdir, splitter);
+        kmers::KMerDiskCounter<RtSeq> counter(workdir, splitter);
         BuildIndex(index, counter, 16, nthreads);
 
         // Now use the index to fill the coverage and EdgeId's

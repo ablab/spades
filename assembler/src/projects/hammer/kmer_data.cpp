@@ -36,9 +36,9 @@ struct KMerComparator {
 };
 
 
-class HammerFilteringKMerSplitter : public utils::KMerSortingSplitter<hammer::KMer> {
+class HammerFilteringKMerSplitter : public kmers::KMerSortingSplitter<hammer::KMer> {
  public:
-  using typename utils::KMerSortingSplitter<hammer::KMer>::RawKMers;
+  using typename kmers::KMerSortingSplitter<hammer::KMer>::RawKMers;
   typedef std::function<bool(const KMer&)> KMerFilter;
 
   HammerFilteringKMerSplitter(std::string &work_dir,
@@ -328,15 +328,15 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
       // FIXME: Reduce code duplication
       HammerFilteringKMerSplitter splitter(workdir,
                                            [&] (const KMer &k) { return mcounter.count(k) > 1; });
-      utils::KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
+      kmers::KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
 
-      kmers = utils::KMerIndexBuilder<HammerKMerIndex>(num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
+      kmers = kmers::KMerIndexBuilder<HammerKMerIndex>(num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
       final_kmers = counter.final_kmers_file();
   } else {
       HammerFilteringKMerSplitter splitter(workdir);
-      utils::KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
+      kmers::KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
 
-      kmers = utils::KMerIndexBuilder<HammerKMerIndex>(num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
+      kmers = kmers::KMerIndexBuilder<HammerKMerIndex>(num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
       final_kmers = counter.final_kmers_file();
   }
 

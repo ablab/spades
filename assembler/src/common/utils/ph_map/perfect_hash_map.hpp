@@ -30,7 +30,7 @@ public:
     typedef K KeyType;
     typedef traits traits_t;
 protected:
-    typedef KMerIndex<traits> KMerIndexT;
+    typedef kmers::KMerIndex<traits> KMerIndexT;
     //these fields are protected only for reduction of storage in edge indices BinWrite
     std::shared_ptr<KMerIndexT> index_ptr_;
 private:
@@ -76,7 +76,7 @@ public:
 };
 
 template<class K, class V,
-         class traits = kmer_index_traits<K>, class StoringType = SimpleStoring,
+         class traits = kmers::kmer_index_traits<K>, class StoringType = SimpleStoring,
          class Container = std::vector<V>>
 class PerfectHashMap : public IndexWrapper<K, traits> {
 public:

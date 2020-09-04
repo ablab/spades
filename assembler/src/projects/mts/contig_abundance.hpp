@@ -30,7 +30,7 @@ private:
     typedef typename utils::InvertableStoring::trivial_inverter InverterT;
     typedef utils::KeyStoringMap<RtSeq,
         Offset,
-        utils::kmer_index_traits<RtSeq>,
+        kmers::kmer_index_traits<RtSeq>,
         utils::InvertableStoring> IndexT;
 
     static size_t sample_cnt_;

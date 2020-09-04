@@ -36,7 +36,7 @@ void EarlyClipTips(const config::debruijn_config::construction& params, Extensio
     EarlyTipClipperProcessor(ext, *params.early_tc.length_bound).ClipTips();
 }
 
-using KMerFiles = std::unique_ptr<utils::KMerCounter<RtSeq>>;
+using KMerFiles = std::unique_ptr<kmers::KMerCounter<RtSeq>>;
 
 template<class Read>
 KMerFiles ConstructGraphUsingExtensionIndex(const config::debruijn_config::construction &params,

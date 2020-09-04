@@ -201,8 +201,8 @@ Stream &operator<<(Stream& stream, const InOutMask &mask) {
 }
 
 template<class Seq>
-struct slim_kmer_index_traits : public utils::kmer_index_traits<Seq> {
-    typedef utils::kmer_index_traits<Seq> __super;
+struct slim_kmer_index_traits : public kmers::kmer_index_traits<Seq> {
+    typedef kmers::kmer_index_traits<Seq> __super;
 
     template<class Writer>
     static void raw_serialize(Writer&, typename __super::RawKMerStorage*) {

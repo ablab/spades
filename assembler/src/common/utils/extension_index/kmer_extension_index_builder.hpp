@@ -63,7 +63,7 @@ public:
 
 public:
     template<class Index, class Streams>
-    std::unique_ptr<KMerCounter<RtSeq>>
+    std::unique_ptr<kmers::KMerCounter<RtSeq>>
     BuildExtensionIndexFromStream(fs::TmpDir workdir, Index &index,
                                   Streams &streams,
                                   size_t read_buffer_size = 0) const {
@@ -74,7 +74,7 @@ public:
         DeBruijnReadKMerSplitter<typename Streams::ReadT, KmerFilter >
                 splitter(workdir, index.k() + 1, 0xDEADBEEF, streams, read_buffer_size);
         
-        auto counter = std::make_unique<KMerDiskCounter<RtSeq>>(workdir, splitter);
+        auto counter = std::make_unique<kmers::KMerDiskCounter<RtSeq>>(workdir, splitter);
         counter->CountAll(nthreads, nthreads, /* merge */ false);
 
         BuildExtensionIndexFromKPOMers(workdir, index, *counter,
@@ -95,7 +95,7 @@ public:
                          index.k() + 1, Index::storing_type::IsInvertable(), read_buffer_size);
         for (unsigned i = 0; i < counter.num_buckets(); ++i)
             splitter.AddKMers(counter.GetMergedKMersFname(i));
-        KMerDiskCounter<RtSeq> counter2(workdir, splitter);
+        kmers::KMerDiskCounter<RtSeq> counter2(workdir, splitter);
 
         BuildIndex(index, counter2, 16, nthreads);
 

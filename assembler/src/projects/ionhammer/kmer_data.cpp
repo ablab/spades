@@ -9,24 +9,26 @@
 #include "config_struct.hpp"
 #include "valid_hkmer_generator.hpp"
 
+#include "io/kmers/mmapped_writer.hpp"
+#include "io/reads/file_reader.hpp"
+#include "io/reads/read_processor.hpp"
+
+#include "utils/kmer_mph/kmer_splitter.hpp"
 #include "utils/kmer_mph/kmer_index_builder.hpp"
 
 #include <mutex>
 #include <random>
-#include "io/kmers/mmapped_writer.hpp"
-#include "io/reads/file_reader.hpp"
-#include "io/reads/read_processor.hpp"
 
 using namespace hammer;
 
 class BufferFiller;
 
-class HammerKMerSplitter : public utils::KMerSortingSplitter<HKMer> {
+class HammerKMerSplitter : public kmers::KMerSortingSplitter<HKMer> {
  public:
-  using typename utils::KMerSortingSplitter<HKMer>::RawKMers;
+  using typename kmers::KMerSortingSplitter<HKMer>::RawKMers;
 
   HammerKMerSplitter(const std::string &work_dir)
-      : KMerSortingSplitter<HKMer>(work_dir, hammer::K) {}
+          : kmers::KMerSortingSplitter<HKMer>(work_dir, hammer::K) {}
 
   RawKMers Split(size_t num_files, unsigned nthreads) override;
 
@@ -166,9 +168,9 @@ class KMerDataFiller {
 
 void KMerDataCounter::FillKMerData(KMerData &data) {
   HammerKMerSplitter splitter(cfg::get().working_dir);
-  utils::KMerDiskCounter<hammer::HKMer> counter(cfg::get().working_dir, splitter);
+  kmers::KMerDiskCounter<hammer::HKMer> counter(cfg::get().working_dir, splitter);
 
-  size_t sz = utils::KMerIndexBuilder<HammerKMerIndex>(num_files_, cfg::get().max_nthreads).BuildIndex(data.index_, counter);
+  size_t sz = kmers::KMerIndexBuilder<HammerKMerIndex>(num_files_, cfg::get().max_nthreads).BuildIndex(data.index_, counter);
 
   // Now use the index to fill the kmer quality information.
   INFO("Collecting K-mer information, this takes a while.");

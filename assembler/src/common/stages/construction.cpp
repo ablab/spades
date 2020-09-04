@@ -34,7 +34,7 @@ struct ConstructionStorage {
     utils::DeBruijnExtensionIndex<> ext_index;
 
     std::unique_ptr<qf::cqf> cqf;
-    std::unique_ptr<utils::KMerDiskCounter<RtSeq>> counter;
+    std::unique_ptr<kmers::KMerDiskCounter<RtSeq>> counter;
     std::unique_ptr<CoverageMap> coverage_map;
     config::debruijn_config::construction params;
     io::ReadStreamList<io::SingleReadSeq> read_streams;
@@ -239,7 +239,7 @@ public:
         utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
                                         utils::StoringTypeFilter<storing_type>>
                 splitter(storage().workdir, index.k() + 1, 0, merge_streams, buffer_size);
-        storage().counter.reset(new utils::KMerDiskCounter<RtSeq>(storage().workdir, splitter));
+        storage().counter.reset(new kmers::KMerDiskCounter<RtSeq>(storage().workdir, splitter));
         storage().counter->CountAll(nthreads, nthreads, /* merge */false);
     }
 
