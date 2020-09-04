@@ -2,6 +2,7 @@
 
 #include "utils/ph_map/perfect_hash_map_builder.hpp"
 #include "io/kmers/mmapped_reader.hpp"
+#include "sequence/rtseq.hpp"
 
 #include <boost/optional.hpp>
 

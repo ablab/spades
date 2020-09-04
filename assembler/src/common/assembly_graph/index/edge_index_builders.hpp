@@ -8,6 +8,7 @@
 #pragma once
 
 #include "edge_info_updater.hpp"
+#include "utils/kmer_mph/kmer_splitters.hpp"
 #include "utils/ph_map/perfect_hash_map_builder.hpp"
 
 namespace debruijn_graph {
