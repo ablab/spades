@@ -59,8 +59,8 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
 
  public:
   DeBruijnKMerSplitter(fs::TmpDir work_dir,
-                       unsigned K, KmerFilter kmer_filter, size_t read_buffer_size = 0, uint32_t seed = 0)
-      : RtSeqKMerSplitter(work_dir, K, seed), kmer_filter_(kmer_filter), read_buffer_size_(read_buffer_size) {
+                       unsigned K, KmerFilter kmer_filter, size_t read_buffer_size = 0)
+      : RtSeqKMerSplitter(work_dir, K), kmer_filter_(kmer_filter), read_buffer_size_(read_buffer_size) {
   }
  protected:
   DECL_LOGGER("DeBruijnKMerSplitter");
@@ -77,11 +77,11 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
  public:
   using typename DeBruijnKMerSplitter<KmerFilter>::RawKMers;
   DeBruijnReadKMerSplitter(fs::TmpDir work_dir,
-                           unsigned K, uint32_t seed,
+                           unsigned K,
                            io::ReadStreamList<Read>& streams,
                            size_t read_buffer_size = 0,
                            KmerFilter filter = KmerFilter())
-      : DeBruijnKMerSplitter<KmerFilter>(work_dir, K, filter, read_buffer_size, seed),
+      : DeBruijnKMerSplitter<KmerFilter>(work_dir, K, filter, read_buffer_size),
       streams_(streams) {}
 
   RawKMers Split(size_t num_files, unsigned nthreads) override;

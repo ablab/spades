@@ -240,7 +240,7 @@ public:
                                                           utils::StoringTypeFilter<storing_type>>;
         
         storage().counter.reset(new kmers::KMerDiskCounter<RtSeq>(storage().workdir,
-                                                                  Splitter(storage().workdir, index.k() + 1, 0, merge_streams, buffer_size)));
+                                                                  Splitter(storage().workdir, index.k() + 1, merge_streams, buffer_size)));
         storage().counter->CountAll(nthreads, nthreads, /* merge */false);
     }
 

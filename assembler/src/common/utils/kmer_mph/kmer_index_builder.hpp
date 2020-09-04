@@ -51,7 +51,6 @@ class KMerCounter {
 public:
   typedef typename traits::raw_data_iterator       iterator;
   typedef typename traits::raw_data_const_iterator const_iterator;
-  typedef typename traits::ResultFile              ResultFile;
   typedef typename traits::RawKMerStorage          RawKMerStorage;
 
   KMerCounter()
@@ -112,12 +111,11 @@ public:
 
   size_t Count(unsigned num_buckets, unsigned num_threads) override {
     this->num_buckets_ = num_buckets;
-    unsigned num_files = num_buckets * num_threads;
 
     // Split k-mers into buckets.
-    INFO("Splitting kmer instances into " << num_files << " files using " << num_threads << " threads. This might take a while.");
+    INFO("Splitting kmer instances into " << num_buckets << " files using " << num_threads << " threads. This might take a while.");
     TIME_TRACE_BEGIN("KMerDiskCounter::Split");
-    auto raw_kmers = splitter_->Split(num_files, num_threads);
+    auto raw_kmers = splitter_->Split(num_buckets, num_threads);
     TIME_TRACE_END;
 
     INFO("Starting k-mer counting.");
@@ -126,7 +124,7 @@ public:
         TIME_TRACE_SCOPE("KMerDiskCounter::Count");
 #       pragma omp parallel for shared(raw_kmers) num_threads(num_threads) schedule(dynamic) reduction(+:kmers)
         for (size_t i = 0; i < raw_kmers.size(); ++i) {
-          kmers += MergeKMers(*raw_kmers[i], GetUniqueKMersFname(unsigned(i)));
+          kmers += MergeKMers(*raw_kmers[i], GetMergedKMersFname(unsigned(i)));
           raw_kmers[i].reset();
         }
     }
@@ -136,18 +134,6 @@ public:
       exit(-1);
     }
 
-    INFO("Merging temporary buckets.");
-    {
-        TIME_TRACE_SCOPE("KMerDiskCounter::MergeTemporary");
-        for (unsigned i = 0; i < num_buckets; ++i) {
-            std::string ofname = GetMergedKMersFname(i);
-            std::ofstream ofs(ofname.c_str(), std::ios::out | std::ios::binary);
-            for (unsigned j = 0; j < num_threads; ++j) {
-                BucketStorage ins(GetUniqueKMersFname(i + j * num_buckets), Seq::GetDataSize(k_), /* unlink */ true);
-                ofs.write((const char*)ins.data(), ins.data_size());
-            }
-        }
-    }
     this->kmers_ = kmers;
     this->counted_ = true;
 
@@ -190,10 +176,6 @@ private:
   fs::TmpFile final_kmers_;
   std::unique_ptr<kmers::KMerSplitter<Seq>> splitter_;
   unsigned k_;
-
-  std::string GetUniqueKMersFname(unsigned suffix) const {
-    return kmer_prefix_->file() + ".unique." + std::to_string(suffix);
-  }
 
   size_t MergeKMers(const std::string &ifname, const std::string &ofname) {
     MMappedRecordArrayReader<typename Seq::DataType> ins(ifname, Seq::GetDataSize(k_), /* unlink */ true);

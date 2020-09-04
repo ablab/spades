@@ -6,10 +6,13 @@
 
 #pragma once
 
+#include "kmer_buckets.hpp"
+
 #include "adt/kmer_vector.hpp"
 #include "utils/filesystem/file_limit.hpp"
 #include "utils/filesystem/temporary.hpp"
 #include "utils/memory_limit.hpp"
+#include "utils/logger/logger.hpp"
 
 #include <libcxx/sort.hpp>
 #include <string>
@@ -20,14 +23,14 @@ namespace kmers {
 template<class Seq>
 class KMerSplitter {
 public:
-    typedef typename Seq::hash hash_function;
+    typedef typename kmer::KMerBucketPolicy<Seq> KMerBuckets;
     typedef std::vector<fs::DependentTmpFile> RawKMers;
 
-    KMerSplitter(const std::string &work_dir, unsigned K, uint32_t seed = 0)
-            : KMerSplitter(fs::tmp::make_temp_dir(work_dir, "kmer_splitter"), K, seed) {}
+    KMerSplitter(const std::string &work_dir, unsigned K)
+            : KMerSplitter(fs::tmp::make_temp_dir(work_dir, "kmer_splitter"), K) {}
 
-    KMerSplitter(fs::TmpDir work_dir, unsigned K, uint32_t seed = 0)
-            : work_dir_(work_dir), K_(K), seed_(seed) {}
+    KMerSplitter(fs::TmpDir work_dir, unsigned K)
+            : work_dir_(work_dir), K_(K) {}
 
     virtual ~KMerSplitter() {}
 
@@ -38,12 +41,12 @@ public:
     }
 
     unsigned K() const { return K_; }
+    KMerBuckets bucket_policy() const { return bucket_; }
 
 protected:
     fs::TmpDir work_dir_;
-    hash_function hash_;
     unsigned K_;
-    uint32_t seed_;
+    KMerBuckets bucket_;
 
     DECL_LOGGER("K-mer Splitting");
 };
@@ -53,11 +56,11 @@ class KMerSortingSplitter : public KMerSplitter<Seq> {
 public:
     using typename KMerSplitter<Seq>::RawKMers;
 
-    KMerSortingSplitter(const std::string &work_dir, unsigned K, uint32_t seed = 0)
-            : KMerSplitter<Seq>(work_dir, K, seed), cell_size_(0), num_files_(0) {}
+    KMerSortingSplitter(const std::string &work_dir, unsigned K)
+            : KMerSplitter<Seq>(work_dir, K), cell_size_(0), num_files_(0) {}
 
-    KMerSortingSplitter(fs::TmpDir work_dir, unsigned K, uint32_t seed = 0)
-            : KMerSplitter<Seq>(work_dir, K, seed), cell_size_(0), num_files_(0) {}
+    KMerSortingSplitter(fs::TmpDir work_dir, unsigned K)
+            : KMerSplitter<Seq>(work_dir, K), cell_size_(0), num_files_(0) {}
 
 protected:
     using SeqKMerVector = adt::KMerVector<Seq>;
@@ -107,7 +110,7 @@ protected:
     bool push_back_internal(const Seq &seq, unsigned thread_id) {
         KMerBuffer &entry = kmer_buffers_[thread_id];
 
-        size_t idx = this->GetFileNumForSeq(seq, (unsigned)num_files_);
+        size_t idx = this->bucket_(seq, (unsigned)num_files_);
         entry[idx].push_back(seq);
         return entry[idx].size() > cell_size_;
     }
@@ -168,11 +171,6 @@ protected:
                 eentry.shrink_to_fit();
             }
     }
-
-    unsigned GetFileNumForSeq(const Seq &s, unsigned total) const {
-        return (unsigned)(this->hash_(s, this->seed_) % total);
-    }
-
 };
 
 }

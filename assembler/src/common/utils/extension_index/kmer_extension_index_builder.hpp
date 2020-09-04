@@ -72,9 +72,9 @@ public:
 
         // First, build a k+1-mer index
         DeBruijnReadKMerSplitter<typename Streams::ReadT, KmerFilter >
-                splitter(workdir, index.k() + 1, 0xDEADBEEF, streams, read_buffer_size);
+                splitter(workdir, index.k() + 1, streams, read_buffer_size);
         
-        auto counter = std::make_unique<kmers::KMerDiskCounter<RtSeq>>(workdir, splitter);
+        auto counter = std::make_unique<kmers::KMerDiskCounter<RtSeq>>(workdir, std::move(splitter));
         counter->CountAll(nthreads, nthreads, /* merge */ false);
 
         BuildExtensionIndexFromKPOMers(workdir, index, *counter,
@@ -95,7 +95,7 @@ public:
                          index.k() + 1, Index::storing_type::IsInvertable(), read_buffer_size);
         for (unsigned i = 0; i < counter.num_buckets(); ++i)
             splitter.AddKMers(counter.GetMergedKMersFname(i));
-        kmers::KMerDiskCounter<RtSeq> counter2(workdir, splitter);
+        kmers::KMerDiskCounter<RtSeq> counter2(workdir, std::move(splitter));
 
         BuildIndex(index, counter2, 16, nthreads);
 
