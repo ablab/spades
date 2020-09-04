@@ -85,7 +85,7 @@ public:
         , seq(seq)
         , nthreads(nthreads)
     {
-        DropOverlappedEdges();
+        // DropOverlappedEdges();
     }
 
     pair<std::string, std::vector<PathWithBorderEdgesIndexies>> GetBestSequence() const;

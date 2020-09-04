@@ -50,28 +50,29 @@ FilterType<Columns::match, Columns::strand, Columns::block_count,
            > GetFilter()
 {
     return [](auto const & element) {
+        constexpr auto EDGE_LENGTH_ERROR_COEFF = 0.02;
+        constexpr auto LENGTHS_ERROR_COEFF = 0.01;
         if (element.template Get<Columns::strand>() != '+' || element.template Get<Columns::block_count>() != 1)
             return false;
         auto matched = element.template Get<Columns::match>();
         auto contig_start = element.template Get<Columns::Q_start>();
         auto contig_end = element.template Get<Columns::Q_end>();
-        auto contig_len = element.template Get<Columns::Q_size>();
 
         auto edge_start = element.template Get<Columns::T_start>();
         auto edge_end = element.template Get<Columns::T_end>();
         auto edge_len = element.template Get<Columns::T_size>();
-        auto contig_delta = contig_end - contig_start;
-        auto edge_delta = edge_end - edge_start;
+        auto contig_delta = contig_end - contig_start + 1;
+        auto edge_delta = edge_end - edge_start + 1;
 
-        auto identity = static_cast<double>(matched) / static_cast<double>(contig_delta + 1);
-        auto cov = static_cast<double>(edge_delta) / static_cast<double>(edge_len);
+        auto identity = static_cast<double>(matched) / static_cast<double>(contig_delta);
+        auto edge_len_difference = std::abs(edge_delta - edge_len);
+        auto lens_difference = std::abs(contig_delta - edge_delta);
 
-        auto contig_first_or_last = contig_start < 10 || (contig_len - contig_end) < 20;
-        auto edge_first_or_last = edge_start < 20 || (edge_len - edge_end) < 20;
-
-        return ((contig_first_or_last && edge_first_or_last) || (cov > 0.98 && identity > 0.99 && contig_delta > 999)) &&
-                (double) contig_delta > (double) edge_delta * 0.99 &&
-                GetCov(element.template Get<Columns::T_name>()) > 2;
+        return identity > 0.95 &&
+               contig_delta > 1000 &&
+               (double)edge_len_difference < (double)edge_len * EDGE_LENGTH_ERROR_COEFF &&
+               (double) lens_difference < (double) edge_delta * LENGTHS_ERROR_COEFF &&
+               GetCov(element.template Get<Columns::T_name>()) > 2;
     };
 }
 
@@ -95,7 +96,7 @@ std::pair<PathWithEdgePostionsContainer, std::vector<std::string>> MakePaths(Rec
     for (auto const & contig : ContigFragments) {
         PathWithEdgePostions path;
         for (size_t index : contig.second) {
-            path.positions.push_back(records[index].template Get<Columns::Q_start>());
+            path.positions.push_back((int)records[index].template Get<Columns::Q_start>());
             path.edge_set.push_back({GetEdgeId(records[index].template Get<Columns::T_name>(), graph)});
         }
         if (!path.positions.empty()) {
