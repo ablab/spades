@@ -6,17 +6,31 @@
 
 #pragma once
 
+#include <cstdlib>
 
 namespace kmer {
 
 template<class Seq>
-struct KMerBucketPolicy {
+class KMerBucketPolicy {
     typedef typename Seq::hash hash;
 
-    unsigned operator()(const Seq &s, unsigned total) const {
-        return (unsigned)(hash()(s) % total);
+public:
+    explicit KMerBucketPolicy(size_t num_buckets = 0)
+            : num_buckets_(num_buckets) {}
+
+    void reset(size_t num_buckets) {
+        num_buckets_ = num_buckets;
     }
+
+    size_t num_buckets() const { return num_buckets_; }
+
+    size_t operator()(const Seq &s) const {
+        return hash()(s) % num_buckets_;
+    }
+
+private:
+    size_t num_buckets_ = 0;
 };
-    
+
 
 }

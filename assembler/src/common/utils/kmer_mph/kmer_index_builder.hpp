@@ -45,14 +45,14 @@
 
 namespace kmers {
 
-
 template<class Seq, class traits = kmer_index_traits<Seq> >
 class KMerCounter {
 public:
   typedef typename traits::raw_data_iterator       iterator;
   typedef typename traits::raw_data_const_iterator const_iterator;
   typedef typename traits::RawKMerStorage          RawKMerStorage;
-
+  typedef typename kmer::KMerBucketPolicy<Seq>     KMerBucketPolicy;
+  
   KMerCounter()
       : kmers_(0), counted_(false) {}
 

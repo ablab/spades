@@ -72,6 +72,7 @@ protected:
 
     RawKMers PrepareBuffers(size_t num_files, unsigned nthreads, size_t reads_buffer_size) {
         num_files_ = num_files;
+        this->bucket_.reset(num_files);
 
         // Determine the set of output files
         RawKMers out;
@@ -110,7 +111,7 @@ protected:
     bool push_back_internal(const Seq &seq, unsigned thread_id) {
         KMerBuffer &entry = kmer_buffers_[thread_id];
 
-        size_t idx = this->bucket_(seq, (unsigned)num_files_);
+        size_t idx = this->bucket_(seq);
         entry[idx].push_back(seq);
         return entry[idx].size() > cell_size_;
     }
