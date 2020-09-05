@@ -28,6 +28,10 @@
 using namespace std;
 using namespace path_extend;
 
+#define WISHED_COLUMNS Columns::match, Columns::strand, Columns::block_count,\
+          Columns::Q_name, Columns::Q_size, Columns::Q_start, Columns::Q_end,\
+          Columns::T_name, Columns::T_size, Columns::T_start, Columns::T_end
+
 struct gcfg {
     gcfg()
         : k(21)
@@ -98,6 +102,30 @@ std::vector<std::string> ReadContigsNames(std::string const & filtered_contigs_n
     return names;
 }
 
+void WriteWithWidth(std::ostream & out, std::string const & seq, size_t width = 100) {
+    for (size_t pos = 0; pos < seq.size(); pos += width)
+        out << seq.substr(pos, width) << '\n';
+}
+
+template<Columns ... columns>
+void MakeAllFilteredEdgesDump(Records<columns ...> const & records, MapFromContigNameToContigFragments const & contig_fragments, Graph const & graph, std::string const & output_dir) {
+    auto dir = fs::append_path(output_dir, "filtered_edges_dump");
+    fs::remove_if_exists(dir);
+    fs::make_dir(dir);
+
+    for (auto const & contig : contig_fragments) {
+        if (contig.second.empty())
+            continue;
+        std::ofstream output(fs::append_path(dir, contig.first + ".fasta"));
+        for (auto index : contig.second) {
+            auto const & record = records[index];
+            auto edge_id = GetEdgeId(record.template Get<Columns::T_name>(), graph);
+            output << ">mapped_onto_contig_from_" << record.template Get<Columns::Q_start>() << "_to_" << record.template Get<Columns::Q_end>() << ";_real_id_" << edge_id << ";\n";
+            WriteWithWidth(output, graph.EdgeNucls(edge_id).str());
+        }
+    }
+}
+
 constexpr char BASE_NAME[] = "graph_pack";
 
 int main(int argc, char* argv[]) {
@@ -164,8 +192,10 @@ int main(int argc, char* argv[]) {
             if (!blat_output_stream.is_open())
                 throw "Cannot open " + cfg.blat_output;
             INFO("Started blat output reading");
-            auto res = Read(blat_output_stream, GetFilter());
-            auto paths_data = MakePaths(res, graph);
+            auto res = Read(blat_output_stream, GetFilter<WISHED_COLUMNS>());
+            auto fragments = GetContigFragments(res, GetNonDropper<WISHED_COLUMNS>(), graph.k());
+            MakeAllFilteredEdgesDump(res, fragments, graph, output_dir);
+            auto paths_data = MakePaths(res, fragments, graph);
             auto const & input_paths = paths_data.first;
             auto const & paths_names = paths_data.second;
         #endif
@@ -183,9 +213,7 @@ int main(int argc, char* argv[]) {
             if (contig.seq.empty())
                 continue;
             contigs_output << '>' << contig.name << " len=" << contig.seq.size() << '\n';
-            const auto d_pos = 100;
-            for (size_t pos = 0; pos < contig.seq.size(); pos += d_pos)
-                contigs_output << contig.seq.substr(pos, d_pos) << '\n';
+            WriteWithWidth(contigs_output, contig.seq);
         }
     } catch (const std::string &s) {
         std::cerr << s << std::endl;

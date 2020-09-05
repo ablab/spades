@@ -84,9 +84,7 @@ public:
         , path_info(path_info)
         , seq(seq)
         , nthreads(nthreads)
-    {
-        // DropOverlappedEdges();
-    }
+    {}
 
     pair<std::string, std::vector<PathWithBorderEdgesIndexies>> GetBestSequence() const;
 private:
@@ -118,28 +116,6 @@ private:
         DEBUG("Negative distance between " << graph.int_id(GetEdge(start_pos)) << " and " << graph.int_id(GetEdge(end_pos)));
         return -1ull;
         // return 0;
-    }
-
-    void DropOverlappedEdges() {
-        vector<bool> is_bad_edge(Size(), false);
-        for (size_t i = 0; i + 1 < Size(); ++i) {
-            if (GetPos(i + 1) < GetPos(i) + (long long)EdgeLenInNucl(GetEdge(i))) {
-                is_bad_edge[i] = true;
-                is_bad_edge[i + 1] = true;
-            }
-        }
-        PathWithEdgePostions new_path_info;
-        for (size_t i = 0; i < Size(); ++i) {
-            if (!is_bad_edge[i]) {
-                new_path_info.edge_set.push_back(std::move(path_info.edge_set[i]));
-                new_path_info.positions.push_back(path_info.positions[i]);
-            }
-        }
-        auto dropped_pats_cnt = Size();
-        path_info = std::move(new_path_info);
-        dropped_pats_cnt -= Size();
-        if (dropped_pats_cnt > 0)
-            WARN(dropped_pats_cnt << " edge" << (dropped_pats_cnt != 1 ? "s" : "") << " would be dropped");
     }
 
     std::string BackMappingDropCurrentSuffix(vector<PathWithBorderEdgesIndexies> const & paths) const;
@@ -448,8 +424,8 @@ path_extend::PathContainer Launch(debruijn_graph::GraphPack const & gp,
             continue;
         }
         #endif
-        INFO("Processing path# " << i + 1 << " (of " << input_paths.size() << ") with " << input_paths[i].edge_set.size() << " edges");
         auto & contig = *find_if(contigs.begin(), contigs.end(), [&path_name](SeqString const & contig){return contig.name == path_name;});
+        INFO("Processing path [" << contig.name << "] # " << i + 1 << " (of " << input_paths.size() << ") with " << input_paths[i].edge_set.size() << " edges");
         SequenceCorrector<PathFiller::UseDistance> corrector(graph, params, cover_map, input_paths[i], contig.seq, nthreads);
 
         auto data = corrector.GetBestSequence();
