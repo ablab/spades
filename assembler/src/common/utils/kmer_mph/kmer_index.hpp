@@ -7,6 +7,7 @@
 //***************************************************************************
 
 #include "kmer_index_traits.hpp"
+#include "kmer_buckets.hpp"
 
 #include <boomphf/BooPHF.h>
 
@@ -114,6 +115,7 @@ public:
     bucket_starts_.resize(num_buckets_ + 1);
     is.read((char*)&bucket_starts_[0], (num_buckets_ + 1) * sizeof(bucket_starts_[0]));
     count_size();
+    bucket_policy_.reset(num_buckets_);
   }
 
   void swap(KMerIndex<traits> &other) {
@@ -121,6 +123,7 @@ public:
     std::swap(num_buckets_, other.num_buckets_);
     std::swap(size_, other.size_);
     std::swap(bucket_starts_, other.bucket_starts_);
+    std::swap(bucket_policy_, other.bucket_policy_);
   }
 
  private:
@@ -129,12 +132,13 @@ public:
   size_t num_buckets_;
   std::vector<size_t> bucket_starts_;
   size_t size_;
+  kmer::KMerBucketPolicy<KMerSeq> bucket_policy_;
 
   size_t seq_bucket(const KMerSeq &s) const {
-    return hash_function()(s) % num_buckets_;
+    return bucket_policy_(s);
   }
   size_t raw_seq_bucket(const KMerRawReference data) const {
-    return hash_function()(data) % num_buckets_;
+    return bucket_policy(data);
   }
 
   friend class KMerIndexBuilder<__self>;

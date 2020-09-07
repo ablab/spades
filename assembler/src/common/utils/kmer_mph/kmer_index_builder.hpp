@@ -330,6 +330,7 @@ class KMerIndexBuilder {
     size_t buckets = kmer_storage.num_buckets();
     index.num_buckets_ = buckets;
     index.bucket_starts_.resize(buckets + 1);
+    index.bucket_policy_.reset(buckets);
     index.index_ = new typename KMerIndex<kmer_index_traits>::KMerDataIndex[buckets];
 
     INFO("Building perfect hash indices");

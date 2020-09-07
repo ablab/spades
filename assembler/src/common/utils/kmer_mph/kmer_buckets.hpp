@@ -28,6 +28,11 @@ public:
         return hash()(s) % num_buckets_;
     }
 
+    template<class Ref>
+    size_t operator()(Ref s) const {
+        return hash()(s) % num_buckets_;
+    }
+
 private:
     size_t num_buckets_ = 0;
 };
