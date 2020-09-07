@@ -10,6 +10,7 @@
 
 #include "io/kmers/mmapped_reader.hpp"
 #include "io/kmers/mmapped_writer.hpp"
+#include "io/kmers/kmer_iterator.hpp"
 
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/memory_limit.hpp"
@@ -53,6 +54,43 @@ class KMerDiskStorage {
   typedef S Seq;
   typedef typename std::vector<fs::DependentTmpFile> Buckets;
   typedef typename kmer::KMerBucketPolicy<Seq>       KMerBucketPolicy;
+  typedef typename traits::KMerRawReference          KMerRawReference;
+  typedef typename traits::KMerRawData               KMerRawData;
+
+  class kmer_iterator :
+      public boost::iterator_facade<kmer_iterator,
+                                    KMerRawData,
+                                    std::input_iterator_tag,
+                                    KMerRawReference> {
+   public:
+    // Default ctor, used to implement "end" iterator
+    kmer_iterator() : k_(0) { }
+
+    kmer_iterator(const std::string &FileName, unsigned k)
+        : inner_iterator_(FileName, Seq::GetDataSize(k)), k_(k) {}
+
+    void operator+=(size_t n) {
+      inner_iterator_ += n;
+    }
+
+   private:
+    friend class boost::iterator_core_access;
+
+    void increment() {
+      ++inner_iterator_;
+    }
+
+    bool equal(const kmer_iterator &other) const {
+        return inner_iterator_ == other.inner_iterator_;
+    }
+
+    KMerRawReference dereference() const {
+      return adt::array_vector<typename Seq::DataType>(const_cast<typename Seq::DataType*>(*inner_iterator_), 0, Seq::GetDataSize(k_))[0];
+    }
+
+    MMappedFileRecordArrayIterator<typename Seq::DataType> inner_iterator_;
+    unsigned k_;
+  };
 
   KMerDiskStorage(fs::TmpDir work_dir, unsigned k,
                   KMerBucketPolicy policy)
@@ -100,9 +138,16 @@ class KMerDiskStorage {
     return all_kmers_;
   }
 
-  // FIXME: temporary
-  std::unique_ptr<BucketStorage> bucket(size_t i) const {
-    return std::make_unique<BucketStorage>(*buckets_.at(i), Seq::GetDataSize(k_), false);
+  size_t bucket_size(size_t i) const {
+    return fs::filesize(*buckets_.at(i)) / (Seq::GetDataSize(k_) * sizeof(typename Seq::DataType));
+  }
+
+  kmer_iterator bucket_begin(size_t i) const {
+    return kmer_iterator(*buckets_.at(i), k_);
+  }
+
+  kmer_iterator bucket_end() const {
+    return kmer_iterator();
   }
 
   // FIXME: temporary
@@ -340,12 +385,12 @@ class KMerIndexBuilder {
 #     pragma omp parallel for shared(index) num_threads(num_threads_)
       for (size_t i = 0; i < buckets; ++i) {
           typename KMerIndex<kmer_index_traits>::KMerDataIndex &data_index = index.index_[i];
-          auto bucket = kmer_storage.bucket(i);
-          size_t sz = bucket->end() - bucket->begin();
+          //auto bucket = kmer_storage.bucket(i);
+          size_t sz = kmer_storage.bucket_size(i);
           index.bucket_starts_[i + 1] = sz;
 
           data_index = typename Index::KMerDataIndex(sz,
-                                                     boomphf::range(bucket->begin(), bucket->end()),
+                                                     boomphf::range(kmer_storage.bucket_begin(i), kmer_storage.bucket_end()),
                                                      1, 4.0, false, false);
       }
     }

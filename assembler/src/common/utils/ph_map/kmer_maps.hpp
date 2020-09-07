@@ -184,12 +184,12 @@ public:
 
     kmer_iterator kmer_begin() const {
         VERIFY(kmers_ && "Index should be built");
-        return kmer_iterator(*this->kmers_, KMer::GetDataSize(base::k()));
+        return raw_kmer_iterator(*this->kmers_, KMer::GetDataSize(base::k()));
     }
 
     std::vector<kmer_iterator> kmer_begin(size_t parts) const {
         VERIFY(kmers_ && "Index should be built");
-        return io::make_kmer_iterator<KMer>(*this->kmers_, base::k(), parts);
+        return io::make_raw_kmer_iterator<KMer>(*this->kmers_, base::k(), parts);
     }
 
     friend struct KeyIteratingIndexBuilder;

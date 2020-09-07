@@ -222,6 +222,7 @@ public:
     size_t data_size() const { return FileSize; }
 
     void *data() const { return MappedRegion; }
+    void *cdata() const { return MappedRegion + BytesRead - BlockOffset; }
 };
 
 template<typename T>
@@ -377,7 +378,7 @@ public:
     MMappedFileRecordArrayIterator(const std::string &FileName,
                                    size_t elcnt,
                                    off_t offset = 0, size_t filesize = 0)
-            : value_(NULL),
+            : value_(nullptr),
               array_size_(sizeof(T) * elcnt),
               reader_(FileName, false,
                       round_up(filesize > 0 ? std::min(size_t(64 * 1024 * 1024), filesize) : 64 * 1024 * 1024,
@@ -388,13 +389,22 @@ public:
     }
 
     MMappedFileRecordArrayIterator(MMappedRecordReader<T> &&reader, size_t elcnt)
-            : value_(NULL), array_size_(sizeof(T) * elcnt), reader_(std::move(reader)), good_(false) {
+            : value_(nullptr), array_size_(sizeof(T) * elcnt), reader_(std::move(reader)), good_(false) {
         increment();
     }
 
-    MMappedFileRecordArrayIterator(const MMappedFileRecordArrayIterator &) = default;
+    MMappedFileRecordArrayIterator(const MMappedFileRecordArrayIterator &that) {
+        assign(that);
+    }
+
     MMappedFileRecordArrayIterator(MMappedFileRecordArrayIterator &&other) = default;
-    MMappedFileRecordArrayIterator& operator=(const MMappedFileRecordArrayIterator &) = default;
+    MMappedFileRecordArrayIterator& operator=(const MMappedFileRecordArrayIterator &that) {
+        if (&that != this)
+            assign(that);
+
+        return *this;
+    }
+
     MMappedFileRecordArrayIterator& operator=(MMappedFileRecordArrayIterator &&other) = default;
 
     bool good() const { return good_; }
@@ -408,6 +418,16 @@ public:
 
 private:
     friend class boost::iterator_core_access;
+
+    void assign(const MMappedFileRecordArrayIterator &that) {
+        // Ok, this is a bit crazy: first, we need to restore all fields but value
+        array_size_ = that.array_size_;
+        reader_ = that.reader_;
+        good_ = that.good_;
+        // Now we need to restore value. The problem is that reader already remapped and it is *past* the value.
+        // Therefore we need to grap the pointer from the value and get the "previous" one.
+        value_ = (good_ ? (T*)reader_.cdata() - (array_size_ / sizeof(T)) : nullptr);
+    }
 
     void increment() {
         this->operator+=(1);

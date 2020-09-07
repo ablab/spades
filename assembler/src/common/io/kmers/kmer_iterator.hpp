@@ -10,14 +10,14 @@ template<class Seq>
 using raw_kmer_iterator = MMappedFileRecordArrayIterator<typename Seq::DataType>;
 
 template<class Seq>
-raw_kmer_iterator<Seq> make_kmer_iterator(const std::string &FileName,
-                                          unsigned K) {
+raw_kmer_iterator<Seq> make_raw_kmer_iterator(const std::string &FileName,
+                                              unsigned K) {
     return raw_kmer_iterator<Seq>(FileName, Seq::GetDataSize(K));
 }
 
 template<class Seq>
-std::vector<raw_kmer_iterator<Seq>> make_kmer_iterator(const std::string &FileName,
-                                                       size_t K, size_t amount) {
+std::vector<raw_kmer_iterator<Seq>> make_raw_kmer_iterator(const std::string &FileName,
+                                                           size_t K, size_t amount) {
     std::vector<raw_kmer_iterator<Seq>> res;
     if (amount == 1) {
         res.emplace_back(FileName, Seq::GetDataSize(K));
@@ -47,7 +47,6 @@ std::vector<raw_kmer_iterator<Seq>> make_kmer_iterator(const std::string &FileNa
 
     return res;
 }
-
 
 };
 
