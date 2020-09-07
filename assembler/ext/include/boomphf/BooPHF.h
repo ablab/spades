@@ -408,7 +408,7 @@ template<class SingleHasher_t> class XorshiftHashFunctors {
 template <typename Iterator>
 struct iter_range {
     iter_range(Iterator b, Iterator e)
-            : m_begin(b), m_end(e) {}
+            : m_begin(std::move(b)), m_end(std::move(e)) {}
 
     Iterator begin() const { return m_begin; }
     Iterator end() const { return m_end; }
@@ -418,7 +418,7 @@ struct iter_range {
 
 template <typename Iterator>
 iter_range<Iterator> range(Iterator begin, Iterator end) {
-    return iter_range<Iterator>(begin, end);
+    return iter_range<Iterator>(std::move(begin), std::move(end));
 }
 
 ////////////////////////////////////////////////////////////////
