@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "adt/lemiere_mod_reduce.hpp"
 #include <cstdlib>
 
 namespace kmer {
@@ -25,12 +26,12 @@ public:
     size_t num_buckets() const { return num_buckets_; }
 
     size_t operator()(const Seq &s) const {
-        return hash()(s) % num_buckets_;
+        return mod_reduce::multiply_high_u64(hash()(s), num_buckets_);
     }
 
     template<class Ref>
     size_t operator()(Ref s) const {
-        return hash()(s) % num_buckets_;
+        return mod_reduce::multiply_high_u64(hash()(s), num_buckets_);
     }
 
 private:
