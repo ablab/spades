@@ -45,35 +45,120 @@
 
 namespace kmers {
 
-template<class Seq, class traits = kmer_index_traits<Seq> >
+// TODO: Make interface
+template<class S, class traits = kmer_index_traits<S>>
+class KMerDiskStorage {
+  typedef typename traits::RawKMerStorage BucketStorage;
+ public:
+  typedef S Seq;
+  typedef typename std::vector<fs::DependentTmpFile> Buckets;
+  typedef typename kmer::KMerBucketPolicy<Seq>       KMerBucketPolicy;
+
+  KMerDiskStorage(fs::TmpDir work_dir, unsigned k,
+                  KMerBucketPolicy policy)
+      : work_dir_(work_dir), k_(k), bucket_policy_(std::move(policy)) {
+    kmer_prefix_ = work_dir_->tmp_file("kmers");
+    resize(policy.num_buckets());
+  }
+
+  fs::DependentTmpFile create() {
+    fs::DependentTmpFile res;
+#pragma omp critical
+    {
+      buckets_.emplace_back(kmer_prefix_->CreateDep(std::to_string(buckets_.size())));
+      res = buckets_.back();
+    }
+    return res;
+  }
+
+  fs::DependentTmpFile create(size_t idx) {
+    fs::DependentTmpFile res = kmer_prefix_->CreateDep(std::to_string(idx));
+    buckets_.at(idx) = res;
+    return res;
+  }
+
+  void resize(size_t n) {
+    buckets_.resize(n);
+  }
+
+  unsigned k() const { return k_; }
+
+  size_t kmers() const {
+    size_t fsize = 0;
+    if (all_kmers_) {
+      fsize = fs::filesize(*all_kmers_);
+    } else {
+      for (const auto &file : buckets_)
+        fsize += fs::filesize(*file);
+    }
+
+    return fsize / (Seq::GetDataSize(k_) * sizeof(typename Seq::DataType));
+  }
+
+  fs::TmpFile final_kmers() {
+    VERIFY_MSG(all_kmers_, "k-mers were not merged yet");
+    return all_kmers_;
+  }
+
+  // FIXME: temporary
+  std::unique_ptr<BucketStorage> bucket(size_t i) const {
+    return std::make_unique<BucketStorage>(*buckets_.at(i), Seq::GetDataSize(k_), false);
+  }
+
+  // FIXME: temporary
+  std::string kmer_file(size_t i) const {
+    return *buckets_.at(i);
+  }
+
+  size_t num_buckets() const { return buckets_.size(); }
+
+  void merge() {
+    INFO("Merging final buckets.");
+    TIME_TRACE_SCOPE("KMerDiskStorage::MergeFinal");
+
+    all_kmers_ = work_dir_->tmp_file("final_kmers");
+    std::ofstream ofs(*all_kmers_, std::ios::out | std::ios::binary);
+    for (auto &entry : buckets_) {
+      BucketStorage bucket(*entry, Seq::GetDataSize(k_), false);
+      ofs.write((const char*)bucket.data(), bucket.data_size());
+      entry.reset();
+    }
+    buckets_.clear();
+    ofs.close();
+  }
+
+
+ private:
+  fs::TmpDir work_dir_;
+  fs::TmpFile kmer_prefix_;
+  fs::TmpFile all_kmers_;
+  unsigned k_;
+  Buckets buckets_;
+  KMerBucketPolicy bucket_policy_;
+};
+
+
+template<class S, class traits = kmer_index_traits<S> >
 class KMerCounter {
 public:
   typedef typename traits::raw_data_iterator       iterator;
   typedef typename traits::raw_data_const_iterator const_iterator;
   typedef typename traits::RawKMerStorage          RawKMerStorage;
-  typedef typename kmer::KMerBucketPolicy<Seq>     KMerBucketPolicy;
-  
-  KMerCounter()
-      : kmers_(0), counted_(false) {}
+  typedef S Seq;
+
+  KMerCounter(unsigned k)
+      : k_(k) { }
 
   virtual size_t kmer_size() const = 0;
+  unsigned k() const { return k_; }
 
-  virtual size_t Count(unsigned num_buckets, unsigned num_threads) = 0;
-  virtual size_t CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) = 0;
-  virtual void MergeBuckets() = 0;
-
-  virtual std::unique_ptr<RawKMerStorage> GetBucket(size_t idx, bool unlink = true) = 0;
+  virtual KMerDiskStorage<Seq> Count(unsigned num_buckets, unsigned num_threads) = 0;
+  virtual KMerDiskStorage<Seq> CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) = 0;
 
   virtual ~KMerCounter() {}
 
-  unsigned num_buckets() const { return num_buckets_; }
-  size_t kmers() const { return kmers_; }
-  bool counted() const { return counted_; }
-
  protected:
-  unsigned num_buckets_;
-  size_t kmers_;
-  bool counted_;
+  unsigned k_;
 
   DECL_LOGGER("K-mer Counting");
 };
@@ -87,9 +172,7 @@ public:
   template<class Splitter>
   KMerDiskCounter(fs::TmpDir work_dir,
                   Splitter splitter)
-      : work_dir_(work_dir), splitter_(new Splitter{std::move(splitter)}), k_(splitter_->K()) {
-    kmer_prefix_ = work_dir_->tmp_file("kmers");
-  }
+      : __super(splitter.K()), splitter_(new Splitter{std::move(splitter)}), work_dir_(work_dir) {}
 
   template<class Splitter>
   KMerDiskCounter(const std::string &work_dir,
@@ -98,33 +181,26 @@ public:
 
   ~KMerDiskCounter() {}
 
-  unsigned k() const { return k_; }
-
   size_t kmer_size() const override {
-    return Seq::GetDataSize(k_) * sizeof(typename Seq::DataType);
+    return Seq::GetDataSize(this->k()) * sizeof(typename Seq::DataType);
   }
 
-  std::unique_ptr<BucketStorage> GetBucket(size_t idx, bool unlink = true) override {
-    VERIFY_MSG(this->counted_, "k-mers were not counted yet");
-    return std::unique_ptr<BucketStorage>(new BucketStorage(GetMergedKMersFname((unsigned)idx), Seq::GetDataSize(k_), unlink));
-  }
-
-  size_t Count(unsigned num_buckets, unsigned num_threads) override {
-    this->num_buckets_ = num_buckets;
-
+  KMerDiskStorage<Seq> Count(unsigned num_buckets, unsigned num_threads) override {
     // Split k-mers into buckets.
     INFO("Splitting kmer instances into " << num_buckets << " files using " << num_threads << " threads. This might take a while.");
     TIME_TRACE_BEGIN("KMerDiskCounter::Split");
     auto raw_kmers = splitter_->Split(num_buckets, num_threads);
+    VERIFY(raw_kmers.size() == num_buckets);
     TIME_TRACE_END;
 
     INFO("Starting k-mer counting.");
+    KMerDiskStorage<Seq> res(work_dir_, this->k(), splitter_->bucket_policy());
     size_t kmers = 0;
     {
         TIME_TRACE_SCOPE("KMerDiskCounter::Count");
 #       pragma omp parallel for shared(raw_kmers) num_threads(num_threads) schedule(dynamic) reduction(+:kmers)
         for (size_t i = 0; i < raw_kmers.size(); ++i) {
-          kmers += MergeKMers(*raw_kmers[i], GetMergedKMersFname(unsigned(i)));
+          kmers += MergeKMers(*raw_kmers[i], *res.create(i));
           raw_kmers[i].reset();
         }
     }
@@ -134,51 +210,23 @@ public:
       exit(-1);
     }
 
-    this->kmers_ = kmers;
-    this->counted_ = true;
-
-    return kmers;
+    return res;
   }
 
-  void MergeBuckets() override {
-    INFO("Merging final buckets.");
-    TIME_TRACE_SCOPE("KMerDiskCounter::MergeFinal");
-
-    final_kmers_ = work_dir_->tmp_file("final_kmers");
-    std::ofstream ofs(*final_kmers_, std::ios::out | std::ios::binary);
-    for (unsigned j = 0; j < this->num_buckets_; ++j) {
-      auto bucket = GetBucket(j, /* unlink */ true);
-      ofs.write((const char*)bucket->data(), bucket->data_size());
-    }
-    ofs.close();
-  }
-
-  size_t CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) override {
-    size_t kmers = Count(num_buckets, num_threads);
+  KMerDiskStorage<Seq> CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) override {
+    auto storage = Count(num_buckets, num_threads);
     if (merge)
-      MergeBuckets();
+      storage.merge();
 
-    return kmers;
-  }
-
-  std::string GetMergedKMersFname(unsigned suffix) const {
-    return kmer_prefix_->file() + ".merged." + std::to_string(suffix);
-  }
-
-  ResultFile final_kmers_file() {
-    VERIFY_MSG(this->final_kmers_, "k-mers were not counted yet");
-    return final_kmers_;
+    return storage;
   }
 
 private:
-  fs::TmpDir work_dir_;
-  fs::TmpFile kmer_prefix_;
-  fs::TmpFile final_kmers_;
   std::unique_ptr<kmers::KMerSplitter<Seq>> splitter_;
-  unsigned k_;
+  fs::TmpDir work_dir_;
 
   size_t MergeKMers(const std::string &ifname, const std::string &ofname) {
-    MMappedRecordArrayReader<typename Seq::DataType> ins(ifname, Seq::GetDataSize(k_), /* unlink */ true);
+    MMappedRecordArrayReader<typename Seq::DataType> ins(ifname, Seq::GetDataSize(this->k()), /* unlink */ true);
 
     std::string IdxFileName = ifname + ".idx";
     if (FILE *f = fopen(IdxFileName.c_str(), "rb")) {
@@ -210,7 +258,7 @@ private:
       }
 
       // Write it down!
-      adt::KMerVector<Seq> buf(k_, 1024*1024);
+      adt::KMerVector<Seq> buf(this->k(), 1024*1024);
       size_t total = 0;
       while (!tree.empty()) {
           buf.clear();
@@ -224,7 +272,7 @@ private:
 
             if (tree.empty())
               break;
-            
+
             buf.push_back(tree.top());
             tree.replay();
             cnt += 1;
@@ -255,7 +303,7 @@ private:
       // resizing.
       auto it = std::unique(ins.begin(), ins.end(), adt::array_equal_to<typename Seq::DataType>());
 
-      MMappedRecordArrayWriter<typename Seq::DataType> os(ofname, Seq::GetDataSize(k_));
+      MMappedRecordArrayWriter<typename Seq::DataType> os(ofname, Seq::GetDataSize(this->k()));
       os.resize(it - ins.begin());
       std::copy(ins.begin(), it, os.begin());
 
@@ -275,43 +323,23 @@ class KMerIndexBuilder {
  public:
   KMerIndexBuilder(unsigned num_buckets, unsigned num_threads)
       : num_buckets_(num_buckets), num_threads_(num_threads) {}
-  size_t BuildIndex(Index &out, KMerCounter<Seq> &counter,
-                    bool save_final = false);
 
- private:
+  void BuildIndex(Index &index, const KMerDiskStorage<Seq> &kmer_storage) {
+    index.clear();
 
-  DECL_LOGGER("K-mer Index Building");
-};
+    size_t buckets = kmer_storage.num_buckets();
+    index.num_buckets_ = buckets;
+    index.bucket_starts_.resize(buckets + 1);
+    index.index_ = new typename KMerIndex<kmer_index_traits>::KMerDataIndex[buckets];
 
-// FIXME: Should be able to build index just from the set of files
-template<class Index>
-size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &counter,
-                                           bool save_final) {
-    //TIME_TRACE_SCOPE("KMerIndexBuilder::BuildIndex");
+    INFO("Building perfect hash indices");
 
-  index.clear();
-
-  INFO("Building kmer index ");
-
-  // First, count the unique k-mers
-  if (!counter.counted())
-    counter.Count(num_buckets_, num_threads_);
-
-  size_t kmers = counter.kmers();
-  unsigned buckets = counter.num_buckets();
-
-  index.num_buckets_ = buckets;
-  index.bucket_starts_.resize(buckets + 1);
-  index.index_ = new typename KMerIndex<kmer_index_traits>::KMerDataIndex[buckets];
-
-  INFO("Building perfect hash indices");
-
-  {
+    {
       TIME_TRACE_SCOPE("KMerDiskCounter::BuildPHM");
 #     pragma omp parallel for shared(index) num_threads(num_threads_)
-      for (unsigned i = 0; i < buckets; ++i) {
+      for (size_t i = 0; i < buckets; ++i) {
           typename KMerIndex<kmer_index_traits>::KMerDataIndex &data_index = index.index_[i];
-          auto bucket = counter.GetBucket(i, !save_final);
+          auto bucket = kmer_storage.bucket(i);
           size_t sz = bucket->end() - bucket->begin();
           index.bucket_starts_[i + 1] = sz;
 
@@ -319,18 +347,36 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
                                                      boomphf::range(bucket->begin(), bucket->end()),
                                                      1, 4.0, false, false);
       }
+    }
+
+    // Finally, record the sizes of buckets.
+    for (unsigned i = 1; i < buckets; ++i)
+      index.bucket_starts_[i] += index.bucket_starts_[i - 1];
+
+    double bits_per_kmer = 8.0 * (double)index.mem_size() / (double)kmer_storage.kmers();
+    INFO("Index built. Total " << index.mem_size() << " bytes occupied (" << bits_per_kmer << " bits per kmer).");
+    index.count_size();
   }
-  
-  // Finally, record the sizes of buckets.
-  for (unsigned i = 1; i < buckets; ++i)
-    index.bucket_starts_[i] += index.bucket_starts_[i - 1];
 
-  if (save_final)
-    counter.MergeBuckets();
+  KMerDiskStorage<Seq> BuildIndex(Index &index, KMerCounter<Seq> &counter,
+                                  bool save_final = false) {
+    //TIME_TRACE_SCOPE("KMerIndexBuilder::BuildIndex");
 
-  double bits_per_kmer = 8.0 * (double)index.mem_size() / (double)kmers;
-  INFO("Index built. Total " << index.mem_size() << " bytes occupied (" << bits_per_kmer << " bits per kmer).");
-  index.count_size();
-  return kmers;
-}
+    INFO("Building kmer index");
+    // First, count the unique k-mers
+    auto kmer_storage = counter.Count(num_buckets_, num_threads_);
+
+    // Now, build the index itself
+    BuildIndex(index, kmer_storage);
+
+    if (save_final)
+      kmer_storage.merge();
+
+    return kmer_storage;
+  }
+
+ private:
+  DECL_LOGGER("K-mer Index Building");
+};
+
 }

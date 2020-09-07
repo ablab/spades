@@ -212,8 +212,8 @@ int main(int argc, char* argv[]) {
         }
 
         kmers::KMerDiskCounter<RtSeq> counter(args.workdir, std::move(splitter));
-        counter.CountAll(16, args.nthreads);
-        auto final_kmers = counter.final_kmers_file();
+        auto res = counter.CountAll(16, args.nthreads, /* merge */ true);
+        auto final_kmers = res.final_kmers();
 
         std::string outputfile_name = fs::append_path(args.workdir, "final_kmers");
         std::rename(final_kmers->file().c_str(), outputfile_name.c_str());

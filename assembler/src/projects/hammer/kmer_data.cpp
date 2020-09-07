@@ -334,9 +334,11 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
                                                              HammerFilteringKMerSplitter(workdir)));
       
   }
-  kmers = kmers::KMerIndexBuilder<HammerKMerIndex>(num_files_, omp_get_max_threads()).BuildIndex(data.index_, *counter, /* save final */ true);
-  final_kmers = counter->final_kmers_file();
+  auto res = kmers::KMerIndexBuilder<HammerKMerIndex>(num_files_, omp_get_max_threads()).BuildIndex(data.index_, *counter, /* save final */ true);
+  kmers = res.kmers();
+  final_kmers = res.final_kmers();
 
+  INFO("" << kmers);
   // Check, whether we'll ever have enough memory for running BH and bail out earlier
   double needed = 1.25 * (double)kmers * (sizeof(KMerStat) + sizeof(hammer::KMer));
   if (needed > (double) utils::get_memory_limit())

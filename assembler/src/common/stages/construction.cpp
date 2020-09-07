@@ -34,7 +34,7 @@ struct ConstructionStorage {
     utils::DeBruijnExtensionIndex<> ext_index;
 
     std::unique_ptr<qf::cqf> cqf;
-    std::unique_ptr<kmers::KMerDiskCounter<RtSeq>> counter;
+    std::unique_ptr<kmers::KMerDiskStorage<RtSeq>> kmers;
     std::unique_ptr<CoverageMap> coverage_map;
     config::debruijn_config::construction params;
     io::ReadStreamList<io::SingleReadSeq> read_streams;
@@ -238,10 +238,12 @@ public:
         unsigned nthreads = (unsigned)merge_streams.size();
         using Splitter =  utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
                                                           utils::StoringTypeFilter<storing_type>>;
-        
-        storage().counter.reset(new kmers::KMerDiskCounter<RtSeq>(storage().workdir,
-                                                                  Splitter(storage().workdir, index.k() + 1, merge_streams, buffer_size)));
-        storage().counter->CountAll(nthreads, nthreads, /* merge */false);
+
+        kmers::KMerDiskCounter<RtSeq>
+                counter(storage().workdir,
+                        Splitter(storage().workdir, index.k() + 1, merge_streams, buffer_size));
+        auto kmers = counter.CountAll(nthreads, nthreads, /* merge */false);
+        storage().kmers.reset(new kmers::KMerDiskStorage<RtSeq>(std::move(kmers)));
     }
 
     void load(debruijn_graph::GraphPack&,
@@ -268,7 +270,7 @@ public:
         // FIXME: We just need files here, not the full counter. Implement refererence counting scheme!
         utils::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromKPOMers(storage().workdir,
                                                                               storage().ext_index,
-                                                                              *storage().counter,
+                                                                              *storage().kmers,
                                                                               unsigned(storage().read_streams.size()),
                                                                               storage().params.read_buffer_size);
     }
@@ -377,12 +379,11 @@ public:
     virtual ~PHMCoverageFiller() = default;
 
     void run(debruijn_graph::GraphPack &gp, const char *) override {
-        storage().coverage_map.reset(new ConstructionStorage::CoverageMap(storage().counter->k()));
+        storage().coverage_map.reset(new ConstructionStorage::CoverageMap(storage().kmers->k()));
         auto &coverage_map = *storage().coverage_map;
 
         utils::CoverageHashMapBuilder().BuildIndex(coverage_map,
-                                                   *storage().counter,
-                                                   16,
+                                                   *storage().kmers,
                                                    storage().read_streams);
         /*
         INFO("Checking the PHM");

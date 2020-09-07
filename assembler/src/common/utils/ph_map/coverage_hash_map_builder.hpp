@@ -37,22 +37,20 @@ struct CoverageHashMapBuilder : public utils::PerfectHashMapBuilder {
         }
     }
 
-    template<class Index, class Counter, class Streams>
-        void BuildIndex(Index &index,
-                        Counter& counter, size_t bucket_num,
-                        Streams &streams,
-                        bool save_final = false) const {
-            unsigned nthreads = (unsigned)streams.size();
+    template<class Index, class KMerStorage, class Streams>
+    void BuildIndex(Index &index,
+                    const KMerStorage& storage,
+                    Streams &streams) const {
+        unsigned nthreads = (unsigned)streams.size();
 
-            utils::PerfectHashMapBuilder::BuildIndex(index, counter, bucket_num, nthreads, save_final);
-            INFO("Collecting k-mer coverage information from reads, this takes a while.");
+        utils::PerfectHashMapBuilder::BuildIndex(index, storage, nthreads);
+        INFO("Collecting k-mer coverage information from reads, this takes a while.");
 
-            streams.reset();
-#           pragma omp parallel for num_threads(nthreads)
-            for (size_t i = 0; i < streams.size(); ++i) {
-                FillCoverageFromStream(streams[i], index);
-            }
+        streams.reset();
+#       pragma omp parallel for num_threads(nthreads)
+        for (size_t i = 0; i < streams.size(); ++i) {
+            FillCoverageFromStream(streams[i], index);
         }
-    };
-
+    }
+};
 }

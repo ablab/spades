@@ -6,6 +6,7 @@
 //***************************************************************************
 
 #pragma once
+#include "decl_logger.hpp"
 #include "utils/perf/perfcounter.hpp"
 #include "version.hpp"
 
@@ -115,15 +116,6 @@ void attach_logger(logger *lg);
 void detach_logger();
 
 } // logging
-
-inline const char* __scope_source_name() {
-  return " General ";
-}
-
-#define DECL_LOGGER(source)                                             \
-  static const char* __scope_source_name() {                            \
-    return source;                                                      \
-  }
 
 #define LOG_MSG(l, msg)                                                 \
   do {                                                                  \

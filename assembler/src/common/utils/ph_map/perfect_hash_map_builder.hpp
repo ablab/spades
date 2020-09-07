@@ -16,16 +16,31 @@ namespace utils {
 
 struct PerfectHashMapBuilder {
     template<class K, class V, class traits, class StoringType, class Counter>
-    void BuildIndex(PerfectHashMap<K, V, traits, StoringType> &index,
-                    Counter& counter, size_t bucket_num,
-                    size_t thread_num, bool save_final = true) const {
-        TIME_TRACE_SCOPE("PerfectHashMapBuilder::BuildIndex");
+    kmers::KMerDiskStorage<typename Counter::Seq>
+    BuildIndex(PerfectHashMap<K, V, traits, StoringType> &index,
+               Counter& counter, size_t bucket_num,
+               size_t thread_num, bool save_final = true) const {
+        TIME_TRACE_SCOPE("PerfectHashMapBuilder::BuildIndex<Counter>");
 
         using KMerIndex = typename PerfectHashMap<K, V, traits, StoringType>::KMerIndexT;
 
         kmers::KMerIndexBuilder<KMerIndex> builder((unsigned)bucket_num, (unsigned)thread_num);
-        size_t sz = builder.BuildIndex(*index.index_ptr_, counter, save_final);
-        index.resize(sz);
+        auto res = builder.BuildIndex(*index.index_ptr_, counter, save_final);
+        index.resize(res.kmers());
+
+        return res;
+    }
+
+    template<class K, class V, class traits, class StoringType, class KMerStorage>
+    void BuildIndex(PerfectHashMap<K, V, traits, StoringType> &index,
+                    const KMerStorage& storage, size_t thread_num) const {
+        TIME_TRACE_SCOPE("PerfectHashMapBuilder::BuildIndex<Storage>");
+
+        using KMerIndex = typename PerfectHashMap<K, V, traits, StoringType>::KMerIndexT;
+
+        kmers::KMerIndexBuilder<KMerIndex> builder(0, (unsigned)thread_num);
+        builder.BuildIndex(*index.index_ptr_, storage);
+        index.resize(storage.kmers());
     }
 };
 
@@ -53,7 +68,7 @@ struct CQFHashMapBuilder {
         // Step 1: build PHM
         kmers::KMerIndexBuilder<KMerIndex> builder((unsigned) bucket_num,
                                                    (unsigned) thread_num);
-        size_t sz = builder.BuildIndex(*index.index_ptr_, counter, save_final);
+        auto res = builder.BuildIndex(*index.index_ptr_, counter, save_final);
 
         // Step 2: allocate CQF
 
@@ -63,7 +78,7 @@ struct CQFHashMapBuilder {
                 [](const typename Index::KeyWithHash &, uint64_t) {
                     return 42;
                 },
-                sz));
+                res.kmers()));
 
         // Now we know the CQF range, so we could initialize the inthash properly
         uint64_t range_mask = index.values_->range_mask();
@@ -78,10 +93,10 @@ struct KeyStoringIndexBuilder {
     template<class K, class V, class traits, class StoringType, class Counter>
     void BuildIndex(KeyStoringMap<K, V, traits, StoringType> &index,
                     Counter& counter, size_t bucket_num,
-                    size_t thread_num, bool save_final = true) const {
-        phm_builder_.BuildIndex(index, counter, bucket_num, thread_num, save_final);
+                    size_t thread_num) const {
+        auto res = phm_builder_.BuildIndex(index, counter, bucket_num, thread_num, true);
         VERIFY(!index.kmers_.get());
-        index.kmers_file_ = counter.final_kmers_file();
+        index.kmers_file_ = res.final_kmers();
         index.SortUniqueKMers();
     }
 
@@ -93,9 +108,9 @@ struct KeyIteratingIndexBuilder {
     template<class K, class V, class traits, class StoringType, class Counter>
     void BuildIndex(KeyIteratingMap<K, V, traits, StoringType> &index,
                     Counter& counter, size_t bucket_num,
-                    size_t thread_num, bool save_final = true) const {
-        phm_builder_.BuildIndex(index, counter, bucket_num, thread_num, save_final);
-        index.kmers_ = counter.final_kmers_file();
+                    size_t thread_num) const {
+        auto res = phm_builder_.BuildIndex(index, counter, bucket_num, thread_num, true);
+        index.kmers_ = res.final_kmers();
     }
 
   private:
@@ -105,16 +120,15 @@ struct KeyIteratingIndexBuilder {
 template<class K, class V, class traits, class StoringType, class Counter>
 void BuildIndex(KeyIteratingMap<K, V, traits, StoringType> &index,
                 Counter& counter, size_t bucket_num,
-                size_t thread_num, bool save_final = true) {
-    KeyIteratingIndexBuilder().BuildIndex(index, counter, bucket_num, thread_num, save_final);
+                size_t thread_num) {
+    KeyIteratingIndexBuilder().BuildIndex(index, counter, bucket_num, thread_num);
 }
-
 
 template<class K, class V, class traits, class StoringType, class Counter>
 void BuildIndex(KeyStoringMap<K, V, traits, StoringType> &index,
                 Counter& counter, size_t bucket_num,
-                size_t thread_num, bool save_final = true) {
-    KeyStoringIndexBuilder().BuildIndex(index, counter, bucket_num, thread_num, save_final);
+                size_t thread_num) {
+    KeyStoringIndexBuilder().BuildIndex(index, counter, bucket_num, thread_num);
 }
 
 template<class K, class V, class traits, class StoringType, class Counter>

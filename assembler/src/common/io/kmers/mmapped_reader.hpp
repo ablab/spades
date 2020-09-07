@@ -78,7 +78,7 @@ class MMappedReader {
         if (Unlink) {
             int res = unlink(FileName.c_str());
             if (res != 0)
-                FATAL_ERROR("unlink(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
+                FATAL_ERROR("unlink(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno << ". File:" << FileName);
         }
     }
 

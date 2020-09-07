@@ -32,5 +32,4 @@ private:
     size_t num_buckets_ = 0;
 };
 
-
 }

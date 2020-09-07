@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "utils/logger/decl_logger.hpp"
+
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
 #include <string>
 #include <atomic>
@@ -48,6 +50,8 @@ class TmpDirImpl : public llvm::ThreadSafeRefCountedBase<TmpDirImpl>, non_copy_m
   private:
     std::string dir_;
     std::atomic<bool> released_;
+
+    DECL_LOGGER("Temporary");
 };
 
 class TmpFileImpl : public llvm::ThreadSafeRefCountedBase<TmpFileImpl>, non_copy_move_assign_able {
@@ -74,6 +78,8 @@ class TmpFileImpl : public llvm::ThreadSafeRefCountedBase<TmpFileImpl>, non_copy
     TmpDir parent_;
     int fd_;
     std::atomic<bool> released_;
+
+    DECL_LOGGER("Temporary");
 };
 
 class DependentTmpFileImpl : public llvm::ThreadSafeRefCountedBase<DependentTmpFileImpl>, non_copy_move_assign_able {
@@ -90,6 +96,8 @@ class DependentTmpFileImpl : public llvm::ThreadSafeRefCountedBase<DependentTmpF
     TmpFile parent_;
     std::string file_;
     std::atomic<bool> released_;
+
+    DECL_LOGGER("Temporary");
 };
 
 inline TmpDir make_temp_dir(const std::string &prefix, const std::string &suffix) {
