@@ -51,7 +51,19 @@ class MMappedReader {
         if (MappedRegion == MAP_FAILED)
             FATAL_ERROR("mmap(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
     }
-    
+
+    void assign(const MMappedReader &other) {
+        FileSize = other.FileSize;
+        BlockOffset = other.BlockOffset;
+        BytesRead = other.BytesRead;
+        BlockSize = other.BlockSize;
+        FileName = std::move(other.FileName);
+        Unlink = other.Unlink;
+        InitialOffset = other.InitialOffset;
+        MappedRegion = nullptr;
+        map();
+    }
+
     void remap() {
         VERIFY(BlockSize != FileSize);
 
@@ -115,6 +127,20 @@ public:
     MMappedReader(MMappedReader &&other)
             : MMappedReader() {
         *this = std::move(other);
+    }
+
+    MMappedReader(const MMappedReader &other) {
+        VERIFY(!other.Unlink);
+        assign(other);
+    }
+
+    MMappedReader& operator=(const MMappedReader &other) {
+        if (this != &other) {
+            VERIFY(!other.Unlink);
+            cleanup();
+            assign(other);
+        }
+        return *this;
     }
 
     MMappedReader &operator=(MMappedReader &&other) {
@@ -203,6 +229,8 @@ class MMappedRecordReader : public MMappedReader {
 public:
     typedef adt::pointer_iterator<T> iterator;
     typedef const adt::pointer_iterator<T> const_iterator;
+
+    MMappedRecordReader() {}
 
     MMappedRecordReader(const std::string &FileName, bool unlink = true,
                         size_t blocksize = 64 * 1024 * 1024 / (sizeof(T) * (unsigned) getpagesize()) *
@@ -364,11 +392,10 @@ public:
         increment();
     }
 
-    MMappedFileRecordArrayIterator(const MMappedFileRecordArrayIterator &) = delete;
-
-    MMappedFileRecordArrayIterator(MMappedFileRecordArrayIterator &&other)
-            : value_(other.value_), array_size_(other.array_size_),
-              reader_(std::move(other.reader_)), good_(other.good_) { }
+    MMappedFileRecordArrayIterator(const MMappedFileRecordArrayIterator &) = default;
+    MMappedFileRecordArrayIterator(MMappedFileRecordArrayIterator &&other) = default;
+    MMappedFileRecordArrayIterator& operator=(const MMappedFileRecordArrayIterator &) = default;
+    MMappedFileRecordArrayIterator& operator=(MMappedFileRecordArrayIterator &&other) = default;
 
     bool good() const { return good_; }
 
