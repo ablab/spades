@@ -42,6 +42,10 @@ private:
         auto res = XXH3_128bits(k.data(), k.size() * sizeof(typename KMerSeq::DataType));
         return { res.high64, res.low64 };
     }
+      std::pair<uint64_t, uint64_t> operator()(std::pair<const typename KMerSeq::DataType*, size_t> k) const {
+        auto res = XXH3_128bits(k.first, k.second);
+        return { res.high64, res.low64 };
+    }
   };
   typedef KMerIndex __self;
   typedef boomphf::mphf<hash_function128> KMerDataIndex;

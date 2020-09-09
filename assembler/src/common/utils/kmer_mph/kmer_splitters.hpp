@@ -9,6 +9,7 @@
 
 #include "kmer_splitter.hpp"
 #include "io/reads/io_helper.hpp"
+#include "adt/iterator_range.hpp"
 
 namespace utils {
 
@@ -90,7 +91,7 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
 template<class Read, class KmerFilter> template<class ReadStream>
 size_t
 DeBruijnReadKMerSplitter< Read, KmerFilter>::FillBufferFromStream(ReadStream &stream,
-                                                                 unsigned thread_id) {
+                                                                  unsigned thread_id) {
   typename ReadStream::ReadT r;
   size_t reads = 0;
 
@@ -131,16 +132,15 @@ DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files, unsigned nth
   return out;
 }
 
-template<class KmerFilter>
+template<class KmerFilter, class KMerIterator>
 class DeBruijnKMerKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
-  typedef MMappedFileRecordArrayIterator<RtSeq::DataType> kmer_iterator;
-
+  using kmer_range = adt::iterator_range<KMerIterator>;
   unsigned K_source_;
-  std::vector<std::string> kmers_;
+  std::vector<kmer_range> kmers_;
   bool add_rc_;
 
-  size_t FillBufferFromKMers(kmer_iterator &kmer,
-                             unsigned thread_id);
+  size_t FillBufferFromKMers(kmer_range &range,
+                             size_t thread_id);
 
  public:
   using typename DeBruijnKMerSplitter<KmerFilter>::RawKMers;
@@ -150,24 +150,24 @@ class DeBruijnKMerKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
       : DeBruijnKMerSplitter<KmerFilter>(work_dir, K_target, KmerFilter(), read_buffer_size),
         K_source_(K_source), add_rc_(add_rc) {}
 
-  void AddKMers(const std::string &file) {
-    kmers_.push_back(file);
+  void AddKMers(kmer_range range) {
+    kmers_.emplace_back(std::move(range));
   }
 
   RawKMers Split(size_t num_files, unsigned nthreads) override;
 };
 
-template<class KmerFilter>
-inline size_t DeBruijnKMerKMerSplitter<KmerFilter>::FillBufferFromKMers(kmer_iterator &kmer,
-                                                                        unsigned thread_id) {
+template<class KmerFilter, class KMerIterator>
+inline size_t DeBruijnKMerKMerSplitter<KmerFilter, KMerIterator>::FillBufferFromKMers(kmer_range &range,
+                                                                                      size_t thread_id) {
   size_t seqs = 0;
-  for (; kmer.good(); ++kmer) {
-    RtSeq nucls(K_source_, *kmer);
+  for (auto &it = range.begin(); it != range.end(); ++it) {
+    RtSeq nucls(K_source_, it->first); // FIXME: temporary
     seqs += 1;
 
-    bool stop = this->FillBufferFromSequence(nucls, thread_id);
+    bool stop = this->FillBufferFromSequence(nucls, unsigned(thread_id));
     if (add_rc_)
-      stop |= this->FillBufferFromSequence(!nucls, thread_id);
+      stop |= this->FillBufferFromSequence(!nucls, unsigned(thread_id));
 
     if (stop)
       break;
@@ -176,24 +176,18 @@ inline size_t DeBruijnKMerKMerSplitter<KmerFilter>::FillBufferFromKMers(kmer_ite
   return seqs;
 }
 
-template<class KmerFilter>
-typename DeBruijnKMerKMerSplitter<KmerFilter>::RawKMers
-DeBruijnKMerKMerSplitter<KmerFilter>::Split(size_t num_files, unsigned nthreads) {
-  unsigned nit = (unsigned) kmers_.size();
-
+template<class KmerFilter, class KMerIterator>
+typename DeBruijnKMerKMerSplitter<KmerFilter,  KMerIterator>::RawKMers
+DeBruijnKMerKMerSplitter<KmerFilter, KMerIterator>::Split(size_t num_files, unsigned nthreads) {
   auto out = this->PrepareBuffers(num_files, nthreads, this->read_buffer_size_);
 
   size_t counter = 0, n = 10;
-  std::vector<kmer_iterator> its;
-  its.reserve(nit);
-  for (auto it = kmers_.begin(), et = kmers_.end(); it != et; ++it)
-    its.emplace_back(*it, RtSeq::GetDataSize(K_source_));
 
-  while (std::any_of(its.begin(), its.end(),
-                     [](const kmer_iterator &it) { return it.good(); })) {
+  while (!std::all_of(kmers_.begin(), kmers_.end(),
+                      [](const kmer_range &r) { return r.begin() == r.end(); })) {
 #   pragma omp parallel for num_threads(nthreads) reduction(+ : counter)
-    for (unsigned i = 0; i < nit; ++i)
-      counter += FillBufferFromKMers(its[i], i);
+    for (size_t i = 0; i < kmers_.size(); ++i)
+      counter += FillBufferFromKMers(kmers_[i], i);
 
     this->DumpBuffers(out);
 

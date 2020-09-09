@@ -373,7 +373,8 @@ class MMappedFileRecordArrayIterator :
                 const T *> {
 public:
     // Default ctor, used to implement "end" iterator
-    MMappedFileRecordArrayIterator() : value_(NULL), array_size_(0), reader_(), good_(false) { }
+    MMappedFileRecordArrayIterator()
+            : value_(nullptr), array_size_(0), reader_(), good_(false) { }
 
     MMappedFileRecordArrayIterator(const std::string &FileName,
                                    size_t elcnt,

@@ -54,20 +54,22 @@ class KMerDiskStorage {
   typedef S Seq;
   typedef typename std::vector<fs::DependentTmpFile> Buckets;
   typedef typename kmer::KMerBucketPolicy<Seq>       KMerBucketPolicy;
-  typedef typename traits::KMerRawReference          KMerRawReference;
-  typedef typename traits::KMerRawData               KMerRawData;
+  typedef typename std::pair<const typename Seq::DataType*, size_t> KMerRawData;
 
   class kmer_iterator :
       public boost::iterator_facade<kmer_iterator,
                                     KMerRawData,
                                     std::input_iterator_tag,
-                                    KMerRawReference> {
+                                    KMerRawData> {
    public:
     // Default ctor, used to implement "end" iterator
-    kmer_iterator() : k_(0) { }
+    kmer_iterator()
+        : inner_iterator_(),
+          k_(0), kmer_bytes_(0) { }
 
     kmer_iterator(const std::string &FileName, unsigned k)
-        : inner_iterator_(FileName, Seq::GetDataSize(k)), k_(k) {}
+        : inner_iterator_(FileName, Seq::GetDataSize(k)),
+          k_(k), kmer_bytes_(Seq::GetDataSize(k_) * sizeof(typename Seq::DataType)) {}
 
     void operator+=(size_t n) {
       inner_iterator_ += n;
@@ -84,12 +86,13 @@ class KMerDiskStorage {
         return inner_iterator_ == other.inner_iterator_;
     }
 
-    KMerRawReference dereference() const {
-      return adt::array_vector<typename Seq::DataType>(const_cast<typename Seq::DataType*>(*inner_iterator_), 0, Seq::GetDataSize(k_))[0];
+    KMerRawData dereference() const {
+      return { *inner_iterator_, kmer_bytes_ };
     }
 
     MMappedFileRecordArrayIterator<typename Seq::DataType> inner_iterator_;
     unsigned k_;
+    size_t kmer_bytes_;
   };
 
   KMerDiskStorage(fs::TmpDir work_dir, unsigned k,
@@ -148,11 +151,6 @@ class KMerDiskStorage {
 
   kmer_iterator bucket_end() const {
     return kmer_iterator();
-  }
-
-  // FIXME: temporary
-  std::string kmer_file(size_t i) const {
-    return *buckets_.at(i);
   }
 
   size_t num_buckets() const { return buckets_.size(); }
