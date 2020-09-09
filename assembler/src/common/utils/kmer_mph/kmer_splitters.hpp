@@ -139,8 +139,7 @@ class DeBruijnKMerKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
   std::vector<kmer_range> kmers_;
   bool add_rc_;
 
-  size_t FillBufferFromKMers(kmer_range &range,
-                             size_t thread_id);
+  size_t FillBufferFromKMers(kmer_range &range, size_t thread_id);
 
  public:
   using typename DeBruijnKMerSplitter<KmerFilter>::RawKMers;

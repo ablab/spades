@@ -36,7 +36,7 @@ void EarlyClipTips(const config::debruijn_config::construction& params, Extensio
     EarlyTipClipperProcessor(ext, *params.early_tc.length_bound).ClipTips();
 }
 
-using KMerFiles = std::unique_ptr<kmers::KMerCounter<RtSeq>>;
+using KMerFiles = kmers::KMerDiskStorage<RtSeq>;
 
 template<class Read>
 KMerFiles ConstructGraphUsingExtensionIndex(const config::debruijn_config::construction &params,
@@ -95,8 +95,7 @@ void ConstructGraphWithCoverage(const config::debruijn_config::construction &par
     using CoverageMap = utils::PerfectHashMap<RtSeq, uint32_t, utils::slim_kmer_index_traits<RtSeq>, utils::DefaultStoring>;
     CoverageMap coverage_map(unsigned(g.k() + 1));
 
-    utils::CoverageHashMapBuilder().BuildIndex(coverage_map,
-                                               *kmers, 16, streams);
+    utils::CoverageHashMapBuilder().BuildIndex(coverage_map, kmers, streams);
 
     INFO("Filling coverage and flanking coverage from PHM");
     FillCoverageAndFlankingFromPHM(coverage_map, g, flanking_cov);

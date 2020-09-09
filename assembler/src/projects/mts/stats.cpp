@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
            << "Pre-binned edges\tPre-binned length\t"
            << "Propagated edges\tPropagated length" << endl;
 
-    for (const auto genome_path : genomes_path) {
+    for (const auto &genome_path : genomes_path) {
         auto ref_name = fs::basename(genome_path);
         io::SingleRead genome = ReadGenome(genome_path);
 

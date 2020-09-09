@@ -31,7 +31,7 @@ public:
 
     template<class Ref>
     size_t operator()(Ref s) const {
-        return mod_reduce::multiply_high_u64(hash()(s), num_buckets_);
+        return mod_reduce::multiply_high_u64(hash()(s.data(), s.size()), num_buckets_);
     }
 
 private:

@@ -144,13 +144,15 @@ class KmerMultiplicityCounter {
         typedef size_t Offset;
         using namespace utils;
 
-        static const size_t read_buffer_size = 0; //FIXME some buffer size
-        DeBruijnKMerKMerSplitter<StoringTypeFilter<InvertableStoring>>
-            splitter(workdir, k_, k_, true, read_buffer_size);
-        splitter.AddKMers(*kmer_file);
+        using KMerDiskStorage = kmers::KMerDiskStorage<RtSeq>;
+        constexpr size_t read_buffer_size = 0; //FIXME some buffer size
+        DeBruijnKMerKMerSplitter<StoringTypeFilter<InvertableStoring>,
+                                 KMerDiskStorage::kmer_iterator>
+                splitter(workdir, k_, k_, true, read_buffer_size);
+        splitter.AddKMers(adt::make_range(KMerDiskStorage::kmer_iterator(*kmer_file, k_), KMerDiskStorage::kmer_iterator()));
 
-        KMerDiskCounter<RtSeq> counter(workdir, splitter);
-        KeyStoringMap<RtSeq, Offset, kmer_index_traits<RtSeq>, InvertableStoring> kmer_mpl(k_);
+        kmers::KMerDiskCounter<RtSeq> counter(workdir, std::move(splitter));
+        KeyStoringMap<RtSeq, Offset, kmers::kmer_index_traits<RtSeq>, InvertableStoring> kmer_mpl(k_);
         BuildIndex(kmer_mpl, counter, 16, nthreads);
         INFO("Built index with " << kmer_mpl.size() << " kmers");
 
