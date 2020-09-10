@@ -113,7 +113,7 @@ public:
         InitialOffset = off;
         FileSize = (sz ? sz : (stat(FileName.c_str(), &buf) != 0 ? 0 : buf.st_size - InitialOffset));
 
-        if (BlockSize != -1ULL) {
+        if (BlockSize != -1ULL && BlockSize < FileSize) {
             size_t PageSize = getpagesize();
             BlockSize = BlockSize / PageSize * PageSize;
         } else
