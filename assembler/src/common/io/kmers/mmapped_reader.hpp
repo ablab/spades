@@ -124,7 +124,7 @@ public:
         map();
     }
 
-    MMappedReader(MMappedReader &&other)
+    MMappedReader(MMappedReader &&other) noexcept
             : MMappedReader() {
         *this = std::move(other);
     }
@@ -143,7 +143,7 @@ public:
         return *this;
     }
 
-    MMappedReader &operator=(MMappedReader &&other) {
+    MMappedReader &operator=(MMappedReader &&other) noexcept {
         if (this != &other) {
             cleanup();
             // First, copy out the stuff
@@ -280,7 +280,7 @@ public:
         reader_.read(&value_, sizeof(value_));
     }
 
-    MMappedFileRecordIterator(MMappedRecordReader<T> &&reader)
+    MMappedFileRecordIterator(MMappedRecordReader<T> &&reader) noexcept
             : reader_(std::move(reader)), good_(true) {
         reader_.read(&value_, sizeof(value_));
     }
@@ -389,7 +389,7 @@ public:
         increment();
     }
 
-    MMappedFileRecordArrayIterator(MMappedRecordReader<T> &&reader, size_t elcnt)
+    MMappedFileRecordArrayIterator(MMappedRecordReader<T> &&reader, size_t elcnt) noexcept
             : value_(nullptr), array_size_(sizeof(T) * elcnt), reader_(std::move(reader)), good_(false) {
         increment();
     }

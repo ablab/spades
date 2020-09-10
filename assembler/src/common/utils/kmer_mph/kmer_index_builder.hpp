@@ -95,6 +95,8 @@ class KMerDiskStorage {
     size_t kmer_bytes_;
   };
 
+  static_assert(std::is_nothrow_move_constructible<kmer_iterator>::value, "kmer_iterator must be nonthrow move constructible");
+
   KMerDiskStorage(fs::TmpDir work_dir, unsigned k,
                   KMerBucketPolicy policy)
       : work_dir_(work_dir), k_(k), bucket_policy_(std::move(policy)) {
