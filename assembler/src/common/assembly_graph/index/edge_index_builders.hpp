@@ -97,7 +97,7 @@ public:
         kmers::KMerDiskCounter<RtSeq> counter(workdir,
                                               Splitter(workdir, index.k(), g, read_buffer_size));
         
-        BuildIndex(index, counter, 16, nthreads);
+        BuildIndex(index, counter, 10 * nthreads, nthreads);
 
         // Now use the index to fill the coverage and EdgeId's
         INFO("Collecting edge information from graph, this takes a while.");
