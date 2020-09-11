@@ -45,8 +45,8 @@ public:
     void FillExtensionsFromIndex(It begin, It end,
                                  Index &index) const {
         unsigned KPlusOne = index.k() + 1;
-        while (begin != end) {
-            RtSeq kpomer(KPlusOne, (*begin++).first); // FIXME: temporary until boophm refactoring
+        for (; begin != end; ++begin) {
+            RtSeq kpomer(KPlusOne, begin->first); // FIXME: temporary until boophm refactoring
 
             char pnucl = kpomer[0], nnucl = kpomer[KPlusOne - 1];
             TRACE("processing k+1-mer " << kpomer);
