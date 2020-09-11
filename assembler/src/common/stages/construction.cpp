@@ -242,7 +242,7 @@ public:
         kmers::KMerDiskCounter<RtSeq>
                 counter(storage().workdir,
                         Splitter(storage().workdir, index.k() + 1, merge_streams, buffer_size));
-        auto kmers = counter.CountAll(nthreads, nthreads, /* merge */false);
+        auto kmers = counter.Count(10 * nthreads, nthreads);
         storage().kmers.reset(new kmers::KMerDiskStorage<RtSeq>(std::move(kmers)));
     }
 
