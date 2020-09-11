@@ -116,7 +116,7 @@ DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files, unsigned nth
   while (!streams_.eof()) {
 #   pragma omp parallel for num_threads(nthreads) reduction(+ : counter)
     for (unsigned i = 0; i < (unsigned)streams_.size(); ++i) {
-      counter += FillBufferFromStream(streams_[i], i);
+      counter += FillBufferFromStream(streams_[i], omp_get_thread_num());
     }
 
     this->DumpBuffers(out);
@@ -186,7 +186,7 @@ DeBruijnKMerKMerSplitter<KmerFilter, KMerIterator>::Split(size_t num_files, unsi
                       [](const kmer_range &r) { return r.begin() == r.end(); })) {
 #   pragma omp parallel for num_threads(nthreads) reduction(+ : counter)
     for (size_t i = 0; i < kmers_.size(); ++i)
-      counter += FillBufferFromKMers(kmers_[i], i);
+        counter += FillBufferFromKMers(kmers_[i], omp_get_thread_num());
 
     this->DumpBuffers(out);
 

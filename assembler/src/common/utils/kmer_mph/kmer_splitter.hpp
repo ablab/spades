@@ -109,6 +109,7 @@ protected:
     }
 
     bool push_back_internal(const Seq &seq, unsigned thread_id) {
+        VERIFY(thread_id < kmer_buffers_.size());
         KMerBuffer &entry = kmer_buffers_[thread_id];
 
         size_t idx = this->bucket_(seq);
