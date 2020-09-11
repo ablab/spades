@@ -56,14 +56,7 @@ DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_files, unsigned n
     auto out = this->PrepareBuffers(num_files, nthreads, this->read_buffer_size_);
 
     omnigraph::IterationHelper<Graph, EdgeId> edges(g_);
-    auto its = edges.Chunks(nthreads);
-
-    // Turn chunks into iterator ranges
-    std::vector<EdgeRange> ranges;
-    for (size_t i = 0; i < its.size() - 1; ++i)
-        ranges.emplace_back(its[i], its[i+1]);
-
-    VERIFY(ranges.size() <= nthreads);
+    auto ranges = edges.Ranges(nthreads);
 
     size_t counter = 0, n = 10;
     while (!std::all_of(ranges.begin(), ranges.end(),
