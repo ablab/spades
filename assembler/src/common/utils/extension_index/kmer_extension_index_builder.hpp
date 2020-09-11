@@ -81,26 +81,26 @@ public:
 
     template<class Index, class KMerStorage>
     void BuildExtensionIndexFromKPOMers(fs::TmpDir workdir,
-                                        Index &index, const KMerStorage &kmers,
+                                        Index &index, const KMerStorage &kpomers,
                                         unsigned nthreads, size_t read_buffer_size = 0) const {
-        VERIFY(kmers.k() == index.k() + 1);
+        VERIFY(kpomers.k() == index.k() + 1);
 
         // Now, count unique k-mers from k+1-mers
         using Splitter = DeBruijnKMerKMerSplitter<StoringTypeFilter<typename Index::storing_type>,
                                                   typename KMerStorage::kmer_iterator>;
         Splitter splitter(workdir, index.k(),
                           index.k() + 1, Index::storing_type::IsInvertable(), read_buffer_size);
-        for (unsigned i = 0; i < kmers.num_buckets(); ++i)
-            splitter.AddKMers(adt::make_range(kmers.bucket_begin(i), kmers.bucket_end()));
+        for (unsigned i = 0; i < kpomers.num_buckets(); ++i)
+            splitter.AddKMers(adt::make_range(kpomers.bucket_begin(i), kpomers.bucket_end()));
         kmers::KMerDiskCounter<RtSeq> counter(workdir, std::move(splitter));
 
-        BuildIndex(index, counter, kmers.num_buckets(), nthreads);
+        BuildIndex(index, counter, kpomers.num_buckets(), nthreads);
 
         // Build the kmer extensions
         INFO("Building k-mer extensions from k+1-mers");
 #       pragma omp parallel for num_threads(nthreads)
-        for (size_t i = 0; i < kmers.num_buckets(); ++i)
-            FillExtensionsFromIndex(kmers.bucket_begin(i), kmers.bucket_end(),
+        for (size_t i = 0; i < kpomers.num_buckets(); ++i)
+            FillExtensionsFromIndex(kpomers.bucket_begin(i), kpomers.bucket_end(),
                                     index);
         INFO("Building k-mer extensions from k+1-mers finished.");
     }
