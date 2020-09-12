@@ -25,4 +25,4 @@ add_library(common_modules
             adt/concurrent_dsu.cpp)
 
 target_link_libraries(common_modules
-                      assembly_graph input pipeline sequence coverage_model paired_info path_extend stages utils mph_index modules)
+                      assembly_graph input pipeline sequence coverage_model paired_info path_extend stages mph_index modules utils)
