@@ -8,6 +8,8 @@
 #include "blat_output_reader.hpp"
 #include "blat_output_postprocessing.hpp"
 
+#include "common/assembly_graph/graph_support/scaff_supplementary.hpp"
+#include "common/assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
 #include "common/assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 #include "common/toolchain/utils.hpp"
 #include "common/utils/memory_limit.hpp"
@@ -112,14 +114,43 @@ void MakeAllFilteredEdgesDump(Records<columns ...> const & records, MapFromConti
     }
 }
 
+ScaffoldingUniqueEdgeStorage GetUniqueEdgeStorage(GraphPack const & gp) {
+    auto const & graph = gp.get<Graph>();
+    constexpr auto min_unique_length = 2000;
+    constexpr auto uniformity_fraction_threshold = 0.8;
+    constexpr auto nonuniform_coverage_variation = 50;
+    auto unique_variation = 0.5;
+
+    CoverageUniformityAnalyzer coverage_analyzer(graph, min_unique_length);
+    double median_coverage = coverage_analyzer.CountMedianCoverage();
+    double uniformity_fraction = coverage_analyzer.UniformityFraction(unique_variation, median_coverage);
+    INFO ("median coverage for edges longer than " << min_unique_length << " is " << median_coverage <<
+        " uniformity " << size_t(uniformity_fraction * 100) << "%");
+
+    bool uniform_coverage = false;
+    if (math::gr(uniformity_fraction, uniformity_fraction_threshold)) {
+        uniform_coverage = true;
+    }
+    if (!uniform_coverage) {
+        unique_variation = nonuniform_coverage_variation;
+        INFO("Coverage is not uniform, we do not rely on coverage for long edge uniqueness");
+    }
+
+
+    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, min_unique_length, unique_variation);
+    ScaffoldingUniqueEdgeStorage unique_edge_storage;
+    unique_edge_analyzer.FillUniqueEdgeStorage(unique_edge_storage);
+    return unique_edge_storage;
+}
+
 template<Columns ... columns>
 void DropAnother(Records<columns ...> const & records, MapFromContigNameToContigFragments & contig_fragments) {
     auto intersected =
     [](long long start, long long end) {
         auto dt = 100;
         auto range = std::make_pair(1471516-dt, 1471563+dt);
-        return range.first <= start && start <= range.second || 
-            range.first <= end && end <= range.second || 
+        return range.first <= start && start <= range.second ||
+            range.first <= end && end <= range.second ||
             start < range.first && range.second < start;
     };
 
@@ -201,11 +232,17 @@ int main(int argc, char* argv[]) {
         if (!cfg.paths_save_file.empty())
             ReadScaffolds(scaffolds, graph, cfg.paths_save_file);
 
+
         ifstream blat_output_stream(cfg.blat_output);
         if (!blat_output_stream.is_open())
             throw "Cannot open " + cfg.blat_output;
+
+        auto unique_edge_storage = GetUniqueEdgeStorage(gp);
+        auto unique_edge_checker = [&unique_edge_storage](EdgeId id) { return unique_edge_storage.IsUnique(id); };
+        auto filter = GetFilter<WISHED_COLUMNS>(std::move(unique_edge_checker), graph);
+
         INFO("Started blat output reading");
-        auto res = Read(blat_output_stream, GetFilter<WISHED_COLUMNS>());
+        auto res = Read(blat_output_stream, filter);
         auto fragments = GetContigFragments(res, GetDropAlg<WISHED_COLUMNS>(cfg.drop_alg), graph.k());
         // DropAnother(res, fragments);
         MakeAllFilteredEdgesDump(res, fragments, graph, output_dir);
@@ -216,7 +253,7 @@ int main(int argc, char* argv[]) {
 
         ContigWriter writer(graph, MakeContigNameGenerator(config::pipeline_type::base, gp));
         writer.OutputPaths(paths, fs::append_path(output_dir, "connected_paths.fasta"));
-        
+
         ofstream contigs_output(fs::append_path(output_dir, "remapped_paths.fasta"));
         VERIFY(contigs_output.is_open());
 

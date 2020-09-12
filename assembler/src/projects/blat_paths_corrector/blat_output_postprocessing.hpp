@@ -54,8 +54,8 @@ double GetIDY(Record<columns ...> const & record) {
 }
 
 template<Columns ... columns>
-FilterType<columns ...> GetFilter() {
-    return [](auto const & element) {
+FilterType<columns ...> GetFilter(std::function<bool(debruijn_graph::EdgeId)> unique_edge_checker, debruijn_graph::Graph const & graph) {
+    return [unique_edge_checker_ = std::move(unique_edge_checker), &graph](auto const & element) {
         constexpr auto EDGE_LENGTH_ERROR_COEFF = 0.0;
         constexpr auto LENGTHS_ERROR_COEFF = 0.01;
         if (element.template Get<Columns::strand>() != '+' || element.template Get<Columns::block_count>() != 1)
@@ -74,12 +74,13 @@ FilterType<columns ...> GetFilter() {
         if (lens_difference != 0) {
             std::cout << "I AM HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
         }
-
-        return GetIDY(element) > 0.95 &&
-               100 < contig_delta && //contig_delta < 5000 &&
+        auto const & edge_title = element.template Get<Columns::T_name>();
+        return unique_edge_checker_(GetEdgeId(edge_title, graph)) &&
+               GetIDY(element) > 0.80 &&
+            //    100 < contig_delta && //contig_delta < 5000 &&
                (double)edge_len_difference <= (double)edge_len * EDGE_LENGTH_ERROR_COEFF &&
                (double) lens_difference < (double) edge_delta * LENGTHS_ERROR_COEFF &&
-               GetCov(element.template Get<Columns::T_name>()) > 2;
+               GetCov(edge_title) > 2;
     };
 }
 
