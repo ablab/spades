@@ -7,11 +7,13 @@
 
 #include "simplification.hpp"
 #include "position_storage.hpp"
-#include "projects/unitig_coverage/profile_storage.hpp"
-#include "io/graph/gfa_writer.hpp"
-#include "toolchain/utils.hpp"
 
+#include "toolchain/utils.hpp"
+#include "io/graph/gfa_writer.hpp"
+#include "io/binary/graph_pack.hpp"
 #include "utils/segfault_handler.hpp"
+
+#include "projects/unitig_coverage/profile_storage.hpp"
 
 #include "version.hpp"
 
@@ -23,13 +25,11 @@
 using namespace debruijn_graph;
 
 struct gcfg {
-    gcfg() : k(0), RL(0),
-             save_gfa(false), save_gp(false),
-             use_cov_ratios(false),
-             nthreads(omp_get_max_threads() / 2 + 1) {}
+    gcfg()
+       : nthreads(omp_get_max_threads() / 2 + 1) {}
 
-    unsigned k;
-    unsigned RL;
+    unsigned k = 0;
+    unsigned RL = 0;
     std::string bin_cov_str;
     std::string graph;
     std::string tmpdir;
@@ -37,9 +37,9 @@ struct gcfg {
     std::string stop_codons_fn;
     std::string deadends_fn;
     std::string outfile;
-    bool save_gfa;
-    bool save_gp;
-    bool use_cov_ratios;
+    bool save_gfa = false;
+    bool save_gp = false;
+    bool use_cov_ratios = false;
     unsigned nthreads;
 };
 
@@ -157,7 +157,7 @@ int main(int argc, char** argv) {
         gp.get_mutable<KmerMapper<Graph>>().Attach();
 
         io::EdgeLabelHelper<Graph> label_helper(element_finder,
-                                                toolchain::LoadGraph(gp, cfg.graph));
+                                                toolchain::LoadGraphPack(gp, cfg.graph));
 
         //Refilling flanking coverage to get same behavior while working with gfa graphs
         auto &flanking_cov = gp.get_mutable<FlankingCoverage<Graph>>();

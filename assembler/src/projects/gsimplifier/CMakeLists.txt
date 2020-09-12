@@ -14,7 +14,7 @@ add_executable(spades-gsimplifier
                ../unitig_coverage/profile_storage.cpp
                main.cpp)
 
-target_link_libraries(spades-gsimplifier graphio common_modules ${COMMON_LIBRARIES})
+target_link_libraries(spades-gsimplifier toolchain common_modules ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades-gsimplifier PROPERTIES LINK_SEARCH_END_STATIC 1)

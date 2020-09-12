@@ -18,8 +18,8 @@ add_executable(cds-subgraphs
 add_executable(cds-mapping-stats
                stats.cpp)
 
-target_link_libraries(cds-subgraphs graphio common_modules ${COMMON_LIBRARIES})
-target_link_libraries(cds-mapping-stats graphio common_modules ${COMMON_LIBRARIES})
+target_link_libraries(cds-subgraphs toolchain common_modules ${COMMON_LIBRARIES})
+target_link_libraries(cds-mapping-stats toolchain common_modules ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(cds-subgraphs PROPERTIES LINK_SEARCH_END_STATIC 1)

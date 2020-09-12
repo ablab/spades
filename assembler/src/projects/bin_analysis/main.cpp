@@ -79,7 +79,7 @@ static void Run(size_t K, const std::string &graph_path,
     omnigraph::GraphElementFinder<Graph> element_finder(graph);
     gp.get_mutable<KmerMapper<Graph>>().Attach();
     io::EdgeLabelHelper<Graph> label_helper(element_finder,
-                                            toolchain::LoadGraph(gp, graph_path));
+                                            toolchain::LoadGraphPack(gp, graph_path));
 
     gp.EnsureBasicMapping();
 

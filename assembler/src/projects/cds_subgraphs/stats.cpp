@@ -223,7 +223,7 @@ int main(int argc, char** argv) {
         INFO("Loading de Bruijn graph from " << cfg.graph_path);
         gp.get_mutable<debruijn_graph::KmerMapper<debruijn_graph::Graph>>().Attach(); // TODO unnecessary
         io::EdgeLabelHelper<Graph> label_helper(element_finder,
-                toolchain::LoadGraph(gp, cfg.graph_path));
+                toolchain::LoadGraphPack(gp, cfg.graph_path));
 
         gp.EnsureBasicMapping();
 

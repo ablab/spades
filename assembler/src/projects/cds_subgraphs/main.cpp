@@ -335,7 +335,7 @@ int main(int argc, char** argv) {
         INFO("Loading de Bruijn graph from " << cfg.graph);
         gp.get_mutable<KmerMapper<Graph>>().Attach(); // TODO unnecessary
         io::EdgeLabelHelper<Graph> label_helper(element_finder,
-                toolchain::LoadGraph(gp, cfg.graph));
+                toolchain::LoadGraphPack(gp, cfg.graph));
 
         gp.EnsureBasicMapping();
 
