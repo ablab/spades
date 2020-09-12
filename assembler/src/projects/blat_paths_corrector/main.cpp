@@ -40,10 +40,9 @@ struct gcfg {
     {}
 
     size_t k;
+    size_t drop_alg;
     std::string canu_contigs_file;
-    std::string filtered_contigs_names_file;
     std::string saves_folder;
-    std::string transcript_paths_file;
     std::string paths_save_file;
     std::string output_dir;
     std::string blat_output;
@@ -56,11 +55,10 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
 
   auto cli = (
       cfg.saves_folder << value("saves folder"),
-      cfg.transcript_paths_file << value("blat_filtered.paths.txt"),
       cfg.canu_contigs_file << value("canu contigs"),
-      cfg.filtered_contigs_names_file << value("blat_filtered.names.txt"),
       cfg.blat_output << value("blat_output.psl"),
       (required("-k") & integer("int", cfg.k)) % "k-mer length to use",
+      (required("-d") & integer("int", cfg.drop_alg)) % "0 = drop nothing, 1 = full drop, 2 = transitive drop by IDY",
       (option("-t") & integer("int", cfg.nthreads)) % "# of threads to use",
       (option("-o") & value("dir", cfg.output_dir)) % "output directory",
       (option("-s") & value("file", cfg.paths_save_file)) % "save_path_to_scaffolds"
@@ -88,21 +86,7 @@ void ReadScaffolds(PathContainer& scaffolds, Graph const & graph, std::string co
     }
 }
 
-std::vector<std::string> ReadContigsNames(std::string const & filtered_contigs_names_file) {
-    std::ifstream inp(filtered_contigs_names_file);
-    if (!inp.is_open())
-        throw "Cannot open " + filtered_contigs_names_file;
-    std::vector<std::string> names;
-    std::string name;
-    while (inp >> name) {
-        if (name.empty())
-            continue;
-        names.push_back(std::move(name));
-    }
-    return names;
-}
-
-void WriteWithWidth(std::ostream & out, std::string const & seq, size_t width = 100) {
+void WriteWithWidth(std::ostream & out, std::string const & seq, size_t width = 50) {
     for (size_t pos = 0; pos < seq.size(); pos += width)
         out << seq.substr(pos, width) << '\n';
 }
@@ -119,13 +103,48 @@ void MakeAllFilteredEdgesDump(Records<columns ...> const & records, MapFromConti
         std::ofstream output(fs::append_path(dir, contig.first + ".fasta"));
         for (auto index : contig.second) {
             auto const & record = records[index];
+            auto start_pos = record.template Get<Columns::Q_start>();
+            auto end_pos = record.template Get<Columns::Q_end>();
             auto edge_id = GetEdgeId(record.template Get<Columns::T_name>(), graph);
-            output << ">mapped_onto_contig_from_" << record.template Get<Columns::Q_start>() << "_to_" << record.template Get<Columns::Q_end>() << ";_real_id_" << edge_id << ";\n";
+            output << ">mapped_onto_contig_from_" << start_pos << "_to_" << end_pos << ";_real_id_" << edge_id << ";\n";
             WriteWithWidth(output, graph.EdgeNucls(edge_id).str());
         }
     }
 }
 
+template<Columns ... columns>
+void DropAnother(Records<columns ...> const & records, MapFromContigNameToContigFragments & contig_fragments) {
+    auto intersected =
+    [](long long start, long long end) {
+        auto dt = 100;
+        auto range = std::make_pair(1471516-dt, 1471563+dt);
+        return range.first <= start && start <= range.second || 
+            range.first <= end && end <= range.second || 
+            start < range.first && range.second < start;
+    };
+
+    for (auto & contig : contig_fragments) {
+        vector<size_t> good_indexes;
+        for (auto index : contig.second) {
+            auto const & record = records[index];
+            auto start_pos = record.template Get<Columns::Q_start>();
+            auto end_pos = record.template Get<Columns::Q_end>() + 1;
+            if (intersected(start_pos, end_pos))
+                good_indexes.push_back(index);
+        }
+        contig.second = std::move(good_indexes);
+    }
+}
+
+template<Columns ... columns>
+DropAlg<columns ...> GetDropAlg(size_t num) {
+    switch (num) {
+        case 0: return GetNonDropper<columns ...>(); break;
+        case 1: return GetFullDropper<columns ...>(); break;
+        case 2: return GetTransitiveDropperByIDY<columns ...>(); break;
+        default: throw std::string("unknown the value of -d option"); break;
+    }
+}
 constexpr char BASE_NAME[] = "graph_pack";
 
 int main(int argc, char* argv[]) {
@@ -182,26 +201,18 @@ int main(int argc, char* argv[]) {
         if (!cfg.paths_save_file.empty())
             ReadScaffolds(scaffolds, graph, cfg.paths_save_file);
 
-
-        #ifdef USE_R_SCRIPT
-            auto input_paths = ParseInputPaths(cfg.transcript_paths_file, graph);
-            auto paths_names = ReadContigsNames(cfg.filtered_contigs_names_file);
-            VERIFY(input_paths.size() == paths_names.size());
-        #else
-            ifstream blat_output_stream(cfg.blat_output);
-            if (!blat_output_stream.is_open())
-                throw "Cannot open " + cfg.blat_output;
-            INFO("Started blat output reading");
-            auto res = Read(blat_output_stream, GetFilter<WISHED_COLUMNS>());
-            auto fragments = GetContigFragments(res, GetNonDropper<WISHED_COLUMNS>(), graph.k());
-            MakeAllFilteredEdgesDump(res, fragments, graph, output_dir);
-            auto paths_data = MakePaths(res, fragments, graph);
-            auto const & input_paths = paths_data.first;
-            auto const & paths_names = paths_data.second;
-        #endif
+        ifstream blat_output_stream(cfg.blat_output);
+        if (!blat_output_stream.is_open())
+            throw "Cannot open " + cfg.blat_output;
+        INFO("Started blat output reading");
+        auto res = Read(blat_output_stream, GetFilter<WISHED_COLUMNS>());
+        auto fragments = GetContigFragments(res, GetDropAlg<WISHED_COLUMNS>(cfg.drop_alg), graph.k());
+        // DropAnother(res, fragments);
+        MakeAllFilteredEdgesDump(res, fragments, graph, output_dir);
+        auto input_paths = MakePaths(res, fragments, graph);
         INFO("Scanned " << input_paths.size() << " paths");
 
-        auto paths = Launch(gp, PathThreadingParams(), input_paths, contigs, paths_names, scaffolds, nthreads);
+        auto paths = Launch(gp, PathThreadingParams(), input_paths, contigs, scaffolds, nthreads);
 
         ContigWriter writer(graph, MakeContigNameGenerator(config::pipeline_type::base, gp));
         writer.OutputPaths(paths, fs::append_path(output_dir, "connected_paths.fasta"));

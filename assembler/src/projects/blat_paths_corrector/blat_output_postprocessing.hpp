@@ -56,7 +56,7 @@ double GetIDY(Record<columns ...> const & record) {
 template<Columns ... columns>
 FilterType<columns ...> GetFilter() {
     return [](auto const & element) {
-        constexpr auto EDGE_LENGTH_ERROR_COEFF = 0.02;
+        constexpr auto EDGE_LENGTH_ERROR_COEFF = 0.0;
         constexpr auto LENGTHS_ERROR_COEFF = 0.01;
         if (element.template Get<Columns::strand>() != '+' || element.template Get<Columns::block_count>() != 1)
             return false;
@@ -66,15 +66,18 @@ FilterType<columns ...> GetFilter() {
         auto edge_start = element.template Get<Columns::T_start>();
         auto edge_end = element.template Get<Columns::T_end>();
         auto edge_len = element.template Get<Columns::T_size>();
-        auto contig_delta = contig_end - contig_start + 1;
-        auto edge_delta = edge_end - edge_start + 1;
+        auto contig_delta = contig_end - contig_start;
+        auto edge_delta = edge_end - edge_start;
 
         auto edge_len_difference = std::abs(edge_delta - edge_len);
         auto lens_difference = std::abs(contig_delta - edge_delta);
+        if (lens_difference != 0) {
+            std::cout << "I AM HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
+        }
 
         return GetIDY(element) > 0.95 &&
-               contig_delta > 100 &&
-               (double)edge_len_difference < (double)edge_len * EDGE_LENGTH_ERROR_COEFF &&
+               100 < contig_delta && //contig_delta < 5000 &&
+               (double)edge_len_difference <= (double)edge_len * EDGE_LENGTH_ERROR_COEFF &&
                (double) lens_difference < (double) edge_delta * LENGTHS_ERROR_COEFF &&
                GetCov(element.template Get<Columns::T_name>()) > 2;
     };
@@ -170,19 +173,25 @@ MapFromContigNameToContigFragments GetContigFragments(Records<columns ...> const
 }
 
 template<Columns ... columns>
-std::pair<PathWithEdgePostionsContainer, std::vector<std::string>> MakePaths(Records<columns ...> const & records, MapFromContigNameToContigFragments const & contig_fragments, debruijn_graph::Graph const & graph) {
+PathWithEdgePostionsContainer MakePaths(Records<columns ...> const & records, MapFromContigNameToContigFragments const & contig_fragments, debruijn_graph::Graph const & graph) {
     PathWithEdgePostionsContainer paths;
     std::vector<std::string> paths_names;
     for (auto const & contig : contig_fragments) {
         PathWithEdgePostions path;
         for (size_t index : contig.second) {
-            path.positions.push_back((int)records[index].template Get<Columns::Q_start>());
-            path.edge_set.push_back({GetEdgeId(records[index].template Get<Columns::T_name>(), graph)});
+            auto const & record = records[index];
+            auto start_shift = record.template Get<Columns::T_start>() - 0;
+            auto end_shift = record.template Get<Columns::T_size>() - record.template Get<Columns::T_end>();
+            // std::cout << record.template Get<Columns::T_start>() << " " << record.template Get<Columns::T_end>() << ' ' << record.template Get<Columns::T_size>() << " " << start_shift << " " << end_shift << '\n';
+            VERIFY(end_shift == 0 && start_shift == 0);
+            path.start_positions.push_back(record.template Get<Columns::Q_start>() - start_shift);
+            path.end_positions.push_back(record.template Get<Columns::Q_end>() + end_shift);
+            path.edges.push_back(GetEdgeId(record.template Get<Columns::T_name>(), graph));
         }
-        if (!path.positions.empty()) {
+        if (!path.edges.empty()) {
+            path.path_name = contig.first;
             paths.push_back(std::move(path));
-            paths_names.push_back(contig.first);
         }
     }
-    return {std::move(paths), std::move(paths_names)};
+    return paths;
 }

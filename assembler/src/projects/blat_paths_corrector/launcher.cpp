@@ -88,37 +88,33 @@ public:
 
     pair<std::string, std::vector<PathWithBorderEdgesIndexies>> GetBestSequence() const;
 private:
-    pair<GappedPath, size_t> GetNextPath(size_t start_pos) const;
-    
-    boost::optional<pair<GappedPath, size_t>> FindFiller(size_t start_pos) const;
+    pair<GappedPath, size_t> GetNextPath(size_t start_pos, size_t & adjacent_edges_connected) const;
+
+    boost::optional<pair<GappedPath, size_t>> FindFiller(size_t start_pos, size_t & adjacent_edges_connected) const;
 
     GappedPath GetBestMachedPathUsingDistance(EdgeId start_edge, EdgeId end_edge, size_t distance, string const & ref) const;
     GappedPath GetBestMachedPathUsingAligner(EdgeId start_edge, EdgeId end_edge, size_t distance, string const & ref) const;
 
     GappedPath ConnectWithScaffolds(EdgeId start, EdgeId end) const;
 
-    size_t EdgeLen(EdgeId edge) const { return graph.length(edge); }
-    size_t EdgeLenInNucl(EdgeId edge) const { return EdgeLen(edge) + graph.k(); }
-
-    EdgeId GetEdge(size_t pos) const { 
-        VERIFY_MSG(path_info.edge_set[pos].size() == 1, "alternatives are not supported");
-        return path_info.edge_set[pos].front(); 
+    EdgeId GetEdge(size_t pos) const {
+        return path_info.edges[pos];
     }
 
-    long long GetPos(size_t pos) const { return path_info.positions[pos]; }
+    long long GetStartPos(size_t pos) const { return path_info.start_positions[pos]; }
+    long long GetEndPos(size_t pos) const { return path_info.end_positions[pos]; }
 
-    size_t Size() const noexcept { return path_info.edge_set.size(); }
-    
+    size_t Size() const noexcept { return path_info.edges.size(); }
+
     size_t GetDistance(size_t start_pos, size_t end_pos) const { 
-        long long start_after_edge = GetPos(start_pos) + EdgeLen(GetEdge(start_pos));
-        if (start_after_edge <= GetPos(end_pos))
-            return GetPos(end_pos) - start_after_edge;
+        long long dist = GetStartPos(end_pos) - GetStartPos(start_pos) + graph.k();
+        if (dist >= 0)
+            return dist;
         DEBUG("Negative distance between " << graph.int_id(GetEdge(start_pos)) << " and " << graph.int_id(GetEdge(end_pos)));
         return -1ull;
         // return 0;
     }
 
-    std::string BackMappingDropCurrentSuffix(vector<PathWithBorderEdgesIndexies> const & paths) const;
     std::string BackMappingDropNextPreffix(vector<PathWithBorderEdgesIndexies> const & paths) const;
     std::list<BackMappingInfo> ConvertToBackMappingInfo(vector<PathWithBorderEdgesIndexies> const & paths) const;
     std::string MakeSeq(list<BackMappingInfo> const & mapping_info) const;
@@ -129,9 +125,8 @@ std::list<BackMappingInfo> SequenceCorrector<filler_mode>::ConvertToBackMappingI
     list<BackMappingInfo> mapping_info;
     for (size_t i = 0; i < paths.size(); ++i) {
         BackMappingInfo info(BidirectionalPath(graph, paths[i].path));
-        auto right_shift = static_cast<long long>(EdgeLenInNucl(info.path.Back()));
-        auto start_pos = GetPos(paths[i].first_edge_index);
-        auto end_pos = GetPos(paths[i].last_edge_index) + right_shift;
+        auto start_pos = GetStartPos(paths[i].first_edge_index);
+        auto end_pos = GetEndPos(paths[i].last_edge_index);
         if (start_pos < 0)
             info.drop_from_head = -start_pos;
         if (seq.size() < end_pos)
@@ -150,15 +145,36 @@ std::string SequenceCorrector<filler_mode>::MakeSeq(list<BackMappingInfo> const 
     size_t current_pos = 0;
     stringstream ss;
     ScaffoldSequenceMaker seq_maker(graph);
+    ofstream old_fragments("old_fragments.info");
+    ofstream new_fragments("new_fragments.info");
+    ofstream common_fragments("common_fragments.info");
+    size_t i = 0;
     for (auto const & path : mapping_info) {
         if (path.drop_from_head > 0)
             WARN("The new path prefix with len=" << path.drop_from_head << " of " << path.LengthInNucls() << " would be dropped");
         if (path.drop_from_tail > 0)
             WARN("The new path suffix with len=" << path.drop_from_tail << " of " << path.LengthInNucls() << " would be dropped");
+
+        VERIFY_MSG(path.ResultLengthInNucls() + path.contig_start_pos == path.contig_end_pos,
+            "??wtf?? or not??\n"
+            "path.contig_start_pos = " << path.contig_start_pos << "\n"
+            "path.contig_end_pos = " << path.contig_end_pos << "\n"
+            "path.ResultLengthInNucls() = " << path.ResultLengthInNucls() << "\n"
+            "diff = " << path.contig_end_pos - path.contig_start_pos << "\n"
+        );
+        ++i;
+        old_fragments << '>' << i << "\n"
+                      << seq.substr(path.contig_start_pos, path.ResultLengthInNucls()) << "\n";
+        new_fragments << '>' << i << "\n"
+                      << seq_maker.MakeSequence(path.path).substr(path.drop_from_head, path.ResultLengthInNucls()) << "\n";
+        common_fragments << '>' << i << "\n"
+                         << seq.substr(current_pos, path.contig_start_pos - current_pos) << "\n";
+        cout << i << ": " << current_pos << " -> " << path.contig_start_pos << " -> " << path.contig_end_pos << " : " << path.contig_start_pos - current_pos << " -> "<< path.ResultLengthInNucls() << '\n';
         ss << seq.substr(current_pos, path.contig_start_pos - current_pos);
         ss << seq_maker.MakeSequence(path.path).substr(path.drop_from_head, path.ResultLengthInNucls());
         current_pos = path.contig_end_pos;
     }
+    common_fragments << seq.substr(current_pos);
     ss << seq.substr(current_pos);
     return ss.str();
 }
@@ -170,11 +186,13 @@ std::string SequenceCorrector<filler_mode>::BackMappingDropNextPreffix(vector<Pa
         return seq;
 
     auto current_path = mapping_info.begin();
+    size_t tail_drop = 0;
     while (true) {
         auto next_path = std::next(current_path);
         if (next_path == mapping_info.end())
             break;
         if (next_path->contig_start_pos < current_path->contig_end_pos) {
+            tail_drop += current_path->contig_end_pos - next_path->contig_start_pos;
             next_path->drop_from_head += current_path->contig_end_pos - next_path->contig_start_pos;
             next_path->contig_start_pos = current_path->contig_end_pos;
         }
@@ -182,38 +200,14 @@ std::string SequenceCorrector<filler_mode>::BackMappingDropNextPreffix(vector<Pa
             mapping_info.erase(next_path);
             continue;
         }
+        auto current_path_befor_shift = current_path;
         ++current_path;
-    }
-    if (mapping_info.size() != paths.size()) {
-        size_t dropped_pats_cnt = paths.size() - mapping_info.size();
-        WARN("Oh no! Full " << dropped_pats_cnt << " path" << (dropped_pats_cnt != 1 ? "s" : "") << " would be dropped");
-    }
-
-    return MakeSeq(mapping_info);
-}
-
-template<PathFiller filler_mode>
-std::string SequenceCorrector<filler_mode>::BackMappingDropCurrentSuffix(vector<PathWithBorderEdgesIndexies> const & paths) const {
-    auto mapping_info = ConvertToBackMappingInfo(paths);
-    if (mapping_info.empty())
-        return seq;
-
-    auto current_path = mapping_info.rbegin();
-    while (true) {
-        auto prev_path = std::next(current_path);
-        if (prev_path == mapping_info.rend())
-            break;
-        if (current_path->contig_start_pos < prev_path->contig_end_pos) {
-            prev_path->drop_from_tail += prev_path->contig_end_pos - current_path->contig_start_pos;
-            prev_path->contig_end_pos = current_path->contig_start_pos;
-        }
-        auto const & base = std::prev(prev_path.base());
-        VERIFY(base->path.GetId() == prev_path->path.GetId());
-        if (prev_path->ShouldBeDropped()) {
-            mapping_info.erase(std::prev(prev_path.base()));
-            continue;
-        }
-        ++current_path;
+        current_path_befor_shift->drop_from_tail += tail_drop;
+        if (current_path_befor_shift->ShouldBeDropped())
+            mapping_info.erase(current_path_befor_shift);
+        else
+            current_path_befor_shift->contig_end_pos -= tail_drop;
+        tail_drop = 0;
     }
     if (mapping_info.size() != paths.size()) {
         size_t dropped_pats_cnt = paths.size() - mapping_info.size();
@@ -226,25 +220,26 @@ std::string SequenceCorrector<filler_mode>::BackMappingDropCurrentSuffix(vector<
 template<PathFiller filler_mode>
 pair<std::string, std::vector<PathWithBorderEdgesIndexies>> SequenceCorrector<filler_mode>::GetBestSequence() const {
     std::vector<PathWithBorderEdgesIndexies> paths;
+    size_t adjacent_edges_connected = 0;
     size_t start_pos = 0;
     while (start_pos < Size()) {
-        auto path = GetNextPath(start_pos);
+        auto path = GetNextPath(start_pos, adjacent_edges_connected);
         if (path.first.Size() > 0) {
             paths.push_back({std::move(path.first), start_pos, path.second});
         }
         start_pos = path.second + 1;
     }
-    DEBUG("Made " << paths.size() << " path" << (paths.size() != 1 ? "s" : ""));
-    // return {BackMappingDropCurrentSuffix(paths), std::move(paths)};
+    INFO("Made " << paths.size() << " path" << (paths.size() != 1 ? "s" : ""));
+    INFO("Connected " << adjacent_edges_connected << " adjacent edges pair" << (adjacent_edges_connected == 1 ? "" : "s"));
     return {BackMappingDropNextPreffix(paths), std::move(paths)};
 }
 
 template<PathFiller filler_mode>
-pair<GappedPath, size_t> SequenceCorrector<filler_mode>::GetNextPath(size_t start_pos) const {
+pair<GappedPath, size_t> SequenceCorrector<filler_mode>::GetNextPath(size_t start_pos, size_t & adjacent_edges_connected) const {
     GappedPath current_path;
     current_path.PushBack(GetEdge(start_pos));
     while (start_pos + 1 < Size()) {
-        auto path = FindFiller(start_pos);
+        auto path = FindFiller(start_pos, adjacent_edges_connected);
         if (!path.is_initialized())
             break;
         current_path.PushBack(std::move(path->first));
@@ -256,15 +251,15 @@ pair<GappedPath, size_t> SequenceCorrector<filler_mode>::GetNextPath(size_t star
 }
 
 template<PathFiller filler_mode>
-boost::optional<pair<GappedPath, size_t>> SequenceCorrector<filler_mode>::FindFiller(size_t start_pos) const {
+boost::optional<pair<GappedPath, size_t>> SequenceCorrector<filler_mode>::FindFiller(size_t start_pos, size_t & adjacent_edges_connected) const {
     size_t end_pos = start_pos + 1;
     auto start_edge = GetEdge(start_pos);
     for (; end_pos - start_pos <= params.max_steps_forward && end_pos < Size(); ++end_pos) {
         GappedPath current_path;
         auto end_edge  = GetEdge(end_pos);
 
-        if (graph.EdgeStart(end_edge) == graph.EdgeEnd(start_edge)) {
-            INFO("Connected adjacent edges");
+        if (graph.EdgeStart(end_edge) == graph.EdgeEnd(start_edge) && GetStartPos(end_pos) + graph.k() == GetEndPos(start_pos)) {
+            ++adjacent_edges_connected;
             return {{std::move(current_path), end_pos}};
         }
 
@@ -272,8 +267,8 @@ boost::optional<pair<GappedPath, size_t>> SequenceCorrector<filler_mode>::FindFi
             size_t distance = GetDistance(start_pos, end_pos);
             if (distance == -1ull)
                 return {};
-            VERIFY(GetPos(end_pos) >= (long long)distance);
-            size_t start_after_edge = GetPos(end_pos) - distance;
+            VERIFY(GetStartPos(end_pos) >= (long long)distance);
+            size_t start_after_edge = GetStartPos(end_pos) - distance;
             if (filler_mode == PathFiller::UseDistance)
                 current_path = GetBestMachedPathUsingDistance(start_edge, end_edge, distance, seq.substr(start_after_edge, distance));
             else
@@ -398,11 +393,10 @@ path_extend::PathContainer Launch(debruijn_graph::GraphPack const & gp,
                                   PathThreadingParams params,
                                   PathWithEdgePostionsContainer const & input_paths,
                                   std::vector<SeqString> & contigs,
-                                  std::vector<std::string> const & paths_names,
                                   PathContainer const & scaffolds,
                                   size_t nthreads)
 {
-    params.use_scaffolds = !input_paths.empty();
+    params.use_scaffolds &= !input_paths.empty();
     auto const & graph = gp.get<Graph>();
     GraphCoverageMap cover_map(graph);
     cover_map.AddPaths(scaffolds);
@@ -418,14 +412,14 @@ path_extend::PathContainer Launch(debruijn_graph::GraphPack const & gp,
     PathContainer total_paths;
     // #pragma omp parallel for num_threads(nthreads) schedule(dynamic)
     for (size_t i = 0; i < input_paths.size(); ++i) {
-        const auto& path_name = paths_names[i];
+        const auto& path_name = input_paths[i].path_name;
         #ifdef GOOD_NAME
         if (path_name != GOOD_NAME) {
             continue;
         }
         #endif
         auto & contig = *find_if(contigs.begin(), contigs.end(), [&path_name](SeqString const & contig){return contig.name == path_name;});
-        INFO("Processing path [" << contig.name << "] # " << i + 1 << " (of " << input_paths.size() << ") with " << input_paths[i].edge_set.size() << " edges");
+        INFO("Processing path [" << contig.name << "] # " << i + 1 << " (of " << input_paths.size() << ") with " << input_paths[i].edges.size() << " edges");
         SequenceCorrector<PathFiller::UseDistance> corrector(graph, params, cover_map, input_paths[i], contig.seq, nthreads);
 
         auto data = corrector.GetBestSequence();

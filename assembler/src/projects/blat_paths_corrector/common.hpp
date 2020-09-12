@@ -8,8 +8,9 @@
 #include "common/assembly_graph/paths/bidirectional_path_container.hpp"
 #include "common/pipeline/graph_pack.hpp"
 
-//tig00000020
+//tig00000104
 // #define GOOD_NAME "tig00000055"
+// #define GOOD_NAME "tig00000020"
 
 struct PathThreadingParams {
     double good_distance_coeff = 0.10;   //a path is considered as good if its distance differs by at most good_distance_coeff
@@ -18,18 +19,26 @@ struct PathThreadingParams {
     bool use_agressive_filling = false;  //use dijkstra's algorithm for edges connecting
     size_t max_steps_forward = 1;
     size_t max_distance = 50000;        //stop Dijkstra path search when path length exceeds max_distance or there are more than 3000 paths in buffer
-    bool use_scaffolds = true;          //use pre-contructed scaffolds if path was not found
+    bool use_scaffolds = false;         //use pre-contructed scaffolds if path was not found
 };
 
 struct PathWithEdgePostions {
 
-    PathWithEdgePostions(): edge_set(), positions() {}
+    PathWithEdgePostions() = default;
 
-    PathWithEdgePostions(const std::vector<std::vector<debruijn_graph::EdgeId>>&& paths_, const std::vector<int>&& positions_):
-        edge_set(paths_), positions(positions_) {}
+    PathWithEdgePostions(std::string path_name_, std::vector<debruijn_graph::EdgeId> paths_, std::vector<long long> start_positions_, std::vector<long long> end_positions_)
+        : path_name(std::move(path_name_))
+        , edges(std::move(paths_))
+        , start_positions(std::move(start_positions_))
+        , end_positions(std::move(end_positions_))
+    {
+        VERIFY(edges.size() == start_positions.size() && edges.size() == end_positions.size());
+    }
 
-    std::vector<std::vector<debruijn_graph::EdgeId>> edge_set;
-    std::vector<int> positions;
+    std::string path_name;
+    std::vector<debruijn_graph::EdgeId> edges;
+    std::vector<long long> start_positions; // inclusive
+    std::vector<long long> end_positions;   // exclusive
 };
 
 struct SeqString {
@@ -45,7 +54,6 @@ path_extend::PathContainer Launch(debruijn_graph::GraphPack const & gp,
                                   PathThreadingParams params,
                                   PathWithEdgePostionsContainer const & input_paths,
                                   std::vector<SeqString> & contigs,
-                                  std::vector<std::string> const & paths_names,
                                   path_extend::PathContainer const & scaffolds,
                                   size_t nthreads);
 
