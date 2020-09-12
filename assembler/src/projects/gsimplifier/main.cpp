@@ -157,7 +157,7 @@ int main(int argc, char** argv) {
         gp.get_mutable<KmerMapper<Graph>>().Attach();
 
         io::EdgeLabelHelper<Graph> label_helper(element_finder,
-                                                toolchain::LoadGraphPack(gp, cfg.graph));
+                                                toolchain::LoadBaseGraph(gp.get_mutable<Graph>(), cfg.graph));
 
         //Refilling flanking coverage to get same behavior while working with gfa graphs
         auto &flanking_cov = gp.get_mutable<FlankingCoverage<Graph>>();
