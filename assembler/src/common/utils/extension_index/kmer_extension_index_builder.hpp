@@ -71,7 +71,7 @@ public:
         using Splitter = DeBruijnReadKMerSplitter<typename Streams::ReadT, KmerFilter>;
         kmers::KMerDiskCounter<RtSeq> counter(workdir,
                                               Splitter(workdir, index.k() + 1, streams, read_buffer_size));
-        auto kmers = counter.Count(nthreads, nthreads);
+        auto kmers = counter.Count(10 * nthreads, nthreads);
 
         BuildExtensionIndexFromKPOMers(workdir, index, kmers,
                                        nthreads, read_buffer_size);
