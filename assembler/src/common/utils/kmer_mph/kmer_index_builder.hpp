@@ -126,7 +126,7 @@ class KMerDiskStorage {
 
   unsigned k() const { return k_; }
 
-  size_t kmers() const {
+  size_t total_kmers() const {
     size_t fsize = 0;
     if (all_kmers_) {
       fsize = fs::filesize(*all_kmers_);
@@ -399,7 +399,7 @@ class KMerIndexBuilder {
     for (unsigned i = 1; i < buckets; ++i)
       index.bucket_starts_[i] += index.bucket_starts_[i - 1];
 
-    double bits_per_kmer = 8.0 * (double)index.mem_size() / (double)kmer_storage.kmers();
+    double bits_per_kmer = 8.0 * (double)index.mem_size() / (double)kmer_storage.total_kmers();
     INFO("Index built. Total " << index.mem_size() << " bytes occupied (" << bits_per_kmer << " bits per kmer).");
     index.count_size();
   }

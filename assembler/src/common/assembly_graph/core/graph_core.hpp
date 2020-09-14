@@ -353,6 +353,8 @@ private:
     }
 
     struct EdgePredicate {
+        typedef EdgeId operand_type;
+        
         EdgePredicate(const GraphCore<DataMaster> &graph)
                 : graph_(graph) {}
 
@@ -363,6 +365,7 @@ private:
 
     struct AllEdges : public EdgePredicate {
         using EdgePredicate::EdgePredicate;
+        using typename EdgePredicate::operand_type;
 
         bool operator()(EdgeId) const noexcept {
             return true;
@@ -371,6 +374,7 @@ private:
 
     struct CanonicalEdges : public EdgePredicate {
         using EdgePredicate::EdgePredicate;
+        using typename EdgePredicate::operand_type;
 
         bool operator()(EdgeId e) const noexcept {
             const GraphCore<DataMaster> &g = this->graph_;
@@ -379,6 +383,8 @@ private:
     };
 
     struct VertexPredicate {
+        typedef VertexId operand_type;
+        
         VertexPredicate(const GraphCore<DataMaster> &graph)
                 : graph_(graph) {}
 
@@ -389,6 +395,7 @@ private:
 
     struct AllVertices : public VertexPredicate {
         using VertexPredicate::VertexPredicate;
+        using typename VertexPredicate::operand_type;
 
         bool operator()(VertexId) const {
             return true;
@@ -397,6 +404,7 @@ private:
 
     struct CanonicalVertices : public VertexPredicate {
         using VertexPredicate::VertexPredicate;
+        using typename VertexPredicate::operand_type;
 
         bool operator()(VertexId e) const {
             const GraphCore<DataMaster> &g = this->graph_;
@@ -409,7 +417,7 @@ private:
         And(Predicate1 p1, Predicate2 p2)
                 : p1_(std::move(p1)), p2_(std::move(p2)) {}
 
-        bool operator()(EdgeId e) const noexcept {
+        bool operator()(typename Predicate1::operand_type e) const noexcept {
             return p1_(e) && p2_(e);
         }
 

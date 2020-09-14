@@ -335,7 +335,7 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
       
   }
   auto res = kmers::KMerIndexBuilder<HammerKMerIndex>(num_files_, omp_get_max_threads()).BuildIndex(data.index_, *counter, /* save final */ true);
-  kmers = res.kmers();
+  kmers = res.total_kmers();
   final_kmers = res.final_kmers();
 
   INFO("" << kmers);

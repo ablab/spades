@@ -173,7 +173,7 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
 
   // Now use the index to fill the kmer quality information.
   INFO("Collecting K-mer information, this takes a while.");
-  data.data_.resize(res.kmers());
+  data.data_.resize(res.total_kmers());
 
   const auto &dataset = cfg::get().dataset;
   for (auto it = dataset.reads_begin(), et = dataset.reads_end(); it != et;

@@ -26,7 +26,7 @@ struct PerfectHashMapBuilder {
 
         kmers::KMerIndexBuilder<KMerIndex> builder((unsigned)bucket_num, (unsigned)thread_num);
         auto res = builder.BuildIndex(*index.index_ptr_, counter, save_final);
-        index.resize(res.kmers());
+        index.resize(res.total_kmers());
 
         return res;
     }
@@ -40,7 +40,7 @@ struct PerfectHashMapBuilder {
 
         kmers::KMerIndexBuilder<KMerIndex> builder(0, (unsigned)thread_num);
         builder.BuildIndex(*index.index_ptr_, storage);
-        index.resize(storage.kmers());
+        index.resize(storage.total_kmers());
     }
 };
 
@@ -78,7 +78,7 @@ struct CQFHashMapBuilder {
                 [](const typename Index::KeyWithHash &, uint64_t) {
                     return 42;
                 },
-                res.kmers()));
+                res.total_kmers()));
 
         // Now we know the CQF range, so we could initialize the inthash properly
         uint64_t range_mask = index.values_->range_mask();
