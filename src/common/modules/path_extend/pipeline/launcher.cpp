@@ -25,7 +25,6 @@
 #include "modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor.hpp"
 #include "modules/path_extend/read_cloud_path_extend/fragment_statistics/secondary_stats_estimators.hpp"
 #include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage_constructor.hpp"
-#include "modules/path_extend/read_cloud_path_extend/statistics/path_scaffolder_analyzer.hpp"
 
 #include <unordered_set>
 namespace path_extend {
@@ -97,12 +96,9 @@ std::shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructPath
     const auto &cloud_lib = dataset_info_.reads[lib_index];
     VERIFY_DEV(cloud_lib.type() == io::LibraryType::Clouds10x);
     VERIFY_DEV(not distribution_pack.length_distribution_.empty());
-    const size_t small_path_length_threshold = params_.pe_cfg.read_cloud.long_edge_length_lower_bound;
-    size_t min_upper_bound = params_.pe_cfg.read_cloud.long_edge_length_min_upper_bound;
-    size_t max_upper_bound = params_.pe_cfg.read_cloud.long_edge_length_max_upper_bound;
-    read_cloud::fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor(distribution_pack);
-    read_cloud::fragment_statistics::UpperLengthBoundEstimator length_bound_estimator(min_upper_bound,
-                                                                                      max_upper_bound);
+    const auto &unique_storage = unique_data_.read_cloud_storages_.small_unique_storage_;
+    VERIFY_DEV(unique_storage.size() != 0);
+    const size_t small_path_length_threshold = unique_storage.min_length();
     bool scaffolding_mode = true;
     size_t num_threads = params_.threads;
     auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
@@ -113,14 +109,18 @@ std::shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructPath
     read_cloud::SearchingExtenderParams empty_searching_extender_params(empty_storage);
     read_cloud::ReadCloudSearchParameterPack empty_pack{empty_chooser_params, empty_search_params,
                                                         empty_searching_extender_params};
-
-    std::string scaffold_graph_stats_path = fs::append_path(params_.output_dir,
-                                                            params_.pe_cfg.read_cloud.statistics.scaffold_graph_statistics);
-    read_cloud::CloudScaffoldGraphConstructor constructor(num_threads, gp_, unique_data_.main_unique_storage_, cloud_lib,
+    std::string base_stats_path = fs::append_path(params_.etc_dir,
+                                                  params_.pe_cfg.read_cloud.statistics.scaffold_graph_statistics);
+    std::string scaffold_graph_stats_path = fs::append_path(base_stats_path, "path_graph");
+    fs::remove_if_exists(scaffold_graph_stats_path);
+    fs::make_dir(scaffold_graph_stats_path);
+    read_cloud::CloudScaffoldGraphConstructor constructor(num_threads, gp_, unique_storage, cloud_lib,
                                                           params_.pe_cfg.read_cloud, empty_pack,
                                                           scaffold_graph_stats_path, extractor);
     auto path_scaffold_graph = std::make_shared<scaffold_graph::ScaffoldGraph>(
-        constructor.ConstructScaffoldGraphFromPathContainer(path_container,small_path_length_threshold,scaffolding_mode));
+        constructor.ConstructScaffoldGraphFromPathContainer(path_container,
+                                                            small_path_length_threshold,
+                                                            scaffolding_mode));
     return path_scaffold_graph;
 }
 
@@ -402,7 +402,41 @@ Extenders PathExtendLauncher::ConstructMPExtenders(const ExtendersGenerator &gen
     return generator.MakeMPExtenders();
 }
 
+void PathExtendLauncher::ConstructReadCloudStorages() {
+    INFO("Constructing read cloud unique storages");
+    const size_t unique_length_threshold = params_.pe_cfg.read_cloud.long_edge_length_lower_bound;
+    double max_relative_coverage = unique_data_.unique_variation_;
+    ScaffoldingUniqueEdgeStorage &small_storage = unique_data_.read_cloud_storages_.small_unique_storage_;
+    ScaffoldingUniqueEdgeAnalyzer small_unique_edge_analyzer(gp_, unique_length_threshold, max_relative_coverage);
+    small_unique_edge_analyzer.FillUniqueEdgeStorage(small_storage);
+
+    for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
+        const auto &lib = dataset_info_.reads[lib_index];
+        if (lib.type() == io::LibraryType::Clouds10x) {
+            using read_cloud::fragment_statistics::DistributionPack;
+            const auto &lib = dataset_info_.reads[lib_index];
+            DistributionPack distribution_pack(lib.data().read_cloud_info.fragment_length_distribution);
+            INFO(distribution_pack.length_distribution_.size() << " clusters loaded");
+            VERIFY_DEV(not distribution_pack.length_distribution_.empty());
+            read_cloud::fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor(distribution_pack);
+            size_t min_upper_bound = params_.pe_cfg.read_cloud.long_edge_length_min_upper_bound;
+            size_t max_upper_bound = params_.pe_cfg.read_cloud.long_edge_length_max_upper_bound;
+            read_cloud::fragment_statistics::UpperLengthBoundEstimator length_bound_estimator(min_upper_bound, max_upper_bound);
+            const double ultralong_edge_length_percentile = params_.pe_cfg.read_cloud.scaff_con.ultralong_edge_length_percentile;
+            size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
+                                                                                  ultralong_edge_length_percentile);
+            INFO("Length upper bound for lib " << lib_index << ": " << length_upper_bound);
+            ScaffoldingUniqueEdgeAnalyzer large_unique_edge_analyzer(gp_, length_upper_bound, max_relative_coverage);
+            auto &storage_map = unique_data_.read_cloud_storages_.lib_to_large_storage_;
+            large_unique_edge_analyzer.FillUniqueEdgeStorage(storage_map[lib_index]);
+            const ScaffoldingUniqueEdgeStorage &large_storage = storage_map.at(lib_index);
+            small_unique_edge_analyzer.AddUniqueEdgesFromSet(small_storage, large_storage.unique_edges());
+        }
+    }
+}
+
 Extenders PathExtendLauncher::ConstructReadCloudExtenders(const ExtendersGenerator &generator) {
+    ConstructReadCloudStorages();
     return generator.MakeReadCloudExtenders();
 }
 
