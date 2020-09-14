@@ -192,12 +192,12 @@ struct UniqueData {
     ScaffoldingUniqueEdgeStorage main_unique_storage_;
     std::vector<ScaffoldingUniqueEdgeStorage> unique_storages_;
 
-    ScaffoldingUniqueEdgeStorage unique_pb_storage_;
-    struct ReadCloudStorages {
-      ScaffoldingUniqueEdgeStorage unique_read_cloud_small_storage_;
-      ScaffoldingUniqueEdgeStorage unique_read_cloud_large_storage_;
-    };
-    ReadCloudStorages read_cloud_storages_;
+  ScaffoldingUniqueEdgeStorage unique_pb_storage_;
+  struct ReadCloudStorages {
+    ScaffoldingUniqueEdgeStorage small_unique_storage_;
+    std::unordered_map<size_t, ScaffoldingUniqueEdgeStorage> lib_to_large_storage_;
+  };
+  ReadCloudStorages read_cloud_storages_;
 
     std::vector<PathContainer> long_reads_paths_;
     std::vector<GraphCoverageMap> long_reads_cov_map_;

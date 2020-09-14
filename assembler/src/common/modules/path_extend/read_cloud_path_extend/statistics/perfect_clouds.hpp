@@ -17,10 +17,7 @@ class PerfectClustersAnalyzer {
     typedef cluster_storage::Cluster Cluster;
     typedef std::set<scaffold_graph::ScaffoldVertex> VertexSet;
     typedef std::map<VertexSet, size_t> SetDistribution;
-    PerfectClustersAnalyzer(const Graph &g,
-                            const debruijn_graph::Index &index,
-                            const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
-                            const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
+    PerfectClustersAnalyzer(const GraphPack &gp,
                             const std::string &output_dir,
                             size_t max_threads);
 
@@ -30,10 +27,7 @@ class PerfectClustersAnalyzer {
     SetDistribution ConstructPerfectClusters(const scaffold_graph::ScaffoldGraph &perfect_graph) const;
     double GetMeanEdgeNumber(const SetDistribution &clusters, size_t length_threshold, const Graph &g) const;
 
-    const Graph &g_;
-    const debruijn_graph::Index &index_;
-    const debruijn_graph::KmerMapper<Graph> &kmer_mapper_;
-    const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper_;
+    const GraphPack &gp_;
     const std::string output_dir_;
     const size_t max_threads_;
 };
