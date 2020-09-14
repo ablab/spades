@@ -83,6 +83,8 @@ class PathExtendLauncher {
 
     Extenders ConstructPBExtenders(const ExtendersGenerator &generator);
 
+    void ConstructReadCloudStorages();
+
     Extenders ConstructReadCloudExtenders(const ExtendersGenerator &generator);
 
     void FilterPaths(PathContainer& paths);

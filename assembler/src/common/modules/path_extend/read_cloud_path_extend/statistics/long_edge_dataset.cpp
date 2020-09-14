@@ -28,7 +28,7 @@ void LongEdgePairDataset::Serialize(const string &path) {
     }
 }
 LongEdgePairDataset LongEdgePairDatasetExtractor::GetLongEdgeDataset(
-        const std::vector<std::vector<validation::EdgeWithMapping>> &reference_paths) const {
+        const validation::UniqueReferencePaths &reference_paths) const {
     INFO("Getting long edge dataset")
     validation::ReferencePathIndexBuilder path_index_builder;
     auto reference_index = path_index_builder.BuildReferencePathIndex(reference_paths);
@@ -39,7 +39,7 @@ LongEdgePairDataset LongEdgePairDatasetExtractor::GetLongEdgeDataset(
     auto close_transition_storage = close_transition_builder.GetTransitionStorage(reference_paths);
     auto covered_edges_set = reference_transition_storage.GetCoveredEdges();
 
-    auto distance_map = GetDistanceMap(reference_paths);
+    auto distance_map = GetDistanceMap(reference_paths.paths_);
     std::vector<EdgeId> reference_edges(covered_edges_set.begin(), covered_edges_set.end());
 
     std::vector<LongEdgePairEntry> dataset;
@@ -189,10 +189,10 @@ LongEdgePairDatasetExtractor::LongEdgePairDatasetExtractor(const Graph &g,
     barcode_mapper_(barcode_mapper),
     scaffold_graph_storage_(scaffold_graph_storage),
     max_threads_(max_threads) {}
-LongEdgePairDataset LongEdgePairDatasetExtractor::GetLongEdgeDataset(const scaffold_graph::ScaffoldGraph &graph,
+LongEdgePairDataset LongEdgePairDatasetExtractor::GetLongEdgeDataset(const ScaffoldingUniqueEdgeStorage &unique_storage,
                                                                      const std::string &path_to_reference) const {
     validation::FilteredReferencePathHelper path_helper(g_, index_, kmer_mapper_);
-    auto reference_paths = path_helper.GetFilteredReferencePathsFromGraph(path_to_reference, graph);
+    auto reference_paths = path_helper.GetFilteredReferencePathsFromUnique(path_to_reference, unique_storage);
     return GetLongEdgeDataset(reference_paths);
 }
 void LongEdgePairDatasetExtractor::ConstructAndSerialize(const std::string &path_to_reference,
@@ -201,9 +201,9 @@ void LongEdgePairDatasetExtractor::ConstructAndSerialize(const std::string &path
     size_t long_threshold = scaffold_graph_storage_.GetSmallLengthThreshold();
     size_t ultralong_threshold = scaffold_graph_storage_.GetLargeLengthThreshold();
     INFO(scaffold_graph_storage_.GetSmallScaffoldGraph().VertexCount() << " long edges");
-    auto long_edge_dataset = GetLongEdgeDataset(scaffold_graph_storage_.GetSmallScaffoldGraph(), reference_path);
+    auto long_edge_dataset = GetLongEdgeDataset(scaffold_graph_storage_.GetSmallUniqueStorage(), reference_path);
     INFO(scaffold_graph_storage_.GetLargeScaffoldGraph().VertexCount() << " ultralong edges");
-    auto ultralong_edge_dataset = GetLongEdgeDataset(scaffold_graph_storage_.GetLargeScaffoldGraph(), reference_path);
+    auto ultralong_edge_dataset = GetLongEdgeDataset(scaffold_graph_storage_.GetLargeUniqueStorage(), reference_path);
     const std::string output_name = "long_edge_dataset_";
     const std::string long_output_path = fs::append_path(output_base, output_name + std::to_string(long_threshold));
     const string ultralong_output_path = fs::append_path(output_base, output_name +

@@ -54,17 +54,22 @@ SimpleTransitionGraphValidator SimpleTransitionGraphValidatorConstructor::GetVal
     const string &path_to_reference) const {
     GeneralTransitionStorageBuilder reference_storage_builder(g_, 1, false, false);
     validation::FilteredReferencePathHelper path_helper(g_, index_, kmer_mapper_);
-    auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold_);
+    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, length_threshold_, 5000.0);
+    ScaffoldingUniqueEdgeStorage unique_storage;
+    unique_edge_analyzer.FillUniqueEdgeStorage(unique_storage);
+    auto reference_paths = path_helper.GetFilteredReferencePathsFromUnique(path_to_reference, unique_storage);
     auto reference_transition_storage = reference_storage_builder.GetTransitionStorage(reference_paths);
     SimpleTransitionGraphValidator transition_graph_validator(reference_transition_storage, length_threshold_);
     return transition_graph_validator;
 }
 SimpleTransitionGraphValidatorConstructor::SimpleTransitionGraphValidatorConstructor(
-        const Graph &g,
-        const debruijn_graph::Index &index,
-        const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
+        const GraphPack &gp,
         size_t length_threshold) :
-    g_(g), index_(index), kmer_mapper_(kmer_mapper), length_threshold_(length_threshold) {}
+    gp_(gp),
+    g_(gp_.get<Graph>()),
+    index_(gp_.get<EdgeIndex<Graph>>()),
+    kmer_mapper_(gp_.get<KmerMapper<Graph>>()),
+    length_threshold_(length_threshold) {}
 }
 }
 }
