@@ -62,6 +62,7 @@ class ScaffoldGraphPolisherHelper {
     ScaffoldGraph GetScaffoldGraphFromStorage(const ScaffoldGraphStorage &storage, bool path_scaffolding) const;
 
     void PrintScaffoldGraphReferenceInfo(const scaffold_graph::ScaffoldGraph &scaffold_graph,
+                                         const ScaffoldingUniqueEdgeStorage &unique_storage,
                                          const std::string &path_to_reference) const;
 
   private:
@@ -95,8 +96,8 @@ class CloudScaffoldGraphConstructor {
                                   const ReadCloudSearchParameterPack &search_parameter_pack,
                                   const std::string &debug_output_path,
                                   std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor);
-    ScaffoldGraph ConstructScaffoldGraphFromMinLength(const ScaffoldingUniqueEdgeStorage &unique_storage,
-                                                      scaffold_graph_construction_pipeline_type::Type type) const;
+    ScaffoldGraph ConstructScaffoldGraphFromUniqueStorage(const ScaffoldingUniqueEdgeStorage &unique_storage,
+                                                          scaffold_graph_construction_pipeline_type::Type type) const;
 
     ScaffoldGraph ConstructScaffoldGraphFromPathContainer(const path_extend::PathContainer &paths,
                                                           size_t min_length, bool scaffolding_mode) const;

@@ -48,8 +48,9 @@ class ScaffoldGraphConstructionPipeline {
     typedef std::shared_ptr<scaffolder::ScaffoldGraphConstructor> ConstructorPtr;
     typedef std::pair<std::shared_ptr<scaffold_graph::ScaffoldGraph>, string> ResultT;
 
-    ScaffoldGraphConstructionPipeline(ConstructorPtr initial_constructor, const Graph &g,
-                                      const read_cloud::ScaffolderParams &params);
+    ScaffoldGraphConstructionPipeline(ConstructorPtr initial_constructor,
+                                      const read_cloud::ScaffolderParams &params,
+                                      const Graph &g);
 
     void AddStage(std::shared_ptr<IterativeScaffoldGraphConstructorCaller> stage);
     void Run();
@@ -61,8 +62,8 @@ class ScaffoldGraphConstructionPipeline {
     ConstructorPtr initial_constructor_;
     std::vector<std::shared_ptr<IterativeScaffoldGraphConstructorCaller>> construction_stages_;
     std::vector<ResultT> intermediate_results_;
-    const Graph &g_;
     const read_cloud::ScaffolderParams params_;
+    const Graph &g_;
 };
 
 class ScaffoldGraphPipelineConstructor {

@@ -43,9 +43,7 @@ class ReferencePathIndexBuilder {
   public:
     typedef std::vector<std::vector<EdgeWithMapping>> ReferencePaths;
 
-    ReferencePathIndex BuildReferencePathIndex(const ReferencePaths &reference_paths);
-    ReferencePathIndex BuildReferencePathIndexForSet(const ReferencePaths &reference_paths,
-                                                     const std::unordered_set<EdgeId> &edges);
+    ReferencePathIndex BuildReferencePathIndex(const UniqueReferencePaths &unique_paths);
 };
 }
 }

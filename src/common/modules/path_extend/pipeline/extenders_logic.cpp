@@ -581,31 +581,14 @@ std::shared_ptr<ExtensionChooser> ExtendersGenerator::MakeSimpleExtensionChooser
 std::shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldGraphExtender(size_t lib_index) const {
     using read_cloud::fragment_statistics::DistributionPack;
     const auto &lib = dataset_info_.reads[lib_index];
+    const auto &small_unique_storage = unique_data_.read_cloud_storages_.small_unique_storage_;
+    const auto &storage_map = unique_data_.read_cloud_storages_.lib_to_large_storage_;
+    auto large_unique_storage_result = storage_map.find(lib_index);
+    if (large_unique_storage_result == storage_map.end()) {
+        WARN("Could not find unique storage for library " << lib_index << ", skipping scaffold graph construction");
+    }
+    const auto &large_unique_storage = large_unique_storage_result->second;
     INFO("Scaffold graph construction started");
-    const size_t unique_length_threshold = params_.pe_cfg.read_cloud.long_edge_length_lower_bound;
-    DistributionPack distribution_pack(lib.data().read_cloud_info.fragment_length_distribution);
-    INFO(distribution_pack.length_distribution_.size() << " clusters loaded");
-    VERIFY_DEV(not distribution_pack.length_distribution_.empty());
-    read_cloud::fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor(distribution_pack);
-    size_t min_upper_bound = params_.pe_cfg.read_cloud.long_edge_length_min_upper_bound;
-    size_t max_upper_bound = params_.pe_cfg.read_cloud.long_edge_length_max_upper_bound;
-    read_cloud::fragment_statistics::UpperLengthBoundEstimator length_bound_estimator(min_upper_bound, max_upper_bound);
-    const double ultralong_edge_length_percentile = params_.pe_cfg.read_cloud.scaff_con.ultralong_edge_length_percentile;
-    size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
-                                                                          ultralong_edge_length_percentile);
-    INFO("Length upper bound: " << length_upper_bound);
-
-    double max_relative_coverage = unique_data_.unique_variation_;
-
-    ScaffoldingUniqueEdgeAnalyzer small_unique_edge_analyzer(gp_, unique_length_threshold, max_relative_coverage);
-    ScaffoldingUniqueEdgeStorage small_unique_storage;
-    small_unique_edge_analyzer.FillUniqueEdgeStorage(small_unique_storage);
-
-    ScaffoldingUniqueEdgeAnalyzer large_unique_edge_analyzer(gp_, length_upper_bound, max_relative_coverage);
-    ScaffoldingUniqueEdgeStorage large_unique_storage;
-    large_unique_edge_analyzer.FillUniqueEdgeStorage(large_unique_storage);
-    small_unique_edge_analyzer.AddUniqueEdgesFromSet(small_unique_storage, large_unique_storage.unique_edges());
-
     auto opts = params_.pset.extension_options;
     double lib_cov = support_.EstimateLibCoverage(lib_index);
     bool is_coverage_aware = params_.uneven_depth || params_.mode == config::pipeline_type::moleculo;
@@ -623,12 +606,16 @@ std::shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldGraphExtender(size
     read_cloud::ReadCloudSearchParameterPack search_parameter_pack{construction_params, search_params,
                                                                    default_composite_extender_params};
 
-    std::string scaffold_graph_stats_path = fs::append_path(params_.output_dir,
-                                                            params_.pe_cfg.read_cloud.statistics.scaffold_graph_statistics);
+    std::string base_stats_path = fs::append_path(params_.etc_dir,
+                                                  params_.pe_cfg.read_cloud.statistics.scaffold_graph_statistics);
+    fs::remove_if_exists(base_stats_path);
+    fs::make_dir(base_stats_path);
+    size_t unique_length_threshold = small_unique_storage.min_length();
+    size_t length_upper_bound = large_unique_storage.min_length();
     read_cloud::ScaffoldGraphStorageConstructor storage_constructor(small_unique_storage, large_unique_storage,
                                                                     unique_length_threshold, length_upper_bound,
                                                                     params_.threads, lib, params_.pe_cfg.read_cloud,
-                                                                    search_parameter_pack, scaffold_graph_stats_path,
+                                                                    search_parameter_pack, base_stats_path,
                                                                     gp_);
     auto storage = storage_constructor.ConstructStorage();
     read_cloud::ScaffoldGraphPolisherHelper scaffold_graph_polisher(gp_.g, gp_.index, gp_.kmer_mapper,

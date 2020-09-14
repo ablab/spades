@@ -9,12 +9,6 @@
 namespace path_extend {
 namespace read_cloud {
 
-ScaffoldGraphStorage::ScaffoldGraphStorage(ScaffoldGraphStorage::ScaffoldGraph &&large_scaffold_graph,
-                                           ScaffoldGraphStorage::ScaffoldGraph &&small_scaffold_graph,
-                                           size_t large_length_threshold, size_t small_length_threshold)
-    : large_scaffold_graph_(large_scaffold_graph), small_scaffold_graph_(small_scaffold_graph),
-      large_length_threshold_(large_length_threshold), small_length_threshold_(small_length_threshold) {}
-
 const ScaffoldGraphStorage::ScaffoldGraph &ScaffoldGraphStorage::GetLargeScaffoldGraph() const {
     return large_scaffold_graph_;
 }
@@ -30,9 +24,6 @@ void ScaffoldGraphStorage::SetSmallScaffoldGraph(const ScaffoldGraph &small_scaf
 void ScaffoldGraphStorage::SetLargeScaffoldGraph(const ScaffoldGraph &large_scaffold_graph) {
     ReplaceScaffoldGraph(large_scaffold_graph, large_scaffold_graph_);
 }
-
-ScaffoldGraphStorage::ScaffoldGraphStorage(const debruijn_graph::Graph &g) :
-    large_scaffold_graph_(g), small_scaffold_graph_(g), large_length_threshold_(0), small_length_threshold_(0) {}
 
 void ScaffoldGraphStorage::ReplaceScaffoldGraph(const ScaffoldGraphStorage::ScaffoldGraph &from, ScaffoldGraph &to) {
     to = from;
@@ -68,6 +59,22 @@ size_t ScaffoldGraphStorage::GetLargeLengthThreshold() const {
 size_t ScaffoldGraphStorage::GetSmallLengthThreshold() const {
     return small_length_threshold_;
 }
+const ScaffoldingUniqueEdgeStorage& ScaffoldGraphStorage::GetLargeUniqueStorage() const {
+    return large_unique_storage_;
+}
+const ScaffoldingUniqueEdgeStorage& ScaffoldGraphStorage::GetSmallUniqueStorage() const {
+    return small_unique_storage_;
+}
+ScaffoldGraphStorage::ScaffoldGraphStorage(ScaffoldGraphStorage::ScaffoldGraph &&large_scaffold_graph,
+                                           ScaffoldGraphStorage::ScaffoldGraph &&small_scaffold_graph,
+                                           const ScaffoldingUniqueEdgeStorage &large_unique_storage,
+                                           const ScaffoldingUniqueEdgeStorage &small_unique_storage):
+    large_scaffold_graph_(large_scaffold_graph),
+    small_scaffold_graph_(small_scaffold_graph),
+    large_unique_storage_(large_unique_storage),
+    small_unique_storage_(small_unique_storage),
+    large_length_threshold_(large_unique_storage.min_length()),
+    small_length_threshold_(small_unique_storage.min_length()) {}
 void ScaffoldGraphSerializer::SaveScaffoldGraph(std::ofstream &fout,
                                                 const ScaffoldGraphSerializer::ScaffoldGraph &graph) const {
     fout << graph.VertexCount() << std::endl;

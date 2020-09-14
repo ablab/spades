@@ -22,7 +22,10 @@ void SplitStatistics::Serialize(const std::string &path) {
 SplitStatistics SplitStatisticsExtractor::GetSplitStatistics(const std::string &path_to_reference,
                                                              size_t length_threshold) const {
     validation::FilteredReferencePathHelper path_helper(g_, index_, kmer_mapper_);
-    auto reference_paths = path_helper.GetFilteredReferencePathsFromLength(path_to_reference, length_threshold);
+    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, length_threshold, 5000.0);
+    ScaffoldingUniqueEdgeStorage unique_storage;
+    unique_edge_analyzer.FillUniqueEdgeStorage(unique_storage);
+    auto reference_paths = path_helper.GetFilteredReferencePathsFromUnique(path_to_reference, unique_storage);
 
     validation::GeneralTransitionStorageBuilder forward_transition_builder(g_, 1, false, false);
     auto reference_transition_storage = forward_transition_builder.GetTransitionStorage(reference_paths);
@@ -52,7 +55,7 @@ SplitStatistics SplitStatisticsExtractor::GetSplitStatistics(const std::string &
     INFO(conj_transitions.size() << " conjugate transitions");
 
     std::set<scaffold_graph::ScaffoldVertex> scaffold_vertices;
-    for (const auto &path: reference_paths) {
+    for (const auto &path: reference_paths.paths_) {
         for (const auto &edge: path) {
             scaffold_vertices.insert(edge.edge_);
         }
@@ -127,12 +130,14 @@ void SplitStatisticsExtractor::ConstructAndSerialize(const std::string &path_to_
     const std::string output_path = fs::append_path(output_base, "split_statistics.csv");
     split_statistics.Serialize(output_path);
 }
-SplitStatisticsExtractor::SplitStatisticsExtractor(const Graph &g,
-                                                   const debruijn_graph::Index &index,
-                                                   const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
-                                                   const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
+SplitStatisticsExtractor::SplitStatisticsExtractor(const GraphPack &gp,
                                                    size_t max_threads) :
-    g_(g), index_(index), kmer_mapper_(kmer_mapper), barcode_mapper_(barcode_mapper), max_threads_(max_threads) {}
+    gp_(gp),
+    g_(gp_.get<Graph>()),
+    index_(gp_.get<EdgeIndex<Graph>>()),
+    kmer_mapper_(gp_.get<KmerMapper<Graph>>()),
+    barcode_mapper_(gp_.get<barcode_index::FrameBarcodeIndex<Graph>>()),
+    max_threads_(max_threads) {}
 SplitEntry::SplitEntry(double split_index, const std::string &status) : split_index_(split_index), status_(status) {}
 }
 }
