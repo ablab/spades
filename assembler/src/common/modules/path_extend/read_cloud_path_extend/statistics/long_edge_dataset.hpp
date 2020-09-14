@@ -63,8 +63,9 @@ class LongEdgePairDatasetExtractor {
                                  const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
                                  const ScaffoldGraphStorage &scaffold_graph_storage,
                                  size_t max_threads);
-    LongEdgePairDataset GetLongEdgeDataset(const std::vector<std::vector<validation::EdgeWithMapping>> &reference_paths) const;
-    LongEdgePairDataset GetLongEdgeDataset(const scaffold_graph::ScaffoldGraph &graph, const string &path_to_reference) const;
+    LongEdgePairDataset GetLongEdgeDataset(const validation::UniqueReferencePaths &reference_paths) const;
+    LongEdgePairDataset GetLongEdgeDataset(const ScaffoldingUniqueEdgeStorage &unique_storage,
+                                           const string &path_to_reference) const;
     void ConstructAndSerialize(const string &path_to_reference, const string &output_path) const;
 
   private:

@@ -6,9 +6,9 @@
 
 #include "scaffold_graph_storage_constructor.hpp"
 
-#include "modules/path_extend/read_cloud_path_extend/statistics/cloud_check_statistics.hpp"
 #include "modules/path_extend/read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
 #include "modules/path_extend/read_cloud_path_extend/validation/path_cluster_validation.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/pipeline_validation.hpp"
 #include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
 #include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
 
@@ -16,11 +16,12 @@ namespace path_extend {
 namespace read_cloud {
 
 ScaffoldGraphStorage ScaffoldGraphStorageConstructor::ConstructStorage() const {
-    auto extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
+    const auto &barcode_mapper = gp_.get<barcode_index::FrameBarcodeIndex<Graph>>();
+    auto extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(barcode_mapper, gp_.get<Graph>());
     CloudScaffoldGraphConstructor constructor(max_threads_, gp_, small_length_storage_, lib_, configs_, search_params_,
                                               scaffold_graph_path_, extractor);
     scaffold_graph_construction_pipeline_type::Type type = scaffold_graph_construction_pipeline_type::Basic;
-    auto large_scaffold_graph = constructor.ConstructScaffoldGraphFromMinLength(large_length_storage_, type);
+    auto large_scaffold_graph = constructor.ConstructScaffoldGraphFromUniqueStorage(large_length_storage_, type);
 
     //make sure that small scaffold graph contains vertices of large scaffold graph
     std::set<scaffold_graph::ScaffoldVertex> small_graph_vertices;
@@ -35,7 +36,7 @@ ScaffoldGraphStorage ScaffoldGraphStorageConstructor::ConstructStorage() const {
                                                                                small_length_storage_,
                                                                                small_length_threshold_, type);
     ScaffoldGraphStorage storage(std::move(large_scaffold_graph), std::move(small_scaffold_graph),
-                                 large_length_threshold_, small_length_threshold_);
+                                 large_length_storage_, small_length_storage_);
 
     return storage;
 }
@@ -48,7 +49,7 @@ ScaffoldGraphStorageConstructor::ScaffoldGraphStorageConstructor(const Scaffoldi
                                                                  const ReadCloudConfigsT &configs,
                                                                  const ReadCloudSearchParameterPack &search_params,
                                                                  const std::string &scaffold_graph_path,
-                                                                 const conj_graph_pack &gp) :
+                                                                 const GraphPack &gp) :
     small_length_storage_(small_length_storage), large_length_storage_(large_length_storage),
     small_length_threshold_(small_length_threshold), large_length_threshold_(large_length_threshold),
     max_threads_(max_threads),lib_(lib), configs_(configs), search_params_(search_params),
@@ -58,20 +59,21 @@ ScaffoldGraphStorage ScaffoldGraphStorageConstructor::ConstructStorageFromPaths(
                                                                                 bool scaffolding_mode) const {
 
     const size_t num_threads = max_threads_;
-    auto extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
+    const auto &barcode_mapper = gp_.get<barcode_index::FrameBarcodeIndex<Graph>>();
+    auto extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(barcode_mapper, gp_.get<Graph>());
     CloudScaffoldGraphConstructor constructor(num_threads, gp_, small_length_storage_, lib_, configs_, search_params_,
                                               scaffold_graph_path_, extractor);
     ScaffoldGraphStorage storage(constructor.ConstructScaffoldGraphFromPathContainer(paths, large_length_threshold_,
                                                                                      scaffolding_mode),
                                  constructor.ConstructScaffoldGraphFromPathContainer(paths, small_length_threshold_,
                                                                                      scaffolding_mode),
-                                 large_length_threshold_,
-                                 small_length_threshold_);
+                                 large_length_storage_,
+                                 small_length_storage_);
     return storage;
 }
 
 ScaffoldGraphPolisherHelper::ScaffoldGraphPolisherHelper(const Graph &g,
-                                                         const debruijn_graph::Index &index,
+                                                         const debruijn_graph::EdgeIndex<Graph> &index,
                                                          const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
                                                          const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
                                                          const CloudConfigT &cloud_configs,
@@ -88,17 +90,18 @@ void ScaffoldGraphPolisherHelper::GetGraphStorageReferenceInfo(const ScaffoldGra
     const auto &large_scaffold_graph = storage.GetLargeScaffoldGraph();
     const auto &small_scaffold_graph = storage.GetSmallScaffoldGraph();
     INFO("Large scaffold graph stats");
-    PrintScaffoldGraphReferenceInfo(large_scaffold_graph, path_to_reference);
+    PrintScaffoldGraphReferenceInfo(large_scaffold_graph, storage.GetLargeUniqueStorage(), path_to_reference);
     INFO("Small scaffold graph stats");
-    PrintScaffoldGraphReferenceInfo(small_scaffold_graph, path_to_reference);
+    PrintScaffoldGraphReferenceInfo(small_scaffold_graph, storage.GetSmallUniqueStorage(), path_to_reference);
 }
 void ScaffoldGraphPolisherHelper::PrintScaffoldGraphReferenceInfo(const scaffold_graph::ScaffoldGraph &scaffold_graph,
+                                                                  const ScaffoldingUniqueEdgeStorage &unique_storage,
                                                                   const std::string &path_to_reference) const {
     DEBUG("Path to reference: " << path_to_reference);
     DEBUG("Path exists: " << fs::check_existence(path_to_reference));
     validation::ScaffoldGraphValidator scaffold_graph_validator(g_);
     validation::FilteredReferencePathHelper path_helper(g_, index_, kmer_mapper_);
-    auto reference_paths = path_helper.GetFilteredReferencePathsFromGraph(path_to_reference, scaffold_graph);
+    auto reference_paths = path_helper.GetFilteredReferencePathsFromUnique(path_to_reference, unique_storage);
     auto stats = scaffold_graph_validator.GetScaffoldGraphStats(scaffold_graph, reference_paths);
     stats.Serialize(std::cout);
 }
@@ -126,7 +129,7 @@ ScaffoldGraphPolisherHelper::ScaffoldGraph ScaffoldGraphPolisherHelper::GetScaff
                                                << " edges in new small scaffold graph");
     if (validate_using_reference) {
         INFO("Resulting scaffold graph stats");
-        PrintScaffoldGraphReferenceInfo(polished_scaffold_graph, path_to_reference);
+        PrintScaffoldGraphReferenceInfo(polished_scaffold_graph, storage.GetSmallUniqueStorage(), path_to_reference);
     }
 
     const double relative_threshold = cloud_configs_.relative_score_threshold;
@@ -164,7 +167,7 @@ ScaffoldGraphPolisherHelper::ScaffoldGraph ScaffoldGraphPolisherHelper::ApplyRel
 }
 
 CloudScaffoldGraphConstructor::CloudScaffoldGraphConstructor(const size_t max_threads_,
-                                                             const debruijn_graph::conj_graph_pack &gp,
+                                                             const debruijn_graph::GraphPack &gp,
                                                              const ScaffoldingUniqueEdgeStorage &unique_storage,
                                                              const LibraryT &lib,
                                                              const ReadCloudConfigsT &configs,
@@ -175,9 +178,10 @@ CloudScaffoldGraphConstructor::CloudScaffoldGraphConstructor(const size_t max_th
       lib_(lib), configs_(configs), search_parameter_pack_(search_parameter_pack), debug_output_path_(debug_output_path),
       barcode_extractor_(barcode_extractor) {}
 
-CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::ConstructScaffoldGraphFromMinLength(
-    const ScaffoldingUniqueEdgeStorage &unique_storage, scaffold_graph_construction_pipeline_type::Type type) const {
-        std::set<ScaffoldVertex> scaffold_vertices;
+CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::ConstructScaffoldGraphFromUniqueStorage(
+        const ScaffoldingUniqueEdgeStorage &unique_storage,
+        scaffold_graph_construction_pipeline_type::Type type) const {
+    std::set<ScaffoldVertex> scaffold_vertices;
     for (const auto &edge: unique_storage) {
         ScaffoldVertex sc_vertex(edge);
         scaffold_vertices.insert(sc_vertex);
@@ -202,7 +206,7 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
     DEBUG(path_set.size());
     for (const auto &path: path_set) {
         DEBUG(path.int_id());
-        DEBUG(path.GetLengthFromGraph(gp_.g));
+        DEBUG(path.GetLengthFromGraph(gp_.get<Graph>()));
     }
     scaffold_graph_construction_pipeline_type::Type type;
     if (scaffolding_mode) {
@@ -229,7 +233,8 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
             break;
         }
         case scaffold_graph_construction_pipeline_type::Scaffolding: {
-            pipeline_constructor = std::make_shared<MergingScaffoldGraphPipelineConstructor>(configs_, gp_.g, lib_,
+            pipeline_constructor = std::make_shared<MergingScaffoldGraphPipelineConstructor>(configs_, gp_.get<Graph>(),
+                                                                                             lib_,
                                                                                              unique_storage,
                                                                                              barcode_extractor_,
                                                                                              max_threads_, min_length);
@@ -237,7 +242,8 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
             break;
         }
         case scaffold_graph_construction_pipeline_type::Binning: {
-            pipeline_constructor = std::make_shared<BinningScaffoldGraphPipelineConstructor>(configs_, gp_.g, lib_,
+            pipeline_constructor = std::make_shared<BinningScaffoldGraphPipelineConstructor>(configs_, gp_.get<Graph>(),
+                                                                                             lib_,
                                                                                              unique_storage,
                                                                                              barcode_extractor_,
                                                                                              max_threads_, min_length);
@@ -249,24 +255,14 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
     pipeline.Run();
 
     if (configs_.debug_mode) {
+        validation::ScaffoldGraphPipelineValidator pipeline_validator(configs_.statistics.genome_path,
+                                                                      unique_storage,
+                                                                      gp_);
+        std::string stats_output_path = fs::append_path(debug_output_path_, std::to_string(min_length));
+        fs::remove_if_exists(stats_output_path);
+        fs::make_dir(stats_output_path);
+        pipeline_validator.ValidateStagesResults(pipeline, stats_output_path);
         const auto intermediate_results = pipeline.GetIntermediateResults();
-        const string path_to_reference = configs_.statistics.genome_path;
-        DEBUG("Path to reference: " << path_to_reference);
-        DEBUG("Path exists: " << fs::check_existence(path_to_reference));
-        validation::ScaffoldGraphValidator scaffold_graph_validator(gp_.g);
-        validation::FilteredReferencePathHelper path_helper(gp_.g, gp_.index, gp_.kmer_mapper);
-        VERIFY_DEV(not intermediate_results.empty());
-        auto reference_paths = path_helper.GetFilteredReferencePathsFromGraph(path_to_reference,
-                                                                              *(intermediate_results[0].first));
-
-        for (const auto &result: intermediate_results) {
-            auto scaffold_graph = *(result.first);
-            string name = result.second;
-            auto stats = scaffold_graph_validator.GetScaffoldGraphStats(scaffold_graph, reference_paths);
-            INFO("Stats for " << name);
-            std::ofstream fout(debug_output_path_);
-            stats.Serialize(fout);
-        }
     }
     return *(pipeline.GetResult());
 }
