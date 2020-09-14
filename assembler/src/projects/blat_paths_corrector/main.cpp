@@ -30,9 +30,14 @@
 using namespace std;
 using namespace path_extend;
 
-#define WISHED_COLUMNS Columns::match, Columns::strand, Columns::block_count,\
-          Columns::Q_name, Columns::Q_size, Columns::Q_start, Columns::Q_end,\
-          Columns::T_name, Columns::T_size, Columns::T_start, Columns::T_end
+// #define WISHED_COLUMNS BColumns, BColumns::match, BColumns::strand, BColumns::block_count,\
+//           BColumns::Q_name, BColumns::Q_size, BColumns::Q_start, BColumns::Q_end,\
+//           BColumns::T_name, BColumns::T_size, BColumns::T_start, BColumns::T_end
+
+#define WISHED_COLUMNS MColumns, MColumns::match, MColumns::strand,\
+          MColumns::Q_name, MColumns::Q_size, MColumns::Q_start, MColumns::Q_end,\
+          MColumns::T_name, MColumns::T_size, MColumns::T_start, MColumns::T_end
+
 
 struct gcfg {
     gcfg()
@@ -93,8 +98,8 @@ void WriteWithWidth(std::ostream & out, std::string const & seq, size_t width = 
         out << seq.substr(pos, width) << '\n';
 }
 
-template<Columns ... columns>
-void MakeAllFilteredEdgesDump(Records<columns ...> const & records, MapFromContigNameToContigFragments const & contig_fragments, Graph const & graph, std::string const & output_dir) {
+template<class Columns, Columns ... columns>
+void MakeAllFilteredEdgesDump(Records<Columns, columns ...> const & records, MapFromContigNameToContigFragments const & contig_fragments, Graph const & graph, std::string const & output_dir) {
     auto dir = fs::append_path(output_dir, "filtered_edges_dump");
     fs::remove_if_exists(dir);
     fs::make_dir(dir);
@@ -136,15 +141,14 @@ ScaffoldingUniqueEdgeStorage GetUniqueEdgeStorage(GraphPack const & gp) {
         INFO("Coverage is not uniform, we do not rely on coverage for long edge uniqueness");
     }
 
-
     ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, min_unique_length, unique_variation);
     ScaffoldingUniqueEdgeStorage unique_edge_storage;
     unique_edge_analyzer.FillUniqueEdgeStorage(unique_edge_storage);
     return unique_edge_storage;
 }
 
-template<Columns ... columns>
-void DropAnother(Records<columns ...> const & records, MapFromContigNameToContigFragments & contig_fragments) {
+template<class Columns, Columns ... columns>
+void DropAnother(Records<Columns, columns ...> const & records, MapFromContigNameToContigFragments & contig_fragments) {
     auto intersected =
     [](long long start, long long end) {
         auto dt = 100;
@@ -167,12 +171,12 @@ void DropAnother(Records<columns ...> const & records, MapFromContigNameToContig
     }
 }
 
-template<Columns ... columns>
-DropAlg<columns ...> GetDropAlg(size_t num) {
+template<class Columns, Columns ... columns>
+DropAlg<Columns, columns ...> GetDropAlg(size_t num) {
     switch (num) {
-        case 0: return GetNonDropper<columns ...>(); break;
-        case 1: return GetFullDropper<columns ...>(); break;
-        case 2: return GetTransitiveDropperByIDY<columns ...>(); break;
+        case 0: return GetNonDropper<Columns, columns ...>(); break;
+        case 1: return GetFullDropper<Columns, columns ...>(); break;
+        case 2: return GetTransitiveDropperByIDY<Columns, columns ...>(); break;
         default: throw std::string("unknown the value of -d option"); break;
     }
 }
@@ -242,7 +246,7 @@ int main(int argc, char* argv[]) {
         auto filter = GetFilter<WISHED_COLUMNS>(std::move(unique_edge_checker), graph);
 
         INFO("Started blat output reading");
-        auto res = Read(blat_output_stream, filter);
+        auto res = Read2(blat_output_stream, filter);
         auto fragments = GetContigFragments(res, GetDropAlg<WISHED_COLUMNS>(cfg.drop_alg), graph.k());
         // DropAnother(res, fragments);
         MakeAllFilteredEdgesDump(res, fragments, graph, output_dir);

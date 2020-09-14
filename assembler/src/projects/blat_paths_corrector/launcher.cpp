@@ -145,9 +145,9 @@ std::string SequenceCorrector<filler_mode>::MakeSeq(list<BackMappingInfo> const 
     size_t current_pos = 0;
     stringstream ss;
     ScaffoldSequenceMaker seq_maker(graph);
-    ofstream old_fragments("old_fragments.info");
-    ofstream new_fragments("new_fragments.info");
-    ofstream common_fragments("common_fragments.info");
+    // ofstream old_fragments("old_fragments.info");
+    // ofstream new_fragments("new_fragments.info");
+    // ofstream common_fragments("common_fragments.info");
     size_t i = 0;
     for (auto const & path : mapping_info) {
         if (path.drop_from_head > 0)
@@ -155,26 +155,26 @@ std::string SequenceCorrector<filler_mode>::MakeSeq(list<BackMappingInfo> const 
         if (path.drop_from_tail > 0)
             WARN("The new path suffix with len=" << path.drop_from_tail << " of " << path.LengthInNucls() << " would be dropped");
 
-        VERIFY_MSG(path.ResultLengthInNucls() + path.contig_start_pos == path.contig_end_pos,
-            "??wtf?? or not??\n"
-            "path.contig_start_pos = " << path.contig_start_pos << "\n"
-            "path.contig_end_pos = " << path.contig_end_pos << "\n"
-            "path.ResultLengthInNucls() = " << path.ResultLengthInNucls() << "\n"
-            "diff = " << path.contig_end_pos - path.contig_start_pos << "\n"
-        );
-        ++i;
-        old_fragments << '>' << i << "\n"
-                      << seq.substr(path.contig_start_pos, path.ResultLengthInNucls()) << "\n";
-        new_fragments << '>' << i << "\n"
-                      << seq_maker.MakeSequence(path.path).substr(path.drop_from_head, path.ResultLengthInNucls()) << "\n";
-        common_fragments << '>' << i << "\n"
-                         << seq.substr(current_pos, path.contig_start_pos - current_pos) << "\n";
+        // VERIFY_MSG(path.ResultLengthInNucls() + path.contig_start_pos == path.contig_end_pos,
+        //     "??wtf?? or not??\n"
+        //     "path.contig_start_pos = " << path.contig_start_pos << "\n"
+        //     "path.contig_end_pos = " << path.contig_end_pos << "\n"
+        //     "path.ResultLengthInNucls() = " << path.ResultLengthInNucls() << "\n"
+        //     "diff = " << path.contig_end_pos - path.contig_start_pos << "\n"
+        // );
+        // ++i;
+        // old_fragments << '>' << i << "\n"
+        //               << seq.substr(path.contig_start_pos, path.ResultLengthInNucls()) << "\n";
+        // new_fragments << '>' << i << "\n"
+        //               << seq_maker.MakeSequence(path.path).substr(path.drop_from_head, path.ResultLengthInNucls()) << "\n";
+        // common_fragments << '>' << i << "\n"
+        //                  << seq.substr(current_pos, path.contig_start_pos - current_pos) << "\n";
         cout << i << ": " << current_pos << " -> " << path.contig_start_pos << " -> " << path.contig_end_pos << " : " << path.contig_start_pos - current_pos << " -> "<< path.ResultLengthInNucls() << '\n';
         ss << seq.substr(current_pos, path.contig_start_pos - current_pos);
         ss << seq_maker.MakeSequence(path.path).substr(path.drop_from_head, path.ResultLengthInNucls());
         current_pos = path.contig_end_pos;
     }
-    common_fragments << seq.substr(current_pos);
+    // common_fragments << seq.substr(current_pos);
     ss << seq.substr(current_pos);
     return ss.str();
 }

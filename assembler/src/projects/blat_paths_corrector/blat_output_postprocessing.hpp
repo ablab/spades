@@ -44,24 +44,25 @@ debruijn_graph::EdgeId GetEdgeId(std::string const & edge_name, debruijn_graph::
     return edge_id;
 }
 
-template<Columns ... columns>
-double GetIDY(Record<columns ...> const & record) {
+template<class Columns, Columns ... columns>
+double GetIDY(Record<Columns, columns ...> const & record) {
     auto matched = record.template Get<Columns::match>();
     auto contig_start = record.template Get<Columns::Q_start>();
     auto contig_end = record.template Get<Columns::Q_end>();
-    auto contig_delta = contig_end - contig_start + 1;
+    auto contig_delta = contig_end - contig_start;
     return static_cast<double>(matched) / static_cast<double>(contig_delta);
 }
 
-template<Columns ... columns>
-FilterType<columns ...> GetFilter(std::function<bool(debruijn_graph::EdgeId)> unique_edge_checker, debruijn_graph::Graph const & graph) {
+template<class Columns, Columns ... columns>
+FilterType<Columns, columns ...> GetFilter(std::function<bool(debruijn_graph::EdgeId)> unique_edge_checker, debruijn_graph::Graph const & graph) {
     return [unique_edge_checker_ = std::move(unique_edge_checker), &graph](auto const & element) {
-        constexpr auto EDGE_LENGTH_ERROR_COEFF = 0.0;
-        constexpr auto LENGTHS_ERROR_COEFF = 0.01;
-        if (element.template Get<Columns::strand>() != '+' || element.template Get<Columns::block_count>() != 1)
+        constexpr auto EDGE_LENGTH_ERROR_COEFF = 0.01;
+        constexpr auto LENGTHS_ERROR_COEFF = 0.05;
+        if (element.template Get<Columns::strand>() != '+')
             return false;
         auto contig_start = element.template Get<Columns::Q_start>();
         auto contig_end = element.template Get<Columns::Q_end>();
+        auto contig_len = element.template Get<Columns::Q_size>();
 
         auto edge_start = element.template Get<Columns::T_start>();
         auto edge_end = element.template Get<Columns::T_end>();
@@ -70,22 +71,20 @@ FilterType<columns ...> GetFilter(std::function<bool(debruijn_graph::EdgeId)> un
         auto edge_delta = edge_end - edge_start;
 
         auto edge_len_difference = std::abs(edge_delta - edge_len);
+        auto contig_len_difference = std::abs(contig_delta - contig_len);
         auto lens_difference = std::abs(contig_delta - edge_delta);
-        if (lens_difference != 0) {
-            std::cout << "I AM HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
-        }
+
         auto const & edge_title = element.template Get<Columns::T_name>();
         return unique_edge_checker_(GetEdgeId(edge_title, graph)) &&
                GetIDY(element) > 0.80 &&
-            //    100 < contig_delta && //contig_delta < 5000 &&
-               (double)edge_len_difference <= (double)edge_len * EDGE_LENGTH_ERROR_COEFF &&
+               ((double)edge_len_difference <= (double)edge_len * EDGE_LENGTH_ERROR_COEFF || (double)contig_len_difference <= (double)contig_len * EDGE_LENGTH_ERROR_COEFF) &&
                (double) lens_difference < (double) edge_delta * LENGTHS_ERROR_COEFF &&
                GetCov(edge_title) > 2;
     };
 }
 
-template<Columns ... columns>
-bool HasBadIntersection(Record<columns ...> const & lhs, Record<columns ...> const & rhs, size_t k) {
+template<class Columns, Columns ... columns>
+bool HasBadIntersection(Record<Columns, columns ...> const & lhs, Record<Columns, columns ...> const & rhs, size_t k) {
     auto lhs_start = lhs.template Get<Columns::Q_start>();
     auto lhs_end = lhs.template Get<Columns::Q_end>() + 1;
     auto rhs_start = rhs.template Get<Columns::Q_start>();
@@ -101,14 +100,14 @@ bool HasBadIntersection(Record<columns ...> const & lhs, Record<columns ...> con
 
 using MapFromContigNameToContigFragments = std::unordered_map<std::string, std::vector<size_t>>;
 
-template<Columns ... columns>
-using DropAlg = std::function<size_t(std::vector<size_t> &, Records<columns ...> const &, size_t)>;
+template<class Columns, Columns ... columns>
+using DropAlg = std::function<size_t(std::vector<size_t> &, Records<Columns, columns ...> const &, size_t)>;
 
-template<Columns ... columns>
-using DropMarker = std::function<std::pair<bool, bool>(Record<columns ...> const &, Record<columns ...> const &)>;
+template<class Columns, Columns ... columns>
+using DropMarker = std::function<std::pair<bool, bool>(Record<Columns, columns ...> const &, Record<Columns, columns ...> const &)>;
 
-template<Columns ... columns>
-size_t DropperCore(std::vector<size_t> & contig, Records<columns ...> const & records, size_t k, DropMarker<columns ...> const & marker) {
+template<class Columns, Columns ... columns>
+size_t DropperCore(std::vector<size_t> & contig, Records<Columns, columns ...> const & records, size_t k, DropMarker<Columns, columns ...> const & marker) {
     std::vector<bool> is_bad_edge(contig.size(), false);
     for (size_t i = 0; i + 1 < contig.size(); ++i) {
         for (size_t j = i + 1; j < contig.size(); ++j) {
@@ -129,25 +128,25 @@ size_t DropperCore(std::vector<size_t> & contig, Records<columns ...> const & re
     return dropped_pats_cnt;
 }
 
-template<Columns ... columns>
-DropAlg<columns ...> GetNonDropper() {
-    return [](std::vector<size_t> &, Records<columns ...> const &, size_t) {
+template<class Columns, Columns ... columns>
+DropAlg<Columns, columns ...> GetNonDropper() {
+    return [](std::vector<size_t> &, Records<Columns, columns ...> const &, size_t) {
         return 0;
     };
 }
 
-template<Columns ... columns>
-DropAlg<columns ...> GetFullDropper() {
-    return [](std::vector<size_t> & contig, Records<columns ...> const & records, size_t k) {
-        DropMarker<columns ...> marker = [](auto const &, auto const &) { return std::make_pair(true, true); };
+template<class Columns, Columns ... columns>
+DropAlg<Columns, columns ...> GetFullDropper() {
+    return [](std::vector<size_t> & contig, Records<Columns, columns ...> const & records, size_t k) {
+        DropMarker<Columns, columns ...> marker = [](auto const &, auto const &) { return std::make_pair(true, true); };
         return DropperCore(contig, records, k, marker);
     };
 }
 
-template<Columns ... columns>
-DropAlg<columns ...> GetTransitiveDropperByIDY() {
-    return [](std::vector<size_t> & contig, Records<columns ...> const & records, size_t k) {
-        DropMarker<columns ...> marker = [](auto const & lhs, auto const & rhs) {
+template<class Columns, Columns ... columns>
+DropAlg<Columns, columns ...> GetTransitiveDropperByIDY() {
+    return [](std::vector<size_t> & contig, Records<Columns, columns ...> const & records, size_t k) {
+        DropMarker<Columns, columns ...> marker = [](auto const & lhs, auto const & rhs) {
             auto idy = GetIDY(lhs) < GetIDY(rhs);
             return std::make_pair(idy, !idy);
         };
@@ -155,8 +154,8 @@ DropAlg<columns ...> GetTransitiveDropperByIDY() {
     };
 }
 
-template<Columns ... columns>
-MapFromContigNameToContigFragments GetContigFragments(Records<columns ...> const & records, DropAlg<columns ...> const & drop_alg, size_t k) {
+template<class Columns, Columns ... columns>
+MapFromContigNameToContigFragments GetContigFragments(Records<Columns, columns ...> const & records, DropAlg<Columns, columns ...> const & drop_alg, size_t k) {
     MapFromContigNameToContigFragments contig_fragments;
     for (size_t i = 0; i < records.size(); ++i)
         contig_fragments[records[i].template Get<Columns::Q_name>()].push_back(i);
@@ -173,8 +172,8 @@ MapFromContigNameToContigFragments GetContigFragments(Records<columns ...> const
     return contig_fragments;
 }
 
-template<Columns ... columns>
-PathWithEdgePostionsContainer MakePaths(Records<columns ...> const & records, MapFromContigNameToContigFragments const & contig_fragments, debruijn_graph::Graph const & graph) {
+template<class Columns, Columns ... columns>
+PathWithEdgePostionsContainer MakePaths(Records<Columns, columns ...> const & records, MapFromContigNameToContigFragments const & contig_fragments, debruijn_graph::Graph const & graph) {
     PathWithEdgePostionsContainer paths;
     std::vector<std::string> paths_names;
     for (auto const & contig : contig_fragments) {
@@ -184,7 +183,7 @@ PathWithEdgePostionsContainer MakePaths(Records<columns ...> const & records, Ma
             auto start_shift = record.template Get<Columns::T_start>() - 0;
             auto end_shift = record.template Get<Columns::T_size>() - record.template Get<Columns::T_end>();
             // std::cout << record.template Get<Columns::T_start>() << " " << record.template Get<Columns::T_end>() << ' ' << record.template Get<Columns::T_size>() << " " << start_shift << " " << end_shift << '\n';
-            VERIFY(end_shift == 0 && start_shift == 0);
+            // VERIFY(end_shift == 0 && start_shift == 0);
             path.start_positions.push_back(record.template Get<Columns::Q_start>() - start_shift);
             path.end_positions.push_back(record.template Get<Columns::Q_end>() + end_shift);
             path.edges.push_back(GetEdgeId(record.template Get<Columns::T_name>(), graph));
