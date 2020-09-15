@@ -23,7 +23,7 @@
 #include "adt/iterator_range.hpp"
 #include "adt/loser_tree.hpp"
 
-#include "boomphf/BooPHF.h"
+#include "boomphf/BooPHF2.h"
 
 #include <libcxx/sort.hpp>
 
@@ -401,9 +401,9 @@ class KMerIndexBuilder {
           size_t sz = kmer_storage.bucket_size(i);
           index.bucket_starts_[i + 1] = sz;
 
-          data_index = typename Index::KMerDataIndex(sz,
-                                                     boomphf::range(kmer_storage.bucket_begin(i), kmer_storage.bucket_end()),
-                                                     1, 4.0, false, false);
+          data_index = typename Index::KMerDataIndex(sz, 4.0);
+          data_index.build(boomphf::range(kmer_storage.bucket_begin(i), kmer_storage.bucket_end()),
+                           1);
       }
     }
 

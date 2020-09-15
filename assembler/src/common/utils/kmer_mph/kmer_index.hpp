@@ -9,7 +9,7 @@
 #include "kmer_index_traits.hpp"
 #include "kmer_buckets.hpp"
 
-#include <boomphf/BooPHF.h>
+#include <boomphf/BooPHF2.h>
 
 #include <vector>
 #include <cmath>
