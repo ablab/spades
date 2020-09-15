@@ -388,22 +388,19 @@ class KMerIndexBuilder {
     index.num_buckets_ = buckets;
     index.bucket_starts_.resize(buckets + 1);
     index.bucket_policy_.reset(buckets);
-    index.index_ = new typename KMerIndex<kmer_index_traits>::KMerDataIndex[buckets];
 
     INFO("Building perfect hash indices");
 
     {
       TIME_TRACE_SCOPE("KMerDiskCounter::BuildPHM");
+      for (size_t i = 0; i < buckets; ++i)
+        index.index_.emplace_back(kmer_storage.bucket_size(i), 4.0);
+         
 #     pragma omp parallel for shared(index) num_threads(num_threads_)
       for (size_t i = 0; i < buckets; ++i) {
-          typename KMerIndex<kmer_index_traits>::KMerDataIndex &data_index = index.index_[i];
-          //auto bucket = kmer_storage.bucket(i);
-          size_t sz = kmer_storage.bucket_size(i);
-          index.bucket_starts_[i + 1] = sz;
-
-          data_index = typename Index::KMerDataIndex(sz, 4.0);
-          data_index.build(boomphf::range(kmer_storage.bucket_begin(i), kmer_storage.bucket_end()),
-                           1);
+          index.bucket_starts_[i + 1] = kmer_storage.bucket_size(i);
+          index.index_[i].build(boomphf::range(kmer_storage.bucket_begin(i), kmer_storage.bucket_end()),
+                                1);
       }
     }
 

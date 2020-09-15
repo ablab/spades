@@ -144,47 +144,46 @@ class bitVector {
         _bitArray = nullptr;
     }
 
-    bitVector(uint64_t n) : _size(n)
-    {
+    bitVector(uint64_t n)
+            : _size(n) {
         _nchar  = (1ULL+n/64ULL);
-        _bitArray =  (uint64_t *) calloc (_nchar,sizeof(uint64_t));
+        _bitArray =  (uint64_t *) calloc(_nchar,sizeof(uint64_t));
     }
 
-    ~bitVector()
-    {
-        if(_bitArray != nullptr)
+    ~bitVector() {
+        if (_bitArray != nullptr)
             free(_bitArray);
     }
 
     //copy constructor
-    bitVector(bitVector const &r)
-    {
+    bitVector(bitVector const &r) {
         _size =  r._size;
         _nchar = r._nchar;
         _ranks = r._ranks;
-        _bitArray = (uint64_t *) calloc (_nchar,sizeof(uint64_t));
-        memcpy(_bitArray, r._bitArray, _nchar*sizeof(uint64_t) );
+        _bitArray = nullptr;
+        if (r._bitArray) {
+            _bitArray = (uint64_t *) calloc(_nchar,sizeof(uint64_t));
+            memcpy(_bitArray, r._bitArray, _nchar*sizeof(uint64_t) );
+        }
     }
 
     // Copy assignment operator
     bitVector &operator=(bitVector const &r)
     {
-        if (&r != this)
-        {
+        if (&r != this) {
             _size =  r._size;
             _nchar = r._nchar;
             _ranks = r._ranks;
-            if(_bitArray != nullptr)
+            if (_bitArray != nullptr)
                 free(_bitArray);
-            _bitArray = (uint64_t *) calloc (_nchar,sizeof(uint64_t));
+            _bitArray = (uint64_t *) calloc(_nchar, sizeof(uint64_t));
             memcpy(_bitArray, r._bitArray, _nchar*sizeof(uint64_t) );
         }
         return *this;
     }
 
     // Move assignment operator
-    bitVector &operator=(bitVector &&r)
-    {
+    bitVector &operator=(bitVector &&r) noexcept {
         //printf("bitVector move assignment \n");
         if (&r != this)
         {
@@ -434,7 +433,8 @@ class mphf {
     mphf(size_t n, 
          double gamma = 2.0, float perc_elem_loaded = 0.03f)
             : _nb_levels(0), _gamma(gamma), _hash_domain(size_t(ceil(double(n) * gamma))),
-              _nelem(n), _percent_elem_loaded_for_fastMode(perc_elem_loaded) {
+              _nelem(n), _percent_elem_loaded_for_fastMode(perc_elem_loaded),
+              _built(false) {
         if (n ==0)
             return;
 
@@ -447,7 +447,9 @@ class mphf {
     void build(const Range &input_range,
                int num_thread = 1) {
         _num_thread = num_thread; // FIXME
-        
+
+        pthread_mutex_init(&_mutex, NULL);
+
         uint64_t offset = 0;
         for (int ii = 0; ii< _nb_levels; ii++) {
             _tempBitset =  new bitVector(_levels[ii].hash_domain); // temp collision bitarray for this level
@@ -691,8 +693,6 @@ class mphf {
 
   private:
     void setup() {
-        pthread_mutex_init(&_mutex, NULL);
-
         if (_fastmode)
             setLevelFastmode.resize(_percent_elem_loaded_for_fastMode * (double)_nelem );
 
@@ -706,7 +706,7 @@ class mphf {
             // round size to nearest superior multiple of 64, makes it easier to clear a level
             _levels[ii].hash_domain =  (( (uint64_t)(_hash_domain * pow(_proba_collision, ii)) + 63) / 64 ) * 64;
             if (_levels[ii].hash_domain == 0)
-                _levels[ii].hash_domain  = 64 ;
+                _levels[ii].hash_domain = 64;
         }
 
         _fastModeLevel = _nb_levels;

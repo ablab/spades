@@ -51,7 +51,7 @@ private:
   typedef boomphf::mphf<hash_function128> KMerDataIndex;
 
 public:
-  KMerIndex(): index_(NULL), num_buckets_(0), size_(0) {}
+  KMerIndex(): num_buckets_(0), size_(0) {}
 
   KMerIndex(const KMerIndex&) = delete;
   KMerIndex& operator=(const KMerIndex&) = delete;
@@ -61,9 +61,7 @@ public:
   void clear() {
     num_buckets_ = 0;
     bucket_starts_.clear();
-
-    delete[] index_;
-    index_ = NULL;
+    index_.clear();
   }
 
   size_t mem_size() {
@@ -75,8 +73,6 @@ public:
   }
 
   void count_size() {
-      if (index_ == NULL)
-          return;
       size_ = 0;
       for (size_t i = 0; i < num_buckets_; i++)
         size_ += index_[i].size();
@@ -114,7 +110,7 @@ public:
 
     is.read((char*)&num_buckets_, sizeof(num_buckets_));
 
-    index_ = new KMerDataIndex[num_buckets_];
+    index_.resize(num_buckets_);
     for (size_t i = 0; i < num_buckets_; ++i)
       index_[i].load(is);
 
@@ -133,7 +129,7 @@ public:
   }
 
  private:
-  KMerDataIndex *index_;
+  std::vector<KMerDataIndex> index_;
 
   size_t num_buckets_;
   std::vector<size_t> bucket_starts_;
