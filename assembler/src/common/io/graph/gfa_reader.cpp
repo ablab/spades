@@ -84,15 +84,15 @@ void GFAReader::to_graph(ConjugateDeBruijnGraph &g,
     g.vreserve(gfa_->n_seg * 4);
     std::unordered_set<VertexId> vertices;
     for (uint32_t i = 0; i < gfa_->n_seg; ++i) {
-        VertexId v1 = helper.CreateVertex(DeBruijnVertexData()),
-                 v2 = helper.CreateVertex(DeBruijnVertexData());
-
+        VertexId v1 = helper.CreateVertex(DeBruijnVertexData());
         helper.LinkIncomingEdge(v1, edges[i]);
-        if (edges[i] != g.conjugate(edges[i]))
-            helper.LinkIncomingEdge(v2, g.conjugate(edges[i]));
-
         vertices.insert(v1);
-        vertices.insert(v2);
+
+        if (edges[i] != g.conjugate(edges[i])) {
+            VertexId v2 = helper.CreateVertex(DeBruijnVertexData());
+            helper.LinkIncomingEdge(v2, g.conjugate(edges[i]));
+            vertices.insert(v2);
+        }
     }
 
     // INFO("Linking edges");
@@ -125,12 +125,11 @@ void GFAReader::to_graph(ConjugateDeBruijnGraph &g,
     }
 
     // INFO("Filtering dangling vertices");
-    for (auto it = vertices.begin(); it != vertices.end(); ) {
-        VertexId v = *it;
-        if (g.OutgoingEdgeCount(v) == 0 && g.IncomingEdgeCount(v) == 0) {
-            it = vertices.erase(it);
-        } else
-            ++it;
+    for (VertexId v : vertices) {
+        if (g.OutgoingEdgeCount(v) > 0 || g.IncomingEdgeCount(v) > 0)
+            continue;
+
+        g.DeleteVertex(v);
     }
 
     // INFO("Reading paths")
