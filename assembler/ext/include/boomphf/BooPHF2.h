@@ -303,7 +303,7 @@ class bitVector {
 
         uint64_t curent_rank = offset;
         for (size_t ii = 0; ii < _nchar; ii++) {
-            if (((ii*64)  % _nb_bits_per_rank_sample) == 0) {
+            if (((ii*64) % _nb_bits_per_rank_sample) == 0) {
                 _ranks.push_back(curent_rank);
             }
             curent_rank +=  popcount_64(_bitArray[ii]);
@@ -355,7 +355,7 @@ class bitVector {
 
     // epsilon =  64 / _nb_bits_per_rank_sample   bits
     // additional size for rank is epsilon * _size
-    static const uint64_t _nb_bits_per_rank_sample = 512; //512 seems ok
+    static constexpr uint64_t _nb_bits_per_rank_sample = 512; //512 seems ok
     std::vector<uint64_t> _ranks;
 };
 
@@ -399,6 +399,8 @@ class mphf {
     typedef XorshiftHashFunctors<Hasher_t> MultiHasher_t ;
 
   public:
+    static constexpr uint64_t NOT_FOUND = -1ULL;
+
     mphf()
             : _built(false) {}
 
@@ -438,7 +440,7 @@ class mphf {
 
     template<class elem_t>
     uint64_t lookup(const elem_t &elem) const {
-        if (!_built) return ULLONG_MAX;
+        if (!_built) return NOT_FOUND;
 
         //auto hashes = _hasher(elem);
         uint64_t non_minimal_hp, minimal_hp;
@@ -451,7 +453,7 @@ class mphf {
             auto in_final_map = _final_hash.find(bbhash);
             if (in_final_map == _final_hash.end())
                 //elem was not in orignal set of keys
-                return ULLONG_MAX; //  means elem not in set
+                return NOT_FOUND; //  means elem not in set
 
             minimal_hp =  in_final_map->second + _lastbitsetrank;
             return minimal_hp;
@@ -472,14 +474,6 @@ class mphf {
             totalsizeBitset += _levels[ii].bitset.bitSize();
 
         uint64_t totalsize = totalsizeBitset +  _final_hash.size()*42*8 ;  // unordered map takes approx 42B per elem [personal test] (42B with uint64_t key, would be larger for other type of elem)
-
-        /*
-        printf("Bitarray    %12llu  bits (%.2f %%)   (array + ranks )\n",
-               totalsizeBitset, 100*(float)totalsizeBitset/totalsize);
-        printf("final hash  %12lu  bits (%.2f %%) (nb in final hash %lu)\n",
-               _final_hash.size()*42*8, 100*(float)(_final_hash.size()*42*8)/totalsize,
-               _final_hash.size() );
-        */
 
         return totalsize / 8;
     }
