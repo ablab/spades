@@ -59,7 +59,7 @@ static inline unsigned popcount_64(uint64_t x) {
 
 typedef std::array<uint64_t,2> hash_pair_t;
 typedef hash_pair_t internal_hash_t; // ou hash_pair_t directement ?  __uint128_t
-typedef std::vector<internal_hash_t>::const_iterator vectorit_hash128_t;
+typedef std::vector<internal_hash_t>::iterator vectorit_hash128_t;
 
 struct internalHasher {
     uint64_t operator()(const internal_hash_t& key) const {
@@ -184,56 +184,47 @@ class bitVector {
 
     // Move assignment operator
     bitVector &operator=(bitVector &&r) noexcept {
-        //printf("bitVector move assignment \n");
-        if (&r != this)
-        {
-            if(_bitArray != nullptr)
+        if (&r != this) {
+            if (_bitArray != nullptr)
                 free(_bitArray);
 
-            _size =  std::move (r._size);
-            _nchar = std::move (r._nchar);
-            _ranks = std::move (r._ranks);
+            _size =  r._size;
+            _nchar = r._nchar;
+            _ranks = std::move(r._ranks);
             _bitArray = r._bitArray;
             r._bitArray = nullptr;
         }
         return *this;
     }
+
     // Move constructor
-    bitVector(bitVector &&r) : _bitArray ( nullptr),_size(0)
-    {
+    bitVector(bitVector &&r) noexcept
+            : _bitArray( nullptr) ,_size(0)  {
         *this = std::move(r);
     }
 
 
-    void resize(uint64_t newsize)
-    {
+    void resize(uint64_t newsize) {
         //printf("bitvector resize from  %llu bits to %llu \n",_size,newsize);
         _nchar  = (1ULL+newsize/64ULL);
         _bitArray = (uint64_t *) realloc(_bitArray,_nchar*sizeof(uint64_t));
         _size = newsize;
     }
 
-    size_t size() const
-    {
-        return _size;
-    }
-
+    size_t size() const { return _size; }
     uint64_t bitSize() const {return (_nchar*64ULL + _ranks.capacity()*64ULL );}
 
     //clear whole array
-    void clear()
-    {
+    void clear() {
         memset(_bitArray,0,_nchar*sizeof(uint64_t));
     }
 
     //clear collisions in interval, only works with start and size multiple of 64
-    void clearCollisions(uint64_t start, size_t size, bitVector * cc)
-    {
+    void clearCollisions(uint64_t start, size_t size, bitVector * cc) {
         assert( (start & 63) ==0);
         assert( (size & 63) ==0);
         uint64_t ids = (start/64ULL);
-        for(uint64_t ii =0;  ii< (size/64ULL); ii++ )
-        {
+        for (uint64_t ii =0;  ii< (size/64ULL); ii++) {
             _bitArray[ids+ii] =  _bitArray[ids+ii] & (~ (cc->get64(ii)) );
         }
 
@@ -430,7 +421,7 @@ class mphf {
     ~mphf() {}
 
     // allow perc_elem_loaded  elements to be loaded in ram for faster construction (default 3%), set to 0 to desactivate
-    mphf(size_t n, 
+    mphf(size_t n,
          double gamma = 2.0, float perc_elem_loaded = 0.03f)
             : _nb_levels(0), _gamma(gamma), _hash_domain(size_t(ceil(double(n) * gamma))),
               _nelem(n), _percent_elem_loaded_for_fastMode(perc_elem_loaded),
@@ -446,28 +437,21 @@ class mphf {
     template <typename Range>
     void build(const Range &input_range,
                int num_thread = 1) {
-        _num_thread = num_thread; // FIXME
-
-        pthread_mutex_init(&_mutex, NULL);
-
         uint64_t offset = 0;
-        for (int ii = 0; ii< _nb_levels; ii++) {
-            _tempBitset =  new bitVector(_levels[ii].hash_domain); // temp collision bitarray for this level
-            processLevel(input_range, ii);
-            _levels[ii].bitset.clearCollisions(0 , _levels[ii].hash_domain, _tempBitset);
-            offset = _levels[ii].bitset.build_ranks(offset);
-
-            delete _tempBitset;
+        for (int i_level = 0; i_level < _nb_levels; ++i_level) {
+            auto &level = _levels[i_level];
+            bitVector collisions(level.hash_domain); // temp collision bitarray for this level
+            processLevel(input_range, i_level, collisions);
+            level.bitset.clearCollisions(0, level.hash_domain, &collisions);
+            offset = level.bitset.build_ranks(offset);
         }
 
         _lastbitsetrank = offset;
         std::vector<internal_hash_t>().swap(setLevelFastmode);   // clear setLevelFastmode reallocating
 
-        pthread_mutex_destroy(&_mutex);
-
         _built = true;
     }
-    
+
     template<class elem_t>
     uint64_t lookup(const elem_t &elem) const {
         if (!_built) return ULLONG_MAX;
@@ -515,115 +499,6 @@ class mphf {
 
         return totalsize / 8;
     }
-
-    template <typename Iterator>
-    void fillBuffer(std::vector<internal_hash_t> &buffer,
-                    std::shared_ptr<Iterator> shared_it, std::shared_ptr<Iterator> until_p,
-                    uint64_t &inbuff, bool & isRunning) {
-        auto until = *until_p;
-        pthread_mutex_lock(&_mutex);
-        for (; inbuff<NBBUFF && (*shared_it)!=until; ++(*shared_it)) {
-            buffer[inbuff]= _hasher.hashpair128(*(*shared_it));
-            inbuff++;
-        }
-
-        if ((*shared_it)==until)
-            isRunning =false;
-        pthread_mutex_unlock(&_mutex);
-
-    }
-
-    void fillBuffer(std::vector<internal_hash_t> &buffer,
-                    std::shared_ptr<vectorit_hash128_t> shared_it, std::shared_ptr<vectorit_hash128_t> until_p,
-                    uint64_t &inbuff, bool &isRunning) {
-        fillBufferCommon128(buffer,shared_it,until_p,inbuff,isRunning);
-    }
-
-    template <typename Iterator>
-    void fillBufferCommon128(std::vector<internal_hash_t> &buffer,
-                             std::shared_ptr<Iterator> shared_it, std::shared_ptr<Iterator> until_p,
-                             uint64_t &inbuff, bool &isRunning) {
-        auto until = *until_p;
-        pthread_mutex_lock(&_mutex);
-        for (; inbuff<NBBUFF && (*shared_it)!=until; ++(*shared_it)) {
-            buffer[inbuff]= (*(*shared_it)); inbuff++;
-        }
-
-        if ((*shared_it)==until)
-            isRunning =false;
-        pthread_mutex_unlock(&_mutex);
-    }
-
-    template <typename Iterator>  //typename Range,
-    void pthread_processLevel(std::vector<internal_hash_t> &buffer, std::shared_ptr<Iterator> shared_it, std::shared_ptr<Iterator> until_p, int i) {
-        uint64_t inbuff =0;
-
-        uint64_t writebuff =0;
-        for (bool isRunning=true;  isRunning ; ) {
-            //safely copy n items into buffer
-            //call to specialized function accordin to iterator type (may be iterator over keys (first 2 levels), or iterator over 128 bit hashes)
-            fillBuffer(buffer, shared_it, until_p, inbuff, isRunning);
-
-            //do work on the n elems of the buffer
-            for (uint64_t ii=0; ii<inbuff ; ii++) {
-                //internal_hash_t val = buffer[ii];
-                internal_hash_t bbhash = buffer[ii];
-                internal_hash_t val = bbhash;
-
-                //auto hashes = _hasher(val);
-                //hash_pair_t bbhash;
-                int level;
-
-                getLevel(bbhash, &level, i);
-
-                if (level != i)
-                    continue;
-                
-                //insert into lvl i
-                if (_fastmode && i == _fastModeLevel) {
-                    uint64_t idxl2 = __sync_fetch_and_add(& _idxLevelsetLevelFastmode,1);
-                    //si depasse taille attendue pour setLevelFastmode, fall back sur slow mode mais devrait pas arriver si hash ok et proba avec nous
-                    if (idxl2>= setLevelFastmode.size())
-                        _fastmode = false;
-                    else
-                        setLevelFastmode[idxl2] = val; // create set for fast mode
-                }
-
-                // insert to level i+1 : either next level of the cascade or final hash if last level reached
-                if (i == _nb_levels-1) { //stop cascade here, insert into exact hash
-                    uint64_t hashidx =  __sync_fetch_and_add(&_hashidx, 1);
-                    
-                    pthread_mutex_lock(&_mutex); //see later if possible to avoid this, mais pas bcp item vont la
-                    // calc rank de fin  precedent level qq part, puis init hashidx avec ce rank, direct minimal, pas besoin inser ds bitset et rank
-                    
-                    if (_final_hash.count(val)) { // key already in final hash
-                        fprintf(stderr,"The impossible happened : collision on 128 bit hashes... please switch to safe branch, and play the lottery.");
-                        fprintf(stderr,"Another more likely explanation might be that you have duplicate keys in your input.\
-                                        If so, you can ignore this message, but be aware that too many duplicate keys will increase ram usage\n");
-                    }
-                    _final_hash[val] = hashidx;
-
-                    pthread_mutex_unlock(&_mutex);
-                } else {
-                    //ils ont reach ce level
-                    //insert elem into curr level on disk --> sera utilise au level+1 , (mais encore besoin filtre)
-
-                    // computes next hash
-                    uint64_t level_hash;
-                    if (level == 0)
-                        level_hash = bbhash[0];
-                    else if (level == 1)
-                        level_hash = bbhash[1];
-                    else
-                        level_hash = _hasher.next(bbhash);
-                    insertIntoLevel(level_hash, i); //should be safe
-                }
-            }
-
-            inbuff = 0;
-        }
-    }
-
 
     void save(std::ostream& os) const {
         os.write(reinterpret_cast<char const*>(&_gamma), sizeof(_gamma));
@@ -747,7 +622,7 @@ class mphf {
 
     // compute level and returns hash of last level reached
     // FIXME: The usage of getLevel here is *super* confusing, really.
-    uint64_t getLevel(internal_hash_t &bbhash, int * res_level, int maxlevel) const {
+    uint64_t getLevel(internal_hash_t &bbhash, int *res_level, int maxlevel) const {
         int level = 0;
         uint64_t hash_raw=0;
 
@@ -771,123 +646,151 @@ class mphf {
     }
 
     // insert into bitarray
-    void insertIntoLevel(uint64_t level_hash, int i) {
-        uint64_t hashl = fastrange64(level_hash, _levels[i].hash_domain);
+    void insertIntoLevel(uint64_t level_hash, int level,
+                         bitVector &collisions) {
+        uint64_t hashl = fastrange64(level_hash, _levels[level].hash_domain);
 
-        if (_levels[i].bitset.atomic_test_and_set(hashl))
-            _tempBitset->atomic_test_and_set(hashl);
+        if (_levels[level].bitset.atomic_test_and_set(hashl))
+            collisions.atomic_test_and_set(hashl);
     }
 
-    //loop to insert into level i
-    template <typename Range>
-    void processLevel(Range const& input_range, int i) {
-        _levels[i].bitset = bitVector(_levels[i].hash_domain);
+    void processBuffer(std::vector<internal_hash_t> &buffer, size_t buffer_size,
+                        int i, bitVector &collisions) {
+        //do work on the n elems of the buffer
+        for (uint64_t ii = 0; ii < buffer_size ; ii++) {
+            //internal_hash_t val = buffer[ii];
+            internal_hash_t bbhash = buffer[ii];
+            internal_hash_t val = bbhash;
+
+            //auto hashes = _hasher(val);
+            //hash_pair_t bbhash;
+            int level;
+            getLevel(bbhash, &level, i);
+
+            if (level != i)
+                continue;
+
+            // insert into lvl i
+            if (_fastmode && i == _fastModeLevel) {
+                uint64_t idxl2 = __sync_fetch_and_add(& _idxLevelsetLevelFastmode,1);
+                //si depasse taille attendue pour setLevelFastmode, fall back sur slow mode mais devrait pas arriver si hash ok et proba avec nous
+                if (idxl2>= setLevelFastmode.size())
+                    _fastmode = false;
+                else
+                    setLevelFastmode[idxl2] = val; // create set for fast mode
+            }
+
+            // insert to level i+1 : either next level of the cascade or final hash if last level reached
+            if (i == _nb_levels-1) { //stop cascade here, insert into exact hash
+                uint64_t hashidx =  __sync_fetch_and_add(&_hashidx, 1);
+
+                // pthread_mutex_lock(&_mutex); //see later if possible to avoid this, mais pas bcp item vont la
+                // calc rank de fin  precedent level qq part, puis init hashidx avec ce rank, direct minimal, pas besoin inser ds bitset et rank
+                if (_final_hash.count(val)) { // key already in final hash
+                    fprintf(stderr,"The impossible happened : collision on 128 bit hashes... please switch to safe branch, and play the lottery.");
+                    fprintf(stderr,"Another more likely explanation might be that you have duplicate keys in your input.\
+                                        If so, you can ignore this message, but be aware that too many duplicate keys will increase ram usage\n");
+                }
+                _final_hash[val] = hashidx;
+
+                // pthread_mutex_unlock(&_mutex);
+            } else {
+                //ils ont reach ce level
+                //insert elem into curr level on disk --> sera utilise au level+1 , (mais encore besoin filtre)
+
+                // computes next hash
+                uint64_t level_hash;
+                if (level == 0)
+                    level_hash = bbhash[0];
+                else if (level == 1)
+                    level_hash = bbhash[1];
+                else
+                    level_hash = _hasher.next(bbhash);
+                insertIntoLevel(level_hash, i, collisions); //should be safe
+            }
+        }
+    }
+
+
+    template <typename Iterator>
+    bool fillBuffer(std::vector<internal_hash_t> &buffer,
+                    Iterator &shared_it, Iterator &until,
+                    uint64_t &inbuff) {
+        for (; inbuff < buffer.size() && shared_it!=until; ++shared_it) {
+            buffer[inbuff++]= _hasher.hashpair128(*shared_it);
+        }
+
+        return shared_it != until;
+    }
+
+    bool fillBuffer2(std::vector<internal_hash_t> &buffer,
+                     vectorit_hash128_t &shared_it, vectorit_hash128_t &until,
+                     uqint64_t &inbuff) {
+        for (; inbuff < buffer.size() && shared_it!=until; ++shared_it) {
+            buffer[inbuff++]= *shared_it;
+        }
+
+        return shared_it != until;
+    }
+
+    // loop to insert into level i
+    template<typename Range>
+    void processLevel(Range const& input_range,
+                      int level, bitVector &collisions) {
+        _levels[level].bitset = bitVector(_levels[level].hash_domain);
+
         _hashidx = 0;
         _idxLevelsetLevelFastmode = 0;
 
-        //create  threads
-        pthread_t *tab_threads= new pthread_t [_num_thread];
+        std::vector<internal_hash_t> buffer(NBBUFF);
         typedef decltype(input_range.begin()) it_type;
-        thread_args<Range, it_type> t_arg; // meme arg pour tous
-        t_arg.boophf = this;
-        t_arg.range = &input_range;
-        t_arg.it_p = std::static_pointer_cast<void>(std::make_shared<it_type>(input_range.begin()));
-        t_arg.until_p = std::static_pointer_cast<void>(std::make_shared<it_type>(input_range.end()));
 
-        t_arg.level = i;
+        auto fast_begin = setLevelFastmode.begin();
+        auto fast_end = setLevelFastmode.end();
+        auto range_begin = input_range.begin();
+        auto range_end = input_range.end();
 
-        if (_fastmode && i > _fastModeLevel) {
-            //   we'd like to do t_arg.it = data_iterator.begin() but types are different;
-            //   so, casting to (void*) because of that; and we remember the type in the template
-            //	typedef decltype(setLevelFastmode.begin()) fastmode_it_type; // vectorit_hash128_t
-            t_arg.it_p =  std::static_pointer_cast<void>(std::make_shared<vectorit_hash128_t>(setLevelFastmode.begin()));
-            t_arg.until_p =  std::static_pointer_cast<void>(std::make_shared<vectorit_hash128_t>(setLevelFastmode.end()));
+        for (bool isRunning = true; isRunning; ) {
+            uint64_t inbuff = 0;
+            //safely copy n items into buffer
+            //call to specialized function accordin to iterator type (may be iterator over keys (first 2 levels), or iterator over 128 bit hashes)
+            if (_fastmode && level > _fastModeLevel)
+                isRunning = fillBuffer2(buffer, fast_begin, fast_end, inbuff);
+            else
+                isRunning = fillBuffer(buffer, range_begin, range_end, inbuff);
 
-            //       we'd like to do t_arg.it = data_iterator.begin() but types are different;
-            //       so, casting to (void*) because of that; and we remember the type in the template
-
-            if (_num_thread > 1) {
-                for (int ii=0;ii<_num_thread;ii++)
-                    pthread_create (&tab_threads[ii], NULL,  thread_processLevel<Hasher_t, Range, vectorit_hash128_t>, &t_arg); //&t_arg[ii]
-            } else {
-                thread_processLevel<Hasher_t, Range, vectorit_hash128_t>(&t_arg); //&t_arg[ii]
-            }
-        } else {
-            //printf(" _ _ basic mode \n");
-            if (_num_thread > 1) {
-                for(int ii=0;ii<_num_thread;ii++)
-                    pthread_create (&tab_threads[ii], NULL,  thread_processLevel<Hasher_t, Range, decltype(input_range.begin())>, &t_arg); //&t_arg[ii]
-            } else
-                thread_processLevel<Hasher_t, Range, decltype(input_range.begin())>(&t_arg); //&t_arg[ii]
-        }
-        
-        //joining
-        if (_num_thread > 1) {
-            for(int ii=0;ii<_num_thread;ii++)
-            {
-                pthread_join(tab_threads[ii], NULL);
-            }
+            processBuffer(buffer, inbuff, level, collisions);
         }
 
-        if (_fastmode && i == _fastModeLevel) { //shrink to actual number of elements in set
+        if (_fastmode && level == _fastModeLevel) { //shrink to actual number of elements in set
             //printf("\nresize setLevelFastmode to %lli \n",_idxLevelsetLevelFastmode);
             setLevelFastmode.resize(_idxLevelsetLevelFastmode);
         }
-        delete [] tab_threads;
     }
 
   private:
     std::vector<level> _levels;
     int _nb_levels;
+
     MultiHasher_t _hasher;
-    bitVector * _tempBitset;
 
     double _gamma;
     uint64_t _hash_domain;
     uint64_t _nelem;
     std::unordered_map<internal_hash_t,uint64_t, internalHasher> _final_hash; // internalHasher   Hasher_t
-    uint64_t _hashidx;
-    int _num_thread;
     double _proba_collision;
     uint64_t _lastbitsetrank;
 
     // fast build mode , requires  that _percent_elem_loaded_for_fastMode %   elems are loaded in ram
-    float _percent_elem_loaded_for_fastMode ;
+    float _percent_elem_loaded_for_fastMode;
     bool _fastmode;
+
+    uint64_t _hashidx;
     uint64_t _idxLevelsetLevelFastmode;
-    std::vector< internal_hash_t > setLevelFastmode;
+    std::vector<internal_hash_t> setLevelFastmode;
     int _fastModeLevel;
 
     bool _built;
-
-  public:  
-    pthread_mutex_t _mutex;
 };
 
-////////////////////////////////////////////////////////////////
-#pragma mark -
-#pragma mark threading
-////////////////////////////////////////////////////////////////
-
-template<typename Hasher_t, typename Range, typename it_type>
-void *thread_processLevel(void * args) {
-    if (args ==NULL) return NULL;
-
-    thread_args<Range,it_type> *targ = (thread_args<Range,it_type>*) args;
-    mphf<Hasher_t> * obw = (mphf<Hasher_t > *) targ->boophf;
-    int level = targ->level;
-    std::vector<internal_hash_t> buffer;
-    buffer.resize(NBBUFF);
-
-    pthread_mutex_t * mutex =  & obw->_mutex;
-
-    pthread_mutex_lock(mutex); // from comment above: "//get starting iterator for this thread, must be protected (must not be currently used by other thread to copy elems in buff)"
-    std::shared_ptr<it_type> startit = std::static_pointer_cast<it_type>(targ->it_p);
-    std::shared_ptr<it_type> until_p = std::static_pointer_cast<it_type>(targ->until_p);
-    pthread_mutex_unlock(mutex);
-
-    obw->pthread_processLevel(buffer, startit, until_p, level);
-
-    return NULL;
-}
 }
