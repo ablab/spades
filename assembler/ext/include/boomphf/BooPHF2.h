@@ -391,22 +391,6 @@ class level{
 #pragma mark mphf
 ////////////////////////////////////////////////////////////////
 
-#define NBBUFF 10000
-
-template<typename Range,typename Iterator>
-struct thread_args {
-    void * boophf;
-    Range const * range;
-    std::shared_ptr<void> it_p; /* used to be "Iterator it" but because of fastmode, iterator is polymorphic; TODO: think about whether it should be a unique_ptr actually */
-    std::shared_ptr<void> until_p; /* to cache the "until" variable */
-    int level;
-};
-
-//forward declaration
-
-template <typename Hasher_t, typename Range, typename it_type>
-void * thread_processLevel(void * args);
-
 /* Hasher_t returns a single hash when operator()(elem_t key) is called.
    if used with XorshiftHashFunctors, it must have the following operator: operator()(elem_t key, uint64_t seed) */
 template<typename Hasher_t>
@@ -725,7 +709,7 @@ class mphf {
 
     bool fillBuffer2(std::vector<internal_hash_t> &buffer,
                      vectorit_hash128_t &shared_it, vectorit_hash128_t &until,
-                     uqint64_t &inbuff) {
+                     uint64_t &inbuff) {
         for (; inbuff < buffer.size() && shared_it!=until; ++shared_it) {
             buffer[inbuff++]= *shared_it;
         }
@@ -742,7 +726,7 @@ class mphf {
         _hashidx = 0;
         _idxLevelsetLevelFastmode = 0;
 
-        std::vector<internal_hash_t> buffer(NBBUFF);
+        std::vector<internal_hash_t> buffer(16384);
         typedef decltype(input_range.begin()) it_type;
 
         auto fast_begin = setLevelFastmode.begin();
