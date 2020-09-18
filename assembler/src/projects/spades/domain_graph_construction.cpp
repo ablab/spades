@@ -177,6 +177,8 @@ private:
     class PairComparator {
       public:
         int operator()(const std::pair<int,int> &lhs, const std::pair<int,int> &rhs) const {
+            if (lhs.first == rhs.first)
+                return lhs.second < rhs.second;
             return lhs.first < rhs.first;
         }
     };
@@ -228,12 +230,12 @@ private:
     }
 
     void ConstructStrongEdgesInternal(VertexId current_vertex, path_extend::BidirectionalPath *path,
-                                       std::map<size_t, std::map<std::pair<int, int>, std::pair<VertexId, std::vector<EdgeId>>, PairComparator>> &mappings_for_path) {
+                                       std::map<size_t, std::map<std::pair<int, int>, std::vector<std::pair<VertexId, std::vector<EdgeId>>>, PairComparator>> &mappings_for_path) {
         std::vector<EdgeId> edges;
         std::pair<int, int> coords = FindMappingToPath(path, domain_graph_.mapping_path(current_vertex), edges);
         if (coords.first == -1)
             return;
-        mappings_for_path[path->GetId()][coords] = std::make_pair(current_vertex, edges);
+        mappings_for_path[path->GetId()][coords].push_back(std::make_pair(current_vertex, edges));
 
         if (coords.second + 5000 > path->Length()) {
             DEBUG("set coord");
@@ -293,7 +295,7 @@ private:
     void ConstructStrongEdges() {
         const auto &g = gp_.get<Graph>();
         path_extend::GraphCoverageMap coverage_map(g, gp_.get<path_extend::PathContainer>());
-        std::map<size_t, std::map<std::pair<int, int>, std::pair<VertexId, std::vector<EdgeId>>, PairComparator>> mappings_for_path;
+        std::map<size_t, std::map<std::pair<int, int>, std::vector<std::pair<VertexId, std::vector<EdgeId>>>, PairComparator>> mappings_for_path;
         std::map<size_t, path_extend::BidirectionalPath*> from_id_to_path;
         for (VertexId current_vertex : domain_graph_.vertices()) {
             DEBUG("Processing vertex " << domain_graph_.GetVertexName(current_vertex));
@@ -311,46 +313,53 @@ private:
         }
 
         std::set<VertexId> removed_vertices;
+
         for (auto p : mappings_for_path) {
             DEBUG("Processing path " << p.first);
             if (from_id_to_path[p.first]->IsCanonical())
                 continue;
 
             std::pair<std::pair<int, int>, std::pair<VertexId, std::vector<EdgeId>>> prev(std::make_pair(-1, -1), std::make_pair(VertexId(0), std::vector<EdgeId>()));
-            for (const auto& maps : p.second) {
-                DEBUG("Processing mapping " << maps.second.first);
-                DEBUG("Mapping start: " << maps.first.first << ". Mapping end: " << maps.first.second);
 
-                if (removed_vertices.count(maps.second.first)) {
-                    DEBUG("Already deleted");
-                    continue;
-                }
+            for (auto &external_p : p.second) { // std::pair<std::pair<int, int>, std::vector<std::pair<VertexId, std::vector<EdgeId>>
+                for (const auto& imaps : external_p.second) {
+                    auto maps = std::make_pair(external_p.first, imaps);
+                    DEBUG("Processing mapping " << maps.second.first);
+                    DEBUG("Mapping start: " << maps.first.first << ". Mapping end: " << maps.first.second);
 
-                if (prev.first.first == -1) {
-                    prev = maps;
-                    continue;
-                }
-
-                if (prev.first.second > maps.first.first) {
-                    DEBUG("Mapping intersects with other, skipping");
-                    if (!removed_vertices.count(maps.second.first)) {
-                        removed_vertices.insert(domain_graph_.conjugate(maps.second.first));
-                        removed_vertices.insert(maps.second.first);
-                        if (!domain_graph_.IncomingEdgeCount(maps.second.first))
-                            domain_graph_.DeleteVertex(maps.second.first);
+                    if (removed_vertices.count(maps.second.first)) {
+                        DEBUG("Already deleted");
+                        continue;
                     }
-                    continue;
+
+                    if (prev.first.first == -1) {
+                        prev = maps;
+                        continue;
+                    }
+
+                    if (prev.first.second > maps.first.first) {
+                        DEBUG("Mapping intersects with other, skipping");
+                        if (!removed_vertices.count(maps.second.first)) {
+                            removed_vertices.insert(domain_graph_.conjugate(maps.second.first));
+                            removed_vertices.insert(maps.second.first);
+                            if (!domain_graph_.IncomingEdgeCount(maps.second.first))
+                                domain_graph_.DeleteVertex(maps.second.first);
+                        }
+                        continue;
+                    }
+
+                    if (prev.first.second < maps.first.first && maps.first.first - prev.first.second < 20000 &&
+                        !removed_vertices.count(maps.second.first) && !removed_vertices.count(prev.second.first) &&
+                        domain_graph_.GetEdgesBetween(prev.second.first, maps.second.first).size() == 0) {
+                        DEBUG("Connecting " << prev.second << " and " << maps.second);
+                        domain_graph_.AddEdge(prev.second.first, maps.second.first, true,
+                                              FindEdgesBetweenMappings(prev.first.second, maps.first.first, from_id_to_path[p.first]), maps.first.first - prev.first.second);
+                    }
+                    prev = maps;
                 }
 
-                if (prev.first.second < maps.first.first && maps.first.first - prev.first.second < 20000 &&
-                    !removed_vertices.count(maps.second.first) && !removed_vertices.count(prev.second.first) &&
-                    domain_graph_.GetEdgesBetween(prev.second.first, maps.second.first).size() == 0) {
-                    DEBUG("Connecting " << prev.second << " and " << maps.second);
-                    domain_graph_.AddEdge(prev.second.first, maps.second.first, true,
-                                          FindEdgesBetweenMappings(prev.first.second, maps.first.first, from_id_to_path[p.first]), maps.first.first - prev.first.second);
-                }
-                prev = maps;
             }
+
         }
     }
 

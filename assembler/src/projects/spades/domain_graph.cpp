@@ -479,7 +479,7 @@ void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp,
     }
     if (!start_only_from_tips) {
         for (VertexId v : vertices()) {
-            if (!HasStrongIncomingEdge(v) && IncomingEdgeCount(v))
+            if ((!HasStrongIncomingEdge(v) && IncomingEdgeCount(v)))
                 start_nodes.push_back(v);
         }
     }
