@@ -453,8 +453,11 @@ class bitVector {
         _size =  r._size;
         _nchar = r._nchar;
         _ranks = r._ranks;
-        _bitArray = (uint64_t *) calloc (_nchar,sizeof(uint64_t));
-        memcpy(_bitArray, r._bitArray, _nchar*sizeof(uint64_t) );
+        _bitArray = nullptr;
+        if (r._bitArray) {
+            _bitArray = (uint64_t *) calloc(_nchar,sizeof(uint64_t));
+            memcpy(_bitArray, r._bitArray, _nchar*sizeof(uint64_t) );
+        }
     }
 
     // Copy assignment operator
@@ -467,8 +470,11 @@ class bitVector {
             _ranks = r._ranks;
             if(_bitArray != nullptr)
                 free(_bitArray);
-            _bitArray = (uint64_t *) calloc (_nchar,sizeof(uint64_t));
-            memcpy(_bitArray, r._bitArray, _nchar*sizeof(uint64_t) );
+            _bitArray = nullptr;
+            if (r._bitArray) {
+                _bitArray = (uint64_t *) calloc(_nchar,sizeof(uint64_t));
+                memcpy(_bitArray, r._bitArray, _nchar*sizeof(uint64_t) );
+            }
         }
         return *this;
     }
@@ -734,7 +740,7 @@ class mphf {
          double gamma = 2.0,
          bool writeEach = true, bool progress =true, float perc_elem_loaded = 0.03f)
             :
-            _nb_levels(0), _gamma(gamma), _hash_domain(size_t(ceil(double(n) * gamma))), _nelem(n), _num_thread(num_thread), _percent_elem_loaded_for_fastMode (perc_elem_loaded), _withprogress(progress) {
+            _nb_levels(0), _gamma(gamma), _hash_domain(size_t(ceil(double(n) * gamma))), _nelem(n), _num_thread(num_thread), _percent_elem_loaded_for_fastMode (perc_elem_loaded), _withprogress(progress),_built(false) {
         if (n ==0)
             return;
 
