@@ -19,7 +19,7 @@ struct PerfectHashMapBuilder {
     kmers::KMerDiskStorage<typename Counter::Seq>
     BuildIndex(PerfectHashMap<K, V, traits, StoringType> &index,
                Counter& counter, size_t bucket_num,
-               size_t thread_num, bool save_final = true) const {
+               size_t thread_num, bool save_final = false) const {
         TIME_TRACE_SCOPE("PerfectHashMapBuilder::BuildIndex<Counter>");
 
         using KMerIndex = typename PerfectHashMap<K, V, traits, StoringType>::KMerIndexT;
