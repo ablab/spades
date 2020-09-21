@@ -68,7 +68,7 @@ private:
                     continue;
 
                 local_out_tip_map.emplace(edge, edge);
-                std::stack<std::pair<EdgeId, int>> edge_stack;
+                std::stack<std::pair<EdgeId, size_t>> edge_stack;
                 edge_stack.emplace(edge, 0);
                 while (!edge_stack.empty()) {
                     auto checking_pair = edge_stack.top();
@@ -76,7 +76,7 @@ private:
                     VertexId start = graph_.EdgeStart(checking_pair.first);
                     checking_pair.second += graph_.length(checking_pair.first);
 
-                    if (!graph_.CheckUniqueOutgoingEdge(start) || checking_pair.second > max_dist_to_tip_) {
+                    if (!graph_.CheckUniqueOutgoingEdge(start) || checking_pair.second > size_t(max_dist_to_tip_)) {
                         continue;
                     }
 
@@ -101,10 +101,10 @@ private:
     }
 
 public:
-    GapCloserPairedIndexFiller(const Graph &graph, omnigraph::de::PairedInfoIndexT<Graph> &paired_index,
-                               const GraphPack &gp, int max_dist_to_tip)
-            : graph_(graph), paired_index_(paired_index), buffer_pi_(graph), gp_(gp),
-              index_(graph, gp.workdir()), max_dist_to_tip_(max_dist_to_tip) {
+    GapCloserPairedIndexFiller(const GraphPack &gp, omnigraph::de::PairedInfoIndexT<Graph> &paired_index,
+        int max_dist_to_tip)
+            :  gp_(gp), graph_(gp_.get<Graph>()), paired_index_(paired_index), buffer_pi_(graph_),
+              index_(graph_, gp.workdir()), max_dist_to_tip_(max_dist_to_tip) {
         PrepareTipMap(out_tip_map_);
 
         std::vector<EdgeId> edges;
@@ -414,7 +414,7 @@ void GapClosing::run(GraphPack &gp, const char *) {
 
     auto &g = gp.get_mutable<Graph>();
     omnigraph::de::PairedInfoIndexT<Graph> tips_paired_idx(g);
-    GapCloserPairedIndexFiller gcpif(g, tips_paired_idx, gp, cfg::get().gc.max_dist_to_tip);
+    GapCloserPairedIndexFiller gcpif(gp, tips_paired_idx, cfg::get().gc.max_dist_to_tip);
     if (gcpif.IsTipAreaEmpty()) {
         INFO("No tips in graph, skipping gap closer");
         return;
