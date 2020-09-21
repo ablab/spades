@@ -398,9 +398,9 @@ private:
             mappings[domain_graph_.GetVertexName(v)] = edges;
             mappings[domain_graph_.GetVertexName(domain_graph_.conjugate(v))] = rc_edges;
         }
-
-        for (VertexId v : domain_graph_.vertices())
-            domain_graph_.SetMaxVisited(v, IsInsideRepeat(v) ? 2 : 1);
+        if (cfg::get().hm->set_copynumber)
+            for (VertexId v : domain_graph_.vertices())
+                domain_graph_.SetMaxVisited(v, IsInsideRepeat(v) ? 2 : 1);
     }
 
     GraphPack &gp_;

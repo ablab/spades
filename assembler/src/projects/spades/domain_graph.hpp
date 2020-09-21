@@ -45,7 +45,7 @@ namespace nrps {
         DomainVertexData()
                 : domain_name_("None"),
                   start_coord_(0), end_coord_(0),
-                  max_visited_(0), current_visited_(0), visited_(false) {
+                  max_visited_(1), current_visited_(0), visited_(false) {
         }
 
         DomainVertexData(const omnigraph::MappingPath<EdgeId> &mapping_path,
@@ -53,7 +53,7 @@ namespace nrps {
                          const std::string &domain_desc,
                          size_t start_coord,
                          size_t end_coord,
-                         size_t max_visited = 0,
+                         size_t max_visited = 1,
                          size_t current_visited = 0,
                          bool near_contig_end = false,
                          bool near_contig_start = false,

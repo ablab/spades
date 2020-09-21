@@ -470,6 +470,7 @@ struct debruijn_config {
         std::string hmm_set;
         size_t component_size_part;
         bool start_only_from_tips;
+        bool set_copynumber;
     };
     
     contig_output co;

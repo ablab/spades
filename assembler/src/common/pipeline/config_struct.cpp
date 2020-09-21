@@ -566,6 +566,7 @@ void load(debruijn_config::hmm_matching& hm,
   load(hm.hmm_set, pt, "set_of_hmms");
   load(hm.component_size_part, pt, "component_size_part", 1);
   load(hm.start_only_from_tips, pt, "start_only_from_tips", 1);
+  load(hm.set_copynumber, pt, "set_copynumber", 1);
 }
 
 void load(dataset &ds,

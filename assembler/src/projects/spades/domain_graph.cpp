@@ -339,7 +339,9 @@ DomainGraph::Arrangements DomainGraph::FindAllPossibleArrangements(VertexId v,
             result.weak_edges += WeakEdgeCount(v);
         }
 
-        SetCopynumber(preliminary_visited);
+        if (cfg::get().hm->set_copynumber)
+            SetCopynumber(preliminary_visited);
+
         for (VertexId v : preliminary_visited)
             SetVisited(v);
 
