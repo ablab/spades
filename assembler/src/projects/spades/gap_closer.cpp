@@ -23,7 +23,6 @@ namespace debruijn_graph {
 
 class GapCloserPairedIndexFiller : public SequenceMapperListener {
 private:
-    const GraphPack &gp_;
     const Graph &graph_;
     typedef phmap::parallel_flat_hash_map<EdgeId, EdgeId> TipMap;
     omnigraph::de::PairedInfoIndexT<Graph> &paired_index_;
@@ -103,8 +102,8 @@ private:
 public:
     GapCloserPairedIndexFiller(const GraphPack &gp, omnigraph::de::PairedInfoIndexT<Graph> &paired_index,
         int max_dist_to_tip)
-            :  gp_(gp), graph_(gp_.get<Graph>()), paired_index_(paired_index), buffer_pi_(graph_),
-              index_(graph_, gp.workdir()), max_dist_to_tip_(max_dist_to_tip) {
+            :  graph_(gp.get<Graph>()), paired_index_(paired_index), buffer_pi_(graph_),
+            index_(graph_, gp.workdir()), max_dist_to_tip_(max_dist_to_tip) {
         PrepareTipMap(out_tip_map_);
 
         std::vector<EdgeId> edges;
@@ -121,7 +120,7 @@ public:
 
         if (edges.size() > 0) {
             index_.Refill(edges);
-            mapper_ = MapperInstance(gp_, index_);
+            mapper_ = MapperInstance(gp, index_);
         }
     }
 
