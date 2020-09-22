@@ -180,6 +180,34 @@ DropAlg<Columns, columns ...> GetDropAlg(size_t num) {
         default: throw std::string("unknown the value of -d option"); break;
     }
 }
+
+PathContainer GetUnique(PathContainer const & paths) {
+    PathContainer ans;
+    vector<unique_ptr<BidirectionalPath>> forward_paths;
+    for (auto const & path : paths)
+        forward_paths.push_back(make_unique<BidirectionalPath>(path.second->g(), path.second->Conjugate()));
+    std::sort(forward_paths.begin(), forward_paths.end(), [](unique_ptr<BidirectionalPath> const & lhs, unique_ptr<BidirectionalPath> const & rhs) {
+        if (lhs->Size() != rhs->Size())
+            return lhs->Size() < rhs->Size();
+        if (lhs->Length() != rhs->Length())
+            return lhs->Length() < rhs->Length();
+
+        for (size_t i = 0; i < lhs->Size(); ++i) {
+            if (lhs->At(i) != rhs->At(i))
+                return lhs->At(i) < rhs->At(i);
+        }
+        return false;
+    });
+
+    forward_paths.erase(std::unique(forward_paths.begin(), forward_paths.end(), [](auto const & lhs, auto const & rhs) { return *lhs == *rhs; }), forward_paths.end());
+
+    for (auto & path : forward_paths) {
+        auto cpath = make_unique<BidirectionalPath>(path->g(), path->Conjugate());
+        ans.AddPair(path.release(), cpath.release());
+    }
+    return ans;
+}
+
 constexpr char BASE_NAME[] = "graph_pack";
 
 int main(int argc, char* argv[]) {
@@ -256,7 +284,7 @@ int main(int argc, char* argv[]) {
         auto paths = Launch(gp, PathThreadingParams(), input_paths, contigs, scaffolds, nthreads);
 
         ContigWriter writer(graph, MakeContigNameGenerator(config::pipeline_type::base, gp));
-        writer.OutputPaths(paths, fs::append_path(output_dir, "connected_paths.fasta"));
+        writer.OutputPaths(GetUnique(paths), fs::append_path(output_dir, "connected_paths.fasta"));
 
         ofstream contigs_output(fs::append_path(output_dir, "remapped_paths.fasta"));
         VERIFY(contigs_output.is_open());
