@@ -169,7 +169,7 @@ class KMerDataFiller {
 void KMerDataCounter::FillKMerData(KMerData &data) {
   kmers::KMerDiskCounter<hammer::HKMer> counter(cfg::get().working_dir, HammerKMerSplitter(cfg::get().working_dir));
 
-  auto res = kmers::KMerIndexBuilder<HammerKMerIndex>(num_files_, cfg::get().max_nthreads).BuildIndex(data.index_, counter);
+  auto res = kmers::KMerIndexBuilder<HammerKMerIndex>(num_files_, cfg::get().max_nthreads).BuildIndex(data.index_, counter, false);
 
   // Now use the index to fill the kmer quality information.
   INFO("Collecting K-mer information, this takes a while.");
