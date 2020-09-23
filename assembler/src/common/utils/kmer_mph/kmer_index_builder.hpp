@@ -156,7 +156,7 @@ class KMerDiskStorage {
     return kmer_iterator(*buckets_.at(i), k_);
   }
 
-  kmer_iterator bucket_end() const {
+  kmer_iterator bucket_end(size_t) const {
     return kmer_iterator();
   }
 
@@ -381,7 +381,10 @@ class KMerIndexBuilder {
   KMerIndexBuilder(unsigned num_buckets, unsigned num_threads)
       : num_buckets_(num_buckets), num_threads_(num_threads) {}
 
-  void BuildIndex(Index &index, const KMerDiskStorage<Seq> &kmer_storage) {
+  template<class KMerStorage>
+  void BuildIndex(Index &index, const KMerStorage &kmer_storage) {
+    TIME_TRACE_SCOPE("KMerIndexBuilder::BuildIndex(storage)");
+
     index.clear();
 
     size_t buckets = kmer_storage.num_buckets();
@@ -399,7 +402,7 @@ class KMerIndexBuilder {
 #     pragma omp parallel for shared(index) num_threads(num_threads_)
       for (size_t i = 0; i < buckets; ++i) {
           index.bucket_starts_[i + 1] = kmer_storage.bucket_size(i);
-          index.index_[i].build(boomphf::range(kmer_storage.bucket_begin(i), kmer_storage.bucket_end()),
+          index.index_[i].build(boomphf::range(kmer_storage.bucket_begin(i), kmer_storage.bucket_end(i)),
                                 1);
       }
     }
@@ -413,9 +416,8 @@ class KMerIndexBuilder {
     index.count_size();
   }
 
-  KMerDiskStorage<Seq> BuildIndex(Index &index, KMerCounter<Seq> &counter,
-                                  bool save_final = false) {
-    //TIME_TRACE_SCOPE("KMerIndexBuilder::BuildIndex");
+  auto BuildIndex(Index &index, KMerCounter<Seq> &counter, bool save_final = false) {
+    TIME_TRACE_SCOPE("KMerIndexBuilder::BuildIndex(counter)");
 
     INFO("Building kmer index");
     // First, count the unique k-mers

@@ -91,7 +91,7 @@ public:
         Splitter splitter(workdir, index.k(),
                           index.k() + 1, Index::storing_type::IsInvertable(), read_buffer_size);
         for (unsigned i = 0; i < kpomers.num_buckets(); ++i)
-            splitter.AddKMers(adt::make_range(kpomers.bucket_begin(i), kpomers.bucket_end()));
+            splitter.AddKMers(adt::make_range(kpomers.bucket_begin(i), kpomers.bucket_end(i)));
         kmers::KMerDiskCounter<RtSeq> counter(workdir, std::move(splitter));
 
         BuildIndex(index, counter, kpomers.num_buckets(), nthreads);
@@ -100,7 +100,7 @@ public:
         INFO("Building k-mer extensions from k+1-mers");
 #       pragma omp parallel for num_threads(nthreads)
         for (size_t i = 0; i < kpomers.num_buckets(); ++i)
-            FillExtensionsFromIndex(kpomers.bucket_begin(i), kpomers.bucket_end(),
+            FillExtensionsFromIndex(kpomers.bucket_begin(i), kpomers.bucket_end(i),
                                     index);
         INFO("Building k-mer extensions from k+1-mers finished.");
     }
