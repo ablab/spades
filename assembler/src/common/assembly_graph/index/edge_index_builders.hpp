@@ -8,6 +8,10 @@
 #pragma once
 
 #include "edge_info_updater.hpp"
+
+#include "assembly_graph/core/graph.hpp"
+#include "assembly_graph/core/kmer_iterator.hpp"
+
 #include "utils/kmer_mph/kmer_splitters.hpp"
 #include "utils/ph_map/perfect_hash_map_builder.hpp"
 
@@ -152,66 +156,115 @@ public:
     typedef Index IndexT;
     typedef typename Index::KMer Kmer;
 
+    template<class EdgeRange>
     class KMerGraphStorage {
       public:
-
         KMerGraphStorage(const Graph &g, unsigned k,
-                         KMerBucketPolicy policy)
-      : work_dir_(work_dir), k_(k), bucket_policy_(std::move(policy)) {
-    resize(policy.num_buckets());
-  }
+                         std::vector<EdgeRange> buckets)
+                : k_(k), g_(g), buckets_(std::move(buckets)) {
+            bucket_policy_.reset(buckets_.size());
 
-  void resize(size_t n) {
-    buckets_.resize(n);
-  }
+            INFO("buckets: " << buckets_.size());
 
-  unsigned k() const { return k_; }
+            for (size_t i = 0; i < buckets_.size(); ++i) {
+                size_t sz = std::distance(bucket_begin(i), bucket_end(i));
+                INFO("sz: " << sz);
+                sizes_.push_back(sz);
+                total_kmers_ += sz;
+            }
+        }
 
-  size_t total_kmers() const {
-      return total_kmers;
-  }
+        unsigned k() const { return k_; }
+        size_t total_kmers() const {  return total_kmers_;  }
 
-  size_t bucket_size(size_t i) const {
-    return fs::filesize(*buckets_.at(i)) / (Seq::GetDataSize(k_) * sizeof(typename Seq::DataType));
-  }
+        size_t bucket_size(size_t i) const { return sizes_.at(i); }
 
-  kmer_iterator bucket_begin(size_t i) const {
-    return kmer_iterator(*buckets_.at(i), k_);
-  }
+        auto bucket_begin(size_t i) const {
+            return boost::make_filter_iterator(utils::StoringTypeFilter<typename Index::storing_type>(),
+                                               kmer_begin(buckets_.at(i).begin(), buckets_.at(i).end(), g_, k_),
+                                               kmer_end(buckets_.at(i).end(), g_));
+        }
 
-  kmer_iterator bucket_end() const {
-    return kmer_iterator();
-  }
+        auto bucket_end(size_t i) const {
+            return boost::make_filter_iterator(utils::StoringTypeFilter<typename Index::storing_type>(),
+                                               kmer_end(buckets_.at(i).end(), g_),
+                                               kmer_end(buckets_.at(i).end(), g_));
+        }
 
-  size_t num_buckets() const { return buckets_.size(); }
+        size_t num_buckets() const { return buckets_.size(); }
 
-  void merge() {
-    INFO("Merging final buckets.");
-    TIME_TRACE_SCOPE("KMerDiskStorage::MergeFinal");
+      private:
+        unsigned k_;
+        const Graph &g_;
+        size_t total_kmers_ = 0;
+        std::vector<EdgeRange> buckets_;
+        std::vector<size_t> sizes_;
+        kmer::KMerBucketPolicy<Kmer> bucket_policy_;
+    };
 
-    all_kmers_ = work_dir_->tmp_file("final_kmers");
-    std::ofstream ofs(*all_kmers_, std::ios::out | std::ios::binary);
-    for (auto &entry : buckets_) {
-      BucketStorage bucket(*entry, Seq::GetDataSize(k_), false);
-      ofs.write((const char*)bucket.data(), bucket.data_size());
-      entry.reset();
+    class KMerFullGraphStorage : public KMerGraphStorage<omnigraph::IterationHelper<Graph, EdgeId>::EdgeRange> {
+      using IterationHelper = omnigraph::IterationHelper<Graph, EdgeId>;
+      using base = KMerGraphStorage<IterationHelper::EdgeRange>;
+
+      public:
+        KMerFullGraphStorage(const Graph &g, unsigned k, unsigned num_buckets)
+                : base(g, k, IterationHelper(g).Ranges(num_buckets)) {}
+    };
+
+    class KMerPartialGraphStorage : public KMerGraphStorage<adt::iterator_range<std::vector<EdgeId>::const_iterator>> {
+      using EdgeRange = adt::iterator_range<std::vector<EdgeId>::const_iterator>;
+      using base = KMerGraphStorage<EdgeRange>;
+
+        std::vector<EdgeRange> ranges(const std::vector<EdgeId> &edges, unsigned num_buckets) const {
+            if (num_buckets == 1)
+                return { adt::make_range(edges.begin(), edges.end()) };
+
+            std::vector<EdgeRange> res;
+            size_t chunk_size = std::max(size_t(1), edges.size() / num_buckets);
+            size_t range_begin = 0, range_end = 0;
+            while (range_end < edges.size()) {
+                range_begin = range_end;
+                range_end += chunk_size;
+                if (range_end > edges.size())
+                    range_end = edges.size();
+
+                res.emplace_back(edges.begin() + range_begin, edges.begin() + range_end);
+            }
+
+            return res;
+        }
+
+      public:
+        KMerPartialGraphStorage(const Graph &g, unsigned k,
+                                const std::vector<EdgeId> &edges, unsigned num_buckets)
+                : base(g, k, ranges(edges, num_buckets)) {}
+    };
+
+    void BuildIndexFromGraph(Index &index, const Graph &g) const {
+        unsigned nthreads = omp_get_max_threads();
+
+        KMerFullGraphStorage storage(g, index.k(), 10 * nthreads);
+
+        BuildIndex(index, storage, nthreads);
+
+        // Now use the index to fill the coverage and EdgeId's
+        INFO("Collecting edge information from graph, this takes a while.");
+        EdgeInfoUpdater<Graph>().UpdateAll(g, index);
     }
-    buckets_.clear();
-    ofs.close();
-  }
 
+    void BuildIndexFromGraph(Index &index, const Graph &g,
+                             const std::vector<EdgeId> &edges) const {
+        unsigned nthreads = omp_get_max_threads();
 
- private:
-  fs::TmpDir work_dir_;
-  fs::TmpFile kmer_prefix_;
-  fs::TmpFile all_kmers_;
-  unsigned k_;
-  Buckets buckets_;
-  KMerBucketPolicy bucket_policy_;
-};
-        
-    
-    template<class Graph>
+        KMerPartialGraphStorage storage(g, index.k(), edges, 10 * nthreads);
+
+        BuildIndex(index, storage, nthreads);
+
+        // Now use the index to fill the coverage and EdgeId's
+        INFO("Collecting edge information from graph, this takes a while.");
+        EdgeInfoUpdater<Graph>().Update(g, index, edges);
+    }
+
     void BuildIndexFromGraph(Index &index, const Graph &g,
                              fs::TmpDir workdir, size_t read_buffer_size = 0) const {
         unsigned nthreads = omp_get_max_threads();
@@ -229,7 +282,6 @@ public:
         EdgeInfoUpdater<Graph>().UpdateAll(g, index);
     }
 
-    template<class Graph>
     void BuildIndexFromGraph(Index &index,
                              const Graph &g, const std::vector<typename Graph::EdgeId> &edges,
                              fs::TmpDir workdir, size_t read_buffer_size = 0) const {

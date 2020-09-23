@@ -4,8 +4,9 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "assembly_graph/index/edge_index_builders.hpp"
 #include "assembly_graph/core/graph.hpp"
+#include "assembly_graph/core/kmer_iterator.hpp"
+#include "assembly_graph/index/edge_index_builders.hpp"
 #include "utils/filesystem/temporary.hpp"
 
 #include "edge_index_refiller.hpp"
@@ -20,40 +21,45 @@ EdgeIndexRefiller::EdgeIndexRefiller(const std::string &workdir)
     : workdir_(workdir)
 {}
 
-template<class EdgeIndex, class Graph>
+template<class EdgeIndex>
 void EdgeIndexRefiller::Refill(EdgeIndex &index, const Graph &g) {
+    typedef GraphPositionFillingIndexBuilder<EdgeIndex> IndexBuilder;
+#if 1
+    IndexBuilder().BuildIndexFromGraph(index, g);
+#else
     auto workdir = fs::tmp::make_temp_dir(workdir_, "edge_index");
 
-    typedef GraphPositionFillingIndexBuilder<EdgeIndex> IndexBuilder;
     IndexBuilder().BuildIndexFromGraph(index, g, workdir);
+#endif
 }
 
 template
-void EdgeIndexRefiller::Refill<EdgeIndex,ConjugateDeBruijnGraph>(EdgeIndex &index,
-                                                                 const ConjugateDeBruijnGraph &g);
+void EdgeIndexRefiller::Refill(EdgeIndex &index, const Graph &g);
 
 template
-void EdgeIndexRefiller::Refill<EdgeIndex64, ConjugateDeBruijnGraph>(EdgeIndex64 &index,
-                                                                    const ConjugateDeBruijnGraph &g);
+void EdgeIndexRefiller::Refill(EdgeIndex64 &index, const Graph &g);
 
 template
-void EdgeIndexRefiller::Refill<EdgeIndex32, ConjugateDeBruijnGraph>(EdgeIndex32 &index,
-                                                                    const ConjugateDeBruijnGraph &g);
+void EdgeIndexRefiller::Refill(EdgeIndex32 &index, const Graph &g);
 
 
-template<class EdgeIndex, class Graph>
+template<class EdgeIndex>
 void EdgeIndexRefiller::Refill(EdgeIndex &index,
                                const Graph &g,
-                               const std::vector<typename Graph::EdgeId> &edges) {
+                               const std::vector<EdgeId> &edges) {
+    typedef GraphPositionFillingIndexBuilder<EdgeIndex> IndexBuilder;
+#if 1
+    IndexBuilder().BuildIndexFromGraph(index, g, edges);
+#else
     auto workdir = fs::tmp::make_temp_dir(workdir_, "edge_index");
 
-    typedef GraphPositionFillingIndexBuilder<EdgeIndex> IndexBuilder;
     IndexBuilder().BuildIndexFromGraph(index, g, edges, workdir);
+#endif
 }
 
 template
 void EdgeIndexRefiller::Refill(EdgeIndex &index,
-                               const ConjugateDeBruijnGraph &g,
+                               const Graph &g,
                                const std::vector<typename ConjugateDeBruijnGraph::EdgeId> &edges);
 
 template
