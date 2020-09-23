@@ -166,12 +166,15 @@ public:
 
             INFO("buckets: " << buckets_.size());
 
+            sizes_.resize(buckets_.size());
+#           pragma omp parallel for
             for (size_t i = 0; i < buckets_.size(); ++i) {
                 size_t sz = std::distance(bucket_begin(i), bucket_end(i));
                 INFO("sz: " << sz);
-                sizes_.push_back(sz);
-                total_kmers_ += sz;
+                sizes_[i] = sz;
             }
+            for (size_t sz : sizes_)
+                total_kmers_ += sz;
         }
 
         unsigned k() const { return k_; }
