@@ -134,7 +134,14 @@ void BuildIndex(KeyStoringMap<K, V, traits, StoringType> &index,
 template<class K, class V, class traits, class StoringType, class Counter>
 void BuildIndex(PerfectHashMap<K, V, traits, StoringType> &index,
                 Counter& counter, size_t bucket_num,
-                size_t thread_num, bool save_final = true) {
+                size_t thread_num, bool save_final = false) {
     PerfectHashMapBuilder().BuildIndex(index, counter, bucket_num, thread_num, save_final);
 }
+
+template<class K, class V, class traits, class StoringType, class KMerStorage>
+void BuildIndex(PerfectHashMap<K, V, traits, StoringType> &index,
+                const KMerStorage& storage, size_t thread_num) {
+    PerfectHashMapBuilder().BuildIndex(index, storage, thread_num);
+}
+
 }
