@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "assembly_graph/core/graph.hpp"
+
 #include <string>
 #include <vector>
 
@@ -20,10 +22,10 @@ struct EdgeIndexRefiller {
 
     EdgeIndexRefiller(const std::string &workdir);
 
-    template<class EdgeIndex, class Graph>
+    template<class EdgeIndex>
     void Refill(EdgeIndex &index, const Graph &g);
 
-    template<class EdgeIndex, class Graph>
+    template<class EdgeIndex>
     void Refill(EdgeIndex &index, const Graph &g,
                 const std::vector<typename Graph::EdgeId> &edges);
 };
