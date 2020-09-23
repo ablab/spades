@@ -13,7 +13,6 @@
 #include "assembly_graph/construction/debruijn_graph_constructor.hpp"
 #include "assembly_graph/construction/early_simplification.hpp"
 #include "assembly_graph/graph_support/coverage_filling.hpp"
-#include "assembly_graph/index/edge_index_builders.hpp"
 
 #include "modules/alignment/edge_index.hpp"
 
