@@ -77,7 +77,12 @@ struct StoringTypeFilter {
 template<>
 struct StoringTypeFilter<SimpleStoring> {
     template<class Kmer>
-    bool filter(const Kmer &/*kmer*/) const {
+    bool operator()(const Kmer &/*kmer*/) const {
+        return true;
+    }
+
+    template<class Kmer>
+    static bool filter(const Kmer &/*kmer*/) {
         return true;
     }
 };
@@ -85,7 +90,12 @@ struct StoringTypeFilter<SimpleStoring> {
 template<>
 struct StoringTypeFilter<InvertableStoring> {
     template<class Kmer>
-    bool filter(const Kmer &kmer) const {
+    bool operator()(const Kmer &kmer) const {
+        return filter(kmer);
+    }
+
+    template<class Kmer>
+    static bool filter(const Kmer &kmer) {
         return kmer.IsMinimal();
     }
 };

@@ -152,6 +152,65 @@ public:
     typedef Index IndexT;
     typedef typename Index::KMer Kmer;
 
+    class KMerGraphStorage {
+      public:
+
+        KMerGraphStorage(const Graph &g, unsigned k,
+                         KMerBucketPolicy policy)
+      : work_dir_(work_dir), k_(k), bucket_policy_(std::move(policy)) {
+    resize(policy.num_buckets());
+  }
+
+  void resize(size_t n) {
+    buckets_.resize(n);
+  }
+
+  unsigned k() const { return k_; }
+
+  size_t total_kmers() const {
+      return total_kmers;
+  }
+
+  size_t bucket_size(size_t i) const {
+    return fs::filesize(*buckets_.at(i)) / (Seq::GetDataSize(k_) * sizeof(typename Seq::DataType));
+  }
+
+  kmer_iterator bucket_begin(size_t i) const {
+    return kmer_iterator(*buckets_.at(i), k_);
+  }
+
+  kmer_iterator bucket_end() const {
+    return kmer_iterator();
+  }
+
+  size_t num_buckets() const { return buckets_.size(); }
+
+  void merge() {
+    INFO("Merging final buckets.");
+    TIME_TRACE_SCOPE("KMerDiskStorage::MergeFinal");
+
+    all_kmers_ = work_dir_->tmp_file("final_kmers");
+    std::ofstream ofs(*all_kmers_, std::ios::out | std::ios::binary);
+    for (auto &entry : buckets_) {
+      BucketStorage bucket(*entry, Seq::GetDataSize(k_), false);
+      ofs.write((const char*)bucket.data(), bucket.data_size());
+      entry.reset();
+    }
+    buckets_.clear();
+    ofs.close();
+  }
+
+
+ private:
+  fs::TmpDir work_dir_;
+  fs::TmpFile kmer_prefix_;
+  fs::TmpFile all_kmers_;
+  unsigned k_;
+  Buckets buckets_;
+  KMerBucketPolicy bucket_policy_;
+};
+        
+    
     template<class Graph>
     void BuildIndexFromGraph(Index &index, const Graph &g,
                              fs::TmpDir workdir, size_t read_buffer_size = 0) const {
