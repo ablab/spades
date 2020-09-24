@@ -397,7 +397,9 @@ class KMerIndexBuilder {
     {
       TIME_TRACE_SCOPE("KMerDiskCounter::BuildPHM");
       for (size_t i = 0; i < buckets; ++i)
-        index.index_.emplace_back(kmer_storage.bucket_size(i), 4.0);
+        index.index_.emplace_back(kmer_storage.bucket_size(i),
+                                  Index::KMerDataIndex::ConflictPolicy::Ignore,
+                                  4.0);
          
 #     pragma omp parallel for shared(index) num_threads(num_threads_)
       for (size_t i = 0; i < buckets; ++i) {
@@ -412,7 +414,7 @@ class KMerIndexBuilder {
       index.bucket_starts_[i] += index.bucket_starts_[i - 1];
 
     double bits_per_kmer = 8.0 * (double)index.mem_size() / (double)kmer_storage.total_kmers();
-    INFO("Index built. Total " << index.mem_size() << " bytes occupied (" << bits_per_kmer << " bits per kmer).");
+    INFO("Index built. Total " << kmer_storage.total_kmers() << " kmers, " << index.mem_size() << " bytes occupied (" << bits_per_kmer << " bits per kmer).");
     index.count_size();
   }
 

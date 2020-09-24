@@ -24,13 +24,7 @@ EdgeIndexRefiller::EdgeIndexRefiller(const std::string &workdir)
 template<class EdgeIndex>
 void EdgeIndexRefiller::Refill(EdgeIndex &index, const Graph &g) {
     typedef GraphPositionFillingIndexBuilder<EdgeIndex> IndexBuilder;
-#if 1
     IndexBuilder().BuildIndexFromGraph(index, g);
-#else
-    auto workdir = fs::tmp::make_temp_dir(workdir_, "edge_index");
-
-    IndexBuilder().BuildIndexFromGraph(index, g, workdir);
-#endif
 }
 
 template
@@ -48,13 +42,7 @@ void EdgeIndexRefiller::Refill(EdgeIndex &index,
                                const Graph &g,
                                const std::vector<EdgeId> &edges) {
     typedef GraphPositionFillingIndexBuilder<EdgeIndex> IndexBuilder;
-#if 1
     IndexBuilder().BuildIndexFromGraph(index, g, edges);
-#else
-    auto workdir = fs::tmp::make_temp_dir(workdir_, "edge_index");
-
-    IndexBuilder().BuildIndexFromGraph(index, g, edges, workdir);
-#endif
 }
 
 template

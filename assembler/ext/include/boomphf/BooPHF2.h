@@ -20,16 +20,6 @@
 
 namespace boomphf {
 
-inline uint64_t printPt( pthread_t pt) {
-    unsigned char *ptc = (unsigned char*)(void*)(&pt);
-    uint64_t res =0;
-    for (size_t i=0; i<sizeof(pt); i++) {
-        res+= (unsigned)(ptc[i]);
-    }
-    return res;
-}
-
-
 ////////////////////////////////////////////////////////////////
 #pragma mark -
 #pragma mark utils
@@ -364,9 +354,7 @@ class bitVector {
 #pragma mark level
 ////////////////////////////////////////////////////////////////
 
-
 static inline uint64_t fastrange64(uint64_t word, uint64_t p) {
-    //return word %  p;
     return (uint64_t)(((__uint128_t)word * (__uint128_t)p) >> 64);
 }
 
@@ -401,6 +389,12 @@ class mphf {
   public:
     static constexpr uint64_t NOT_FOUND = -1ULL;
 
+    enum ConflictPolicy {
+        Error,
+        Warning,
+        Ignore
+    };        
+    
     mphf()
             : _built(false) {}
 
@@ -408,9 +402,11 @@ class mphf {
 
     // allow perc_elem_loaded  elements to be loaded in ram for faster construction (default 3%), set to 0 to desactivate
     mphf(size_t n,
+         ConflictPolicy policy = ConflictPolicy::Warning,
          double gamma = 2.0, float perc_elem_loaded = 0.03f)
             : _nb_levels(0), _gamma(gamma), _hash_domain(size_t(ceil(double(n) * gamma))),
-              _nelem(n), _percent_elem_loaded_for_fastMode(perc_elem_loaded),
+              _nelem(n), _policy(policy),
+              _percent_elem_loaded_for_fastMode(perc_elem_loaded),
               _built(false) {
         if (n ==0)
             return;
@@ -452,11 +448,10 @@ class mphf {
         if (level == (_nb_levels-1)) {
             auto in_final_map = _final_hash.find(bbhash);
             if (in_final_map == _final_hash.end())
-                //elem was not in orignal set of keys
-                return NOT_FOUND; //  means elem not in set
-
-            minimal_hp =  in_final_map->second + _lastbitsetrank;
-            return minimal_hp;
+                return NOT_FOUND;
+            
+            return (in_final_map->second != NOT_FOUND ?
+                    in_final_map->second + _lastbitsetrank : NOT_FOUND);
         } else {
             non_minimal_hp = fastrange64(level_hash,_levels[level].hash_domain);
         }
@@ -665,11 +660,17 @@ class mphf {
                 // pthread_mutex_lock(&_mutex); //see later if possible to avoid this, mais pas bcp item vont la
                 // calc rank de fin  precedent level qq part, puis init hashidx avec ce rank, direct minimal, pas besoin inser ds bitset et rank
                 if (_final_hash.count(val)) { // key already in final hash
-                    fprintf(stderr,"The impossible happened : collision on 128 bit hashes... please switch to safe branch, and play the lottery.");
-                    fprintf(stderr,"Another more likely explanation might be that you have duplicate keys in your input.\
+                    if (_policy == ConflictPolicy::Ignore) {
+                        _final_hash[val] = NOT_FOUND;
+                    } else {
+                        fprintf(stderr,"The impossible happened : collision on 128 bit hashes... please switch to safe branch, and play the lottery.");
+                        fprintf(stderr,"Another more likely explanation might be that you have duplicate keys in your input.\
                                         If so, you can ignore this message, but be aware that too many duplicate keys will increase ram usage\n");
-                }
-                _final_hash[val] = hashidx;
+                        if (_policy == ConflictPolicy::Error)
+                            abort();
+                    }
+                } else
+                    _final_hash[val] = hashidx;
 
                 // pthread_mutex_unlock(&_mutex);
             } else {
@@ -758,6 +759,7 @@ class mphf {
     std::unordered_map<internal_hash_t,uint64_t, internalHasher> _final_hash; // internalHasher   Hasher_t
     double _proba_collision;
     uint64_t _lastbitsetrank;
+    ConflictPolicy _policy;
 
     // fast build mode , requires  that _percent_elem_loaded_for_fastMode %   elems are loaded in ram
     float _percent_elem_loaded_for_fastMode;
