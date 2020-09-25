@@ -24,7 +24,7 @@ add_library(spades-stages STATIC
             load_graph.cpp
             domain_graph.cpp)
 
-target_link_libraries(spades-stages spoa easel)
+target_link_libraries(spades-stages hmmercpp spoa easel)
           
 add_executable(spades-core
                pipeline.cpp
@@ -32,7 +32,7 @@ add_executable(spades-core
                series_analysis.cpp
                ../mts/contig_abundance.cpp)
 
-target_link_libraries(spades-core spades-stages graphio common_modules hmmercpp ${COMMON_LIBRARIES})
+target_link_libraries(spades-core spades-stages graphio common_modules ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades-core PROPERTIES LINK_SEARCH_END_STATIC 1)
