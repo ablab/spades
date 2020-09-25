@@ -6,11 +6,11 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "kmer_splitter.hpp"
 #include "kmer_index.hpp"
 
 #include "io/kmers/mmapped_reader.hpp"
 #include "io/kmers/mmapped_writer.hpp"
-#include "io/kmers/kmer_iterator.hpp"
 
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/memory_limit.hpp"
@@ -23,7 +23,7 @@
 #include "adt/iterator_range.hpp"
 #include "adt/loser_tree.hpp"
 
-#include "boomphf/BooPHF2.h"
+#include <boomphf/BooPHF.h>
 
 #include <libcxx/sort.hpp>
 
@@ -41,8 +41,6 @@
 #include <fstream>
 #include <vector>
 #include <cmath>
-
-#include "kmer_splitter.hpp"
 
 namespace kmers {
 
