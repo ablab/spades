@@ -455,12 +455,32 @@ template <typename... Ts>
 class Serializer<std::tuple<Ts...>, std::enable_if_t<is_serializable<Ts...>>> {
 public:
     static void Write(std::ostream &os, const std::tuple<Ts...> &t) {
-        auto binwriter = [&os](const auto& v) { BinWrite(os, v); };
+        auto binwriter = [&os](auto&& ...v) { BinWrite(os, v...); };
         apply(binwriter, t);
     }
 
-    static void BinRead(std::istream &is, const std::tuple<Ts...> &t) {
-        auto binreader = [&is](auto& v) { BinRead(is, v); };
+    static void Read(std::istream &is, std::tuple<Ts...> &t) {
+        auto binreader = [&is](auto&& ...v) { BinRead(is, v...); };
+        apply(binreader, t);
+    }
+};
+
+template<typename... Ts>
+std::enable_if_t<is_serializable<Ts...>> BinRead(std::istream &is, std::tuple<Ts&...> t) {
+    auto binreader = [&is](auto&& ...v) { BinRead(is, v...); };
+    apply(binreader, t);
+}
+
+template <typename... Ts>
+class Serializer<std::tuple<Ts&...>, std::enable_if_t<is_serializable<Ts...>>> {
+public:
+    static void Write(std::ostream &os, const std::tuple<Ts&...> &t) {
+        auto binwriter = [&os](auto&& ...v) { BinWrite(os, v...); };
+        apply(binwriter, t);
+    }
+
+    static void Read(std::istream &is, std::tuple<Ts&...> t) {
+        auto binreader = [&is](auto&& ...v) { BinRead(is, v...); };
         apply(binreader, t);
     }
 };
