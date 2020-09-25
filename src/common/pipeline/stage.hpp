@@ -42,6 +42,8 @@ public:
                       const char *prefix = nullptr) const;
     void prepare(graph_pack::GraphPack &, const char *stage_name, const char *started_from = nullptr);
     virtual void run(graph_pack::GraphPack &, const char *started_from = nullptr) = 0;
+    virtual bool distributed() const { return false; }
+    virtual bool constant() const { return false; }
 
 private:
     const char *name_;
@@ -87,6 +89,10 @@ public:
     virtual void init(graph_pack::GraphPack &, const char * = nullptr) = 0;
     virtual void fini(graph_pack::GraphPack &) = 0;
     void run(graph_pack::GraphPack &gp, const char * = nullptr);
+
+    const std::vector<std::unique_ptr<PhaseBase> >& phases() const {
+        return phases_;
+    }
 
 private:
     std::vector<std::unique_ptr<PhaseBase> > phases_;
@@ -215,15 +221,16 @@ public:
 
     StageManager &add(AssemblyStage *stage) {
         stages_.push_back(std::unique_ptr<AssemblyStage>(stage));
-        stages_.back()->parent_ = this;
+        acquire(stage);
 
         return *this;
     }
 
     template<typename Stage, typename ... Args>
     StageManager &add(Args&&... args) {
-        stages_.push_back(std::unique_ptr<Stage>(new Stage(std::forward<Args>(args)...)));
-        stages_.back()->parent_ = this;
+        auto *stage = new Stage(std::forward<Args>(args)...);
+        stages_.push_back(std::unique_ptr<Stage>(stage));
+        acquire(stage);
 
         return *this;
     }
@@ -234,6 +241,22 @@ public:
     const SavesPolicy &saves_policy() const {
         return saves_policy_;
     }
+
+protected:
+    void acquire(AssemblyStage *stage) {
+        stage->parent_ = this;
+    }
+
+    std::vector<std::unique_ptr<AssemblyStage> > &stages() {
+        return stages_;
+    }
+
+    const std::vector<std::unique_ptr<AssemblyStage> > &stages() const {
+        return stages_;
+    }
+
+    std::vector<std::unique_ptr<AssemblyStage>>::iterator prepare_run(graph_pack::GraphPack& g,
+                                                                      const char *start_from);
 
 private:
     using Stages = std::vector<std::unique_ptr<AssemblyStage> >;
