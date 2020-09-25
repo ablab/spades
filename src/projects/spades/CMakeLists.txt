@@ -32,7 +32,8 @@ set(SPADES_SRC pipeline.cpp main.cpp series_analysis.cpp ../mts/contig_abundance
 add_executable(spades-core
                ${SPADES_SRC})
 
-target_link_libraries(spades-core spades-stages graphio common_modules ${COMMON_LIBRARIES})
+# FIXME: Temporary
+target_link_libraries(spades-core spades-stages graphio common_modules ${COMMON_LIBRARIES} ${MPI_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades-core PROPERTIES LINK_SEARCH_END_STATIC 1)
