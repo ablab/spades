@@ -15,7 +15,12 @@ set(utils_src
     filesystem/glob.cpp
     logger/logger_impl.cpp
     logger/log_writers.cpp
-    logger/log_writers_thread.cpp)
+    logger/log_writers_thread.cpp
+    )
+
+if (MPI_FOUND)
+  set(utils_src ${utils_src} logger/mpi_log_writers.cpp)
+endif()
 
 if (READLINE_FOUND)
   set(utils_src ${utils_src} autocompletion.cpp)
