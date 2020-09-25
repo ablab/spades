@@ -12,7 +12,8 @@ set(utils_src
     filesystem/path_helper.cpp
     filesystem/temporary.cpp
     filesystem/glob.cpp
-    logger/logger_impl.cpp)
+    logger/logger_impl.cpp
+    logger/log_writers.cpp)
 
 if (READLINE_FOUND)
   set(utils_src ${utils_src} autocompletion.cpp)
