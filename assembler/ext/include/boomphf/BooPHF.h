@@ -393,8 +393,8 @@ class mphf {
         Error,
         Warning,
         Ignore
-    };        
-    
+    };
+
     mphf()
             : _built(false) {}
 
@@ -419,6 +419,9 @@ class mphf {
     template <typename Range>
     void build(const Range &input_range,
                int num_thread = 1) {
+        if (_nb_levels == 0)
+            return;
+
         uint64_t offset = 0;
         for (int i_level = 0; i_level < _nb_levels; ++i_level) {
             auto &level = _levels[i_level];
@@ -449,7 +452,7 @@ class mphf {
             auto in_final_map = _final_hash.find(bbhash);
             if (in_final_map == _final_hash.end())
                 return NOT_FOUND;
-            
+
             return (in_final_map->second != NOT_FOUND ?
                     in_final_map->second + _lastbitsetrank : NOT_FOUND);
         } else {
