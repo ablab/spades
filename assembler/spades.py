@@ -229,7 +229,7 @@ def get_options_from_params(params_filename, running_script):
     # we cannot restart/continue spades.py run with metaspades.py/rnaspades.py/etc and vice versa
     if prev_running_script != running_script:
         message = "executable script of the previous run (%s) is not equal " \
-                  "to the current executable script (%s)!" % prev_running_script, running_script
+                  "to the current executable script (%s)!" % (prev_running_script, running_script)
         return command_line, options, prev_running_script, message
     return command_line, options, prev_running_script, ""
 
