@@ -28,11 +28,12 @@ add_library(spades-stages STATIC
 
 target_link_libraries(spades-stages hmmercpp spoa easel)
 
-set(SPADES_SRC pipeline.cpp main.cpp series_analysis.cpp ../mts/contig_abundance.cpp)
+set(SPADES_SRC pipeline.cpp series_analysis.cpp ../mts/contig_abundance.cpp)
+set(SPADES_LIB spades-stages graphio common_modules ${COMMON_LIBRARIES})
 add_executable(spades-core
+               main.cpp
                ${SPADES_SRC})
-
-target_link_libraries(spades-core spades-stages graphio common_modules ${COMMON_LIBRARIES})
+target_link_libraries(spades-core ${SPADES_LIB})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades-core PROPERTIES LINK_SEARCH_END_STATIC 1)
@@ -44,9 +45,11 @@ install(TARGETS spades-core
         COMPONENT spades)
 
 if (MPI_FOUND)
-  add_executable(spades-hpc ${SPADES_SRC})
+  add_executable(spades-hpc
+                 main_mpi.cpp
+                 ${SPADES_SRC})
 
-  target_link_libraries(spades-hpc spades-stages graphio common_modules ${COMMON_LIBRARIES} ${MPI_LIBRARIES})
+  target_link_libraries(spades-hpc ${SPADES_LIB} ${MPI_LIBRARIES})
   set_target_properties(spades-hpc PROPERTIES LINK_FLAGS "${MPI_LINK_FLAGS}")
 
   if (SPADES_STATIC_BUILD)
