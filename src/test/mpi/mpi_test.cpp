@@ -112,7 +112,8 @@ int main() {
         io::binary::BinWrite(ss, std::vector<int>(10));
     }
 
-    partask::init();
+    bool init = partask::init();
+    INFO("MPI init: " << (init ? "done" : "failed"));
     {
         partask::ChunkedStringStream mss;
         mss << "mama,papa,pipi" << std::endl;

@@ -39,7 +39,7 @@ std::string mpi_console_writer::nodeinfo() const {
         int world_rank, world_size;
         MPI_Comm_size(MPI_COMM_WORLD, &world_size);
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-        return fmt::format("{:>2d}/{:<2d}", world_rank, world_size);
+        return fmt::format("{:>2d}/{:<2d}", world_rank + 1, world_size);
     } else {
         return fmt::format("{:^5}", "N/A");
     }
