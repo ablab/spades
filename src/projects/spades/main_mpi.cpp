@@ -18,7 +18,7 @@
 #include "version.hpp"
 
 namespace spades {
-void assemble_genome();
+void assemble_genome(bool mpi);
 }
 
 struct TimeTracerRAII {
@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
         }
 
         TIME_TRACE_SCOPE("spades");
-        spades::assemble_genome();
+        spades::assemble_genome(true);
     } catch (std::bad_alloc const &e) {
         std::cerr << "Not enough memory to run SPAdes. " << e.what() << std::endl;
         MPI_Abort(MPI_COMM_WORLD, EINTR);

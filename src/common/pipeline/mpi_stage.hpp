@@ -141,7 +141,7 @@ public:
     ~MPIStageManager();
 
     void run(graph_pack::GraphPack &g,
-             const char *start_from = nullptr);
+             const char *start_from = nullptr) override;
 
     bool master() const { return rank_ == 0; }
     bool worker() const { return rank_ != 0; }

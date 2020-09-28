@@ -235,8 +235,8 @@ public:
         return *this;
     }
 
-    void run(graph_pack::GraphPack &g,
-             const char *start_from = nullptr);
+    virtual void run(graph_pack::GraphPack &g,
+                     const char *start_from = nullptr);
 
     const SavesPolicy &saves_policy() const {
         return saves_policy_;
