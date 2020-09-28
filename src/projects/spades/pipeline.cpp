@@ -22,6 +22,7 @@
 #include "library/library.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/stage.hpp"
+#include "pipeline/mpi_stage.hpp"
 #include "alignment/kmer_mapper.hpp"
 #include "wastewater_disentangle.hpp"
 
@@ -205,7 +206,15 @@ static void AddRepeatResolutionStages(StageManager &SPAdes) {
           .add<debruijn_graph::RepeatResolution>();
 }
 
-void assemble_genome() {
+class FakeStageOnlyforDataSyncDoesNothingElse : public spades::AssemblyStage {
+public:
+    FakeStageOnlyforDataSyncDoesNothingElse()
+            : AssemblyStage("Fake Stage Only for Data Sync", "fake_stage_sync_data") { }
+
+    void run(graph_pack::GraphPack&, const char *) {}
+};
+
+void assemble_genome(bool mpi = false) {
     using namespace debruijn_graph::config;
     pipeline_type mode = cfg::get().mode;
 
@@ -224,10 +233,16 @@ void assemble_genome() {
 
     INFO("Starting from stage: " << cfg::get().entry_point);
 
-    StageManager SPAdes(SavesPolicy(cfg::get().checkpoints,
-                                    cfg::get().output_saves, cfg::get().load_from));
+    std::unique_ptr<StageManager> SPAdes;
+    SavesPolicy saves_policy(cfg::get().checkpoints,
+                             cfg::get().output_saves, cfg::get().load_from);
+    if (mpi) {
+        SPAdes.reset(new MPIStageManager(saves_policy));
+    } else {
+        SPAdes.reset(new StageManager(saves_policy));
+    }
 
-    if (SPAdes.saves_policy().EnabledAnyCheckpoint())
+    if (SPAdes->saves_policy().EnabledAnyCheckpoint())
         create_directory(cfg::get().output_saves);
 
     bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable;
@@ -247,44 +262,44 @@ void assemble_genome() {
     }
 
     // Build the pipeline
-    SPAdes.add<ReadConversion>();
+    SPAdes->add<ReadConversion>();
 
     if (!AssemblyGraphPresent()) {
-        AddConstructionStages(SPAdes);
+        AddConstructionStages(*SPAdes);
         if (cfg::get().sewage)
-            SPAdes.add<debruijn_graph::RestrictedEdgesFilling>();
+            SPAdes->add<debruijn_graph::RestrictedEdgesFilling>();
 
-        AddSimplificationStages(SPAdes);
+        AddSimplificationStages(*SPAdes);
 
-        SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration ?
-                                                 GetBeforeRROutput() : GetNonFinalStageOutput());
+        SPAdes->add<debruijn_graph::ContigOutput>(cfg::get().main_iteration ?
+                                                  GetBeforeRROutput() : GetNonFinalStageOutput());
     } else {
-        SPAdes.add<debruijn_graph::LoadGraph>();
+        SPAdes->add<debruijn_graph::LoadGraph>();
     }
     
     if (cfg::get().main_iteration) {
         // Not metaextrachromosomal!
         if (mode == pipeline_type::plasmid)
-            SPAdes.add<debruijn_graph::ChromosomeRemoval>();
+            SPAdes->add<debruijn_graph::ChromosomeRemoval>();
 
         if (HybridLibrariesPresent())
-            SPAdes.add<debruijn_graph::HybridLibrariesAligning>();
+            SPAdes->add<debruijn_graph::HybridLibrariesAligning>();
 
         // No graph modification allowed after HybridLibrariesAligning stage!
 
         if (cfg::get().rr_enable)
-            AddRepeatResolutionStages(SPAdes);
+            AddRepeatResolutionStages(*SPAdes);
 
         if (mode == pipeline_type::metaextrachromosomal)
-            AddMetaplasmidStages(SPAdes);
+            AddMetaplasmidStages(*SPAdes);
         else
-            SPAdes.add<debruijn_graph::ContigOutput>(GetFinalStageOutput());
+            SPAdes->add<debruijn_graph::ContigOutput>(GetFinalStageOutput());
 
         if (cfg::get().hm)
-            SPAdes.add<debruijn_graph::DomainGraphConstruction>();
+            SPAdes->add<debruijn_graph::DomainGraphConstruction>();
     }
 
-    SPAdes.run(conj_gp, cfg::get().entry_point.c_str());
+    SPAdes->run(conj_gp, cfg::get().entry_point.c_str());
 
     // For informing spades.py about estimated params
     write_lib_data(cfg::get().output_dir / "final");
