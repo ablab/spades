@@ -395,15 +395,15 @@ class KMerIndexBuilder {
     {
       TIME_TRACE_SCOPE("KMerDiskCounter::BuildPHM");
       for (size_t i = 0; i < buckets; ++i)
+        // Use of gamma = 4 implies ~5.7 bits per k-mer, however, faster construction and lookup
         index.index_.emplace_back(kmer_storage.bucket_size(i),
                                   Index::KMerDataIndex::ConflictPolicy::Ignore,
-                                  4.0);
+                                  /* gamma */ 4.0);
          
 #     pragma omp parallel for shared(index) num_threads(num_threads_)
       for (size_t i = 0; i < buckets; ++i) {
           index.bucket_starts_[i + 1] = kmer_storage.bucket_size(i);
-          index.index_[i].build(boomphf::range(kmer_storage.bucket_begin(i), kmer_storage.bucket_end(i)),
-                                1);
+          index.index_[i].build(boomphf::range(kmer_storage.bucket_begin(i), kmer_storage.bucket_end(i)));
       }
     }
 

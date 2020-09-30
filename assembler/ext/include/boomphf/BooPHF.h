@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <vector>
 #include <memory> // for make_shared
+#include <iosfwd>
 #include <unistd.h>
 
 namespace boomphf {
@@ -166,8 +167,11 @@ class bitVector {
             _ranks = r._ranks;
             if (_bitArray != nullptr)
                 free(_bitArray);
-            _bitArray = (uint64_t *) calloc(_nchar, sizeof(uint64_t));
-            memcpy(_bitArray, r._bitArray, _nchar*sizeof(uint64_t) );
+            _bitArray = nullptr;
+            if (r._bitArray) {
+                _bitArray = (uint64_t *) calloc(_nchar, sizeof(uint64_t));
+                memcpy(_bitArray, r._bitArray, _nchar*sizeof(uint64_t) );
+            }
         }
         return *this;
     }
@@ -195,7 +199,6 @@ class bitVector {
 
 
     void resize(uint64_t newsize) {
-        //printf("bitvector resize from  %llu bits to %llu \n",_size,newsize);
         _nchar  = (1ULL+newsize/64ULL);
         _bitArray = (uint64_t *) realloc(_bitArray,_nchar*sizeof(uint64_t));
         _size = newsize;
@@ -253,8 +256,6 @@ class bitVector {
 
     // return value at pos
     uint64_t operator[](uint64_t pos) const {
-        //unsigned char * _bitArray8 = (unsigned char *) _bitArray;
-        //return (_bitArray8[pos >> 3ULL] >> (pos & 7 ) ) & 1;
         return (_bitArray[pos >> 6ULL] >> (pos & 63)) & 1;
     }
 
@@ -276,14 +277,12 @@ class bitVector {
     //set bit pos to 1
     void set(uint64_t pos) {
         assert(pos<_size);
-        //_bitArray [pos >> 6] |=   (1ULL << (pos & 63) ) ;
-        __sync_fetch_and_or (_bitArray + (pos >> 6ULL), (1ULL << (pos & 63)) );
+        __sync_fetch_and_or(_bitArray + (pos >> 6ULL), (1ULL << (pos & 63)) );
     }
 
     //set bit pos to 0
     void reset(uint64_t pos) {
-        //_bitArray [pos >> 6] &=   ~(1ULL << (pos & 63) ) ;
-        __sync_fetch_and_and (_bitArray + (pos >> 6ULL), ~(1ULL << (pos & 63) ));
+        __sync_fetch_and_and(_bitArray + (pos >> 6ULL), ~(1ULL << (pos & 63) ));
     }
 
     // return value of last rank
@@ -339,7 +338,6 @@ class bitVector {
 
   protected:
     uint64_t*  _bitArray;
-    //uint64_t* _bitArray;
     uint64_t _size;
     uint64_t _nchar;
 
@@ -418,7 +416,7 @@ class mphf {
 
     template <typename Range>
     void build(const Range &input_range,
-               int num_thread = 1) {
+               int num_thread = 1) { // FIXME: num_thread is unused for now
         if (_nb_levels == 0)
             return;
 
@@ -441,8 +439,7 @@ class mphf {
     uint64_t lookup(const elem_t &elem) const {
         if (!_built) return NOT_FOUND;
 
-        //auto hashes = _hasher(elem);
-        uint64_t non_minimal_hp, minimal_hp;
+        uint64_t non_minimal_hp;
         int level;
 
         hash_pair_t bbhash = _hasher.hashpair128(elem);
@@ -507,7 +504,6 @@ class mphf {
 
 
         for (int ii=0; ii<_nb_levels; ii++) {
-            //_levels[ii].bitset = new bitVector();
             _levels[ii].bitset.load(is);
         }
 
@@ -564,7 +560,6 @@ class mphf {
         for (int ii=0; ii<_nb_levels; ii++) {
             if (pow(_proba_collision,ii) < _percent_elem_loaded_for_fastMode) {
                 _fastModeLevel = ii;
-                //printf("fast mode level :  %i \n",ii);
                 break;
             }
         }
@@ -577,7 +572,6 @@ class mphf {
         uint64_t hash_raw=0;
 
         for (int ii = 0; ii < (_nb_levels-1) ; ii++) {
-            //calc le hash suivant
             if (ii == 0)
                 hash_raw = bbhash[0];
             else if (ii == 1)
@@ -638,8 +632,6 @@ class mphf {
             internal_hash_t bbhash = buffer[ii];
             internal_hash_t val = bbhash;
 
-            //auto hashes = _hasher(val);
-            //hash_pair_t bbhash;
             int level;
             getLevel(bbhash, &level, i);
 
@@ -660,7 +652,6 @@ class mphf {
             if (i == _nb_levels-1) { //stop cascade here, insert into exact hash
                 uint64_t hashidx =  __sync_fetch_and_add(&_hashidx, 1);
 
-                // pthread_mutex_lock(&_mutex); //see later if possible to avoid this, mais pas bcp item vont la
                 // calc rank de fin  precedent level qq part, puis init hashidx avec ce rank, direct minimal, pas besoin inser ds bitset et rank
                 if (_final_hash.count(val)) { // key already in final hash
                     if (_policy == ConflictPolicy::Ignore) {
@@ -674,8 +665,6 @@ class mphf {
                     }
                 } else
                     _final_hash[val] = hashidx;
-
-                // pthread_mutex_unlock(&_mutex);
             } else {
                 //ils ont reach ce level
                 //insert elem into curr level on disk --> sera utilise au level+1 , (mais encore besoin filtre)
@@ -724,7 +713,8 @@ class mphf {
         _hashidx = 0;
         _idxLevelsetLevelFastmode = 0;
 
-        std::vector<internal_hash_t> buffer(16384);
+        static constexpr unsigned NBUFF = 16384;
+        std::vector<internal_hash_t> buffer(NBUFF);
         typedef decltype(input_range.begin()) it_type;
 
         auto fast_begin = setLevelFastmode.begin();
@@ -745,7 +735,6 @@ class mphf {
         }
 
         if (_fastmode && level == _fastModeLevel) { //shrink to actual number of elements in set
-            //printf("\nresize setLevelFastmode to %lli \n",_idxLevelsetLevelFastmode);
             setLevelFastmode.resize(_idxLevelsetLevelFastmode);
         }
     }
