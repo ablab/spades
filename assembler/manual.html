@@ -1,4 +1,4 @@
-<html>     <head>         <title>SPAdes 3.14.1 Manual</title>         <style type="text/css">             .highlight  pre {               background-color: #f0f2f4;               border-radius: 2px;               font-size: 100%;               line-height: 1.45;               overflow: auto;               padding: 16px;             }         </style>     </head>     <body> <meta charset="UTF-8"> <p><strong>SPAdes 3.14.1 Manual</strong></p>
+<html>     <head>         <title>SPAdes 3.15.0-dev Manual</title>         <style type="text/css">             .highlight  pre {               background-color: #f0f2f4;               border-radius: 2px;               font-size: 100%;               line-height: 1.45;               overflow: auto;               padding: 16px;             }         </style>     </head>     <body> <meta charset="UTF-8"> <p><strong>SPAdes 3.14.1 Manual</strong></p>
 <ol>
 <li><a href="#sec1">About SPAdes</a> <br>
     1.1. <a href="#sec1.1">Supported data types</a><br>
@@ -31,7 +31,8 @@
 </ol>
 <p><a name="sec1"></a></p>
 <h1>About SPAdes</h1>
-<p>SPAdes – St. Petersburg genome assembler – is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.14.1 was released under GPLv2 on April 27, 2020 and can be downloaded from <a href="http://cab.spbu.ru/software/spades/" rel="nofollow">http://cab.spbu.ru/software/spades/</a>. <a href=""></a></p>
+<p>SPAdes – St. Petersburg genome assembler – is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.14.1 was released under GPLv2 on April 27, 2020 and can be downloaded from <a href="http://cab.spbu.ru/software/spades/" rel="nofollow">http://cab.spbu.ru/software/spades/</a>.</p>
+<p>The latest SPAdes paper describing various pipelines in a protocol format is available <a href="https://currentprotocols.onlinelibrary.wiley.com/doi/abs/10.1002/cpbi.102" rel="nofollow">here</a>.</p>
 <p><a name="sec1.1"></a></p>
 <h2>Supported data types</h2>
 <p>The current version of SPAdes works with Illumina or IonTorrent reads and is capable of providing hybrid assemblies using PacBio, Oxford Nanopore and Sanger reads. You can also provide additional contigs that will be used as long reads.</p>
@@ -815,7 +816,8 @@ output directory to use (default: spaligner_result/)</p>
 <p>Also if you want to align protein sequences please refer to our <a href="https://github.com/ablab/spades/releases/tag/spaligner-paper">pre-release version</a>.</p>
 <p><a name="sec5"></a></p>
 <h1>Citation</h1>
-<p>If you use SPAdes in your research, please include <a href="http://link.springer.com/chapter/10.1007%2F978-3-642-37195-0_13" rel="nofollow">Nurk, Bankevich et al., 2013</a> in your reference list. You may also add <a href="http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021" rel="nofollow">Bankevich, Nurk et al., 2012</a> instead.</p>
+<p>If you use SPAdes in your research, please cite <a href="https://currentprotocols.onlinelibrary.wiley.com/doi/abs/10.1002/cpbi.102" rel="nofollow">our latest paper</a>.</p>
+<p>You may also include <a href="http://link.springer.com/chapter/10.1007%2F978-3-642-37195-0_13" rel="nofollow">Nurk, Bankevich et al., 2013</a> or <a href="http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021" rel="nofollow">Bankevich, Nurk et al., 2012</a>, epecially if you assemble single-cell data.</p>
 <p>In case you perform hybrid assembly ussing  PacBio or Nanopore reads, you may also cite <a href="http://bioinformatics.oxfordjournals.org/content/early/2015/11/20/bioinformatics.btv688.short" rel="nofollow">Antipov et al., 2015</a>.</p>
 <p>If you use multiple paired-end and/or mate-pair libraries you may also cite papers describing SPAdes repeat resolution algorithms <a href="http://bioinformatics.oxfordjournals.org/content/30/12/i293.short" rel="nofollow">Prjibelski et al., 2014</a> and <a href="http://bioinformatics.oxfordjournals.org/content/31/20/3262.abstract" rel="nofollow">Vasilinetc et al., 2015</a>.</p>
 <p>If you use metaSPAdes please cite <a href="https://genome.cshlp.org/content/27/5/824.short" rel="nofollow">Nurk et al., 2017</a>.</p>

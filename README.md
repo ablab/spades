@@ -33,7 +33,9 @@
 <a name="sec1"></a>
 # About SPAdes
 
-SPAdes &ndash; St. Petersburg genome assembler &ndash; is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.14.1 was released under GPLv2 on April 27, 2020 and can be downloaded from <http://cab.spbu.ru/software/spades/>. []()
+SPAdes &ndash; St. Petersburg genome assembler &ndash; is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.14.1 was released under GPLv2 on April 27, 2020 and can be downloaded from <http://cab.spbu.ru/software/spades/>. 
+
+The latest SPAdes paper describing various pipelines in a protocol format is available [here](https://currentprotocols.onlinelibrary.wiley.com/doi/abs/10.1002/cpbi.102).
 
 <a name="sec1.1"></a>
 ## Supported data types
@@ -1206,7 +1208,9 @@ Also if you want to align protein sequences please refer to our [pre-release ver
 
 <a name="sec5"></a>
 # Citation
-If you use SPAdes in your research, please include [Nurk, Bankevich et al., 2013](http://link.springer.com/chapter/10.1007%2F978-3-642-37195-0_13) in your reference list. You may also add [Bankevich, Nurk et al., 2012](http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021) instead.
+If you use SPAdes in your research, please cite [our latest paper](https://currentprotocols.onlinelibrary.wiley.com/doi/abs/10.1002/cpbi.102).
+
+You may also include [Nurk, Bankevich et al., 2013](http://link.springer.com/chapter/10.1007%2F978-3-642-37195-0_13) or [Bankevich, Nurk et al., 2012](http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021), epecially if you assemble single-cell data.
 
 In case you perform hybrid assembly ussing  PacBio or Nanopore reads, you may also cite [Antipov et al., 2015](http://bioinformatics.oxfordjournals.org/content/early/2015/11/20/bioinformatics.btv688.short). 
 
