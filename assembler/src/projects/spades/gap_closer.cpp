@@ -31,6 +31,7 @@ private:
     debruijn_graph::EdgeIndex<ConjugateDeBruijnGraph> index_;
     std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> mapper_ = nullptr;
     const int max_dist_to_tip_;
+    int cnt_libs_to_process_ = 0;
 
     void ProcessPairedRead(const MappingPath<EdgeId> &path1, const MappingPath<EdgeId> &path2) {
         for (size_t i = 0; i < path1.size(); ++i) {
@@ -101,9 +102,9 @@ private:
 
 public:
     GapCloserPairedIndexFiller(const GraphPack &gp, omnigraph::de::PairedInfoIndexT<Graph> &paired_index,
-        int max_dist_to_tip)
+        int max_dist_to_tip, int cnt_libs_to_process)
             :  graph_(gp.get<Graph>()), paired_index_(paired_index), buffer_pi_(graph_),
-            index_(graph_, gp.workdir()), max_dist_to_tip_(max_dist_to_tip) {
+            index_(graph_, gp.workdir()), max_dist_to_tip_(max_dist_to_tip), cnt_libs_to_process_(cnt_libs_to_process) {
         PrepareTipMap(out_tip_map_);
 
         std::vector<EdgeId> edges;
@@ -130,18 +131,17 @@ public:
 
     void StartProcessLibrary(size_t /* threads_count */) override {
         paired_index_.clear();
-        if (out_tip_map_.empty()) {
-            INFO("Preparing tip map");
-            PrepareTipMap(out_tip_map_);
-        }
     }
 
     void StopProcessLibrary() override {
         paired_index_.Merge(buffer_pi_);
         buffer_pi_.clear();
-        out_tip_map_.clear();
-        index_.Detach();
-        index_.clear();
+        --cnt_libs_to_process_;
+        if (cnt_libs_to_process_ == 0) {
+            out_tip_map_.clear();
+            index_.Detach();
+            index_.clear();
+        }
     }
 
     void ProcessPairedRead(size_t /* thread_index */, const io::PairedRead&  /* pr */,
@@ -396,21 +396,21 @@ void GapClosing::run(GraphPack &gp, const char *) {
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
     printer(config::info_printer_pos::before_first_gap_closer);
 
-    bool pe_exist = false;
+    int cnt_pe = 0;
     for (const auto& lib : cfg::get().ds.reads.libraries()) {
         if (lib.type() != io::LibraryType::PairedEnd)
             continue;
 
-        pe_exist = true;
+        cnt_pe += 1;
     }
-    if (!pe_exist) {
+    if (cnt_pe == 0) {
         INFO("No paired-end libraries exist, skipping gap closer");
         return;
     }
 
     auto &g = gp.get_mutable<Graph>();
     omnigraph::de::PairedInfoIndexT<Graph> tips_paired_idx(g);
-    GapCloserPairedIndexFiller gcpif(gp, tips_paired_idx, cfg::get().gc.max_dist_to_tip);
+    GapCloserPairedIndexFiller gcpif(gp, tips_paired_idx, cfg::get().gc.max_dist_to_tip, cnt_pe);
     if (gcpif.IsTipAreaEmpty()) {
         INFO("No tips in graph, skipping gap closer");
         return;
