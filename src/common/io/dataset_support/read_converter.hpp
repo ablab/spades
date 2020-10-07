@@ -55,14 +55,17 @@ void ConvertIfNeeded(DataSet<LibraryData> &data, unsigned nthreads = 1,
 BinaryPairedStreams paired_binary_readers(SequencingLibraryT &lib,
                                           bool followed_by_rc,
                                           size_t insert_size,
-                                          bool include_merged);
+                                          bool include_merged,
+                                          size_t chunk_num = 0);
 BinarySingleStreams single_binary_readers(SequencingLibraryT &lib,
                                           bool followed_by_rc,
-                                          bool including_paired_and_merged);
+                                          bool including_paired_and_merged,
+                                          size_t chunk_num = 0);
 
 BinarySingleStreams single_binary_readers_for_libs(DataSet<LibraryData>& dataset_info,
                                                    const std::vector<size_t>& libs,
                                                    bool followed_by_rc = true,
-                                                   bool including_paired_reads = true);
+                                                   bool including_paired_reads = true,
+                                                   size_t chunk_num = 0);
 
 }
