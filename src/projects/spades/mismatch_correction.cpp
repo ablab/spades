@@ -20,6 +20,11 @@
 #include <parallel_hashmap/phmap.h>
 #include <parallel_hashmap/btree.h>
 
+#include "io/binary/binary.hpp"
+#include "io/binary/types/phmap.hpp"
+#include "io/binary/graph_pack.hpp"
+#include "pipeline/partask_mpi.hpp"
+
 template <typename Iter>
 std::vector<Iter> split_iterator(size_t chunks, Iter b, Iter e, size_t n) {
     std::vector<Iter> result(chunks + 1, e);
@@ -65,6 +70,14 @@ struct NuclCount {
         counts_[3] += other.counts_[3];
         return *this;
     }
+
+    void BinWrite(std::ostream &os) const {
+        io::binary::BinWrite(os, counts_);
+    }
+
+    void BinRead(std::istream &is) {
+        io::binary::BinRead(is, counts_);
+    }
 };
 
 struct MismatchEdgeInfo {
@@ -94,6 +107,14 @@ struct MismatchEdgeInfo {
 
 public:
     phmap::flat_hash_map<uint32_t, NuclCount> info_;
+
+    void BinWrite(std::ostream &os) const {
+        io::binary::BinWrite(os, info_);
+    }
+
+    void BinRead(std::istream &is) {
+        io::binary::BinRead(is, info_);
+    }
 };
 
 class MismatchStatistics : public SequenceMapperListener {
@@ -272,6 +293,20 @@ public:
         Merge(statistics_buffers_[thread_index]);
     }
 
+    void Serialize(std::ostream &os) const override {
+        io::binary::BinWrite(os, statistics_);
+    }
+
+    void Deserialize(std::istream &is) override {
+        io::binary::BinRead(is, statistics_);
+    }
+
+    void MergeFromStream(std::istream &is) override {
+        InnerMismatchStatistics other_statistics;
+        io::binary::BinRead(is, other_statistics);
+        Merge(other_statistics);
+    }
+
     const_iterator begin() const {
         return statistics_.begin();
     }
@@ -410,6 +445,30 @@ private:
         return CorrectAllEdges(statistics);
     }
 
+    size_t ParallelStopMismatchIterationMPI() {
+        INFO("Collect potential mismatches");
+        MismatchStatistics statistics(gp_);
+        INFO("Potential mismatches collected");
+
+        SequenceMapperNotifier notifier(cfg::get_writable().ds.reads.lib_count());
+
+        auto& dataset = cfg::get_writable().ds;
+
+        auto mapper = MapperInstance(gp_);
+        for (size_t i = 0; i < dataset.reads.lib_count(); ++i) {
+            if (!dataset.reads[i].is_mismatch_correctable())
+                continue;
+
+            notifier.Subscribe(&statistics, i);
+            auto &reads = dataset.reads[i];
+            size_t num_readers = partask::overall_num_threads();
+            auto single_streams = single_binary_readers(reads, /*followed by rc */true, /*binary*/true, num_readers);
+            notifier.ProcessLibraryMPI(single_streams, i, *mapper);
+        }
+
+        return CorrectAllEdges(statistics);
+    }
+
 public:
     MismatchShallNotPass(graph_pack::GraphPack &gp, double relative_threshold = 1.5) :
             gp_(gp),
@@ -431,6 +490,18 @@ public:
         }
         return res;
     }
+
+    size_t ParallelStopAllMismatchesMPI(size_t max_iterations = 1) {
+        size_t res = 0;
+        while (max_iterations > 0) {
+            size_t last = ParallelStopMismatchIterationMPI();
+            res += last;
+            if (last == 0)
+                break;
+            max_iterations--;
+        }
+        return res;
+    }
 };
 
 } // namespace mismatches
@@ -438,7 +509,7 @@ public:
 void MismatchCorrection::run(graph_pack::GraphPack &gp, const char*) {
     EnsureBasicMapping(gp);
     size_t corrected = mismatches::MismatchShallNotPass(gp, 2).
-                       ParallelStopAllMismatches(1);
+                       ParallelStopAllMismatchesMPI(1);
     INFO("Corrected " << corrected << " nucleotides");
 }
 
