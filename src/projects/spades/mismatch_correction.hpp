@@ -9,13 +9,14 @@
 #pragma once
 
 #include "pipeline/stage.hpp"
+#include "pipeline/mpi_stage.hpp"
 
 namespace debruijn_graph {
 
-class MismatchCorrection : public spades::AssemblyStage {
+class MismatchCorrection : public spades::MPIAssemblyStage {
 public:
     MismatchCorrection()
-            : AssemblyStage("Mismatch Correction", "mismatch_correction") { }
+            : MPIAssemblyStage("Mismatch Correction", "mismatch_correction") { }
 
     void run(graph_pack::GraphPack &gp, const char *) override;
 };
