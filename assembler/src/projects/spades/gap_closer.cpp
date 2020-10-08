@@ -31,7 +31,7 @@ private:
     debruijn_graph::EdgeIndex<ConjugateDeBruijnGraph> index_;
     std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> mapper_ = nullptr;
     const int max_dist_to_tip_;
-    int cnt_libs_to_process_ = 0;
+    size_t cnt_libs_to_process_ = 0;
 
     void ProcessPairedRead(const MappingPath<EdgeId> &path1, const MappingPath<EdgeId> &path2) {
         for (size_t i = 0; i < path1.size(); ++i) {
@@ -396,7 +396,7 @@ void GapClosing::run(GraphPack &gp, const char *) {
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
     printer(config::info_printer_pos::before_first_gap_closer);
 
-    int cnt_pe = 0;
+    size_t cnt_pe = 0;
     for (const auto& lib : cfg::get().ds.reads.libraries()) {
         if (lib.type() != io::LibraryType::PairedEnd)
             continue;
