@@ -92,7 +92,7 @@ simp
     ; suspecies bulge remover:
     subspecies_br
     {   
-        enabled true
+        enabled false
         main_iteration_only true
         max_bulge_length_coefficient    30.     ; max_bulge_length = max_bulge_length_coefficient * k
         max_coverage            1000000.0
