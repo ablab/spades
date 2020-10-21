@@ -399,17 +399,27 @@ class mphf {
     ~mphf() {}
 
     // allow perc_elem_loaded  elements to be loaded in ram for faster construction (default 3%), set to 0 to desactivate
+
     mphf(size_t n,
          ConflictPolicy policy = ConflictPolicy::Warning,
          double gamma = 2.0, float perc_elem_loaded = 0.03f)
-            : _nb_levels(0), _gamma(gamma), _hash_domain(size_t(ceil(double(n) * gamma))),
-              _nelem(n), _policy(policy),
-              _percent_elem_loaded_for_fastMode(perc_elem_loaded),
-              _built(false) {
+            : _built(false) {
+        init(n, policy, gamma, perc_elem_loaded);
+    }
+
+    void init(size_t n,
+              ConflictPolicy policy = ConflictPolicy::Warning,
+              double gamma = 2.0, float perc_elem_loaded = 0.03f) {
+        _nb_levels = 0;
+        _gamma = gamma;
+        _hash_domain = size_t(ceil(double(n) * gamma));
+        _nelem = n;
+        _policy = policy;
+        _percent_elem_loaded_for_fastMode = perc_elem_loaded;
+        _fastmode = _percent_elem_loaded_for_fastMode > 0.0;
+        
         if (n ==0)
             return;
-
-        _fastmode = _percent_elem_loaded_for_fastMode > 0.0;
 
         setup();
     }
@@ -471,6 +481,10 @@ class mphf {
         uint64_t totalsize = totalsizeBitset +  _final_hash.size()*42*8 ;  // unordered map takes approx 42B per elem [personal test] (42B with uint64_t key, would be larger for other type of elem)
 
         return totalsize / 8;
+    }
+
+    double prob_collision() const {
+        return _proba_collision;
     }
 
     void save(std::ostream& os) const {
