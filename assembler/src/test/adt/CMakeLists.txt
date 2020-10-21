@@ -16,4 +16,4 @@ target_link_libraries(loser_tree_test ${COMMON_LIBRARIES})
 
 add_executable(phm_test
                phm_test.cpp)
-target_link_libraries(phm_test ${COMMON_LIBRARIES})
+target_link_libraries(phm_test utils ${COMMON_LIBRARIES} gtest)
