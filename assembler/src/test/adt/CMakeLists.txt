@@ -13,3 +13,7 @@ target_link_libraries(pack_demo ${COMMON_LIBRARIES})
 add_executable(loser_tree_test
                loser_tree_test.cpp)
 target_link_libraries(loser_tree_test ${COMMON_LIBRARIES})
+
+add_executable(phm_test
+               phm_test.cpp)
+target_link_libraries(phm_test ${COMMON_LIBRARIES})
