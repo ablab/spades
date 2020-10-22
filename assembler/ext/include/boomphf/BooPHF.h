@@ -135,8 +135,8 @@ class bitVector {
 
   public:
 
-    bitVector() : _size(0)
-    {
+    bitVector()
+            : _size(0) {
         _bitArray = nullptr;
     }
 
@@ -164,8 +164,7 @@ class bitVector {
     }
 
     // Copy assignment operator
-    bitVector &operator=(bitVector const &r)
-    {
+    bitVector &operator=(bitVector const &r) {
         if (&r != this) {
             _size =  r._size;
             _nchar = r._nchar;
@@ -231,20 +230,17 @@ class bitVector {
 
 
     //clear interval, only works with start and size multiple of 64
-    void clear(uint64_t start, size_t size)
-    {
+    void clear(uint64_t start, size_t size) {
         assert( (start & 63) ==0);
         assert( (size & 63) ==0);
         memset(_bitArray + (start/64ULL),0,(size/64ULL)*sizeof(uint64_t));
     }
 
     //for debug purposes
-    void print() const
-    {
-        printf("bit array of size %lli: \n",_size);
-        for(uint64_t ii = 0; ii< _size; ii++)
-        {
-            if(ii%10==0)
+    void print() const {
+        printf("bit array of size %lli: \n", _size);
+        for (uint64_t ii = 0; ii< _size; ii++) {
+            if (ii%10==0)
                 printf(" (%llu) ",ii);
             int val = (_bitArray[ii >> 6] >> (ii & 63 ) ) & 1;
             printf("%i",val);
@@ -252,8 +248,7 @@ class bitVector {
         printf("\n");
 
         printf("rank array : size %lu \n",_ranks.size());
-        for (uint64_t ii = 0; ii< _ranks.size(); ii++)
-        {
+        for (uint64_t ii = 0; ii< _ranks.size(); ii++) {
             printf("%llu :  %lli,  ",ii,_ranks[ii]);
         }
         printf("\n");
@@ -266,7 +261,7 @@ class bitVector {
 
     //atomically   return old val and set to 1
     uint64_t atomic_test_and_set(uint64_t pos) {
-        uint64_t oldval =   __sync_fetch_and_or(_bitArray + (pos >> 6), (uint64_t) (1ULL << (pos & 63)) );
+        uint64_t oldval = __sync_fetch_and_or(_bitArray + (pos >> 6), (uint64_t) (1ULL << (pos & 63)) );
         return (oldval >> (pos & 63)) & 1;
     }
 
@@ -659,9 +654,9 @@ class mphf {
 
             // insert into lvl i
             if (_fastmode && i == _fastModeLevel) {
-                uint64_t idxl2 = __sync_fetch_and_add(& _idxLevelsetLevelFastmode,1);
+                uint64_t idxl2 = __sync_fetch_and_add(&_idxLevelsetLevelFastmode,1);
                 //si depasse taille attendue pour setLevelFastmode, fall back sur slow mode mais devrait pas arriver si hash ok et proba avec nous
-                if (idxl2>= setLevelFastmode.size())
+                if (idxl2 >= setLevelFastmode.size())
                     _fastmode = false;
                 else
                     setLevelFastmode[idxl2] = val; // create set for fast mode
