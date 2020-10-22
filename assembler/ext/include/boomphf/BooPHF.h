@@ -86,6 +86,11 @@ template<class InnerHasher> class XorshiftHashFunctors {
         return { h.first, h.second };
     }
 
+    template<>
+    hash_pair_t hashpair128(const internal_hash_t &key) const {
+        return key;
+    }
+
     //return next hash an update state s
     uint64_t next(hash_pair_t &s) const {
         uint64_t s1 = s[0];
@@ -417,7 +422,7 @@ class mphf {
         _policy = policy;
         _percent_elem_loaded_for_fastMode = perc_elem_loaded;
         _fastmode = _percent_elem_loaded_for_fastMode > 0.0;
-        
+
         if (n ==0)
             return;
 
@@ -708,16 +713,6 @@ class mphf {
         return shared_it != until;
     }
 
-    bool fillBuffer2(std::vector<internal_hash_t> &buffer,
-                     vectorit_hash128_t &shared_it, vectorit_hash128_t &until,
-                     uint64_t &inbuff) {
-        for (; inbuff < buffer.size() && shared_it!=until; ++shared_it) {
-            buffer[inbuff++]= *shared_it;
-        }
-
-        return shared_it != until;
-    }
-
     // loop to insert into level i
     template<typename Range>
     void processLevel(Range const& input_range,
@@ -741,7 +736,7 @@ class mphf {
             //safely copy n items into buffer
             //call to specialized function accordin to iterator type (may be iterator over keys (first 2 levels), or iterator over 128 bit hashes)
             if (_fastmode && level > _fastModeLevel)
-                isRunning = fillBuffer2(buffer, fast_begin, fast_end, inbuff);
+                isRunning = fillBuffer(buffer, fast_begin, fast_end, inbuff);
             else
                 isRunning = fillBuffer(buffer, range_begin, range_end, inbuff);
 
