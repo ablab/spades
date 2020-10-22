@@ -52,7 +52,7 @@ typedef std::array<uint64_t,2> hash_pair_t;
 typedef hash_pair_t internal_hash_t; // ou hash_pair_t directement ?  __uint128_t
 typedef std::vector<internal_hash_t>::iterator vectorit_hash128_t;
 
-struct internalHasher {
+struct InternalHasher {
     uint64_t operator()(const internal_hash_t& key) const {
         uint64_t s0 = key[0];
         uint64_t s1 = key[1];
@@ -61,7 +61,7 @@ struct internalHasher {
     }
 };
 
-template<class SingleHasher_t> class XorshiftHashFunctors {
+template<class InnerHasher> class XorshiftHashFunctors {
     /*  Xorshift128*
         Written in 2014 by Sebastiano Vigna (vigna@acm.org)
 
@@ -82,7 +82,7 @@ template<class SingleHasher_t> class XorshiftHashFunctors {
   public:
     template<class Item>
     hash_pair_t hashpair128(const Item& key) const {
-        auto h = singleHasher(key);
+        auto h = inner_hasher_(key);
         return { h.first, h.second };
     }
 
@@ -96,7 +96,7 @@ template<class SingleHasher_t> class XorshiftHashFunctors {
     }
 
   private:
-    SingleHasher_t singleHasher;
+    InnerHasher inner_hasher_;
 };
 
 
@@ -762,7 +762,7 @@ class mphf {
     double _gamma;
     uint64_t _hash_domain;
     uint64_t _nelem;
-    std::unordered_map<internal_hash_t,uint64_t, internalHasher> _final_hash; // internalHasher   Hasher_t
+    std::unordered_map<internal_hash_t,uint64_t, InternalHasher> _final_hash; // InternalHasher   Hasher_t
     double _proba_collision;
     uint64_t _lastbitsetrank;
     ConflictPolicy _policy;
