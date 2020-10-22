@@ -453,7 +453,7 @@ class mphf {
         int level;
 
         hash_pair_t bbhash = _hasher.hashpair128(elem);
-        uint64_t level_hash = getLevel(bbhash, elem, &level);
+        uint64_t level_hash = getLevel(bbhash, &level);
 
         if (level == (_nb_levels-1)) {
             auto in_final_map = _final_hash.find(bbhash);
@@ -579,24 +579,21 @@ class mphf {
         }
     }
 
-    //overload getLevel with either elem_t or internal_hash_t
-    template<class elem_t>
-    uint64_t getLevel(hash_pair_t bbhash, const elem_t &val, int *res_level) const {
+    // compute level and returns hash of last level reached
+    uint64_t getLevel(hash_pair_t bbhash, int *res_level) const {
         int level = 0;
         uint64_t hash_raw=0;
 
-        for (int ii = 0; ii < (_nb_levels-1) ; ii++) {
-            if (ii == 0)
+        for (level = 0; level < (_nb_levels-1); ++level) {
+            if (level == 0)
                 hash_raw = bbhash[0];
-            else if (ii == 1)
+            else if (level == 1)
                 hash_raw = bbhash[1];
             else
                 hash_raw = _hasher.next(bbhash);
 
-            if (_levels[ii].get(hash_raw))
+            if (_levels[level].get(hash_raw))
                 break;
-
-            level++;
         }
 
         *res_level = level;
