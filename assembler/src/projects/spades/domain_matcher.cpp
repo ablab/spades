@@ -67,7 +67,7 @@ static void match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::Bidi
             }
             DEBUG(name);
             DEBUG("First - " << seqpos.first << ", second - " << seqpos.second);
-            res.push_back({name, type, desc, unsigned(seqpos.first), unsigned(seqpos.second), path_string.substr(seqpos.first, seqpos.second - seqpos.first)});
+            res.push_back({name, type, desc, unsigned(seqpos.first), unsigned(seqpos.second), path_string.substr(seqpos.first, std::max(seqpos.second - seqpos.first, (int)path->g().k() + 1))});
         }
     }
     matcher.reset_top_hits();
