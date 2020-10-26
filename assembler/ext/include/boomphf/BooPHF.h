@@ -431,7 +431,7 @@ class mphf {
             return;
 
         uint64_t offset = 0;
-        for (int i_level = 0; i_level < _nb_levels; ++i_level) {
+        for (unsigned i_level = 0; i_level < _nb_levels; ++i_level) {
             auto &level = _levels[i_level];
             bitVector collisions(level.hash_domain); // temp collision bitarray for this level
             processLevel(input_range, i_level, collisions);
@@ -463,7 +463,7 @@ class mphf {
             return (in_final_map->second != NOT_FOUND ?
                     in_final_map->second + _lastbitsetrank : NOT_FOUND);
         } else {
-            non_minimal_hp = fastrange64(level_hash,_levels[level].hash_domain);
+            non_minimal_hp = fastrange64(level_hash, _levels[level].hash_domain);
         }
 
         return _levels[level].bitset.rank(non_minimal_hp); // minimal_hp
@@ -475,7 +475,7 @@ class mphf {
 
     uint64_t mem_size() const {
         uint64_t totalsizeBitset = 0;
-        for (int ii = 0; ii < _nb_levels; ii++)
+        for (unsigned ii = 0; ii < _nb_levels; ii++)
             totalsizeBitset += _levels[ii].bitset.bitSize();
 
         uint64_t totalsize = totalsizeBitset +  _final_hash.size()*42*8 ;  // unordered map takes approx 42B per elem [personal test] (42B with uint64_t key, would be larger for other type of elem)
@@ -504,7 +504,6 @@ class mphf {
         size_t final_hash_size = _final_hash.size();
 
         os.write(reinterpret_cast<char const*>(&final_hash_size), sizeof(size_t));
-
         for (auto it = _final_hash.begin(); it != _final_hash.end(); ++it) {
             os.write(reinterpret_cast<char const*>(&(it->first)), sizeof(internal_hash_t));
             os.write(reinterpret_cast<char const*>(&(it->second)), sizeof(uint64_t));
@@ -612,93 +611,67 @@ class mphf {
             collisions.atomic_test_and_set(hashl);
     }
 
-    void processBuffer(std::vector<internal_hash_t> &buffer, size_t buffer_size,
-                       int i, bitVector &collisions) {
-        //do work on the n elems of the buffer
-        for (uint64_t ii = 0; ii < buffer_size ; ii++) {
-            //internal_hash_t val = buffer[ii];
-            internal_hash_t bbhash = buffer[ii];
-            internal_hash_t val = bbhash;
+    void processHash(internal_hash_t val, unsigned i, bitVector &collisions) {
+        unsigned level; uint64_t level_hash;
+        level_hash = getLevel(val, &level, i);
 
-            unsigned level; uint64_t level_hash;
-            level_hash = getLevel(bbhash, &level, i);
+        if (level != i)
+            return;
 
-            if (level != i)
-                continue;
+        // insert into lvl i
+        if (_fastmode && i == _fastModeLevel) {
+            uint64_t idxl2 = __sync_fetch_and_add(&_idxLevelsetLevelFastmode,1);
+            //si depasse taille attendue pour setLevelFastmode, fall back sur slow mode mais devrait pas arriver si hash ok et proba avec nous
+            if (idxl2 >= setLevelFastmode.size())
+                _fastmode = false;
+            else
+                setLevelFastmode[idxl2] = val; // create set for fast mode
+        }
 
-            // insert into lvl i
-            if (_fastmode && i == _fastModeLevel) {
-                uint64_t idxl2 = __sync_fetch_and_add(&_idxLevelsetLevelFastmode,1);
-                //si depasse taille attendue pour setLevelFastmode, fall back sur slow mode mais devrait pas arriver si hash ok et proba avec nous
-                if (idxl2 >= setLevelFastmode.size())
-                    _fastmode = false;
-                else
-                    setLevelFastmode[idxl2] = val; // create set for fast mode
-            }
+        // insert to level i+1 : either next level of the cascade or final hash if last level reached
+        if (i == _nb_levels-1) { //stop cascade here, insert into exact hash
+            uint64_t hashidx =  __sync_fetch_and_add(&_final_hashidx, 1);
 
-            // insert to level i+1 : either next level of the cascade or final hash if last level reached
-            if (i == _nb_levels-1) { //stop cascade here, insert into exact hash
-                uint64_t hashidx =  __sync_fetch_and_add(&_hashidx, 1);
-
-                // calc rank de fin  precedent level qq part, puis init hashidx avec ce rank, direct minimal, pas besoin inser ds bitset et rank
-                if (_final_hash.count(val)) { // key already in final hash
-                    if (_policy == ConflictPolicy::Ignore) {
-                        _final_hash[val] = NOT_FOUND;
-                    } else {
-                        fprintf(stderr,"The impossible happened : collision on 128 bit hashes... please switch to safe branch, and play the lottery.");
-                        fprintf(stderr,"Another more likely explanation might be that you have duplicate keys in your input.\
+            // calc rank de fin  precedent level qq part, puis init hashidx avec ce rank, direct minimal, pas besoin inser ds bitset et rank
+            if (_final_hash.count(val)) { // key already in final hash
+                if (_policy == ConflictPolicy::Ignore) {
+                    _final_hash[val] = NOT_FOUND;
+                } else {
+                    fprintf(stderr,"The impossible happened : collision on 128 bit hashes... please switch to safe branch, and play the lottery.");
+                    fprintf(stderr,"Another more likely explanation might be that you have duplicate keys in your input.\
                                         If so, you can ignore this message, but be aware that too many duplicate keys will increase ram usage\n");
-                        if (_policy == ConflictPolicy::Error)
-                            abort();
-                    }
-                } else
-                    _final_hash[val] = hashidx;
-            } else {
-                insertIntoLevel(level_hash, i, collisions); //should be safe
-            }
+                    if (_policy == ConflictPolicy::Error)
+                        abort();
+                }
+            } else
+                _final_hash[val] = hashidx;
+        } else {
+            insertIntoLevel(level_hash, i, collisions); //should be safe
         }
     }
 
-
-    template <typename Iterator>
-    bool fillBuffer(std::vector<internal_hash_t> &buffer,
-                    Iterator &shared_it, Iterator &until,
-                    uint64_t &inbuff) {
-        for (; inbuff < buffer.size() && shared_it!=until; ++shared_it) {
-            buffer[inbuff++]= _hasher.hashpair128(*shared_it);
-        }
-
-        return shared_it != until;
-    }
-
-    // loop to insert into level i
     template<typename Range>
     void processLevel(Range const& input_range,
                       int level, bitVector &collisions) {
         _levels[level].bitset = bitVector(_levels[level].hash_domain);
 
-        _hashidx = 0;
+        _final_hashidx = 0;
         _idxLevelsetLevelFastmode = 0;
 
         static constexpr unsigned NBUFF = 16384;
         std::vector<internal_hash_t> buffer(NBUFF);
-        typedef decltype(input_range.begin()) it_type;
 
         auto fast_begin = setLevelFastmode.begin();
         auto fast_end = setLevelFastmode.end();
         auto range_begin = input_range.begin();
         auto range_end = input_range.end();
 
-        for (bool isRunning = true; isRunning; ) {
-            uint64_t inbuff = 0;
-            //safely copy n items into buffer
-            //call to specialized function accordin to iterator type (may be iterator over keys (first 2 levels), or iterator over 128 bit hashes)
-            if (_fastmode && level > _fastModeLevel)
-                isRunning = fillBuffer(buffer, fast_begin, fast_end, inbuff);
-            else
-                isRunning = fillBuffer(buffer, range_begin, range_end, inbuff);
-
-            processBuffer(buffer, inbuff, level, collisions);
+        if (_fastmode && level > _fastModeLevel) {
+            for (const auto &entry : setLevelFastmode)
+                processHash( _hasher.hashpair128(entry), level, collisions);
+        } else {
+            for (const auto &entry : input_range)
+                processHash( _hasher.hashpair128(entry), level, collisions);
         }
 
         if (_fastmode && level == _fastModeLevel) { //shrink to actual number of elements in set
@@ -715,16 +688,15 @@ class mphf {
     double _gamma;
     uint64_t _hash_domain;
     uint64_t _nelem;
-    std::unordered_map<internal_hash_t,uint64_t, InternalHasher> _final_hash; // InternalHasher   Hasher_t
     double _proba_collision;
     uint64_t _lastbitsetrank;
     ConflictPolicy _policy;
+    std::unordered_map<internal_hash_t,uint64_t, InternalHasher> _final_hash; // InternalHasher   Hasher_t
+    uint64_t _final_hashidx;
 
     // fast build mode , requires  that _percent_elem_loaded_for_fastMode %   elems are loaded in ram
     float _percent_elem_loaded_for_fastMode;
     bool _fastmode;
-
-    uint64_t _hashidx;
     uint64_t _idxLevelsetLevelFastmode;
     std::vector<internal_hash_t> setLevelFastmode;
     int _fastModeLevel;
