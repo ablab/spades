@@ -26,11 +26,17 @@ public:
     size_t num_buckets() const { return num_buckets_; }
 
     size_t operator()(const Seq &s) const {
+        if (num_buckets_ == 1)
+            return 0;
+        
         return mod_reduce::multiply_high_u64(hash()(s), num_buckets_);
     }
 
     template<class Ref>
     size_t operator()(Ref s) const {
+        if (num_buckets_ == 1)
+            return 0;
+
         return mod_reduce::multiply_high_u64(hash()(s.data(), s.size()), num_buckets_);
     }
 

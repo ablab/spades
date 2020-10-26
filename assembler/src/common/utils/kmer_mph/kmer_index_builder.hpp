@@ -163,6 +163,7 @@ class KMerDiskStorage {
   }
 
   size_t num_buckets() const { return buckets_.size(); }
+  KMerBucketPolicy bucket_policy() const { return bucket_policy_; }
 
   void merge() {
     INFO("Merging final buckets.");
@@ -385,15 +386,17 @@ class KMerIndexBuilder {
 
     index.clear();
 
-    size_t buckets = kmer_storage.num_buckets();
+    auto bucket_policy = kmer_storage.bucket_policy();
+    size_t buckets = bucket_policy.num_buckets();
+    index.bucket_starts_.resize(buckets + 1, 0);
+    index.bucket_policy_ = bucket_policy;
     index.num_buckets_ = buckets;
-    index.bucket_starts_.resize(buckets + 1);
-    index.bucket_policy_.reset(buckets);
 
     INFO("Building perfect hash indices");
 
-    {
-      TIME_TRACE_SCOPE("KMerDiskCounter::BuildPHM");
+    if (buckets == kmer_storage.num_buckets()) {
+      // Build segmented index joining all buckets
+      TIME_TRACE_SCOPE("KMerIndexBuilder::BuildIndex(storage, segmented)");
       for (size_t i = 0; i < buckets; ++i)
         // Use of gamma = 4 implies ~5.7 bits per k-mer, however, faster construction and lookup
         index.index_.emplace_back(kmer_storage.bucket_size(i),
@@ -405,6 +408,19 @@ class KMerIndexBuilder {
           index.bucket_starts_[i + 1] = kmer_storage.bucket_size(i);
           index.index_[i].build(boomphf::range(kmer_storage.bucket_begin(i), kmer_storage.bucket_end(i)));
       }
+    } else {
+      // Build single index parallel over buckets
+      TIME_TRACE_SCOPE("KMerIndexBuilder::BuildIndex(storage, parallel)");
+      VERIFY(buckets == 1);
+      // Use of gamma = 4 implies ~5.7 bits per k-mer, however, faster construction and lookup
+      index.index_.emplace_back(kmer_storage.total_kmers(),
+                                Index::KMerDataIndex::ConflictPolicy::Ignore,
+                                /* gamma */ 4.0);
+      using Range = decltype(boomphf::range(kmer_storage.bucket_begin(0), kmer_storage.bucket_end(0)));
+      std::vector<Range> ranges;
+      for (size_t i = 0; i < kmer_storage.num_buckets(); ++i)
+        ranges.emplace_back(boomphf::range(kmer_storage.bucket_begin(i), kmer_storage.bucket_end(i)));
+      index.index_[0].build(ranges, num_threads_);
     }
 
     // Finally, record the sizes of buckets.

@@ -86,7 +86,6 @@ template<class InnerHasher> class XorshiftHashFunctors {
         return { h.first, h.second };
     }
 
-    template<>
     hash_pair_t hashpair128(const internal_hash_t &key) const {
         return key;
     }
@@ -418,9 +417,6 @@ class mphf {
         _percent_elem_loaded_for_fastMode = perc_elem_loaded;
         _fastmode = _percent_elem_loaded_for_fastMode > 0.0;
 
-        if (n == 0)
-            return;
-
         setup();
     }
 
@@ -454,10 +450,7 @@ class mphf {
         for (unsigned i_level = 0; i_level < _nb_levels; ++i_level) {
             auto &level = _levels[i_level];
             bitVector collisions(level.hash_domain); // temp collision bitarray for this level
-#pragma omp parallel for nthreads(nthreads)
-            for (size_t i = 0; i < ranges.size(); ++i) {
-                processLevel(ranges[i], i_level, collisions);
-            }
+            processLevel(ranges, i_level, collisions, nthreads);
             level.bitset.clearCollisions(0, level.hash_domain, &collisions);
             offset = level.bitset.build_ranks(offset);
         }
@@ -498,6 +491,9 @@ class mphf {
     }
 
     uint64_t mem_size() const {
+        if (!_built)
+            return 0;
+
         uint64_t totalsizeBitset = 0;
         for (unsigned ii = 0; ii < _nb_levels; ii++)
             totalsizeBitset += _levels[ii].bitset.bitSize();
@@ -551,8 +547,8 @@ class mphf {
         _hash_domain = (size_t)(ceil(double(_nelem) * _gamma)) ;
         for (int ii=0; ii<_nb_levels; ii++) {
             _levels[ii].hash_domain =  ((uint64_t(_hash_domain * pow(_proba_collision,ii)) + 63) / 64) * 64;
-            if (_levels[ii].hash_domain == 0 )
-                _levels[ii].hash_domain  = 64 ;
+            if (_levels[ii].hash_domain == 0)
+                _levels[ii].hash_domain = 64;
         }
 
         //restore final hash
@@ -578,13 +574,13 @@ class mphf {
   private:
     void setup() {
         if (_fastmode)
-            setLevelFastmode.resize(_percent_elem_loaded_for_fastMode * (double)_nelem );
+            setLevelFastmode.resize(_percent_elem_loaded_for_fastMode * (double)_nelem);
 
         _proba_collision = 1.0 -  pow(((_gamma*(double)_nelem -1 ) / (_gamma*(double)_nelem)),_nelem-1);
         _levels.resize(_nb_levels);
 
         // build levels
-        for (int ii = 0; ii<_nb_levels; ii++) {
+        for (unsigned ii = 0; ii<_nb_levels; ii++) {
             // round size to nearest superior multiple of 64, makes it easier to clear a level
             _levels[ii].hash_domain = ((uint64_t(_hash_domain * pow(_proba_collision, ii)) + 63) / 64) * 64;
             if (_levels[ii].hash_domain == 0)
@@ -592,7 +588,7 @@ class mphf {
         }
 
         _fastModeLevel = _nb_levels;
-        for (int ii = 0; ii < _nb_levels; ii++) {
+        for (unsigned ii = 0; ii < _nb_levels; ii++) {
             if (pow(_proba_collision, ii) < _percent_elem_loaded_for_fastMode) {
                 _fastModeLevel = ii;
                 break;
@@ -659,6 +655,7 @@ class mphf {
             // calc rank de fin  precedent level qq part, puis init hashidx avec ce rank, direct minimal, pas besoin inser ds bitset et rank
             if (_final_hash.count(val)) { // key already in final hash
                 if (_policy == ConflictPolicy::Ignore) {
+#                   pragma omp critical
                     _final_hash[val] = NOT_FOUND;
                 } else {
                     fprintf(stderr,"The impossible happened : collision on 128 bit hashes... please switch to safe branch, and play the lottery.");
@@ -667,8 +664,10 @@ class mphf {
                     if (_policy == ConflictPolicy::Error)
                         abort();
                 }
-            } else
+            } else {
+#               pragma omp critical
                 _final_hash[val] = hashidx;
+            }
         } else {
             insertIntoLevel(level_hash, i, collisions); //should be safe
         }
@@ -676,26 +675,45 @@ class mphf {
 
     template<typename Range>
     void processLevel(Range const& input_range,
-                      int level, bitVector &collisions) {
+                      unsigned level, bitVector &collisions) {
         _levels[level].bitset = bitVector(_levels[level].hash_domain);
 
         _final_hashidx = 0;
         _idxLevelsetLevelFastmode = 0;
 
-        static constexpr unsigned NBUFF = 16384;
-        std::vector<internal_hash_t> buffer(NBUFF);
-
-        auto fast_begin = setLevelFastmode.begin();
-        auto fast_end = setLevelFastmode.end();
-        auto range_begin = input_range.begin();
-        auto range_end = input_range.end();
-
         if (_fastmode && level > _fastModeLevel) {
             for (const auto &entry : setLevelFastmode)
-                processHash( _hasher.hashpair128(entry), level, collisions);
+                processHash(_hasher.hashpair128(entry), level, collisions);
         } else {
             for (const auto &entry : input_range)
-                processHash( _hasher.hashpair128(entry), level, collisions);
+                processHash(_hasher.hashpair128(entry), level, collisions);
+        }
+
+        if (_fastmode && level == _fastModeLevel) { //shrink to actual number of elements in set
+            setLevelFastmode.resize(_idxLevelsetLevelFastmode);
+        }
+    }
+
+    template<typename Range>
+    void processLevel(std::vector<Range> const& ranges,
+                      unsigned level, bitVector &collisions,
+                      unsigned nthreads) {
+        _levels[level].bitset = bitVector(_levels[level].hash_domain);
+
+        _final_hashidx = 0;
+        _idxLevelsetLevelFastmode = 0;
+
+        if (_fastmode && level > _fastModeLevel) {
+#           pragma omp parallel for num_threads(nthreads)
+            for (size_t i = 0; i < setLevelFastmode.size(); ++i) {
+                processHash(_hasher.hashpair128(setLevelFastmode[i]), level, collisions);
+            }
+        } else {
+#           pragma omp parallel for num_threads(nthreads)
+            for (size_t i = 0; i < ranges.size(); ++i) {
+                for (const auto &entry : ranges[i])
+                    processHash(_hasher.hashpair128(entry), level, collisions);
+            }
         }
 
         if (_fastmode && level == _fastModeLevel) { //shrink to actual number of elements in set

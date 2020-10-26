@@ -162,7 +162,7 @@ public:
         KMerGraphStorage(const Graph &g, unsigned k,
                          std::vector<EdgeRange> buckets)
                 : k_(k), g_(g), buckets_(std::move(buckets)) {
-            bucket_policy_.reset(buckets_.size());
+            bucket_policy_.reset(1);
 
             sizes_.resize(buckets_.size());
 #           pragma omp parallel for
@@ -192,6 +192,7 @@ public:
         }
 
         size_t num_buckets() const { return buckets_.size(); }
+        kmer::KMerBucketPolicy<Kmer> bucket_policy() const { return bucket_policy_; }
 
       private:
         unsigned k_;
@@ -203,8 +204,8 @@ public:
     };
 
     class KMerFullGraphStorage : public KMerGraphStorage<omnigraph::IterationHelper<Graph, EdgeId>::EdgeRange> {
-      using IterationHelper = omnigraph::IterationHelper<Graph, EdgeId>;
-      using base = KMerGraphStorage<IterationHelper::EdgeRange>;
+        using IterationHelper = omnigraph::IterationHelper<Graph, EdgeId>;
+        using base = KMerGraphStorage<IterationHelper::EdgeRange>;
 
       public:
         KMerFullGraphStorage(const Graph &g, unsigned k, unsigned num_buckets)
@@ -212,8 +213,8 @@ public:
     };
 
     class KMerPartialGraphStorage : public KMerGraphStorage<adt::iterator_range<std::vector<EdgeId>::const_iterator>> {
-      using EdgeRange = adt::iterator_range<std::vector<EdgeId>::const_iterator>;
-      using base = KMerGraphStorage<EdgeRange>;
+        using EdgeRange = adt::iterator_range<std::vector<EdgeId>::const_iterator>;
+        using base = KMerGraphStorage<EdgeRange>;
 
         std::vector<EdgeRange> ranges(const std::vector<EdgeId> &edges, unsigned num_buckets) const {
             if (num_buckets == 1)
