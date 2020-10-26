@@ -45,7 +45,7 @@ namespace debruijn_graph {
 namespace config {
 
 bool PipelineHelper::IsPlasmidPipeline(const pipeline_type pipeline) {
-    return pipeline == pipeline_type::plasmid || pipeline == pipeline_type::metaplasmid;
+    return pipeline == pipeline_type::plasmid || pipeline == pipeline_type::metaplasmid || pipeline == pipeline_type::metaviral;
 }
 
 bool PipelineHelper::IsMetagenomicPipeline(const pipeline_type pipeline) {
@@ -54,6 +54,7 @@ bool PipelineHelper::IsMetagenomicPipeline(const pipeline_type pipeline) {
             return false;
         case pipeline_type::meta:
         case pipeline_type::metaplasmid:
+        case pipeline_type::metaviral:
             return true;
     }
 
@@ -97,7 +98,8 @@ std::vector<std::string> PipelineTypeNames() {
                     {"rna", pipeline_type::rna},
                     {"plasmid", pipeline_type::plasmid},
                     {"large_genome", pipeline_type::large_genome},
-                    {"metaplasmid", pipeline_type::metaplasmid}
+                    {"metaplasmid", pipeline_type::metaplasmid},
+                    {"metaviral", pipeline_type::metaviral}
                     }, pipeline_type::total);
 }
 

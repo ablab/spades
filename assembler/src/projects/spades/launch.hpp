@@ -163,8 +163,8 @@ void assemble_genome() {
                .add<debruijn_graph::PairInfoCount>()
                .add<debruijn_graph::DistanceEstimation>()
                .add<debruijn_graph::RepeatResolution>();
-        
-        if (cfg::get().mode == debruijn_graph::config::pipeline_type::metaplasmid) {
+        INFO("Mode: " + cfg::get().mode);
+        if (cfg::get().mode == debruijn_graph::config::pipeline_type::metaplasmid || cfg::get().mode == debruijn_graph::config::pipeline_type::metaviral) {
             SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration, true, "contigs_before_metaplasmid");
             AddMetaplasmidStages(SPAdes);
         }

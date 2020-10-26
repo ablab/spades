@@ -17,7 +17,7 @@ void ChromosomeRemoval::run(GraphPack &gp, const char*) {
     const auto &graph = gp.get<Graph>();
     ChromosomeRemover remover(gp, ext_limit_, *cfg::get().pd);
     INFO("Starting chromosomal removal procedure, external coverage limit set to " << ext_limit_ <<", there are " << graph.size() << " vertices in graph");
-    if (cfg::get().mode == config::pipeline_type::metaplasmid) {
+    if (cfg::get().mode == config::pipeline_type::metaplasmid || cfg::get().mode == config::pipeline_type::metaviral) {
         remover.RunMetaPipeline();
     } else {
         remover.RunIsolatedPipeline();

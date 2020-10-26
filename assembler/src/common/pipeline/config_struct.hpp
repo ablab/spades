@@ -45,6 +45,7 @@ enum class pipeline_type : char {
     plasmid,
     large_genome,
     metaplasmid,
+    metaviral,
     total
 };
 

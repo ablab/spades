@@ -28,6 +28,8 @@ def get_mode():
     mode_parser.add_argument("--plasmid", dest="plasmid", action="store_true")
     mode_parser.add_argument("--meta", dest="meta", action="store_true")
     mode_parser.add_argument("--bio", dest="bio", action="store_true")
+    mode_parser.add_argument("--metaviral", dest="metaviral", action="store_true")
+
     nargs, unknown_args = mode_parser.parse_known_args(options)
 
     if script_basename == "rnaspades.py" or nargs.rna:
@@ -38,8 +40,10 @@ def get_mode():
         mode = "bgc"
     elif script_basename == "metaspades.py" or nargs.meta:
         mode = "meta"
-    if script_basename == "metaplasmidspades.py" or (nargs.plasmid and nargs.meta) or script_basename == "metaviralspades.py":
+    if script_basename == "metaplasmidspades.py" or (nargs.plasmid and nargs.meta):
         mode = "metaplasmid"
+    if script_basename == "metaviralspades.py":
+        mode = "metaviral"
     return mode
 
 
@@ -57,6 +61,10 @@ def add_mode_to_args(args):
     elif mode == "metaplasmid":
         args.meta = True
         args.plasmid = True
+    elif mode == "metaviral":
+        args.meta = True
+        args.plasmid = True
+        args.metaviral = True
 
 
 
@@ -303,6 +311,11 @@ def add_basic_args(pgroup_basic):
                               help="runs plasmidSPAdes pipeline for plasmid detection"
                               if not help_hidden else argparse.SUPPRESS,
                               action="store_true")
+    pgroup_basic.add_argument("--metaviral",
+                              dest="metaviral",
+                              help="runs metaviralSPAdes pipeline for virus detection"
+                              if not help_hidden else argparse.SUPPRESS,
+                              action="store_true")
     pgroup_basic.add_argument("--iontorrent",
                               dest="iontorrent",
                               help="this flag is required for IonTorrent data",
@@ -486,7 +499,7 @@ def add_input_data_args(pgroup_input_data):
                                    help=argparse.SUPPRESS,
                                    action="store_const")
 
-    help_hidden = (mode != "plasmid" and mode != "bgc" and mode != "metaplasmid")
+    help_hidden = (mode != "plasmid" and mode != "bgc" and mode != "metaplasmid" and mode != "metaviral")
     pgroup_input_data.add_argument("--assembly-graph",
                                    metavar="<filename>",
                                    nargs=1,
