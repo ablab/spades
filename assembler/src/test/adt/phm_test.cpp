@@ -29,10 +29,14 @@ struct PHMTest : public ::testing::Test {
         for (size_t i = 0; i < 10005000; ++i)
             vals_.push_back(i);
 
-        phm_.init(vals_.size());
+        phm_.init(vals_.size(),
+                  phm::ConflictPolicy::Warning, 1, 0.03, 10);
         phm_.build(boomphf::range(vals_.begin(), vals_.end()));
 
-        INFO("PHM built. Size: " << phm_.size() << ", mem size:" << phm_.mem_size() << ", collision prob: " << phm_.prob_collision());
+        INFO("PHM built. Size: " << phm_.size()
+             << ", mem size:" << phm_.mem_size()
+             << ", collision prob: " << phm_.prob_collision()
+             << ", final hash size: " << phm_.last_level_size());
     }
     ~PHMTest() {
         INFO("teardown fixture");

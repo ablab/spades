@@ -402,15 +402,15 @@ class mphf {
 
     mphf(size_t n,
          ConflictPolicy policy = ConflictPolicy::Warning,
-         double gamma = 2.0, float perc_elem_loaded = 0.03f)
+         double gamma = 2.0, float perc_elem_loaded = 0.03f, unsigned nb_levels = 25)
             : _built(false) {
-        init(n, policy, gamma, perc_elem_loaded);
+        init(n, policy, gamma, perc_elem_loaded, nb_levels);
     }
 
     void init(size_t n,
               ConflictPolicy policy = ConflictPolicy::Warning,
-              double gamma = 2.0, float perc_elem_loaded = 0.03f) {
-        _nb_levels = 0;
+              double gamma = 2.0, float perc_elem_loaded = 0.03f, unsigned nb_levels = 25) {
+        _nb_levels = nb_levels;
         _gamma = gamma;
         _hash_domain = size_t(ceil(double(n) * gamma));
         _nelem = n;
@@ -418,7 +418,7 @@ class mphf {
         _percent_elem_loaded_for_fastMode = perc_elem_loaded;
         _fastmode = _percent_elem_loaded_for_fastMode > 0.0;
 
-        if (n ==0)
+        if (n == 0)
             return;
 
         setup();
@@ -427,7 +427,7 @@ class mphf {
     template <typename Range>
     void build(const Range &input_range,
                int num_thread = 1) { // FIXME: num_thread is unused for now
-        if (_nb_levels == 0)
+        if (_nelem == 0)
             return;
 
         uint64_t offset = 0;
@@ -450,10 +450,10 @@ class mphf {
         if (!_built) return NOT_FOUND;
 
         uint64_t non_minimal_hp;
-        int level;
+        unsigned level;
 
         hash_pair_t bbhash = _hasher.hashpair128(elem);
-        uint64_t level_hash = getLevel(bbhash, &level);
+        uint64_t level_hash = getLevel(bbhash, &level, _nb_levels);
 
         if (level == (_nb_levels-1)) {
             auto in_final_map = _final_hash.find(bbhash);
@@ -487,6 +487,10 @@ class mphf {
         return _proba_collision;
     }
 
+    uint64_t last_level_size() const {
+        return _final_hash.size();
+    }
+
     void save(std::ostream& os) const {
         os.write(reinterpret_cast<char const*>(&_gamma), sizeof(_gamma));
         os.write(reinterpret_cast<char const*>(&_nb_levels), sizeof(_nb_levels));
@@ -515,19 +519,15 @@ class mphf {
         is.read(reinterpret_cast<char*>(&_nelem), sizeof(_nelem));
 
         _levels.resize(_nb_levels);
-
-
-        for (int ii=0; ii<_nb_levels; ii++) {
+        for (int ii=0; ii<_nb_levels; ii++)
             _levels[ii].bitset.load(is);
-        }
 
-        //mini setup, recompute size of each level
+        // mini setup, recompute size of each level
         _proba_collision = 1.0 -  pow(((_gamma*(double)_nelem -1 ) / (_gamma*(double)_nelem)),_nelem-1);
         uint64_t previous_idx =0;
         _hash_domain = (size_t)(ceil(double(_nelem) * _gamma)) ;
         for (int ii=0; ii<_nb_levels; ii++) {
-            //_levels[ii] = new level();
-            _levels[ii].hash_domain =  (( (uint64_t) (_hash_domain * pow(_proba_collision,ii)) + 63) / 64 ) * 64;
+            _levels[ii].hash_domain =  ((uint64_t(_hash_domain * pow(_proba_collision,ii)) + 63) / 64) * 64;
             if (_levels[ii].hash_domain == 0 )
                 _levels[ii].hash_domain  = 64 ;
         }
@@ -558,72 +558,49 @@ class mphf {
             setLevelFastmode.resize(_percent_elem_loaded_for_fastMode * (double)_nelem );
 
         _proba_collision = 1.0 -  pow(((_gamma*(double)_nelem -1 ) / (_gamma*(double)_nelem)),_nelem-1);
-
-        _nb_levels = 25; // 25
         _levels.resize(_nb_levels);
 
         // build levels
-        for (int ii=0; ii<_nb_levels; ii++) {
+        for (int ii = 0; ii<_nb_levels; ii++) {
             // round size to nearest superior multiple of 64, makes it easier to clear a level
-            _levels[ii].hash_domain =  (( (uint64_t)(_hash_domain * pow(_proba_collision, ii)) + 63) / 64 ) * 64;
+            _levels[ii].hash_domain = ((uint64_t(_hash_domain * pow(_proba_collision, ii)) + 63) / 64) * 64;
             if (_levels[ii].hash_domain == 0)
                 _levels[ii].hash_domain = 64;
         }
 
         _fastModeLevel = _nb_levels;
-        for (int ii=0; ii<_nb_levels; ii++) {
-            if (pow(_proba_collision,ii) < _percent_elem_loaded_for_fastMode) {
+        for (int ii = 0; ii < _nb_levels; ii++) {
+            if (pow(_proba_collision, ii) < _percent_elem_loaded_for_fastMode) {
                 _fastModeLevel = ii;
                 break;
             }
         }
     }
 
-    // compute level and returns hash of last level reached
-    uint64_t getLevel(hash_pair_t bbhash, int *res_level) const {
-        int level = 0;
-        uint64_t hash_raw=0;
+    constexpr uint64_t iterate_hash(hash_pair_t &bbhash, unsigned level) const {
+        if (level == 0)
+            return bbhash[0];
+        else if (level == 1)
+            return bbhash[1];
 
-        for (level = 0; level < (_nb_levels-1); ++level) {
-            if (level == 0)
-                hash_raw = bbhash[0];
-            else if (level == 1)
-                hash_raw = bbhash[1];
-            else
-                hash_raw = _hasher.next(bbhash);
-
-            if (_levels[level].get(hash_raw))
-                break;
-        }
-
-        *res_level = level;
-        return hash_raw;
+        return _hasher.next(bbhash);
     }
 
-
     // compute level and returns hash of last level reached
-    // FIXME: The usage of getLevel here is *super* confusing, really.
-    uint64_t getLevel(internal_hash_t &bbhash, int *res_level, int maxlevel) const {
-        int level = 0;
-        uint64_t hash_raw=0;
+    uint64_t getLevel(internal_hash_t bbhash, unsigned *res_level, unsigned maxlevel) const {
+        unsigned level = 0;
+        uint64_t hash_raw = 0;
 
-        for (int ii = 0; ii<(_nb_levels-1) && ii < maxlevel; ii++) {
-            //calc le hash suivant
-            if (ii == 0)
-                hash_raw = bbhash[0];
-            else if (ii == 1)
-                hash_raw = bbhash[1];
-            else
-                hash_raw = _hasher.next(bbhash);
-
-            if (_levels[ii].get(hash_raw))
-                break;
-
-            level++;
+        for (level = 0; level < _nb_levels - 1 && level < maxlevel; ++level) {
+            hash_raw = iterate_hash(bbhash, level);
+            if (_levels[level].get(hash_raw)) {
+                *res_level = level;
+                return hash_raw;
+            }
         }
 
         *res_level = level;
-        return hash_raw;
+        return iterate_hash(bbhash, level);
     }
 
     // insert into bitarray
@@ -636,15 +613,15 @@ class mphf {
     }
 
     void processBuffer(std::vector<internal_hash_t> &buffer, size_t buffer_size,
-                        int i, bitVector &collisions) {
+                       int i, bitVector &collisions) {
         //do work on the n elems of the buffer
         for (uint64_t ii = 0; ii < buffer_size ; ii++) {
             //internal_hash_t val = buffer[ii];
             internal_hash_t bbhash = buffer[ii];
             internal_hash_t val = bbhash;
 
-            int level;
-            getLevel(bbhash, &level, i);
+            unsigned level; uint64_t level_hash;
+            level_hash = getLevel(bbhash, &level, i);
 
             if (level != i)
                 continue;
@@ -677,17 +654,6 @@ class mphf {
                 } else
                     _final_hash[val] = hashidx;
             } else {
-                //ils ont reach ce level
-                //insert elem into curr level on disk --> sera utilise au level+1 , (mais encore besoin filtre)
-
-                // computes next hash
-                uint64_t level_hash;
-                if (level == 0)
-                    level_hash = bbhash[0];
-                else if (level == 1)
-                    level_hash = bbhash[1];
-                else
-                    level_hash = _hasher.next(bbhash);
                 insertIntoLevel(level_hash, i, collisions); //should be safe
             }
         }
