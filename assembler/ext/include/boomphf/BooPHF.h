@@ -424,9 +424,8 @@ class mphf {
         setup();
     }
 
-    template <typename Range>
-    void build(const Range &input_range,
-               int num_thread = 1) { // FIXME: num_thread is unused for now
+    template<typename Range>
+    void build(const Range &input_range) {
         if (_nelem == 0)
             return;
 
@@ -444,6 +443,31 @@ class mphf {
 
         _built = true;
     }
+
+    template<typename Range>
+    void build(const std::vector<Range> &ranges,
+               unsigned nthreads = 1) {
+        if (_nelem == 0)
+            return;
+
+        uint64_t offset = 0;
+        for (unsigned i_level = 0; i_level < _nb_levels; ++i_level) {
+            auto &level = _levels[i_level];
+            bitVector collisions(level.hash_domain); // temp collision bitarray for this level
+#pragma omp parallel for nthreads(nthreads)
+            for (size_t i = 0; i < ranges.size(); ++i) {
+                processLevel(ranges[i], i_level, collisions);
+            }
+            level.bitset.clearCollisions(0, level.hash_domain, &collisions);
+            offset = level.bitset.build_ranks(offset);
+        }
+
+        _lastbitsetrank = offset;
+        std::vector<internal_hash_t>().swap(setLevelFastmode);   // clear setLevelFastmode reallocating
+
+        _built = true;
+    }
+
 
     template<class elem_t>
     uint64_t lookup(const elem_t &elem) const {
