@@ -23,7 +23,7 @@ namespace kmers {
 template<class Seq>
 class KMerSplitter {
 public:
-    typedef typename kmer::KMerBucketPolicy<Seq> KMerBuckets;
+    typedef typename kmer::KMerSegmentPolicy<Seq> KMerBuckets;
     typedef std::vector<fs::DependentTmpFile> RawKMers;
 
     KMerSplitter(const std::string &work_dir, unsigned K)

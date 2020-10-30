@@ -162,7 +162,7 @@ public:
         KMerGraphStorage(const Graph &g, unsigned k,
                          std::vector<EdgeRange> buckets)
                 : k_(k), g_(g), buckets_(std::move(buckets)) {
-            bucket_policy_.reset(1);
+            segment_policy_.reset(1);
 
             sizes_.resize(buckets_.size());
 #           pragma omp parallel for
@@ -192,7 +192,7 @@ public:
         }
 
         size_t num_buckets() const { return buckets_.size(); }
-        kmer::KMerBucketPolicy<Kmer> bucket_policy() const { return bucket_policy_; }
+        kmer::KMerSegmentPolicy<Kmer> segment_policy() const { return segment_policy_; }
 
       private:
         unsigned k_;
@@ -200,7 +200,7 @@ public:
         size_t total_kmers_ = 0;
         std::vector<EdgeRange> buckets_;
         std::vector<size_t> sizes_;
-        kmer::KMerBucketPolicy<Kmer> bucket_policy_;
+        kmer::KMerSegmentPolicy<Kmer> segment_policy_;
     };
 
     class KMerFullGraphStorage : public KMerGraphStorage<omnigraph::IterationHelper<Graph, EdgeId>::EdgeRange> {

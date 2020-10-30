@@ -51,7 +51,7 @@ private:
   typedef boomphf::mphf<hash_function128> KMerDataIndex;
 
 public:
-  KMerIndex(): num_buckets_(0), size_(0) {}
+  KMerIndex(): num_segments_(0), size_(0) {}
 
   KMerIndex(const KMerIndex&) = delete;
   KMerIndex& operator=(const KMerIndex&) = delete;
@@ -59,14 +59,14 @@ public:
   ~KMerIndex() { clear(); }
 
   void clear() {
-    num_buckets_ = 0;
-    bucket_starts_.clear();
+    num_segments_ = 0;
+    segment_starts_.clear();
     index_.clear();
   }
 
   size_t mem_size() {
     size_t sz = 0;
-    for (size_t i = 0; i < num_buckets_; ++i)
+    for (size_t i = 0; i < num_segments_; ++i)
       sz += index_[i].mem_size();
 
     return sz;
@@ -74,7 +74,7 @@ public:
 
   void count_size() {
       size_ = 0;
-      for (size_t i = 0; i < num_buckets_; i++)
+      for (size_t i = 0; i < num_segments_; i++)
         size_ += index_[i].size();
   }
 
@@ -86,61 +86,61 @@ public:
     size_t bucket = seq_bucket(s);
     size_t idx = index_[bucket].lookup(s);
 
-    return (idx == -1ULL ? idx : bucket_starts_[bucket] + idx);
+    return (idx == -1ULL ? idx : segment_starts_[bucket] + idx);
   }
 
   size_t raw_seq_idx(const KMerRawReference data) const {
     size_t bucket = raw_seq_bucket(data);
     size_t idx = index_[bucket].lookup(data);
 
-    return (idx == -1ULL ? idx : bucket_starts_[bucket] + idx);
+    return (idx == -1ULL ? idx : segment_starts_[bucket] + idx);
   }
 
   template<class Writer>
   void serialize(Writer &os) const {
-    os.write((char*)&num_buckets_, sizeof(num_buckets_));
-    for (size_t i = 0; i < num_buckets_; ++i)
+    os.write((char*)&num_segments_, sizeof(num_segments_));
+    for (size_t i = 0; i < num_segments_; ++i)
       index_[i].save(os);
-    os.write((char*)&bucket_starts_[0], (num_buckets_ + 1) * sizeof(bucket_starts_[0]));
+    os.write((char*)&segment_starts_[0], (num_segments_ + 1) * sizeof(segment_starts_[0]));
   }
 
   template<class Reader>
   void deserialize(Reader &is) {
     clear();
 
-    is.read((char*)&num_buckets_, sizeof(num_buckets_));
+    is.read((char*)&num_segments_, sizeof(num_segments_));
 
-    index_.resize(num_buckets_);
-    for (size_t i = 0; i < num_buckets_; ++i)
+    index_.resize(num_segments_);
+    for (size_t i = 0; i < num_segments_; ++i)
       index_[i].load(is);
 
-    bucket_starts_.resize(num_buckets_ + 1);
-    is.read((char*)&bucket_starts_[0], (num_buckets_ + 1) * sizeof(bucket_starts_[0]));
+    segment_starts_.resize(num_segments_ + 1);
+    is.read((char*)&segment_starts_[0], (num_segments_ + 1) * sizeof(segment_starts_[0]));
     count_size();
-    bucket_policy_.reset(num_buckets_);
+    segment_policy_.reset(num_segments_);
   }
 
   void swap(KMerIndex<traits> &other) {
     std::swap(index_, other.index_);
-    std::swap(num_buckets_, other.num_buckets_);
+    std::swap(num_segments_, other.num_segments_);
     std::swap(size_, other.size_);
-    std::swap(bucket_starts_, other.bucket_starts_);
-    std::swap(bucket_policy_, other.bucket_policy_);
+    std::swap(segment_starts_, other.segment_starts_);
+    std::swap(segment_policy_, other.segment_policy_);
   }
 
  private:
   std::vector<KMerDataIndex> index_;
 
-  size_t num_buckets_;
-  std::vector<size_t> bucket_starts_;
+  size_t num_segments_;
+  std::vector<size_t> segment_starts_;
   size_t size_;
-  kmer::KMerBucketPolicy<KMerSeq> bucket_policy_;
+  kmer::KMerSegmentPolicy<KMerSeq> segment_policy_;
 
   size_t seq_bucket(const KMerSeq &s) const {
-    return bucket_policy_(s);
+    return segment_policy_(s);
   }
   size_t raw_seq_bucket(const KMerRawReference data) const {
-    return bucket_policy_(data);
+    return segment_policy_(data);
   }
 
   friend class KMerIndexBuilder<__self>;

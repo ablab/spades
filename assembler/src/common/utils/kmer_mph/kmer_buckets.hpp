@@ -12,36 +12,36 @@
 namespace kmer {
 
 template<class Seq>
-class KMerBucketPolicy {
+class KMerSegmentPolicy {
     typedef typename Seq::hash hash;
 
 public:
-    explicit KMerBucketPolicy(size_t num_buckets = 0)
-            : num_buckets_(num_buckets) {}
+    explicit KMerSegmentPolicy(size_t num_segments = 0)
+            : num_segments_(num_segments) {}
 
-    void reset(size_t num_buckets) {
-        num_buckets_ = num_buckets;
+    void reset(size_t num_segments) {
+        num_segments_ = num_segments;
     }
 
-    size_t num_buckets() const { return num_buckets_; }
+    size_t num_segments() const { return num_segments_; }
 
     size_t operator()(const Seq &s) const {
-        if (num_buckets_ == 1)
+        if (num_segments_ == 1)
             return 0;
         
-        return mod_reduce::multiply_high_u64(hash()(s), num_buckets_);
+        return mod_reduce::multiply_high_u64(hash()(s), num_segments_);
     }
 
     template<class Ref>
     size_t operator()(Ref s) const {
-        if (num_buckets_ == 1)
+        if (num_segments_ == 1)
             return 0;
 
-        return mod_reduce::multiply_high_u64(hash()(s.data(), s.size()), num_buckets_);
+        return mod_reduce::multiply_high_u64(hash()(s.data(), s.size()), num_segments_);
     }
 
 private:
-    size_t num_buckets_ = 0;
+    size_t num_segments_ = 0;
 };
 
 }

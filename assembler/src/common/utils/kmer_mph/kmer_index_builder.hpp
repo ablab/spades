@@ -51,7 +51,7 @@ class KMerDiskStorage {
  public:
   typedef S Seq;
   typedef typename std::vector<fs::DependentTmpFile> Buckets;
-  typedef typename kmer::KMerBucketPolicy<Seq>       KMerBucketPolicy;
+  typedef typename kmer::KMerSegmentPolicy<Seq>       KMerSegmentPolicy;
   typedef typename std::pair<const typename Seq::DataType*, size_t> KMerRawData;
 
   class kmer_iterator :
@@ -98,10 +98,10 @@ class KMerDiskStorage {
   KMerDiskStorage() {}
   
   KMerDiskStorage(fs::TmpDir work_dir, unsigned k,
-                  KMerBucketPolicy policy)
-      : work_dir_(work_dir), k_(k), bucket_policy_(std::move(policy)) {
+                  KMerSegmentPolicy policy)
+      : work_dir_(work_dir), k_(k), segment_policy_(std::move(policy)) {
     kmer_prefix_ = work_dir_->tmp_file("kmers");
-    resize(policy.num_buckets());
+    resize(policy.num_segments());
   }
 
   KMerDiskStorage(KMerDiskStorage &&) = default;
@@ -163,7 +163,7 @@ class KMerDiskStorage {
   }
 
   size_t num_buckets() const { return buckets_.size(); }
-  KMerBucketPolicy bucket_policy() const { return bucket_policy_; }
+  KMerSegmentPolicy segment_policy() const { return segment_policy_; }
 
   void merge() {
     INFO("Merging final buckets.");
@@ -187,7 +187,7 @@ class KMerDiskStorage {
   fs::TmpFile all_kmers_;
   unsigned k_;
   Buckets buckets_;
-  KMerBucketPolicy bucket_policy_;
+  KMerSegmentPolicy segment_policy_;
 };
 
 
@@ -386,32 +386,32 @@ class KMerIndexBuilder {
 
     index.clear();
 
-    auto bucket_policy = kmer_storage.bucket_policy();
-    size_t buckets = bucket_policy.num_buckets();
-    index.bucket_starts_.resize(buckets + 1, 0);
-    index.bucket_policy_ = bucket_policy;
-    index.num_buckets_ = buckets;
+    auto segment_policy = kmer_storage.segment_policy();
+    size_t segments = segment_policy.num_segments();
+    index.segment_starts_.resize(segments + 1, 0);
+    index.segment_policy_ = segment_policy;
+    index.num_segments_ = segments;
 
     INFO("Building perfect hash indices");
 
-    if (buckets == kmer_storage.num_buckets()) {
+    if (segments == kmer_storage.num_buckets()) {
       // Build segmented index joining all buckets
       TIME_TRACE_SCOPE("KMerIndexBuilder::BuildIndex(storage, segmented)");
-      for (size_t i = 0; i < buckets; ++i)
+      for (size_t i = 0; i < kmer_storage.num_buckets(); ++i)
         // Use of gamma = 4 implies ~5.7 bits per k-mer, however, faster construction and lookup
         index.index_.emplace_back(kmer_storage.bucket_size(i),
                                   Index::KMerDataIndex::ConflictPolicy::Ignore,
                                   /* gamma */ 4.0);
          
 #     pragma omp parallel for shared(index) num_threads(num_threads_)
-      for (size_t i = 0; i < buckets; ++i) {
-          index.bucket_starts_[i + 1] = kmer_storage.bucket_size(i);
+      for (size_t i = 0; i < kmer_storage.num_buckets(); ++i) {
+          index.segment_starts_[i + 1] = kmer_storage.bucket_size(i);
           index.index_[i].build(boomphf::range(kmer_storage.bucket_begin(i), kmer_storage.bucket_end(i)));
       }
     } else {
       // Build single index parallel over buckets
       TIME_TRACE_SCOPE("KMerIndexBuilder::BuildIndex(storage, parallel)");
-      VERIFY(buckets == 1);
+      VERIFY(segments == 1);
       // Use of gamma = 4 implies ~5.7 bits per k-mer, however, faster construction and lookup
       index.index_.emplace_back(kmer_storage.total_kmers(),
                                 Index::KMerDataIndex::ConflictPolicy::Ignore,
@@ -424,8 +424,8 @@ class KMerIndexBuilder {
     }
 
     // Finally, record the sizes of buckets.
-    for (unsigned i = 1; i < buckets; ++i)
-      index.bucket_starts_[i] += index.bucket_starts_[i - 1];
+    for (unsigned i = 1; i < segments; ++i)
+      index.segment_starts_[i] += index.segment_starts_[i - 1];
 
     double bits_per_kmer = 8.0 * (double)index.mem_size() / (double)kmer_storage.total_kmers();
     INFO("Index built. Total " << kmer_storage.total_kmers() << " kmers, " << index.mem_size() << " bytes occupied (" << bits_per_kmer << " bits per kmer).");
