@@ -14,6 +14,8 @@
 #include "modules/simplification/compressor.hpp"
 #include "paired_info/concurrent_pair_info_buffer.hpp"
 #include "pipeline/sequence_mapper_gp_api.hpp"
+#include "pipeline/partask_mpi.hpp"
+#include "io/binary/edge_index.hpp"
 
 #include <parallel_hashmap/phmap.h>
 #include <parallel_hashmap/btree.h>
@@ -35,6 +37,20 @@ private:
     std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> mapper_ = nullptr;
     const size_t max_dist_to_tip_;
     size_t cnt_libs_to_process_ = 0;
+
+    virtual void Serialize(std::ostream& os) const override {
+        io::binary::BinWrite(os, paired_index_);
+    }
+
+    virtual void Deserialize(std::istream& is) override {
+        io::binary::BinRead(is, paired_index_);
+    }
+
+    virtual void MergeFromStream(std::istream& is) override {
+        omnigraph::de::PairedInfoIndexT<Graph> remote(graph_);
+        io::binary::BinRead(is, remote);
+        paired_index_.Merge(remote);
+    }
 
     void ProcessPairedRead(const MappingPath<EdgeId> &path1, const MappingPath<EdgeId> &path2) {
         for (size_t i = 0; i < path1.size(); ++i) {
@@ -478,17 +494,21 @@ void GapClosing::run(graph_pack::GraphPack &gp, const char *) {
         return;
     }
 
+    SequenceMapperNotifier notifier(cfg::get().ds.reads.lib_count());
+    size_t num_readers = partask::overall_num_threads();
+
     auto& dataset = cfg::get_writable().ds;
     for (size_t i = 0; i < dataset.reads.lib_count(); ++i) {
         if (dataset.reads[i].type() != io::LibraryType::PairedEnd)
             continue;
 
-        SequenceMapperNotifier notifier;
-        notifier.Subscribe(&gcpif);
-        io::BinaryPairedStreams paired_streams = paired_binary_readers(dataset.reads[i], false, 0, false);
-        notifier.ProcessLibrary(paired_streams, *gcpif.GetMapper());
-
+        notifier.Subscribe(&gcpif, i);
+        io::BinaryPairedStreams paired_streams = paired_binary_readers(dataset.reads[i], false,
+            0, false, num_readers);
+        notifier.ProcessLibraryMPI(paired_streams, i, *gcpif.GetMapper());
+        
         INFO("Initializing gap closer");
+        g.clear_state();  // FIXME Hack-hack-hack required for uniform id distribution on master and slaves
         GapCloser gap_closer(g, tips_paired_idx,
                              cfg::get().gc.minimal_intersection, cfg::get().gc.weight_threshold);
         gap_closer.CloseShortGaps();
