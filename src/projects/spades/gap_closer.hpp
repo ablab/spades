@@ -5,30 +5,19 @@
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
-//***************************************************************************
-//* Copyright (c) 2015 Saint Petersburg State University
-//* Copyright (c) 2011-2014 Saint Petersburg Academic University
-//* All Rights Reserved
-//* See file LICENSE for details.
-//***************************************************************************
 
-#ifndef GAP_CLOSER_HPP_
-#define GAP_CLOSER_HPP_
-
+#pragma once
+#include "pipeline/mpi_stage.hpp"
 #include "pipeline/stage.hpp"
 
 namespace debruijn_graph {
 
-class GapClosing : public spades::AssemblyStage {
+class GapClosing : public spades::MPIAssemblyStage {
   public:
     GapClosing(const char* id)
-        : AssemblyStage("Gap Closer", id) {}
+        : MPIAssemblyStage("Gap Closer (parmap)", id) {}
 
     void run(graph_pack::GraphPack &gp, const char*) override;
 };
 
 }
-
-
-
-#endif /* GAP_CLOSER_HPP_ */
