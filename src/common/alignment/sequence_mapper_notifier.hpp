@@ -16,6 +16,7 @@
 #include "io/reads/paired_read.hpp"
 #include "io/reads/read_stream_vector.hpp"
 #include "utils/perf/timetracer.hpp"
+#include "pipeline/partask_mpi.hpp"
 
 #include <string>
 #include <vector>
@@ -36,9 +37,37 @@ public:
     virtual void ProcessSingleRead(size_t /* thread_index */, const io::SingleReadSeq& /* r */, const omnigraph::MappingPath<EdgeId>& /* read */) {}
 
     virtual void MergeBuffer(size_t /* thread_index */) {}
-    
+
+    virtual void Serialize(std::ostream&) const {}
+    virtual void Deserialize(std::istream&) {}
+
+    virtual void MergeFromStream(std::istream&) {}
+
     virtual ~SequenceMapperListener() {}
 };
+
+inline void PyramidMergeMPI(SequenceMapperListener &listener) {
+    size_t mpi_size = partask::world_size();
+    size_t mpi_rank = partask::world_rank();
+    const size_t deadbeef = 0xDEADBEEF;
+
+    for (size_t step = 1; step < mpi_size; step *= 2) {
+        if ((mpi_rank % (2*step) == 0) && (mpi_rank + step < mpi_size)) {
+            partask::InputMPIStream is(mpi_rank + step);
+            size_t sz;
+            io::binary::BinRead(is, sz);
+            VERIFY_MSG(sz == deadbeef, "Listener type: " << typeid(listener).name());
+            listener.MergeFromStream(is);
+            io::binary::BinRead(is, sz);
+            VERIFY_MSG(sz == deadbeef, "Listener type: " << typeid(listener).name());
+        } else if (mpi_rank % (2*step) == step) {
+            partask::OutputMPIStream os(mpi_rank - step);
+            io::binary::BinWrite(os, deadbeef);
+            listener.Serialize(os);
+            io::binary::BinWrite(os, deadbeef);
+        }
+    }
+}
 
 class SequenceMapperNotifier {
     static constexpr size_t BUFFER_SIZE = 200000;
@@ -50,6 +79,63 @@ public:
     SequenceMapperNotifier(size_t lib_count = 1);
 
     void Subscribe(SequenceMapperListener* listener, size_t lib_index = 0);
+
+    template<class ReadType>
+    void ProcessLibraryMPI(io::ReadStreamList<ReadType>& streams,
+                           size_t lib_index, const SequenceMapperT& mapper, size_t threads_count = 0) {
+        INFO("ProcessLibraryMPI started");
+        // Select streams
+        std::vector<size_t> chunks;
+        size_t mpi_size = partask::world_size();
+        size_t mpi_rank = partask::world_rank();
+        for (size_t i = 0; i < streams.size(); ++i) {
+            if (i % mpi_size == mpi_rank) {
+                chunks.push_back(i);
+            }
+        }
+        INFO("Selected streams: " << chunks);
+        auto local_streams = partask::create_empty_stream_list<ReadType>(chunks.size());
+        partask::swap_streams(streams, local_streams, chunks);
+
+        // Run ProcessLibrary
+        INFO("Running ProcessLibrary");
+        ProcessLibrary(local_streams, lib_index, mapper, threads_count);
+        INFO("ProcessLibrary done");
+
+        // Swap streams back
+        partask::swap_streams(streams, local_streams, chunks);
+
+        INFO("Merging results...");
+        for (const auto& listener : listeners_[lib_index]) {
+            INFO("Merging listener " << typeid(*listener).name());
+            PyramidMergeMPI(*listener);
+        }
+        INFO("Listeners merged");
+
+        const size_t deadbeef = 0xDEADBEEF;
+        if (mpi_size > 1) {
+            INFO("Syncing listeners...");
+            if (mpi_rank == 0) {
+                partask::OutputMPIStreamBcast os(0);
+                for (const auto& listener : listeners_[lib_index]) {
+                    io::binary::BinWrite(os, deadbeef);
+                    listener->Serialize(os);
+                    io::binary::BinWrite(os, deadbeef);
+                }
+            } else {
+                partask::InputMPIStreamBcast is(0);
+                for (const auto& listener : listeners_[lib_index]) {
+                    size_t sz;
+                    io::binary::BinRead(is, sz);
+                    VERIFY(sz == deadbeef);
+                    listener->Deserialize(is);
+                    io::binary::BinRead(is, sz);
+                    VERIFY(sz == deadbeef);
+                }
+            }
+            INFO("Listeners synced");
+        }
+    }
 
     template<class ReadType>
     void ProcessLibrary(io::ReadStreamList<ReadType>& streams,
@@ -68,7 +154,7 @@ public:
             threads_count = streams.size();
 
         streams.reset();
-        NotifyStartProcessLibrary(lib_index, threads_count);
+        NotifyStartProcessLibrary(lib_index, streams.size());
         size_t counter = 0, n = 15;
 
         #pragma omp parallel for num_threads(threads_count) shared(counter)
@@ -97,9 +183,10 @@ public:
             counter += size;
         }
 
-        for (size_t i = 0; i < threads_count; ++i)
+        for (size_t i = 0; i < streams.size(); ++i)
             NotifyMergeBuffer(lib_index, i);
 
+        streams.close();
         INFO("Total " << counter << " reads processed");
         NotifyStopProcessLibrary(lib_index);
     }
