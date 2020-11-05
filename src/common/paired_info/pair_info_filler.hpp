@@ -63,6 +63,20 @@ public:
         ProcessPairedRead(read1, read2, r.distance());
     }
 
+    void Serialize(std::ostream &os) const override {
+        io::binary::BinWrite(os, paired_index_);
+    }
+
+    void Deserialize(std::istream &is) override {
+        io::binary::BinRead(is, paired_index_);
+    }
+
+    void MergeFromStream(std::istream &is) override {
+        omnigraph::de::UnclusteredPairedInfoIndexT<Graph> remote(paired_index_.graph());
+        io::binary::BinRead(is, remote);
+        paired_index_.Merge(remote);
+    }
+
     virtual ~LatePairedIndexFiller() {}
 
 private:

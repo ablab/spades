@@ -115,21 +115,56 @@ private:
 
     }
     struct count_data {
-      size_t total_;
-      std::vector<size_t> arr_;
-      count_data()
-              : total_(0) {}
+        size_t total_;
+        std::vector<size_t> arr_;
+        count_data()
+            : total_(0) {}
 
-      count_data(size_t nthreads)
-              : total_(0), arr_(nthreads, 0) {}
+        count_data(size_t nthreads)
+            : total_(0), arr_(nthreads, 0) {}
 
-      void inc(size_t i) { ++arr_[i]; }
-      void merge() {
-        for (size_t i = 0; i < arr_.size(); ++i) {
-          total_ += arr_[i];
+        void inc(size_t i) { ++arr_[i]; }
+        void merge() {
+            for (size_t i = 0; i < arr_.size(); ++i) {
+                total_ += arr_[i];
+                arr_[i] = 0;
+            }
         }
-      }
+
+        void BinWrite(std::ostream &os) const {
+            io::binary::BinWrite(os, total_);
+        }
+
+        void BinRead(std::istream &is) {
+            io::binary::BinRead(is, total_);
+        }
     };
+
+    void Serialize(std::ostream &os) const override {
+        total_.BinWrite(os);
+        counted_.BinWrite(os);
+        negative_.BinWrite(os);
+        io::binary::BinWrite(os, hist_);
+    }
+
+    void Deserialize(std::istream &is) override {
+        total_.BinRead(is);
+        counted_.BinRead(is);
+        negative_.BinRead(is);
+        io::binary::BinRead(is, hist_);
+    }
+
+    void MergeFromStream(std::istream &is) override {
+        InsertSizeCounter remote(*this);
+        remote.Deserialize(is);
+        total_.total_ += remote.total_.total_;
+        counted_.total_ += remote.counted_.total_;
+        negative_.total_ += remote.negative_.total_;
+
+        for (const auto& kv: remote.hist_) {
+            hist_[kv.first] += kv.second;
+        }
+    }
 
 private:
     const Graph &graph_;

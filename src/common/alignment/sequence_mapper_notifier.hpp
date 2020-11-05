@@ -38,10 +38,17 @@ public:
 
     virtual void MergeBuffer(size_t /* thread_index */) {}
 
-    virtual void Serialize(std::ostream&) const {}
-    virtual void Deserialize(std::istream&) {}
+    virtual void Serialize(std::ostream&) const {
+        VERIFY_MSG(false, "Method Serialize is not implemented. Using default realization.");
+    }
 
-    virtual void MergeFromStream(std::istream&) {}
+    virtual void Deserialize(std::istream&) {
+        VERIFY_MSG(false, "Method Deserialize is not implemented. Using default realization.");
+    }
+
+    virtual void MergeFromStream(std::istream&) {
+        VERIFY_MSG(false, "Method MergeFromStream is not implemented. Using default realization.");
+    }
 
     virtual ~SequenceMapperListener() {}
 };

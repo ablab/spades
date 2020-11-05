@@ -42,6 +42,55 @@ std::shared_ptr<SequenceMapper<Graph>> ChooseProperMapper(const graph_pack::Grap
     return MapperInstance(gp);
 }
 
+class DEFilter : public SequenceMapperListener {
+  public:
+    DEFilter(paired_info::PairedInfoFilter &filter, const Graph &g)
+            : bf_(filter), g_(g) {}
+
+    void ProcessPairedRead(size_t,
+                           const io::PairedRead&,
+                           const MappingPath<EdgeId>& read1,
+                           const MappingPath<EdgeId>& read2) override {
+        ProcessPairedRead(read1, read2);
+    }
+    void ProcessPairedRead(size_t,
+                           const io::PairedReadSeq&,
+                           const MappingPath<EdgeId>& read1,
+                           const MappingPath<EdgeId>& read2) override {
+        ProcessPairedRead(read1, read2);
+    }
+
+    void Serialize(std::ostream &os) const override {
+        io::binary::BinWrite(os, bf_);
+    }
+
+    void Deserialize(std::istream &is) override {
+        io::binary::BinRead(is, bf_);
+    }
+
+    void MergeFromStream(std::istream &is) override {
+        paired_info::PairedInfoFilter remote;
+        io::binary::BinRead(is, remote);
+        bf_.merge(remote);
+    }
+
+  private:
+    void ProcessPairedRead(const MappingPath<EdgeId>& path1,
+                           const MappingPath<EdgeId>& path2) {
+        for (size_t i = 0; i < path1.size(); ++i) {
+            EdgeId edge1 = path1.edge_at(i);
+            for (size_t j = 0; j < path2.size(); ++j) {
+                EdgeId edge2 = path2.edge_at(j);
+                bf_.add({edge1, edge2});
+                bf_.add({g_.conjugate(edge2), g_.conjugate(edge1)});
+            }
+        }
+    }
+
+    paired_info::PairedInfoFilter &bf_;
+    const Graph &g_;
+};
+
 bool HasGoodRRLibs() {
     for (const auto &lib : cfg::get().ds.reads) {
         if (lib.is_contig_lib())
@@ -129,18 +178,60 @@ size_t ProcessSingleReads(graph_pack::GraphPack &gp, size_t ilib,
     }
 
     auto mapper_ptr = ChooseProperMapper(gp, reads);
+    size_t num_readers = partask::overall_num_threads();
     if (use_binary) {
-        auto single_streams = single_binary_readers(reads, false, map_paired);
-        notifier.ProcessLibrary(single_streams, *mapper_ptr);
+        auto single_streams = single_binary_readers(reads, false, map_paired, num_readers);
+        notifier.ProcessLibraryMPI(single_streams, ilib, *mapper_ptr);
     } else {
         auto single_streams = single_easy_readers(reads, false,
                                                   map_paired, /*handle Ns*/false);
-        notifier.ProcessLibrary(single_streams, *mapper_ptr);
+        notifier.ProcessLibraryMPI(single_streams, ilib, *mapper_ptr);
     }
 
     return single_long_reads.size();
 }
 
+void ProcessPairedReads(graph_pack::GraphPack &gp,
+                        std::unique_ptr<paired_info::PairedInfoFilter> filter,
+                        unsigned filter_threshold,
+                        size_t ilib) {
+    SequencingLib &reads = cfg::get_writable().ds.reads[ilib];
+    const auto &data = reads.data();
+
+    unsigned round_thr = 0;
+    // Do not round if filtering is disabled
+    if (filter)
+        round_thr = unsigned(std::min(cfg::get().de.max_distance_coeff * data.insert_size_deviation * cfg::get().de.rounding_coeff,
+                                      cfg::get().de.rounding_thr));
+
+    SequenceMapperNotifier notifier(cfg::get_writable().ds.reads.lib_count());
+    INFO("Left insert size quantile " << data.insert_size_left_quantile <<
+         ", right insert size quantile " << data.insert_size_right_quantile <<
+         ", filtering threshold " << filter_threshold <<
+         ", rounding threshold " << round_thr);
+
+    LatePairedIndexFiller::WeightF weight;
+    if (filter) {
+        weight = [&](const std::pair<EdgeId, EdgeId> &ep,
+                     const MappingRange&, const MappingRange&) {
+            return (filter->lookup(ep) > filter_threshold ? 1. : 0.);
+        };
+    } else {
+        weight = [&](const std::pair<EdgeId, EdgeId> &,
+                     const MappingRange&, const MappingRange&) {
+            return 1.;
+        };
+    }
+
+    using Indices = omnigraph::de::UnclusteredPairedInfoIndicesT<Graph>;
+    LatePairedIndexFiller pif(gp.get<Graph>(), weight, round_thr, gp.get_mutable<Indices>()[ilib]);
+    notifier.Subscribe(&pif, ilib);
+
+    size_t num_readers = partask::overall_num_threads();
+    auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, (size_t) data.mean_insert_size,
+                                                /*include merged*/true, num_readers);
+    notifier.ProcessLibraryMPI(paired_streams, ilib, *ChooseProperMapper(gp, reads));
+}
 } // namespace
 
 void PairInfoCount::run(graph_pack::GraphPack &gp, const char *) {
@@ -200,8 +291,24 @@ void PairInfoCount::run(graph_pack::GraphPack &gp, const char *) {
 
                 // Only filter paired-end libraries
                 if (filter_threshold && lib.type() == io::LibraryType::PairedEnd) {
+                    filter.reset(new paired_info::PairedInfoFilter([](const std::pair<EdgeId, EdgeId> &e, uint64_t seed) {
+                                uint64_t h1 = e.first.hash();
+                                return XXH3_64bits_withSeed(&h1, sizeof(h1), (e.second.hash() * seed) ^ seed);
+                            },
+                            12 * edgepairs));
+
                     INFO("Filtering data for library #" << i);
-                    filter = paired_info::FillEdgePairFilter(graph, *ChooseProperMapper(gp, lib), lib, edgepairs);
+                    {
+                        SequenceMapperNotifier notifier(cfg::get_writable().ds.reads.lib_count());
+                        DEFilter filter_counter(*filter, graph);
+                        notifier.Subscribe(&filter_counter, i);
+
+                        VERIFY(lib.data().unmerged_read_length != 0);
+                        size_t num_readers = partask::overall_num_threads();
+                        auto reads = paired_binary_readers(lib, /*followed by rc*/false,
+                            0, /*include merged*/true, num_readers);
+                        notifier.ProcessLibraryMPI(reads, i, *ChooseProperMapper(gp, lib));
+                    }
                 }
 
                 INFO("Mapping library #" << i);
