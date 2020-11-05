@@ -9,14 +9,15 @@
 #pragma once
 
 #include "pipeline/stage.hpp"
+#include "pipeline/mpi_stage.hpp"
 
 namespace debruijn_graph {
 
-class PairInfoCount : public spades::AssemblyStage {
-  public:
+class PairInfoCount : public spades::MPIAssemblyStage {
+ public:
     PairInfoCount(bool preliminary = false)
-        : AssemblyStage(preliminary ? "Preliminary Paired Information Counting" : "Paired Information Counting",
-                        preliminary ? "late_pair_info_count_preliminary" : "late_pair_info_count") {}
+        : MPIAssemblyStage(preliminary ? "Preliminary Paired Information Counting" : "Paired Information Counting",
+                           preliminary ? "late_pair_info_count_preliminary" : "late_pair_info_count") {}
 
     void run(graph_pack::GraphPack &gp, const char*) override;
 };
