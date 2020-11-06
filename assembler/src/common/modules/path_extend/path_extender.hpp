@@ -310,11 +310,13 @@ private:
 //TODO:: what should be here?
                 if (cfg::get().pd && loop_count * (g_.length(forward_cycle_edge) + g_.length(loop_outgoing)) < 1000) {
                     INFO(" Plasmid mode: full loop resolving. Loop multiplicity: " << loop_count);
-                    INFO(" Loop edges " << forward_cycle_edge << " " << loop_outgoing);
-                    for(size_t i = 0; i < loop_count; i++) {
+                    INFO(" Loop edges " << forward_cycle_edge << " " << back_cycle_edge);
+                    for(size_t i = 0; i < loop_count - 1; i++) {
                         path.PushBack(forward_cycle_edge);
-                        path.PushBack(loop_outgoing);
+                        path.PushBack(back_cycle_edge);
                     }
+                    path.PushBack(forward_cycle_edge);
+                    path.PushBack(loop_outgoing);
                 } else {
                     DEBUG("Multiple cycles");
                     //If the forward edge is shorter than K, avoid overlapping bases between backward edge and outgoing edge
