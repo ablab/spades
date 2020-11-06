@@ -17,18 +17,13 @@ shared_ptr<ExtensionChooser> ExtendersGenerator::MakeLongReadsExtensionChooser(s
     auto long_reads_config = support_.GetLongReadsConfig(dataset_info_.reads[lib_index].type());
 
     if (dataset_info_.reads[lib_index].type() == io::LibraryType::TrustedContigs) {
-        bool is_not_the_first_extender = false;
-        for (auto const & lib : dataset_info_.reads)
-            is_not_the_first_extender |= (ExtenderTriplet::GetPriority(lib.type()) < ExtenderTriplet::GetPriority(io::LibraryType::TrustedContigs));
-
         return make_shared<TrustedContigsExtensionChooser>(graph_, read_paths_cov_map,
                                                             long_reads_config.filtering,
                                                             long_reads_config.weight_priority,
                                                             long_reads_config.unique_edge_priority,
                                                             long_reads_config.min_significant_overlap,
                                                             params_.pset.extension_options.max_repeat_length,
-                                                            params_.uneven_depth,
-                                                            is_not_the_first_extender);
+                                                            params_.uneven_depth);
     }
 
     return make_shared<LongReadsExtensionChooser>(graph_, read_paths_cov_map,
