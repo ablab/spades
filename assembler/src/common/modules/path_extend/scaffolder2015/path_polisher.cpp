@@ -71,14 +71,25 @@ BidirectionalPath PathPolisher::Polish(const BidirectionalPath &init_path) {
 }
 
 BidirectionalPath PathGapCloser::CloseGaps(const BidirectionalPath &path) const {
-    BidirectionalPath result(g_);
-    if (path.Empty())
-        return result;
+    auto isBadGap = [&path, th = this] (size_t i) {
+        return th->g_.EdgeEnd(path[i - 1]) != th->g_.EdgeStart(path[i]) && !path.GapAt(i).is_final;
+    };
 
+    auto withoutBadGaps = [&isBadGap, &path] () {
+        for (size_t i = 1; i < path.Size(); ++i) 
+            if (isBadGap(i))
+                return false;
+        return true;
+    };
+    
+    if (withoutBadGaps())
+        return path;
+
+    BidirectionalPath result(g_);
     VERIFY(path.GapAt(0) == Gap());
     result.PushBack(path[0]);
     for (size_t i = 1; i < path.Size(); ++i) {
-        if (g_.EdgeEnd(path[i - 1]) == g_.EdgeStart(path[i]) || path.GapAt(i).is_final) {
+        if (!isBadGap(i)) {
             result.PushBack(path[i], path.GapAt(i));
         } else {
             DEBUG("Gap between " << path[i - 1].int_id() << " and " << path[i].int_id() << " " << path.GapAt(i));

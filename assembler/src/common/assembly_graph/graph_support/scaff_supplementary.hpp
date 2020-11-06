@@ -9,6 +9,9 @@
 #include "pipeline/graph_pack.hpp"
 #include "utils/logger/logger.hpp"
 
+#include <unordered_set>
+#include <unordered_map>
+
 namespace path_extend {
 typedef debruijn_graph::EdgeId EdgeId;
 
@@ -46,9 +49,14 @@ public:
         return unique_edges_.erase(iter);
     }
 
-    size_t size() const {
+    size_t size() const noexcept {
         return unique_edges_.size();
     }
+
+    bool empty() const noexcept {
+        return unique_edges_.empty();
+    }
+
     size_t min_length() const {
         return min_unique_length_;
     }
@@ -105,7 +113,8 @@ public:
 };
 
 class UsedUniqueStorage {
-    std::set<EdgeId> used_;
+    std::unordered_set<EdgeId> used_;
+    std::unordered_map<size_t, std::unordered_set<EdgeId>> used_by_paths_;
     const ScaffoldingUniqueEdgeStorage& unique_;
     const debruijn_graph::ConjugateDeBruijnGraph &g_;
 
@@ -116,36 +125,53 @@ public:
     UsedUniqueStorage(UsedUniqueStorage&&) = default;
 
     explicit UsedUniqueStorage(const ScaffoldingUniqueEdgeStorage& unique,
-                               const debruijn_graph::ConjugateDeBruijnGraph &g):
-            unique_(unique), g_(g) {}
+                               const debruijn_graph::ConjugateDeBruijnGraph &g)
+        : unique_(unique)
+        , g_(g) 
+    {}
 
-    void insert(EdgeId e) {
+    void insert(EdgeId e, size_t path_id) {
         if (!unique_.IsUnique(e))
             return;
 
         used_.insert(e);
         used_.insert(g_.conjugate(e));
+        used_by_paths_[path_id].insert(e);
+        used_by_paths_[path_id].insert(g_.conjugate(e));
     }
 
-//    const ScaffoldingUniqueEdgeStorage& unique_edge_storage() const {
-//        return unique_;
-//    }
+    bool IsUsed(EdgeId e, size_t path_id) const {
+        auto it = used_by_paths_.find(path_id);
+        return it != used_by_paths_.end() && it->second.find(e) != it->second.end();
+    }
+
+    bool IsUsed(EdgeId e) const {
+        return used_.find(e) != used_.end();
+    }
+
+    bool IsUsedAndUnique(EdgeId e, size_t path_id) const {
+        return unique_.IsUnique(e) && IsUsed(e, path_id);
+    }
 
     bool IsUsedAndUnique(EdgeId e) const {
-        return (unique_.IsUnique(e) && used_.find(e) != used_.end());
+        return unique_.IsUnique(e) && IsUsed(e);
     }
 
     bool UniqueCheckEnabled() const {
-        return unique_.size() > 0;
+        return !unique_.empty();
     }
 
     bool TryUseEdge(BidirectionalPath &path, EdgeId e, const Gap &gap) {
         if (UniqueCheckEnabled()) {
             if (IsUsedAndUnique(e)) {
+                if (used_by_paths_[path.GetId()].count(e) && path.SetCycleOverlapping(path.FindFirst(e))) {
+                    DEBUG("Trying to add edge " << e << " was failed, because this edge is unique and had used before\n");
+                } else {
+                    DEBUG("Wrong edge was detected, trying to add " << e << " with overlapping " << path.FindFirst(e));
+                }
                 return false;
-            } else {
-                insert(e);
             }
+            insert(e, path.GetId());
         }
         path.PushBack(e, gap);
         return true;

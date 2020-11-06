@@ -8,6 +8,8 @@
 #pragma once
 
 #include "assembly_graph/core/graph.hpp"
+#include "io/binary/binary.hpp"
+
 #include <algorithm>
 #include <atomic>
 #include <deque>
@@ -21,33 +23,78 @@ struct Gap {
     struct Trash {
         uint32_t previous;
         uint32_t current;
+        void BinWrite(std::ostream &str) const {
+            using io::binary::BinWrite;
+            BinWrite(str, previous);
+            BinWrite(str, current);
+        };
 
-        Trash(uint32_t previous_, uint32_t current_) :
-            previous(previous_), current(current_) {
+        void BinRead(std::istream &str) {
+            using io::binary::BinRead;
+            BinRead(str, previous);
+            BinRead(str, current);
         }
     };
+
+    using GapSeqType = std::unique_ptr<std::string>;
+
+    GapSeqType gap_seq;
     int gap;
     Trash trash;
 
 //True if gap is resolved not by ordinary procedure but by some sort of magic, and should not be changed.
     bool is_final;
 
-    static const int INVALID_GAP = std::numeric_limits<int>::min();
+    static constexpr int INVALID_GAP = std::numeric_limits<int>::min();
+    static constexpr bool IS_FINAL_DEFAULT = true;
+    #define DEFAULT_TRASH {0, 0}
 
-    static const Gap& INVALID() {
-        static Gap gap = Gap(INVALID_GAP);
-        return gap;
+    static Gap INVALID() {
+        return Gap(INVALID_GAP);
     }
 
     //gap is in k+1-mers and does not know about "trash" regions
-    explicit Gap(int gap_, Gap::Trash trash_, bool is_final_ = true)
-            : gap(gap_), trash(trash_), is_final(is_final_) { }
+    Gap(int gap_, Gap::Trash trash_, bool is_final_ = IS_FINAL_DEFAULT, GapSeqType gap_seq_ = nullptr)
+        : gap_seq(std::move(gap_seq_))
+        , gap(gap_)
+        , trash(trash_)
+        , is_final(is_final_)
+    {}
 
-    explicit Gap(int gap_ = 0, bool is_final_ = true)
-            : gap(gap_), trash{0, 0}, is_final(is_final_) { }
+    explicit Gap(int gap_ = 0, bool is_final_ = IS_FINAL_DEFAULT, GapSeqType gap_seq_ = nullptr)
+        : Gap(gap_, DEFAULT_TRASH, is_final_, std::move(gap_seq_))
+    {}
 
-    Gap conjugate() const {
-        return Gap(gap, {trash.current, trash.previous}, is_final);
+    Gap(GapSeqType gap_seq_, int gap_)
+        : Gap(gap_, DEFAULT_TRASH, IS_FINAL_DEFAULT, std::move(gap_seq_))
+    {}
+
+    Gap(std::string gap_seq_, int gap_)
+        : Gap(gap_, DEFAULT_TRASH, IS_FINAL_DEFAULT, MakeGapSeq(std::move(gap_seq_)))
+    {}
+
+    Gap(const Gap& other)
+        : Gap(other.gap, other.trash, other.is_final, other.CopyGapSeq())
+    {};
+
+    Gap& operator=(const Gap& other) {
+        gap_seq = other.CopyGapSeq();
+        gap = other.gap;
+        trash = other.trash;
+        is_final = other.is_final;
+        return *this;
+    };
+
+    Gap(Gap&&) = default;
+    Gap& operator=(Gap&&) = default;
+
+    Gap Conjugate() const {
+        if (!gap_seq)
+            return Gap(gap, {trash.current, trash.previous}, is_final);
+        auto gap_seq_complement = *gap_seq;
+        std::reverse(gap_seq_complement.begin(), gap_seq_complement.end());
+        nucl_str_complement(const_cast<char*>(gap_seq_complement.data()), gap_seq_complement.size());
+        return Gap(gap, {trash.current, trash.previous}, is_final, MakeGapSeq(std::move(gap_seq_complement)));
     }
 
     bool operator==(const Gap &that) const {
@@ -56,21 +103,47 @@ struct Gap {
                 is_final == that.is_final;
     }
 
-    bool operator!=(const Gap &that) const {
+    bool operator!=(const Gap &that) const noexcept {
         return !(*this == that);
     }
 
-    int overlap(size_t k) const {
+    int Overlap(size_t k) const noexcept {
         return int(k) - gap;
     }
 
-    int overlap_after_trim(size_t k) const {
-        return overlap(k) - trash.current - trash.previous;
+    int OverlapAfterTrim(size_t k) const noexcept {
+        return Overlap(k) - trash.current - trash.previous;
     }
 
-    bool NoTrash() const {
+    bool NoTrash() const noexcept {
         return trash.current == 0 && trash.previous == 0;
     }
+
+    GapSeqType CopyGapSeq() const {
+        return (gap_seq ? std::make_unique<std::string>(*gap_seq) : nullptr);
+    }
+
+    static GapSeqType MakeGapSeq(std::string && gap_seq_) {
+        return (gap_seq_.empty() ? nullptr : std::make_unique<std::string>(std::move(gap_seq_)));
+    }
+
+    void BinWrite(std::ostream &str) const {
+        using io::binary::BinWrite;
+        BinWrite(str, gap_seq);
+        BinWrite(str, gap);
+        BinWrite(str, trash);
+        BinWrite(str, is_final);
+    };
+
+    void BinRead(std::istream &str) {
+        using io::binary::BinRead;
+        BinRead(str, gap_seq);
+        BinRead(str, gap);
+        BinRead(str, trash);
+        BinRead(str, is_final);
+    }
+
+    #undef DEFAULT_TRASH
 };
 
 inline std::ostream& operator<<(std::ostream& os, Gap gap) {
@@ -86,59 +159,281 @@ public:
     virtual ~PathListener() {}
 };
 
-class BidirectionalPath : public PathListener {
+class GappedPath {
+protected:
+    using EdgeId = debruijn_graph::EdgeId;
+    std::deque<EdgeId> edges_;
+    std::deque<Gap> gaps_; // gap0 -> e0 -> gap1 -> e1 -> ... -> gapN -> eN; gap0 = 0
+
+public:
+    GappedPath() = default;
+    GappedPath(const std::vector<EdgeId>& path)
+        : edges_(path.begin(), path.end())
+        , gaps_(path.size(), Gap())
+    {}
+
+    GappedPath(const GappedPath&) = default;
+    GappedPath(GappedPath&&) = default;
+    GappedPath& operator=(const GappedPath&) = default;
+    GappedPath& operator=(GappedPath&&) = default;
+
+    size_t Size() const noexcept {
+        return edges_.size();
+    }
+
+    bool Empty() const noexcept {
+        return edges_.empty();
+    }
+
+    EdgeId operator[](size_t index) const noexcept {
+        return edges_[index];
+    }
+
+    EdgeId At(size_t index) const {
+        return edges_.at(index);
+    }
+
+    const Gap& GapAt(size_t index) const noexcept {
+        return gaps_[index];
+    }
+
+    void SetGapAt(size_t index, const Gap &gap) {
+        gaps_[index] = gap;
+    }
+
+    EdgeId Back() const noexcept {
+        return edges_.back();
+    }
+
+    EdgeId Front() const noexcept {
+        return edges_.front();
+    }
+    void PushBack(EdgeId e, Gap gap = Gap()) {
+        VERIFY(!edges_.empty() || gap == Gap());
+        edges_.push_back(e);
+        gaps_.push_back(std::move(gap));
+    }
+
+    void PushBack(GappedPath path, Gap gap = Gap()) {
+        if (path.Empty())
+            return;
+        PushBack(path.Front(), std::move(gap));
+        std::move(path.edges_.begin()+1, path.edges_.end(), std::back_inserter(edges_));
+        std::move(path.gaps_.begin()+1, path.gaps_.end(), std::back_inserter(gaps_));
+    }
+
+    void PushBack(const std::vector<EdgeId>& path, Gap gap = Gap()) {
+        if (path.empty())
+            return;
+        PushBack(path.front(), std::move(gap));
+        std::copy(path.begin()+1, path.end(), std::back_inserter(edges_));
+        gaps_.resize(gaps_.size() + path.size() - 1, Gap());
+    }
+
+    void PopBack() noexcept {
+        edges_.pop_back();
+        gaps_.pop_back();
+    }
+
+    void PopBack(size_t count) {
+        VERIFY(count <= Size());
+        for (size_t i = 0; i < count; ++i)
+            PopBack();
+    }
+
+    void PushFront(EdgeId e, Gap gap) {
+        if (!Empty())
+            gaps_[0] = std::move(gap);
+        edges_.push_front(e);
+        gaps_.push_front(Gap());
+    }
+
+    void PopFront() noexcept {
+        edges_.pop_front();
+        gaps_.pop_front();
+        if (!Empty())
+            gaps_.front() = Gap();
+    }
+
+    void Clear() noexcept {
+        edges_.clear();
+        gaps_.clear();
+    }
+
+    int FindFirst(EdgeId e) const noexcept {
+        auto pos = std::find(edges_.begin(), edges_.end(), e);
+        if (pos == edges_.end())
+            return -1;
+        return static_cast<int>(pos - edges_.begin());
+    }
+
+    int FindLast(EdgeId e) const noexcept {
+        auto pos = std::find(edges_.rbegin(), edges_.rend(), e);
+        return static_cast<int>(edges_.rend() - pos - 1);
+    }
+
+    bool Contains(EdgeId e) const noexcept {
+        return FindFirst(e) != -1;
+    }
+
+    std::vector<size_t> FindAll(EdgeId e, size_t start = 0) const {
+        VERIFY(start < Size());
+        std::vector<size_t> result;
+        for (size_t i = start; i < Size(); ++i) {
+            if (edges_[i] == e)
+                result.push_back(i);
+        }
+        return result;
+    }
+
+    //TODO is it ok not to compare gaps here?
+    bool CompareFrom(size_t from, const GappedPath& sample) const noexcept {
+        if (from + sample.Size() > Size())
+            return false;
+
+        for (size_t i = 0; i < sample.Size(); ++i) {
+            if ((*this)[from + i] != sample[i])
+                return false;
+        }
+        return true;
+    }
+
+    int FindFirst(const GappedPath& path, size_t from = 0) const noexcept {
+        if (path.Size() > Size()) {
+            return -1;
+        }
+        for (size_t i = from; i <= Size() - path.Size(); ++i) {
+            if (CompareFrom(i, path))
+                return static_cast<int>(i);
+        }
+        return -1;
+    }
+
+    //TODO: Why just naive search?
+    int FindLast(const GappedPath& path) const noexcept {
+        if (path.Size() > Size()) {
+            return -1;
+        }
+        for (int i = (int) (Size() - path.Size()); i >= 0; --i) {
+            if (CompareFrom((size_t) i, path))
+                return i;
+        }
+        return -1;
+    }
+
+    bool Equal(const GappedPath& path) const {
+        return operator==(path);
+    }
+
+    bool operator==(const GappedPath& path) const {
+        return Size() == path.Size() && CompareFrom(0, path);
+    }
+
+    bool operator!=(const GappedPath& path) const {
+        return !operator==(path);
+    }
+
+    GappedPath SubPath(size_t from, size_t to) const {
+        VERIFY(from <= to && to <= Size());
+        GappedPath result;
+        if (from < to) {
+            result.PushBack(edges_[from], Gap());
+            for (size_t i = from + 1; i < to; ++i)
+                result.PushBack(edges_[i], gaps_[i]);
+        }
+        return result;
+    }
+
+    GappedPath SubPath(size_t from) const {
+        return SubPath(from, Size());
+    }
+
+    auto begin() const noexcept -> decltype(edges_.begin()) {
+        return edges_.begin();
+    }
+
+    auto end() const noexcept -> decltype(edges_.end()) {
+        return edges_.end();
+    }
+
+    void BinWrite(std::ostream &str) const {
+        using io::binary::BinWrite;
+        BinWrite(str, edges_.size());
+        for (auto x : edges_)
+            BinWrite(str, x);
+
+        BinWrite(str, gaps_.size());
+        for (const auto& x : gaps_)
+            BinWrite(str, x);
+    };
+
+    void BinRead(std::istream &str) {
+        using io::binary::BinRead;
+        edges_.resize(BinRead<size_t>(str));
+        for (auto& x : edges_)
+            BinRead(str, x);
+
+        gaps_.resize(BinRead<size_t>(str));
+        for (auto& x : gaps_)
+            BinRead(str, x);
+    }
+};
+
+class BidirectionalPath : public PathListener, public GappedPath {
     static std::atomic<uint64_t> path_id_;
 
     const debruijn_graph::Graph& g_;
-    std::deque<debruijn_graph::EdgeId> data_;
     BidirectionalPath* conj_path_;
     // Length from beginning of i-th edge to path end: L(e_i + gap_(i+1) + e_(i+1) + ... + gap_N + e_N)
     std::deque<size_t> cumulative_len_;
-    std::deque<Gap> gap_len_;  // e0 -> gap1 -> e1 -> ... -> gapN -> eN; gap0 = 0
     std::vector<PathListener *> listeners_;
     const uint64_t id_;  //Unique ID
     float weight_;
+    int cycle_overlapping_; // in edges; [ < 0 ] => is not cycled
 
 public:
     BidirectionalPath(const debruijn_graph::Graph& g)
             : g_(g),
               conj_path_(nullptr),
               id_(path_id_++),
-              weight_(1.0) {
+              weight_(1.0),
+              cycle_overlapping_(-1) {
     }
 
-    BidirectionalPath(const debruijn_graph::Graph& g, const std::vector<debruijn_graph::EdgeId>& path)
-            : BidirectionalPath(g) {
-        cumulative_len_.resize(path.size(), 0);
-        data_.resize(path.size());
-        gap_len_.resize(path.size(), Gap());
+    BidirectionalPath(const debruijn_graph::Graph& g, GappedPath path) 
+            : BidirectionalPath(g)
+    {
+        GappedPath::PushBack(std::move(path));
+        cumulative_len_.resize(Size(), 0);
 
-        for (size_t i = 0; i < path.size(); ++i) {
-            data_[i] = path[i];
-            cumulative_len_.front() += g_.length(path[i]);
-        }
-        for (size_t i = 1; i < path.size(); ++i) {
-            cumulative_len_[i] = cumulative_len_[i - 1] - g_.length(data_[i - 1]);
-        }
+        for (size_t i = 0; i < Size(); ++i)
+            cumulative_len_.front() += g_.length(edges_[i]) + gaps_[i].gap;
+
+        for (size_t i = 1; i < Size(); ++i)
+            cumulative_len_[i] = cumulative_len_[i - 1] - g_.length(edges_[i - 1]) - gaps_[i].gap;
     }
 
-    BidirectionalPath(const debruijn_graph::Graph& g, debruijn_graph::EdgeId e)
+    BidirectionalPath(const debruijn_graph::Graph& g, std::vector<EdgeId> path)
+            : BidirectionalPath(g, GappedPath(std::move(path)))
+    {}
+
+    BidirectionalPath(const debruijn_graph::Graph& g, EdgeId e)
             : BidirectionalPath(g) {
         PushBack(e);
     }
 
     BidirectionalPath(const BidirectionalPath& path)
-            : g_(path.g_),
-              data_(path.data_),
+            : GappedPath(path),
+              g_(path.g_),
               conj_path_(nullptr),
               cumulative_len_(path.cumulative_len_),
-              gap_len_(path.gap_len_),
               listeners_(),
               id_(path_id_++),
-              weight_(path.weight_) {
+              weight_(path.weight_),
+              cycle_overlapping_(path.cycle_overlapping_) {
     }
 
-    const debruijn_graph::Graph &g() const{
+    const debruijn_graph::Graph &g() const noexcept {
         return g_;
     }
 
@@ -146,119 +441,110 @@ public:
         listeners_.push_back(listener);
     }
 
-//    void Unsubscribe(PathListener * listener) {
-//        for (auto it = listeners_.begin(); it != listeners_.end(); ++it) {
-//            if (*it == listener) {
-//                listeners_.erase(it);
-//                break;
-//            }
-//        }
-//    }
-
-    void SetConjPath(BidirectionalPath* path) {
+    void SetConjPath(BidirectionalPath* path) noexcept {
         conj_path_ = path;
     }
 
-    const BidirectionalPath* GetConjPath() const {
+    const BidirectionalPath* GetConjPath() const noexcept {
         return conj_path_;
     }
 
-    BidirectionalPath* GetConjPath() {
+    BidirectionalPath* GetConjPath() noexcept {
         return conj_path_;
     }
 
-    void SetWeight(float w) {
+    void SetWeight(float w) noexcept {
         weight_ = w;
     }
 
-    double GetWeight() const {
+    double GetWeight() const noexcept {
         return weight_;
     }
 
-    size_t Size() const {
-        return data_.size();
-    }
-
-    const debruijn_graph::Graph& graph() const {
+    const debruijn_graph::Graph& graph() const noexcept {
         return g_;
     }
 
-    bool Empty() const {
-        return data_.empty();
+    bool SetCycleOverlapping(int new_overlapping) noexcept {
+        if (static_cast<int>(Size()) < new_overlapping)
+            return false;
+
+        for (int i = 0; i < new_overlapping; ++i) {
+            if (edges_[i] != edges_[Size() - new_overlapping + i] || GapAt(i) != GapAt(Size() - new_overlapping + i))
+                return false;
+        }
+
+        cycle_overlapping_ = new_overlapping;
+        if (conj_path_)
+            conj_path_->cycle_overlapping_ = new_overlapping;
+        return true;
+    }
+
+    int GetCycleOverlapping() const noexcept {
+        return cycle_overlapping_;
+    }
+
+    bool IsCycle() const noexcept {
+        return cycle_overlapping_ >= 0;
     }
 
     size_t Length() const {
         if (Empty()) {
             return 0;
         }
-        VERIFY(gap_len_[0].gap == 0);
+        VERIFY(gaps_[0].gap == 0);
         return cumulative_len_[0];
     }
 
-    //TODO iterators forward/reverse
-    debruijn_graph::EdgeId operator[](size_t index) const {
-        return data_[index];
-    }
-
-    debruijn_graph::EdgeId At(size_t index) const {
-        return data_[index];
-    }
-
     int ShiftLength(size_t index) const {
-        return gap_len_[index].gap + (int) g_.length(At(index));
+        return gaps_[index].gap + (int) g_.length(At(index));
     }
 
     // Length from beginning of i-th edge to path end for forward directed path: L(e1 + e2 + ... + eN)
-    size_t LengthAt(size_t index) const {
+    size_t LengthAt(size_t index) const noexcept {
         return cumulative_len_[index];
     }
 
-    Gap GapAt(size_t index) const {
-        return gap_len_[index];
-    }
-
-    void SetGapAt(size_t index, const Gap &gap) {
-        gap_len_[index] = gap;
-    }
-
-    size_t GetId() const {
+    size_t GetId() const noexcept {
         return id_;
     }
 
-    debruijn_graph::EdgeId Back() const {
-        return data_.back();
+    void PushBack(EdgeId e, Gap gap = Gap()) {
+        VERIFY(!edges_.empty() || gap == Gap());
+        if (IsCycle()) {
+            VERIFY(e == edges_[cycle_overlapping_]);
+            ++cycle_overlapping_;
+        }
+        GappedPath::PushBack(e, std::move(gap));
+        IncreaseLengths(g_.length(e), gaps_.back().gap);
+        NotifyBackEdgeAdded(e, gaps_.back());
     }
 
-    debruijn_graph::EdgeId Front() const {
-        return data_.front();
-    }
-    void PushBack(debruijn_graph::EdgeId e, const Gap& gap = Gap()) {
-        VERIFY(!data_.empty() || gap == Gap());
-        data_.push_back(e);
-        gap_len_.push_back(gap);
-        IncreaseLengths(g_.length(e), gap.gap);
-        NotifyBackEdgeAdded(e, gap);
-    }
-
-    void PushBack(const BidirectionalPath& path, const Gap& gap = Gap()) {
+    void PushBack(const BidirectionalPath& path, Gap gap = Gap()) {
         if (path.Size() > 0) {
             VERIFY(path.GapAt(0) == Gap());
-            PushBack(path.At(0), gap);
-            for (size_t i = 1; i < path.Size(); ++i) {
+            PushBack(path.At(0), std::move(gap));
+            for (size_t i = 1; i < path.Size(); ++i)
                 PushBack(path.At(i), path.GapAt(i));
-            }
         }
     }
 
+    void PushBack(const std::vector<EdgeId>& path, Gap gap = Gap()) {
+        VERIFY(!path.empty());
+        PushBack(path[0], std::move(gap));
+        for (size_t i = 1; i < path.size(); ++i)
+            PushBack(path[i]);
+    }
+
     void PopBack() {
-        if (data_.empty())
+        if (edges_.empty())
             return;
 
-        debruijn_graph::EdgeId e = data_.back();
+        EdgeId e = edges_.back();
         DecreaseLengths();
-        gap_len_.pop_back();
-        data_.pop_back();
+        GappedPath::PopBack();
         NotifyBackEdgeRemoved(e);
+        DecreaseCycleOverlapping();
     }
 
     void PopBack(size_t count) {
@@ -273,45 +559,23 @@ public:
         }
     }
 
-    void FrontEdgeAdded(debruijn_graph::EdgeId, BidirectionalPath*, const Gap&) override {
+    void FrontEdgeAdded(EdgeId, BidirectionalPath*, const Gap&) override {
         //FIXME is it ok to be empty?
     }
 
-    void BackEdgeAdded(debruijn_graph::EdgeId e, BidirectionalPath*, const Gap& gap) override {
-        PushFront(g_.conjugate(e), gap.conjugate());
+    void BackEdgeAdded(EdgeId e, BidirectionalPath*, const Gap& gap) override {
+        PushFront(g_.conjugate(e), gap.Conjugate());
     }
 
-    void FrontEdgeRemoved(debruijn_graph::EdgeId, BidirectionalPath*) override {
+    void FrontEdgeRemoved(EdgeId, BidirectionalPath*) override {
     }
 
-    void BackEdgeRemoved(debruijn_graph::EdgeId, BidirectionalPath *) override {
+    void BackEdgeRemoved(EdgeId, BidirectionalPath *) override {
         PopFront();
     }
 
-    int FindFirst(debruijn_graph::EdgeId e) const {
-        for (size_t i = 0; i < Size(); ++i) {
-            if (data_[i] == e) {
-                return (int) i;
-            }
-        }
-        return -1;
-    }
-
-    int FindLast(debruijn_graph::EdgeId e) const {
-        for (int i = (int) Size() - 1; i >= 0; --i) {
-            if (data_[i] == e) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    bool Contains(debruijn_graph::EdgeId e) const {
-        return FindFirst(e) != -1;
-    }
-
     bool Contains(debruijn_graph::VertexId v) const {
-        for(auto edge : data_) {
+        for(auto edge : edges_) {
             if(g_.EdgeEnd(edge) == v || g_.EdgeStart(edge) == v ) {
                 return true;
             }
@@ -319,92 +583,8 @@ public:
         return false;
     }
 
-    std::vector<size_t> FindAll(debruijn_graph::EdgeId e, size_t start = 0) const {
-        std::vector<size_t> result;
-        for (size_t i = start; i < Size(); ++i) {
-            if (data_[i] == e) {
-                result.push_back(i);
-            }
-        }
-        return result;
-    }
-
-    //TODO is it ok not to compare gaps here?
-    bool CompareFrom(size_t from, const BidirectionalPath& sample) const {
-        if (from + sample.Size() > Size()) {
-            return false;
-        }
-
-        for (size_t i = 0; i < sample.Size(); ++i) {
-            if (At(from + i) != sample[i]) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    size_t CommonEndSize(const BidirectionalPath& p) const {
-        if (p.Size() == 0) {
-            return 0;
-        }
-        std::vector<size_t> begins = FindAll(p.At(0));
-        for (size_t i = 0; i < begins.size(); ++i) {
-            size_t it1 = begins[i];
-            size_t it2 = 0;
-            while (it2 < p.Size() and At(it1) == p.At(it2)) {
-                it1++;
-                it2++;
-                if (it1 == Size()) {
-                    return it2;
-                }
-            }
-        }
-        return 0;
-    }
-
-    int FindFirst(const BidirectionalPath& path, size_t from = 0) const {
-        if (path.Size() > Size()) {
-            return -1;
-        }
-        for (size_t i = from; i <= Size() - path.Size(); ++i) {
-            if (CompareFrom(i, path)) {
-                return (int) i;
-            }
-        }
-        return -1;
-    }
-//TODO: Why just naive search?
-    int FindLast(const BidirectionalPath& path) const {
-        if (path.Size() > Size()) {
-            return -1;
-        }
-        for (int i = (int) (Size() - path.Size()); i >= 0; --i) {
-            if (CompareFrom((size_t) i, path)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    bool Equal(const BidirectionalPath& path) const {
-        return operator==(path);
-    }
-
-    bool operator==(const BidirectionalPath& path) const {
-        return Size() == path.Size() && CompareFrom(0, path);
-    }
-
-    bool operator!=(const BidirectionalPath& path) const {
-        return !operator==(path);
-    }
-
     BidirectionalPath SubPath(size_t from, size_t to) const {
-        VERIFY(from <= to && to <= Size());
-        BidirectionalPath result(g_);
-        for (size_t i = from; i < to; ++i) {
-            result.PushBack(data_[i], i == from ? Gap() : gap_len_[i]);
-        }
-        return result;
+        return BidirectionalPath(g_, GappedPath::SubPath(from, to));
     }
 
     BidirectionalPath SubPath(size_t from) const {
@@ -415,7 +595,7 @@ public:
         double cov = 0.0;
 
         for (size_t i = 0; i < Size(); ++i) {
-            cov += g_.coverage(data_[i]) * (double) g_.length(data_[i]);
+            cov += g_.coverage(edges_[i]) * (double) g_.length(edges_[i]);
         }
         return cov / (double) Length();
     }
@@ -427,30 +607,17 @@ public:
         }
         result.PushBack(g_.conjugate(Back()));
         for (int i = ((int) Size()) - 2; i >= 0; --i) {
-            result.PushBack(g_.conjugate(data_[i]), gap_len_[i + 1].conjugate());
+            result.PushBack(g_.conjugate(edges_[i]), gaps_[i + 1].Conjugate());
         }
-
+        result.cycle_overlapping_ = cycle_overlapping_;
         return result;
-    }
-
-    //FIXME remove
-    std::vector<debruijn_graph::EdgeId> ToVector() const {
-        return std::vector<debruijn_graph::EdgeId>(data_.begin(), data_.end());
-    }
-
-    auto begin() const -> decltype(data_.begin()) {
-        return data_.begin();
-    }
-
-    auto end() const -> decltype(data_.end()) {
-        return data_.end();
     }
 
     bool IsCircular() {
         return (Size() > 0 &&
                 g_.EdgeStart(Front()) == g_.EdgeEnd(Back()));
     }
-    
+
     void PrintDEBUG() const;
     void PrintINFO() const;
     void Print(std::ostream &os) const;
@@ -467,7 +634,7 @@ private:
     }
 
     void DecreaseLengths() {
-        size_t length = g_.length(data_.back()) + gap_len_.back().gap;
+        size_t length = g_.length(edges_.back()) + gaps_.back().gap;
 
         for (auto iter = cumulative_len_.begin(); iter != cumulative_len_.end(); ++iter) {
             *iter -= length;
@@ -475,37 +642,37 @@ private:
         cumulative_len_.pop_back();
     }
 
-    void NotifyFrontEdgeAdded(debruijn_graph::EdgeId e, Gap gap) {
+    void NotifyFrontEdgeAdded(EdgeId e, const Gap& gap) {
         for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
             (*i)->FrontEdgeAdded(e, this, gap);
         }
     }
 
-    void NotifyBackEdgeAdded(debruijn_graph::EdgeId e, Gap gap) {
+    void NotifyBackEdgeAdded(EdgeId e, const Gap& gap) {
         for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
             (*i)->BackEdgeAdded(e, this, gap);
         }
     }
 
-    void NotifyFrontEdgeRemoved(debruijn_graph::EdgeId e) {
+    void NotifyFrontEdgeRemoved(EdgeId e) {
         for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
             (*i)->FrontEdgeRemoved(e, this);
         }
     }
 
-    void NotifyBackEdgeRemoved(debruijn_graph::EdgeId e) {
+    void NotifyBackEdgeRemoved(EdgeId e) {
         for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
             (*i)->BackEdgeRemoved(e, this);
         }
     }
 
-    void PushFront(debruijn_graph::EdgeId e, Gap gap) {
-        data_.push_front(e);
-        if (gap_len_.size() > 0) {
-            VERIFY(gap_len_[0] == Gap());
-            gap_len_[0] = gap;
+    void PushFront(EdgeId e, const Gap& gap) {
+        if (IsCycle()) {
+            VERIFY(e == edges_[Size() - cycle_overlapping_ - 1]);
+            ++cycle_overlapping_;
         }
-        gap_len_.push_front(Gap());
+
+        GappedPath::PushFront(e, gap);
 
         int length = (int) g_.length(e);
         if (cumulative_len_.empty()) {
@@ -517,15 +684,16 @@ private:
     }
 
     void PopFront() {
-        debruijn_graph::EdgeId e = data_.front();
-        data_.pop_front();
-        gap_len_.pop_front();
+        EdgeId e = edges_.front();
         cumulative_len_.pop_front();
-        if (!gap_len_.empty()) {
-            gap_len_.front() = Gap();
-        }
+        GappedPath::PopFront();
 
         NotifyFrontEdgeRemoved(e);
+        DecreaseCycleOverlapping();
+    }
+
+    void DecreaseCycleOverlapping() noexcept {
+        cycle_overlapping_ -= IsCycle();
     }
 
     DECL_LOGGER("BidirectionalPath");
@@ -593,6 +761,7 @@ inline size_t FirstNotEqualPosition(const BidirectionalPath &path1, size_t pos1,
     DEBUG("Equal!!");
     return -1UL;
 }
+
 inline bool EqualBegins(const BidirectionalPath &path1, size_t pos1,
                         const BidirectionalPath &path2, size_t pos2,
                         bool use_gaps) {
@@ -639,6 +808,10 @@ inline bool EndsWithInterstrandBulge(const BidirectionalPath &path) {
             g.OutgoingEdgeCount(v1) == 2 &&
             g.CheckUniqueIncomingEdge(v1);
 }
+
+using GappedPathStorage = std::vector<GappedPath>;
+
+using TrustedPathsContainer = std::vector<GappedPathStorage>;
 
 }  // path extend
 

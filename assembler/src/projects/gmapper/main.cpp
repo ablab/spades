@@ -110,8 +110,9 @@ static void ProcessSingleReads(GraphPack &gp, DataSet &dataset,
     SequenceMapperNotifier notifier(gp, dataset.lib_count());
 
     const auto &graph = gp.get<Graph>();
-    LongReadMapper read_mapper(graph, gp.get_mutable<LongReadContainer<Graph>>()[ilib],
-                               ChooseProperReadPathExtractor(graph, lib.type()));
+    auto& single_long_reads = gp.get_mutable<LongReadContainer<Graph>>()[ilib];
+    auto& trusted_paths = gp.get_mutable<path_extend::TrustedPathsContainer>()[ilib];
+    LongReadMapper read_mapper(graph, single_long_reads, trusted_paths, lib.type());
 
     if (lib.is_contig_lib()) {
         //FIXME pretty awful, would be much better if listeners were shared ptrs
