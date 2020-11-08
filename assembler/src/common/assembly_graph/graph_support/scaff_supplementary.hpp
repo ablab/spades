@@ -114,7 +114,7 @@ public:
 
 class UsedUniqueStorage {
     std::unordered_set<EdgeId> used_;
-    std::unordered_map<size_t, std::unordered_set<EdgeId>> used_by_paths_;
+    std::unordered_map<size_t, std::unordered_set<EdgeId>> used_by_paths_; // for fast check 'whether the path contains the edge'
     const ScaffoldingUniqueEdgeStorage& unique_;
     const debruijn_graph::ConjugateDeBruijnGraph &g_;
 
@@ -164,11 +164,13 @@ public:
     bool TryUseEdge(BidirectionalPath &path, EdgeId e, const Gap &gap) {
         if (UniqueCheckEnabled()) {
             if (IsUsedAndUnique(e)) {
-                if (used_by_paths_[path.GetId()].count(e) && path.SetCycleOverlapping(path.FindFirst(e))) {
-                    DEBUG("Trying to add edge " << e << " was failed, because this edge is unique and had used before\n");
-                } else {
-                    DEBUG("Wrong edge was detected, trying to add " << e << " with overlapping " << path.FindFirst(e));
+                // if we add 'e' to the path, it might look like "abce..abce" and 'e' is unique edge, hence we have found a cycle.
+                if (IsUsed(e, path.GetId())) {
+                    // p.s. Cycle overlapping will be set iff the prefix equals the suffix
+                    if (!path.SetCycleOverlapping(path.FindFirst(e)))
+                        DEBUG("Wrong edge was detected, trying to add " << e << " with overlapping " << path.FindFirst(e));
                 }
+                DEBUG("Trying to add the edge " << e << " was failed, because this edge is unique and had used earlier\n");
                 return false;
             }
             insert(e, path.GetId());

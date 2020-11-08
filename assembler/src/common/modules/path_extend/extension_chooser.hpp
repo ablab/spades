@@ -1256,6 +1256,7 @@ public:
             , use_low_quality_matching_(use_low_quality_matching)
     {}
 
+    /// @returns the possible next edge of the path
     EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &) const override {
         DEBUG("We are in Filter of TrustedContigsExtensionChooser");
         path.PrintDEBUG();
@@ -1292,6 +1293,7 @@ public:
 
 private:
 
+    /// @return (there are covering paths that contains 'path[start_pos]')
     std::pair<bool, std::set<EdgeWithDistance>> GetCandidates(const BidirectionalPath &path,
                                              std::map<EdgeWithDistance, double> &weights_cands,
                                              size_t start_pos,
@@ -1333,6 +1335,7 @@ private:
     std::set<EdgeWithDistance> GetLowQualityCandidats(const BidirectionalPath &path, std::map<EdgeWithDistance, double> &weights_cands) const {
         DEBUG("Fallback mode");
         auto get_comparator = [&path, th = this](size_t start_pos){
+            /// compares the two path prefixes from 'start_pos', might skip several nonunique edges
             return [&path, start_pos, th] (const BidirectionalPath &coverage_path, size_t pos) {
                 auto pos1 = static_cast<int>(start_pos);
                 auto pos2 = static_cast<int>(pos);

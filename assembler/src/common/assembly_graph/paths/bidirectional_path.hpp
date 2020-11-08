@@ -465,6 +465,8 @@ public:
         return g_;
     }
 
+    /// @brief Check whether (suffix == prefix). If so, set cycle overlapping to new_overlapping.
+    /// @returns whether cycle overlapping is set to new_overlapping.
     bool SetCycleOverlapping(int new_overlapping) noexcept {
         if (static_cast<int>(Size()) < new_overlapping)
             return false;

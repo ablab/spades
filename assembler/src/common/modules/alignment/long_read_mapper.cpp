@@ -10,6 +10,7 @@ namespace debruijn_graph {
 
 namespace {
 
+/// @brief Make a set of paths with mapping info
 class GappedPathExtractor {
 public:
     GappedPathExtractor(const Graph& g) noexcept;
@@ -41,6 +42,9 @@ protected:
                                           const MappingPath<EdgeId> &mapping_path) const override;
 };
 
+/// finds the first subsequence in 'mapping_path' starting from 'mapping_index' witch contains only edges equal to 'edge'.
+/// @returns the sum of the edge lengths of this subsequence.
+/// sets mapping range of this subsequence to the 'range_of_mapped_edge'.
 size_t CountMappedEdgeSize(EdgeId edge, const MappingPath<EdgeId>& mapping_path,
                            size_t& mapping_index, MappingRange& range_of_mapped_edge)
 {
@@ -159,6 +163,7 @@ void LongReadMapper::ProcessSingleRead(size_t thread_index, const MappingPath<Ed
     for (const auto& path : paths)
         buffer_storages_[thread_index].AddPath(path.Path_, 1, false);
 
+    /// merges 'paths' into a single path, filling gaps with contig substrings
     auto mergePaths = [&]() {
         std::vector<path_extend::GappedPath> merged_paths;
         merged_paths.push_back(path_extend::GappedPath(paths[0].Path_));
