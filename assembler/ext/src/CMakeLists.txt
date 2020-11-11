@@ -1,6 +1,11 @@
 # -*- cmake -*-
 
-add_subdirectory(jemalloc)
+if (SPADES_USE_JEMALLOC)
+  add_subdirectory(jemalloc EXCLUDE_FROM_ALL)
+endif()
+if (SPADES_USE_MIMALLOC)
+  add_subdirectory(mimalloc EXCLUDE_FROM_ALL)
+endif()
 add_subdirectory(nlopt)
 add_subdirectory(python_libs/joblib2)
 add_subdirectory(python_libs/joblib3)
