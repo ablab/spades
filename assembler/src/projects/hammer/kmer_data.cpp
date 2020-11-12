@@ -191,7 +191,10 @@ class KMerMultiplicityCounter {
 
   public:
   KMerMultiplicityCounter(size_t size)
-      : cqf_(size, [](const KMer &k) { return k.GetHash(); }) {}
+      : cqf_(size, [](const KMer &k) {
+        auto h = k.GetHash();
+        return h;
+      }) {}
 
   ~KMerMultiplicityCounter() {}
 
@@ -273,8 +276,7 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
 
   // Optionally perform a filtering step
   size_t kmers = 0;
-  typename KMerData::traits::ResultFile final_kmers;
-  std::unique_ptr<kmers::KMerDiskCounter<hammer::KMer>> counter;
+  kmers::KMerDiskStorage<hammer::KMer> kmer_storage;
   if (cfg::get().count_filter_singletons) {
       size_t buffer_size;
       {
@@ -326,19 +328,21 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
       }
       INFO("Total " << processed << " reads processed");
 
-      counter.reset(new kmers::KMerDiskCounter<hammer::KMer>(workdir,
-                                                             HammerFilteringKMerSplitter(workdir,
-                                                                                         [&] (const KMer &k) { return mcounter.count(k) > 1; })));
+      kmer_storage =
+          kmers::KMerDiskCounter<hammer::KMer>(workdir,
+                                               HammerFilteringKMerSplitter(workdir,
+                                                                           [&] (const KMer &k) { return mcounter.count(k) > 1; }))
+          .Count(num_files_, omp_get_max_threads());
   } else {
-      counter.reset(new kmers::KMerDiskCounter<hammer::KMer>(workdir,
-                                                             HammerFilteringKMerSplitter(workdir)));
+      kmer_storage =
+          kmers::KMerDiskCounter<hammer::KMer>(workdir,
+                                               HammerFilteringKMerSplitter(workdir))
+          .Count(num_files_, omp_get_max_threads());
       
   }
-  auto res = kmers::KMerIndexBuilder<HammerKMerIndex>(num_files_, omp_get_max_threads()).BuildIndex(data.index_, *counter, /* save final */ true);
-  kmers = res.total_kmers();
-  final_kmers = res.final_kmers();
+  kmers::KMerIndexBuilder<HammerKMerIndex>(omp_get_max_threads()).BuildIndex(data.index_, kmer_storage);
+  kmers = kmer_storage.total_kmers();
 
-  INFO("" << kmers);
   // Check, whether we'll ever have enough memory for running BH and bail out earlier
   double needed = 1.25 * (double)kmers * (sizeof(KMerStat) + sizeof(hammer::KMer));
   if (needed > (double) utils::get_memory_limit())
@@ -352,14 +356,11 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
     data.kmers_.set_data(new hammer::KMer::DataType[kmers * hammer::KMer::GetDataSize(hammer::K)]);
 
     unsigned nthreads = std::min(cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads);
-    auto kmers_its = io::make_raw_kmer_iterator<hammer::KMer>(*final_kmers, hammer::K, 16*nthreads);
-
 #   pragma omp parallel for num_threads(nthreads) schedule(guided)
-    for (size_t i = 0; i < kmers_its.size(); ++i) {
-        auto &kmer_it = kmers_its[i];
-        for (; kmer_it.good(); ++kmer_it) {
-            size_t kidx = data.index_.seq_idx(hammer::KMer(hammer::K, *kmer_it));
-            memcpy(data.kmers_[kidx].data(), *kmer_it, hammer::KMer::TotalBytes);
+    for (size_t i = 0; i < kmer_storage.num_buckets(); ++i) {
+      for (const auto &entry : kmer_storage.bucket(i)) {
+            size_t kidx = data.index_.seq_idx(hammer::KMer(hammer::K, entry.first));
+            memcpy(data.kmers_[kidx].data(), entry.first, hammer::KMer::TotalBytes);
         }
     }
   }

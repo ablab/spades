@@ -97,6 +97,8 @@ class KMerDiskStorage {
 
   static_assert(std::is_nothrow_move_constructible<kmer_iterator>::value, "kmer_iterator must be nonthrow move constructible");
 
+  KMerDiskStorage() {}
+  
   KMerDiskStorage(fs::TmpDir work_dir, unsigned k,
                   KMerBucketPolicy policy)
       : work_dir_(work_dir), k_(k), bucket_policy_(std::move(policy)) {
@@ -104,6 +106,9 @@ class KMerDiskStorage {
     resize(policy.num_buckets());
   }
 
+  KMerDiskStorage(KMerDiskStorage &&) = default;
+  KMerDiskStorage &operator=(KMerDiskStorage &&) = default;
+  
   fs::DependentTmpFile create() {
     fs::DependentTmpFile res;
 #pragma omp critical
@@ -153,6 +158,10 @@ class KMerDiskStorage {
 
   kmer_iterator bucket_end() const {
     return kmer_iterator();
+  }
+
+  auto bucket(size_t i) const {
+    return adt::make_range(bucket_begin(i), bucket_end());
   }
 
   size_t num_buckets() const { return buckets_.size(); }
@@ -366,6 +375,9 @@ class KMerIndexBuilder {
   unsigned num_threads_;
 
  public:
+  KMerIndexBuilder(unsigned num_threads)
+      : num_buckets_(0), num_threads_(num_threads) {}
+
   KMerIndexBuilder(unsigned num_buckets, unsigned num_threads)
       : num_buckets_(num_buckets), num_threads_(num_threads) {}
 
