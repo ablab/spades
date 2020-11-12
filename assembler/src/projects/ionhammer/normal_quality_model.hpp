@@ -353,7 +353,7 @@ class ModelEstimator {
     {
       cluster_center.resize(clusters.size());
 #pragma omp parallel for num_threads(num_threads_)
-      for (uint i = 0; i < clusters.size(); ++i) {
+      for (size_t i = 0; i < clusters.size(); ++i) {
         auto& cluster = clusters[i];
 
         double best_qual =
