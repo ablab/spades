@@ -159,7 +159,7 @@ class KMerDiskStorage {
   }
 
   auto bucket(size_t i) const {
-    return adt::make_range(bucket_begin(i), bucket_end());
+    return adt::make_range(bucket_begin(i), bucket_end(i));
   }
 
   size_t num_buckets() const { return buckets_.size(); }
