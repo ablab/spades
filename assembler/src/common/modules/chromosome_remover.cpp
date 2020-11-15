@@ -169,7 +169,7 @@ void ChromosomeRemover::CoverageFilter(double coverage_cutoff) {
 
 void ChromosomeRemover::PlasmidSimplify(size_t long_edge_bound,
                                         std::function<void (EdgeId)> removal_handler ) {
-    DEBUG("Simplifying graph for plasmid project");
+    DEBUG("Simplifying graph for extrachromosomal removal project");
     auto& graph = gp_.get_mutable<Graph>();
     size_t iteration_count = 10;
     const auto &forbidden = gp_.get<SmartVertexSet>("forbidden_vertices");
@@ -382,7 +382,9 @@ void ChromosomeRemover::RunMetaPipeline() {
     size_t forbidden_size = gp_.get<SmartVertexSet>("forbidden_vertices").size();
     INFO("Forbidden (initial tip ends) vertex size: " << forbidden_size);
     OutputSuspiciousComponents ();
-    OutputNineComponents (gp_, ext_limit_);
+    if (plasmid_config_.output_linear) {
+        OutputNineComponents(gp_, ext_limit_);
+    }
     std::string tmp = std::to_string(ext_limit_);
     while (tmp.length() < 4) tmp = "_" + tmp;
 
@@ -477,7 +479,7 @@ void ChromosomeRemover::FilterSmallComponents() {
         if (new_graph_size == graph_size) {
             INFO("At iteration " << i << " of small components additional filtering graph was not changed");
             if (new_graph_size == 0) {
-                WARN("No putative plasmid contigs found!");
+                INFO("No putative extrachromosomal sequence remained!");
             } else {
                 INFO("After chromosome removal subroutine " << new_graph_size << " vertices left");
             }

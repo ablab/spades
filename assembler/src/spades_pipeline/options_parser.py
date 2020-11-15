@@ -29,6 +29,7 @@ def get_mode():
     mode_parser.add_argument("--meta", dest="meta", action="store_true")
     mode_parser.add_argument("--bio", dest="bio", action="store_true")
     mode_parser.add_argument("--metaviral", dest="metaviral", action="store_true")
+    mode_parser.add_argument("--metaplasmid", dest="metaplasmid", action="store_true")
 
     nargs, unknown_args = mode_parser.parse_known_args(options)
 
@@ -40,9 +41,9 @@ def get_mode():
         mode = "bgc"
     elif script_basename == "metaspades.py" or nargs.meta:
         mode = "meta"
-    if script_basename == "metaplasmidspades.py" or (nargs.plasmid and nargs.meta):
+    if script_basename == "metaplasmidspades.py" or (nargs.plasmid and nargs.meta) or nargs.metaplasmid:
         mode = "metaplasmid"
-    if script_basename == "metaviralspades.py":
+    if script_basename == "metaviralspades.py" or nargs.metaviral:
         mode = "metaviral"
     return mode
 
@@ -61,6 +62,7 @@ def add_mode_to_args(args):
     elif mode == "metaplasmid":
         args.meta = True
         args.plasmid = True
+        args.metaplasmid = True
     elif mode == "metaviral":
         args.meta = True
         args.plasmid = True
@@ -314,6 +316,11 @@ def add_basic_args(pgroup_basic):
     pgroup_basic.add_argument("--metaviral",
                               dest="metaviral",
                               help="runs metaviralSPAdes pipeline for virus detection"
+                              if not help_hidden else argparse.SUPPRESS,
+                              action="store_true")
+    pgroup_basic.add_argument("--metaplasmid",
+                              dest="metaplasmid",
+                              help="runs metaplasmidSPAdes pipeline for plasmid detection in metagenomic datasets (equivalent for --meta --plasmid) "
                               if not help_hidden else argparse.SUPPRESS,
                               action="store_true")
     pgroup_basic.add_argument("--iontorrent",

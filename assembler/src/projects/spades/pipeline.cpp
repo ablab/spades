@@ -216,11 +216,10 @@ void assemble_genome() {
         FATAL_ERROR("Sorry, current version of metaSPAdes can work either with single library (paired-end only) "
                     "or in hybrid paired-end + (TSLR or PacBio or Nanopore) mode.");
     } else if (AssemblyGraphPresent() &&
-               (mode != pipeline_type::metaplasmid &&
-                mode != pipeline_type::plasmid &&
+               (mode != pipeline_type::metaextrachromosomal &&
                 !cfg::get().hm)) {
         // Disallow generic assembly graph inputs for now
-        FATAL_ERROR("Assembly graph inputs are supported only for plasmid / metaplasmid and / bgc modes!");
+        FATAL_ERROR("Assembly graph inputs are supported only for plasmid / metaextrachromosomal and / bgc modes!");
     }
 
     INFO("Starting from stage: " << cfg::get().entry_point);
@@ -259,7 +258,7 @@ void assemble_genome() {
     }
     
     if (cfg::get().main_iteration) {
-        // Not metaplasmid!
+        // Not metaextrachromosomal!
         if (mode == pipeline_type::plasmid)
             SPAdes.add<debruijn_graph::ChromosomeRemoval>();
 
@@ -271,7 +270,7 @@ void assemble_genome() {
         if (cfg::get().rr_enable)
             AddRepeatResolutionStages(SPAdes);
 
-        if (mode == pipeline_type::metaplasmid || mode == pipeline_type::metaviral)
+        if (mode == pipeline_type::metaextrachromosomal || mode == pipeline_type::metaviral)
             AddMetaplasmidStages(SPAdes);
         else
             SPAdes.add<debruijn_graph::ContigOutput>(GetFinalStageOutput());

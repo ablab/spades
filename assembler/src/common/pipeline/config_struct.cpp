@@ -45,7 +45,7 @@ namespace debruijn_graph {
 namespace config {
 
 bool PipelineHelper::IsPlasmidPipeline(const pipeline_type pipeline) {
-    return pipeline == pipeline_type::plasmid || pipeline == pipeline_type::metaplasmid || pipeline == pipeline_type::metaviral;
+    return pipeline == pipeline_type::plasmid || pipeline == pipeline_type::metaextrachromosomal ;
 }
 
 bool PipelineHelper::IsMetagenomicPipeline(const pipeline_type pipeline) {
@@ -53,8 +53,7 @@ bool PipelineHelper::IsMetagenomicPipeline(const pipeline_type pipeline) {
         default:
             return false;
         case pipeline_type::meta:
-        case pipeline_type::metaplasmid:
-        case pipeline_type::metaviral:
+        case pipeline_type::metaextrachromosomal:
             return true;
     }
 
@@ -98,8 +97,7 @@ std::vector<std::string> PipelineTypeNames() {
                     {"rna", pipeline_type::rna},
                     {"plasmid", pipeline_type::plasmid},
                     {"large_genome", pipeline_type::large_genome},
-                    {"metaplasmid", pipeline_type::metaplasmid},
-                    {"metaviral", pipeline_type::metaviral}
+                    {"metaextrachromosomal", pipeline_type::metaextrachromosomal},
                     }, pipeline_type::total);
 }
 
@@ -499,6 +497,7 @@ void load(debruijn_config::plasmid& pd,
     load(pd.additive_step, pt, "additive_step"); //5
     load(pd.relative_step, pt, "relative_step"); //5
     load(pd.max_length, pt, "max_length"); //1000000
+    load(pd.output_linear, pt, "output_linear"); //false
 }
 
 void load(debruijn_config::gap_closer& gc,
@@ -765,7 +764,7 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     load(cfg.two_step_rr, pt, "two_step_rr", complete);
 //TODO::how to do it normally??
     if (cfg.two_step_rr && cfg.mode == pipeline_type::plasmid) {
-        cfg.mode = pipeline_type::metaplasmid;
+        cfg.mode = pipeline_type::metaextrachromosomal;
     }
     load(cfg.use_intermediate_contigs, pt, "use_intermediate_contigs", complete);
     load(cfg.single_reads_rr, pt, "single_reads_rr", complete);
@@ -886,7 +885,7 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
     //some post-loading processing
     using config::pipeline_type;
     cfg.uneven_depth = std::set<pipeline_type>{pipeline_type::mda, pipeline_type::rna,
-                                               pipeline_type::meta, pipeline_type::metaplasmid}.count(cfg.mode);
+                                               pipeline_type::meta, pipeline_type::metaextrachromosomal}.count(cfg.mode);
     if (!cfg.developer_mode) {
         cfg.pe_params.debug_output = false;
         cfg.pe_params.viz.DisableAll();

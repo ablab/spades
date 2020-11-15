@@ -149,7 +149,7 @@ void assemble_genome() {
     if (cfg::get().rr_enable) {
         if (!cfg::get().series_analysis.empty())
             SPAdes.add<debruijn_graph::SeriesAnalysis>();
-//Not metaplasmid!
+//Not metaextrachromosomal!
         if (cfg::get().mode == debruijn_graph::config::pipeline_type::plasmid)
             SPAdes.add<debruijn_graph::ChromosomeRemoval>();
 
@@ -164,8 +164,8 @@ void assemble_genome() {
                .add<debruijn_graph::DistanceEstimation>()
                .add<debruijn_graph::RepeatResolution>();
         INFO("Mode: " + cfg::get().mode);
-        if (cfg::get().mode == debruijn_graph::config::pipeline_type::metaplasmid || cfg::get().mode == debruijn_graph::config::pipeline_type::metaviral) {
-            SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration, true, "contigs_before_metaplasmid");
+        if (cfg::get().mode == debruijn_graph::config::pipeline_type::metaextrachromosomal ) {
+            SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration, true, "contigs_before_metaextrachromosomal");
             AddMetaplasmidStages(SPAdes);
         }
 

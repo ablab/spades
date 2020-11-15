@@ -44,7 +44,7 @@ enum class pipeline_type : char {
     rna,
     plasmid,
     large_genome,
-    metaplasmid,
+    metaextrachromosomal,
     metaviral,
     total
 };
@@ -362,6 +362,7 @@ struct debruijn_config {
         size_t additive_step; //5
         double relative_step; //1.3
         size_t max_length; //1000000
+        bool output_linear; //false
     };
 
     struct position_handler {

@@ -216,14 +216,17 @@ void ContigOutput::run(GraphPack &gp, const char*) {
                 writer.OutputPaths(circulars,
                                    CreatePathsWriters(fs::append_path(output_dir, outputs_[Kind::PlasmidContigs] + ".circular"),
                                                           fastg_writer));
-
-                using ForbiddenVertices = omnigraph::SmartContainer<std::unordered_set<VertexId>, Graph>;
-                PathContainer linears;
-                if (gp.count<ForbiddenVertices>("forbidden_vertices"))
-                    linears = GetTipScaffolds(broken_scaffolds, gp.get<ForbiddenVertices>("forbidden_vertices"), gp.get_mutable<UsedEdges>("used_edges"));
-                writer.OutputPaths(linears,
-                                   CreatePathsWriters(fs::append_path(output_dir, outputs_[Kind::PlasmidContigs] + ".linears"),
-                                                      fastg_writer));
+                if (cfg::get().pd->output_linear) {
+                    using ForbiddenVertices = omnigraph::SmartContainer<std::unordered_set<VertexId>, Graph>;
+                    PathContainer linears;
+                    if (gp.count<ForbiddenVertices>("forbidden_vertices"))
+                        linears = GetTipScaffolds(broken_scaffolds, gp.get<ForbiddenVertices>("forbidden_vertices"),
+                                                  gp.get_mutable<UsedEdges>("used_edges"));
+                    writer.OutputPaths(linears,
+                                       CreatePathsWriters(
+                                               fs::append_path(output_dir, outputs_[Kind::PlasmidContigs] + ".linears"),
+                                               fastg_writer));
+                }
             }
         }
 

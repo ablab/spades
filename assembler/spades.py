@@ -135,7 +135,7 @@ def print_used_values(cfg, log):
         else:
             print_value(cfg, "assembly", "iterative_K", "k")
         if options_storage.args.plasmid:
-            log.info("  Plasmid mode is turned ON")
+            log.info("  Extrachromosomal mode is turned ON")
         if cfg["assembly"].disable_rr:
             log.info("  Repeat resolution is DISABLED")
         else:

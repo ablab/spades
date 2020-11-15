@@ -28,14 +28,14 @@ def add_configs(command, configs_dir, cfg):
                            ("rna", "rna_mode"),
                            ("large_genome", "large_genome_mode"),
                            ("plasmid", "plasmid_mode"),
-                           ("metaviral", "metaviral_mode")]
+                           ("metaviral", "metaviral_mode"),
+                           ("metaplasmid", "metaplasmid_mode")]
     # ("careful", "careful_mode"),
     for (mode, config) in mode_config_mapping:
         if options_storage.args.__dict__[mode]:
+            print (mode + " found " )
             if mode == "rna" or mode == "meta":
                 command.append(os.path.join(configs_dir, "mda_mode.info"))
-#            if mode == "metaviral":
-#                command.append(os.path.join(configs_dir, "plasmid_mode.info"))            
             command.append(os.path.join(configs_dir, config + ".info"))
     if options_storage.args.__dict__["careful"]:
         if options_storage.args.__dict__["single_cell"]:

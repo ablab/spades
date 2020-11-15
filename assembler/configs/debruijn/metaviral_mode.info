@@ -18,3 +18,7 @@ simp
     }
 
 }
+plasmid
+{
+    output_linear true
+}
