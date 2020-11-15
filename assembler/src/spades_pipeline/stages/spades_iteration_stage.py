@@ -33,7 +33,6 @@ def add_configs(command, configs_dir, cfg):
     # ("careful", "careful_mode"),
     for (mode, config) in mode_config_mapping:
         if options_storage.args.__dict__[mode]:
-            print (mode + " found " )
             if mode == "rna" or mode == "meta":
                 command.append(os.path.join(configs_dir, "mda_mode.info"))
             command.append(os.path.join(configs_dir, config + ".info"))

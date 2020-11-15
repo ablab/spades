@@ -153,7 +153,7 @@ def generateK(cfg, log, dataset_data, silent=False):
     cfg.iterative_K = sorted(cfg.iterative_K)
 
 class PlasmidGlueFileStage(stage.Stage):
-    STAGE_NAME = "metaplasmid glue files"
+    STAGE_NAME = "metaextrachromosomal glue files"
     def __init__(self, latest, *args):
         super(PlasmidGlueFileStage, self).__init__(*args)
         self.latest = latest

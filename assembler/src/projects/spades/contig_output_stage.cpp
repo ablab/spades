@@ -46,21 +46,26 @@ bool CheckUsedPath(const path_extend::BidirectionalPath &path, std::unordered_se
 path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer &sc_storage,
                                                 std::unordered_set<EdgeId> &used_edges) {
     path_extend::PathContainer res;
-    INFO("banned " << used_edges.size() <<" edges");
+    INFO("Banned " << used_edges.size() <<" used edges");
     for (const auto &entry : sc_storage) {
-        if (!entry.first->IsCircular() ||
-            CheckUsedPath(*entry.first, used_edges) ||
-            entry.first->Length() < 500)
+        const path_extend::BidirectionalPath &path = *entry.first;
+
+//FIXME: constant
+        if (!path.IsCircular() ||
+            CheckUsedPath(path, used_edges) ||
+            path.Length() < 500)
             continue;
 
         res.Create(entry.first);
     }
-    INFO("got circular scaffs");
+    
+    INFO("Got " << res.size() << " circular scaffolds");
     return res;
 }
 
 path_extend::PathContainer GetTipScaffolds(const path_extend::PathContainer &sc_storage, const std::unordered_set<VertexId> &forbidden_vertices, std::unordered_set<EdgeId> &used_edges) {
     path_extend::PathContainer res;
+
     for (const auto &entry : sc_storage) {
         const path_extend::BidirectionalPath &path = *entry.first;
 //FIXME: constant
@@ -71,8 +76,10 @@ path_extend::PathContainer GetTipScaffolds(const path_extend::PathContainer &sc_
             continue;
         
         res.Create(entry.first);
+        
     }
-    INFO("got suspicious linear tips scaffs");
+
+    INFO("Got " << res.size() << " linear scaffolds");
     return res;
 
 }

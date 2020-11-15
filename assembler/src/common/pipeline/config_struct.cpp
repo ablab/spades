@@ -482,11 +482,6 @@ void load(debruijn_config::plasmid& pd,
     load(pd.small_component_relative_coverage, pt, "small_component_relative_coverage");
     load(pd.min_component_length, pt, "min_component_length");
     load(pd.min_isolated_length, pt, "min_isolated_length");
-    load(pd.meta_mode, pt, "meta_mode");
-    load(pd.absolute_coverage_cutoff, pt, "absolute_coverage_cutoff");
-    load(pd.min_start_edge_length, pt, "min_start_edge_length");
-    load(pd.min_start_coverage, pt, "min_start_coverage");
-    load(pd.max_loop, pt, "max_loop");
     pd.reference_removal = "";
     boost::optional<std::string> reference =
             pt.get_optional<std::string>("reference_removal");
@@ -753,7 +748,6 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     if (!mode_str.empty()) {
         cfg.mode = ModeByName<pipeline_type>(mode_str, PipelineTypeNames());
     }
-
     //FIXME
     load(cfg.tsa, pt, "tsa", complete);
 
@@ -762,10 +756,7 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     load(cfg.pb, pt, "pacbio_processor", complete);
 
     load(cfg.two_step_rr, pt, "two_step_rr", complete);
-//TODO::how to do it normally??
-    if (cfg.two_step_rr && cfg.mode == pipeline_type::plasmid) {
-        cfg.mode = pipeline_type::metaextrachromosomal;
-    }
+
     load(cfg.use_intermediate_contigs, pt, "use_intermediate_contigs", complete);
     load(cfg.single_reads_rr, pt, "single_reads_rr", complete);
     load(cfg.min_edge_length_for_is_count, pt, "min_edge_length_for_is_count", complete);
@@ -818,9 +809,9 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
 
 
     if (pt.count("plasmid")) {
-        CHECK_FATAL_ERROR(!cfg.pd, "Option can be loaded only once");
-        cfg.pd.reset(debruijn_config::plasmid());
-        load(*cfg.pd, pt, "plasmid");
+        if (!cfg.pd)
+            cfg.pd.reset(debruijn_config::plasmid());
+        load(*cfg.pd, pt, "plasmid", false);
     }
 
     if (pt.count("sc_cor")) {

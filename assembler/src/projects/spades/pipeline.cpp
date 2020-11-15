@@ -270,7 +270,7 @@ void assemble_genome() {
         if (cfg::get().rr_enable)
             AddRepeatResolutionStages(SPAdes);
 
-        if (mode == pipeline_type::metaextrachromosomal || mode == pipeline_type::metaviral)
+        if (mode == pipeline_type::metaextrachromosomal)
             AddMetaplasmidStages(SPAdes);
         else
             SPAdes.add<debruijn_graph::ContigOutput>(GetFinalStageOutput());

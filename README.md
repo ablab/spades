@@ -7,8 +7,6 @@
 
 <font size=20>__SPAdes 3.14.1 Manual__</font>
 
-It contains of script for viral assembly from metagenomes (assembler/metaviralspades.py), which is based on metaplasmidSPAdes.
-
 1. [About SPAdes](#sec1) </br>
     1.1. [Supported data types](#sec1.1)</br>
     1.2. [SPAdes pipeline](#sec1.2)</br>

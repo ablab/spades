@@ -667,7 +667,7 @@ public:
         return cov / (double) Length();
     }
 
-    bool IsCircular() {
+    bool IsCircular() const {
         return (Size() > 0 &&
                 g_.EdgeStart(Front()) == g_.EdgeEnd(Back()));
     }
