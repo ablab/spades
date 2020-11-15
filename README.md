@@ -24,9 +24,10 @@ It contains of script for viral assembly from metagenomes (assembler/metaviralsp
     3.3. [Assembling IonTorrent reads](#sec3.3)</br>
     3.4. [Assembling long Illumina paired reads (2x150 and 2x250)](#sec3.4)</br>
     3.5. [SPAdes output](#sec3.5)</br>
-    3.6. [plasmidSPAdes and metaplasmidSPAdes output](#sec3.6)</br>
-    3.7. [biosyntheticSPAdes output](#sec3.7)</br>
-    3.8. [Assembly evaluation](#sec3.8)</br>
+    3.6. [plasmidSPAdes output](#sec3.6)</br>
+    3.7. [metaplasmidSPAdes and metaviralSPAdes output](#sec3.7)</br>
+    3.8. [biosyntheticSPAdes output](#sec3.8)</br>
+    3.9. [Assembly evaluation](#sec3.9)</br>
 4. [Stand-alone binaries released within SPAdes package](#sec4)</br>
     4.1. [k-mer counting](#sec4.1)</br>
     4.2. [k-mer coverage read filter](#sec4.2)</br>
@@ -164,7 +165,8 @@ In case of successful installation the following files will be placed in the `bi
 -   `spades.py` (main executable script)
 -   `metaspades.py` (main executable script for [metaSPAdes](#meta))
 -   `plasmidspades.py` (main executable script for [plasmidSPAdes](#plasmid))
--   `metaplasmidspades.py` (main executable script for [metaplasmidSPAdes](#plasmid))
+-   `metaplasmidspades.py` (main executable script for [metaplasmidSPAdes](#metaextrachromosomal))
+-   `metaviralspades.py` (main executable script for [metaviralSPAdes](#metaextrachromosomal))
 -   `rnaspades.py` (main executable script for [rnaSPAdes](rnaspades_manual.html))
 -   `truspades.py` (main executable script for [truSPAdes](truspades_manual.html))
 -   `spades-core`  (assembly module)
@@ -408,21 +410,30 @@ Note that we assume that `bin` forder from SPAdes installation directory is adde
 <a name="plasmid"></a>
 `--plasmid `   (same as `plasmidspades.py`)
     This flag is required when assembling only plasmids from WGS data sets (runs plasmidSPAdes, see [paper](https://academic.oup.com/bioinformatics/article/32/22/3380/2525610) for the algorithm details). Note, that plasmidSPAdes is not compatible with [single-cell mode](#sc). Additionally, we do not recommend to run plasmidSPAdes on more than one library. 
-If options `--meta` and `--plasmid` are combined (same as `metaplasmidspades.py`) then metaplasmidSPAdes algorithm for extracting plasmids from metagenomic data sets is run (see [paper](https://genome.cshlp.org/content/29/6/961.short) for algorithm details).
+
+For plasmidSPAdes output details see [section 3.6](#sec3.6).
 
 []()
 
-For plasmidSPAdes and metaplasmidSPAdes output details see [section 3.6](#sec3.6).
+<a name="metaextrachromosomal"></a> 
+`--metaplasmid `   (same as `metaplasmidspades.py` and `--meta` `--plasmid`) and
+
+`--metaviral `   (same as `metaviralspades.py`)
+ 
+These options works specially for extracting extrachromosomal elements from metagenomic assemblies. They run similar pipelines that slightly differ in the simplification step; another difference is that for metaviral mode we output suspicious linear contigs and for metaplasmid mode we do not.
+See [metaplasmid paper](https://genome.cshlp.org/content/29/6/961.short) and [metaviral paper](https://academic.oup.com/bioinformatics/article-abstract/36/14/4126/5837667) for the algorithms details.
+
+For metaplasmidSPAdes/metaviralSPAdes output details see [section 3.7](#sec3.7).
 
 []()
 
-Additionally for plasmidSPAdes and metaplasmidSPAdes we recommend to additionally verify resulting contigs with [plasmidVerify tool](https://github.com/ablab/plasmidVerify).
+Additionally for plasmidSPAdes, metaplasmidSPAdes and metaviralSPAdes we recommend to additionally verify resulting contigs with [viralVerify tool](https://github.com/ablab/viralVerify).
 
 []()
 
 <a name="biosynthetic"></a>
 `--bio `
-    This flag is required when assembling only non-ribosomal and polyketide gene clusters from WGS data sets (runs biosyntheticSPAdes, see [paper](https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1) for the algorithm details). biosyntheticSPAdes is supposed to work on isolate or metagenomic WGS dataset. Note, that biosyntheticSPAdes is not compatible with any other modes. See [section 3.7](#sec3.7) for biosyntheticSPAdes output details.
+    This flag is required when assembling only non-ribosomal and polyketide gene clusters from WGS data sets (runs biosyntheticSPAdes, see [paper](https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1) for the algorithm details). biosyntheticSPAdes is supposed to work on isolate or metagenomic WGS dataset. Note, that biosyntheticSPAdes is not compatible with any other modes. See [section 3.8](#sec3.8) for biosyntheticSPAdes output details.
 
 []()
 
@@ -974,16 +985,23 @@ plasmidSPAdes and metaplasmidSPAdes output only DNA sequences from putative plas
 
 For all plasmidSPAdes' contig names in `contigs.fasta`, `scaffolds.fasta` and `assembly_graph.fastg` we append suffix `_component_X`, where `X` is the id of the putative plasmid, which the contig belongs to. Note that plasmidSPAdes may not be able to separate similar plasmids and thus their contigs may appear with the same id. []()  
 
-The repeat resolution and plasmid detection in metaplasmidSPAdes is run independently for different coverage cutoffs values (see [paper](https://genome.cshlp.org/content/29/6/961.short) for details). In order to distinguish contigs with putative plasmids detected at different cutoff levels we extend the contig name in FASTA file with cutoff value used for this particular contig (in format `_cutoff_N`). This is why, in the contrast to regular SPAdes pipeline, there might be a contig with `NODE_1_` prefix for each cutoff with potential plasmids detected. In following example, there were detected two potential plasmids using cutoff 0, one plasmid was detected with cutoff 5 and one with cutoff 10.
+
+<a name="sec3.7"></a>
+## metaplasmidSPAdes/metaviralSPAdes output
+The repeat resolution and extrachromosomal element detection in metaplasmidSPAdes/metaviralSPAdes is run independently for different coverage cutoffs values (see [paper](https://genome.cshlp.org/content/29/6/961.short) for details). In order to distinguish contigs with putative plasmids detected at different cutoff levels we extend the contig name in FASTA file with cutoff value used for this particular contig (in format `_cutoff_N`). This is why, in the contrast to regular SPAdes pipeline, there might be a contig with `NODE_1_` prefix for each cutoff with potential plasmids detected. In following example, there were detected two potential viruses using cutoff 0, one virus was detected with cutoff 5 and one with cutoff 10.
+Also, we add a suffix that shows the structure of the suspective extrachromosomal element.
+For metaplasmid mode we output only circular potential plasmids.
+For metaviral mode we also output linear potential viruses and linear viruses with simple repeats ('9'-shaped components in the assembly graph) sequences.
+
 ``` plain
->NODE_1_length_40003_cov_13.48_cutoff_0
->NODE_2_length_30000_cov_4.20_cutoff_0
->NODE_1_length_20000_cov_20.42_cutoff_5
->NODE_1_length_10000_cov_198.4_cutoff_10
+>NODE_1_length_40003_cov_13.48_cutoff_0_type_circular
+>NODE_2_length_30000_cov_4.20_cutoff_0_type_linear
+>NODE_1_length_20000_cov_20.42_cutoff_5_type_circular
+>NODE_1_length_10000_cov_198.4_cutoff_10_type_linearrepeat
 ```
 
 
-<a name="sec3.7"></a>
+<a name="sec3.8"></a>
 ## biosyntheticSPAdes output
 
 biosyntheticSPAdes outputs three files of interest:
@@ -992,7 +1010,7 @@ biosyntheticSPAdes outputs three files of interest:
 - domain_graph.dot &ndash; contains domain graph structure, that can be used to assess complexity of the sample and structure of BGCs. For more information about domain graph construction, please refer to the paper.
 
 
-<a name="sec3.8"></a>
+<a name="sec3.9"></a>
 ## Assembly evaluation
 
 [QUAST](http://cab.spbu.ru/software/quast/) may be used to generate summary statistics (N50, maximum contig length, GC %, \# genes found in a reference list or with built-in gene finding tools, etc.) for a single assembly. It may also be used to compare statistics for multiple assemblies of the same data set (e.g., SPAdes run with different parameters, or several different assemblers).
@@ -1206,6 +1224,8 @@ If you use metaSPAdes please cite [Nurk et al., 2017](https://genome.cshlp.org/c
 If you use plasmidSPAdes please cite [Antipov et al., 2016](https://academic.oup.com/bioinformatics/article/32/22/3380/2525610).
 
 If you use metaplasmidSPAdes and/or plasmidVerify please cite [Antipov et al., 2019](https://genome.cshlp.org/content/29/6/961.short)
+
+If you use metaviralSPAdes and/or viralVerify please cite [Antipov et al., 2020](https://academic.oup.com/bioinformatics/article-abstract/36/14/4126/5837667)
 
 For rnaSPAdes citation use [Bushmanova et al., 2019](https://academic.oup.com/gigascience/article/8/9/giz100/5559527).
 

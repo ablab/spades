@@ -265,8 +265,9 @@ void ChromosomeRemover::OutputNineComponents (GraphPack &gp, size_t ext_limit_) 
             ss << graph.EdgeNucls(comp[next_circular]).Subseq(graph.k());
             std::string seq = ss.str();
             double cov = (graph.coverage(comp[incoming]) * graph.length(comp[incoming]) + graph.coverage(comp[next_circular]) * graph.length(comp[next_circular]))/(graph.length(comp[incoming]) + graph.length(comp[next_circular]));
-            is << ">CUTOFF_" << ext_limit_ <<"_NINE_" << count <<
-               "_length_"<< seq.length() <<"_cov_" << cov << "_id_" <<comp[incoming].int_id() << "_" << comp[next_circular].int_id() << std::endl;
+            count ++;
+            is << ">NODE_" << count <<
+               "_length_"<< seq.length() <<"_cov_" << cov << "_cutoff_" << ext_limit_ << "_type_linearrepeat" << std::endl;
             is <<seq << std::endl;
         }
     }
