@@ -14,13 +14,13 @@ simp
         max_relative_coverage       15     ; bulge_cov < this * not_bulge_cov
         max_delta 45
         max_relative_delta 0.2
-        min_identity 0.7
+        min_identity 0.9
     }
 
      red
      {
          enabled true
-         diff_mult  2.5
+         diff_mult  5.
          unconditional_diff_mult 50.
          edge_sum 0
      }
