@@ -441,7 +441,7 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathEquals ) {
     path2.PushBack(e6);
     path2.PushBack(e5);
     path2.PushBack(e6);
-    BOOST_CHECK_EQUAL(path1.Equal(path2), true);
+    BOOST_CHECK_EQUAL(path1 == path2, true);
 }
 
 BOOST_AUTO_TEST_CASE( BidirectionalPathSubpaths ) {

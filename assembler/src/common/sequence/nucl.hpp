@@ -132,9 +132,4 @@ inline char dignucl(char c) {
 #undef likely
 #undef unlikely
 
-inline void nucl_str_complement(char * seq, size_t size) {
-    for (; size > 0; ++seq, --size)
-        *seq = nucl_complement(*seq); 
-}
-
 #endif /* NUCL_HPP_ */

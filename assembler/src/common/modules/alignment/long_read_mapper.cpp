@@ -164,7 +164,7 @@ void LongReadMapper::ProcessSingleRead(size_t thread_index, const MappingPath<Ed
         buffer_storages_[thread_index].AddPath(path.Path_, 1, false);
 
     /// merges 'paths' into a single path, filling gaps with contig substrings
-    auto mergePaths = [&]() {
+    auto MergePaths = [&]() {
         std::vector<path_extend::GappedPath> merged_paths;
         merged_paths.push_back(path_extend::GappedPath(paths[0].Path_));
         for (size_t i = 1; i < paths.size(); ++i) {
@@ -187,7 +187,7 @@ void LongReadMapper::ProcessSingleRead(size_t thread_index, const MappingPath<Ed
     };
 
     if (lib_type_ == io::LibraryType::TrustedContigs && !paths.empty()) {
-        auto paths = mergePaths();
+        auto paths = MergePaths();
         std::move(paths.begin(), paths.end(), std::back_inserter(trusted_path_buffer_storages_[thread_index]));
     }
     DEBUG("Single read processed");
@@ -255,16 +255,16 @@ std::vector<PathWithMappingInfo> GappedPathExtractor::FindReadPathWithGaps(Mappi
         return result;
     }
     PathWithMappingInfo tmp_path;
-    auto setStartPos = [&tmp_path] (auto const & path) {
+    auto SetStartPos = [&tmp_path] (auto const & path) {
         tmp_path.MappingRangeOntoRead_.initial_range.start_pos = path.second.initial_range.start_pos;
         tmp_path.MappingRangeOntoRead_.mapped_range.start_pos = path.second.mapped_range.start_pos;
     };
-    auto setEndPos = [&tmp_path] (auto const & path) {
+    auto SetEndPos = [&tmp_path] (auto const & path) {
         tmp_path.MappingRangeOntoRead_.initial_range.end_pos = path.second.initial_range.end_pos;
         tmp_path.MappingRangeOntoRead_.mapped_range.end_pos = path.second.mapped_range.end_pos;
     };
 
-    setStartPos(path[0]);
+    SetStartPos(path[0]);
     tmp_path.Path_.push_back(path[0].first);
     for (size_t i = 1; i < path.size(); ++i) {
         auto left_vertex = g_.EdgeEnd(path[i - 1].first);
@@ -274,14 +274,14 @@ std::vector<PathWithMappingInfo> GappedPathExtractor::FindReadPathWithGaps(Mappi
             if (!closure.empty()) {
                 tmp_path.Path_.insert(tmp_path.Path_.end(), closure.begin(), closure.end());
             } else {
-                setEndPos(path[i-1]);
+                SetEndPos(path[i-1]);
                 result.push_back(std::move(tmp_path));
-                setStartPos(path[i]);
+                SetStartPos(path[i]);
             }
         }
         tmp_path.Path_.push_back(path[i].first);
     }
-    setEndPos(path.back());
+    SetEndPos(path.back());
     result.push_back(std::move(tmp_path));
     return result;
 }

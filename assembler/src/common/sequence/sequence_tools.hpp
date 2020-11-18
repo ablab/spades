@@ -16,11 +16,11 @@
 #include "sequence.hpp"
 #include "levenshtein.hpp"
 
-inline const std::string Reverse(const std::string &s) {
+inline std::string Reverse(const std::string &s) {
     return std::string(s.rbegin(), s.rend());
 }
 
-inline const std::string Complement(const std::string &s) {
+inline std::string Complement(const std::string &s) {
     std::string res(s.size(), 0);
     std::transform(s.begin(), s.end(), res.begin(), nucl_complement);
     return res;
@@ -33,9 +33,7 @@ void SHWDistanceExtended(const std::string &target, const std::string &query, in
 
 int SHWDistance(const std::string &a, const std::string &b, int max_score, int &end_pos);
 
-
-
-inline const Sequence MergeOverlappingSequences(const std::vector<Sequence>& ss,
+inline Sequence MergeOverlappingSequences(const std::vector<Sequence>& ss,
         size_t overlap, bool safe_merging = true) {
     if (ss.empty()) {
         return Sequence();
@@ -124,7 +122,7 @@ inline std::pair<size_t, size_t> LocalSimilarity(const Sequence& s1, const Seque
     return std::make_pair(size_t(answer), std::min(i_m - i, j_m - j));
 }
 
-inline const std::string ReverseComplement(const std::string &s) {
+inline std::string ReverseComplement(const std::string &s) {
     std::string res(s.size(), 0);
     transform(s.begin(), s.end(), res.rbegin(), nucl_complement); // only difference with reverse is rbegin() instead of begin()
     return res;

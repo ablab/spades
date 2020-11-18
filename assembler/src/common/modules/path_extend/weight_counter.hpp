@@ -62,13 +62,13 @@ struct EdgeWithDistance {
     {}
 
     EdgeWithDistance(const EdgeWithDistance& other) 
-        : EdgeWithDistance(other.e_, other.d_, other.copyGapSeq())
+        : EdgeWithDistance(other.e_, other.d_, other.CopyGapSeq())
     {}
 
     EdgeWithDistance& operator = (const EdgeWithDistance& other) {
         e_ = other.e_;
         d_ = other.d_;
-        gap_sequence_ = other.copyGapSeq();
+        gap_sequence_ = other.CopyGapSeq();
         return *this;
     }
 
@@ -89,7 +89,7 @@ struct EdgeWithDistance {
         return e1.d_ < e2.d_;
     }
 
-    GapSeqType copyGapSeq() const {
+    GapSeqType CopyGapSeq() const {
         return (gap_sequence_ ? std::make_unique<std::string>(*gap_sequence_) : nullptr);
     }
 };

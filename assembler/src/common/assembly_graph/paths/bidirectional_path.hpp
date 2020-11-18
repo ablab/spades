@@ -91,10 +91,7 @@ struct Gap {
     Gap Conjugate() const {
         if (!gap_seq)
             return Gap(gap, {trash.current, trash.previous}, is_final);
-        auto gap_seq_complement = *gap_seq;
-        std::reverse(gap_seq_complement.begin(), gap_seq_complement.end());
-        nucl_str_complement(const_cast<char*>(gap_seq_complement.data()), gap_seq_complement.size());
-        return Gap(gap, {trash.current, trash.previous}, is_final, MakeGapSeq(std::move(gap_seq_complement)));
+        return Gap(gap, {trash.current, trash.previous}, is_final, MakeGapSeq(ReverseComplement(*gap_seq)));
     }
 
     bool operator==(const Gap &that) const {
@@ -217,17 +214,17 @@ public:
     void PushBack(GappedPath path, Gap gap = Gap()) {
         if (path.Empty())
             return;
-        PushBack(path.Front(), std::move(gap));
-        std::move(path.edges_.begin()+1, path.edges_.end(), std::back_inserter(edges_));
-        std::move(path.gaps_.begin()+1, path.gaps_.end(), std::back_inserter(gaps_));
+        gaps_.push_back(std::move(gap));
+        std::move(std::next(path.gaps_.begin()), path.gaps_.end(), std::back_inserter(gaps_));
+        std::move(path.edges_.begin(), path.edges_.end(), std::back_inserter(edges_));
     }
 
     void PushBack(const std::vector<EdgeId>& path, Gap gap = Gap()) {
         if (path.empty())
             return;
-        PushBack(path.front(), std::move(gap));
-        std::copy(path.begin()+1, path.end(), std::back_inserter(edges_));
+        gaps_.push_back(std::move(gap));
         gaps_.resize(gaps_.size() + path.size() - 1, Gap());
+        std::copy(path.begin(), path.end(), std::back_inserter(edges_));
     }
 
     void PopBack() noexcept {
@@ -319,10 +316,6 @@ public:
                 return i;
         }
         return -1;
-    }
-
-    bool Equal(const GappedPath& path) const {
-        return operator==(path);
     }
 
     bool operator==(const GappedPath& path) const {
