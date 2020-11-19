@@ -16,3 +16,8 @@ endif()
 set(COMMON_LIBRARIES format ${COMMON_LIBRARIES})
 # Add version
 set(COMMON_LIBRARIES version ${COMMON_LIBRARIES})
+
+# Really, should be last here
+if (SPADES_USE_MIMALLOC)
+  set(COMMON_LIBRARIES mimalloc-obj ${COMMON_LIBRARIES})
+endif()

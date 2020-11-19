@@ -6,6 +6,7 @@
 
 #include "memory_limit.hpp"
 
+#include "utils/parallel/openmp_wrapper.h"
 #include "utils/logger/logger.hpp"
 #include "utils/verify.hpp"
 
@@ -24,8 +25,6 @@
 #ifdef SPADES_USE_JEMALLOC
 # include <jemalloc/jemalloc.h>
 #endif
-
-#include <common/utils/logger/logger.hpp>
 
 namespace utils {
 
@@ -66,7 +65,7 @@ size_t get_max_rss() {
   if (KERN_SUCCESS !=
       task_info(mach_task_self(),
                 TASK_BASIC_INFO, (task_info_t)&t_info, &t_info_count))
-    return -1U;
+    return -1ULL;
 
   return t_info.resident_size / 1024;
 }
@@ -81,8 +80,16 @@ size_t get_max_rss() {
 
 #endif
 
+#if defined(SPADES_USE_MIMALLOC)
+extern "C" {
+    void mi_stats_merge(void);
+    void mi_collect(bool);
+    size_t mi_stats_total_mem();
+};
+#endif
+
 size_t get_used_memory() {
-#ifdef SPADES_USE_JEMALLOC
+#if defined(SPADES_USE_JEMALLOC)
     // Update statistics cached by mallctl
     {
         uint64_t epoch = 1;
@@ -98,8 +105,24 @@ size_t get_used_memory() {
         int res = je_mallctl("stats.active", &cmem, &clen, NULL, 0);
         if (res != 0)
             FATAL_ERROR("mallctl() call failed, errno = " << errno);
+
         return cmem;
     }
+#elif defined(SPADES_USE_MIMALLOC)
+    // mimalloc implements separate and independent memory pulls for each thread
+    // The statistics is also collected per pool. So we essentially need to propagate
+    // the stats from per-thread pool into main one
+    if (omp_get_thread_num() > 0) {
+        mi_stats_merge();
+    } else {
+        unsigned nthreads = omp_get_max_threads();
+#       pragma omp parallel for
+        for (unsigned i = 0; i < 2*nthreads; ++i) {
+            mi_collect(true); // FIXME: hack-hack-hack
+            mi_stats_merge();
+        }
+    }
+    return mi_stats_total_mem();
 #else
     return get_max_rss();
 #endif
