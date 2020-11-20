@@ -170,7 +170,8 @@ public:
                                        double at_ratio, size_t min_length, size_t max_length)
             : index_(index), ratio_(at_ratio), min_len_(min_length), max_len_(max_length) {}
 
-    // Methods return the number of removed edges
+    // @brief Removes low-complexity edges of length 1 (so effectively junction k-mers without unique extension).
+    // @return Number of removed edges
     size_t RemoveATEdges() {
         INFO("Remove short poly A/T edges");
         auto iters = index_.kmer_begin(10 * omp_get_max_threads());
@@ -240,6 +241,7 @@ public:
             }
         }
 
+#if 0
         for (size_t i = 0; i < at_edges.size(); ++i) {
             for (auto &edge : at_edges[i]) {
                 VERIFY(!index_.CheckOutgoing(edge.first, edge.second));
@@ -247,13 +249,15 @@ public:
                 VERIFY(!index_.CheckIncoming(next, edge.first[0]));
             }
         }
+#endif
 
         INFO("Links removed: " << removed_links);
         return n_edges;
     }
 
 
-    // Methods return the number of removed edges
+    // @brief Removes low-complexity tips.
+    // @return Number of removed edges
     size_t RemoveATTips() {
         INFO("Remove poly A/T tips");
         auto iters = index_.kmer_begin(10 * omp_get_max_threads());
@@ -329,7 +333,6 @@ public:
     }
 
 private:
-    typedef std::array<std::vector<KeyWithHash>, 4> TipsArray;
     Index &index_;
     double ratio_;
     size_t min_len_;
