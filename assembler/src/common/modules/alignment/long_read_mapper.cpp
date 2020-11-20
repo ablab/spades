@@ -95,6 +95,30 @@ inline bool InBounds(T const & min_value, T const & middle_value, T const & max_
     return math::ls(min_value, middle_value) && math::ls(middle_value, max_value);
 }
 
+/// merges 'paths' into a single path, filling gaps with contig substrings
+std::vector<path_extend::GappedPath> MergePaths (const std::vector<PathWithMappingInfo> & paths, const Graph & g_, const io::SingleRead& r) {
+    std::vector<path_extend::GappedPath> merged_paths;
+    merged_paths.push_back(path_extend::GappedPath(paths[0].Path_));
+    for (size_t i = 1; i < paths.size(); ++i) {
+        auto start_pos = paths[i-1].MappingRangeOntoRead_.initial_range.end_pos;
+        start_pos += g_.length(paths[i-1].Path_.back()) - paths[i-1].MappingRangeOntoRead_.mapped_range.end_pos;
+
+        size_t end_pos = paths[i].MappingRangeOntoRead_.initial_range.start_pos;
+        end_pos -= paths[i].MappingRangeOntoRead_.mapped_range.start_pos;
+
+        std::string gap_seq = (end_pos > start_pos ? r.GetSequenceString().substr(start_pos, end_pos-start_pos) : "");
+
+        if ((g_.k() + end_pos < start_pos)) {
+            merged_paths.push_back(path_extend::GappedPath(paths[i].Path_));
+        } else {
+            auto k = static_cast<int>(g_.k() + end_pos - start_pos);
+            merged_paths.back().PushBack(paths[i].Path_, path_extend::Gap(std::move(gap_seq), k));
+        }
+    }
+    return merged_paths;
+};
+
+
 } // namespace
 
 PathWithMappingInfo::PathWithMappingInfo(std::vector<EdgeId> && path, MappingRange && range) 
@@ -163,32 +187,9 @@ void LongReadMapper::ProcessSingleRead(size_t thread_index, const MappingPath<Ed
     for (const auto& path : paths)
         buffer_storages_[thread_index].AddPath(path.Path_, 1, false);
 
-    /// merges 'paths' into a single path, filling gaps with contig substrings
-    auto MergePaths = [&]() {
-        std::vector<path_extend::GappedPath> merged_paths;
-        merged_paths.push_back(path_extend::GappedPath(paths[0].Path_));
-        for (size_t i = 1; i < paths.size(); ++i) {
-            auto start_pos = paths[i-1].MappingRangeOntoRead_.initial_range.end_pos;
-            start_pos += g_.length(paths[i-1].Path_.back()) - paths[i-1].MappingRangeOntoRead_.mapped_range.end_pos;
-
-            size_t end_pos = paths[i].MappingRangeOntoRead_.initial_range.start_pos;
-            end_pos -= paths[i].MappingRangeOntoRead_.mapped_range.start_pos;
-
-            std::string gap_seq = (end_pos > start_pos ? r.GetSequenceString().substr(start_pos, end_pos-start_pos) : "");
-
-            if ((g_.k() + end_pos < start_pos)) {
-                merged_paths.push_back(path_extend::GappedPath(paths[i].Path_));
-            } else {
-                auto k = static_cast<int>(g_.k() + end_pos - start_pos);
-                merged_paths.back().PushBack(paths[i].Path_, path_extend::Gap(std::move(gap_seq), k));
-            }
-        }
-        return merged_paths;
-    };
-
     if (lib_type_ == io::LibraryType::TrustedContigs && !paths.empty()) {
-        auto paths = MergePaths();
-        std::move(paths.begin(), paths.end(), std::back_inserter(trusted_path_buffer_storages_[thread_index]));
+        auto gapped_paths = MergePaths(paths, g_, r);
+        std::move(gapped_paths.begin(), gapped_paths.end(), std::back_inserter(trusted_path_buffer_storages_[thread_index]));
     }
     DEBUG("Single read processed");
 }
