@@ -134,7 +134,7 @@ auto kmer_begin(It begin, It end, const Graph &g, size_t k = 0) {
 
 template<class It>
 auto kmer_end(It end, const Graph &g) {
-    return kmer_graph_iterator<It>(std::move(end), std::move(end), 0, g);
+    return kmer_graph_iterator<It>(end, end, 0, g);
 }
 
 inline auto kmer_begin(const Graph &g, size_t k = 0) {
