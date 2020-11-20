@@ -21,10 +21,39 @@ struct ExtenderTriplet {
 
     }
 
+    static int GetPriority(io::LibraryType type) {
+        #define SET_PRIORITY(o) case o: --priority
+        using io::LibraryType;
+        int priority = 0;
+        // the higher the element, the lower the return value
+        switch (type) {
+            // would have the minimum return value
+            SET_PRIORITY(LibraryType::SangerReads);
+            SET_PRIORITY(LibraryType::PacBioReads);
+            SET_PRIORITY(LibraryType::NanoporeReads);
+            SET_PRIORITY(LibraryType::TrustedContigs);
+            SET_PRIORITY(LibraryType::SingleReads);
+            SET_PRIORITY(LibraryType::PairedEnd);
+            SET_PRIORITY(LibraryType::HQMatePairs);
+            SET_PRIORITY(LibraryType::MatePairs);
+            SET_PRIORITY(LibraryType::TSLReads);
+            SET_PRIORITY(LibraryType::PathExtendContigs);
+            SET_PRIORITY(LibraryType::UntrustedContigs);
+            SET_PRIORITY(LibraryType::FLRNAReads);
+            SET_PRIORITY(LibraryType::AssemblyGraph);
+            // would have the maximum return value
+            break;
+            // there is a LibraryType that does not have priority
+            default: VERIFY(false);
+        };
+        return priority;
+        #undef SET_PRIORITY
+    }
+
     bool operator<(const ExtenderTriplet& that) const {
-        if (this->lib_type_ == that.lib_type_)
+        if (GetPriority(this->lib_type_) == GetPriority(that.lib_type_))
             return this->lib_index_ < that.lib_index_;
-        return this->lib_type_ < that.lib_type_;
+        return GetPriority(this->lib_type_) < GetPriority(that.lib_type_);
     }
 };
 

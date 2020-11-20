@@ -131,7 +131,7 @@ class LoopTraverser {
             return false;
         }
 
-        size_t common_size = start_path.CommonEndSize(end_path);
+        size_t common_size = CommonEndSize(start_path, end_path);
         DEBUG("Str " << start_path.Size() << ", end" << end_path.Size());
         if (common_size == 0 && !start_path.Empty() && !end_path.Empty()) {
             DEBUG("Estimating gap size");
@@ -171,6 +171,24 @@ class LoopTraverser {
             if (g_.length(e) > long_edge_limit_)
                 return true;
         return false;
+    }
+
+    size_t CommonEndSize(const GappedPath& start_path, const GappedPath& end_path) const {
+        if (end_path.Empty())
+            return 0;
+
+        std::vector<size_t> begins = start_path.FindAll(end_path.Front());
+        for (size_t i = 0; i < begins.size(); ++i) {
+            size_t it1 = begins[i];
+            size_t it2 = 0;
+            while (it2 < end_path.Size() && start_path.At(it1) == end_path.At(it2)) {
+                ++it1;
+                ++it2;
+                if (it1 == start_path.Size())
+                    return it2;
+            }
+        }
+        return 0;
     }
 
 public:

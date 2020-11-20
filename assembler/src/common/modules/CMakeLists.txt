@@ -20,4 +20,4 @@ add_library(modules STATIC
             alignment/pacbio/g_aligner.cpp 
             alignment/pacbio/g_aligner.cpp)
 
-target_link_libraries(modules sequence bwa)
+target_link_libraries(modules sequence bwa assembly_graph)
