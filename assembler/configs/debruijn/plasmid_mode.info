@@ -17,4 +17,6 @@ plasmid
     relative_step 1.3
     max_length 1000000
     output_linear false
+    min_circular_length 1000
+    min_linear_length 500
 }

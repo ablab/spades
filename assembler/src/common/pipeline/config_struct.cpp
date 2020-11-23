@@ -493,6 +493,8 @@ void load(debruijn_config::plasmid& pd,
     load(pd.relative_step, pt, "relative_step"); //5
     load(pd.max_length, pt, "max_length"); //1000000
     load(pd.output_linear, pt, "output_linear"); //false
+    load(pd.min_circular_length, pt, "min_circular_length"); //500
+    load(pd.min_linear_length, pt, "min_linear_length"); //1000
 }
 
 void load(debruijn_config::gap_closer& gc,

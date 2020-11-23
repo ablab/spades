@@ -356,6 +356,8 @@ struct debruijn_config {
         double relative_step; //1.3
         size_t max_length; //1000000
         bool output_linear; //false
+        size_t min_circular_length; //500
+        size_t min_linear_length; //1000
     };
 
     struct position_handler {

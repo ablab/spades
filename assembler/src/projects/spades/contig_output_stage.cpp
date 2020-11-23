@@ -43,8 +43,7 @@ bool CheckUsedPath(const path_extend::BidirectionalPath &path, std::unordered_se
     return (math::ge((double)used_len, (double)total_len * LARGE_FRACTION));
 }
 
-path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer &sc_storage,
-                                                std::unordered_set<EdgeId> &used_edges) {
+path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer &sc_storage, std::unordered_set<EdgeId> &used_edges, size_t min_circular_length) {
     path_extend::PathContainer res;
     INFO("Banned " << used_edges.size() <<" used edges");
     for (const auto &entry : sc_storage) {
@@ -53,7 +52,7 @@ path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer
 //FIXME: constant
         if (!path.IsCircular() ||
             CheckUsedPath(path, used_edges) ||
-            path.Length() < 500)
+            path.Length() < min_circular_length)
             continue;
 
         res.Create(entry.first);
@@ -63,13 +62,11 @@ path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer
     return res;
 }
 
-path_extend::PathContainer GetTipScaffolds(const path_extend::PathContainer &sc_storage, const std::unordered_set<VertexId> &forbidden_vertices, std::unordered_set<EdgeId> &used_edges) {
+path_extend::PathContainer GetTipScaffolds(const path_extend::PathContainer &sc_storage, const std::unordered_set<VertexId> &forbidden_vertices, std::unordered_set<EdgeId> &used_edges, size_t min_linear_length) {
     path_extend::PathContainer res;
-
     for (const auto &entry : sc_storage) {
         const path_extend::BidirectionalPath &path = *entry.first;
-//FIXME: constant
-        if (path.Length() <= 500 ||
+        if (path.Length() < min_linear_length ||
             CheckUsedPath(path, used_edges) ||
             !forbidden_vertices.count(path.g().EdgeStart(path.Front())) ||
             !forbidden_vertices.count(path.g().EdgeEnd(path.Back())))
@@ -218,8 +215,7 @@ void ContigOutput::run(GraphPack &gp, const char*) {
                 using UsedEdges = omnigraph::SmartContainer<std::unordered_set<EdgeId>, Graph>;
                 if (!gp.count<UsedEdges>("used_edges"))
                     gp.add("used_edges", UsedEdges(graph));
-
-                PathContainer circulars = GetCircularScaffolds(broken_scaffolds, gp.get_mutable<UsedEdges>("used_edges"));
+                PathContainer circulars = GetCircularScaffolds(broken_scaffolds, gp.get_mutable<UsedEdges>("used_edges"), cfg::get().pd->min_circular_length);
                 writer.OutputPaths(circulars,
                                    CreatePathsWriters(fs::append_path(output_dir, outputs_[Kind::PlasmidContigs] + ".circular"),
                                                           fastg_writer));
@@ -228,7 +224,7 @@ void ContigOutput::run(GraphPack &gp, const char*) {
                     PathContainer linears;
                     if (gp.count<ForbiddenVertices>("forbidden_vertices"))
                         linears = GetTipScaffolds(broken_scaffolds, gp.get<ForbiddenVertices>("forbidden_vertices"),
-                                                  gp.get_mutable<UsedEdges>("used_edges"));
+                                                  gp.get_mutable<UsedEdges>("used_edges"), cfg::get().pd->min_linear_length);
                     writer.OutputPaths(linears,
                                        CreatePathsWriters(
                                                fs::append_path(output_dir, outputs_[Kind::PlasmidContigs] + ".linears"),
