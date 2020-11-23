@@ -217,20 +217,20 @@ void ChromosomeRemover::RemoveNearlyEverythingByCoverage(double cur_limit) {
     PlasmidSimplify(plasmid_config_.long_edge_length);
 }
 
-void ChromosomeRemover::OutputNineComponents (GraphPack &gp, size_t ext_limit_) {
+void ChromosomeRemover::OutputNineComponents (const GraphPack &gp, size_t ext_limit) {
     const auto& graph = gp_.get<Graph>();
     long_vertex_component_.clear();
     long_component_.clear();
     deadends_count_.clear();
     component_list_.clear();
-    std::string tmp = std::to_string(ext_limit_);
+    std::string tmp = std::to_string(ext_limit);
     while (tmp.length() < 4) tmp = "_" + tmp;
-    std::string out_file = "final_contigs" + tmp + ".linear_repeat.fasta";
-    std::ofstream is(cfg::get().output_dir + out_file);
+    std::string out_file = "final_contigs" + tmp + ".linearrepeat.fasta";
+    std::ofstream is(fs::append_path(cfg::get().output_dir, out_file));
 
-    for (auto iter = graph.ConstEdgeBegin(true); !iter.IsEnd(); ++iter) {
-        if (long_component_.find(*iter) == long_component_.end()) {
-            CalculateComponentSize(*iter, graph);
+    for (EdgeId e : graph.edges()) {
+        if (long_component_.count(e) == 0) {
+            CalculateComponentSize(e, graph);
         }
     }
     size_t count = 0;
@@ -267,7 +267,7 @@ void ChromosomeRemover::OutputNineComponents (GraphPack &gp, size_t ext_limit_) 
             double cov = (graph.coverage(comp[incoming]) * graph.length(comp[incoming]) + graph.coverage(comp[next_circular]) * graph.length(comp[next_circular]))/(graph.length(comp[incoming]) + graph.length(comp[next_circular]));
             count ++;
             is << ">NODE_" << count <<
-               "_length_"<< seq.length() <<"_cov_" << cov << "_cutoff_" << ext_limit_ << "_type_linearrepeat" << std::endl;
+               "_length_"<< seq.length() <<"_cov_" << cov << "_cutoff_" << ext_limit << "_type_linearrepeat" << std::endl;
             is <<seq << std::endl;
         }
     }

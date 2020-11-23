@@ -418,7 +418,7 @@ For plasmidSPAdes output details see [section 3.6](#sec3.6).
 
 `--metaviral `   (same as `metaviralspades.py`)
  
-These options works specially for extracting extrachromosomal elements from metagenomic assemblies. They run similar pipelines that slightly differ in the simplification step; another difference is that for metaviral mode we output suspicious linear contigs and for metaplasmid mode we do not.
+These options works specially for extracting extrachromosomal elements from metagenomic assemblies. They run similar pipelines that slightly differ in the simplification step; another difference is that for metaviral mode we output linear putative extrachromosomal contigs and for metaplasmid mode we do not.
 See [metaplasmid paper](https://genome.cshlp.org/content/29/6/961.short) and [metaviral paper](https://academic.oup.com/bioinformatics/article-abstract/36/14/4126/5837667) for the algorithms details.
 
 For metaplasmidSPAdes/metaviralSPAdes output details see [section 3.7](#sec3.7).
@@ -988,8 +988,8 @@ For all plasmidSPAdes' contig names in `contigs.fasta`, `scaffolds.fasta` and `a
 ## metaplasmidSPAdes/metaviralSPAdes output
 The repeat resolution and extrachromosomal element detection in metaplasmidSPAdes/metaviralSPAdes is run independently for different coverage cutoffs values (see [paper](https://genome.cshlp.org/content/29/6/961.short) for details). In order to distinguish contigs with putative plasmids detected at different cutoff levels we extend the contig name in FASTA file with cutoff value used for this particular contig (in format `_cutoff_N`). This is why, in the contrast to regular SPAdes pipeline, there might be a contig with `NODE_1_` prefix for each cutoff with potential plasmids detected. In following example, there were detected two potential viruses using cutoff 0, one virus was detected with cutoff 5 and one with cutoff 10.
 Also, we add a suffix that shows the structure of the suspective extrachromosomal element.
-For metaplasmid mode we output only circular potential plasmids.
-For metaviral mode we also output linear potential viruses and linear viruses with simple repeats ('9'-shaped components in the assembly graph) sequences.
+For metaplasmid mode we output only circular putative plasmids.
+For metaviral mode we also output linear putative viruses and linear viruses with simple repeats ('9'-shaped components in the assembly graph) sequences.
 
 ``` plain
 >NODE_1_length_40003_cov_13.48_cutoff_0_type_circular

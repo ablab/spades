@@ -52,7 +52,7 @@ private:
     void RemoveNearlyEverythingByCoverage(double limit);
 
     void CoverageFilter(double coverage_cutoff);
-    void OutputNineComponents (GraphPack &gp, size_t ext_limit_);
+    void OutputNineComponents (const GraphPack &gp, size_t ext_limit);
     void OutputSuspiciousComponents ();
 
 //  Not used, for debug purpose only
