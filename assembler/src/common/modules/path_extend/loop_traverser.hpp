@@ -173,7 +173,7 @@ class LoopTraverser {
         return false;
     }
 
-    size_t CommonEndSize(const GappedPath& start_path, const GappedPath& end_path) const {
+    size_t CommonEndSize(const SimpleBidirectionalPath& start_path, const SimpleBidirectionalPath& end_path) const {
         if (end_path.Empty())
             return 0;
 

@@ -156,23 +156,23 @@ public:
     virtual ~PathListener() {}
 };
 
-class GappedPath {
+class SimpleBidirectionalPath {
 protected:
     using EdgeId = debruijn_graph::EdgeId;
     std::deque<EdgeId> edges_;
     std::deque<Gap> gaps_; // gap0 -> e0 -> gap1 -> e1 -> ... -> gapN -> eN; gap0 = 0
 
 public:
-    GappedPath() = default;
-    GappedPath(const std::vector<EdgeId>& path)
+    SimpleBidirectionalPath() = default;
+    SimpleBidirectionalPath(const std::vector<EdgeId>& path)
         : edges_(path.begin(), path.end())
         , gaps_(path.size(), Gap())
     {}
 
-    GappedPath(const GappedPath&) = default;
-    GappedPath(GappedPath&&) = default;
-    GappedPath& operator=(const GappedPath&) = default;
-    GappedPath& operator=(GappedPath&&) = default;
+    SimpleBidirectionalPath(const SimpleBidirectionalPath&) = default;
+    SimpleBidirectionalPath(SimpleBidirectionalPath&&) = default;
+    SimpleBidirectionalPath& operator=(const SimpleBidirectionalPath&) = default;
+    SimpleBidirectionalPath& operator=(SimpleBidirectionalPath&&) = default;
 
     size_t Size() const noexcept {
         return edges_.size();
@@ -211,7 +211,7 @@ public:
         gaps_.push_back(std::move(gap));
     }
 
-    void PushBack(GappedPath path, Gap gap = Gap()) {
+    void PushBack(SimpleBidirectionalPath path, Gap gap = Gap()) {
         if (path.Empty())
             return;
         gaps_.push_back(std::move(gap));
@@ -284,7 +284,7 @@ public:
     }
 
     //TODO is it ok not to compare gaps here?
-    bool CompareFrom(size_t from, const GappedPath& sample) const noexcept {
+    bool CompareFrom(size_t from, const SimpleBidirectionalPath& sample) const noexcept {
         if (from + sample.Size() > Size())
             return false;
 
@@ -295,7 +295,7 @@ public:
         return true;
     }
 
-    int FindFirst(const GappedPath& path, size_t from = 0) const noexcept {
+    int FindFirst(const SimpleBidirectionalPath& path, size_t from = 0) const noexcept {
         if (path.Size() > Size()) {
             return -1;
         }
@@ -307,7 +307,7 @@ public:
     }
 
     //TODO: Why just naive search?
-    int FindLast(const GappedPath& path) const noexcept {
+    int FindLast(const SimpleBidirectionalPath& path) const noexcept {
         if (path.Size() > Size()) {
             return -1;
         }
@@ -318,17 +318,17 @@ public:
         return -1;
     }
 
-    bool operator==(const GappedPath& path) const {
+    bool operator==(const SimpleBidirectionalPath& path) const {
         return Size() == path.Size() && CompareFrom(0, path);
     }
 
-    bool operator!=(const GappedPath& path) const {
+    bool operator!=(const SimpleBidirectionalPath& path) const {
         return !operator==(path);
     }
 
-    GappedPath SubPath(size_t from, size_t to) const {
+    SimpleBidirectionalPath SubPath(size_t from, size_t to) const {
         VERIFY(from <= to && to <= Size());
-        GappedPath result;
+        SimpleBidirectionalPath result;
         if (from < to) {
             result.PushBack(edges_[from], Gap());
             for (size_t i = from + 1; i < to; ++i)
@@ -337,7 +337,7 @@ public:
         return result;
     }
 
-    GappedPath SubPath(size_t from) const {
+    SimpleBidirectionalPath SubPath(size_t from) const {
         return SubPath(from, Size());
     }
 
@@ -372,7 +372,7 @@ public:
     }
 };
 
-class BidirectionalPath : public PathListener, public GappedPath {
+class BidirectionalPath : public PathListener, public SimpleBidirectionalPath {
     static std::atomic<uint64_t> path_id_;
 
     const debruijn_graph::Graph& g_;
@@ -393,10 +393,10 @@ public:
               cycle_overlapping_(-1) {
     }
 
-    BidirectionalPath(const debruijn_graph::Graph& g, GappedPath path) 
+    BidirectionalPath(const debruijn_graph::Graph& g, SimpleBidirectionalPath path) 
             : BidirectionalPath(g)
     {
-        GappedPath::PushBack(std::move(path));
+        SimpleBidirectionalPath::PushBack(std::move(path));
         cumulative_len_.resize(Size(), 0);
 
         for (size_t i = 0; i < Size(); ++i)
@@ -407,7 +407,7 @@ public:
     }
 
     BidirectionalPath(const debruijn_graph::Graph& g, std::vector<EdgeId> path)
-            : BidirectionalPath(g, GappedPath(std::move(path)))
+            : BidirectionalPath(g, SimpleBidirectionalPath(std::move(path)))
     {}
 
     BidirectionalPath(const debruijn_graph::Graph& g, EdgeId e)
@@ -416,7 +416,7 @@ public:
     }
 
     BidirectionalPath(const BidirectionalPath& path)
-            : GappedPath(path),
+            : SimpleBidirectionalPath(path),
               g_(path.g_),
               conj_path_(nullptr),
               cumulative_len_(path.cumulative_len_),
@@ -510,7 +510,7 @@ public:
             VERIFY(e == edges_[cycle_overlapping_]);
             ++cycle_overlapping_;
         }
-        GappedPath::PushBack(e, std::move(gap));
+        SimpleBidirectionalPath::PushBack(e, std::move(gap));
         IncreaseLengths(g_.length(e), gaps_.back().gap);
         NotifyBackEdgeAdded(e, gaps_.back());
     }
@@ -537,7 +537,7 @@ public:
 
         EdgeId e = edges_.back();
         DecreaseLengths();
-        GappedPath::PopBack();
+        SimpleBidirectionalPath::PopBack();
         NotifyBackEdgeRemoved(e);
         DecreaseCycleOverlapping();
     }
@@ -579,7 +579,7 @@ public:
     }
 
     BidirectionalPath SubPath(size_t from, size_t to) const {
-        return BidirectionalPath(g_, GappedPath::SubPath(from, to));
+        return BidirectionalPath(g_, SimpleBidirectionalPath::SubPath(from, to));
     }
 
     BidirectionalPath SubPath(size_t from) const {
@@ -667,7 +667,7 @@ private:
             ++cycle_overlapping_;
         }
 
-        GappedPath::PushFront(e, gap);
+        SimpleBidirectionalPath::PushFront(e, gap);
 
         int length = (int) g_.length(e);
         if (cumulative_len_.empty()) {
@@ -681,7 +681,7 @@ private:
     void PopFront() {
         EdgeId e = edges_.front();
         cumulative_len_.pop_front();
-        GappedPath::PopFront();
+        SimpleBidirectionalPath::PopFront();
 
         NotifyFrontEdgeRemoved(e);
         DecreaseCycleOverlapping();
@@ -804,7 +804,7 @@ inline bool EndsWithInterstrandBulge(const BidirectionalPath &path) {
             g.CheckUniqueIncomingEdge(v1);
 }
 
-using GappedPathStorage = std::vector<GappedPath>;
+using GappedPathStorage = std::vector<SimpleBidirectionalPath>;
 
 using TrustedPathsContainer = std::vector<GappedPathStorage>;
 
