@@ -296,7 +296,7 @@ private:
 
     void ConstructStrongEdges() {
         const auto &g = gp_.get<Graph>();
-        path_extend::GraphCoverageMap coverage_map(g, gp_.get<path_extend::PathContainer>());
+        path_extend::GraphCoverageMap coverage_map(g, gp_.get<path_extend::PathContainer>("exSPAnder paths"));
         std::map<size_t, std::map<std::pair<int, int>, std::vector<std::pair<VertexId, std::vector<EdgeId>>>, PairComparator>> mappings_for_path;
         std::unordered_map<size_t, path_extend::BidirectionalPath*> from_id_to_path;
         for (VertexId current_vertex : domain_graph_.vertices()) {

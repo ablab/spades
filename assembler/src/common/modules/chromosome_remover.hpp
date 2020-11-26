@@ -52,7 +52,7 @@ private:
     void RemoveNearlyEverythingByCoverage(double limit);
 
     void CoverageFilter(double coverage_cutoff);
-    void OutputNineComponents (const GraphPack &gp, size_t ext_limit);
+    std::vector<std::vector<EdgeId>> GetNineShapeComponents ();
     void OutputSuspiciousComponents ();
 
 //  Not used, for debug purpose only

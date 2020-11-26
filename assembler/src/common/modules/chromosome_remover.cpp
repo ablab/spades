@@ -17,11 +17,17 @@
 #include "visualization/position_filler.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "math/xmath.h"
+#include "assembly_graph/paths/bidirectional_path_container.hpp"
 
 namespace debruijn_graph {
 
 using VertexSet = std::unordered_set<VertexId>;
 using SmartVertexSet = omnigraph::SmartContainer<VertexSet, Graph>;
+using std::vector;
+
+//paths should be removed from namespace path_extend
+using path_extend::BidirectionalPath;
+using path_extend::PathContainer;
 
 //TODO replace with standard methods
 void ChromosomeRemover::CompressAll(Graph &g) {
@@ -217,16 +223,13 @@ void ChromosomeRemover::RemoveNearlyEverythingByCoverage(double cur_limit) {
     PlasmidSimplify(plasmid_config_.long_edge_length);
 }
 
-void ChromosomeRemover::OutputNineComponents (const GraphPack &gp, size_t ext_limit) {
+vector<vector<EdgeId>> ChromosomeRemover::GetNineShapeComponents () {
     const auto& graph = gp_.get<Graph>();
     long_vertex_component_.clear();
     long_component_.clear();
     deadends_count_.clear();
     component_list_.clear();
-    std::string tmp = std::to_string(ext_limit);
-    while (tmp.length() < 4) tmp = "_" + tmp;
-    std::string out_file = "final_contigs" + tmp + ".linearrepeat.fasta";
-    std::ofstream is(fs::append_path(cfg::get().output_dir, out_file));
+    vector<vector<EdgeId>> res;
 
     for (EdgeId e : graph.edges()) {
         if (long_component_.count(e) == 0) {
@@ -244,8 +247,8 @@ void ChromosomeRemover::OutputNineComponents (const GraphPack &gp, size_t ext_li
                 break;
             int incoming = -1;
             for (size_t i = 0; i < comp.size(); i++) {
-                if (graph.IsDeadStart(graph.EdgeStart(comp[i])) && graph.length(comp[i]) < 0.3 * comp_size) {
-                    incoming = i;
+                if (graph.IsDeadStart(graph.EdgeStart(comp[i])) && (double) graph.length(comp[i]) < 0.3 * (double) comp_size) {
+                    incoming = (int) i;
                     break;
                 }
             }
@@ -254,23 +257,17 @@ void ChromosomeRemover::OutputNineComponents (const GraphPack &gp, size_t ext_li
             int next_circular = -1;
             for (size_t i = 0; i < comp.size(); i++) {
                 if (graph.EdgeStart(comp[i]) == graph.EdgeEnd(comp[i]) && graph.EdgeStart(comp[i]) == graph.EdgeEnd(comp[incoming])) {
-                    next_circular = i;
+                    next_circular = (int) i;
                     break;
                 }
             }
             if (next_circular == -1)
                 break;
-            std::stringstream ss;
-            ss << graph.EdgeNucls(comp[incoming]);
-            ss << graph.EdgeNucls(comp[next_circular]).Subseq(graph.k());
-            std::string seq = ss.str();
-            double cov = (graph.coverage(comp[incoming]) * graph.length(comp[incoming]) + graph.coverage(comp[next_circular]) * graph.length(comp[next_circular]))/(graph.length(comp[incoming]) + graph.length(comp[next_circular]));
+            res.push_back(vector<EdgeId>{comp[incoming], comp[next_circular]});
             count ++;
-            is << ">NODE_" << count <<
-               "_length_"<< seq.length() <<"_cov_" << cov << "_cutoff_" << ext_limit << "_type_linearrepeat" << std::endl;
-            is <<seq << std::endl;
         }
     }
+    return res;
 }
 
 void ChromosomeRemover::OutputSuspiciousComponents () {
@@ -383,13 +380,27 @@ void ChromosomeRemover::RunMetaPipeline() {
     size_t forbidden_size = gp_.get<SmartVertexSet>("forbidden_vertices").size();
     INFO("Forbidden (initial tip ends) vertex size: " << forbidden_size);
     OutputSuspiciousComponents ();
-    if (plasmid_config_.output_linear) {
-        OutputNineComponents(gp_, ext_limit_);
-    }
-    std::string tmp = std::to_string(ext_limit_);
-    while (tmp.length() < 4) tmp = "_" + tmp;
+    std::string suffix = std::to_string(ext_limit_);
+    while (suffix.length() < 4) suffix = "_" + suffix;
 
-    OutputEdgesByID(graph, cfg::get().output_dir + "edges_before" + tmp);
+    OutputEdgesByID(graph, cfg::get().output_dir + "edges_before" + suffix);
+    RemoveNearlyEverythingByCoverage((double) ext_limit_);
+//Graph is not changed after this line and before next chromosome remover iteration
+
+    if (plasmid_config_.output_linear) {
+        auto nine_components = GetNineShapeComponents();
+        if (gp_.count<PathContainer>("Plasmid paths")){
+            gp_.get_mutable<PathContainer>("Plasmid paths").clear();
+        } else {
+            gp_.emplace_with_key<PathContainer>("Plasmid paths");
+        }
+        auto &pathContainer = gp_.get_mutable<PathContainer>("Plasmid paths");
+        for (auto path: nine_components){
+            pathContainer.CreatePair(graph, path);
+        }
+    }
+
+    OutputEdgesByID(graph, cfg::get().output_dir + "edges_before" + suffix);
     RemoveNearlyEverythingByCoverage((double) ext_limit_);
 }
 

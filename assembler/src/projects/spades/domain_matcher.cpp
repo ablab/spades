@@ -167,7 +167,7 @@ ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::GraphPack &gp,
     boost::split(hmm_files, hmm_set, boost::is_any_of(",;"), boost::token_compress_on);
     path_extend::ScaffoldSequenceMaker scaffold_maker(gp.get<debruijn_graph::Graph>());
     path_extend::PathContainer broken_scaffolds;
-    path_extend::ScaffoldBreaker(int(gp.k())).Break(gp.get<path_extend::PathContainer>(), broken_scaffolds);
+    path_extend::ScaffoldBreaker(int(gp.k())).Break(gp.get<path_extend::PathContainer>("exSPAnder paths"), broken_scaffolds);
 
     io::OFastaReadStream oss_contig(fs::append_path(output_dir, "restricted_edges.fasta"));
 

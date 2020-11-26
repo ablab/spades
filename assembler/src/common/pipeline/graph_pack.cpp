@@ -42,7 +42,7 @@ GraphPack::GraphPack(size_t k, const std::string &workdir, size_t lib_count,
     emplace<EdgeQuality<Graph>>(g);
     emplace<EdgesPositionHandler<Graph>>(g, max_mapping_gap + k, max_gap_diff);
     emplace<ConnectedComponentCounter>(g);
-    emplace<path_extend::PathContainer>();
+    emplace_with_key<path_extend::PathContainer>("exSPAnder paths");
     if (detach_indices)
         DetachAll();
 }
@@ -129,7 +129,7 @@ void GraphPack::ClearRRIndices() {
 }
 
 void GraphPack::ClearPaths() {
-    get_mutable<path_extend::PathContainer>().clear();
+    get_mutable<path_extend::PathContainer>("exSPAnder paths").clear();
 }
 
 void GraphPack::DetachAll() {

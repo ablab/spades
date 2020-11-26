@@ -484,7 +484,7 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
 }
 
 void PathExtendLauncher::FilterPaths() {
-    auto &contig_paths = gp_.get_mutable<PathContainer>();
+    auto &contig_paths = gp_.get_mutable<PathContainer>("exSPAnder paths");
     auto default_filtration = params_.pset.path_filtration.end();
     for (auto it = params_.pset.path_filtration.begin(); it != params_.pset.path_filtration.end(); ++it) {
         if (!it->second.enabled)
@@ -638,7 +638,7 @@ void PathExtendLauncher::Launch() {
     RemoveOverlapsAndArtifacts(paths, cover_map, resolver);
     DebugOutputPaths(paths, "before_path_polishing");
 
-    auto &contig_paths = gp_.get_mutable<PathContainer>();
+    auto &contig_paths = gp_.get_mutable<PathContainer>("exSPAnder paths");
 
     //TODO does path polishing correctly work with coverage map
     PolishPaths(paths, contig_paths, cover_map);

@@ -49,7 +49,6 @@ path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer
     for (const auto &entry : sc_storage) {
         const path_extend::BidirectionalPath &path = *entry.first;
 
-//FIXME: constant
         if (!path.IsCircular() ||
             CheckUsedPath(path, used_edges) ||
             path.Length() < min_circular_length)
@@ -167,7 +166,7 @@ void ContigOutput::run(GraphPack &gp, const char*) {
         fastg_writer->WriteSegmentsAndLinks();
     }
 
-    const auto &contig_paths = gp.get<path_extend::PathContainer>();
+    const auto &contig_paths = gp.get<path_extend::PathContainer>("exSPAnder paths");
     bool output_contig_paths =
             (outputs_.count(Kind::Scaffolds) || outputs_.count(Kind::FinalContigs) || outputs_.count(Kind::PlasmidContigs)) &&
             contig_paths.size();
@@ -220,6 +219,14 @@ void ContigOutput::run(GraphPack &gp, const char*) {
                                    CreatePathsWriters(fs::append_path(output_dir, outputs_[Kind::PlasmidContigs] + ".circular"),
                                                           fastg_writer));
                 if (cfg::get().pd->output_linear) {
+                    if (gp.count<PathContainer>("Plasmid paths")) {
+                        PathContainer &pcres = gp.get_mutable<PathContainer>("Plasmid paths");
+                        writer.OutputPaths(pcres,
+                                           CreatePathsWriters(
+                                                   fs::append_path(output_dir, outputs_[Kind::PlasmidContigs] + ".linearrepeat"),
+                                                   fastg_writer));
+                    }
+
                     using ForbiddenVertices = omnigraph::SmartContainer<std::unordered_set<VertexId>, Graph>;
                     PathContainer linears;
                     if (gp.count<ForbiddenVertices>("forbidden_vertices"))
