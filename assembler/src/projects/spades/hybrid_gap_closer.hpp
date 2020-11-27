@@ -237,6 +237,11 @@ public:
         return index_.at(i);
     }
 
+    template <typename Archive>
+    void BinArchive(Archive &ar) {
+        ar(index_, inner_index_);
+    }
+
     size_t size() const {
         return index_.size();
     }

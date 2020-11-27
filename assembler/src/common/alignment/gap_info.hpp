@@ -85,6 +85,11 @@ public:
             filling_seq_(filling_seq) {
     }
 
+    template <typename Archive>
+    void BinArchive(Archive &ar) {
+        ar(left_, right_, estimated_dist_, left_trim_, right_trim_, filling_seq_);
+    }
+
     EdgeId left() const {
         return left_;
     }
