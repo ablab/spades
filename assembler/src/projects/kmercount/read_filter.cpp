@@ -171,7 +171,8 @@ int main(int argc, char* argv[]) {
                 io::PairedStream paired_reads_stream =
                         io::paired_easy_reader(dataset[i], /*followed by rc*/false, /*insert size*/0);
                 io::OFastqPairedStream ostream(args.workdir + "/" + to_string(i + 1) + ".1.fastq",
-                                               args.workdir + "/" + to_string(i + 1) + ".2.fastq");
+                                               args.workdir + "/" + to_string(i + 1) + ".2.fastq",
+                                               dataset[i].orientation());
                 io::CoverageFilter<io::PairedRead, SeqHasher> filter(args.k, hasher, cqf, args.thr + 1);
                 filter_reads(paired_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
             }
