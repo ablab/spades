@@ -10,6 +10,7 @@
 #include "single_read.hpp"
 #include "paired_read.hpp"
 #include "header_naming.hpp"
+#include "common/pipeline/library_fwd.hpp"
 
 #include <fstream>
 #include <string>
@@ -152,13 +153,24 @@ class OPairedReadStream {
 public:
     typedef PairedRead ReadT;
 
-    OPairedReadStream(const std::string &left_filename, const std::string &right_filename)
-            : left_stream_(left_filename), right_stream_(right_filename) {
-    }
+    OPairedReadStream(const std::string &left_filename, const std::string &right_filename,
+                      LibraryOrientation orientation=LibraryOrientation::FF)
+                      : left_stream_(left_filename), right_stream_(right_filename), orientation_(orientation) {}
 
     OPairedReadStream &operator<<(const PairedRead &read) {
-        Writer::Write(left_stream_, read.first());
-        Writer::Write(right_stream_, read.second());
+        if (orientation_ == LibraryOrientation::FF || orientation_ == LibraryOrientation::FR ||
+            orientation_ == LibraryOrientation::Undefined) {
+            Writer::Write(left_stream_, read.first());
+        } else {
+            Writer::Write(left_stream_, !read.first());
+        }
+
+        if (orientation_ == LibraryOrientation::FF || orientation_ == LibraryOrientation::RF ||
+            orientation_ == LibraryOrientation::Undefined) {
+            Writer::Write(right_stream_, read.second());
+        } else {
+            Writer::Write(right_stream_, !read.second());
+        }
         return *this;
     }
 
@@ -169,6 +181,7 @@ public:
 
 private:
     Stream left_stream_, right_stream_;
+    const LibraryOrientation orientation_;
 };
 
 typedef OPairedReadStream<std::ofstream, FastaWriter> OFastaPairedStream;
