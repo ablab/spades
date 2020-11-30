@@ -74,7 +74,7 @@ void ReadConverter::ConvertToBinary(SequencingLibraryT& lib,
     BinaryWriter paired_converter(data.binary_reads_info.paired_read_prefix);
 
     FileReadFlags flags{ PhredOffset, /* use name */ false, /* use quality */ false, /* validate */ false };
-    PairedStream paired_reader = paired_easy_reader(lib, false, 0, false, flags, pool);
+    PairedStream paired_reader = paired_easy_reader(lib, false, 0, false, true, flags, pool);
     ReadStreamStat read_stat = paired_converter.ToBinary(paired_reader, lib.orientation(), pool);
     read_stat.read_count *= 2;
 

@@ -17,6 +17,7 @@ PairedStream paired_easy_reader(const SequencingLibraryBase &lib,
                                 bool followed_by_rc,
                                 size_t insert_size,
                                 bool use_orientation = true,
+                                bool handle_Ns=true,
                                 FileReadFlags flags = FileReadFlags(),
                                 ThreadPool::ThreadPool *pool = nullptr);
 ReadStreamList<SingleRead> single_easy_readers(const SequencingLibraryBase &lib,
