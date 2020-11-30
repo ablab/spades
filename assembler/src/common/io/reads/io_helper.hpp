@@ -38,15 +38,17 @@ SingleStream EasyStream(const std::string& filename, bool followed_by_rc,
                         ThreadPool::ThreadPool *pool = nullptr);
 PairedStream EasyWrapPairedStream(PairedStream stream,
                                   bool followed_by_rc,
-                                  LibraryOrientation orientation);
+                                  LibraryOrientation orientation, bool handle_Ns=true);
 PairedStream PairedEasyStream(const std::string& filename1, const std::string& filename2,
                               bool followed_by_rc, size_t insert_size,
-                              bool use_orientation = true, LibraryOrientation orientation = LibraryOrientation::FR,
+                              bool use_orientation = true, bool handle_Ns=true,
+                              LibraryOrientation orientation = LibraryOrientation::FR,
                               FileReadFlags flags = FileReadFlags(),
                               ThreadPool::ThreadPool *pool = nullptr);
 PairedStream PairedEasyStream(const std::string& filename, bool followed_by_rc,
                               size_t insert_size,
-                              bool use_orientation = true, LibraryOrientation orientation = LibraryOrientation::FR,
+                              bool use_orientation = true,  bool handle_Ns=true,
+                              LibraryOrientation orientation = LibraryOrientation::FR,
                               FileReadFlags flags = FileReadFlags(),
                               ThreadPool::ThreadPool *pool = nullptr);
 }

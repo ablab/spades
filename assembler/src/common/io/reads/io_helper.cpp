@@ -33,11 +33,14 @@ SingleStream EasyStream(const std::string& filename, bool followed_by_rc,
 
 PairedStream EasyWrapPairedStream(PairedStream stream,
                                   bool followed_by_rc,
-                                  LibraryOrientation orientation) {
+                                  LibraryOrientation orientation,
+                                  bool handle_Ns) {
     PairedStream reader{std::move(stream)};
     if (orientation != LibraryOrientation::Undefined)
         reader = OrientationChangingWrapper<PairedRead>(std::move(reader), orientation);
-    reader = LongestValidWrap<PairedRead>(std::move(reader));
+    if (handle_Ns) {
+        reader = LongestValidWrap<PairedRead>(std::move(reader));
+    }
     if (followed_by_rc)
         reader = RCWrap<PairedRead>(std::move(reader));
 
@@ -46,22 +49,22 @@ PairedStream EasyWrapPairedStream(PairedStream stream,
 
 PairedStream PairedEasyStream(const std::string& filename1, const std::string& filename2,
                               bool followed_by_rc, size_t insert_size,
-                              bool use_orientation, LibraryOrientation orientation,
+                              bool use_orientation, bool handle_Ns, LibraryOrientation orientation,
                               FileReadFlags flags,
                               ThreadPool::ThreadPool *pool) {
     return EasyWrapPairedStream(SeparatePairedReadStream(filename1, filename2, insert_size, flags,
                                                          pool),
                                 followed_by_rc,
-                                use_orientation ? orientation : LibraryOrientation::Undefined);
+                                use_orientation ? orientation : LibraryOrientation::Undefined, handle_Ns);
 }
 
 PairedStream PairedEasyStream(const std::string& filename, bool followed_by_rc,
                               size_t insert_size,
-                              bool use_orientation, LibraryOrientation orientation,
+                              bool use_orientation, bool handle_Ns, LibraryOrientation orientation,
                               FileReadFlags flags,
                               ThreadPool::ThreadPool *pool) {
     return EasyWrapPairedStream(InterleavingPairedReadStream(filename, insert_size, flags, pool), followed_by_rc,
-                                use_orientation ? orientation : LibraryOrientation::Undefined);
+                                use_orientation ? orientation : LibraryOrientation::Undefined, handle_Ns);
 }
 
 }
