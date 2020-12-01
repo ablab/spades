@@ -249,8 +249,8 @@ size_t ProcessSingleReads(GraphPack &gp, size_t ilib,
     SequenceMapperNotifier notifier(gp, cfg::get_writable().ds.reads.lib_count());
 
     auto &single_long_reads = gp.get_mutable<LongReadContainer<Graph>>()[ilib];
-    LongReadMapper read_mapper(graph, single_long_reads,
-                               ChooseProperReadPathExtractor(graph, reads.type()));
+    auto& trusted_paths = gp.get_mutable<path_extend::TrustedPathsContainer>()[ilib];
+    LongReadMapper read_mapper(graph, single_long_reads, trusted_paths, reads.type());
 
     if (ShouldObtainSingleReadsPaths(ilib) || reads.is_contig_lib()) {
         //FIXME pretty awful, would be much better if listeners were shared ptrs

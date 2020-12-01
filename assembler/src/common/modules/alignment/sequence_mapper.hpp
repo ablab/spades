@@ -156,16 +156,17 @@ public:
 
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
+    constexpr static size_t LENGTH_BOUND_DEFAULT = 70;
 
     MappingPathFixer(const Graph& graph)
             : g_(graph) {
     }
 
-    Path<EdgeId> TryFixPath(const Path<EdgeId>& path, size_t length_bound = 70) const {
+    Path<EdgeId> TryFixPath(const Path<EdgeId>& path, size_t length_bound = LENGTH_BOUND_DEFAULT) const {
         return Path<EdgeId>(TryFixPath(path.sequence(), length_bound), path.start_pos(), path.end_pos());
     }
 
-    std::vector<EdgeId> TryFixPath(const std::vector<EdgeId>& edges, size_t length_bound = 70) const {
+    std::vector<EdgeId> TryFixPath(const std::vector<EdgeId>& edges, size_t length_bound = LENGTH_BOUND_DEFAULT) const {
         std::vector<EdgeId> answer;
         if (edges.empty()) {
             //          WARN("Mapping path was empty");
@@ -200,8 +201,7 @@ public:
         return Path<EdgeId>(DeleteSameEdges(path.sequence()), path.start_pos(), path.end_pos());
     }
 
-private:
-    std::vector<EdgeId> TryCloseGap(VertexId v1, VertexId v2, size_t length_bound) const {
+    std::vector<EdgeId> TryCloseGap(VertexId v1, VertexId v2, size_t length_bound = LENGTH_BOUND_DEFAULT) const {
         if (v1 == v2)
             return {};
         TRACE("Trying to close gap between v1=" << g_.int_id(v1) << " and v2=" << g_.int_id(v2));
@@ -233,6 +233,8 @@ private:
         TRACE( "Cumulative closure length is " << CumulativeLength(g_, answer));
         return answer;
     }
+
+private:
     const Graph& g_;
 };
 

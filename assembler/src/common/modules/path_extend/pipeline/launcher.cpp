@@ -19,6 +19,7 @@
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
 #include "modules/path_extend/scaffolder2015/path_polisher.hpp"
 
+#include <unordered_set>
 
 namespace path_extend {
 
@@ -339,17 +340,28 @@ Extenders PathExtendLauncher::ConstructMPExtenders(const ExtendersGenerator &gen
 
 void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_threshold) {
     INFO("filling path container");
-    std::vector<PathInfo<Graph>> paths;
-    gp_.get_mutable<LongReadContainer<Graph>>()[lib_index].SaveAllPaths(paths);
-    for (const auto &path: paths) {
-        const auto &edges = path.path();
-        if (edges.size() <= size_threshold)
-            continue;
-        BidirectionalPath *new_path = new BidirectionalPath(graph_, edges);
-        BidirectionalPath *conj_path = new BidirectionalPath(new_path->Conjugate());
-        new_path->SetWeight((float) path.weight());
-        conj_path->SetWeight((float) path.weight());
-        unique_data_.long_reads_paths_[lib_index].AddPair(new_path, conj_path);
+    if (dataset_info_.reads[lib_index].type() == io::LibraryType::TrustedContigs) {
+        auto& trusted_paths = gp_.get_mutable<path_extend::TrustedPathsContainer>()[lib_index];
+        for (auto & path : trusted_paths) {
+            auto new_path = std::make_unique<BidirectionalPath>(graph_, std::move(path));
+            auto conj_path = std::make_unique<BidirectionalPath>(new_path->Conjugate());
+            unique_data_.long_reads_paths_[lib_index].AddPair(new_path.release(), conj_path.release());
+        }
+        DebugOutputPaths(unique_data_.long_reads_paths_[lib_index], "trusted_contigs");
+        trusted_paths.clear();
+    } else {
+        std::vector<PathInfo<Graph>> paths;
+        gp_.get_mutable<LongReadContainer<Graph>>()[lib_index].SaveAllPaths(paths);
+        for (const auto &path: paths) {
+            const auto &edges = path.path();
+            if (edges.size() <= size_threshold)
+                continue;
+            auto new_path = std::make_unique<BidirectionalPath>(graph_, std::move(edges));
+            auto conj_path = std::make_unique<BidirectionalPath>(new_path->Conjugate());
+            new_path->SetWeight((float) path.weight());
+            conj_path->SetWeight((float) path.weight());
+            unique_data_.long_reads_paths_[lib_index].AddPair(new_path.release(), conj_path.release());
+        }
     }
     DEBUG("Long reads paths " << unique_data_.long_reads_paths_[lib_index].size());
     unique_data_.long_reads_cov_map_[lib_index].AddPaths(unique_data_.long_reads_paths_[lib_index]);
@@ -542,6 +554,16 @@ void PathExtendLauncher::SelectStrandSpecificPaths(PathContainer &paths) const {
     }
 }
 
+void MakeConjugateEdgePairsDump(ConjugateDeBruijnGraph const & graph) {
+    std::ofstream out(cfg::get().output_dir+"/conjugate_edge_pairs_dump.info");
+    if (!out.is_open()) {
+        FATAL_ERROR("Cannot open conjugate_edge_pairs_dump.info for writing");
+        return;
+    }
+
+    for (EdgeId e : graph.canonical_edges())
+        out << e << ' ' << graph.conjugate(e) << '\n';
+}
 
 void PathExtendLauncher::Launch() {
     INFO("ExSPAnder repeat resolving tool started");
@@ -566,8 +588,12 @@ void PathExtendLauncher::Launch() {
     PathExtendResolver resolver(graph_);
 
     auto seeds = resolver.MakeSimpleSeeds();
+
     seeds.SortByLength();
     DebugOutputPaths(seeds, "init_paths");
+
+    if (params_.pe_cfg.debug_output)
+        MakeConjugateEdgePairsDump(graph_);
 
     GraphCoverageMap cover_map(graph_);
     UsedUniqueStorage used_unique_storage(unique_data_.main_unique_storage_, graph_);
