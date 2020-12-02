@@ -104,9 +104,10 @@ def prepare_config_bgcspades(filename, cfg, log):
         return
     subst_dict = dict()
     subst_dict["set_of_hmms"] = cfg.set_of_hmms
-    subst_dict["component_size_part"] = 1 if options_storage.args.bio else 2
-    subst_dict["set_copynumber"] = bool_to_str(True) if options_storage.args.bio else bool_to_str(False)
-    subst_dict["start_only_from_tips"] = bool_to_str(True) if options_storage.args.bio else bool_to_str(False)
+    if options_storage.args.bio:
+        subst_dict["component_size_part"] = 1
+        subst_dict["set_copynumber"] = bool_to_str(True)
+        subst_dict["start_only_from_tips"] = bool_to_str(True)
     process_cfg.substitute_params(filename, subst_dict, log)
 
 def prepare_config_construction(filename, log):
