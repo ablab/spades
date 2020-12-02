@@ -1,6 +1,6 @@
 hmm_match {
   set_of_hmms none
-  component_size_part 1
+  component_size_part 10
   start_only_from_tips false
   set_copynumber false
 }
