@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 ############################################################################
-# Copyright (c) 2015-2017 Saint Petersburg State University
+# Copyright (c) 2015-2020 Saint Petersburg State University
 # Copyright (c) 2011-2014 Saint Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
@@ -19,7 +19,7 @@ import subprocess
 import functools
 from traceback import print_exc
 
-sys.path.append('./src/spades_pipeline/')
+sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../../spades_pipeline'))
 import process_cfg
 
 #Log class, use it, not print
@@ -331,6 +331,8 @@ def construct_quast_limit_map(dataset_info, prefix, add_all_params = False):
     return construct_limit_map(dataset_info, prefix, [
                                         ('min_contig',      "# contigs",                True,   True, True, 0.1),
                                         ('max_contig',      "# contigs",                False,  True, True, 0.1),
+                                        ('min_largest',     "Largest contig",           True,   True, True, 0.05),
+                                        ('max_largest',     "Largest contig",           False,  True, True, 0.05),
                                         ('min_n50',         "N50",                      True,   True, True, 0.1),
                                         ('max_n50',         "N50",                      False,  True, True, 0.1),
                                         ('min_ng50',        "NG50",                     True,   True, True, 0.1) ,

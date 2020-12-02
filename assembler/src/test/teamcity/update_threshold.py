@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 ############################################################################
-# Copyright (c) 2015 Saint Petersburg State University
+# Copyright (c) 2015-2020 Saint Petersburg State University
 # Copyright (c) 2011-2014 Saint Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
@@ -23,12 +23,10 @@ import glob
 import math
 from traceback import print_exc
 
-sys.path.append('./src/spades_pipeline/')
+sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../../spades_pipeline'))
 import process_cfg
-
-sys.path.append('./src/test/teamcity/')
-import teamcity_support
 from teamcity_support import *
+
 
 def parse_args_ut():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -58,7 +56,7 @@ def parse_args_ut():
     return args
 
 
-BASIC_METRICS = ["N50", "LG50", "# misassemblies", "Genome fraction (%)",  "# indels per 100 kbp", "# mismatches per 100 kbp", "# local misassemblies"]
+BASIC_METRICS = ["N50", "LG50", "Largest contig", "# misassemblies", "Genome fraction (%)",  "# indels per 100 kbp", "# mismatches per 100 kbp", "# local misassemblies"]
 
 
 def metric_in_list(metric, mlist):

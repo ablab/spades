@@ -20,11 +20,8 @@ import argparse
 import subprocess
 from traceback import print_exc
 
-sys.path.append('./src/spades_pipeline/')
+sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../../spades_pipeline'))
 import process_cfg
-
-sys.path.append('./src/test/teamcity/')
-import teamcity_support
 from teamcity_support import *
 
 ### main ###
@@ -38,7 +35,7 @@ try:
     exit_code = 0
     args = parse_args()
     dataset_info = load_info(args.info)
-    working_dir = os.getcwd()
+    working_dir = os.path.join(os.path.abspath(sys.path[0]), '../../../')
     output_dir = create_output_dir(args, dataset_info)
     save_run_info(args, output_dir)
 
