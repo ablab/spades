@@ -653,20 +653,21 @@ class mphf {
             uint64_t hashidx =  __sync_fetch_and_add(&_final_hashidx, 1);
 
             // calc rank de fin  precedent level qq part, puis init hashidx avec ce rank, direct minimal, pas besoin inser ds bitset et rank
-            if (_final_hash.count(val)) { // key already in final hash
-                if (_policy == ConflictPolicy::Ignore) {
-#                   pragma omp critical
-                    _final_hash[val] = NOT_FOUND;
-                } else {
-                    fprintf(stderr,"The impossible happened : collision on 128 bit hashes... please switch to safe branch, and play the lottery.");
-                    fprintf(stderr,"Another more likely explanation might be that you have duplicate keys in your input.\
+#           pragma omp critical
+            {
+                if (_final_hash.count(val)) { // key already in final hash
+                    if (_policy == ConflictPolicy::Ignore) {
+                        _final_hash[val] = NOT_FOUND;
+                    } else {
+                        fprintf(stderr,"The impossible happened : collision on 128 bit hashes... please switch to safe branch, and play the lottery.");
+                        fprintf(stderr,"Another more likely explanation might be that you have duplicate keys in your input.\
                                         If so, you can ignore this message, but be aware that too many duplicate keys will increase ram usage\n");
-                    if (_policy == ConflictPolicy::Error)
-                        abort();
+                        if (_policy == ConflictPolicy::Error)
+                            abort();
+                    }
+                } else {
+                    _final_hash[val] = hashidx;
                 }
-            } else {
-#               pragma omp critical
-                _final_hash[val] = hashidx;
             }
         } else {
             insertIntoLevel(level_hash, i, collisions); //should be safe
