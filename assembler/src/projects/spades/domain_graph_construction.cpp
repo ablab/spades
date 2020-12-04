@@ -24,18 +24,18 @@ class SetOfForbiddenEdgesPathChooser : public omnigraph::PathProcessor<Graph>::C
     std::vector<EdgeId> answer_path_;
     std::vector<size_t> peaks;
 
-    bool CheckCoverageDiff(const path_extend::BidirectionalPath &path) const {
+    bool CheckCoverageDiff(const std::vector<EdgeId> &path) const {
         double min_coverage = std::numeric_limits<double>::max();
         double max_coverage = std::numeric_limits<double>::min();
 
-        for (size_t i = 0; i < path.Size(); ++i) {
-            min_coverage = std::min(min_coverage, path.graph().coverage(path[i]));
-            max_coverage = std::max(max_coverage, path.graph().coverage(path[i]));
+        for (size_t i = 0; i < path.size(); ++i) {
+            min_coverage = std::min(min_coverage, g_.coverage(path[i]));
+            max_coverage = std::max(max_coverage, g_.coverage(path[i]));
         }
         return math::ge(50.0, max_coverage/min_coverage);
     }
 
-    bool IsNewPathBetter(path_extend::BidirectionalPath &current, path_extend::BidirectionalPath &candidate) const {
+    bool IsNewPathBetter(const path_extend::BidirectionalPath &current, const path_extend::BidirectionalPath &candidate) const {
         int current_length = (int)current.Length();
         int candidate_length = (int)candidate.Length();
         int diff_current = std::numeric_limits<int>::max();
@@ -72,20 +72,20 @@ public:
             }
         }
         if (answer_path_.empty()) {
-            if (!CheckCoverageDiff(path_extend::BidirectionalPath(g_, forward_path))) {
+            if (!CheckCoverageDiff(forward_path)) {
                return;
             }
             answer_path_ = forward_path;
             return;
         }
 
-        if (!CheckCoverageDiff(path_extend::BidirectionalPath(g_,forward_path))) {
+        if (!CheckCoverageDiff(forward_path)) {
             return;
         }
 
-        path_extend::BidirectionalPath current(g_, answer_path_);
-        path_extend::BidirectionalPath candidate(g_, forward_path);
-        if (IsNewPathBetter(current, candidate)) {
+        auto current = path_extend::BidirectionalPath::create(g_, answer_path_);
+        auto candidate = path_extend::BidirectionalPath::create(g_, forward_path);
+        if (IsNewPathBetter(*current, *candidate)) {
             answer_path_ = forward_path;
         }
     }
@@ -139,14 +139,14 @@ private:
         if (g.EdgeEnd(domain_graph_.domain_edges(v1).back()) != g.EdgeStart(domain_graph_.domain_edges(v2).front())) {
             DEBUG("Trying to find paths from " << g.EdgeEnd(domain_graph_.domain_edges(v1).back()) << " to " << g.EdgeStart(domain_graph_.domain_edges(v2).front()));
             ProcessPaths(g, min_len, 4000 - last_mapping - first_mapping, g.EdgeEnd(domain_graph_.domain_edges(v1).back()), g.EdgeStart(domain_graph_.domain_edges(v2).front()), chooser);
-            if(!chooser.answer().empty()) {
+            if (!chooser.answer().empty()) {
                 DEBUG("Path was found");
-                path_extend::BidirectionalPath p(g, chooser.answer());
-                DEBUG("Start vertex: " << g.EdgeStart(p.Front()).int_id());
-                DEBUG("End vertex: " << g.EdgeEnd(p.Back()).int_id());
+                auto p = path_extend::BidirectionalPath::create(g, chooser.answer());
+                DEBUG("Start vertex: " << g.EdgeStart(p->Front()).int_id());
+                DEBUG("End vertex: " << g.EdgeEnd(p->Back()).int_id());
                 DEBUG("Path:");
-                p.PrintDEBUG();
-                domain_graph_.AddEdge(v1, v2, false, chooser.answer(), p.Length() + last_mapping + first_mapping);
+                p->PrintDEBUG();
+                domain_graph_.AddEdge(v1, v2, false, chooser.answer(), p->Length() + last_mapping + first_mapping);
             }
             else {
                 DEBUG("Path was not found");

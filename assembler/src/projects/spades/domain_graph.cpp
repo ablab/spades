@@ -202,18 +202,18 @@ namespace nrps {
         stat_file << std::endl;
         stat_file << "Domain cordinates:" << std::endl;
         size_t current_coord = 0;
-        path_extend::BidirectionalPath p(g_);
+        auto p = path_extend::BidirectionalPath::create(g_);
         for (size_t i = 0; i < single_candidate.size(); ++i) {
             auto v = single_candidate[i];
             DEBUG("Translating vertex " << this->GetVertexName(v));
             for (EdgeId e : domain_edges(v)) {
-                if (p.Size() == 0 || p.Back() != e) {
+                if (p->Size() == 0 || p->Back() != e) {
                     int gap = 0;
-                    if (p.Size() != 0 &&
-                        p.graph().EdgeEnd(p.Back()) != g_.EdgeStart(e)) {
+                    if (p->Size() != 0 &&
+                        p->graph().EdgeEnd(p->Back()) != g_.EdgeStart(e)) {
                         gap = 100;
                     }
-                    p.PushBack(e, path_extend::Gap(gap));
+                    p->PushBack(e, path_extend::Gap(gap));
                     current_coord += g_.length(e) + gap;
                 }
             }
@@ -224,7 +224,7 @@ namespace nrps {
             }
 
             stat_file << GetStartCoord(v) + current_coord - sum << " ";
-            stat_file << GetEndCoord(v) + current_coord - g_.length(p.Back()) << std::endl;
+            stat_file << GetEndCoord(v) + current_coord - g_.length(p->Back()) << std::endl;
             //TODO: check if can be improved
             if (i != single_candidate.size() - 1) {
                 auto next_edges = this->GetEdgesBetween(v, single_candidate[i + 1]);
@@ -233,13 +233,13 @@ namespace nrps {
                 }
                 EdgeId next_edge = next_edges[0];
                 for (auto e : debruijn_edges(next_edge)) {
-                    if (p.Size() == 0 || p.Back() != e) {
+                    if (p->Size() == 0 || p->Back() != e) {
                         int gap = 0;
-                        if (p.Size() != 0 &&
-                            g_.EdgeEnd(p.Back()) != g_.EdgeStart(e)) {
+                        if (p->Size() != 0 &&
+                            g_.EdgeEnd(p->Back()) != g_.EdgeStart(e)) {
                             gap = 100;
                         }
-                        p.PushBack(e, path_extend::Gap(gap));
+                        p->PushBack(e, path_extend::Gap(gap));
                         current_coord += g_.length(e) + gap;
                     }
                 }
@@ -475,14 +475,12 @@ namespace nrps {
             ordering_id = 1;
             for (const auto &vec : answer) {
                 OutputStatArrangement(vec, ordering_id, stat_stream);
-                path_extend::BidirectionalPath *p =
-                        new path_extend::BidirectionalPath(graph);
-                std::string outputstring = PathToSequence(p, vec);
-                path_extend::BidirectionalPath *conjugate =
-                        new path_extend::BidirectionalPath(p->Conjugate());
-                contig_paths_.AddPair(p, conjugate);
-                OutputComponent(p, component_id, ordering_id);
-                outputstring = seq_maker.MakeSequence(*p);
+                auto p = path_extend::BidirectionalPath::create(graph);
+                std::string outputstring = PathToSequence(p.get(), vec);
+                auto conjugate = path_extend::BidirectionalPath::clone_conjugate(p);
+                auto paths = contig_paths_.AddPair(std::move(p), std::move(conjugate));
+                OutputComponent(&paths.first, component_id, ordering_id);
+                outputstring = seq_maker.MakeSequence(paths.first);
                 oss.SetCluster(component_id, ordering_id);
                 oss << outputstring;
                 ordering_id++;

@@ -5,6 +5,8 @@
 //***************************************************************************
 
 #include "path_polisher.hpp"
+#include "assembly_graph/core/graph.hpp"
+#include "assembly_graph/paths/bidirectional_path.hpp"
 
 namespace path_extend {
 
@@ -23,10 +25,10 @@ void PathPolisher::InfoAboutGaps(const PathContainer & result){
 PathContainer PathPolisher::PolishPaths(const PathContainer &paths) {
     PathContainer result;
     for (const auto& path_pair : paths) {
-        BidirectionalPath path = Polish(*path_pair.first);
-        BidirectionalPath *conjugate_path = new BidirectionalPath(Polish(path.Conjugate()));
-        BidirectionalPath *re_path = new BidirectionalPath(conjugate_path->Conjugate());
-        result.AddPair(re_path, conjugate_path);
+        auto path = Polish(*path_pair.first);
+        auto conjugate_path = Polish(path->Conjugate());
+        auto re_path = BidirectionalPath::clone_conjugate(conjugate_path);
+        result.AddPair(std::move(re_path), std::move(conjugate_path));
     }
     InfoAboutGaps(result);
     return result;
@@ -41,11 +43,12 @@ size_t DijkstraGapCloser::MinPathLength(const PathsT& paths) const {
     return shortest_len;
 }
 
-BidirectionalPath PathPolisher::Polish(const BidirectionalPath &init_path) {
-    if (init_path.Empty())
-        return init_path;
+std::unique_ptr<BidirectionalPath> PathPolisher::Polish(const BidirectionalPath &init_path) {
+    auto path = BidirectionalPath::clone(init_path);
 
-    auto path = std::make_shared<BidirectionalPath>(init_path);
+    if (init_path.Empty())
+        return path;
+
     size_t prev_len = path->Size();
 
     bool changed = true;
@@ -53,8 +56,8 @@ BidirectionalPath PathPolisher::Polish(const BidirectionalPath &init_path) {
     while (changed) {
         changed = false;
         for (const auto& gap_closer : gap_closers_) {
-            path = std::make_shared<BidirectionalPath>(gap_closer->CloseGaps(*path));
-            if (path->Size() != prev_len){
+            path = gap_closer->CloseGaps(*path);
+            if (path->Size() != prev_len) {
                 changed = true;
                 prev_len = path->Size();
                 break;
@@ -67,10 +70,10 @@ BidirectionalPath PathPolisher::Polish(const BidirectionalPath &init_path) {
             break;
         }
     }
-    return *path;
+    return path;
 }
 
-BidirectionalPath PathGapCloser::CloseGaps(const BidirectionalPath &path) const {
+std::unique_ptr<BidirectionalPath> PathGapCloser::CloseGaps(const BidirectionalPath &path) const {
     auto IsBadGap = [&path, th = this] (size_t i) {
         return th->g_.EdgeEnd(path[i - 1]) != th->g_.EdgeStart(path[i]) && !path.GapAt(i).is_final;
     };
@@ -83,21 +86,22 @@ BidirectionalPath PathGapCloser::CloseGaps(const BidirectionalPath &path) const 
     };
     
     if (WithoutBadGaps())
-        return path;
+        return BidirectionalPath::clone(path);
 
-    BidirectionalPath result(g_);
+    auto result = BidirectionalPath::create(g_);
     VERIFY(path.GapAt(0) == Gap());
-    result.PushBack(path[0]);
+    result->PushBack(path[0]);
     for (size_t i = 1; i < path.Size(); ++i) {
         if (!IsBadGap(i)) {
-            result.PushBack(path[i], path.GapAt(i));
+            result->PushBack(path[i], path.GapAt(i));
         } else {
             DEBUG("Gap between " << path[i - 1].int_id() << " and " << path[i].int_id() << " " << path.GapAt(i));
-            auto new_gap = CloseGap(path, i, result);
+            auto new_gap = CloseGap(path, i, *result);
             DEBUG("gap after " << new_gap);
-            result.PushBack(path[i], new_gap);
+            result->PushBack(path[i], new_gap);
         }
     }
+    
     return result;
 }
 

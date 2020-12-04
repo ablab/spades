@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include "assembly_graph/paths/bidirectional_path.hpp"
 #include "path_extender.hpp"
 
 namespace path_extend {
@@ -103,15 +104,16 @@ class OverlapRemover {
     }
 
     void InnerMarkOverlaps(bool end_start_only, bool retain_one_copy) {
-        for (auto path_pair: paths_) {
+        for (auto &path_pair : paths_) {
             //TODO think if this "optimization" is necessary
             if (path_pair.first->Size() == 0)
                 continue;
+            
             if (path_pair.first->IsCycle()) {
                 VERIFY(path_pair.first->GetCycleOverlapping() == path_pair.second->GetCycleOverlapping());
                 auto overlapping = path_pair.first->GetCycleOverlapping();
                 if (overlapping > 0)
-                    splits_[path_pair.first].insert(overlapping);
+                    splits_[path_pair.first.get()].insert(overlapping);
             } else {
                 MarkStartOverlaps(*path_pair.first, end_start_only, retain_one_copy);
                 MarkStartOverlaps(*path_pair.second, end_start_only, retain_one_copy);
@@ -121,10 +123,10 @@ class OverlapRemover {
 
 public:
     OverlapRemover(const Graph &g,
-                         const PathContainer &paths,
-                         GraphCoverageMap &coverage_map,
-                         size_t min_edge_len,// = 0,
-                         size_t max_diff) :// = 0) :
+                   const PathContainer &paths,
+                   GraphCoverageMap &coverage_map,
+                   size_t min_edge_len,// = 0,
+                   size_t max_diff) :// = 0) :
             paths_(paths),
             helper_(g, coverage_map,
                     min_edge_len, max_diff) {
@@ -155,7 +157,7 @@ class PathSplitter {
     PathContainer &paths_;
     GraphCoverageMap &coverage_map_;
 
-    std::set<size_t> TransformConjSplits(PathPtr p) const {
+    std::set<size_t> TransformConjSplits(const BidirectionalPath *p) const {
         std::set<size_t> path_splits;
         size_t path_len = p->Size();
         auto it = splits_.find(p);
@@ -170,10 +172,11 @@ class PathSplitter {
         return path_splits;
     }
 
-    std::set<size_t> GatherAllSplits(const PathPair &pp) const {
-        VERIFY(pp.first->Size() == pp.second->Size());
-        std::set<size_t> path_splits = TransformConjSplits(pp.second);
-        auto it = splits_.find(pp.first);
+    std::set<size_t> GatherAllSplits(const BidirectionalPath *p,
+                                     const BidirectionalPath *cp) const {
+        VERIFY(p->Size() == cp->Size());
+        std::set<size_t> path_splits = TransformConjSplits(cp);
+        auto it = splits_.find(p);
         if (it != splits_.end()) {
             utils::insert_all(path_splits, it->second);
         }
@@ -202,9 +205,12 @@ public:
             coverage_map_(coverage_map) {}
 
      void Split() {
-         std::vector<PathPair> tmp_paths(paths_.begin(), paths_.end());
-         for (auto path_pair: tmp_paths) {
-             SplitPath(path_pair.first, GatherAllSplits(path_pair));
+         std::vector<std::pair<BidirectionalPath*, BidirectionalPath*>> tmp_paths;
+         for (const auto &entry : paths_)
+             tmp_paths.emplace_back(entry.first.get(), entry.second.get());
+         for (auto & path_pair : tmp_paths) {
+             SplitPath(path_pair.first, GatherAllSplits(path_pair.first,
+                                                        path_pair.second));
          }
      }
 
@@ -217,7 +223,7 @@ class PathDeduplicator {
     const bool equal_only_;
     const OverlapFindingHelper helper_;
 
-    bool IsRedundant(PathPtr path) const {
+    bool IsRedundant(BidirectionalPath *path) const {
         TRACE("Checking if path redundant " << path->GetId());
         for (auto candidate : helper_.FindCandidatePaths(*path)) {
             TRACE("Considering candidate " << candidate->GetId());
@@ -245,9 +251,9 @@ public:
 
     //TODO use path container filtering?
     void Deduplicate() {
-        for (auto path_pair : paths_) {
-            auto path = path_pair.first;
-            if (IsRedundant(path)) {
+        for (auto & path_pair : paths_) {
+            auto &path = path_pair.first;
+            if (IsRedundant(path.get())) {
                 TRACE("Clearing path " << path->str());
                 path->Clear();
             }
@@ -259,8 +265,8 @@ private:
 };
 
 inline void Deduplicate(const Graph &g, PathContainer &paths, GraphCoverageMap &coverage_map,
-                 size_t min_edge_len, size_t max_path_diff,
-                 bool equal_only = false) {
+                        size_t min_edge_len, size_t max_path_diff,
+                        bool equal_only = false) {
     //add sorting to guarantee survival of longest paths if max_path_diff used
     //paths.SortByLength(false);
     PathDeduplicator deduplicator(g, paths, coverage_map, min_edge_len, max_path_diff, equal_only);
@@ -274,9 +280,9 @@ class PathExtendResolver {
     size_t k_;
 
 public:
-    PathExtendResolver(const Graph& g): g_(g), k_(g.k()) {
-    }
-
+    PathExtendResolver(const Graph& g)
+            : g_(g), k_(g.k()) {}
+    
     PathContainer MakeSimpleSeeds() const {
         std::set<EdgeId> included;
         PathContainer edges;
@@ -284,7 +290,7 @@ public:
             EdgeId e = *iter;
             if (g_.int_id(e) <= 0 || InTwoEdgeCycle(e, g_))
                 continue;
-            edges.AddPair(new BidirectionalPath(g_, e), new BidirectionalPath(g_, g_.conjugate(e)));
+            edges.AddPair(BidirectionalPath::create(g_, e), BidirectionalPath::create(g_, g_.conjugate(e)));
         }
         return edges;
     }
@@ -308,7 +314,7 @@ public:
         }
 
         OverlapRemover overlap_remover(g_, paths, coverage_map,
-                                             min_edge_len, max_path_diff);
+                                       min_edge_len, max_path_diff);
         INFO("Marking overlaps");
         overlap_remover.MarkOverlaps(end_start_only, !cut_all);
 
@@ -326,7 +332,7 @@ public:
         for (auto iter = g_.ConstEdgeBegin(true); !iter.IsEnd(); ++iter) {
             EdgeId e = *iter;
             if (!coverageMap.IsCovered(e)) {
-                AddPath(paths, BidirectionalPath(g_, e), coverageMap);
+                AddPath(paths, BidirectionalPath::create(g_, e), coverageMap);
             }
         }
     }

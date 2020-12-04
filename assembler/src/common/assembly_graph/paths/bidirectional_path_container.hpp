@@ -8,13 +8,15 @@
 
 #include "bidirectional_path.hpp"
 #include "modules/path_extend/path_filter.hpp"
+#include <memory>
 #include <vector>
 #include <set>
 #include <map>
 
 namespace path_extend {
 
-typedef std::pair<BidirectionalPath*, BidirectionalPath*> PathPair;
+typedef std::pair<std::unique_ptr<BidirectionalPath>,
+                  std::unique_ptr<BidirectionalPath>> PathPair;
 
 class PathComparator {
 public:
@@ -36,7 +38,6 @@ typedef std::multiset<BidirectionalPath *, PathComparator> BidirectionalPathMult
 
 class PathContainer {
 public:
-
     typedef std::vector<PathPair> PathContainerT;
 
     class Iterator : public PathContainerT::iterator {
@@ -45,10 +46,10 @@ public:
             : PathContainerT::iterator(iter) {
         }
         BidirectionalPath* get() const {
-            return this->operator *().first;
+            return this->operator *().first.get();
         }
         BidirectionalPath* getConjugate() const {
-            return this->operator *().second;
+            return this->operator *().second.get();
         }
     };
 
@@ -63,10 +64,10 @@ public:
         }
 
         BidirectionalPath* get() const {
-            return this->operator *().first;
+            return this->operator *().first.get();
         }
         BidirectionalPath* getConjugate() const {
-            return this->operator *().second;
+            return this->operator *().second.get();
         }
     };
 
@@ -79,11 +80,10 @@ public:
     PathContainer& operator=(PathContainer&&) = default;
 
     PathContainer(ConstIterator begin, ConstIterator end) {
-        DeleteAllPaths();
+        clear();
         for (ConstIterator it = begin; it != end; ++it) {
-            BidirectionalPath * path = new BidirectionalPath(*(it.get()));
-            BidirectionalPath * conjugatePath = new BidirectionalPath(*(it.getConjugate()));
-            AddPair(path, conjugatePath);
+            AddPair(BidirectionalPath::clone(*(it.get())),
+                    BidirectionalPath::clone(*(it.getConjugate())));
         }
     }
 
@@ -92,47 +92,33 @@ public:
     }
 
     BidirectionalPath* Get(size_t index) const {
-        return data_[index].first;
+        return data_[index].first.get();
     }
 
     BidirectionalPath* GetConjugate(size_t index) const {
-        return data_[index].second;
+        return data_[index].second.get();
     }
 
     void Swap(size_t index) {
         std::swap(data_[index].first, data_[index].second);
     }
 
-    void DeleteAllPaths() {
-        for (size_t i = 0; i < data_.size(); ++i) {
-            DeletePathPair(data_[i]);
-        }
-        clear();
-    }
+    ~PathContainer() {}
 
-    ~PathContainer() {
-        DeleteAllPaths();
-    }
+    size_t size() const { return data_.size(); }
+    void clear() { data_.clear(); }
+    void reserve(size_t size) { data_.reserve(size); }
 
-    size_t size() const {
-        return data_.size();
-    }
+    // This guy acquires the ownership of paths
+    std::pair<BidirectionalPath&, BidirectionalPath&>
+    AddPair(std::unique_ptr<BidirectionalPath> p, std::unique_ptr<BidirectionalPath> cp) {
+        p->SetConjPath(cp.get());
+        cp->SetConjPath(p.get());
+        p->Subscribe(cp.get());
+        cp->Subscribe(p.get());
+        data_.emplace_back(std::move(p), std::move(cp));
 
-    void clear() {
-        data_.clear();
-    }
-
-    void reserve(size_t size) {
-        data_.reserve(size);
-    }
-
-    bool AddPair(BidirectionalPath* p, BidirectionalPath* cp) {
-        p->SetConjPath(cp);
-        cp->SetConjPath(p);
-        p->Subscribe(cp);
-        cp->Subscribe(p);
-        data_.emplace_back(p, cp);
-        return true;
+        return { *data_.back().first, *data_.back().second };
     }
 
     void SortByLength(bool desc = true) {
@@ -146,21 +132,10 @@ public:
         });
     }
 
-    Iterator begin() {
-        return Iterator(data_.begin());
-    }
-
-    Iterator end() {
-        return Iterator(data_.end());
-    }
-
-    ConstIterator begin() const {
-        return ConstIterator(data_.begin());
-    }
-
-    ConstIterator end() const {
-        return ConstIterator(data_.end());
-    }
+    Iterator begin() { return Iterator(data_.begin()); }
+    Iterator end() { return Iterator(data_.end()); }
+    ConstIterator begin() const { return ConstIterator(data_.begin()); }
+    ConstIterator end() const { return ConstIterator(data_.end()); }
 
     Iterator erase(ConstIterator iter) {
         return Iterator(data_.erase(iter));
@@ -193,12 +168,9 @@ public:
     }
 
 private:
-
     void DeletePathPair(PathPair &pp) {
-        delete pp.first;
-        pp.first = nullptr;
-        delete pp.second;
-        pp.second = nullptr;
+        pp.first.reset();
+        pp.second.reset();
     }
 
     std::vector<PathPair> data_;

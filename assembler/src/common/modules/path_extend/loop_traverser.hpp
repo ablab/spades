@@ -5,19 +5,14 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * loop_traverser.hpp
- *
- *  Created on: Jan 28, 2013
- *      Author: ira
- */
-
 #ifndef LOOP_TRAVERSER_H_
 #define LOOP_TRAVERSER_H_
 
 #include "path_extender.hpp"
 #include "pe_resolver.hpp"
 #include "path_visualizer.hpp"
+
+#include "assembly_graph/core/graph.hpp"
 
 namespace path_extend {
 
@@ -39,13 +34,13 @@ class LoopTraverser {
 
     EdgeId FindStart(const std::set<VertexId> &component_set) const {
         EdgeId result;
-        for (auto it = component_set.begin(); it != component_set.end(); ++it) {
-            for (auto eit = g_.in_begin(*it); eit != g_.in_end(*it); ++eit) {
-                if (component_set.count(g_.EdgeStart(*eit)) == 0) {
-                    if (result != EdgeId()) {
+        for (VertexId v : component_set) {
+            for (EdgeId e : g_.IncomingEdges(v)) {
+                if (component_set.count(g_.EdgeStart(e)) == 0) {
+                    if (result != EdgeId())
                         return EdgeId();
-                    }
-                    result = *eit;
+
+                    result = e;
                 }
             }
         }
@@ -54,20 +49,18 @@ class LoopTraverser {
 
     EdgeId FindFinish(const std::set<VertexId> &component_set) {
         EdgeId result;
-        for (auto it = component_set.begin(); it != component_set.end(); ++it) {
-            for (auto I = g_.out_begin(*it), E = g_.out_end(*it);
-                    I != E; ++I) {
-                if (component_set.count(g_.EdgeEnd(*I)) == 0) {
-                    if (result != EdgeId()) {
+        for (VertexId v : component_set) {
+            for (EdgeId e : g_.OutgoingEdges(v)) {
+                if (component_set.count(g_.EdgeEnd(e)) == 0) {
+                    if (result != EdgeId())
                         return EdgeId();
-                    }
-                    result = *I;
+
+                    result = e;
                 }
             }
         }
         return result;
     }
-
 
     bool IsEndInsideComponent(const BidirectionalPath &path, const std::set<VertexId> &component_set) {
         if (component_set.count(g_.EdgeStart(path.Front())) == 0)
@@ -80,6 +73,16 @@ class LoopTraverser {
         return true;
     }
 
+    bool IsEndInsideComponent(const std::vector<EdgeId> &path, const std::set<VertexId> &component_set) {
+        if (component_set.count(g_.EdgeStart(path.front())) == 0)
+            return false;
+
+        for (size_t i = 0; i < path.size(); ++i)
+            if (component_set.count(g_.EdgeEnd(path[i])) == 0)
+                return false;
+
+        return true;
+    }
 
     bool IsEndInsideComponent(const BidirectionalPath &path, EdgeId component_entrance,
                               const std::set<VertexId> &component_set, bool conjugate = false) {
@@ -126,7 +129,7 @@ class LoopTraverser {
 
         //Checking that paths ends are within component
         if (!IsEndInsideComponent(start_path, start, component_set) ||
-                !IsEndInsideComponent(*end_path.GetConjPath(), g_.conjugate(end), component_set, true)) {
+            !IsEndInsideComponent(*end_path.GetConjPath(), g_.conjugate(end), component_set, true)) {
             DEBUG("Some path goes outside of the component")
             return false;
         }
@@ -149,7 +152,7 @@ class LoopTraverser {
                     DEBUG("Failed to find closing path");
                     return false;
                 } 
-                if (!IsEndInsideComponent(BidirectionalPath(g_, shortest_path), component_set)) {
+                if (!IsEndInsideComponent(shortest_path, component_set)) {
                     DEBUG("Closing path is outside the component");
                     return false;
                 }

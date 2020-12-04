@@ -129,7 +129,7 @@ void GraphPack::ClearRRIndices() {
 }
 
 void GraphPack::ClearPaths() {
-    get_mutable<path_extend::PathContainer>().DeleteAllPaths();
+    get_mutable<path_extend::PathContainer>().clear();
 }
 
 void GraphPack::DetachAll() {

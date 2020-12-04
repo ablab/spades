@@ -384,18 +384,15 @@ class BidirectionalPath : public PathListener, public SimpleBidirectionalPath {
     float weight_;
     int cycle_overlapping_; // in edges; [ < 0 ] => is not cycled
 
-public:
     BidirectionalPath(const debruijn_graph::Graph& g)
             : g_(g),
               conj_path_(nullptr),
               id_(path_id_++),
               weight_(1.0),
-              cycle_overlapping_(-1) {
-    }
+              cycle_overlapping_(-1) {}
 
-    BidirectionalPath(const debruijn_graph::Graph& g, SimpleBidirectionalPath path) 
-            : BidirectionalPath(g)
-    {
+    BidirectionalPath(const debruijn_graph::Graph& g, SimpleBidirectionalPath path)
+            : BidirectionalPath(g)  {
         SimpleBidirectionalPath::PushBack(std::move(path));
         cumulative_len_.resize(Size(), 0);
 
@@ -407,8 +404,7 @@ public:
     }
 
     BidirectionalPath(const debruijn_graph::Graph& g, std::vector<EdgeId> path)
-            : BidirectionalPath(g, SimpleBidirectionalPath(std::move(path)))
-    {}
+            : BidirectionalPath(g, SimpleBidirectionalPath(std::move(path))) {}
 
     BidirectionalPath(const debruijn_graph::Graph& g, EdgeId e)
             : BidirectionalPath(g) {
@@ -423,7 +419,69 @@ public:
               listeners_(),
               id_(path_id_++),
               weight_(path.weight_),
-              cycle_overlapping_(path.cycle_overlapping_) {
+              cycle_overlapping_(path.cycle_overlapping_) {  }
+
+public:
+    BidirectionalPath(BidirectionalPath&& path) = default;
+
+    static std::unique_ptr<BidirectionalPath> create(const debruijn_graph::Graph& g) {
+        // ctor is private, so we cannot do make_unique here
+        return std::unique_ptr<BidirectionalPath>(new BidirectionalPath(g));
+    }
+
+    static std::unique_ptr<BidirectionalPath> create(const debruijn_graph::Graph& g, std::vector<EdgeId> path) {
+        // ctor is private, so we cannot do make_unique here
+        return std::unique_ptr<BidirectionalPath>(new BidirectionalPath(g, std::move(path)));
+    }
+
+    static std::unique_ptr<BidirectionalPath> create(const debruijn_graph::Graph& g, EdgeId e) {
+        // ctor is private, so we cannot do make_unique here
+        return std::unique_ptr<BidirectionalPath>(new BidirectionalPath(g, e));
+    }
+
+    static std::unique_ptr<BidirectionalPath> clone(const std::unique_ptr<BidirectionalPath> &path) {
+        return clone(*path);
+    }
+
+    static std::unique_ptr<BidirectionalPath> clone(const BidirectionalPath &path) {
+        // ctor is private, so we cannot do make_unique here
+        return std::unique_ptr<BidirectionalPath>(new BidirectionalPath(path));
+    }
+
+    static std::unique_ptr<BidirectionalPath> create(const debruijn_graph::Graph& g, SimpleBidirectionalPath path) {
+        // ctor is private, so we cannot do make_unique here
+        return std::unique_ptr<BidirectionalPath>(new BidirectionalPath(g, std::move(path)));
+    }
+
+    static std::unique_ptr<BidirectionalPath> clone_conjugate(const BidirectionalPath &path) {
+        auto result = create(path.g());
+        if (path.Empty())
+            return result;
+
+        result->PushBack(path.g().conjugate(path.Back()));
+        for (int i = ((int) path.Size()) - 2; i >= 0; --i)
+            result->PushBack(path.g().conjugate(path.edges_[i]), path.gaps_[i + 1].Conjugate());
+
+        result->cycle_overlapping_ = path.cycle_overlapping_;
+        return result;
+    }
+
+    static std::unique_ptr<BidirectionalPath> clone_conjugate(const std::unique_ptr<BidirectionalPath> &path) {
+        return clone_conjugate(*path.get());
+    }
+
+    // FIXME: remove
+    BidirectionalPath Conjugate() const {
+        BidirectionalPath result(g_);
+        if (Empty()) {
+            return result;
+        }
+        result.PushBack(g_.conjugate(Back()));
+        for (int i = ((int) Size()) - 2; i >= 0; --i) {
+            result.PushBack(g_.conjugate(edges_[i]), gaps_[i + 1].Conjugate());
+        }
+        result.cycle_overlapping_ = cycle_overlapping_;
+        return result;
     }
 
     const debruijn_graph::Graph &g() const noexcept {
@@ -570,8 +628,8 @@ public:
     }
 
     bool Contains(debruijn_graph::VertexId v) const {
-        for(auto edge : edges_) {
-            if(g_.EdgeEnd(edge) == v || g_.EdgeStart(edge) == v ) {
+        for (EdgeId edge : edges_) {
+            if (g_.EdgeEnd(edge) == v || g_.EdgeStart(edge) == v ) {
                 return true;
             }
         }
@@ -593,19 +651,6 @@ public:
             cov += g_.coverage(edges_[i]) * (double) g_.length(edges_[i]);
         }
         return cov / (double) Length();
-    }
-
-    BidirectionalPath Conjugate() const {
-        BidirectionalPath result(g_);
-        if (Empty()) {
-            return result;
-        }
-        result.PushBack(g_.conjugate(Back()));
-        for (int i = ((int) Size()) - 2; i >= 0; --i) {
-            result.PushBack(g_.conjugate(edges_[i]), gaps_[i + 1].Conjugate());
-        }
-        result.cycle_overlapping_ = cycle_overlapping_;
-        return result;
     }
 
     bool IsCircular() {
@@ -809,4 +854,3 @@ using GappedPathStorage = std::vector<SimpleBidirectionalPath>;
 using TrustedPathsContainer = std::vector<GappedPathStorage>;
 
 }  // path extend
-

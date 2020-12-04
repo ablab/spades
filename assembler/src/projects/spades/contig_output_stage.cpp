@@ -7,6 +7,7 @@
 
 #include "contig_output_stage.hpp"
 
+#include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/paths/bidirectional_path.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 #include "modules/path_extend/pe_resolver.hpp"
@@ -41,32 +42,36 @@ bool CheckUsedPath(const path_extend::BidirectionalPath* path, std::unordered_se
     return (math::ge((double)used_len, (double)total_len * LARGE_FRACTION));
 }
 
-path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer &sc_storage, std::unordered_set<EdgeId> &used_edges) {
+path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer &sc_storage,
+                                                std::unordered_set<EdgeId> &used_edges) {
     path_extend::PathContainer res;
     INFO("banned " << used_edges.size() <<" edges");
-    for (auto it = sc_storage.begin(); it != sc_storage.end(); it++) {
-//FIXME: constant
-        if (it->first->IsCircular() && !CheckUsedPath(it->first, used_edges) && it->first->Length() >= 500) {
-            path_extend::BidirectionalPath *p = new path_extend::BidirectionalPath(*it->first);
-            path_extend::BidirectionalPath *cp = new path_extend::BidirectionalPath(p->Conjugate());
-            res.AddPair(p, cp);
-        }
+    for (const auto &entry : sc_storage) {
+        if (!entry.first->IsCircular() ||
+            CheckUsedPath(entry.first.get(), used_edges) ||
+            entry.first->Length() < 500)
+            continue;
+
+        auto p = path_extend::BidirectionalPath::clone(entry.first);
+        auto cp = path_extend::BidirectionalPath::clone_conjugate(p);
+        res.AddPair(std::move(p), std::move(cp));
     }
     INFO("got circular scaffs");
     return res;
 }
 
-path_extend::PathContainer GetTipScaffolds(const path_extend::PathContainer &sc_storage, const std::unordered_set<VertexId> &forbidden_vertices) {
+path_extend::PathContainer GetTipScaffolds(const path_extend::PathContainer &sc_storage,
+                                           const std::unordered_set<VertexId> &forbidden_vertices) {
     path_extend::PathContainer res;
-    for (auto it = sc_storage.begin(); it != sc_storage.end(); it++) {
-//FIXME: constant
-        if (it->first->Length() > 0 &&
-            forbidden_vertices.count(it->first->g().EdgeStart(it->first->Front())) &&
-            forbidden_vertices.count(it->first->g().EdgeEnd(it->first->Back()))) {
-            path_extend::BidirectionalPath *p = new path_extend::BidirectionalPath(*it->first);
-            path_extend::BidirectionalPath *cp = new path_extend::BidirectionalPath(p->Conjugate());
-            res.AddPair(p, cp);
-        }
+    for (const auto &entry : sc_storage) {
+        if (entry.first->Length() == 0 ||
+            !forbidden_vertices.count(entry.first->g().EdgeStart(entry.first->Front())) ||
+            !forbidden_vertices.count(entry.first->g().EdgeEnd(entry.first->Back())))
+            continue;
+
+        auto p = path_extend::BidirectionalPath::clone(entry.first);
+        auto cp = path_extend::BidirectionalPath::clone_conjugate(p);
+        res.AddPair(std::move(p), std::move(cp));
     }
     INFO("got suspicious linear tips scaffs");
     return res;

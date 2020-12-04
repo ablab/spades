@@ -26,7 +26,7 @@ protected:
                          BidirectionalPath &path) const = 0;
     DECL_LOGGER("PathGapCloser")
 public:
-    BidirectionalPath CloseGaps(const BidirectionalPath &path) const;
+    std::unique_ptr<BidirectionalPath> CloseGaps(const BidirectionalPath &path) const;
 
     PathGapCloser(const Graph& g, size_t max_path_len):
                   g_(g),
@@ -125,7 +125,7 @@ class PathPolisher {
 
     void InfoAboutGaps(const PathContainer& result);
 
-    BidirectionalPath Polish(const BidirectionalPath& path);
+    std::unique_ptr<BidirectionalPath> Polish(const BidirectionalPath& path);
     DECL_LOGGER("PathPolisher")
 
 public:

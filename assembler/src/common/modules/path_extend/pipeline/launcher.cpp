@@ -343,9 +343,9 @@ void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_thresho
     if (dataset_info_.reads[lib_index].type() == io::LibraryType::TrustedContigs) {
         auto& trusted_paths = gp_.get_mutable<path_extend::TrustedPathsContainer>()[lib_index];
         for (auto & path : trusted_paths) {
-            auto new_path = std::make_unique<BidirectionalPath>(graph_, std::move(path));
-            auto conj_path = std::make_unique<BidirectionalPath>(new_path->Conjugate());
-            unique_data_.long_reads_paths_[lib_index].AddPair(new_path.release(), conj_path.release());
+            auto new_path = BidirectionalPath::create(graph_, std::move(path));
+            auto conj_path = BidirectionalPath::clone_conjugate(new_path);
+            unique_data_.long_reads_paths_[lib_index].AddPair(std::move(new_path), std::move(conj_path));
         }
         DebugOutputPaths(unique_data_.long_reads_paths_[lib_index], "trusted_contigs");
         trusted_paths.clear();
@@ -356,11 +356,11 @@ void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_thresho
             const auto &edges = path.path();
             if (edges.size() <= size_threshold)
                 continue;
-            auto new_path = std::make_unique<BidirectionalPath>(graph_, std::move(edges));
-            auto conj_path = std::make_unique<BidirectionalPath>(new_path->Conjugate());
+            auto new_path = BidirectionalPath::create(graph_, std::move(edges));
+            auto conj_path = BidirectionalPath::clone_conjugate(new_path);
             new_path->SetWeight((float) path.weight());
             conj_path->SetWeight((float) path.weight());
-            unique_data_.long_reads_paths_[lib_index].AddPair(new_path.release(), conj_path.release());
+            unique_data_.long_reads_paths_[lib_index].AddPair(std::move(new_path), std::move(conj_path));
         }
     }
     DEBUG("Long reads paths " << unique_data_.long_reads_paths_[lib_index].size());
@@ -523,11 +523,11 @@ void PathExtendLauncher::AddFLPaths(PathContainer &paths) const {
             for (const auto& path: raw_paths) {
                 const auto& edges = path.path();
 
-                BidirectionalPath *new_path = new BidirectionalPath(graph_, edges);
-                BidirectionalPath *conj_path = new BidirectionalPath(new_path->Conjugate());
+                auto new_path = BidirectionalPath::create(graph_, edges);
+                auto conj_path = BidirectionalPath::clone_conjugate(new_path);
                 new_path->SetWeight((float) path.weight());
                 conj_path->SetWeight((float) path.weight());
-                paths.AddPair(new_path, conj_path);
+                paths.AddPair(std::move(new_path), std::move(conj_path));
             }
             fl_paths_added = true;
             INFO("Total " << paths.size() << " FL paths were extracted for lib #" << lib_index);

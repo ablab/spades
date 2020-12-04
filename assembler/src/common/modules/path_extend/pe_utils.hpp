@@ -5,16 +5,10 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * pe_utils.hpp
- *
- *  Created on: Nov 27, 2012
- *      Author: andrey
- */
-
 #ifndef PE_UTILS_HPP_
 #define PE_UTILS_HPP_
 
+#include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "modules/alignment/rna/ss_coverage.hpp"
 
@@ -71,20 +65,17 @@ private:
         }
     }
 
-    void ProcessPath(BidirectionalPath * path, bool subscribe) {
+    void ProcessPath(BidirectionalPath *path, bool subscribe) {
         if (subscribe)
             path->Subscribe(this);
+        
         for (size_t i = 0; i < path->Size(); ++i) {
             EdgeAdded(path->At(i), path);
         }
     }
 
     size_t EdgeCount() const {
-        size_t result = 0;
-        for (auto e = g_.ConstEdgeBegin(); !e.IsEnd(); ++e) {
-            ++result;
-        }
-        return result;
+        return g_.e_size();
     }
 
 public:
@@ -110,9 +101,9 @@ public:
     }
 
     void AddPaths(const PathContainer& paths, bool subscribe = false) {
-        for (auto path_pair : paths) {
-            ProcessPath(path_pair.first, subscribe);
-            ProcessPath(path_pair.second, subscribe);
+        for (auto &path_pair : paths) {
+            ProcessPath(path_pair.first.get(), subscribe);
+            ProcessPath(path_pair.second.get(), subscribe);
         }
     }
 
@@ -317,9 +308,8 @@ inline size_t LoopDetector::LastLoopCount(size_t skip_identical_edges, size_t mi
 }
 
 inline size_t LoopDetector::LastLoopCount(size_t edges) const {
-    if (edges == 0) {
+    if (edges == 0)
         return 0;
-    }
 
     BidirectionalPath loop = path_->SubPath(path_->Size() - edges);
     size_t count = 0;
