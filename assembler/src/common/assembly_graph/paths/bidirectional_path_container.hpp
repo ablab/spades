@@ -7,7 +7,6 @@
 #pragma once
 
 #include "bidirectional_path.hpp"
-#include "modules/path_extend/path_filter.hpp"
 #include <memory>
 #include <vector>
 #include <set>
@@ -148,7 +147,7 @@ public:
         }
     }
 
-    void FilterPaths(const func::TypedPredicate<const BidirectionalPath&>& pred) {
+    void FilterPaths(func::TypedPredicate<const BidirectionalPath&> pred) {
         DEBUG("Filtering paths based on predicate");
         for (auto &pp : data_) {
             if (pred(*pp.first)) {
@@ -164,7 +163,7 @@ public:
 
     void FilterEmptyPaths() {
         DEBUG("Removing empty paths");
-        FilterPaths(EmptyPathCondition());
+        FilterPaths([](const BidirectionalPath &p) { return p.Empty(); });
     }
 
 private:

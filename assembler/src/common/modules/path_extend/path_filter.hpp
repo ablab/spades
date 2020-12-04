@@ -5,13 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * path_filter.hpp
- *
- *  Created on: Mar 14, 2012
- *      Author: andrey
- */
-
 #ifndef PATH_FILTER_HPP_
 #define PATH_FILTER_HPP_
 
