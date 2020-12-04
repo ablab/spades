@@ -171,6 +171,7 @@ int main(int argc, char* argv[]) {
 
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
             INFO("Filtering library " << i);
+            dataset[i].set_orientation(io::LibraryOrientation::Undefined);
             if (dataset[i].has_paired()) {
                 io::PairedStream paired_reads_stream =
                         io::paired_easy_reader(dataset[i], /*followed by rc*/false, /*insert size*/0, true, false);
