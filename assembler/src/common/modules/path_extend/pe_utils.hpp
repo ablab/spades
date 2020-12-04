@@ -10,7 +10,6 @@
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
-#include "modules/alignment/rna/ss_coverage.hpp"
 
 namespace path_extend {
 
@@ -160,38 +159,6 @@ public:
         return g_;
     }
 
-};
-
-
-class PathContainerCoverageSwitcher {
-    const Graph& g_;
-
-    const debruijn_graph::SSCoverageStorage& coverage_storage_;
-
-    bool antisense_;
-
-    double CalculateCoverage(const BidirectionalPath& p, bool reverse) const {
-        double res = 0.0;
-        double len = 0;
-        for(auto e : p) {
-            res += coverage_storage_.GetCoverage(e, reverse) * double(g_.length(e));
-            len += (double) g_.length(e);
-        }
-        return res / len;
-    }
-
-public:
-    PathContainerCoverageSwitcher(const Graph& g, const debruijn_graph::SSCoverageStorage& coverage_storage, bool antisense):
-        g_(g), coverage_storage_(coverage_storage), antisense_(antisense) {}
-
-
-    void Apply(PathContainer& paths) const {
-        for (size_t i = 0; i < paths.size(); ++i) {
-            if (math::ls(CalculateCoverage(*paths.Get(i), antisense_), CalculateCoverage(*paths.GetConjugate(i), antisense_))) {
-                paths.Swap(i);
-            }
-        }
-    }
 };
 
 // Result -- first edge is loop's back edge, second is loop exit edge
