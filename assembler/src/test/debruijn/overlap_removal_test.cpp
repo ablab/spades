@@ -16,9 +16,9 @@ using namespace path_extend;
 typedef std::initializer_list<size_t> PathInit;
 typedef std::initializer_list<PathInit> PathsInit;
 
-inline BidirectionalPath AsPath(const Graph &g,
-                                const omnigraph::GraphElementFinder<Graph> &finder,
-                                PathInit ids) {
+std::unique_ptr<BidirectionalPath> AsPath(const Graph &g,
+                                          const omnigraph::GraphElementFinder<Graph> &finder,
+                                          PathInit ids) {
 //    INFO("Converting ids " << utils::join(ids));
     std::vector<EdgeId> edges;
     std::transform(ids.begin(), ids.end(), std::back_inserter(edges),
@@ -27,7 +27,7 @@ inline BidirectionalPath AsPath(const Graph &g,
                        VERIFY_MSG(e != EdgeId(), "Couldn't convert id " << id);
 //                       INFO("Edge found " << g.str(e));
                        return e;});
-    return BidirectionalPath(g, edges);
+    return BidirectionalPath::create(g, edges);
 }
 
 inline void FormPaths(const Graph &g,
@@ -58,7 +58,8 @@ inline void CheckPaths(const Graph &g,
 
     std::set<size_t> poss;
     for (const auto &ids: path_ids) {
-        auto pos = FindPath(paths, AsPath(g, finder, ids));
+        auto path = AsPath(g, finder, ids);
+        auto pos = FindPath(paths, *path);
         EXPECT_FALSE(pos.empty());
         utils::insert_all(poss, pos);
     }
@@ -105,13 +106,13 @@ TEST( OverlapRemoval, BasicNoDiff ) {
     size_t min_edge_len = 0;
     size_t max_diff = 0;
     OverlapFindingHelper finding_helper(g, cov_map, min_edge_len, max_diff);
-    EXPECT_TRUE(finding_helper.IsEqual(path1, path2));
-    EXPECT_FALSE(finding_helper.IsEqual(path1, path3));
-    EXPECT_FALSE(finding_helper.IsEqual(path1, path4));
-    EXPECT_TRUE(finding_helper.IsSubpath(path3, path1));
-    EXPECT_TRUE(finding_helper.IsSubpath(path4, path1));
-    EXPECT_TRUE(finding_helper.IsSubpath(path2, path1));
-    EXPECT_FALSE(finding_helper.IsSubpath(path3, path4));
+    EXPECT_TRUE(finding_helper.IsEqual(*path1, *path2));
+    EXPECT_FALSE(finding_helper.IsEqual(*path1, *path3));
+    EXPECT_FALSE(finding_helper.IsEqual(*path1, *path4));
+    EXPECT_TRUE(finding_helper.IsSubpath(*path3, *path1));
+    EXPECT_TRUE(finding_helper.IsSubpath(*path4, *path1));
+    EXPECT_TRUE(finding_helper.IsSubpath(*path2, *path1));
+    EXPECT_FALSE(finding_helper.IsSubpath(*path3, *path4));
 }
 
 TEST( OverlapRemoval, BasicDiff ) {
@@ -132,30 +133,30 @@ TEST( OverlapRemoval, BasicDiff ) {
     size_t min_edge_len = 0;
     size_t max_diff = 1;
     OverlapFindingHelper finding_helper(g, cov_map, min_edge_len, max_diff);
-    EXPECT_TRUE(finding_helper.IsEqual(path1, path2));
-    EXPECT_TRUE(finding_helper.IsEqual(path2, path1));
+    EXPECT_TRUE(finding_helper.IsEqual(*path1, *path2));
+    EXPECT_TRUE(finding_helper.IsEqual(*path2, *path1));
 
-    EXPECT_TRUE(finding_helper.IsEqual(path1, path3));
-    EXPECT_TRUE(finding_helper.IsEqual(path3, path1));
+    EXPECT_TRUE(finding_helper.IsEqual(*path1, *path3));
+    EXPECT_TRUE(finding_helper.IsEqual(*path3, *path1));
 
-    EXPECT_TRUE(finding_helper.IsEqual(path1, path4));
-    EXPECT_TRUE(finding_helper.IsEqual(path4, path1));
+    EXPECT_TRUE(finding_helper.IsEqual(*path1, *path4));
+    EXPECT_TRUE(finding_helper.IsEqual(*path4, *path1));
 
-    EXPECT_TRUE(finding_helper.IsSubpath(path2, path1));
-    EXPECT_TRUE(finding_helper.IsSubpath(path1, path2));
-    EXPECT_TRUE(finding_helper.IsSubpath(path3, path1));
-    EXPECT_TRUE(finding_helper.IsSubpath(path1, path3));
-    EXPECT_TRUE(finding_helper.IsSubpath(path4, path1));
-    EXPECT_TRUE(finding_helper.IsSubpath(path1, path4));
+    EXPECT_TRUE(finding_helper.IsSubpath(*path2, *path1));
+    EXPECT_TRUE(finding_helper.IsSubpath(*path1, *path2));
+    EXPECT_TRUE(finding_helper.IsSubpath(*path3, *path1));
+    EXPECT_TRUE(finding_helper.IsSubpath(*path1, *path3));
+    EXPECT_TRUE(finding_helper.IsSubpath(*path4, *path1));
+    EXPECT_TRUE(finding_helper.IsSubpath(*path1, *path4));
 
-    EXPECT_TRUE(finding_helper.IsSubpath(path3, path4));
-    EXPECT_TRUE(finding_helper.IsSubpath(path4, path3));
+    EXPECT_TRUE(finding_helper.IsSubpath(*path3, *path4));
+    EXPECT_TRUE(finding_helper.IsSubpath(*path4, *path3));
 
-    EXPECT_TRUE(finding_helper.IsSubpath(path5, path1));
-    EXPECT_TRUE(finding_helper.IsSubpath(path5, path2));
-    EXPECT_FALSE(finding_helper.IsSubpath(path3, path5));
-    EXPECT_FALSE(finding_helper.IsEqual(path2, path5));
-    EXPECT_FALSE(finding_helper.IsEqual(path5, path2));
+    EXPECT_TRUE(finding_helper.IsSubpath(*path5, *path1));
+    EXPECT_TRUE(finding_helper.IsSubpath(*path5, *path2));
+    EXPECT_FALSE(finding_helper.IsSubpath(*path3, *path5));
+    EXPECT_FALSE(finding_helper.IsEqual(*path2, *path5));
+    EXPECT_FALSE(finding_helper.IsEqual(*path5, *path2));
 }
 
 TEST( OverlapRemoval, BasicRepeatConjugateEdges ) {
