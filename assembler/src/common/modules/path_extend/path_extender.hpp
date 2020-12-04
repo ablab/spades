@@ -205,23 +205,23 @@ inline void SubscribeCoverageMap(BidirectionalPath * path, GraphCoverageMap &cov
     }
 }
 
-inline void AddPath(PathContainer &paths,
-                    const BidirectionalPath &path,
-                    GraphCoverageMap &coverage_map) {
+inline BidirectionalPath& AddPath(PathContainer &paths,
+                                  const BidirectionalPath &path,
+                                  GraphCoverageMap &coverage_map) {
     auto p = BidirectionalPath::clone(path);
     auto conj_p = (path.GetConjPath() ? BidirectionalPath::clone(*path.GetConjPath()) : BidirectionalPath::clone_conjugate(path));
     SubscribeCoverageMap(p.get(), coverage_map);
     SubscribeCoverageMap(conj_p.get(), coverage_map);
-    paths.AddPair(std::move(p), std::move(conj_p));
+    return paths.AddPair(std::move(p), std::move(conj_p)).first;
 }
 
-inline void AddPath(PathContainer &paths,
-                    std::unique_ptr<BidirectionalPath> p,
-                    GraphCoverageMap &coverage_map) {
+inline BidirectionalPath& AddPath(PathContainer &paths,
+                                  std::unique_ptr<BidirectionalPath> p,
+                                  GraphCoverageMap &coverage_map) {
     auto conj_p = BidirectionalPath::clone_conjugate(p);
     SubscribeCoverageMap(p.get(), coverage_map);
     SubscribeCoverageMap(conj_p.get(), coverage_map);
-    paths.AddPair(std::move(p), std::move(conj_p));
+    return paths.AddPair(std::move(p), std::move(conj_p)).first;
 }
 
 class ShortLoopEstimator {
@@ -824,13 +824,12 @@ public:
             return;
         }
 
-        auto p = BidirectionalPath::clone(path.SubPath(pos));
-        auto cp = BidirectionalPath::clone_conjugate(p);
-        visited_cycles_coverage_map_.Subscribe(p.get());
-        visited_cycles_coverage_map_.Subscribe(cp.get());
+        auto p = path_storage_.CreatePair(path.SubPath(pos));
+
+        visited_cycles_coverage_map_.Subscribe(&p.first);
+        visited_cycles_coverage_map_.Subscribe(p.first.GetConjPath());
         DEBUG("add cycle");
-        p->PrintDEBUG();
-        path_storage_.AddPair(std::move(p), std::move(cp));
+        p.first.PrintDEBUG();
     }
 };
 
@@ -916,22 +915,18 @@ private:
                     continue;
                 }
             }
-            
+
             if (!cover_map_.IsCovered(*paths.Get(i))) {
                 AddPath(result, *paths.Get(i), cover_map_);
-                auto p = BidirectionalPath::clone(*paths.Get(i));
-                auto conj_p = BidirectionalPath::clone(*paths.GetConjugate(i));
-                SubscribeCoverageMap(p.get(), cover_map_);
-                SubscribeCoverageMap(conj_p.get(), cover_map_);
-                auto paths = result.AddPair(std::move(p), std::move(conj_p));
-                BidirectionalPath &path = paths.first;
+                BidirectionalPath &path = AddPath(result, *paths.Get(i), cover_map_);
+
                 size_t count_trying = 0;
                 size_t current_path_len = 0;
                 do {
                     current_path_len = path.Length();
                     count_trying++;
-                    GrowPath(paths.first, &result);
-                    GrowPath(paths.second, &result);
+                    GrowPath(path, &result);
+                    GrowPath(*path.GetConjPath(), &result);
                 } while (count_trying < 10 && (path.Length() != current_path_len));
                 DEBUG("result path " << path.GetId());
                 path.PrintDEBUG();
@@ -1020,7 +1015,7 @@ public:
               is_detector_(graph, is),
               used_storage_(unique),
               investigate_short_loops_(investigate_short_loops),
-              cov_map_(cov_map) 
+              cov_map_(cov_map)
             {}
 
     bool TryToResolveTwoLoops(BidirectionalPath& path) {
@@ -1080,7 +1075,7 @@ public:
         if (DetectCycle(path))
             return false;
 
-        if (auto attempt = TryToResolveShortLoop(path)) 
+        if (auto attempt = TryToResolveShortLoop(path))
             return *attempt;
 
         return path_is_growed;
@@ -1260,7 +1255,7 @@ protected:
         if (!investigate_short_loops_ &&
             (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
             && extensionChooser_->WeightCounterBased()) {
-	    DEBUG("loop deteced");
+        DEBUG("loop deteced");
             return false;
         }
         if (candidates.size() == 1) {
@@ -1270,7 +1265,7 @@ protected:
             DEBUG("push done");
             return true;
         } else if (candidates.size() == 2) {
-             //Check for bulge
+            //Check for bulge
             auto v = g_.EdgeStart(candidates.front().e_);
             auto u = g_.EdgeEnd(candidates.front().e_);
             for (const auto& edge : candidates) {
@@ -1278,13 +1273,11 @@ protected:
                     return false;
             }
 
-            //Creating new paths for other than new candidate.
+            // Creating new paths for other than new candidate.
             for (size_t i = 1; i < candidates.size(); ++i) {
                 DEBUG("push other candidates " << i);
-                auto p = BidirectionalPath::clone(path);
-                p->PushBack(candidates[i].e_, Gap(candidates[i].d_));
-                auto cp = BidirectionalPath::clone_conjugate(p);
-                paths_storage->AddPair(std::move(p), std::move(cp));
+                auto p = paths_storage->CreatePair(path);
+                p.first.PushBack(candidates[i].e_, Gap(candidates[i].d_));
             }
 
             DEBUG("push");

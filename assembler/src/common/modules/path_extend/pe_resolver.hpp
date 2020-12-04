@@ -290,7 +290,7 @@ public:
             EdgeId e = *iter;
             if (g_.int_id(e) <= 0 || InTwoEdgeCycle(e, g_))
                 continue;
-            edges.AddPair(BidirectionalPath::create(g_, e), BidirectionalPath::create(g_, g_.conjugate(e)));
+            edges.CreatePair(g_, e);
         }
         return edges;
     }

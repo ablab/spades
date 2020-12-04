@@ -343,9 +343,7 @@ void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_thresho
     if (dataset_info_.reads[lib_index].type() == io::LibraryType::TrustedContigs) {
         auto& trusted_paths = gp_.get_mutable<path_extend::TrustedPathsContainer>()[lib_index];
         for (auto & path : trusted_paths) {
-            auto new_path = BidirectionalPath::create(graph_, std::move(path));
-            auto conj_path = BidirectionalPath::clone_conjugate(new_path);
-            unique_data_.long_reads_paths_[lib_index].AddPair(std::move(new_path), std::move(conj_path));
+            unique_data_.long_reads_paths_[lib_index].CreatePair(graph_, std::move(path));
         }
         DebugOutputPaths(unique_data_.long_reads_paths_[lib_index], "trusted_contigs");
         trusted_paths.clear();
@@ -356,11 +354,10 @@ void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_thresho
             const auto &edges = path.path();
             if (edges.size() <= size_threshold)
                 continue;
-            auto new_path = BidirectionalPath::create(graph_, std::move(edges));
-            auto conj_path = BidirectionalPath::clone_conjugate(new_path);
-            new_path->SetWeight((float) path.weight());
-            conj_path->SetWeight((float) path.weight());
-            unique_data_.long_reads_paths_[lib_index].AddPair(std::move(new_path), std::move(conj_path));
+
+            auto new_paths = unique_data_.long_reads_paths_[lib_index].CreatePair(graph_, std::move(edges));
+            new_paths.first.SetWeight((float) path.weight());
+            new_paths.second.SetWeight((float) path.weight());
         }
     }
     DEBUG("Long reads paths " << unique_data_.long_reads_paths_[lib_index].size());
@@ -478,7 +475,7 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
 //    for  (const auto& extender: generator.MakePEExtenders()) {
 //        gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap, extender));
 //    }
-//FIXME: uncomment cover_map 
+//FIXME: uncomment cover_map
 
     PathPolisher polisher(gp_.get<Graph>(), gap_closers);
     result = polisher.PolishPaths(paths);
@@ -523,16 +520,15 @@ void PathExtendLauncher::AddFLPaths(PathContainer &paths) const {
             for (const auto& path: raw_paths) {
                 const auto& edges = path.path();
 
-                auto new_path = BidirectionalPath::create(graph_, edges);
-                auto conj_path = BidirectionalPath::clone_conjugate(new_path);
-                new_path->SetWeight((float) path.weight());
-                conj_path->SetWeight((float) path.weight());
-                paths.AddPair(std::move(new_path), std::move(conj_path));
+                auto new_paths = paths.CreatePair(graph_, edges);
+                new_paths.first.SetWeight((float) path.weight());
+                new_paths.second.SetWeight((float) path.weight());
             }
             fl_paths_added = true;
             INFO("Total " << paths.size() << " FL paths were extracted for lib #" << lib_index);
         }
     }
+
     if (fl_paths_added) {
         INFO("Deduplicating FL paths");
         GraphCoverageMap cover_map(graph_, paths);
@@ -543,15 +539,16 @@ void PathExtendLauncher::AddFLPaths(PathContainer &paths) const {
 }
 
 void PathExtendLauncher::SelectStrandSpecificPaths(PathContainer &paths) const {
-    if (params_.ss.ss_enabled) {
-        INFO("Paths will be printed according to strand-specific coverage");
-        size_t lib_index = 0;
-        while (lib_index < dataset_info_.reads.lib_count() && !dataset_info_.reads[lib_index].is_graph_constructable()) {
-            ++lib_index;
-        }
-        PathContainerCoverageSwitcher switcher(graph_, gp_.get<SSCoverageContainer>()[lib_index], params_.ss.antisense);
-        switcher.Apply(paths);
+    if (!params_.ss.ss_enabled)
+        return;
+
+    INFO("Paths will be printed according to strand-specific coverage");
+    size_t lib_index = 0;
+    while (lib_index < dataset_info_.reads.lib_count() && !dataset_info_.reads[lib_index].is_graph_constructable()) {
+        ++lib_index;
     }
+    PathContainerCoverageSwitcher switcher(graph_, gp_.get<SSCoverageContainer>()[lib_index], params_.ss.antisense);
+    switcher.Apply(paths);
 }
 
 void MakeConjugateEdgePairsDump(ConjugateDeBruijnGraph const & graph) {

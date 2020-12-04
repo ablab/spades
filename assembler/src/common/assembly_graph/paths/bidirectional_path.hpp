@@ -443,6 +443,14 @@ public:
         return clone(*path);
     }
 
+    static std::unique_ptr<BidirectionalPath> create(const std::unique_ptr<BidirectionalPath> &path) {
+        return clone(*path);
+    }
+
+    static std::unique_ptr<BidirectionalPath> create(const BidirectionalPath &path) {
+        return clone(path);
+    }
+
     static std::unique_ptr<BidirectionalPath> clone(const BidirectionalPath &path) {
         // ctor is private, so we cannot do make_unique here
         return std::unique_ptr<BidirectionalPath>(new BidirectionalPath(path));

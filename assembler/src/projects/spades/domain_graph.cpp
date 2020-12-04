@@ -475,10 +475,8 @@ namespace nrps {
             ordering_id = 1;
             for (const auto &vec : answer) {
                 OutputStatArrangement(vec, ordering_id, stat_stream);
-                auto p = path_extend::BidirectionalPath::create(graph);
-                std::string outputstring = PathToSequence(p.get(), vec);
-                auto conjugate = path_extend::BidirectionalPath::clone_conjugate(p);
-                auto paths = contig_paths_.AddPair(std::move(p), std::move(conjugate));
+                auto paths = contig_paths_.CreatePair(graph);
+                std::string outputstring = PathToSequence(&paths.first, vec);
                 OutputComponent(&paths.first, component_id, ordering_id);
                 outputstring = seq_maker.MakeSequence(paths.first);
                 oss.SetCluster(component_id, ordering_id);

@@ -146,8 +146,7 @@ void path_extend::ScaffoldBreaker::SplitPath(const BidirectionalPath &path, Path
             p->PrintDEBUG();
         }
 
-        auto cp = BidirectionalPath::clone_conjugate(p);
-        result.AddPair(std::move(p), std::move(cp));
+        result.Add(std::move(p));
     }
 }
 

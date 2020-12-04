@@ -120,6 +120,18 @@ public:
         return { *data_.back().first, *data_.back().second };
     }
 
+    std::pair<BidirectionalPath&, BidirectionalPath&>
+    Add(std::unique_ptr<BidirectionalPath> p) {
+        auto cp = BidirectionalPath::clone_conjugate(p);
+        return AddPair(std::move(p), std::move(cp));
+    }
+
+    template<typename... Args>
+    std::pair<BidirectionalPath&, BidirectionalPath&>
+    CreatePair(Args&&... args) {
+        return Add(BidirectionalPath::create(std::forward<Args>(args)...));
+    }
+
     void SortByLength(bool desc = true) {
         std::stable_sort(data_.begin(), data_.end(), [=](const PathPair& p1, const PathPair& p2) {
             if (p1.first->Empty() || p2.first->Empty() || p1.first->Length() != p2.first->Length()) {

@@ -52,9 +52,7 @@ path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer
             entry.first->Length() < 500)
             continue;
 
-        auto p = path_extend::BidirectionalPath::clone(entry.first);
-        auto cp = path_extend::BidirectionalPath::clone_conjugate(p);
-        res.AddPair(std::move(p), std::move(cp));
+        res.CreatePair(entry.first);
     }
     INFO("got circular scaffs");
     return res;
@@ -69,9 +67,7 @@ path_extend::PathContainer GetTipScaffolds(const path_extend::PathContainer &sc_
             !forbidden_vertices.count(entry.first->g().EdgeEnd(entry.first->Back())))
             continue;
 
-        auto p = path_extend::BidirectionalPath::clone(entry.first);
-        auto cp = path_extend::BidirectionalPath::clone_conjugate(p);
-        res.AddPair(std::move(p), std::move(cp));
+        res.CreatePair(entry.first);
     }
     INFO("got suspicious linear tips scaffs");
     return res;
