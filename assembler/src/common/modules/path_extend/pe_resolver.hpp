@@ -5,13 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * pe_resolver.hpp
- *
- *  Created on: Mar 12, 2012
- *      Author: andrey
- */
-
 #pragma once
 
 #include "assembly_graph/paths/bidirectional_path.hpp"
@@ -236,9 +229,7 @@ class PathDeduplicator {
         }
         return false;
     }
-
 public:
-
     PathDeduplicator(const Graph &g,
                      PathContainer &paths,
                      GraphCoverageMap &coverage_map,
@@ -272,6 +263,23 @@ inline void Deduplicate(const Graph &g, PathContainer &paths, GraphCoverageMap &
     PathDeduplicator deduplicator(g, paths, coverage_map, min_edge_len, max_path_diff, equal_only);
     deduplicator.Deduplicate();
     paths.FilterEmptyPaths();
+}
+
+//Checks whether we are in a cycle of length 2, used only for seed selection.
+inline bool InTwoEdgeCycle(EdgeId e, const Graph &g) {
+    auto v = g.EdgeEnd(e);
+    //allow to start from long edge with potential coverage one.
+    if (g.OutgoingEdgeCount(v) >= 1 && (g.length(e) < 1000 || g.OutgoingEdgeCount(v) > 1)) {
+
+//    if (g.OutgoingEdgeCount(v) >= 1) {
+        auto edges = g.OutgoingEdges(v);
+        for (auto it = edges.begin(); it != edges.end(); ++it) {
+            if (g.EdgeStart(e) == g.EdgeEnd(*it)) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 class PathExtendResolver {
