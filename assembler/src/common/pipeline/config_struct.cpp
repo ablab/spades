@@ -880,7 +880,7 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
     //some post-loading processing
     using config::pipeline_type;
     cfg.uneven_depth = std::set<pipeline_type>{pipeline_type::mda, pipeline_type::rna,
-                                               pipeline_type::meta, pipeline_type::metaextrachromosomal}.count(cfg.mode);
+                                               pipeline_type::meta, pipeline_type::metaextrachromosomal, pipeline_type::rnaviral}.count(cfg.mode);
     if (!cfg.developer_mode) {
         cfg.pe_params.debug_output = false;
         cfg.pe_params.viz.DisableAll();
