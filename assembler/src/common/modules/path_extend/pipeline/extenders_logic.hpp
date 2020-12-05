@@ -1,10 +1,13 @@
-//
-// Created by andrey on 14.11.16.
-//
+//***************************************************************************
+//* Copyright (c) 2016-2020 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//****************************************************************************
 
 #pragma once
 
 #include "modules/path_extend/path_extender.hpp"
+#include "modules/path_extend/gap_analyzer.hpp"
 #include "launch_support.hpp"
 
 namespace path_extend {

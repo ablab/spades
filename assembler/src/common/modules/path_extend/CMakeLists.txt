@@ -10,6 +10,7 @@ project(path_extend CXX)
 add_library(path_extend STATIC
             pe_config_struct.cpp
             loop_detector.cpp
+            gap_analyzer.cpp
             pipeline/launch_support.cpp
             pipeline/launcher.cpp
             pipeline/extenders_logic.cpp

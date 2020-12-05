@@ -1,19 +1,20 @@
 //***************************************************************************
 //* Copyright (c) 2011-2014 Saint-Petersburg Academic University
+//* Copyright (c) 2014-2020 Saint Petersburg State University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //****************************************************************************
 
 #pragma once
 
-#include "assembly_graph/paths/bidirectional_path.hpp"
 #include "extension_chooser.hpp"
 #include "overlap_analysis.hpp"
 #include "path_filter.hpp"
-#include "modules/alignment/gap_info.hpp"
+#include "gap_analyzer.hpp"
+#include "assembly_graph/paths/bidirectional_path.hpp"
+#include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
-#include "assembly_graph/paths/bidirectional_path_container.hpp"
 
 #include <cmath>
 
@@ -458,243 +459,6 @@ public:
 private:
     PairedInfoLoopEstimator pi_estimator_;
     CoverageLoopEstimator cov_estimator_;
-};
-
-
-
-//TODO move to gap_closing.hpp
-typedef omnigraph::GapDescription<Graph> GapDescription;
-class GapAnalyzer {
-
-public:
-    static const int INVALID_GAP = GapDescription::INVALID_GAP;
-    GapAnalyzer(const Graph& g)
-            : g_(g) { }
-
-    virtual GapDescription FixGap(const GapDescription &gap) const = 0;
-
-    virtual ~GapAnalyzer() { }
-protected:
-    const Graph& g_;
-};
-
-class HammingGapAnalyzer: public GapAnalyzer {
-    const double min_gap_score_;
-    const size_t short_overlap_threshold_;
-    const size_t basic_overlap_length_;
-
-    static constexpr double MIN_OVERLAP_COEFF = 0.05;
-
-    size_t HammingDistance(const Sequence& s1, const Sequence& s2) const {
-        VERIFY(s1.size() == s2.size());
-        size_t dist = 0;
-        for (size_t i = 0; i < s1.size(); ++i) {
-            if (s1[i] != s2[i]) {
-                dist++;
-            }
-        }
-        return dist;
-    }
-
-    double ScoreGap(const Sequence& s1, const Sequence& s2) const {
-        VERIFY(s1.size() == s2.size());
-        return 1.0 - (double) HammingDistance(s1, s2) / (double) s1.size();
-    }
-
-public:
-
-    //todo review parameters in usages
-    HammingGapAnalyzer(const Graph& g,
-            double min_gap_score,
-            size_t short_overlap_threshold,
-            size_t basic_overlap_length):
-                GapAnalyzer(g),
-                min_gap_score_(min_gap_score),
-                short_overlap_threshold_(short_overlap_threshold),
-                basic_overlap_length_(basic_overlap_length)
-    {
-        DEBUG("HammingGapAnalyzer params: \n min_gap_score " << min_gap_score_ <<
-              "\n short_overlap_threshold " << short_overlap_threshold_ <<
-              "\n basic_overlap_length " << basic_overlap_length_);
-    }
-
-    GapDescription FixGap(const GapDescription &gap) const override {
-        VERIFY_MSG(gap.no_trim(), "Trims not supported yet");
-
-        size_t max_overlap = basic_overlap_length_;
-        if (gap.estimated_dist() < 0) {
-            max_overlap -= gap.estimated_dist();
-        }
-
-        max_overlap = std::min(max_overlap, g_.k() + std::min(g_.length(gap.left()), g_.length(gap.right())));
-
-        DEBUG("Corrected max overlap " << max_overlap);
-
-        double best_score = min_gap_score_;
-        int fixed_gap = GapDescription::INVALID_GAP;
-
-        size_t min_overlap = 1;
-        if (gap.estimated_dist() < 0) {
-            min_overlap = std::max(min_overlap, size_t(math::round(MIN_OVERLAP_COEFF * double(-gap.estimated_dist()))));
-        }
-        //todo better usage of estimated overlap
-        DEBUG("Min overlap " << min_overlap);
-
-        for (size_t l = max_overlap; l >= min_overlap; --l) {
-            //TRACE("Sink: " << g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l).str());
-            //TRACE("Source: " << g_.EdgeNucls(source).Subseq(0, l));
-            double score = 0;
-            score = ScoreGap(g_.EdgeNucls(gap.left()).Subseq(g_.length(gap.left()) + g_.k() - l),
-                                    g_.EdgeNucls(gap.right()).Subseq(0, l));
-            if (math::gr(score, best_score)) {
-                TRACE("Curr overlap " << l);
-                TRACE("Score: " << score);
-                best_score = score;
-                fixed_gap = -int(l);
-            }
-
-            if (l == short_overlap_threshold_ && fixed_gap != GapDescription::INVALID_GAP) {
-                //look at "short" overlaps only if long overlaps couldn't be found
-                DEBUG("Not looking at short overlaps");
-                break;
-            }
-        }
-
-        if (fixed_gap != INVALID_GAP) {
-            DEBUG("Found candidate gap length with score " << best_score);
-            DEBUG("Estimated gap: " << gap.estimated_dist() <<
-                  ", fixed gap: " << fixed_gap << " (overlap " << (-fixed_gap) << ")");
-
-            auto answer = gap;
-            answer.set_estimated_dist(fixed_gap);
-            return answer;
-        } else {
-            return GapDescription();
-        }
-    }
-
-private:
-    DECL_LOGGER("HammingGapAnalyzer");
-};
-
-//LA stands for Local Alignment
-//TODO if current setting will work -- get rid of flank_*_coefficient params
-class LAGapAnalyzer: public GapAnalyzer {
-public:
-    LAGapAnalyzer(const Graph& g, size_t min_la_length,
-            double flank_multiplication_coefficient,
-            int flank_addition_coefficient) :
-            GapAnalyzer(g),
-            min_la_length_(min_la_length),
-            flank_multiplication_coefficient_(flank_multiplication_coefficient),
-            flank_addition_coefficient_(flank_addition_coefficient) {
-        DEBUG("flank_multiplication_coefficient - " << flank_multiplication_coefficient_);
-        DEBUG("flank_addition_coefficient  - " << flank_addition_coefficient_ );
-    }
-
-    GapDescription FixGap(const GapDescription &gap) const override {
-        VERIFY_MSG(gap.no_trim(), "Trims not supported yet");
-        //estimated_gap is in k-mers
-
-        size_t estimated_overlap = gap.estimated_dist() < 0 ? size_t(abs(gap.estimated_dist())) : 0;
-        SWOverlapAnalyzer overlap_analyzer(size_t(math::round(double(estimated_overlap) * ESTIMATED_GAP_MULTIPLIER))
-                                           + GAP_ADDITIONAL_COEFFICIENT);
-
-        auto overlap_info = overlap_analyzer.AnalyzeOverlap(g_, gap.left(), gap.right());
-        DEBUG(overlap_info);
-
-        if (overlap_info.size() < min_la_length_) {
-            DEBUG("Low alignment size");
-            return GapDescription();
-        }
-
-        size_t max_flank_length = std::max(overlap_info.r2.start_pos,
-                g_.length(gap.left()) + g_.k() - overlap_info.r1.end_pos);
-        DEBUG("Max flank length - " << max_flank_length);
-
-        if (int(math::round(double(max_flank_length) * flank_multiplication_coefficient_))
-                + flank_addition_coefficient_ > int(overlap_info.size())) {
-            DEBUG("Too long flanks for such alignment");
-            return GapDescription();
-        }
-
-        if (math::ls(overlap_info.identity(), IDENTITY_RATIO)) {
-            DEBUG("Low identity score");
-            return GapDescription();
-        }
-
-        if (overlap_info.r1.end_pos <= g_.k() || overlap_info.r2.start_pos >= g_.length(gap.right())) {
-            DEBUG("Less than k+1 nucleotides were left of one of the edges");
-            return GapDescription();
-        }
-
-        //TODO Is it ok to have a non-symmetric overlap gap description
-        return GapDescription(gap.left(), gap.right(),
-                              -int(overlap_info.r2.size()),
-                              g_.length(gap.left()) + g_.k() - overlap_info.r1.end_pos,
-                              overlap_info.r2.start_pos);
-    }
-
-private:
-    DECL_LOGGER("LAGapAnalyzer");
-    const size_t min_la_length_;
-    const double flank_multiplication_coefficient_;
-    const int flank_addition_coefficient_;
-
-    static constexpr double IDENTITY_RATIO = 0.9;
-    static constexpr double ESTIMATED_GAP_MULTIPLIER = 2.0;
-    static constexpr size_t GAP_ADDITIONAL_COEFFICIENT = 30;
-};
-
-
-class CompositeGapAnalyzer: public GapAnalyzer {
-public:
-
-    CompositeGapAnalyzer(const Graph& g, const std::vector<std::shared_ptr<GapAnalyzer>> &joiners,
-                         size_t may_overlap_threshold, int must_overlap_threshold, size_t artificial_gap) :
-            GapAnalyzer(g),
-            joiners_(joiners),
-            may_overlap_threshold_(may_overlap_threshold),
-            must_overlap_threshold_(must_overlap_threshold),
-            artificial_gap_(artificial_gap)
-    {  }
-
-    GapDescription FixGap(const GapDescription &gap) const override {
-        VERIFY_MSG(gap.right_trim() == 0 && gap.left_trim() == 0, "Not supported yet");
-        DEBUG("Trying to fix estimated gap " << gap.estimated_dist() <<
-              " between " << g_.str(gap.left()) << " and " << g_.str(gap.right()));
-
-        if (gap.estimated_dist() > int(may_overlap_threshold_)) {
-            DEBUG("Edges are supposed to be too far to check overlaps");
-            return gap;
-        }
-
-        for (auto joiner : joiners_) {
-            GapDescription fixed_gap = joiner->FixGap(gap);
-            if (fixed_gap != GapDescription()) {
-                return fixed_gap;
-            }
-        }
-
-        //couldn't find decent overlap
-        if (gap.estimated_dist() < must_overlap_threshold_) {
-            DEBUG("Estimated gap looks unreliable");
-            return GapDescription();
-        } else {
-            DEBUG("Overlap was not found");
-            auto answer = gap;
-            answer.set_estimated_dist(std::max(gap.estimated_dist(), int(artificial_gap_)));
-            return answer;
-        }
-    }
-
-private:
-    std::vector<std::shared_ptr<GapAnalyzer>> joiners_;
-    const size_t may_overlap_threshold_;
-    const int must_overlap_threshold_;
-    const size_t artificial_gap_;
-
-    DECL_LOGGER("CompositeGapAnalyzer");
 };
 
 //Detects a cycle as a minsuffix > IS present earlier in the path. Overlap is allowed.
