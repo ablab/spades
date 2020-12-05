@@ -19,6 +19,185 @@ inline void PopFront(BidirectionalPath * const path, size_t cnt) {
     path->GetConjPath()->PopBack(cnt);
 }
 
+//TODO think about symmetry and what if it breaks?
+class OverlapFindingHelper {
+    const Graph &g_;
+    const GraphCoverageMap &coverage_map_;
+    const size_t min_edge_len_;
+    const size_t max_diff_;
+    const bool try_extend_;
+
+    //TODO think of the cases when (gap + length) < 0
+    //Changes second argument on success
+    void TryExtendToEnd(const BidirectionalPath &path, size_t &pos) const {
+        if (pos < path.Size() &&
+                path.GapAt(pos).gap + path.LengthAt(pos) <= max_diff_)
+            pos = path.Size();
+    }
+
+    //Changes second argument on success
+    void TryExtendToStart(const BidirectionalPath &path, size_t &pos) const {
+        if (pos > 0 && path.Length() - path.LengthAt(pos) <= max_diff_)
+            pos = 0;
+    }
+
+    std::pair<Range, Range> ComparePaths(const BidirectionalPath &path1,
+                                         const BidirectionalPath &path2,
+                                         size_t start2) const {
+        TRACE("Comparing paths " << path1.GetId() << " and " << path2.GetId());
+        //TODO change to edit distance?
+        int shift1 = 0;
+        //path1 is always matched from the start
+        const size_t start1 = 0;
+        size_t end1 = start1;
+        size_t end2 = start2;
+
+        for (size_t i = start1; i < path1.Size(); ++i) {
+            if (abs(shift1) > int(max_diff_))
+                break;
+
+            bool match = false;
+            size_t j = end2;
+            int shift2 = 0;
+            for (; j < path2.Size(); ++j) {
+                if (end1 == 0) {
+                    //Force first match to start with pos2
+                    if (j > start2) {
+                        break;
+                    }
+                }
+
+                if (abs(shift2) > int(max_diff_))
+                    break;
+                if (path1.At(i) == path2.At(j) &&
+                        (end1 == 0 ||
+                            abs(shift1 + path1.GapAt(i).gap - shift2 - path2.GapAt(j).gap) <= int(max_diff_))) {
+                    match = true;
+                    break;
+                } else {
+                    shift2 += path2.ShiftLength(j);
+                }
+            }
+            if (match) {
+                end1 = i+1;
+                end2 = j+1;
+                shift1 = 0;
+            } else {
+                shift1 += path1.ShiftLength(i);
+            }
+        }
+
+        //Extending the ends of the paths if possible
+        if (try_extend_ && end1 > 0) {
+            TryExtendToEnd(path1, end1);
+            TryExtendToEnd(path2, end2);
+            //no need to extend path1 left
+            VERIFY(start1 == 0);
+            TryExtendToStart(path2, start2);
+        }
+
+        return {Range(start1, end1), Range(start2, end2)};
+    }
+
+public:
+    OverlapFindingHelper(const Graph &g,
+                         const GraphCoverageMap &coverage_map,
+                         size_t min_edge_len,
+                         size_t max_diff) :
+            g_(g),
+            coverage_map_(coverage_map),
+            min_edge_len_(min_edge_len),
+            max_diff_(max_diff),
+            //had to enable try_extend, otherwise equality lost symmetry
+            try_extend_(max_diff_ > 0) {
+    }
+
+    bool IsSubpath(const BidirectionalPath &path,
+                   const BidirectionalPath &other) const {
+        for (size_t j = 0; j < other.Size(); ++j) {
+            auto range_pair = ComparePaths(path, other, j);
+            if (range_pair.first.end_pos == path.Size()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    //NB! Equality is not transitive if max_diff is > 0
+    bool IsEqual(const BidirectionalPath &path,
+                 const BidirectionalPath &other) const {
+        auto ends_pair = CommonPrefix(path, other);
+        return ends_pair.first == path.Size()
+               && ends_pair.second == other.Size();
+    }
+
+
+    std::pair<size_t, size_t> CommonPrefix(const BidirectionalPath &path1,
+                                           const BidirectionalPath &path2) const {
+        std::pair<size_t, size_t> answer(0, 0);
+        size_t cum = 0;
+        size_t max_overlap = 0;
+        for (size_t j = 0; j < path2.Size(); ++j) {
+            auto range_pair = ComparePaths(path1, path2, j);
+            if (range_pair.second.start_pos == 0 && range_pair.first.size() > max_overlap) {
+                answer = {range_pair.first.end_pos, range_pair.second.end_pos};
+                max_overlap = range_pair.first.size();
+            }
+
+            if (!try_extend_)
+                break;
+
+            cum += path2.ShiftLength(j);
+            if (cum > max_diff_)
+                break;
+        }
+        return answer;
+    };
+
+    //overlap is forced to start from the beginning of path1
+    std::pair<Range, Range> FindOverlap(const BidirectionalPath &path1,
+                                        const BidirectionalPath &path2,
+                                        bool end_start_only) const {
+        size_t max_overlap = 0;
+        std::pair<Range, Range> matching_ranges;
+        for (size_t j = 0; j < path2.Size(); ++j) {
+            auto range_pair = ComparePaths(path1, path2, j);
+            VERIFY(range_pair.first.start_pos == 0);
+            //checking if overlap is valid
+            if (end_start_only && range_pair.second.end_pos != path2.Size())
+                continue;
+
+            size_t overlap_size = range_pair.first.size();
+            if (overlap_size > max_overlap ||
+                //prefer overlaps with end of path2
+                (overlap_size == max_overlap &&
+                 range_pair.second.end_pos == path2.Size())) {
+                max_overlap = overlap_size;
+                matching_ranges = range_pair;
+            }
+        }
+        return matching_ranges;
+    }
+
+    std::vector<const BidirectionalPath*> FindCandidatePaths(const BidirectionalPath &path) const {
+        std::set<const BidirectionalPath*> candidates;
+        size_t cum_len = 0;
+        for (size_t i = 0; i < path.Size(); ++i) {
+            if (cum_len > max_diff_)
+                break;
+            EdgeId e = path.At(i);
+            if (g_.length(e) >= min_edge_len_) {
+                utils::insert_all(candidates, coverage_map_.GetCoveringPaths(e));
+                cum_len += path.ShiftLength(i);
+            }
+        }
+        return std::vector<const BidirectionalPath*>(candidates.begin(), candidates.end());
+    }
+
+private:
+    DECL_LOGGER("OverlapFindingHelper");
+};
+
 class OverlapRemover {
     const PathContainer &paths_;
     const OverlapFindingHelper helper_;
@@ -283,10 +462,8 @@ inline bool InTwoEdgeCycle(EdgeId e, const Graph &g) {
 }
 
 class PathExtendResolver {
-
     const Graph& g_;
     size_t k_;
-
 public:
     PathExtendResolver(const Graph& g)
             : g_(g), k_(g.k()) {}
@@ -344,7 +521,6 @@ public:
             }
         }
     }
-
 protected:
     DECL_LOGGER("PEResolver")
 };
