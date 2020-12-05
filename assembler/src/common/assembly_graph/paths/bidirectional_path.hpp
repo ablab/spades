@@ -149,10 +149,10 @@ inline std::ostream& operator<<(std::ostream& os, Gap gap) {
 
 class PathListener {
 public:
-    virtual void FrontEdgeAdded(debruijn_graph::EdgeId e, BidirectionalPath *path, const Gap &gap) = 0;
-    virtual void BackEdgeAdded(debruijn_graph::EdgeId e, BidirectionalPath *path, const Gap &gap) = 0;
-    virtual void FrontEdgeRemoved(debruijn_graph::EdgeId e, BidirectionalPath *path) = 0;
-    virtual void BackEdgeRemoved(debruijn_graph::EdgeId e, BidirectionalPath *path) = 0;
+    virtual void FrontEdgeAdded(debruijn_graph::EdgeId e, BidirectionalPath &path, const Gap &gap) = 0;
+    virtual void BackEdgeAdded(debruijn_graph::EdgeId e, BidirectionalPath &path, const Gap &gap) = 0;
+    virtual void FrontEdgeRemoved(debruijn_graph::EdgeId e, BidirectionalPath &path) = 0;
+    virtual void BackEdgeRemoved(debruijn_graph::EdgeId e, BidirectionalPath &path) = 0;
     virtual ~PathListener() {}
 };
 
@@ -620,18 +620,18 @@ public:
         }
     }
 
-    void FrontEdgeAdded(EdgeId, BidirectionalPath*, const Gap&) override {
+    void FrontEdgeAdded(EdgeId, BidirectionalPath&, const Gap&) override {
         //FIXME is it ok to be empty?
     }
 
-    void BackEdgeAdded(EdgeId e, BidirectionalPath*, const Gap& gap) override {
+    void BackEdgeAdded(EdgeId e, BidirectionalPath&, const Gap& gap) override {
         PushFront(g_.conjugate(e), gap.Conjugate());
     }
 
-    void FrontEdgeRemoved(EdgeId, BidirectionalPath*) override {
+    void FrontEdgeRemoved(EdgeId, BidirectionalPath&) override {
     }
 
-    void BackEdgeRemoved(EdgeId, BidirectionalPath *) override {
+    void BackEdgeRemoved(EdgeId, BidirectionalPath &) override {
         PopFront();
     }
 
@@ -691,26 +691,26 @@ private:
     }
 
     void NotifyFrontEdgeAdded(EdgeId e, const Gap& gap) {
-        for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
-            (*i)->FrontEdgeAdded(e, this, gap);
+        for (auto & listener : listeners_) {
+            listener->FrontEdgeAdded(e, *this, gap);
         }
     }
 
     void NotifyBackEdgeAdded(EdgeId e, const Gap& gap) {
-        for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
-            (*i)->BackEdgeAdded(e, this, gap);
+        for (auto & listener : listeners_) {
+            listener->BackEdgeAdded(e, *this, gap);
         }
     }
 
     void NotifyFrontEdgeRemoved(EdgeId e) {
-        for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
-            (*i)->FrontEdgeRemoved(e, this);
+        for (auto & listener : listeners_) {
+            listener->FrontEdgeRemoved(e, *this);
         }
     }
 
     void NotifyBackEdgeRemoved(EdgeId e) {
-        for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
-            (*i)->BackEdgeRemoved(e, this);
+        for (auto & listener : listeners_) {
+            listener->BackEdgeRemoved(e, *this);
         }
     }
 

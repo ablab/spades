@@ -27,32 +27,32 @@ private:
     std::unordered_map<EdgeId, MapDataT * > edge_coverage_;
     const MapDataT empty_;
 
-    void EdgeAdded(EdgeId e, BidirectionalPath * path) {
+    void EdgeAdded(EdgeId e, BidirectionalPath &path) {
         auto iter = edge_coverage_.find(e);
         if (iter == edge_coverage_.end()) {
             edge_coverage_.insert(std::make_pair(e, new MapDataT()));
         }
-        edge_coverage_[e]->insert(path);
+        edge_coverage_[e]->insert(&path);
     }
 
-    void EdgeRemoved(EdgeId e, BidirectionalPath * path) {
+    void EdgeRemoved(EdgeId e, BidirectionalPath &path) {
         auto iter = edge_coverage_.find(e);
         if (iter != edge_coverage_.end()) {
-            if (iter->second->count(path) == 0) {
+            if (iter->second->count(&path) == 0) {
                 DEBUG("Error erasing path from coverage map");
             } else {
-                auto entry = iter->second->find(path);
+                auto entry = iter->second->find(&path);
                 iter->second->erase(entry);
             }
         }
     }
 
-    void ProcessPath(BidirectionalPath *path, bool subscribe) {
+    void ProcessPath(BidirectionalPath &path, bool subscribe) {
         if (subscribe)
-            path->Subscribe(this);
+            path.Subscribe(this);
         
-        for (size_t i = 0; i < path->Size(); ++i) {
-            EdgeAdded(path->At(i), path);
+        for (size_t i = 0; i < path.Size(); ++i) {
+            EdgeAdded(path.At(i), path);
         }
     }
 
@@ -84,32 +84,32 @@ public:
 
     void AddPaths(const PathContainer& paths, bool subscribe = false) {
         for (auto &path_pair : paths) {
-            ProcessPath(path_pair.first.get(), subscribe);
-            ProcessPath(path_pair.second.get(), subscribe);
+            ProcessPath(*path_pair.first, subscribe);
+            ProcessPath(*path_pair.second, subscribe);
         }
     }
 
-    void Subscribe(BidirectionalPath * path) {
+    void Subscribe(BidirectionalPath &path) {
         ProcessPath(path, true);
     }
 
     //Inherited from PathListener
-    void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, const Gap&) override {
+    void FrontEdgeAdded(EdgeId e, BidirectionalPath &path, const Gap&) override {
         EdgeAdded(e, path);
     }
 
     //Inherited from PathListener
-    void BackEdgeAdded(EdgeId e, BidirectionalPath * path, const Gap&) override {
+    void BackEdgeAdded(EdgeId e, BidirectionalPath &path, const Gap&) override {
         EdgeAdded(e, path);
     }
 
     //Inherited from PathListener
-    void FrontEdgeRemoved(EdgeId e, BidirectionalPath * path) override {
+    void FrontEdgeRemoved(EdgeId e, BidirectionalPath &path) override {
         EdgeRemoved(e, path);
     }
 
     //Inherited from PathListener
-    void BackEdgeRemoved(EdgeId e, BidirectionalPath * path) override {
+    void BackEdgeRemoved(EdgeId e, BidirectionalPath &path) override {
         EdgeRemoved(e, path);
     }
 

@@ -198,10 +198,10 @@ private:
     DECL_LOGGER("OverlapFindingHelper");
 };
 
-inline void SubscribeCoverageMap(BidirectionalPath * path, GraphCoverageMap &coverage_map) {
-    path->Subscribe(&coverage_map);
-    for (size_t i = 0; i < path->Size(); ++i) {
-        coverage_map.BackEdgeAdded(path->At(i), path, path->GapAt(i));
+inline void SubscribeCoverageMap(BidirectionalPath &path, GraphCoverageMap &coverage_map) {
+    path.Subscribe(&coverage_map);
+    for (size_t i = 0; i < path.Size(); ++i) {
+        coverage_map.BackEdgeAdded(path.At(i), path, path.GapAt(i));
     }
 }
 
@@ -210,8 +210,8 @@ inline BidirectionalPath& AddPath(PathContainer &paths,
                                   GraphCoverageMap &coverage_map) {
     auto p = BidirectionalPath::clone(path);
     auto conj_p = (path.GetConjPath() ? BidirectionalPath::clone(*path.GetConjPath()) : BidirectionalPath::clone_conjugate(path));
-    SubscribeCoverageMap(p.get(), coverage_map);
-    SubscribeCoverageMap(conj_p.get(), coverage_map);
+    SubscribeCoverageMap(*p, coverage_map);
+    SubscribeCoverageMap(*conj_p, coverage_map);
     return paths.AddPair(std::move(p), std::move(conj_p)).first;
 }
 
@@ -219,8 +219,8 @@ inline BidirectionalPath& AddPath(PathContainer &paths,
                                   std::unique_ptr<BidirectionalPath> p,
                                   GraphCoverageMap &coverage_map) {
     auto conj_p = BidirectionalPath::clone_conjugate(p);
-    SubscribeCoverageMap(p.get(), coverage_map);
-    SubscribeCoverageMap(conj_p.get(), coverage_map);
+    SubscribeCoverageMap(*p, coverage_map);
+    SubscribeCoverageMap(*conj_p, coverage_map);
     return paths.AddPair(std::move(p), std::move(conj_p)).first;
 }
 
@@ -826,8 +826,8 @@ public:
 
         auto p = path_storage_.CreatePair(path.SubPath(pos));
 
-        visited_cycles_coverage_map_.Subscribe(&p.first);
-        visited_cycles_coverage_map_.Subscribe(p.first.GetConjPath());
+        visited_cycles_coverage_map_.Subscribe(p.first);
+        visited_cycles_coverage_map_.Subscribe(p.second);
         DEBUG("add cycle");
         p.first.PrintDEBUG();
     }
