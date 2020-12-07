@@ -6,12 +6,15 @@
 
 #include "assembly_graph/handlers/id_track_handler.hpp"
 #include "modules/path_extend/pe_resolver.hpp"
+#include "modules/path_extend/pe_utils.hpp"
+#include "modules/path_extend/overlap_remover.hpp"
 
 #include "graphio.hpp"
 
 #include <gtest/gtest.h>
 
 using namespace path_extend;
+using namespace debruijn_graph;
 
 typedef std::initializer_list<size_t> PathInit;
 typedef std::initializer_list<PathInit> PathsInit;
