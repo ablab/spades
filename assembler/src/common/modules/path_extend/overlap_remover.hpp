@@ -14,8 +14,7 @@
 
 namespace path_extend {
 
-typedef const BidirectionalPath * PathPtr;
-typedef std::unordered_map<PathPtr, std::set<size_t>> SplitsStorage;
+typedef std::unordered_map<uint64_t, std::set<size_t>> SplitsStorage;
 
 inline void PopFront(BidirectionalPath * const path, size_t cnt) {
     path->GetConjPath()->PopBack(cnt);
@@ -205,16 +204,16 @@ class OverlapRemover {
     const OverlapFindingHelper helper_;
     SplitsStorage splits_;
 
-    bool AlreadyAdded(PathPtr ptr, size_t pos) const {
-        auto it = splits_.find(ptr);
+    bool AlreadyAdded(const BidirectionalPath &p, size_t pos) const {
+        auto it = splits_.find(p.GetId());
         return it != splits_.end() && it->second.count(pos);
     }
 
     //TODO if situation start ==0 && end==p.Size is not interesting then code can be simplified
     bool AlreadyAdded(const BidirectionalPath &p, size_t start, size_t end) const {
-        if (start == 0 && AlreadyAdded(&p, end))
+        if (start == 0 && AlreadyAdded(p, end))
             return true;
-        if (end == p.Size() && AlreadyAdded(p.GetConjPath(), p.Size() - start))
+        if (end == p.Size() && AlreadyAdded(*p.GetConjPath(), p.Size() - start))
             return true;
         return false;
     }
@@ -234,23 +233,21 @@ class OverlapRemover {
         //checking if region on the other path has not been already added
         //TODO discuss if the logic is needed/correct. It complicates the procedure and prevents trivial parallelism.
         if (retain_one_copy &&
-                AlreadyAdded(other,
-                             other_range.start_pos,
-                             other_range.end_pos) &&
-                /*forcing "cut_all" behavior on conjugate paths*/
-                &other != path.GetConjPath() &&
-                /*certain overkill*/
-                &other != &path) {
+            AlreadyAdded(other, other_range.start_pos, other_range.end_pos) &&
+            /*forcing "cut_all" behavior on conjugate paths*/
+            other.GetId() != path.GetConjPath()->GetId() &&
+            /*certain overkill*/
+            other.GetId() != path.GetId()) {
             return 0;
         }
 
-        if (&other == &path) {
+        if (other.GetId() == path.GetId()) {
             if (overlap == path.Size())
                 return 0;
             overlap = std::min(overlap, other_range.start_pos);
         }
 
-        if (&other == path.GetConjPath()) {
+        if (other.GetId() == path.GetConjPath()->GetId()) {
             overlap = std::min(overlap, other.Size() - other_range.end_pos);
         }
 
@@ -265,15 +262,14 @@ class OverlapRemover {
 
     void MarkStartOverlaps(const BidirectionalPath &path, bool end_start_only, bool retain_one_copy) {
         std::set<size_t> overlap_poss;
-        for (PathPtr candidate : helper_.FindCandidatePaths(path)) {
+        for (const BidirectionalPath *candidate : helper_.FindCandidatePaths(path)) {
             size_t overlap = AnalyzeOverlaps(path, *candidate,
                                              end_start_only, retain_one_copy);
-            if (overlap > 0) {
+            if (overlap > 0)
                 overlap_poss.insert(overlap);
-            }
         }
         if (!overlap_poss.empty()) {
-            utils::insert_all(splits_[&path], overlap_poss);
+            utils::insert_all(splits_[path.GetId()], overlap_poss);
         }
     }
 
@@ -282,12 +278,12 @@ class OverlapRemover {
             //TODO think if this "optimization" is necessary
             if (path_pair.first->Size() == 0)
                 continue;
-            
+
             if (path_pair.first->IsCycle()) {
                 VERIFY(path_pair.first->GetCycleOverlapping() == path_pair.second->GetCycleOverlapping());
                 auto overlapping = path_pair.first->GetCycleOverlapping();
                 if (overlapping > 0)
-                    splits_[path_pair.first.get()].insert(overlapping);
+                    splits_[path_pair.first->GetId()].insert(overlapping);
             } else {
                 MarkStartOverlaps(*path_pair.first, end_start_only, retain_one_copy);
                 MarkStartOverlaps(*path_pair.second, end_start_only, retain_one_copy);
@@ -331,10 +327,10 @@ class PathSplitter {
     PathContainer &paths_;
     GraphCoverageMap &coverage_map_;
 
-    std::set<size_t> TransformConjSplits(const BidirectionalPath *p) const {
+    std::set<size_t> TransformConjSplits(const BidirectionalPath &p) const {
         std::set<size_t> path_splits;
-        size_t path_len = p->Size();
-        auto it = splits_.find(p);
+        size_t path_len = p.Size();
+        auto it = splits_.find(p.GetId());
         if (it != splits_.end()) {
 //                std::transform(it->second.begin(), it->second.end(),
 //                               std::inserter(path_splits, path_splits.end()),
@@ -346,11 +342,11 @@ class PathSplitter {
         return path_splits;
     }
 
-    std::set<size_t> GatherAllSplits(const BidirectionalPath *p,
-                                     const BidirectionalPath *cp) const {
-        VERIFY(p->Size() == cp->Size());
+    std::set<size_t> GatherAllSplits(const BidirectionalPath &p,
+                                     const BidirectionalPath &cp) const {
+        VERIFY(p.Size() == cp.Size());
         std::set<size_t> path_splits = TransformConjSplits(cp);
-        auto it = splits_.find(p);
+        auto it = splits_.find(p.GetId());
         if (it != splits_.end()) {
             utils::insert_all(path_splits, it->second);
         }
@@ -383,8 +379,8 @@ public:
          for (const auto &entry : paths_)
              tmp_paths.emplace_back(entry.first.get(), entry.second.get());
          for (auto & path_pair : tmp_paths) {
-             SplitPath(path_pair.first, GatherAllSplits(path_pair.first,
-                                                        path_pair.second));
+             SplitPath(path_pair.first, GatherAllSplits(*path_pair.first,
+                                                        *path_pair.second));
          }
      }
 
@@ -392,48 +388,5 @@ private:
     DECL_LOGGER("PathSplitter");
 };
 
-class PathDeduplicator {
-    PathContainer &paths_;
-    const bool equal_only_;
-    const OverlapFindingHelper helper_;
-
-    bool IsRedundant(BidirectionalPath *path) const {
-        TRACE("Checking if path redundant " << path->GetId());
-        for (auto candidate : helper_.FindCandidatePaths(*path)) {
-            TRACE("Considering candidate " << candidate->GetId());
-//                VERIFY(candidate != path && candidate != path->GetConjPath());
-            if (candidate == path || candidate == path->GetConjPath())
-                continue;
-            if (equal_only_ ? helper_.IsEqual(*path, *candidate) : helper_.IsSubpath(*path, *candidate)) {
-                return true;
-            }
-        }
-        return false;
-    }
-public:
-    PathDeduplicator(const Graph &g,
-                     PathContainer &paths,
-                     GraphCoverageMap &coverage_map,
-                     size_t min_edge_len,
-                     size_t max_diff,
-                     bool equal_only) :
-            paths_(paths),
-            equal_only_(equal_only),
-            helper_(g, coverage_map, min_edge_len, max_diff) {}
-
-    //TODO use path container filtering?
-    void Deduplicate() {
-        for (auto & path_pair : paths_) {
-            auto &path = path_pair.first;
-            if (IsRedundant(path.get())) {
-                TRACE("Clearing path " << path->str());
-                path->Clear();
-            }
-        }
-    }
-
-private:
-    DECL_LOGGER("PathDeduplicator");
-};
 
 }
