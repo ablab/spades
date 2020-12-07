@@ -20,8 +20,13 @@ simp
      red
      {
          enabled true
-         diff_mult  5.
+         diff_mult  10.
          unconditional_diff_mult 50.
          edge_sum 0
+     }
+
+     final_br
+     {
+         enabled false
      }
 }
