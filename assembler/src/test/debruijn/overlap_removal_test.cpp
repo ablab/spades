@@ -7,6 +7,7 @@
 #include "assembly_graph/handlers/id_track_handler.hpp"
 #include "modules/path_extend/pe_resolver.hpp"
 #include "modules/path_extend/pe_utils.hpp"
+#include "modules/path_extend/path_extender.hpp"
 #include "modules/path_extend/overlap_remover.hpp"
 
 #include "graphio.hpp"

@@ -13,6 +13,7 @@ add_library(path_extend STATIC
             gap_analyzer.cpp
             path_extenders.cpp
             pe_resolver.cpp
+            overlap_remover.cpp
             pipeline/launch_support.cpp
             pipeline/launcher.cpp
             pipeline/extenders_logic.cpp
