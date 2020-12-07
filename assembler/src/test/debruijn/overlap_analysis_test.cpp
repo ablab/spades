@@ -5,7 +5,7 @@
 //***************************************************************************
 
 #include "modules/path_extend/overlap_analysis.hpp"
-#include "modules/path_extend/path_extender.hpp"
+#include "modules/path_extend/overlap_remover.hpp"
 #include "sequence/sequence.hpp"
 
 #include <gtest/gtest.h>
