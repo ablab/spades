@@ -254,9 +254,11 @@ Connections AssemblyGraphConnectionCondition::ConnectedWith(debruijn_graph::Edge
     return stored_distances_[e];
 }
 void AssemblyGraphConnectionCondition::AddInterestingEdges(func::TypedPredicate<typename Graph::EdgeId> edge_condition) {
-    for (auto e_iter = g_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
-        if (edge_condition(*e_iter))
-            interesting_edge_set_.insert(*e_iter);
+    for (EdgeId e : g_.edges()) {
+        if (!edge_condition(e))
+            continue;
+
+        interesting_edge_set_.insert(e);
     }
 }
 

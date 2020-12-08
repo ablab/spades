@@ -59,7 +59,7 @@ void CompositeExtender::GrowAllPaths(PathContainer& paths, PathContainer& result
         if (!cover_map_.IsCovered(*paths.Get(i))) {
             AddPath(result, *paths.Get(i), cover_map_);
             BidirectionalPath &path = AddPath(result, *paths.Get(i), cover_map_);
-            
+
             size_t count_trying = 0;
             size_t current_path_len = 0;
             do {
@@ -165,11 +165,11 @@ bool LoopDetectingPathExtender::MakeGrowStep(BidirectionalPath& path, PathContai
         if (attempt)
             return *attempt;
     }
-    
+
     DEBUG("Making step");
     bool path_is_growed = MakeSimpleGrowStep(path, paths_storage);
     DEBUG("Made step");
-    
+
     if (DetectCycle(path))
         return false;
 
@@ -232,13 +232,13 @@ bool SimpleExtender::ResolveShortLoopByPI(BidirectionalPath& path) {
 bool SimpleExtender::FilterCandidates(BidirectionalPath& path, ExtensionChooser::EdgeContainer& candidates) {
     if (path.Size() == 0)
         return false;
-    
+
     DEBUG("Simple grow step");
     path.PrintDEBUG();
     FindFollowingEdges(path, &candidates);
     DEBUG("found candidates");
     DEBUG(candidates.size());
-    
+
     if (candidates.size() == 1) {
         LoopDetector loop_detector(&path, cov_map_);
         if (!investigate_short_loops_ &&
@@ -257,7 +257,7 @@ bool SimpleExtender::FilterCandidates(BidirectionalPath& path, ExtensionChooser:
 bool SimpleExtender::AddCandidates(BidirectionalPath& path, PathContainer* /*paths_storage*/, ExtensionChooser::EdgeContainer& candidates) {
     if (candidates.size() != 1)
         return false;
-    
+
     LoopDetector loop_detector(&path, cov_map_);
     DEBUG("loop detecor");
     if (!investigate_short_loops_ &&
@@ -307,7 +307,7 @@ bool MultiExtender::AddCandidates(BidirectionalPath& path, PathContainer* paths_
             auto p = paths_storage->CreatePair(path);
             p.first.PushBack(candidates[i].e_, Gap(candidates[i].d_));
         }
-        
+
         DEBUG("push");
         path.PushBack(candidates.front().e_, Gap(candidates.front().d_));
         DEBUG("push done");
@@ -317,7 +317,7 @@ bool MultiExtender::AddCandidates(BidirectionalPath& path, PathContainer* paths_
             DEBUG("Found " << candidates.size() << " candidates");
         }
     }
-    
+
     return res;
 }
 
@@ -325,10 +325,11 @@ bool MultiExtender::AddCandidates(BidirectionalPath& path, PathContainer* paths_
 void ScaffoldingPathExtender::InitSources() {
     sources_.clear();
 
-    for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-        if (g_.IncomingEdgeCount(g_.EdgeStart(*iter)) == 0) {
-            sources_.push_back(EdgeWithDistance(*iter, 0));
-        }
+    for (EdgeId e : g_.edges()) {
+        if (g_.IncomingEdgeCount(g_.EdgeStart(e)) > 0)
+            continue;
+
+        sources_.push_back(EdgeWithDistance(e, 0));
     }
 }
 
@@ -373,7 +374,7 @@ bool ScaffoldingPathExtender::MakeSimpleGrowStepForChooser(BidirectionalPath& pa
                   << ", estimated gap length: " << candidates.back().d_);
             return false;
         }
-        
+
         DEBUG("Gap after fixing " << gap.gap << " (was " << candidates.back().d_ << ")");
         if (must_overlap && !CheckGap(gap)) {
             DEBUG("Overlap is not large enough");
@@ -384,7 +385,7 @@ bool ScaffoldingPathExtender::MakeSimpleGrowStepForChooser(BidirectionalPath& pa
         VERIFY(candidates.back().d_ > int(g_.k()));
         gap = Gap(candidates.back().d_, false);
     }
-    
+
     return TryUseEdge(path, e, NormalizeGap(gap));
 }
 
@@ -402,4 +403,3 @@ bool RNAScaffoldingPathExtender::MakeSimpleGrowStep(BidirectionalPath& path, Pat
 }
 
 }
-

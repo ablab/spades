@@ -190,7 +190,7 @@ protected:
 
 public:
     ExtensionChooser(const Graph &g, std::shared_ptr<WeightCounter> wc = nullptr, double weight_threshold = -1.):
-        g_(g), wc_(wc), 
+        g_(g), wc_(wc),
         weight_threshold_(weight_threshold) {
     }
 
@@ -426,7 +426,7 @@ class ExcludingExtensionChooser: public ExtensionChooser {
         return weights;
     }
 
-    EdgeContainer FindPossibleEdges(const AlternativeContainer& weights, 
+    EdgeContainer FindPossibleEdges(const AlternativeContainer& weights,
             double max_weight) const {
         EdgeContainer top;
         auto possible_edge = weights.lower_bound(max_weight / prior_coeff_);
@@ -928,23 +928,24 @@ private:
        double sum_cov = 0;
        size_t sum_len = 0;
        size_t total_len = 0;
-       for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-           total_len += g_.length(*iter);
-           if (g_.length(*iter) >= max_repeat_length_) {
-               sum_cov += g_.coverage(*iter) * (double)g_.length(*iter);
-               sum_len += g_.length(*iter);
+       for (EdgeId e : g_.edges()) {
+           total_len += g_.length(e);
+           if (g_.length(e) >= max_repeat_length_) {
+               sum_cov += g_.coverage(e) * (double) g_.length(e);
+               sum_len += g_.length(e);
            }
        }
        if (sum_len * 4 < total_len) return;
        sum_cov /= (double)sum_len;
        DEBUG("average coverage of long edges: " << sum_cov) ;
-       for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-           if (g_.length(*iter) > 500 && (double)g_.coverage(*iter) < 1.2 * sum_cov) {
-               if (unique_edges_.find(*iter) == unique_edges_.end()) {
-                   unique_edges_.insert(*iter);
-                   unique_edges_.insert(g_.conjugate(*iter));
-                   DEBUG("Added coverage based unique edge " << g_.int_id(*iter) << " len "<< g_.length(*iter) << " " << g_.coverage(*iter));
-               }
+       for (EdgeId e : g_.edges()) {
+           if (g_.length(e) > 500 && (double)g_.coverage(e) < 1.2 * sum_cov) {
+               if (unique_edges_.count(e))
+                   continue;
+
+               unique_edges_.insert(e);
+               unique_edges_.insert(g_.conjugate(e));
+               DEBUG("Added coverage based unique edge " << g_.int_id(e) << " len "<< g_.length(e) << " " << g_.coverage(e));
            }
        }
    }
@@ -952,11 +953,12 @@ private:
 
     void FindAllUniqueEdges() {
         DEBUG("Looking for unique edges");
-        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-            if (UniqueEdge(*iter)) {
-                unique_edges_.insert(*iter);
-                unique_edges_.insert(g_.conjugate(*iter));
-            }
+        for (EdgeId e : g_.edges()) {
+            if (!UniqueEdge(e))
+                continue;
+
+            unique_edges_.insert(e);
+            unique_edges_.insert(g_.conjugate(e));
         }
         DEBUG("coverage based uniqueness started");
         if (!uneven_depth_)
@@ -1402,10 +1404,10 @@ private:
 
 class CoordinatedCoverageExtensionChooser: public ExtensionChooser {
 public:
-    CoordinatedCoverageExtensionChooser(const Graph& g, 
-            CoverageAwareIdealInfoProvider& coverage_provider, 
+    CoordinatedCoverageExtensionChooser(const Graph& g,
+            CoverageAwareIdealInfoProvider& coverage_provider,
             size_t max_edge_length_in_repeat, double delta, size_t min_path_len) :
-            ExtensionChooser(g), provider_(coverage_provider), 
+            ExtensionChooser(g), provider_(coverage_provider),
             max_edge_length_in_repeat_(max_edge_length_in_repeat), delta_(delta), min_path_len_(min_path_len) {
     }
 
@@ -1502,7 +1504,7 @@ private:
         if (g_.length(ext) > max_edge_length_in_repeat_) {
             DEBUG("Long extension");
             return g_.coverage(ext);
-        } 
+        }
 
         DEBUG("Short extension, launching repeat component analysis");
         auto gc = GetRepeatComponent(g_.EdgeEnd(ext), path_coverage);
@@ -1521,7 +1523,7 @@ private:
         DEBUG("Checking long sinks");
         for (auto v : gc.exits()) {
             for (auto e : g_.OutgoingEdges(v)) {
-                if (g_.length(e) > max_edge_length_in_repeat_ && 
+                if (g_.length(e) > max_edge_length_in_repeat_ &&
                         CompatibleEdge(e, path_coverage) &&
                         math::ls(g_.coverage(e), answer)) {
                     DEBUG("Updating answer to coverage of edge " << g_.str(e));

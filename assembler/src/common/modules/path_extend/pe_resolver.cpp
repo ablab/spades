@@ -39,8 +39,7 @@ static bool InTwoEdgeCycle(EdgeId e, const Graph &g) {
 PathContainer PathExtendResolver::MakeSimpleSeeds() const {
     std::set<EdgeId> included;
     PathContainer edges;
-    for (auto iter = g_.ConstEdgeBegin(/*canonical only*/true); !iter.IsEnd(); ++iter) {
-        EdgeId e = *iter;
+    for (EdgeId e : g_.canonical_edges()) {
         if (g_.int_id(e) <= 0 || InTwoEdgeCycle(e, g_))
             continue;
         edges.CreatePair(g_, e);
@@ -82,13 +81,12 @@ void PathExtendResolver::RemoveOverlaps(PathContainer &paths, GraphCoverageMap &
 }
 
 void PathExtendResolver::AddUncoveredEdges(PathContainer &paths, GraphCoverageMap &coverageMap) const {
-    for (auto iter = g_.ConstEdgeBegin(true); !iter.IsEnd(); ++iter) {
-        EdgeId e = *iter;
-        if (!coverageMap.IsCovered(e)) {
-            AddPath(paths, BidirectionalPath::create(g_, e), coverageMap);
-        }
+    for (EdgeId e : g_.canonical_edges()) {
+        if (coverageMap.IsCovered(e))
+            continue;
+
+        AddPath(paths, BidirectionalPath::create(g_, e), coverageMap);
     }
 }
 
 }
-
