@@ -21,7 +21,7 @@ bool GetLoopAndExit(const Graph& g, EdgeId forward_cycle_edge, EdgeId& back_cycl
 
     auto edges = g.OutgoingEdges(loop_end);
     EdgeId edge1 = *edges.begin();
-    EdgeId edge2 = *(++edges.begin());
+    EdgeId edge2 = *(std::next(edges.begin()));
     if (g.EdgeEnd(edge1) == g.EdgeEnd(edge2)) {
 //Patologic situation, two glued loops
         return false;
@@ -36,10 +36,9 @@ bool GetLoopAndExit(const Graph& g, EdgeId forward_cycle_edge, EdgeId& back_cycl
         return false;
     }
 
-    auto incoming_edges = g.IncomingEdges(loop_start);
-    for (auto edge = incoming_edges.begin(); edge != incoming_edges.end(); ++edge) {
-        if (*edge != back_cycle_edge) {
-            loop_incoming = *edge;
+    for (EdgeId edge : g.IncomingEdges(loop_start)) {
+        if (edge != back_cycle_edge) {
+            loop_incoming = edge;
         }
     }
 
@@ -56,7 +55,7 @@ size_t LoopDetector::LoopEdges(size_t skip_identical_edges, size_t min_cycle_app
         return 0;
     }
     EdgeId e = path_->Back();
-    size_t count = cov_map_.GetEdgePaths(e)->count(path_);
+    size_t count = cov_map_.Count(e, path_);
     if (count <= 1 || count < min_cycle_appearences * (skip_identical_edges + 1)) {
         return 0;
     }
@@ -108,7 +107,7 @@ size_t LoopDetector::LastLoopCount(size_t edges) const {
 }
 
 bool LoopDetector::IsCycled(size_t loopLimit, size_t& skip_identical_edges) const {
-    if (path_->Size() == 0 || cov_map_.GetEdgePaths(path_->Back())->count(path_) < loopLimit)
+    if (path_->Size() == 0 || cov_map_.Count(path_->Back(), path_) < loopLimit)
         return false;
 
     skip_identical_edges = 0;

@@ -37,13 +37,14 @@ private:
 
     void EdgeRemoved(EdgeId e, BidirectionalPath &path) {
         auto iter = edge_coverage_.find(e);
-        if (iter != edge_coverage_.end()) {
-            if (iter->second->count(&path) == 0) {
-                DEBUG("Error erasing path from coverage map");
-            } else {
-                auto entry = iter->second->find(&path);
-                iter->second->erase(entry);
-            }
+        if (iter == edge_coverage_.end())
+            return;
+        
+        if (iter->second->count(&path) == 0) {
+            DEBUG("Error erasing path from coverage map");
+        } else {
+            auto entry = iter->second->find(&path);
+            iter->second->erase(entry);
         }
     }
 
@@ -56,10 +57,6 @@ private:
         }
     }
 
-    size_t EdgeCount() const {
-        return g_.e_size();
-    }
-
 public:
     GraphCoverageMap(const GraphCoverageMap&) = delete;
     GraphCoverageMap& operator=(const GraphCoverageMap&) = delete;
@@ -68,7 +65,7 @@ public:
 
     explicit GraphCoverageMap(const Graph& g) : g_(g) {
         //FIXME heavy constructor
-        edge_coverage_.reserve(EdgeCount());
+        edge_coverage_.reserve(g_.e_size());
     }
 
     GraphCoverageMap(const Graph& g, const PathContainer& paths, bool subscribe = false) :
@@ -113,12 +110,21 @@ public:
         EdgeRemoved(e, path);
     }
 
-    const MapDataT *  GetEdgePaths(EdgeId e) const {
+    const MapDataT *GetEdgePaths(EdgeId e) const {
         auto iter = edge_coverage_.find(e);
         if (iter != edge_coverage_.end()) {
             return iter->second;
         }
         return &empty_;
+    }
+
+    // FIXME: temporary
+    size_t Count(EdgeId e, BidirectionalPath *path) const {
+        auto entry = edge_coverage_.find(e);
+        if (entry == edge_coverage_.end())
+            return 0;
+
+        return entry->second->count(path);
     }
 
     int GetCoverage(EdgeId e) const {
@@ -131,9 +137,8 @@ public:
 
     bool IsCovered(const BidirectionalPath& path) const {
         for (size_t i = 0; i < path.Size(); ++i) {
-            if (!IsCovered(path[i])) {
+            if (!IsCovered(path[i]))
                 return false;
-            }
         }
         return true;
     }
