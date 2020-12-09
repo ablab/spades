@@ -11,6 +11,8 @@
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
 
+#include "parallel_hashmap/phmap.h"
+
 namespace path_extend {
 
 using namespace debruijn_graph;
@@ -24,7 +26,7 @@ public:
 private:
     const Graph& g_;
 
-    std::unordered_map<EdgeId, MapDataT> edge_coverage_;
+    phmap::parallel_flat_hash_map<EdgeId, MapDataT> edge_coverage_;
     const MapDataT empty_;
 
     void EdgeAdded(EdgeId e, BidirectionalPath &path) {
