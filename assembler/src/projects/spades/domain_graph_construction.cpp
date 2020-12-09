@@ -342,7 +342,7 @@ private:
                         if (!removed_vertices.count(maps.second.first)) {
                             removed_vertices.insert(domain_graph_.conjugate(maps.second.first));
                             removed_vertices.insert(maps.second.first);
-                            if (!domain_graph_.IncomingEdgeCount(maps.second.first))
+                            if (!domain_graph_.IncomingEdgeCount(maps.second.first) && !domain_graph_.OutgoingEdgeCount(maps.second.first))
                                 domain_graph_.DeleteVertex(maps.second.first);
                         }
                         continue;
