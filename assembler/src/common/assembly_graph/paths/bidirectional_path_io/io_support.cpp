@@ -69,13 +69,13 @@ void path_extend::TranscriptToGeneJoiner::Construct(const PathContainer &paths) 
     for (auto iterator = edges_coverage.begin(); iterator != edges_coverage.end(); ++iterator) {
         //Select a path covering an edge
         EdgeId edge = iterator->first;
-        GraphCoverageMap::MapDataT *edge_paths = iterator->second;
+        auto &edge_paths = iterator->second;
 
-        if (g_.length(edge) > min_edge_len_ && edge_paths->size() > 1) {
-            DEBUG("Long edge " << edge.int_id() << " Paths " << edge_paths->size());
+        if (g_.length(edge) > min_edge_len_ && edge_paths.size() > 1) {
+            DEBUG("Long edge " << edge.int_id() << " Paths " << edge_paths.size());
             //For all other paths covering this edge join then into single gene with the first path
-            for (auto it_edge = ++edge_paths->begin(); it_edge != edge_paths->end(); ++it_edge) {
-                size_t first = path_id_[*edge_paths->begin()];
+            for (auto it_edge = ++edge_paths.begin(); it_edge != edge_paths.end(); ++it_edge) {
+                size_t first = path_id_[*edge_paths.begin()];
                 size_t next = path_id_[*it_edge];
                 DEBUG("Edge " << edge.int_id() << " First " << first << " Next " << next);
 

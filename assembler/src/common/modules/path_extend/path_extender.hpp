@@ -359,8 +359,7 @@ public:
     //seems that it is outofdate
     bool InExistingLoop(const BidirectionalPath& path) {
         DEBUG("Checking existing loops");
-        auto visited_cycles = visited_cycles_coverage_map_.GetEdgePaths(path.Back());
-        for (auto cycle : *visited_cycles) {
+        for (auto cycle : visited_cycles_coverage_map_.GetEdgePaths(path.Back())) {
             DEBUG("checking  cycle ");
             int pos = path.FindLast(*cycle);
             if (pos == -1)

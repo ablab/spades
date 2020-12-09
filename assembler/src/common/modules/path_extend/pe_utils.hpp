@@ -24,27 +24,23 @@ public:
 private:
     const Graph& g_;
 
-    std::unordered_map<EdgeId, MapDataT * > edge_coverage_;
+    std::unordered_map<EdgeId, MapDataT> edge_coverage_;
     const MapDataT empty_;
 
     void EdgeAdded(EdgeId e, BidirectionalPath &path) {
-        auto iter = edge_coverage_.find(e);
-        if (iter == edge_coverage_.end()) {
-            edge_coverage_.insert(std::make_pair(e, new MapDataT()));
-        }
-        edge_coverage_[e]->insert(&path);
+        edge_coverage_[e].insert(&path);
     }
 
     void EdgeRemoved(EdgeId e, BidirectionalPath &path) {
         auto iter = edge_coverage_.find(e);
         if (iter == edge_coverage_.end())
             return;
-        
-        if (iter->second->count(&path) == 0) {
+
+        auto entry = iter->second.find(&path);
+        if (entry == iter->second.end()) {
             DEBUG("Error erasing path from coverage map");
         } else {
-            auto entry = iter->second->find(&path);
-            iter->second->erase(entry);
+            iter->second.erase(entry);
         }
     }
 
@@ -73,11 +69,7 @@ public:
         AddPaths(paths, subscribe);
     }
 
-    ~GraphCoverageMap() {
-        for (auto iter = edge_coverage_.begin(); iter != edge_coverage_.end(); ++iter) {
-            delete iter->second;
-        }
-    }
+    ~GraphCoverageMap() {}
 
     void AddPaths(const PathContainer& paths, bool subscribe = false) {
         for (auto &path_pair : paths) {
@@ -110,12 +102,12 @@ public:
         EdgeRemoved(e, path);
     }
 
-    const MapDataT *GetEdgePaths(EdgeId e) const {
+    const MapDataT &GetEdgePaths(EdgeId e) const {
         auto iter = edge_coverage_.find(e);
         if (iter != edge_coverage_.end()) {
             return iter->second;
         }
-        return &empty_;
+        return empty_;
     }
 
     // FIXME: temporary
@@ -124,11 +116,11 @@ public:
         if (entry == edge_coverage_.end())
             return 0;
 
-        return entry->second->count(path);
+        return entry->second.count(path);
     }
 
     int GetCoverage(EdgeId e) const {
-        return (int) GetEdgePaths(e)->size();
+        return (int) GetEdgePaths(e).size();
     }
 
     bool IsCovered(EdgeId e) const {
@@ -144,15 +136,15 @@ public:
     }
 
     BidirectionalPathSet GetCoveringPaths(EdgeId e) const {
-        auto mapData = GetEdgePaths(e);
-        return BidirectionalPathSet(mapData->begin(), mapData->end());
+        const auto &mapData = GetEdgePaths(e);
+        return BidirectionalPathSet(mapData.begin(), mapData.end());
     }
 
-    std::unordered_map <EdgeId, MapDataT * >::const_iterator begin() const {
+    auto begin() const {
         return edge_coverage_.begin();
     }
 
-    std::unordered_map <EdgeId, MapDataT * >::const_iterator end() const {
+    auto end() const {
         return edge_coverage_.end();
     }
 
