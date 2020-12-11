@@ -19,10 +19,10 @@ using namespace debruijn_graph;
 
 struct ScaffoldInfo {
     std::string sequence;
-    BidirectionalPath* path;
+    const BidirectionalPath* path;
     std::string name;
 
-    ScaffoldInfo(const std::string& sequence, BidirectionalPath* path) :
+    ScaffoldInfo(const std::string& sequence, const BidirectionalPath* path) :
         sequence(sequence), path(path) { }
 
     size_t length() const {
@@ -53,7 +53,7 @@ private:
     const Graph &g_;
     size_t min_edge_len_; //minimal length for joining transcripts into a gene
 
-    std::unordered_map<BidirectionalPath *, size_t> path_id_; //path ids
+    std::unordered_map<const BidirectionalPath *, size_t> path_id_; //path ids
     std::vector<size_t> parents_; //node parents in
     std::vector<size_t> ranks_; //tree depth
 
@@ -69,7 +69,7 @@ public:
 
     size_t FindTree(size_t x);
 
-    size_t GetPathId(BidirectionalPath *path);
+    size_t GetPathId(const BidirectionalPath *path);
 
     void Construct(const PathContainer &paths);
 };

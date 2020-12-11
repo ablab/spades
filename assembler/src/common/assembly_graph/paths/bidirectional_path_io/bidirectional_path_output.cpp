@@ -1,6 +1,8 @@
-//
-// Created by andrey on 20.01.17.
-//
+//***************************************************************************
+//* Copyright (c) 2020 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 
 #include "bidirectional_path_output.hpp"
 
@@ -12,15 +14,13 @@ void path_extend::ContigWriter::OutputPaths(const PathContainer &paths, const st
     ScaffoldSequenceMaker scaffold_maker(g_);
     DEBUG("started" << paths.size());
     for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-       
-        BidirectionalPath* path = iter.get();
-        DEBUG("path");
-        DEBUG(path->Length());
-        if (path->Length() <= 0)
+        const BidirectionalPath &path = *iter.get();
+        DEBUG("path: " <<  path.Length());
+        if (path.Length() <= 0)
             continue;
-        auto path_string = scaffold_maker.MakeSequence(*path);
+        auto path_string = scaffold_maker.MakeSequence(path);
         if (path_string.length() >= g_.k()) {
-            storage.emplace_back(path_string, path);
+            storage.emplace_back(path_string, &path);
         }
         DEBUG("over");
     }

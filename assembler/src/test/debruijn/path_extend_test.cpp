@@ -686,7 +686,7 @@ TEST( PathExtend, BidirectionalPathLoopDetector ) {
 
     auto path1 = BidirectionalPath::create(g);
     GraphCoverageMap cover_map(g);
-    LoopDetector loop_detect(path1.get(), cover_map);
+    LoopDetector loop_detect(*path1, cover_map);
     path1->Subscribe(&cover_map);
 
     // 98 26 145 70 3 139 139
@@ -714,7 +714,7 @@ TEST( PathExtend, BidirectionalPathLoopDetector ) {
     EXPECT_FALSE(loop_detect.IsCycled(4, skip_identical));
     EXPECT_TRUE(loop_detect.IsCycled(3, skip_identical));
     EXPECT_TRUE(loop_detect.IsCycled(2, skip_identical));
-    loop_detect.RemoveLoop(skip_identical, false);
+    RemoveLoop(*path1, cover_map, skip_identical, false);
     EXPECT_EQ(path1->Size(), 6);
     EXPECT_EQ(path1->Back(), e6);
 
@@ -731,7 +731,7 @@ TEST( PathExtend, BidirectionalPathLoopDetector ) {
     skip_identical = 0;
     EXPECT_TRUE(loop_detect.IsCycled(2, skip_identical));
 
-    loop_detect.RemoveLoop(skip_identical, true);
+    RemoveLoop(*path1, cover_map, skip_identical, true);
     EXPECT_EQ(path1->Size(), 5);
     EXPECT_EQ(path1->Back(), e5);
 
@@ -751,7 +751,7 @@ TEST( PathExtend, BidirectionalPathLoopDetector ) {
     EXPECT_FALSE(loop_detect.IsCycled(2, skip_identical));
 
     EXPECT_EQ(loop_detect.EdgesToRemove(skip_identical, false), 0);
-    loop_detect.RemoveLoop(skip_identical, false);
+    RemoveLoop(*path1, cover_map, skip_identical, false);
     EXPECT_EQ(path1->Size(), 12);
     EXPECT_EQ(path1->Back(), e7);
 }

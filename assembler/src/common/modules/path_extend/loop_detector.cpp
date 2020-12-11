@@ -45,21 +45,30 @@ bool GetLoopAndExit(const Graph& g, EdgeId forward_cycle_edge, EdgeId& back_cycl
     return true;
 }
 
-LoopDetector::LoopDetector(BidirectionalPath* p, const GraphCoverageMap& cov_map)
+void RemoveLoop(BidirectionalPath &path, const GraphCoverageMap& cov_map,
+                size_t skip_identical_edges, bool fullRemoval) {
+    size_t toRemove = LoopDetector(path, cov_map).EdgesToRemove(skip_identical_edges, fullRemoval);
+    for (size_t i = 0; i < toRemove; ++i) {
+        path.PopBack();
+    }
+}
+
+
+LoopDetector::LoopDetector(const BidirectionalPath &p, const GraphCoverageMap& cov_map)
         : path_(p),
           cov_map_(cov_map) {
 }
 
 size_t LoopDetector::LoopEdges(size_t skip_identical_edges, size_t min_cycle_appearences) const {
-    if (path_->Size() == 0) {
+    if (path_.Size() == 0) {
         return 0;
     }
-    EdgeId e = path_->Back();
+    EdgeId e = path_.Back();
     size_t count = cov_map_.Count(e, path_);
     if (count <= 1 || count < min_cycle_appearences * (skip_identical_edges + 1)) {
         return 0;
     }
-    auto edge_positions = path_->FindAll(e);
+    auto edge_positions = path_.FindAll(e);
     VERIFY(edge_positions.size() == count);
     VERIFY(edge_positions.size() >= skip_identical_edges);
     size_t loopSize = edge_positions.back() - edge_positions[edge_positions.size() - 1 - (skip_identical_edges + 1)];
@@ -67,13 +76,13 @@ size_t LoopDetector::LoopEdges(size_t skip_identical_edges, size_t min_cycle_app
 }
 
 bool LoopDetector::PathIsLoop(size_t edges) const {
-    if (edges == 0 || path_->Size() <= 1)
+    if (edges == 0 || path_.Size() <= 1)
         return false;
 
     for (size_t i = 0; i < edges; ++i) {
-        EdgeId e = path_->At(i);
-        for (int j = (int) path_->Size() - ((int) edges - (int) i); j >= 0; j -= (int) edges) {
-            if (path_->operator [](j) != e) {
+        EdgeId e = path_.At(i);
+        for (int j = (int) path_.Size() - ((int) edges - (int) i); j >= 0; j -= (int) edges) {
+            if (path_.operator [](j) != e) {
                 return false;
             }
         }
@@ -90,13 +99,13 @@ size_t LoopDetector::LastLoopCount(size_t edges) const {
     if (edges == 0)
         return 0;
 
-    BidirectionalPath loop = path_->SubPath(path_->Size() - edges);
+    BidirectionalPath loop = path_.SubPath(path_.Size() - edges);
     size_t count = 0;
-    int i = (int) path_->Size() - (int) edges;
+    int i = (int) path_.Size() - (int) edges;
     int delta = -(int) edges;
 
     while (i >= 0) {
-        if (!path_->CompareFrom(i, loop)) {
+        if (!path_.CompareFrom(i, loop)) {
             break;
         }
         ++count;
@@ -107,7 +116,7 @@ size_t LoopDetector::LastLoopCount(size_t edges) const {
 }
 
 bool LoopDetector::IsCycled(size_t loopLimit, size_t& skip_identical_edges) const {
-    if (path_->Size() == 0 || cov_map_.Count(path_->Back(), path_) < loopLimit)
+    if (path_.Size() == 0 || cov_map_.Count(path_.Back(), path_) < loopLimit)
         return false;
 
     skip_identical_edges = 0;
@@ -127,8 +136,8 @@ size_t LoopDetector::EdgesToRemove(size_t skip_identical_edges, bool fullRemoval
     bool onlyCycle = PathIsLoop(edges);
     int result;
 
-    if (onlyCycle || path_->Size() <= count * edges) {
-        result = (int) path_->Size() - (int) edges;
+    if (onlyCycle || path_.Size() <= count * edges) {
+        result = (int) path_.Size() - (int) edges;
     } else if (fullRemoval) {
         result = (int) count * (int) edges;
     } else {
@@ -138,27 +147,20 @@ size_t LoopDetector::EdgesToRemove(size_t skip_identical_edges, bool fullRemoval
     return result < 0 ? 0 : result;
 }
 
-void LoopDetector::RemoveLoop(size_t skip_identical_edges, bool fullRemoval) {
-    size_t toRemove = EdgesToRemove(skip_identical_edges, fullRemoval);
-    for (size_t i = 0; i < toRemove; ++i) {
-        path_->PopBack();
-    }
-}
-
 bool LoopDetector::EdgeInShortLoop(EdgeId e) const {
     EdgeId back_cycle_edge;
     EdgeId loop_exit;
     EdgeId loop_in;
-    return GetLoopAndExit(path_->graph(), e, back_cycle_edge, loop_exit, loop_in);
+    return GetLoopAndExit(path_.graph(), e, back_cycle_edge, loop_exit, loop_in);
 }
 
 bool LoopDetector::PrevEdgeInShortLoop() const {
-    if (path_->Size() <= 2)
+    if (path_.Size() <= 2)
         return false;
 
-    const Graph& g = path_->graph();
-    EdgeId e2 = path_->At(path_->Size() - 1);
-    EdgeId e1 = path_->At(path_->Size() - 2);
+    const Graph& g = path_.graph();
+    EdgeId e2 = path_.At(path_.Size() - 1);
+    EdgeId e1 = path_.At(path_.Size() - 2);
     VertexId v2 = g.EdgeEnd(e1);
     if (g.OutgoingEdgeCount(v2) == 2 &&
         g.EdgeEnd(e2) == g.EdgeStart(e1) &&

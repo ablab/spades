@@ -55,7 +55,7 @@ size_t path_extend::TranscriptToGeneJoiner::FindTree(size_t x) {
     return parent;
 }
 
-size_t path_extend::TranscriptToGeneJoiner::GetPathId(BidirectionalPath *path) {
+size_t path_extend::TranscriptToGeneJoiner::GetPathId(const BidirectionalPath *path) {
     return path_id_[path];
 }
 

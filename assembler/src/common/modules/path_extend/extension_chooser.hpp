@@ -5,13 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * extension.hpp
- *
- *  Created on: Mar 5, 2012
- *      Author: andrey
- */
-
 #ifndef EXTENSION_HPP_
 #define EXTENSION_HPP_
 
@@ -64,10 +57,8 @@ protected:
     }
 
     virtual int ExcludeTrivialWithBulges(const BidirectionalPath& path, std::set<size_t>& edges) const {
-
-        if (path.Empty()) {
+        if (path.Empty())
             return 0;
-        }
 
         int lastEdge = (int) path.Size() - 1;
         do {
@@ -77,18 +68,17 @@ protected:
             if (lastEdge >= 0) {
                 VertexId v = g_.EdgeEnd(path[lastEdge]);
                 VertexId u = g_.EdgeStart(path[lastEdge]);
-                auto bulgeCandidates = g_.IncomingEdges(v);
 
-                for (const auto& candidate: bulgeCandidates) {
-                    if (g_.EdgeStart(candidate) != u) {
+                for (EdgeId e : g_.IncomingEdges(v)) {
+                    if (g_.EdgeStart(e) != u) {
                         bulge = false;
                         break;
                     }
                 }
 
-                if (!bulge) {
+                if (!bulge)
                     break;
-                }
+
                 --lastEdge;
             }
         } while (lastEdge >= 0);
@@ -104,8 +94,8 @@ protected:
 class PreserveSimplePathsAnalyzer: public PathAnalyzer {
 
 public:
-    PreserveSimplePathsAnalyzer(const Graph &g) : PathAnalyzer(g) {
-    }
+    PreserveSimplePathsAnalyzer(const Graph &g)
+            : PathAnalyzer(g) { }
 
     int ExcludeTrivial(const BidirectionalPath& path, std::set<size_t>& edges, int from = -1) const override {
         int edgeIndex = PathAnalyzer::ExcludeTrivial(path, edges, from);
@@ -119,10 +109,8 @@ public:
     }
 
     int ExcludeTrivialWithBulges(const BidirectionalPath& path, std::set<size_t>& edges) const override {
-
-        if (path.Empty()) {
+        if (path.Empty())
             return 0;
-        }
 
         int lastEdge = (int) path.Size() - 1;
         bool has_bulge = false;
@@ -132,16 +120,14 @@ public:
             if (lastEdge >= 0) {
                 VertexId v = g_.EdgeEnd(path[lastEdge]);
                 VertexId u = g_.EdgeStart(path[lastEdge]);
-                auto bulgeCandidates = g_.IncomingEdges(v);
                 has_bulge = true;
 
-                for (auto iter = bulgeCandidates.begin(); iter != bulgeCandidates.end(); ++iter) {
-                    if (g_.EdgeStart(*iter) != u) {
+                for (EdgeId e : g_.IncomingEdges(v)) {
+                    if (g_.EdgeStart(e) != u) {
                         has_bulge = false;
                         break;
                     }
                 }
-
                 --lastEdge;
             }
         } while (lastEdge >= 0);
@@ -903,8 +889,7 @@ private:
                                                  const BidirectionalPathSet& cov_paths) const {
         double weight1 = 0.0;
         double weight2 = 0.0;
-        for (auto iter = cov_paths.begin(); iter != cov_paths.end(); ++iter) {
-            BidirectionalPath* path = *iter;
+        for (const BidirectionalPath *path : cov_paths) {
             if (ContainSubPath(*path, cand1)) {
                 weight1 += path->GetWeight();
             } else if (ContainSubPath(*path, cand2)) {
@@ -974,52 +959,6 @@ private:
     size_t max_repeat_length_;
     bool uneven_depth_;
 };
-
-//class SimpleScaffolding {
-//public:
-//    SimpleScaffolding(const Graph& g) : g_(g) {}
-//
-//    BidirectionalPath FindMaxCommonPath(const vector<BidirectionalPath*>& paths,
-//                                        size_t max_diff_len) const {
-//        BidirectionalPath max_end(g_);
-//        for (auto it1 = paths.begin(); it1 != paths.end(); ++it1) {
-//            BidirectionalPath* p1 = *it1;
-//            for (size_t i = 0; i < p1->Size(); ++i) {
-//                if (p1->Length() - p1->LengthAt(i) > max_diff_len) {
-//                    break;
-//                }
-//                bool contain_all = true;
-//                for (size_t i1 = i + 1; i1 <= p1->Size() && contain_all; ++i1) {
-//                    BidirectionalPath subpath = p1->SubPath(i, i1);
-//                    for (auto it2 = paths.begin();  it2 != paths.end() && contain_all; ++it2) {
-//                        BidirectionalPath* p2 = *it2;
-//                        vector<size_t> positions2 = p2->FindAll(subpath.At(0));
-//                        bool contain = false;
-//                        for (size_t ipos2 = 0; ipos2 < positions2.size(); ++ipos2) {
-//                            size_t pos2 = positions2[ipos2];
-//                            if (p2->Length() - p2->LengthAt(pos2) <= max_diff_len
-//                                    && EqualEnds(subpath, 0, *p2, pos2, false)) {
-//                                contain = true;
-//                                break;
-//                            }
-//                        }
-//                        if (!contain) {
-//                            contain_all = false;
-//                        }
-//                    }
-//                    if (contain_all && (i1 - i) >= max_end.Size()) {
-//                        max_end.Clear();
-//                        max_end.PushBack(subpath);
-//                    }
-//                }
-//            }
-//        }
-//        return max_end;
-//    }
-//
-//private:
-//    const Graph& g_;
-//};
 
 class LongReadsRNAExtensionChooser : public ExtensionChooser {
 public:

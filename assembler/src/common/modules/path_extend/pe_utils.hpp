@@ -117,13 +117,12 @@ public:
         return empty_;
     }
 
-    // FIXME: temporary
-    size_t Count(EdgeId e, BidirectionalPath *path) const {
+    size_t Count(EdgeId e, const BidirectionalPath &path) const {
         auto entry = edge_coverage_.find(e);
         if (entry == edge_coverage_.end())
             return 0;
 
-        auto cov = entry->second.find(path);
+        auto cov = entry->second.find(const_cast<BidirectionalPath*>(&path));
         return (cov == entry->second.end() ? 0 : cov->second);
     }
 
@@ -177,9 +176,12 @@ public:
 // Result -- first edge is loop's back edge, second is loop exit edge
 bool GetLoopAndExit(const Graph& g, EdgeId forward_cycle_edge, EdgeId& back_cycle_edge, EdgeId& loop_outgoing, EdgeId& loop_incoming);
 
+void RemoveLoop(BidirectionalPath &path, const GraphCoverageMap& cov_map,
+                size_t skip_identical_edges, bool fullRemoval = true);
+
 class LoopDetector {
 public:
-    LoopDetector(BidirectionalPath* p, const GraphCoverageMap& cov_map);
+    LoopDetector(const BidirectionalPath &p, const GraphCoverageMap& cov_map);
     size_t LoopEdges(size_t skip_identical_edges, size_t min_cycle_appearences) const;
     size_t LoopLength(size_t skip_identical_edges, size_t min_cycle_appearences) const;
     bool PathIsLoop(size_t edges) const;
@@ -187,12 +189,11 @@ public:
     size_t LastLoopCount(size_t edges) const;
     bool IsCycled(size_t loopLimit, size_t& skip_identical_edges) const;
     size_t EdgesToRemove(size_t skip_identical_edges, bool fullRemoval = false) const;
-    void RemoveLoop(size_t skip_identical_edges, bool fullRemoval = true);
     bool EdgeInShortLoop(EdgeId e) const;
     bool PrevEdgeInShortLoop() const;
 private:
-    BidirectionalPath* path_;
-    const GraphCoverageMap& cov_map_;
+    const BidirectionalPath &path_;
+    const GraphCoverageMap &cov_map_;
     DECL_LOGGER("BidirectionalPath");
 };
 

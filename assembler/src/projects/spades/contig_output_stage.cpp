@@ -22,22 +22,22 @@ using namespace debruijn_graph;
 
 static constexpr double LARGE_FRACTION = 0.8;
 
-bool CheckUsedPath(const path_extend::BidirectionalPath* path, std::unordered_set<EdgeId> &used_edges) {
-    const Graph& g = path->g();
+bool CheckUsedPath(const path_extend::BidirectionalPath &path, std::unordered_set<EdgeId> &used_edges) {
+    const Graph& g = path.g();
     size_t used_len = 0;
     size_t total_len = 0;
-    size_t path_len = path->Size();
+    size_t path_len = path.Size();
     for (size_t i = 0; i < path_len; i++) {
-        size_t cur_len = g.length(path->At(i));
+        size_t cur_len = g.length(path.At(i));
         total_len += cur_len;
-        if (used_edges.count(path->At(i))) {
+        if (used_edges.count(path.At(i))) {
             used_len += cur_len;
         }
     }
 
     for (size_t i = 0; i < path_len; i++) {
-        used_edges.insert(path->At(i));
-        used_edges.insert(g.conjugate(path->At(i)));
+        used_edges.insert(path.At(i));
+        used_edges.insert(g.conjugate(path.At(i)));
     }
 //FIXME: constant
     return (math::ge((double)used_len, (double)total_len * LARGE_FRACTION));
@@ -49,7 +49,7 @@ path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer
     INFO("banned " << used_edges.size() <<" edges");
     for (const auto &entry : sc_storage) {
         if (!entry.first->IsCircular() ||
-            CheckUsedPath(entry.first.get(), used_edges) ||
+            CheckUsedPath(*entry.first, used_edges) ||
             entry.first->Length() < 500)
             continue;
 

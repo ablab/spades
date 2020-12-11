@@ -100,7 +100,7 @@ bool LoopDetectingPathExtender::ResolveShortLoopByCov(BidirectionalPath& path) {
     if (TryToResolveTwoLoops(path))
         return true;
 
-    LoopDetector loop_detector(&path, cov_map_);
+    LoopDetector loop_detector(path, cov_map_);
     size_t init_len = path.Length();
     bool result = false;
     while (path.Size() >= 1 && loop_detector.EdgeInShortLoop(path.Back())) {
@@ -179,7 +179,7 @@ bool LoopDetectingPathExtender::MakeGrowStep(BidirectionalPath& path, PathContai
 }
 
 boost::optional<bool> LoopDetectingPathExtender::TryToResolveShortLoop(BidirectionalPath& path) {
-    LoopDetector loop_detector(&path, cov_map_);
+    LoopDetector loop_detector(path, cov_map_);
     if (!path.Empty() && InvestigateShortLoop()) {
         if (loop_detector.EdgeInShortLoop(path.Back())) {
             DEBUG("Edge in short loop");
@@ -211,7 +211,7 @@ void SimpleExtender::FindFollowingEdges(BidirectionalPath& path, ExtensionChoose
 
 bool SimpleExtender::ResolveShortLoopByPI(BidirectionalPath& path) {
     if (extensionChooser_->WeightCounterBased()) {
-        LoopDetector loop_detector(&path, cov_map_);
+        LoopDetector loop_detector(path, cov_map_);
         size_t init_len = path.Length();
         bool result = false;
         while (path.Size() >= 1 && loop_detector.EdgeInShortLoop(path.Back())) {
@@ -239,7 +239,7 @@ bool SimpleExtender::FilterCandidates(BidirectionalPath& path, ExtensionChooser:
     DEBUG(candidates.size());
 
     if (candidates.size() == 1) {
-        LoopDetector loop_detector(&path, cov_map_);
+        LoopDetector loop_detector(path, cov_map_);
         if (!investigate_short_loops_ &&
             (loop_detector.EdgeInShortLoop(path.Back()) || loop_detector.EdgeInShortLoop(candidates.back().e_)) &&
             extensionChooser_->WeightCounterBased()) {
@@ -257,7 +257,7 @@ bool SimpleExtender::AddCandidates(BidirectionalPath& path, PathContainer* /*pat
     if (candidates.size() != 1)
         return false;
 
-    LoopDetector loop_detector(&path, cov_map_);
+    LoopDetector loop_detector(path, cov_map_);
     DEBUG("loop detecor");
     if (!investigate_short_loops_ &&
         (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_)) &&
@@ -277,7 +277,7 @@ bool MultiExtender::AddCandidates(BidirectionalPath& path, PathContainer* paths_
         return false;
 
     bool res = false;
-    LoopDetector loop_detector(&path, cov_map_);
+    LoopDetector loop_detector(path, cov_map_);
     DEBUG("loop detecor");
     if (!investigate_short_loops_ &&
         (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
