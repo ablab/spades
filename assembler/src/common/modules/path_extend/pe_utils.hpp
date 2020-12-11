@@ -9,8 +9,10 @@
 #define PE_UTILS_HPP_
 
 #include "assembly_graph/core/graph.hpp"
+#include "assembly_graph/paths/bidirectional_path.hpp"
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
 
+#include "adt/flat_map.hpp"
 #include "parallel_hashmap/phmap.h"
 
 namespace path_extend {
@@ -21,7 +23,7 @@ using namespace debruijn_graph;
 // For each edge output all paths  that _traverse_ this path. If path contains multiple instances - count them. Position of the edge is not reported.
 class GraphCoverageMap: public PathListener {
 public:
-    typedef BidirectionalPathMultiset MapDataT;
+    typedef adt::flat_map<BidirectionalPath*, size_t> MapDataT;
 
 private:
     const Graph& g_;
@@ -30,7 +32,7 @@ private:
     const MapDataT empty_;
 
     void EdgeAdded(EdgeId e, BidirectionalPath &path) {
-        edge_coverage_[e].insert(&path);
+        edge_coverage_[e][&path] += 1;
     }
 
     void EdgeRemoved(EdgeId e, BidirectionalPath &path) {
@@ -42,7 +44,10 @@ private:
         if (entry == iter->second.end()) {
             DEBUG("Error erasing path from coverage map");
         } else {
-            iter->second.erase(entry);
+            if (entry->second > 1)
+                entry->second -= 1;
+            else
+                iter->second.erase(entry);
         }
     }
 
@@ -118,11 +123,13 @@ public:
         if (entry == edge_coverage_.end())
             return 0;
 
-        return entry->second.count(path);
+        auto cov = entry->second.find(path);
+        return (cov == entry->second.end() ? 0 : cov->second);
     }
 
-    int GetCoverage(EdgeId e) const {
-        return (int) GetEdgePaths(e).size();
+    size_t GetCoverage(EdgeId e) const {
+        auto iter = edge_coverage_.find(e);
+        return (iter != edge_coverage_.end() ? iter->second.size() : 0);
     }
 
     bool IsCovered(EdgeId e) const {
@@ -138,8 +145,15 @@ public:
     }
 
     BidirectionalPathSet GetCoveringPaths(EdgeId e) const {
-        const auto &mapData = GetEdgePaths(e);
-        return BidirectionalPathSet(mapData.begin(), mapData.end());
+        BidirectionalPathSet res;
+        auto iter = edge_coverage_.find(e);
+        if (iter == edge_coverage_.end())
+            return res;
+
+        for (const auto &entry : iter->second)
+            res.insert(entry.first);
+
+        return res;
     }
 
     auto begin() const {

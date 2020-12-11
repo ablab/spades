@@ -65,22 +65,23 @@ void path_extend::TranscriptToGeneJoiner::Construct(const PathContainer &paths) 
     GraphCoverageMap edges_coverage(g_, paths);
 
     DEBUG("Union trees");
-    //For all edges in coverage map
-    for (auto iterator = edges_coverage.begin(); iterator != edges_coverage.end(); ++iterator) {
-        //Select a path covering an edge
-        EdgeId edge = iterator->first;
-        auto &edge_paths = iterator->second;
+    //  For all edges in coverage map
+    for (const auto &entry : edges_coverage) {
+        // Select a path covering an edge
+        EdgeId edge = entry.first;
+        auto &edge_paths = entry.second;
 
-        if (g_.length(edge) > min_edge_len_ && edge_paths.size() > 1) {
-            DEBUG("Long edge " << edge.int_id() << " Paths " << edge_paths.size());
-            //For all other paths covering this edge join then into single gene with the first path
-            for (auto it_edge = ++edge_paths.begin(); it_edge != edge_paths.end(); ++it_edge) {
-                size_t first = path_id_[*edge_paths.begin()];
-                size_t next = path_id_[*it_edge];
-                DEBUG("Edge " << edge.int_id() << " First " << first << " Next " << next);
+        if (g_.length(edge) <= min_edge_len_ || edge_paths.size() <= 1)
+            continue;
 
-                JoinTrees(first, next);
-            }
+        DEBUG("Long edge " << edge.int_id() << " Paths " << edge_paths.size());
+        // For all other paths covering this edge join then into single gene with the first path
+        for (auto it_edge = std::next(edge_paths.begin()); it_edge != edge_paths.end(); ++it_edge) {
+            size_t first = path_id_[edge_paths.begin()->first];
+            size_t next = path_id_[it_edge->first];
+            DEBUG("Edge " << edge.int_id() << " First " << first << " Next " << next);
+
+            JoinTrees(first, next);
         }
     }
 }
