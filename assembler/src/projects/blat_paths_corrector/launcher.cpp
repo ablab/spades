@@ -29,19 +29,19 @@ using namespace std;
 namespace {
 
 struct PathWithBorderEdgesIndexies {
-    GappedPath path;
+    SimpleBidirectionalPath path;
     size_t first_edge_index;
     size_t last_edge_index;
 };
 
 struct BackMappingInfo {
-    BidirectionalPath path;
+    unique_ptr<BidirectionalPath> path;
     size_t contig_start_pos; // inclusive
     size_t contig_end_pos;   // exclusive
     size_t drop_from_head;
     size_t drop_from_tail;
 
-    BackMappingInfo(BidirectionalPath path)
+    BackMappingInfo(unique_ptr<BidirectionalPath> path)
         : path(std::move(path))
         , contig_start_pos(0)
         , contig_end_pos(0)
@@ -50,7 +50,7 @@ struct BackMappingInfo {
     {}
 
     size_t LengthInNucls() const {
-        return path.Length() + path.g().k();
+        return path->Length() + path->g().k();
     }
 
     bool ShouldBeDropped() const {
@@ -88,14 +88,14 @@ public:
 
     pair<std::string, std::vector<PathWithBorderEdgesIndexies>> GetBestSequence() const;
 private:
-    pair<GappedPath, size_t> GetNextPath(size_t start_pos, size_t & adjacent_edges_connected) const;
+    pair<SimpleBidirectionalPath, size_t> GetNextPath(size_t start_pos, size_t & adjacent_edges_connected) const;
 
-    boost::optional<pair<GappedPath, size_t>> FindFiller(size_t start_pos, size_t & adjacent_edges_connected) const;
+    boost::optional<pair<SimpleBidirectionalPath, size_t>> FindFiller(size_t start_pos, size_t & adjacent_edges_connected) const;
 
-    GappedPath GetBestMachedPathUsingDistance(EdgeId start_edge, EdgeId end_edge, size_t distance, string const & ref) const;
-    GappedPath GetBestMachedPathUsingAligner(EdgeId start_edge, EdgeId end_edge, size_t distance, string const & ref) const;
+    SimpleBidirectionalPath GetBestMachedPathUsingDistance(EdgeId start_edge, EdgeId end_edge, size_t distance, string const & ref) const;
+    SimpleBidirectionalPath GetBestMachedPathUsingAligner(EdgeId start_edge, EdgeId end_edge, size_t distance, string const & ref) const;
 
-    GappedPath ConnectWithScaffolds(EdgeId start, EdgeId end) const;
+    SimpleBidirectionalPath ConnectWithScaffolds(EdgeId start, EdgeId end) const;
 
     EdgeId GetEdge(size_t pos) const {
         return path_info.edges[pos];
@@ -124,7 +124,7 @@ template<PathFiller filler_mode>
 std::list<BackMappingInfo> SequenceCorrector<filler_mode>::ConvertToBackMappingInfo(vector<PathWithBorderEdgesIndexies> const & paths) const {
     list<BackMappingInfo> mapping_info;
     for (size_t i = 0; i < paths.size(); ++i) {
-        BackMappingInfo info(BidirectionalPath(graph, paths[i].path));
+        BackMappingInfo info(BidirectionalPath::create(graph, paths[i].path));
         auto start_pos = GetStartPos(paths[i].first_edge_index);
         auto end_pos = GetEndPos(paths[i].last_edge_index);
         if (start_pos < 0)
@@ -171,7 +171,7 @@ std::string SequenceCorrector<filler_mode>::MakeSeq(list<BackMappingInfo> const 
         //                  << seq.substr(current_pos, path.contig_start_pos - current_pos) << "\n";
         cout << i << ": " << current_pos << " -> " << path.contig_start_pos << " -> " << path.contig_end_pos << " : " << path.contig_start_pos - current_pos << " -> "<< path.ResultLengthInNucls() << '\n';
         ss << seq.substr(current_pos, path.contig_start_pos - current_pos);
-        ss << seq_maker.MakeSequence(path.path).substr(path.drop_from_head, path.ResultLengthInNucls());
+        ss << seq_maker.MakeSequence(*path.path).substr(path.drop_from_head, path.ResultLengthInNucls());
         current_pos = path.contig_end_pos;
     }
     // common_fragments << seq.substr(current_pos);
@@ -235,8 +235,8 @@ pair<std::string, std::vector<PathWithBorderEdgesIndexies>> SequenceCorrector<fi
 }
 
 template<PathFiller filler_mode>
-pair<GappedPath, size_t> SequenceCorrector<filler_mode>::GetNextPath(size_t start_pos, size_t & adjacent_edges_connected) const {
-    GappedPath current_path;
+pair<SimpleBidirectionalPath, size_t> SequenceCorrector<filler_mode>::GetNextPath(size_t start_pos, size_t & adjacent_edges_connected) const {
+    SimpleBidirectionalPath current_path;
     current_path.PushBack(GetEdge(start_pos));
     while (start_pos + 1 < Size()) {
         auto path = FindFiller(start_pos, adjacent_edges_connected);
@@ -251,11 +251,11 @@ pair<GappedPath, size_t> SequenceCorrector<filler_mode>::GetNextPath(size_t star
 }
 
 template<PathFiller filler_mode>
-boost::optional<pair<GappedPath, size_t>> SequenceCorrector<filler_mode>::FindFiller(size_t start_pos, size_t & adjacent_edges_connected) const {
+boost::optional<pair<SimpleBidirectionalPath, size_t>> SequenceCorrector<filler_mode>::FindFiller(size_t start_pos, size_t & adjacent_edges_connected) const {
     size_t end_pos = start_pos + 1;
     auto start_edge = GetEdge(start_pos);
     for (; end_pos - start_pos <= params.max_steps_forward && end_pos < Size(); ++end_pos) {
-        GappedPath current_path;
+        SimpleBidirectionalPath current_path;
         auto end_edge  = GetEdge(end_pos);
 
         if (graph.EdgeStart(end_edge) == graph.EdgeEnd(start_edge) && GetStartPos(end_pos) + graph.k() == GetEndPos(start_pos)) {
@@ -286,7 +286,7 @@ boost::optional<pair<GappedPath, size_t>> SequenceCorrector<filler_mode>::FindFi
 }
 
 template<PathFiller filler_mode>
-GappedPath SequenceCorrector<filler_mode>::GetBestMachedPathUsingDistance(EdgeId start_edge, EdgeId end_edge, size_t distance, string const &) const {
+SimpleBidirectionalPath SequenceCorrector<filler_mode>::GetBestMachedPathUsingDistance(EdgeId start_edge, EdgeId end_edge, size_t distance, string const &) const {
     ScaffoldSequenceMaker seq_maker(graph);
     VertexId target_vertex = graph.EdgeStart(end_edge);
     VertexId start_vertex = graph.EdgeEnd(start_edge);
@@ -296,7 +296,7 @@ GappedPath SequenceCorrector<filler_mode>::GetBestMachedPathUsingDistance(EdgeId
     omnigraph::ProcessPaths(graph, min_len, max_len, start_vertex, target_vertex, path_storage);
     const auto& detected_paths = path_storage.paths();
     
-    GappedPath answer;
+    SimpleBidirectionalPath answer;
     vector<pair<size_t, size_t>> scores;
     if (distance > 0) {
         for (size_t i = 0; i < detected_paths.size(); ++i) {
@@ -321,7 +321,7 @@ GappedPath SequenceCorrector<filler_mode>::GetBestMachedPathUsingDistance(EdgeId
 }
 
 template<PathFiller filler_mode>
-GappedPath SequenceCorrector<filler_mode>::GetBestMachedPathUsingAligner(EdgeId start_edge, EdgeId end_edge, size_t distance, string const & ref) const {
+SimpleBidirectionalPath SequenceCorrector<filler_mode>::GetBestMachedPathUsingAligner(EdgeId start_edge, EdgeId end_edge, size_t distance, string const & ref) const {
     ScaffoldSequenceMaker seq_maker(graph);
     StripedSmithWaterman::Aligner aligner(1, 1, 1, 1);
     aligner.SetReferenceSequence(ref.data(), (int)ref.size());
@@ -333,15 +333,15 @@ GappedPath SequenceCorrector<filler_mode>::GetBestMachedPathUsingAligner(EdgeId 
     omnigraph::ProcessPaths(graph, min_len, max_len, start_vertex, target_vertex, path_storage);
     const auto& detected_paths = path_storage.paths();
     
-    GappedPath answer;
+    SimpleBidirectionalPath answer;
     vector<pair<size_t, size_t>> scores;
     if (distance > 0) {
         // #pragma omp parallel for num_threads(nthreads) schedule(dynamic)
         #pragma omp parallel for schedule(runtime)
         for (size_t i = 0; i < detected_paths.size(); ++i) {
             StripedSmithWaterman::Alignment alignment;
-            BidirectionalPath path(graph, detected_paths[i]);
-            auto query_seq = seq_maker.MakeSequence(path);
+            auto path = BidirectionalPath::create(graph, detected_paths[i]);
+            auto query_seq = seq_maker.MakeSequence(*path);
             StripedSmithWaterman::Filter filter(false, false, 0, uint8_t(1 + std::max(ref.size(), query_seq.size())));
             
             if (aligner.Align(query_seq.data(), filter, &alignment)) {
@@ -366,7 +366,7 @@ GappedPath SequenceCorrector<filler_mode>::GetBestMachedPathUsingAligner(EdgeId 
 }
 
 template<PathFiller filler_mode>
-GappedPath SequenceCorrector<filler_mode>::ConnectWithScaffolds(EdgeId start, EdgeId end) const {
+SimpleBidirectionalPath SequenceCorrector<filler_mode>::ConnectWithScaffolds(EdgeId start, EdgeId end) const {
     auto cover_start = scaffold_coverage_map.GetCoveringPaths(start);
     auto cover_end = scaffold_coverage_map.GetCoveringPaths(end);
     BidirectionalPathSet intersection;
@@ -374,7 +374,7 @@ GappedPath SequenceCorrector<filler_mode>::ConnectWithScaffolds(EdgeId start, Ed
         if (cover_end.count(p) > 0)
             intersection.insert(p);
     }
-    GappedPath answer;
+    SimpleBidirectionalPath answer;
     if (intersection.size() == 1) {
         auto connecting_scaffold = *intersection.begin();
         auto start_pos = connecting_scaffold->FindAll(start);
@@ -426,9 +426,9 @@ path_extend::PathContainer Launch(debruijn_graph::GraphPack const & gp,
         contig.seq = data.first;
         PathContainer result;
         for (auto const & path : data.second) {
-            auto p = make_unique<BidirectionalPath>(graph, std::move(path.path));
-            auto cp = make_unique<BidirectionalPath>(p->Conjugate());
-            result.AddPair(p.release(), cp.release());
+            auto p = BidirectionalPath::create(graph, std::move(path.path));
+            auto cp = BidirectionalPath::clone_conjugate(p);
+            result.AddPair(move(p), move(cp));
         }
 
         // #pragma omp critical

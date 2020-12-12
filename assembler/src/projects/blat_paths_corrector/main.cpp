@@ -85,11 +85,11 @@ void ReadScaffolds(PathContainer& scaffolds, Graph const & graph, std::string co
     size_t amount_of_paths;
     inp >> amount_of_paths;
     for (size_t i = 0; i < amount_of_paths; ++i) {
-        GappedPath gapped_path;
+        SimpleBidirectionalPath gapped_path;
         gapped_path.BinRead(inp);
-        auto path = make_unique<BidirectionalPath>(graph, std::move(gapped_path));
-        auto conj_path = make_unique<BidirectionalPath>(graph, std::move(path->Conjugate()));
-        scaffolds.AddPair(path.release(), conj_path.release());
+        auto path = BidirectionalPath::create(graph, std::move(gapped_path));
+        auto conj_path = BidirectionalPath::clone_conjugate(path);
+        scaffolds.AddPair(move(path), move(conj_path));
     }
 }
 
@@ -185,7 +185,7 @@ PathContainer GetUnique(PathContainer const & paths) {
     PathContainer ans;
     vector<unique_ptr<BidirectionalPath>> forward_paths;
     for (auto const & path : paths)
-        forward_paths.push_back(make_unique<BidirectionalPath>(path.second->g(), path.second->Conjugate()));
+        forward_paths.push_back(BidirectionalPath::clone_conjugate(path.second));
     std::sort(forward_paths.begin(), forward_paths.end(), [](unique_ptr<BidirectionalPath> const & lhs, unique_ptr<BidirectionalPath> const & rhs) {
         if (lhs->Size() != rhs->Size())
             return lhs->Size() < rhs->Size();
@@ -202,8 +202,8 @@ PathContainer GetUnique(PathContainer const & paths) {
     forward_paths.erase(std::unique(forward_paths.begin(), forward_paths.end(), [](auto const & lhs, auto const & rhs) { return *lhs == *rhs; }), forward_paths.end());
 
     for (auto & path : forward_paths) {
-        auto cpath = make_unique<BidirectionalPath>(path->g(), path->Conjugate());
-        ans.AddPair(path.release(), cpath.release());
+        auto cpath = BidirectionalPath::clone_conjugate(path);
+        ans.AddPair(move(path), move(cpath));
     }
     return ans;
 }

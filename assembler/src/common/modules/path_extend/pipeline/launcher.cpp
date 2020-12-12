@@ -635,10 +635,11 @@ void PathExtendLauncher::Launch() {
     auto paths = resolver.ExtendSeeds(seeds, composite_extender);
 
     std::ofstream rps(fs::append_path(cfg::get().output_saves, "raw_paths_save.rps"));
-    VERIFY(rps.is_open());
-    rps << paths.size();
-    for (auto const & x : paths)
-        x.first->BinWrite(rps);
+    if (rps.is_open()) {
+        rps << paths.size();
+        for (auto const & x : paths)
+            x.first->BinWrite(rps);
+    }
 
     DebugOutputPaths(paths, "raw_paths");
 
