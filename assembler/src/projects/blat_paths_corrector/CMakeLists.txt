@@ -12,6 +12,7 @@ add_executable(blat_paths_corrector
                main.cpp
                parser.cpp
                launcher.cpp
+               replacer.cpp
               )
 
 target_link_libraries(blat_paths_corrector graphio common_modules ${COMMON_LIBRARIES})

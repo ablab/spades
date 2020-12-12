@@ -5,6 +5,7 @@
 //***************************************************************************
 
 #include "common.hpp"
+#include "replacer.hpp"
 
 #include "utils/logger/logger.hpp"
 #include "utils/filesystem/path_helper.hpp"
@@ -32,35 +33,6 @@ struct PathWithBorderEdgesIndexies {
     SimpleBidirectionalPath path;
     size_t first_edge_index;
     size_t last_edge_index;
-};
-
-struct BackMappingInfo {
-    unique_ptr<BidirectionalPath> path;
-    size_t contig_start_pos; // inclusive
-    size_t contig_end_pos;   // exclusive
-    size_t drop_from_head;
-    size_t drop_from_tail;
-
-    BackMappingInfo(unique_ptr<BidirectionalPath> path)
-        : path(std::move(path))
-        , contig_start_pos(0)
-        , contig_end_pos(0)
-        , drop_from_head(0)
-        , drop_from_tail(0)
-    {}
-
-    size_t LengthInNucls() const {
-        return path->Length() + path->g().k();
-    }
-
-    bool ShouldBeDropped() const {
-        return LengthInNucls() <= drop_from_head + drop_from_tail;
-    }
-
-    size_t ResultLengthInNucls() const {
-        VERIFY_MSG(LengthInNucls() > drop_from_head + drop_from_tail, "LoL? LengthInNucls() = " << LengthInNucls() << ", drop_from_head = " << drop_from_head << ", drop_from_tail = " << drop_from_tail);
-        return LengthInNucls() - drop_from_head - drop_from_tail;
-    }
 };
 
 enum class PathFiller {
@@ -115,16 +87,15 @@ private:
         // return 0;
     }
 
-    std::string BackMappingDropNextPreffix(vector<PathWithBorderEdgesIndexies> const & paths) const;
-    std::list<BackMappingInfo> ConvertToBackMappingInfo(vector<PathWithBorderEdgesIndexies> const & paths) const;
-    std::string MakeSeq(list<BackMappingInfo> const & mapping_info) const;
+    std::list<ReplaceInfo> ConvertToReplaceInfo(vector<PathWithBorderEdgesIndexies> const & paths) const;
 };
 
 template<PathFiller filler_mode>
-std::list<BackMappingInfo> SequenceCorrector<filler_mode>::ConvertToBackMappingInfo(vector<PathWithBorderEdgesIndexies> const & paths) const {
-    list<BackMappingInfo> mapping_info;
+std::list<ReplaceInfo> SequenceCorrector<filler_mode>::ConvertToReplaceInfo(vector<PathWithBorderEdgesIndexies> const & paths) const {
+    list<ReplaceInfo> mapping_info;
+    ScaffoldSequenceMaker seq_maker(graph);
     for (size_t i = 0; i < paths.size(); ++i) {
-        BackMappingInfo info(BidirectionalPath::create(graph, paths[i].path));
+        ReplaceInfo info(seq_maker.MakeSequence(*BidirectionalPath::create(graph, paths[i].path)));
         auto start_pos = GetStartPos(paths[i].first_edge_index);
         auto end_pos = GetEndPos(paths[i].last_edge_index);
         if (start_pos < 0)
@@ -141,83 +112,6 @@ std::list<BackMappingInfo> SequenceCorrector<filler_mode>::ConvertToBackMappingI
 }
 
 template<PathFiller filler_mode>
-std::string SequenceCorrector<filler_mode>::MakeSeq(list<BackMappingInfo> const & mapping_info) const {
-    size_t current_pos = 0;
-    stringstream ss;
-    ScaffoldSequenceMaker seq_maker(graph);
-    // ofstream old_fragments("old_fragments.info");
-    // ofstream new_fragments("new_fragments.info");
-    // ofstream common_fragments("common_fragments.info");
-    size_t i = 0;
-    for (auto const & path : mapping_info) {
-        if (path.drop_from_head > 0)
-            WARN("The new path prefix with len=" << path.drop_from_head << " of " << path.LengthInNucls() << " would be dropped");
-        if (path.drop_from_tail > 0)
-            WARN("The new path suffix with len=" << path.drop_from_tail << " of " << path.LengthInNucls() << " would be dropped");
-
-        // VERIFY_MSG(path.ResultLengthInNucls() + path.contig_start_pos == path.contig_end_pos,
-        //     "??wtf?? or not??\n"
-        //     "path.contig_start_pos = " << path.contig_start_pos << "\n"
-        //     "path.contig_end_pos = " << path.contig_end_pos << "\n"
-        //     "path.ResultLengthInNucls() = " << path.ResultLengthInNucls() << "\n"
-        //     "diff = " << path.contig_end_pos - path.contig_start_pos << "\n"
-        // );
-        // ++i;
-        // old_fragments << '>' << i << "\n"
-        //               << seq.substr(path.contig_start_pos, path.ResultLengthInNucls()) << "\n";
-        // new_fragments << '>' << i << "\n"
-        //               << seq_maker.MakeSequence(path.path).substr(path.drop_from_head, path.ResultLengthInNucls()) << "\n";
-        // common_fragments << '>' << i << "\n"
-        //                  << seq.substr(current_pos, path.contig_start_pos - current_pos) << "\n";
-        cout << i << ": " << current_pos << " -> " << path.contig_start_pos << " -> " << path.contig_end_pos << " : " << path.contig_start_pos - current_pos << " -> "<< path.ResultLengthInNucls() << '\n';
-        ss << seq.substr(current_pos, path.contig_start_pos - current_pos);
-        ss << seq_maker.MakeSequence(*path.path).substr(path.drop_from_head, path.ResultLengthInNucls());
-        current_pos = path.contig_end_pos;
-    }
-    // common_fragments << seq.substr(current_pos);
-    ss << seq.substr(current_pos);
-    return ss.str();
-}
-
-template<PathFiller filler_mode>
-std::string SequenceCorrector<filler_mode>::BackMappingDropNextPreffix(vector<PathWithBorderEdgesIndexies> const & paths) const {
-    auto mapping_info = ConvertToBackMappingInfo(paths);
-    if (mapping_info.empty())
-        return seq;
-
-    auto current_path = mapping_info.begin();
-    size_t tail_drop = 0;
-    while (true) {
-        auto next_path = std::next(current_path);
-        if (next_path == mapping_info.end())
-            break;
-        if (next_path->contig_start_pos < current_path->contig_end_pos) {
-            tail_drop += current_path->contig_end_pos - next_path->contig_start_pos;
-            next_path->drop_from_head += current_path->contig_end_pos - next_path->contig_start_pos;
-            next_path->contig_start_pos = current_path->contig_end_pos;
-        }
-        if (next_path->ShouldBeDropped()) {
-            mapping_info.erase(next_path);
-            continue;
-        }
-        auto current_path_befor_shift = current_path;
-        ++current_path;
-        current_path_befor_shift->drop_from_tail += tail_drop;
-        if (current_path_befor_shift->ShouldBeDropped())
-            mapping_info.erase(current_path_befor_shift);
-        else
-            current_path_befor_shift->contig_end_pos -= tail_drop;
-        tail_drop = 0;
-    }
-    if (mapping_info.size() != paths.size()) {
-        size_t dropped_pats_cnt = paths.size() - mapping_info.size();
-        WARN("Oh no! Full " << dropped_pats_cnt << " path" << (dropped_pats_cnt != 1 ? "s" : "") << " would be dropped");
-    }
-
-    return MakeSeq(mapping_info);
-}
-
-template<PathFiller filler_mode>
 pair<std::string, std::vector<PathWithBorderEdgesIndexies>> SequenceCorrector<filler_mode>::GetBestSequence() const {
     std::vector<PathWithBorderEdgesIndexies> paths;
     size_t adjacent_edges_connected = 0;
@@ -231,7 +125,8 @@ pair<std::string, std::vector<PathWithBorderEdgesIndexies>> SequenceCorrector<fi
     }
     INFO("Made " << paths.size() << " path" << (paths.size() != 1 ? "s" : ""));
     INFO("Connected " << adjacent_edges_connected << " adjacent edges pair" << (adjacent_edges_connected == 1 ? "" : "s"));
-    return {BackMappingDropNextPreffix(paths), std::move(paths)};
+
+    return {Replace(seq, ConvertToReplaceInfo(paths)), std::move(paths)};
 }
 
 template<PathFiller filler_mode>
