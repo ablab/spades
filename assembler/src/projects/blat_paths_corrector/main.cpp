@@ -1,4 +1,5 @@
 #include "sequence_corrector.hpp"
+#include "contig_replacer.hpp"
 
 #include "common/toolchain/utils.hpp"
 #include "utils/segfault_handler.hpp"
@@ -20,21 +21,24 @@ int main(int argc, char *argv[]) {
         } action;
 
         auto cli = (
-            clipp::command("replace").set(action, Action::replace) | 
-            (
-                clipp::command("correct").set(action, Action::correct),
-                sequence_corrector::GetCLI()
-            )
+            (clipp::command("replace").set(action, Action::replace), contig_replacer::GetCLI()) |
+            (clipp::command("correct").set(action, Action::correct), sequence_corrector::GetCLI())
         );
 
-        if (!clipp::parse(argc, argv, cli)) {
-            std::cout << clipp::make_man_page(cli, argv[0]) << '\n';
+        auto result = clipp::parse(argc, argv, cli);
+        if (!result) {
+            if (result.begin() != result.end()) {
+                std::cerr << "Args parsed as: <arg, index>\n";
+                for (auto const & res : result)
+                    std::cerr << res.arg() << ' ' << res.index() << ' ' << '\n';
+            }
+            std::cerr << clipp::make_man_page(cli, argv[0]) << std::endl;
             return -1;
         }
 
         switch (action) {
         case Action::replace: 
-            return -1;
+            return contig_replacer::main(argc, argv);
         case Action::correct: 
             return sequence_corrector::main(argc, argv);
         }

@@ -5,6 +5,7 @@
 //***************************************************************************
 
 #include "common.hpp"
+#include "sequence_corrector.hpp"
 #include "blat_output_reader.hpp"
 #include "blat_output_postprocessing.hpp"
 
@@ -17,8 +18,6 @@
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/parallel/parallel_wrapper.hpp"
 #include "utils/filesystem/temporary.hpp"
-
-#include <clipp/clipp.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>

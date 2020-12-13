@@ -14,24 +14,18 @@ bool is_next_contig(string const & s) {
     return s[0] == '>';
 }
 
-pair<string, size_t> getNameAndLen(string const & s) {
+pair<string, string> getNameAndInfo(string const & s) {
     // s looks like:
     // >tig00000199 len=181991 reads=225 class=contig suggestRepeat=no suggestBubble=no suggestCircular=no
+    pair<string, string> name_and_info;
     auto name_end = s.find(' ', 1);
-    auto name = s.substr(1, name_end - 1); // skip '>';
+    if (name_end == string::npos)
+        name_end = s.size();
+    name_and_info.first = s.substr(1, name_end - 1); // skip '>';
 
-    std::string pattern = "len=";
-    auto len_start = s.find(pattern, name_end + 1);
-    if (len_start == std::string::npos)
-        return {move(name), 0};
-    size_t len_end = len_start;
-    while (len_end < s.size() && isdigit(s[len_end]))
-        ++len_end;
-    if (len_start == len_end)
-        return {move(name), 0};
-
-    auto len = stoull(s.substr(len_start, len_end - len_start));
-    return {move(name), len};
+    if (name_end + 1 < s.size())
+        name_and_info.second = s.substr(name_end + 1);
+    return name_and_info;
 }
 
 } // namespace
@@ -50,9 +44,7 @@ std::vector<SeqString> ReadContigs(std::string const & contigs_file) {
         if (is_next_contig(current_line)) {
             if (!current_seq.name.empty())
                 contigs.push_back(move(current_seq));
-            auto name_and_len = getNameAndLen(current_line);
-            current_seq.name = name_and_len.first;
-            current_seq.seq.reserve(name_and_len.second);
+            std::tie(current_seq.name, current_seq.info) = getNameAndInfo(current_line);
             continue;
         }
 

@@ -43,6 +43,7 @@ struct PathWithEdgePostions {
 
 struct SeqString {
     std::string name;
+    std::string info;
     std::string seq;
 };
 
