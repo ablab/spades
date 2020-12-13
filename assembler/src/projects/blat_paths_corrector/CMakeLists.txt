@@ -10,6 +10,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(blat_paths_corrector
                main.cpp
+               sequence_corrector.cpp
                parser.cpp
                launcher.cpp
                replacer.cpp
