@@ -1,3 +1,10 @@
+[![TeamCity Simple Build Status](http://chihua.cab.spbu.ru:3000/app/rest/builds/buildType:(id:SPAdesBasicTests_RunAll)/statusIcon)](http://chihua.cab.spbu.ru:3000/buildConfiguration/SPAdesBasicTests_RunAll?mode=builds)
+[![License](https://img.shields.io/badge/licence-GPLv2-blue)](https://www.gnu.org/licenses/old-licenses/gpl-2.0)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/ablab/spades)](https://github.com/ablab/spades/releases/)
+[![GitHub Downloads](https://img.shields.io/github/downloads/ablab/spades/total.svg?style=social&logo=github&label=Download)](https://github.com/ablab/spades/releases)
+
+
+
 <font size=20>__SPAdes 3.14.1 Manual__</font>
 
 
