@@ -84,23 +84,19 @@ simp
         enabled true
         main_iteration_only true
         max_bulge_length_coefficient    30.     ; max_bulge_length = max_bulge_length_coefficient * k
-        max_coverage			1000000.0
-        max_relative_coverage       0.5     ; bulge_cov < this * not_bulge_cov
-        max_delta           45
-        max_relative_delta		0.1
-    }
-    ; suspecies bulge remover:
-    subspecies_br
-    {   
-        enabled false
-        main_iteration_only true
-        max_bulge_length_coefficient    30.     ; max_bulge_length = max_bulge_length_coefficient * k
         max_coverage            1000000.0
-        max_relative_coverage       15     ; bulge_cov < this * not_bulge_cov
+        max_relative_coverage       0.5     ; bulge_cov < this * not_bulge_cov
         max_delta 45
-        max_relative_delta 0.2
+        max_relative_delta 0.1
         min_identity 0.7
     }
+
+    ; suspecies bulge remover:
+    subspecies_br
+    {
+        enabled false
+    }
+    
     ; complex bulge remover
     cbr
     {
