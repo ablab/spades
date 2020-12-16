@@ -1621,6 +1621,7 @@ int aling_fs(int argc, char* argv[]) {
             remove((cfg.output_dir + "/" + hmm.get()->name + ".nucs.fa").c_str());
         }
     }
+    INFO("Pathracer successfully finished! Thanks for flying us!");
     return 0;
 }
 
