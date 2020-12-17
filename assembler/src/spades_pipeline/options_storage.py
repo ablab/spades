@@ -85,6 +85,7 @@ LAST_STAGE = "last"
 first_command_line = None
 args = None
 
+original_dataset_data = None
 
 # get path to checkpoint stage file
 def get_stage_filename(stage_num, stage_short_name):

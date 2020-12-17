@@ -296,7 +296,8 @@ class PreprocessReadsStage(stage.Stage):
 
 def add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log,
                     bin_home, ext_python_modules_home, python_modules_home):
-    if support.dataset_has_interlaced_reads(dataset_data) or support.dataset_has_additional_contigs(dataset_data) \
-            or support.dataset_has_nxmate_reads(dataset_data):
+    if (support.dataset_has_interlaced_reads(options_storage.original_dataset_data) \
+            or support.dataset_has_additional_contigs(options_storage.original_dataset_data) \
+            or support.dataset_has_nxmate_reads(options_storage.original_dataset_data)):
         pipeline.add(PreprocessReadsStage(cfg, "preprocess", output_files, tmp_configs_dir,
-                                          dataset_data, log, bin_home, ext_python_modules_home, python_modules_home))
+                                          options_storage.original_dataset_data, log, bin_home, ext_python_modules_home, python_modules_home))

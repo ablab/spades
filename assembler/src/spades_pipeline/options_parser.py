@@ -1036,21 +1036,26 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
                 existing_dataset_data = pyyaml.load(open(processed_dataset_fpath))
             except pyyaml.YAMLError:
                 existing_dataset_data = None
+
+    options_storage.original_dataset_data = dataset_data
+    if args.dataset_yaml_filename:
+        try:
+            options_storage.original_dataset_data = pyyaml.load(open(args.dataset_yaml_filename))
+        except pyyaml.YAMLError:
+            _, exc, _ = sys.exc_info()
+            support.error(
+                    "exception caught while parsing YAML file (%s):\n" % args.dataset_yaml_filename + str(exc))
+        options_storage.original_dataset_data = support.relative2abs_paths(options_storage.original_dataset_data,
+                                                      os.path.dirname(args.dataset_yaml_filename))
+    else:
+        options_storage.original_dataset_data = support.correct_dataset(options_storage.original_dataset_data)
+        options_storage.original_dataset_data = support.relative2abs_paths(options_storage.original_dataset_data, os.getcwd())
+
     if existing_dataset_data is not None:
         dataset_data = existing_dataset_data
     else:
-        if args.dataset_yaml_filename:
-            try:
-                dataset_data = pyyaml.load(open(args.dataset_yaml_filename))
-            except pyyaml.YAMLError:
-                _, exc, _ = sys.exc_info()
-                support.error(
-                    "exception caught while parsing YAML file (%s):\n" % args.dataset_yaml_filename + str(exc))
-            dataset_data = support.relative2abs_paths(dataset_data,
-                                                      os.path.dirname(args.dataset_yaml_filename))
-        else:
-            dataset_data = support.correct_dataset(dataset_data)
-            dataset_data = support.relative2abs_paths(dataset_data, os.getcwd())
+        dataset_data = options_storage.original_dataset_data
+
     args.dataset_yaml_filename = processed_dataset_fpath
 
     support.check_dataset_reads(dataset_data, (args.only_assembler or args.rna), args.iontorrent, log)
