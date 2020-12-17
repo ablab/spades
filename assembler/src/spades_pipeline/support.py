@@ -18,6 +18,7 @@ import shutil
 import stat
 import sys
 import tempfile
+import traceback
 from distutils.version import LooseVersion
 from os.path import abspath, expanduser, join
 
@@ -141,7 +142,8 @@ def check_file_not_empty(input_filename, message="", log=None):
         if next(reads_iterator, None) is None:
             error("file is empty: %s (%s)" % (filename, message), log=log)
     except Exception as inst:
-        error(inst.args[0].format(FILE=filename), log=log)
+        error(inst.args[0].format(FILE=filename) + "\n\n" +
+              traceback.format_exc().format(FILE=filename), log=log)
 
 
 def check_dir_existence(input_dirname, message="", log=None):
@@ -688,7 +690,8 @@ def get_max_reads_length(reads_file, log, num_checked):
         max_reads_length = max(
             [len(rec) for rec in itertools.islice(SeqIO.parse(SeqIO.Open(reads_file, "r"), file_type), num_checked)])
     except Exception as inst:
-        error(inst.args[0].format(FILE=reads_file), log=log)
+        error(inst.args[0].format(FILE=reads_file) + "\n\n" +
+              traceback.format_exc().format(FILE=reads_file), log=log)
     else:
         log.info("%s: max reads length: %s" % (reads_file, str(max_reads_length)))
     return max_reads_length

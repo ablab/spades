@@ -108,7 +108,8 @@ def parse_fasta(handler):
     reader = Reader(handler)
     while not reader.EOF():
         rec_id = reader.readline().strip()
-        assert (rec_id[0] == '>')
+        if len(rec_id) < 1 or rec_id[0] != '>':
+            raise Exception("{FILE} is incorrect! Please check the correctness of fasta file!")
         rec_seq = reader.ReadUntill(lambda s: s.startswith(">"))
         yield SeqRecord(rec_seq, rec_id[1:])
 
@@ -117,10 +118,12 @@ def parse_fastq(handler):
     reader = Reader(handler)
     while not reader.EOF():
         rec_id = reader.readline().strip()
-        assert (rec_id[0] == '@')
+        if len(rec_id) < 1 or rec_id[0] != '@':
+            raise Exception("{FILE} is incorrect! Please check the correctness of fastq file!")
         rec_seq = reader.ReadUntill(lambda s: s.startswith("+"))
         tmp = reader.readline()
-        assert (tmp[0] == '+')
+        if len(tmp) < 1 or (tmp[0] != '+'):
+            raise Exception("{FILE} is incorrect! Please check the correctness of fastq file!")
         rec_qual = reader.ReadUntillFill(len(rec_seq))
         yield SeqRecord(rec_seq, rec_id[1:], rec_qual)
 
