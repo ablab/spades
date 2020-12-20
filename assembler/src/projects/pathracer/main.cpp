@@ -920,6 +920,7 @@ void TraceHMM(const hmmer::HMM &hmm,
 
         INFO("Extracting top paths");
         auto top_paths = result.top_k(&cached_context, top);
+        INFO("Total " << top_paths.size() << " paths extracted");
         bool x_as_m_in_alignment = fees.is_proteomic();
         if (!top_paths.empty()) {
             INFO("Best score in the current component: " << result.best_score());
@@ -1402,6 +1403,7 @@ int aling_fs(int argc, char* argv[]) {
 
     auto hmms = ParseHMMFile(cfg.hmmfile);
     auto all_seqs = read_fasta(cfg.sequence_file);
+    INFO("Total " << all_seqs.size() << " input sequences");
     std::vector<std::pair<std::string, std::string>> seqs;
 
     std::unordered_set<std::string> allowed_seqs(cfg.sequences.cbegin(), cfg.sequences.cend());
@@ -1519,7 +1521,7 @@ int aling_fs(int argc, char* argv[]) {
 
             INFO("Extracting top paths");
             auto top_paths = result.top_k(&caacc, cfg.top);
-
+            INFO("Total " << top_paths.size() << " paths extracted");
             bool x_as_m_in_alignment = fees.is_proteomic();
             if (!top_paths.empty()) {
                 INFO("Best score in the current component: " << result.best_score());
