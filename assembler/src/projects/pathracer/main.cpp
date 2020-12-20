@@ -108,6 +108,7 @@ struct PathracerConfig {
     double minimal_match_length = 0.9;
     size_t max_insertion_length = 30;
     double indel_rate = 0;
+    bool quiet = false;
 
     hmmer::hmmer_cfg hcfg;
 };
@@ -140,6 +141,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       (option("--threads", "-t") & integer("NTHREADS", cfg.threads)) % "the number of parallel threads [default: 16]",
       (option("--memory", "-m") & integer("MEMORY", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
       (option("--max-size") & integer("SIZE", cfg.max_size)) % "maximal component size to consider [default: INF]",
+      (cfg.quiet << option("--quiet", "-q")) % "be quiet, do not output anything to the console",
       "Query type:" %
       one_of(option("--hmm").set(cfg.mode, Mode::hmm) % "match against HMM(s) [default]",
              option("--nt").set(cfg.mode, Mode::nucl) % "match against nucleotide string(s)",
@@ -1124,7 +1126,7 @@ int pathracer_main(int argc, char* argv[]) {
     process_cmdline(argc, argv, cfg);
 
     int status = mkdir(cfg.output_dir.c_str(), 0775);
-    create_console_logger(cfg.output_dir + "/pathracer.log");
+    create_console_logger(cfg.output_dir + "/pathracer.log", cfg.quiet);
 
     if (status != 0) {
         if (errno == EEXIST) {
@@ -1257,6 +1259,7 @@ struct PathracerSeqFsConfig {
 
     hmmer::hmmer_cfg hcfg;
     bool exhaustive = false;
+    bool quiet = false;
 };
 
 void process_cmdline_seq_fs(int argc, char **argv, PathracerSeqFsConfig &cfg) {
@@ -1280,26 +1283,7 @@ void process_cmdline_seq_fs(int argc, char **argv, PathracerSeqFsConfig &cfg) {
       (option("--queries") & values("queries", cfg.queries)) % "queries names to lookup [default: all queries from input query file]",
       cfg.exhaustive << option("--exhaustive") % "run in exhaustive mode, disable HMM filter",
       (option("--sequences") & values("sequences", cfg.sequences)) % "sequence IDs to process [default: all input sequences]",
-      // "Query type:" %
-      // one_of(option("--hmm").set(cfg.mode, Mode::hmm) % "match against HMM(s) [default]",
-      //        option("--nt").set(cfg.mode, Mode::nucl) % "match against nucleotide string(s)",
-      //        option("--aa").set(cfg.mode, Mode::aa) % "match agains amino acid string(s)"),
-      // "Seeding options:" % (
-      //     (option("--edges") & values("edges", cfg.edges)) % "match around particular edges",
-      //     "Seeding mode:" %
-      //     one_of(option("--seed-edges").set(cfg.seed_mode, SeedMode::edges) % "use graph edges as seeds",
-      //            option("--seed-scaffolds").set(cfg.seed_mode, SeedMode::scaffolds) % "use scaffolds paths as seeds",
-      //            option("--seed-edges-scaffolds").set(cfg.seed_mode, SeedMode::edges_scaffolds) % "use edges AND scaffolds paths as seeds [default]",
-      //            option("--seed-exhaustive").set(cfg.seed_mode, SeedMode::exhaustive) % "exhaustive mode, use ALL edges",
-      //            option("--seed-edges-1-by-1").set(cfg.seed_mode, SeedMode::edges_one_by_one) % "use edges as seeds (1 by 1)",
-      //            option("--seed-scaffolds-1-by-1").set(cfg.seed_mode, SeedMode::scaffolds_one_by_one) % "use scaffolds paths as seeds (1 by 1)")
-      // ),
-      // "Control of the output:" % (
-      //     cfg.debug << option("--debug") % "enable extensive debug output",
-      //     cfg.draw  << option("--draw")  % "draw pictures around the interesting edges",
-      //     cfg.rescore  << option("--rescore")  % "rescore paths via HMMer",
-      //     cfg.annotate_graph << option("--annotate-graph") % "emit paths in GFA graph"
-      // ),
+      (cfg.quiet << option("--quiet", "-q")) % "be quiet, do not output anything to the console",
       "HMMER options (used for seeding and rescoring):" % (
           cfg.hcfg.acc     << option("--acc")          % "prefer accessions over names in output",
           cfg.hcfg.noali   << option("--noali")        % "don't output alignments, so output is smaller",
@@ -1398,10 +1382,7 @@ int aling_fs(int argc, char* argv[]) {
     srandom(42);
 
     int status = mkdir(cfg.output_dir.c_str(), 0775);
-    bool no_log = false;
-    if (!no_log) {
-        create_console_logger(cfg.output_dir + "/pathracer-seq-fs.log");
-    }
+    create_console_logger(cfg.output_dir + "/pathracer-seq-fs.log", cfg.quiet);
 
     if (status != 0) {
         if (errno == EEXIST) {

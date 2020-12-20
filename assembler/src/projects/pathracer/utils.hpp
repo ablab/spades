@@ -186,14 +186,15 @@ IntType int_max_binsearch(const Pred &pred, IntType surely_true, IntType surely_
     return surely_true;
 }
 
-inline void create_console_logger(const std::string &filename = "") {
+inline void create_console_logger(const std::string &filename = "",
+                                  bool quiet = false) {
     using namespace logging;
 
     logger *lg = create_logger("");
-    lg->add_writer(std::make_shared<mutex_writer>(std::make_shared<console_writer_thread>()));
-    if (filename != "") {
+    if (!quiet)
+        lg->add_writer(std::make_shared<mutex_writer>(std::make_shared<console_writer_thread>()));
+    if (filename != "")
         lg->add_writer(std::make_shared<mutex_writer>(std::make_shared<file_writer_thread>(filename)));
-    }
     attach_logger(lg);
 }
 
