@@ -173,6 +173,9 @@ ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::GraphPack &gp,
         }
     }
 
+    // Setup E-value search space size
+    hcfg.Z = 3 * broken_scaffolds.size();
+
 #   pragma omp parallel for
     for (size_t i = 0; i < hmms.size(); ++i) {
         ContigAlnInfo local_res;
