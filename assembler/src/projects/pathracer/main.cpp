@@ -1458,7 +1458,7 @@ int aling_fs(int argc, char* argv[]) {
             const auto &id = seqs[j].first;
             const auto &seq = seqs[j].second;
 
-            matcher.reset();
+            matcher.reset_top_hits();
 
             for (size_t shift = 0; shift < 3; ++shift) {
                 std::string ref = std::to_string(j) + std::string("/") + std::to_string(shift);
