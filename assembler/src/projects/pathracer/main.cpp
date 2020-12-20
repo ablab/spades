@@ -1267,19 +1267,16 @@ void process_cmdline_seq_fs(int argc, char **argv, PathracerSeqFsConfig &cfg) {
 
   auto cli = (
       cfg.hmmfile    << value("input HMM file"),  // TODO support sequence mode
-      // cfg.load_from  << value("load from"),
       cfg.sequence_file  << value("input sequence file"),
       required("--output", "-o") & value("output directory", cfg.output_dir)    % "output directory",
       (option("--global").set(cfg.local, false) % "perform global-local (aka glocal) HMM matching [default]") |
       (cfg.local << option("--local") % "perform local-local HMM matching"),
-      // (option("--length", "-l") & integer("value", cfg.minimal_match_length)) % "minimal length of resultant matched sequence; if <=1 then to be multiplied on aligned HMM length [default: 0.9]",
       (option("--indel-rate", "-r") & value("value", cfg.indel_rate)) % "expected rate of nucleotides indels in graph edges [default: 0.05]",
       (option("--top") & integer("N", cfg.top)) % "extract top N paths [default: 100]",
       (option("--max-fs") & integer("MAX #FS", cfg.max_fs)) % "maximal allowed number of frameshifts in a reported sequence [default: 10]",
       (option("--threads", "-t") & integer("NTHREADS", cfg.threads)) % "the number of parallel threads [default: 16]",
       (option("--memory", "-m") & integer("MEMORY", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
       (option("--cutoff") & value("CUTOFF", cfg.cutoff)) % "bitscore cutoff for reported match; if <= 1 then to be multiplied on GA HMM cutoff [default: 0.7]",
-      // (option("--max-size") & integer("SIZE", cfg.max_size)) % "maximal component size to consider [default: INF]",
       (option("--queries") & values("queries", cfg.queries)) % "queries names to lookup [default: all queries from input query file]",
       cfg.exhaustive << option("--exhaustive") % "run in exhaustive mode, disable HMM filter",
       (option("--sequences") & values("sequences", cfg.sequences)) % "sequence IDs to process [default: all input sequences]",
@@ -1308,15 +1305,11 @@ void process_cmdline_seq_fs(int argc, char **argv, PathracerSeqFsConfig &cfg) {
           (option("--F3") & number("value", cfg.hcfg.F3)) % "Stage 3 (Fwd) threshold: promote hits w/ P <= F3"
       ),
       "Developer options:" % (
-          // cfg.parallel_component_processing << option("--parallel-components") % "process connected components of neighborhood subgraph in parallel [default: false]",
           (option("--max-insertion-length") & integer("x", cfg.max_insertion_length)) % "maximal allowed number of successive I-emissions [default: 30]",
           (option("--expand-coef") & number("value", cfg.expand_coef)) % "overhang expansion coefficient for neighborhood search [default: 2]",
           (option("--expand-const") & integer("value", cfg.expand_const)) % "const addition to overhang values for neighborhood search [default: 20]",
           (option("--no-top-score-filter").set(cfg.state_limits_coef, size_t(100500))) % "disable top score Event Graph vertices filter [default: false]",
           option("--no-fast-forward").set(cfg.use_experimental_i_loop_processing, 0) % "disable fast forward in I-loops processing [default: false]"//,
-          // cfg.disable_depth_filter << option("--disable-depth-filter") % "disable depth filter",  // TODO restore this option
-          // (option("--known-sequences") & value("filename", cfg.known_sequences)) % "FASTA file with known sequnces that should be definitely found",
-          // cfg.export_event_graph << option("--export-event-graph") % "export event graph in cereal format"
       )
   );
 
@@ -1340,6 +1333,7 @@ float max_bitscore(const std::string &seq, hmmer::HMMMatcher &matcher) {
             bitscore = std::max(bitscore, domain.bitscore());
         }
     }
+
     return bitscore;
 }
 
@@ -1412,14 +1406,13 @@ int aling_fs(int argc, char* argv[]) {
 
     std::unordered_set<std::string> allowed_seqs(cfg.sequences.cbegin(), cfg.sequences.cend());
     for (const auto &kv : all_seqs) {
-        if (!allowed_seqs.empty() && !allowed_seqs.count(kv.first)) {
+        if (!allowed_seqs.empty() && !allowed_seqs.count(kv.first))
             continue;
-        }
+
         seqs.push_back(kv);
         std::string rc = rev_comp(kv.second);
-        if (rc != kv.second) {
+        if (rc != kv.second)
             seqs.push_back({kv.first + "'", std::move(rc)});
-        }
     }
 
     std::unordered_set<std::string> queries(cfg.queries.cbegin(), cfg.queries.cend());
@@ -1430,9 +1423,8 @@ int aling_fs(int argc, char* argv[]) {
         const auto &hmm = hmms[i];
         const P7_HMM *p7hmm = hmm.get();
 
-        if (!queries.empty() && !queries.count(p7hmm->name)) {
+        if (!queries.empty() && !queries.count(p7hmm->name))
             continue;
-        }
 
         auto fees = hmm::fees_from_hmm(p7hmm, hmm.abc());
         VERIFY(fees.is_proteomic());
@@ -1498,15 +1490,14 @@ int aling_fs(int argc, char* argv[]) {
             }
 
             if (cfg.exhaustive) {
-                for (size_t i = 0; i < seq.size(); ++i) {
+                for (size_t i = 0; i < seq.size(); ++i)
                     cursors.push_back(StringCursor(i));
-                }
             }
 
-            if (!cursors.size()) {
+            if (!cursors.size())
                 continue;
-            }
-            INFO("Sequence: " << id);
+
+            INFO("Sequence: " << id << ", seed hits: " << overs.size());
 
             std::unordered_set<StringCursor> cursor_set(cursors.cbegin(), cursors.cend());
 
@@ -1569,18 +1560,17 @@ int aling_fs(int argc, char* argv[]) {
                 double cutoff = cfg.cutoff <= 1.0 ? cfg.cutoff * p7hmm->cutoff[cfg.local ? p7_GA2 : p7_GA1] : cfg.cutoff;  // FIXME check global and local
                 int nindels = subseqs.size() - 1;
                 VERIFY(nindels >= 0);
-                if (nindels > cfg.max_fs) {
+                if (nindels > cfg.max_fs)
                     continue;
-                }
 
                 if (cfg.cutoff == -1.0) {  // Auto cutoff
                     const double coef = 15.0;
                     double alpha = static_cast<double>(nindels) / p7hmm->M * coef;
                     cutoff = (1 - alpha) * p7hmm->cutoff[cfg.local ? p7_GA2 : p7_GA1];  // FIXME check global and local
                 }
-                if (bitscore < cutoff) {
+
+                if (bitscore < cutoff)
                     continue;
-                }
 
                 std::stringstream header;
                 // FIXME report PartialScore correspondent to the currunt much rather than just maximal partial score
@@ -1602,6 +1592,7 @@ int aling_fs(int argc, char* argv[]) {
             remove((cfg.output_dir + "/" + hmm.get()->name + ".nucs.fa").c_str());
         }
     }
+    
     INFO("Pathracer successfully finished! Thanks for flying us!");
     return 0;
 }
