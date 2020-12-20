@@ -157,6 +157,10 @@ HMMMatcher::pipeline_create(const hmmer_cfg &cfg, int M_hint, int L_hint, int lo
     /* Configure search space sizes for E value calculations  */
     pli->Z       = pli->domZ       = 0.0;
     pli->Z_setby = pli->domZ_setby = p7_ZSETBY_NTARGETS;
+    if (cfg.Z > 0) {
+        pli->Z = pli->domZ = cfg.Z;
+        pli->Z_setby = pli->domZ_setby = p7_ZSETBY_OPTION;
+    }
 
     /* Configure acceleration pipeline thresholds */
     pli->do_max        = FALSE;

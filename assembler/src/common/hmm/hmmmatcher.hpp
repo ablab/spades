@@ -24,6 +24,7 @@ struct hmmer_cfg {
     double incE; double incT;
     double incdomE; double incdomT;
     bool cut_ga; bool cut_nc; bool cut_tc;
+    size_t Z;
     bool max; double F1; double F2; double F3; bool nobias;
 
     hmmer_cfg()
@@ -31,6 +32,7 @@ struct hmmer_cfg {
               E(10.0), T(0), domE(10.0), domT(0),
               incE(0.01), incT(0.0), incdomE(0.01), incdomT(0),
               cut_ga(false), cut_nc(false), cut_tc(false),
+              Z(0),
               max(false), F1(0.02), F2(1e-3), F3(1e-5), nobias(false)
     {}
 };
