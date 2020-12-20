@@ -1579,10 +1579,8 @@ int aling_fs(int argc, char* argv[]) {
                 header << ">Score=" << info.score << "|Bitscore=" << bitscore << "|PartialBitscore=" << max_subscore << "|Seq=" << id << "|Position=" << info.pos << "|Frameshifts=" << nindels << "|Alignment=" << info.alignment << '\n';
                 o_seqs << header.str();
                 io::WriteWrapped(info.seq, o_seqs);
-                o_seqs.flush();
                 o_nucs << header.str();
                 io::WriteWrapped(info.nuc_seq, o_nucs);
-                o_nucs.flush();
                 at_least_one_match_found = true;
             }
         }
