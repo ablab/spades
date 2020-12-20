@@ -1441,8 +1441,6 @@ int aling_fs(int argc, char* argv[]) {
         }
     }
 
-    hmmer::hmmer_cfg hcfg;
-
     std::unordered_set<std::string> queries(cfg.queries.cbegin(), cfg.queries.cend());
 
     omp_set_num_threads(cfg.threads);
@@ -1478,7 +1476,9 @@ int aling_fs(int argc, char* argv[]) {
         std::ofstream o_nucs(cfg.output_dir + "/" + hmm.get()->name + ".nucs.fa");
         bool at_least_one_match_found = false;
 
-        hmmer::HMMMatcher matcher(hmm, hcfg);
+        // Set proper search space
+        cfg.hcfg.Z = 3 * seqs.size();
+        hmmer::HMMMatcher matcher(hmm, cfg.hcfg);
         for (size_t j = 0; j < seqs.size(); ++j) {
             const auto &id = seqs[j].first;
             const auto &seq = seqs[j].second;
