@@ -525,7 +525,7 @@ void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp,
                         << "Path is " << (p.IsCircular() ? "circular" : "linear") << "\n";
             OutputComponent(&paths.first, component_id, ordering_id);
             std::string outputstring = seq_maker.MakeSequence(p);
-            oss.SetCluster(component_id, ordering_id, vec.size());
+            oss.SetCluster(component_id, ordering_id, unsigned(vec.size()));
             oss << outputstring;
             ordering_id++;
         }
