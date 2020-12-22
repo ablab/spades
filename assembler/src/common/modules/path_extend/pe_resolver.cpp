@@ -85,7 +85,8 @@ void PathExtendResolver::AddUncoveredEdges(PathContainer &paths, GraphCoverageMa
         if (coverageMap.IsCovered(e))
             continue;
 
-        AddPath(paths, BidirectionalPath::create(g_, e), coverageMap);
+        CreatePath(paths, coverageMap,
+                   g_, e);
     }
 }
 

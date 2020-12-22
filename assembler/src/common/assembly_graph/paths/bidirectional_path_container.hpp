@@ -133,6 +133,12 @@ public:
         return Add(BidirectionalPath::create(std::forward<Args>(args)...));
     }
 
+    template<typename... Args>
+    BidirectionalPath&
+    Create(Args&&... args) {
+        return Add(BidirectionalPath::create(std::forward<Args>(args)...)).first;
+    }
+
     void SortByLength(bool desc = true) {
         std::stable_sort(data_.begin(), data_.end(), [=](const PathPair& p1, const PathPair& p2) {
             if (p1.first->Empty() || p2.first->Empty() || p1.first->Length() != p2.first->Length()) {

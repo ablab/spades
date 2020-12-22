@@ -134,20 +134,20 @@ void path_extend::ScaffoldBreaker::SplitPath(const BidirectionalPath &path, Path
     size_t i = 0;
 
     while (i < path.Size()) {
-        auto p = BidirectionalPath::create(path.graph(), path[i]);
+        auto &p = result.Create(path.graph(), path[i]);
         ++i;
 
-        while (i < path.Size() && (path.GapAt(i).OverlapAfterTrim(path.graph().k()) >= min_overlap_ || path.GapAt(i).gap_seq)) {
-            p->PushBack(path[i], path.GapAt(i));
+        while (i < path.Size() &&
+               (path.GapAt(i).OverlapAfterTrim(path.graph().k()) >= min_overlap_ ||
+                path.GapAt(i).gap_seq)) {
+            p.PushBack(path[i], path.GapAt(i));
             ++i;
         }
 
         if (i < path.Size()) {
             DEBUG("split path " << i << " gap " << path.GapAt(i).gap);
-            p->PrintDEBUG();
+            p.PrintDEBUG();
         }
-
-        result.Add(std::move(p));
     }
 }
 

@@ -27,10 +27,11 @@ inline void SubscribeCoverageMap(BidirectionalPath &path, GraphCoverageMap &cove
     }
 }
 
-inline BidirectionalPath& AddPath(PathContainer &paths,
-                                  const BidirectionalPath &path,
-                                  GraphCoverageMap &coverage_map) {
-    auto p = paths.CreatePair(path);
+template<typename... Args>
+inline BidirectionalPath& CreatePath(PathContainer &paths,
+                                     GraphCoverageMap &coverage_map,
+                                     Args&&... args) {
+    auto p = paths.CreatePair(std::forward<Args>(args)...);
 
     SubscribeCoverageMap(p.first, coverage_map);
     SubscribeCoverageMap(p.second, coverage_map);

@@ -258,7 +258,8 @@ void PathSplitter::SplitPath(BidirectionalPath * const p, const std::set<size_t>
             continue;
         if (split_pos == p->Size())
             break;
-        AddPath(paths_, p->SubPath(start_pos, split_pos), coverage_map_);
+        CreatePath(paths_, coverage_map_,
+                   p->SubPath(start_pos, split_pos));
         start_pos = split_pos;
     }
     PopFront(p, start_pos);
@@ -269,8 +270,8 @@ void PathSplitter::Split() {
     for (const auto &entry : paths_)
         tmp_paths.emplace_back(entry.first.get(), entry.second.get());
     for (auto & path_pair : tmp_paths) {
-        SplitPath(path_pair.first, GatherAllSplits(*path_pair.first,
-                                                   *path_pair.second));
+        SplitPath(path_pair.first,
+                  GatherAllSplits(*path_pair.first, *path_pair.second));
     }
 }
 

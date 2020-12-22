@@ -57,7 +57,8 @@ void CompositeExtender::GrowAllPaths(PathContainer& paths, PathContainer& result
         }
 
         if (!cover_map_.IsCovered(*paths.Get(i))) {
-            BidirectionalPath &path = AddPath(result, *paths.Get(i), cover_map_);
+            BidirectionalPath &path = CreatePath(result, cover_map_,
+                                                 *paths.Get(i));
 
             size_t count_trying = 0;
             size_t current_path_len = 0;
