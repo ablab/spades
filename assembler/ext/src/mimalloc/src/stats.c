@@ -395,7 +395,7 @@ size_t mi_stats_total_mem() mi_attr_noexcept {
   mi_stat_add(&total, &_mi_stats_main.normal, 1);
   mi_stat_add(&total, &_mi_stats_main.huge, 1);
   mi_stat_add(&total, &_mi_stats_main.giant, 1);
-  return total.current;
+  return total.current < 0 ? 0 : total.current;
 }
 
 // ----------------------------------------------------------------
