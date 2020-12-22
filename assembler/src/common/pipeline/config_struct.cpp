@@ -725,7 +725,6 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
 
     load(cfg.use_additional_contigs, pt, "use_additional_contigs");
     load(cfg.additional_contigs, pt, "additional_contigs");
-    INFO("Additional contigs is " << cfg.additional_contigs);
 
     load(cfg.rr_enable, pt, "rr_enable");
 
@@ -806,7 +805,6 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     load(cfg.info_printers, pt, "info_printers", complete);
 
     if (save_gp) {
-        INFO("Graph pack will be saved before repeat resolution");
         cfg.info_printers[info_printer_pos::before_repeat_resolution].save_graph_pack = true;
     }
 
