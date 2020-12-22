@@ -1448,7 +1448,7 @@ void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t value_bits,
 		nslots >>= 1;
 	}
 
-	fprintf(stderr, "%llu %llu %llu\n", key_bits, key_remainder_bits, value_bits);
+	// fprintf(stderr, "%llu %llu %llu\n", key_bits, key_remainder_bits, value_bits);
 	bits_per_slot = key_remainder_bits + value_bits;
 	assert (BITS_PER_SLOT == 0 || BITS_PER_SLOT == bits_per_slot);
 	assert(bits_per_slot > 1);
@@ -1474,9 +1474,9 @@ void qf_init(QF *qf, uint64_t nslots, uint64_t key_bits, uint64_t value_bits,
 		qf->metadata->bits_per_slot = bits_per_slot;
 
 		qf->metadata->range = qf->metadata->nslots;
-		fprintf(stderr, "nslots: %llu\n", qf->metadata->range);
+		// fprintf(stderr, "nslots: %llu\n", qf->metadata->range);
 		qf->metadata->range <<= qf->metadata->bits_per_slot;
-        fprintf(stderr, "bits per slot: %llu range: %016llx\n", qf->metadata->bits_per_slot, (uint64_t)qf->metadata->range);
+        // fprintf(stderr, "bits per slot: %llu range: %016llx\n", qf->metadata->bits_per_slot, (uint64_t)qf->metadata->range);
 		qf->metadata->nblocks = (qf->metadata->xnslots + SLOTS_PER_BLOCK - 1) /
 			SLOTS_PER_BLOCK;
 		qf->metadata->nelts = 0;
