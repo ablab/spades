@@ -30,20 +30,20 @@ inline void SubscribeCoverageMap(BidirectionalPath &path, GraphCoverageMap &cove
 inline BidirectionalPath& AddPath(PathContainer &paths,
                                   const BidirectionalPath &path,
                                   GraphCoverageMap &coverage_map) {
-    auto p = BidirectionalPath::clone(path);
-    auto conj_p = (path.GetConjPath() ? BidirectionalPath::clone(*path.GetConjPath()) : BidirectionalPath::clone_conjugate(path));
-    SubscribeCoverageMap(*p, coverage_map);
-    SubscribeCoverageMap(*conj_p, coverage_map);
-    return paths.AddPair(std::move(p), std::move(conj_p)).first;
+    auto p = paths.CreatePair(path);
+
+    SubscribeCoverageMap(p.first, coverage_map);
+    SubscribeCoverageMap(p.second, coverage_map);
+    return p.first;
 }
 
 inline BidirectionalPath& AddPath(PathContainer &paths,
-                                  std::unique_ptr<BidirectionalPath> p,
+                                  std::unique_ptr<BidirectionalPath> path,
                                   GraphCoverageMap &coverage_map) {
-    auto conj_p = BidirectionalPath::clone_conjugate(p);
-    SubscribeCoverageMap(*p, coverage_map);
-    SubscribeCoverageMap(*conj_p, coverage_map);
-    return paths.AddPair(std::move(p), std::move(conj_p)).first;
+    auto p = paths.Add(std::move(path));
+    SubscribeCoverageMap(p.first, coverage_map);
+    SubscribeCoverageMap(p.second, coverage_map);
+    return p.first;
 }
 
 class ShortLoopEstimator {
