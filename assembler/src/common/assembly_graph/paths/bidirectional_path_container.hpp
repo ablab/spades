@@ -122,7 +122,8 @@ public:
 
     std::pair<BidirectionalPath&, BidirectionalPath&>
     Add(std::unique_ptr<BidirectionalPath> p) {
-        auto cp = BidirectionalPath::clone_conjugate(p);
+        auto cp = (p->GetConjPath() ?
+                   BidirectionalPath::clone(*p->GetConjPath()) : BidirectionalPath::clone_conjugate(p));
         return AddPair(std::move(p), std::move(cp));
     }
 
