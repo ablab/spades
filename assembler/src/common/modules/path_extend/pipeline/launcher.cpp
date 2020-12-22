@@ -151,20 +151,20 @@ void PathExtendLauncher::CountMisassembliesWithReference(const PathContainer &pa
 
     size_t total_mis = 0, gap_mis = 0;
     for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-        BidirectionalPath *path = iter.get();
-        auto map_res = genome_checker.CountMisassemblies(*path);
+        const BidirectionalPath &path = *iter.get();
+        auto map_res = genome_checker.CountMisassemblies(path);
         if (map_res.misassemblies > 0) {
             INFO ("there are " << map_res.misassemblies << " misassemblies in path: ");
-            path->PrintINFO();
+            path.PrintINFO();
             total_mis += map_res.misassemblies;
         }
         if (map_res.wrong_gap_size > 0) {
             INFO ("there are " << map_res.wrong_gap_size << " wrong gaps in path. ");
-            path->PrintDEBUG();
+            path.PrintDEBUG();
             gap_mis += map_res.wrong_gap_size;
         }
-        genome_checker.CheckPathEnd(*path);
-        genome_checker.CheckPathEnd(path->Conjugate());
+        genome_checker.CheckPathEnd(path);
+        genome_checker.CheckPathEnd(path.Conjugate());
     }
     INFO ("In total found " << total_mis << " misassemblies " << " and " << gap_mis << " gaps.");
 }

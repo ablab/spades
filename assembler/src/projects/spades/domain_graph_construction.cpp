@@ -185,14 +185,14 @@ private:
         }
     };
 
-    std::pair<int,int> SearchForSubvector(path_extend::BidirectionalPath *scaffold, const MappingPath<EdgeId> &domain) {
-        if (domain.size() > scaffold->Size())
+    std::pair<int,int> SearchForSubvector(const path_extend::BidirectionalPath &scaffold, const MappingPath<EdgeId> &domain) const {
+        if (domain.size() > scaffold.Size())
             return { -1, -1 };
-        scaffold->PrintDEBUG();
+        scaffold.PrintDEBUG();
         DEBUG(domain.simple_path());
-        for (size_t i = 0; i < scaffold->Size() - domain.size() + 1; ++i) {
+        for (size_t i = 0; i < scaffold.Size() - domain.size() + 1; ++i) {
             for (size_t j = 0; j < domain.size(); ++j) {
-                if ((*scaffold)[i + j] != domain[j].first)
+                if (scaffold[i + j] != domain[j].first)
                     break;
 
                 if (j == domain.size() - 1) {
@@ -205,7 +205,7 @@ private:
         return { -1,-1 };
     }
 
-    std::pair<int,int> FindMappingToPath(path_extend::BidirectionalPath *scaffold, const MappingPath<EdgeId> &domain, std::vector<EdgeId> &edges) {
+    std::pair<int,int> FindMappingToPath(const path_extend::BidirectionalPath &scaffold, const MappingPath<EdgeId> &domain, std::vector<EdgeId> &edges) const {
         auto res = SearchForSubvector(scaffold, domain);
         if (res.first == -1) {
             return std::make_pair<int,int>(-1,-1);
@@ -214,32 +214,33 @@ private:
         size_t index = 0;
         const auto &g = gp_.get<Graph>();
         for (;index != res.first; ++index) {
-            start += g.length((*scaffold)[index]) + (*scaffold).GapAt(index).gap;
+            start += g.length(scaffold[index]) + scaffold.GapAt(index).gap;
         }
 
         start += domain[0].second.mapped_range.start_pos;
         size_t end_index = res.second;
         size_t end = 0;
         for (size_t i = 0; i < end_index; ++i) {
-            end += g.length((*scaffold)[i]) + (*scaffold).GapAt(i).gap;
+            end += g.length(scaffold[i]) + scaffold.GapAt(i).gap;
         }
         end += domain.back().second.mapped_range.end_pos;
         for (size_t i = index; i <= end_index; ++i) {
-            edges.push_back((*scaffold)[i]);
+            edges.push_back(scaffold[i]);
         }
         DEBUG("Positions " << start << " " << end);
         return std::make_pair(start, end);
     }
 
-    void ConstructStrongEdgesInternal(VertexId current_vertex, path_extend::BidirectionalPath *path,
-                                       std::map<size_t, std::map<std::pair<int, int>, std::vector<std::pair<VertexId, std::vector<EdgeId>>>, PairComparator>> &mappings_for_path) {
+    void ConstructStrongEdgesInternal(VertexId current_vertex,
+                                      const path_extend::BidirectionalPath &path,
+                                      std::map<size_t, std::map<std::pair<int, int>, std::vector<std::pair<VertexId, std::vector<EdgeId>>>, PairComparator>> &mappings_for_path) {
         std::vector<EdgeId> edges;
         std::pair<int, int> coords = FindMappingToPath(path, domain_graph_.mapping_path(current_vertex), edges);
         if (coords.first == -1)
             return;
-        mappings_for_path[path->GetId()][coords].push_back(std::make_pair(current_vertex, edges));
+        mappings_for_path[path.GetId()][coords].push_back(std::make_pair(current_vertex, edges));
 
-        if (coords.second + 5000 > path->Length()) {
+        if (coords.second + 5000 > path.Length()) {
             DEBUG("set coord");
             DEBUG(current_vertex);
             DEBUG(domain_graph_.conjugate(current_vertex));
@@ -254,18 +255,18 @@ private:
         }
     }
 
-    size_t GetIndexFromPosition(size_t position, path_extend::BidirectionalPath *path) {
+    size_t GetIndexFromPosition(size_t position, const path_extend::BidirectionalPath &path) const {
         size_t index = 0;
-        for (index = 0; index < path->Size(); ++index) {
-            size_t current_pos = path->Length() - path->LengthAt(index) + path->graph().length((*path)[index]);
-            if (current_pos > position) {
+        for (index = 0; index < path.Size(); ++index) {
+            size_t current_pos = path.Length() - path.LengthAt(index) + path.graph().length(path[index]);
+            if (current_pos > position)
                 break;
-            }
         }
         return index;
     }
 
-    std::vector<EdgeId> FindEdgesBetweenMappings(int first_mapping_end_coord, int second_mapping_start_coord, path_extend::BidirectionalPath *path) {
+    std::vector<EdgeId> FindEdgesBetweenMappings(int first_mapping_end_coord, int second_mapping_start_coord,
+                                                 const path_extend::BidirectionalPath &path) const {
         if (first_mapping_end_coord < 0 || second_mapping_start_coord < 0)
             return {};
 
@@ -277,17 +278,17 @@ private:
         std::vector<EdgeId> answer;
         const auto &g = gp_.get<Graph>();
         for (size_t i = first_mapping_end + 1; i < second_mapping_start; ++i) {
-            if (answer.size() != 0 && g.EdgeEnd(answer.back())  != g.EdgeStart((*path)[i])) {
+            if (answer.size() != 0 && g.EdgeEnd(answer.back()) != g.EdgeStart(path[i])) {
                 auto dijkstra = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(g, 500,
                                                                                         30, true /* collect traceback */);
                 dijkstra.Run(g.EdgeEnd(answer.back()));
-                auto shortest_path = dijkstra.GetShortestPathTo(g.EdgeStart((*path)[i]));
+                auto shortest_path = dijkstra.GetShortestPathTo(g.EdgeStart(path[i]));
                 DEBUG("Shortest path");
                 DEBUG(shortest_path);
                 for (auto e : shortest_path)
                     answer.push_back(e);
             }
-            answer.push_back((*path)[i]);
+            answer.push_back(path[i]);
         }
 
         return answer;
@@ -309,7 +310,7 @@ private:
             for (const auto& path_pair : path_container) {
                 from_id_to_path[path_pair->GetId()] = path_pair;
                 from_id_to_path[path_pair->GetConjPath()->GetId()] = path_pair->GetConjPath();
-                ConstructStrongEdgesInternal(current_vertex, path_pair, mappings_for_path);
+                ConstructStrongEdgesInternal(current_vertex, *path_pair, mappings_for_path);
             }
         }
 
@@ -354,7 +355,7 @@ private:
                         domain_graph_.GetEdgesBetween(prev.second.first, maps.second.first).size() == 0) {
                         DEBUG("Connecting " << prev.second << " and " << maps.second);
                         domain_graph_.AddEdge(prev.second.first, maps.second.first, true,
-                                              FindEdgesBetweenMappings(prev.first.second, maps.first.first, from_id_to_path[p.first]), maps.first.first - prev.first.second);
+                                              FindEdgesBetweenMappings(prev.first.second, maps.first.first, *from_id_to_path[p.first]), maps.first.first - prev.first.second);
                     }
                     prev = maps;
                 }

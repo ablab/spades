@@ -1,6 +1,8 @@
-//
-// Created by andrey on 23.01.17.
-//
+//***************************************************************************
+//* Copyright (c) 2020 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 
 #include "io_support.hpp"
 #include "modules/path_extend/pe_utils.hpp"

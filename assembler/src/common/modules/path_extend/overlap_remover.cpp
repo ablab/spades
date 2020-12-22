@@ -9,8 +9,8 @@
 
 namespace path_extend {
 
-static void PopFront(BidirectionalPath * const path, size_t cnt) {
-    path->GetConjPath()->PopBack(cnt);
+static void PopFront(BidirectionalPath &path, size_t cnt) {
+    path.GetConjPath()->PopBack(cnt);
 }
 
 std::pair<Range, Range> OverlapFindingHelper::ComparePaths(const BidirectionalPath &path1,
@@ -262,7 +262,7 @@ void PathSplitter::SplitPath(BidirectionalPath * const p, const std::set<size_t>
                    p->SubPath(start_pos, split_pos));
         start_pos = split_pos;
     }
-    PopFront(p, start_pos);
+    PopFront(*p, start_pos);
 }
 
 void PathSplitter::Split() {

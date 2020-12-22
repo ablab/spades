@@ -65,20 +65,20 @@ Connections LongReadsLibConnectionCondition::ConnectedWith(debruijn_graph::EdgeI
     return {};
 };
 
-bool LongReadsLibConnectionCondition::CheckPath(BidirectionalPath *path, EdgeId e1, EdgeId e2) const {
-    auto pos1 = path->FindAll(e1);
+bool LongReadsLibConnectionCondition::CheckPath(const BidirectionalPath &path, EdgeId e1, EdgeId e2) const {
+    auto pos1 = path.FindAll(e1);
     if (pos1.size() != 1) return false;
-    auto pos2 = path->FindAll(e2);
+    auto pos2 = path.FindAll(e2);
     if (pos2.size() != 1) {
         if (pos2.size() >= 2) {
             DEBUG("Something went wrong:: Edge " << graph_.int_id(e2)
                                                  << "is called unique but presents in path twice! first edge "
                                                  << graph_.int_id(e1) << " path ");
-            path->PrintDEBUG();
+            path.PrintDEBUG();
         }
         return false;
     }
-    if (pos1[0] == path->Size() - 1) return false;
+    if (pos1[0] == path.Size() - 1) return false;
     return true;
 }
 
@@ -87,7 +87,7 @@ Connections LongReadsLibConnectionCondition::ConnectedWith(debruijn_graph::EdgeI
     Connections res;
     auto cov_paths = cov_map_.GetCoveringPaths(e);
     DEBUG("Got cov paths " << cov_paths.size());
-    for (const auto path: cov_paths) {
+    for (const BidirectionalPath *path : cov_paths) {
         auto pos1 = path->FindAll(e);
         if (pos1.size() != 1) {
             DEBUG("***not unique " << graph_.int_id(e) << " len " << graph_.length(e) << "***");
@@ -97,7 +97,7 @@ Connections LongReadsLibConnectionCondition::ConnectedWith(debruijn_graph::EdgeI
         pos++;
         while (pos < path->Size()){
             if (storage.IsUnique(path->At(pos))) {
-                if (CheckPath(path, path->At(pos1[0]), path->At(pos))) {
+                if (CheckPath(*path, path->At(pos1[0]), path->At(pos))) {
                     res[path->At(pos)] += path->GetWeight();
                 }
                 break;
@@ -108,7 +108,7 @@ Connections LongReadsLibConnectionCondition::ConnectedWith(debruijn_graph::EdgeI
     DEBUG("Before prefiltering " << res.size());
     auto iter = res.begin();
     while (iter != res.end()) {
-        if (iter->second < min_read_count_){
+        if (iter->second < min_read_count_) {
             iter = res.erase(iter);
         } else {
             iter++;
@@ -121,8 +121,8 @@ Connections LongReadsLibConnectionCondition::ConnectedWith(debruijn_graph::EdgeI
 int LongReadsLibConnectionCondition::GetMedianGap(debruijn_graph::EdgeId e1, debruijn_graph::EdgeId e2) const {
     auto cov_paths = cov_map_.GetCoveringPaths(e1);
     std::vector<std::pair<int, double>> h;
-    for (const auto &path : cov_paths) {
-        if (CheckPath(path, e1, e2)) {
+    for (const BidirectionalPath *path : cov_paths) {
+        if (CheckPath(*path, e1, e2)) {
             auto pos1 = path->FindAll(e1);
             auto pos2 = path->FindAll(e2);
             h.emplace_back(path->LengthAt(pos1[0] + 1) - path->LengthAt(pos2[0]), path->GetWeight());

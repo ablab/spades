@@ -84,7 +84,7 @@ protected:
     size_t min_read_count_;
     const GraphCoverageMap& cov_map_;
 
-    bool CheckPath(BidirectionalPath *path, EdgeId e1, EdgeId e2) const;
+    bool CheckPath(const BidirectionalPath &path, EdgeId e1, EdgeId e2) const;
 
 public:
 //Only paired info with gap between e1 and e2 between -left_dist_delta_ and right_dist_delta_ taken in account

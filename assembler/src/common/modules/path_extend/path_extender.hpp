@@ -361,27 +361,27 @@ public:
     bool InExistingLoop(const BidirectionalPath& path) {
         DEBUG("Checking existing loops");
         for (const auto &entry : visited_cycles_coverage_map_.GetEdgePaths(path.Back())) {
-            BidirectionalPath *cycle = entry.first;
+            const BidirectionalPath &cycle = *entry.first;
             DEBUG("checking  cycle ");
-            int pos = path.FindLast(*cycle);
+            int pos = path.FindLast(cycle);
             if (pos == -1)
                 continue;
 
-            int start_cycle_pos = pos + (int) cycle->Size();
+            int start_cycle_pos = pos + (int) cycle.Size();
             bool only_cycles_in_tail = true;
             int last_cycle_pos = start_cycle_pos;
             DEBUG("start_cycle pos "<< last_cycle_pos);
-            for (int i = start_cycle_pos; i < (int) path.Size() - (int) cycle->Size(); i += (int) cycle->Size()) {
-                if (!path.CompareFrom(i, *cycle)) {
+            for (int i = start_cycle_pos; i < (int) path.Size() - (int) cycle.Size(); i += (int) cycle.Size()) {
+                if (!path.CompareFrom(i, cycle)) {
                     only_cycles_in_tail = false;
                     break;
                 } else {
-                    last_cycle_pos = i + (int) cycle->Size();
+                    last_cycle_pos = i + (int) cycle.Size();
                     DEBUG("last cycle pos changed " << last_cycle_pos);
                 }
             }
             DEBUG("last_cycle_pos " << last_cycle_pos);
-            only_cycles_in_tail = only_cycles_in_tail && cycle->CompareFrom(0, path.SubPath(last_cycle_pos));
+            only_cycles_in_tail = only_cycles_in_tail && cycle.CompareFrom(0, path.SubPath(last_cycle_pos));
             if (only_cycles_in_tail) {
 // seems that most of this is useless, checking
                 VERIFY (last_cycle_pos == start_cycle_pos);
@@ -391,11 +391,11 @@ public:
                 DEBUG("last subpath");
                 path.SubPath(last_cycle_pos).PrintDEBUG();
                 DEBUG("cycle");
-                cycle->PrintDEBUG();
+                cycle.PrintDEBUG();
                 DEBUG("last_cycle_pos " << last_cycle_pos << " path size " << path.Size());
                 VERIFY(last_cycle_pos <= (int)path.Size());
-                DEBUG("last cycle pos + cycle " << last_cycle_pos + (int)cycle->Size());
-                VERIFY(last_cycle_pos + (int)cycle->Size() >= (int)path.Size());
+                DEBUG("last cycle pos + cycle " << last_cycle_pos + (int)cycle.Size());
+                VERIFY(last_cycle_pos + (int)cycle.Size() >= (int)path.Size());
 
                 return true;
             }

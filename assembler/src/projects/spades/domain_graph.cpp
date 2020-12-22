@@ -206,8 +206,6 @@ namespace nrps {
                 sum += g_.length(e2);
             }
 
-            stat_file << GetStartCoord(v) + current_coord - sum << " ";
-            stat_file << GetEndCoord(v) + current_coord - g_.length(p->Back()) << std::endl;
             //TODO: check if can be improved
             if (i != single_candidate.size() - 1) {
                 auto next_edges = this->GetEdgesBetween(v, single_candidate[i + 1]);
@@ -396,15 +394,15 @@ DomainGraph::Arrangements DomainGraph::FindAllPossibleArrangements(VertexId v,
         current.pop_back();
     }
 
-    std::set<DomainGraph::EdgeId> DomainGraph::CollectEdges(path_extend::BidirectionalPath *p) const {
+    std::set<DomainGraph::EdgeId> DomainGraph::CollectEdges(const path_extend::BidirectionalPath &p) const {
         std::set<EdgeId> edge_set;
-        for (size_t i = 0; i < p->Size(); ++i) {
-            edge_set.insert(p->At(i));
+        for (size_t i = 0; i < p.Size(); ++i) {
+            edge_set.insert(p.At(i));
         }
         return edge_set;
     }
 
-    void DomainGraph::OutputComponent(path_extend::BidirectionalPath *p, int component_id,
+    void DomainGraph::OutputComponent(const path_extend::BidirectionalPath &p, int component_id,
                                       int ordering_id) {
         auto edges = CollectEdges(p);
         auto comp = omnigraph::GraphComponent<debruijn_graph::Graph>::FromEdges(g_,
@@ -523,7 +521,7 @@ void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp,
             PathToSequence(p, vec);
             stat_stream << "Edge order: \n" << path_writer.ToPathString(p) << "\n"
                         << "Path is " << (p.IsCircular() ? "circular" : "linear") << "\n";
-            OutputComponent(&paths.first, component_id, ordering_id);
+            OutputComponent(paths.first, component_id, ordering_id);
             std::string outputstring = seq_maker.MakeSequence(p);
             oss.SetCluster(component_id, ordering_id, unsigned(vec.size()));
             oss << outputstring;

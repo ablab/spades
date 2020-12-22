@@ -2,11 +2,10 @@
 // Created by lab42 on 8/24/15.
 //
 #pragma once
-#include <map>
-//#include "path_extend/bidirectional_path.hpp"
 #include "assembly_graph/core/graph.hpp"
+#include <map>
 
-namespace debruijn_graph{
+namespace debruijn_graph {
 
 class ConnectedComponentCounter {
 public:
@@ -16,11 +15,9 @@ public:
     const Graph &g_;
     ConnectedComponentCounter(const Graph &g):g_(g) {}
     void CalculateComponents() const;
-//    size_t GetComponent(path_extend::BidirectionalPath * p) const;
     size_t GetComponent(EdgeId e) const;
     bool IsFilled() const {
         return (component_ids_.size() != 0);
     }
-
 };
 }

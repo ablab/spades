@@ -33,20 +33,25 @@ class PathGraphLabeler : public visualization::graph_labeler::AbstractGraphLabel
 public:
     PathGraphLabeler(const Graph& g, const PathContainer& paths) : base(g) {
         for(size_t i = 0; i < paths.size(); ++i) {
-            BidirectionalPath * path = paths.Get(i);
-            for (size_t j = 0; j < path->Size(); ++j) {
-                if (labels_.count(path->At(j)) > 0) {
-                    labels_[path->At(j)] += ", ";
+            {
+                const BidirectionalPath &path = *paths.Get(i);
+                for (size_t j = 0; j < path.Size(); ++j) {
+                    if (labels_.count(path.At(j)) > 0) {
+                        labels_[path.At(j)] += ", ";
+                    }
+                    labels_[path.At(j)] += "(" + std::to_string(path.GetId()) + " : " + std::to_string(j) + ")";
                 }
-                labels_[path->At(j)] += "(" + std::to_string(path->GetId()) + " : " + std::to_string(j) + ")";
             }
+            
 
-            path = paths.GetConjugate(i);
-            for (size_t j = 0; j < path->Size(); ++j) {
-                if (labels_.count(path->At(j)) > 0) {
-                    labels_[path->At(j)] += ", ";
+            {
+                const BidirectionalPath &path = *paths.GetConjugate(i);
+                for (size_t j = 0; j < path.Size(); ++j) {
+                    if (labels_.count(path.At(j)) > 0) {
+                        labels_[path.At(j)] += ", ";
+                    }
+                    labels_[path.At(j)] += "(" + std::to_string(path.GetId()) + " : " + std::to_string(j) + ")";
                 }
-                labels_[path->At(j)] += "(" + std::to_string(path->GetId()) + " : " + std::to_string(j) + ")";
             }
         }
     }

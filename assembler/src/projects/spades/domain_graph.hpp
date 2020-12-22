@@ -208,8 +208,8 @@ namespace nrps {
                                                               size_t component_size_part, size_t component_min_size);
         void FinalDFS(VertexId v, std::vector<VertexId> &current, std::set<VertexId> preliminary_visited,
                                    std::vector<std::vector<VertexId>> &answer, size_t component_size, size_t &iteration_number);
-        std::set<EdgeId> CollectEdges(path_extend::BidirectionalPath *p) const;
-        void OutputComponent(path_extend::BidirectionalPath *p, int component_id, int ordering_id);
+        std::set<EdgeId> CollectEdges(const path_extend::BidirectionalPath &p) const;
+        void OutputComponent(const path_extend::BidirectionalPath &p, int component_id, int ordering_id);
 
     public:
         DomainGraph(const debruijn_graph::Graph &g) :
