@@ -110,12 +110,12 @@ private:
                              SetOfForbiddenEdgesPathChooser<Graph> &chooser) {
         const auto &g = gp_.get<Graph>();
         DEBUG("Trying to connect " << domain_graph_.GetVertexName(v1) << " and " << domain_graph_.GetVertexName(v2) << " with weak edge");
-        int last_mapping = (int)g.length(mappings[domain_graph_.GetVertexName(v1)].back().first) - mappings[domain_graph_.GetVertexName(v1)].end_pos();
-        int first_mapping = (int)mappings[domain_graph_.GetVertexName(v2)].start_pos();
+        int last_mapping = (int)g.length(mappings_[domain_graph_.GetVertexName(v1)].back().first) - mappings_[domain_graph_.GetVertexName(v1)].end_pos();
+        int first_mapping = (int)mappings_[domain_graph_.GetVertexName(v2)].start_pos();
 
-        if (5000 < last_mapping + first_mapping) {
+        if (5000 < last_mapping + first_mapping)
             return;
-        }
+
         int min_len = 0;
         if (g.EdgeEnd(domain_graph_.domain_edges(v1).back()) != g.EdgeStart(domain_graph_.domain_edges(v2).front())) {
             DEBUG("Trying to find paths from " << g.EdgeEnd(domain_graph_.domain_edges(v1).back()) << " to " << g.EdgeStart(domain_graph_.domain_edges(v2).front()));
@@ -148,7 +148,7 @@ private:
 
     void ConstructWeakEdges() {
         std::set<std::vector<EdgeId>> forbidden_edges;
-        for (const auto &mapping : mappings)
+        for (const auto &mapping : mappings_)
             forbidden_edges.insert(mapping.second.simple_path());
         const auto &g = gp_.get<Graph>();
         SetOfForbiddenEdgesPathChooser<Graph> chooser(g, forbidden_edges);
@@ -412,8 +412,8 @@ private:
                                                  edges.back().second.mapped_range.end_pos,
                                                  aln.type, aln.desc);
             id++;
-            mappings[domain_graph_.GetVertexName(v)] = std::move(edges);
-            mappings[domain_graph_.GetVertexName(domain_graph_.conjugate(v))] = std::move(rc_edges);
+            mappings_[domain_graph_.GetVertexName(v)] = std::move(edges);
+            mappings_[domain_graph_.GetVertexName(domain_graph_.conjugate(v))] = std::move(rc_edges);
         }
         if (cfg::get().hm->set_copynumber)
             for (VertexId v : domain_graph_.vertices())
@@ -422,7 +422,7 @@ private:
 
     GraphPack &gp_;
     nrps::DomainGraph domain_graph_;
-    std::map<std::string, MappingPath<EdgeId>> mappings;
+    std::map<std::string, MappingPath<EdgeId>> mappings_;
     DECL_LOGGER("DomainGraphConstruction");
 };
 
