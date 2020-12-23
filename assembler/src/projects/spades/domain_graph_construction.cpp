@@ -266,14 +266,14 @@ private:
     }
 
     std::vector<EdgeId> FindEdgesBetweenMappings(int first_mapping_end_coord, int second_mapping_start_coord, path_extend::BidirectionalPath *path) {
-        if (first_mapping_end_coord < 0 || second_mapping_start_coord < 0) {
-            return std::vector<EdgeId>();
-        }
+        if (first_mapping_end_coord < 0 || second_mapping_start_coord < 0)
+            return {};
+
         size_t first_mapping_end = GetIndexFromPosition(first_mapping_end_coord, path);
         size_t second_mapping_start = GetIndexFromPosition(second_mapping_start_coord, path);
-        if (first_mapping_end > second_mapping_start) {
-            return std::vector<EdgeId>();
-        }
+        if (first_mapping_end > second_mapping_start)
+            return {};
+    
         std::vector<EdgeId> answer;
         const auto &g = gp_.get<Graph>();
         for (size_t i = first_mapping_end + 1; i < second_mapping_start; ++i) {
@@ -290,7 +290,6 @@ private:
             answer.push_back((*path)[i]);
         }
 
-
         return answer;
     }
 
@@ -298,7 +297,7 @@ private:
         const auto &g = gp_.get<Graph>();
         path_extend::GraphCoverageMap coverage_map(g, gp_.get<path_extend::PathContainer>());
         std::map<size_t, std::map<std::pair<int, int>, std::vector<std::pair<VertexId, std::vector<EdgeId>>>, PairComparator>> mappings_for_path;
-        std::map<size_t, path_extend::BidirectionalPath*> from_id_to_path;
+        std::unordered_map<size_t, path_extend::BidirectionalPath*> from_id_to_path;
         for (VertexId current_vertex : domain_graph_.vertices()) {
             DEBUG("Processing vertex " << domain_graph_.GetVertexName(current_vertex));
             const auto &mapping_path = domain_graph_.mapping_path(current_vertex);
