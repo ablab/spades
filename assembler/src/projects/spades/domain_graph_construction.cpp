@@ -110,8 +110,8 @@ private:
                              SetOfForbiddenEdgesPathChooser<Graph> &chooser) {
         const auto &g = gp_.get<Graph>();
         DEBUG("Trying to connect " << domain_graph_.GetVertexName(v1) << " and " << domain_graph_.GetVertexName(v2) << " with weak edge");
-        int last_mapping = (int)g.length(mappings_[domain_graph_.GetVertexName(v1)].back().first) - mappings_[domain_graph_.GetVertexName(v1)].end_pos();
-        int first_mapping = (int)mappings_[domain_graph_.GetVertexName(v2)].start_pos();
+        int last_mapping = (int)(g.length(domain_graph_.mapping_path(v1).back().first) - domain_graph_.mapping_path(v1).end_pos());
+        int first_mapping = (int)domain_graph_.mapping_path(v2).start_pos();
 
         if (5000 < last_mapping + first_mapping)
             return;
@@ -147,10 +147,12 @@ private:
     }
 
     void ConstructWeakEdges() {
-        std::set<std::vector<EdgeId>> forbidden_edges;
-        for (const auto &mapping : mappings_)
-            forbidden_edges.insert(mapping.second.simple_path());
         const auto &g = gp_.get<Graph>();
+
+        std::set<std::vector<EdgeId>> forbidden_edges;
+        for (VertexId v : domain_graph_.vertices())
+            forbidden_edges.insert(domain_graph_.mapping_path(v).simple_path());
+
         SetOfForbiddenEdgesPathChooser<Graph> chooser(g, forbidden_edges);
         size_t current_index = 0;
         for (VertexId v1 : domain_graph_.vertices()) {
@@ -380,40 +382,31 @@ private:
 
     void ConstructNodes(const nrps::ContigAlnInfo &info) {
         auto mapper = MapperInstance(gp_);
-        unsigned id = 1;
-        using MappingPair = std::pair<debruijn_graph::MappingPath<EdgeId>,
-                                      debruijn_graph::MappingPath<EdgeId>>;
-        std::vector<MappingPair> graph_edges(info.size());
+        std::vector<MappingPath<EdgeId>> graph_edges(info.size());
         INFO("Reconstructing alignment paths");
 #       pragma omp parallel for
         for (size_t i = 0; i < info.size(); ++i) {
             Sequence sequence(info[i].seq);
             DEBUG(sequence.str());
-            auto edges = mapper->MapSequence(sequence);
-            auto rc_edges = mapper->MapSequence(!sequence);
-
-            graph_edges[i].first = std::move(edges);
-            graph_edges[i].second = std::move(rc_edges);
+            graph_edges[i] = mapper->MapSequence(sequence);
         }
 
         INFO("Creating vertices")
+        unsigned id = 1;
         for (size_t i = 0; i < info.size(); ++i) {
             const auto &aln = info[i];
-            auto &edges = graph_edges[i].first;
-            auto &rc_edges = graph_edges[i].second;
+            auto &edges = graph_edges[i];
             if (edges.simple_path().size() == 0)
                 continue;
 
-            std::string name = aln.name + "_" + std::to_string(id), name_rc = name + "rc";
+            std::string name = aln.name + "_" + std::to_string(id);
             DEBUG("Adding vertex " << name);
 
-            VertexId v = domain_graph_.AddVertex(name, edges,
-                                                 edges.front().second.mapped_range.start_pos,
-                                                 edges.back().second.mapped_range.end_pos,
-                                                 aln.type, aln.desc);
+            domain_graph_.AddVertex(name, edges,
+                                    edges.front().second.mapped_range.start_pos,
+                                    edges.back().second.mapped_range.end_pos,
+                                    aln.type, aln.desc);
             id++;
-            mappings_[domain_graph_.GetVertexName(v)] = std::move(edges);
-            mappings_[domain_graph_.GetVertexName(domain_graph_.conjugate(v))] = std::move(rc_edges);
         }
         if (cfg::get().hm->set_copynumber)
             for (VertexId v : domain_graph_.vertices())
@@ -422,7 +415,6 @@ private:
 
     GraphPack &gp_;
     nrps::DomainGraph domain_graph_;
-    std::map<std::string, MappingPath<EdgeId>> mappings_;
     DECL_LOGGER("DomainGraphConstruction");
 };
 
