@@ -381,16 +381,30 @@ private:
     void ConstructNodes(const nrps::ContigAlnInfo &info) {
         auto mapper = MapperInstance(gp_);
         unsigned id = 1;
-        for (const auto &aln : info) {
-            Sequence sequence(aln.seq);
-            std::string name = aln.name + "_" + std::to_string(id), name_rc = name + "rc";
+        using MappingPair = std::pair<debruijn_graph::MappingPath<EdgeId>,
+                                      debruijn_graph::MappingPath<EdgeId>>;
+        std::vector<MappingPair> graph_edges(info.size());
+        INFO("Reconstructing alignment paths");
+#       pragma omp parallel for
+        for (size_t i = 0; i < info.size(); ++i) {
+            Sequence sequence(info[i].seq);
             DEBUG(sequence.str());
             auto edges = mapper->MapSequence(sequence);
             auto rc_edges = mapper->MapSequence(!sequence);
 
+            graph_edges[i].first = std::move(edges);
+            graph_edges[i].second = std::move(rc_edges);
+        }
+
+        INFO("Creating vertices")
+        for (size_t i = 0; i < info.size(); ++i) {
+            const auto &aln = info[i];
+            auto &edges = graph_edges[i].first;
+            auto &rc_edges = graph_edges[i].second;
             if (edges.simple_path().size() == 0)
                 continue;
 
+            std::string name = aln.name + "_" + std::to_string(id), name_rc = name + "rc";
             DEBUG("Adding vertex " << name);
 
             VertexId v = domain_graph_.AddVertex(name, edges,
@@ -398,8 +412,8 @@ private:
                                                  edges.back().second.mapped_range.end_pos,
                                                  aln.type, aln.desc);
             id++;
-            mappings[domain_graph_.GetVertexName(v)] = edges;
-            mappings[domain_graph_.GetVertexName(domain_graph_.conjugate(v))] = rc_edges;
+            mappings[domain_graph_.GetVertexName(v)] = std::move(edges);
+            mappings[domain_graph_.GetVertexName(domain_graph_.conjugate(v))] = std::move(rc_edges);
         }
         if (cfg::get().hm->set_copynumber)
             for (VertexId v : domain_graph_.vertices())
