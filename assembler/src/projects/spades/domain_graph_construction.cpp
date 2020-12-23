@@ -384,17 +384,19 @@ private:
         for (const auto &aln : info) {
             Sequence sequence(aln.seq);
             std::string name = aln.name + "_" + std::to_string(id), name_rc = name + "rc";
-            INFO(sequence.str());
+            DEBUG(sequence.str());
             auto edges = mapper->MapSequence(sequence);
             auto rc_edges = mapper->MapSequence(!sequence);
 
             if (edges.simple_path().size() == 0)
                 continue;
 
-            INFO("Adding vertex " << name);
+            DEBUG("Adding vertex " << name);
 
-            VertexId v = domain_graph_.AddVertex(name, edges, edges.front().second.mapped_range.start_pos,
-                                                 edges.back().second.mapped_range.end_pos, aln.type, aln.desc);
+            VertexId v = domain_graph_.AddVertex(name, edges,
+                                                 edges.front().second.mapped_range.start_pos,
+                                                 edges.back().second.mapped_range.end_pos,
+                                                 aln.type, aln.desc);
             id++;
             mappings[domain_graph_.GetVertexName(v)] = edges;
             mappings[domain_graph_.GetVertexName(domain_graph_.conjugate(v))] = rc_edges;
