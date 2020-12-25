@@ -496,7 +496,7 @@ public:
     void ClipTips() {
         std::set<EdgeId> edges_to_delete;
         std::set<VertexId> vertices_to_delete;
-        double mult_coef = 2.0;
+        double mult_coef = 1.0;
         size_t max_tip_length = 3000;
         for (auto e : edges_) {
             if (IsTip(e)) {
