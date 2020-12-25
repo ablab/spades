@@ -216,7 +216,7 @@ namespace debruijn_graph {
             for (auto p : temp_set_) {
                 paths.push_back(p.path());
             }
-
+            INFO(paths);
             std::vector<size_t> to_remove;
             for (size_t i = 0; i < paths.size(); ++i) {
                 for (size_t j = i + 1; j < paths.size(); ++j) {
