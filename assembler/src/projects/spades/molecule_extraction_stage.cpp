@@ -185,7 +185,7 @@ namespace debruijn_graph {
                     linear_path.push_back(e);
                     extendForward(comp, linear_path, used_edges);
                     extendBackward(comp, linear_path, used_edges);
-                    if (linear_path.size() != 1 && gp_.g.EdgeStart(linear_path.front()) != gp_.g.EdgeEnd(linear_path.back())) {
+                    if (gp_.g.EdgeStart(linear_path.front()) != gp_.g.EdgeEnd(linear_path.back())) {
                         std::vector<EdgeId> linear_path_vector;
                         for (auto e : linear_path) {
                             linear_path_vector.push_back(e);
