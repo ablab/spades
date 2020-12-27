@@ -379,7 +379,7 @@ class BidirectionalPath : public PathListener, public SimpleBidirectionalPath {
     BidirectionalPath* conj_path_;
     // Length from beginning of i-th edge to path end: L(e_i + gap_(i+1) + e_(i+1) + ... + gap_N + e_N)
     std::deque<size_t> cumulative_len_;
-    std::vector<PathListener *> listeners_;
+    std::vector<std::reference_wrapper<PathListener>> listeners_;
     const uint64_t id_;  //Unique ID
     float weight_;
     int cycle_overlapping_; // in edges; [ < 0 ] => is not cycled
@@ -496,7 +496,7 @@ public:
         return g_;
     }
 
-    void Subscribe(PathListener * listener) {
+    void Subscribe(PathListener &listener) {
         listeners_.push_back(listener);
     }
 
@@ -696,25 +696,25 @@ private:
 
     void NotifyFrontEdgeAdded(EdgeId e, const Gap& gap) {
         for (auto & listener : listeners_) {
-            listener->FrontEdgeAdded(e, *this, gap);
+            listener.get().FrontEdgeAdded(e, *this, gap);
         }
     }
 
     void NotifyBackEdgeAdded(EdgeId e, const Gap& gap) {
         for (auto & listener : listeners_) {
-            listener->BackEdgeAdded(e, *this, gap);
+            listener.get().BackEdgeAdded(e, *this, gap);
         }
     }
 
     void NotifyFrontEdgeRemoved(EdgeId e) {
         for (auto & listener : listeners_) {
-            listener->FrontEdgeRemoved(e, *this);
+            listener.get().FrontEdgeRemoved(e, *this);
         }
     }
 
     void NotifyBackEdgeRemoved(EdgeId e) {
         for (auto & listener : listeners_) {
-            listener->BackEdgeRemoved(e, *this);
+            listener.get().BackEdgeRemoved(e, *this);
         }
     }
 

@@ -21,7 +21,7 @@
 namespace path_extend {
 
 inline void SubscribeCoverageMap(BidirectionalPath &path, GraphCoverageMap &coverage_map) {
-    path.Subscribe(&coverage_map);
+    path.Subscribe(coverage_map);
     for (size_t i = 0; i < path.Size(); ++i) {
         coverage_map.BackEdgeAdded(path.At(i), path, path.GapAt(i));
     }

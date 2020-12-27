@@ -116,8 +116,8 @@ public:
 
         entry.first->SetConjPath(entry.second.get());
         entry.second->SetConjPath(entry.first.get());
-        entry.first->Subscribe(entry.second.get());
-        entry.second->Subscribe(entry.first.get());
+        entry.first->Subscribe(*entry.second);
+        entry.second->Subscribe(*entry.first);
 
         return { *entry.first, *entry.second };
     }

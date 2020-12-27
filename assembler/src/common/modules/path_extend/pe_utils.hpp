@@ -53,7 +53,7 @@ private:
 
     void ProcessPath(BidirectionalPath &path, bool subscribe) {
         if (subscribe)
-            path.Subscribe(this);
+            path.Subscribe(*this);
         
         for (size_t i = 0; i < path.Size(); ++i) {
             EdgeAdded(path.At(i), path);
