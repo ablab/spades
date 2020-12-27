@@ -9,6 +9,7 @@
 
 #include "assembly_graph/core/graph.hpp"
 #include "io/binary/binary.hpp"
+#include "adt/small_pod_vector.hpp"
 
 #include <algorithm>
 #include <atomic>
@@ -379,7 +380,8 @@ class BidirectionalPath : public PathListener, public SimpleBidirectionalPath {
     BidirectionalPath* conj_path_;
     // Length from beginning of i-th edge to path end: L(e_i + gap_(i+1) + e_(i+1) + ... + gap_N + e_N)
     std::deque<size_t> cumulative_len_;
-    std::vector<std::reference_wrapper<PathListener>> listeners_;
+    adt::SmallPODVector<PathListener*,
+                        adt::impl::HybridAllocatedStorage<PathListener*, 2>> listeners_;
     const uint64_t id_;  //Unique ID
     float weight_;
     int cycle_overlapping_; // in edges; [ < 0 ] => is not cycled
@@ -497,7 +499,7 @@ public:
     }
 
     void Subscribe(PathListener &listener) {
-        listeners_.push_back(listener);
+        listeners_.push_back(&listener);
     }
 
     void SetConjPath(BidirectionalPath* path) noexcept {
@@ -696,25 +698,25 @@ private:
 
     void NotifyFrontEdgeAdded(EdgeId e, const Gap& gap) {
         for (auto & listener : listeners_) {
-            listener.get().FrontEdgeAdded(e, *this, gap);
+            listener->FrontEdgeAdded(e, *this, gap);
         }
     }
 
     void NotifyBackEdgeAdded(EdgeId e, const Gap& gap) {
         for (auto & listener : listeners_) {
-            listener.get().BackEdgeAdded(e, *this, gap);
+            listener->BackEdgeAdded(e, *this, gap);
         }
     }
 
     void NotifyFrontEdgeRemoved(EdgeId e) {
         for (auto & listener : listeners_) {
-            listener.get().FrontEdgeRemoved(e, *this);
+            listener->FrontEdgeRemoved(e, *this);
         }
     }
 
     void NotifyBackEdgeRemoved(EdgeId e) {
         for (auto & listener : listeners_) {
-            listener.get().BackEdgeRemoved(e, *this);
+            listener->BackEdgeRemoved(e, *this);
         }
     }
 

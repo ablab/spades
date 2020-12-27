@@ -259,6 +259,14 @@ struct HybridAllocatedStorage : public SmallPODVectorData<T> {
         this->reset();
     }
 
+    HybridAllocatedStorage(const HybridAllocatedStorage &that) {
+        // This will allocate memory and setup buffers as necessary
+        grow(that.size());
+
+        void *data = that.data_.getPointer(), *new_data = data;
+        memcpy(new_data, data, this->size() * sizeof(T));
+    }
+    
     HybridAllocatedStorage(HybridAllocatedStorage &&that) {
         void *data = that.data_.getPointer(), *new_data = data;
         size_t sz = that.data_.getInt(), new_sz = sz;
