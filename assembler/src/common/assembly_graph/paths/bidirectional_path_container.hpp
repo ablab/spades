@@ -111,13 +111,15 @@ public:
     // This guy acquires the ownership of paths
     std::pair<BidirectionalPath&, BidirectionalPath&>
     AddPair(std::unique_ptr<BidirectionalPath> p, std::unique_ptr<BidirectionalPath> cp) {
-        p->SetConjPath(cp.get());
-        cp->SetConjPath(p.get());
-        p->Subscribe(cp.get());
-        cp->Subscribe(p.get());
         data_.emplace_back(std::move(p), std::move(cp));
+        auto &entry = data_.back();
 
-        return { *data_.back().first, *data_.back().second };
+        entry.first->SetConjPath(entry.second.get());
+        entry.second->SetConjPath(entry.first.get());
+        entry.first->Subscribe(entry.second.get());
+        entry.second->Subscribe(entry.first.get());
+
+        return { *entry.first, *entry.second };
     }
 
     std::pair<BidirectionalPath&, BidirectionalPath&>
