@@ -108,18 +108,23 @@ public:
     void clear() { data_.clear(); }
     void reserve(size_t size) { data_.reserve(size); }
 
+    std::pair<BidirectionalPath&, BidirectionalPath&>
+    LinkPair(std::pair<BidirectionalPath&, BidirectionalPath&> ppair) const {
+        ppair.first.SetConjPath(&ppair.second);
+        ppair.second.SetConjPath(&ppair.first);
+        ppair.first.Subscribe(ppair.second);
+        ppair.second.Subscribe(ppair.first);
+
+        return ppair;
+    }
+    
     // This guy acquires the ownership of paths
     std::pair<BidirectionalPath&, BidirectionalPath&>
     AddPair(std::unique_ptr<BidirectionalPath> p, std::unique_ptr<BidirectionalPath> cp) {
         data_.emplace_back(std::move(p), std::move(cp));
         auto &entry = data_.back();
 
-        entry.first->SetConjPath(entry.second.get());
-        entry.second->SetConjPath(entry.first.get());
-        entry.first->Subscribe(*entry.second);
-        entry.second->Subscribe(*entry.first);
-
-        return { *entry.first, *entry.second };
+        return LinkPair({ *entry.first, *entry.second });
     }
 
     std::pair<BidirectionalPath&, BidirectionalPath&>
