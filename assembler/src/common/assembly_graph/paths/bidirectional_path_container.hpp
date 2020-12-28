@@ -86,16 +86,25 @@ public:
         }
     }
 
-    BidirectionalPath& operator[](size_t index) const {
+    BidirectionalPath& operator[](size_t index) {
+        return *(data_[index].first);
+    }
+    const BidirectionalPath& operator[](size_t index) const {
         return *(data_[index].first);
     }
 
-    BidirectionalPath* Get(size_t index) const {
-        return data_[index].first.get();
+    BidirectionalPath& Get(size_t index) {
+        return *data_[index].first;
+    }
+    const BidirectionalPath& Get(size_t index) const {
+        return *data_[index].first;
     }
 
-    BidirectionalPath* GetConjugate(size_t index) const {
-        return data_[index].second.get();
+    BidirectionalPath& GetConjugate(size_t index) {
+        return *data_[index].second;
+    }
+    const BidirectionalPath& GetConjugate(size_t index) const {
+        return *data_[index].second;
     }
 
     void Swap(size_t index) {
@@ -168,8 +177,8 @@ public:
 
     void print() const {
         for (size_t i = 0; i < size(); ++i) {
-            Get(i)->PrintDEBUG();
-            GetConjugate(i)->PrintDEBUG();
+            Get(i).PrintDEBUG();
+            GetConjugate(i).PrintDEBUG();
         }
     }
 

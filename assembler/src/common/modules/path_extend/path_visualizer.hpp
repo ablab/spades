@@ -5,13 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * path_visualizer.hpp
- *
- *  Created on: Mar 22, 2012
- *      Author: andrey
- */
-
 #ifndef PATH_VISUALIZER_HPP_
 #define PATH_VISUALIZER_HPP_
 
@@ -34,7 +27,7 @@ public:
     PathGraphLabeler(const Graph& g, const PathContainer& paths) : base(g) {
         for(size_t i = 0; i < paths.size(); ++i) {
             {
-                const BidirectionalPath &path = *paths.Get(i);
+                const BidirectionalPath &path = paths.Get(i);
                 for (size_t j = 0; j < path.Size(); ++j) {
                     if (labels_.count(path.At(j)) > 0) {
                         labels_[path.At(j)] += ", ";
@@ -45,7 +38,7 @@ public:
             
 
             {
-                const BidirectionalPath &path = *paths.GetConjugate(i);
+                const BidirectionalPath &path = paths.GetConjugate(i);
                 for (size_t j = 0; j < path.Size(); ++j) {
                     if (labels_.count(path.At(j)) > 0) {
                         labels_[path.At(j)] += ", ";

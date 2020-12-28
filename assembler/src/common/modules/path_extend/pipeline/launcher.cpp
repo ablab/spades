@@ -563,7 +563,8 @@ public:
 
     void Apply(PathContainer& paths) const {
         for (size_t i = 0; i < paths.size(); ++i) {
-            if (math::ls(CalculateCoverage(*paths.Get(i), antisense_), CalculateCoverage(*paths.GetConjugate(i), antisense_))) {
+            if (math::ls(CalculateCoverage(paths.Get(i), antisense_),
+                         CalculateCoverage(paths.GetConjugate(i), antisense_))) {
                 paths.Swap(i);
             }
         }

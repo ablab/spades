@@ -39,9 +39,10 @@ void CompositeExtender::GrowAllPaths(PathContainer& paths, PathContainer& result
         //FIXME what is the logic here?
         if (used_storage_.UniqueCheckEnabled()) {
             bool was_used = false;
-            for (size_t ind =0; ind < paths.Get(i)->Size(); ind++) {
-                EdgeId eid = paths.Get(i)->At(ind);
-                auto path_id = paths.Get(i)->GetId();
+            const BidirectionalPath &p = paths.Get(i);
+            for (size_t ind =0; ind < p.Size(); ind++) {
+                EdgeId eid = p.At(ind);
+                auto path_id = p.GetId();
                 if (used_storage_.IsUsedAndUnique(eid, path_id)) {
                     DEBUG("Used edge " << g_.int_id(eid));
                     was_used = true;
@@ -56,9 +57,9 @@ void CompositeExtender::GrowAllPaths(PathContainer& paths, PathContainer& result
             }
         }
 
-        if (!cover_map_.IsCovered(*paths.Get(i))) {
+        if (!cover_map_.IsCovered(paths.Get(i))) {
             BidirectionalPath &path = CreatePath(result, cover_map_,
-                                                 *paths.Get(i));
+                                                 paths.Get(i));
 
             size_t count_trying = 0;
             size_t current_path_len = 0;
