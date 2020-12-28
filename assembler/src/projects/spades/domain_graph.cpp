@@ -516,12 +516,11 @@ void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp,
         ordering_id = 1;
         for (const auto &vec : entry.arrangements) {
             OutputStatArrangement(vec, ordering_id, stat_stream);
-            auto paths = contig_paths_.CreatePair(graph);
-            path_extend::BidirectionalPath &p = paths.first;
+            auto &p = contig_paths_.Create(graph);
             PathToSequence(p, vec);
             stat_stream << "Edge order: \n" << path_writer.ToPathString(p) << "\n"
                         << "Path is " << (p.IsCircular() ? "circular" : "linear") << "\n";
-            OutputComponent(paths.first, component_id, ordering_id);
+            OutputComponent(p, component_id, ordering_id);
             std::string outputstring = seq_maker.MakeSequence(p);
             oss.SetCluster(component_id, ordering_id, unsigned(vec.size()));
             oss << outputstring;

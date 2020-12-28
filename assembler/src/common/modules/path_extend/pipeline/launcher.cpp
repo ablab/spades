@@ -343,9 +343,9 @@ void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_thresho
     INFO("filling path container");
     if (dataset_info_.reads[lib_index].type() == io::LibraryType::TrustedContigs) {
         auto& trusted_paths = gp_.get_mutable<path_extend::TrustedPathsContainer>()[lib_index];
-        for (auto & path : trusted_paths) {
-            unique_data_.long_reads_paths_[lib_index].CreatePair(graph_, std::move(path));
-        }
+        for (auto & path : trusted_paths)
+            unique_data_.long_reads_paths_[lib_index].Create(graph_, std::move(path));
+
         DebugOutputPaths(unique_data_.long_reads_paths_[lib_index], "trusted_contigs");
         trusted_paths.clear();
     } else {

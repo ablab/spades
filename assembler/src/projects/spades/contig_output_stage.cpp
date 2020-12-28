@@ -53,7 +53,7 @@ path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer
             entry.first->Length() < 500)
             continue;
 
-        res.CreatePair(entry.first);
+        res.Create(entry.first);
     }
     INFO("got circular scaffs");
     return res;
@@ -68,7 +68,7 @@ path_extend::PathContainer GetTipScaffolds(const path_extend::PathContainer &sc_
             !forbidden_vertices.count(entry.first->g().EdgeEnd(entry.first->Back())))
             continue;
 
-        res.CreatePair(entry.first);
+        res.Create(entry.first);
     }
     INFO("got suspicious linear tips scaffs");
     return res;

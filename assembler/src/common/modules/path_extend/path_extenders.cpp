@@ -304,8 +304,8 @@ bool MultiExtender::AddCandidates(BidirectionalPath& path, PathContainer* paths_
         // Creating new paths for other than new candidate.
         for (size_t i = 1; i < candidates.size(); ++i) {
             DEBUG("push other candidates " << i);
-            auto p = paths_storage->CreatePair(path);
-            p.first.PushBack(candidates[i].e_, Gap(candidates[i].d_));
+            auto &p = paths_storage->Create(path);
+            p.PushBack(candidates[i].e_, Gap(candidates[i].d_));
         }
 
         DEBUG("push");

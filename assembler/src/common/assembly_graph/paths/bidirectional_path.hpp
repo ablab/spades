@@ -393,6 +393,11 @@ class BidirectionalPath : public PathListener, public SimpleBidirectionalPath {
               weight_(1.0),
               cycle_overlapping_(-1) {}
 
+    BidirectionalPath(const debruijn_graph::Graph& g, EdgeId e)
+            : BidirectionalPath(g) {
+        PushBack(e);
+    }
+    
     BidirectionalPath(const debruijn_graph::Graph& g, SimpleBidirectionalPath path)
             : BidirectionalPath(g)  {
         SimpleBidirectionalPath::PushBack(std::move(path));
@@ -407,11 +412,6 @@ class BidirectionalPath : public PathListener, public SimpleBidirectionalPath {
 
     BidirectionalPath(const debruijn_graph::Graph& g, std::vector<EdgeId> path)
             : BidirectionalPath(g, SimpleBidirectionalPath(std::move(path))) {}
-
-    BidirectionalPath(const debruijn_graph::Graph& g, EdgeId e)
-            : BidirectionalPath(g) {
-        PushBack(e);
-    }
 
     BidirectionalPath(const BidirectionalPath& path)
             : SimpleBidirectionalPath(path),

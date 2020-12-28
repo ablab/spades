@@ -89,6 +89,11 @@ public:
         ProcessPath(path, true);
     }
 
+    void Subscribe(std::pair<BidirectionalPath&, BidirectionalPath&> ppair) {
+        ProcessPath(ppair.first, true);
+        ProcessPath(ppair.second, true);
+    }
+
     //Inherited from PathListener
     void FrontEdgeAdded(EdgeId e, BidirectionalPath &path, const Gap&) override {
         EdgeAdded(e, path);

@@ -42,7 +42,7 @@ PathContainer PathExtendResolver::MakeSimpleSeeds() const {
     for (EdgeId e : g_.canonical_edges()) {
         if (g_.int_id(e) <= 0 || InTwoEdgeCycle(e, g_))
             continue;
-        edges.CreatePair(g_, e);
+        edges.Create(g_, e);
     }
     return edges;
 }

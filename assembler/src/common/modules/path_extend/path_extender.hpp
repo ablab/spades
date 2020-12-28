@@ -20,21 +20,13 @@
 
 namespace path_extend {
 
-inline void SubscribeCoverageMap(BidirectionalPath &path, GraphCoverageMap &coverage_map) {
-    path.Subscribe(coverage_map);
-    for (size_t i = 0; i < path.Size(); ++i) {
-        coverage_map.BackEdgeAdded(path.At(i), path, path.GapAt(i));
-    }
-}
-
 template<typename... Args>
 inline BidirectionalPath& CreatePath(PathContainer &paths,
                                      GraphCoverageMap &coverage_map,
                                      Args&&... args) {
     auto p = paths.CreatePair(std::forward<Args>(args)...);
+    coverage_map.Subscribe(p);
 
-    SubscribeCoverageMap(p.first, coverage_map);
-    SubscribeCoverageMap(p.second, coverage_map);
     return p.first;
 }
 
@@ -42,8 +34,8 @@ inline BidirectionalPath& AddPath(PathContainer &paths,
                                   std::unique_ptr<BidirectionalPath> path,
                                   GraphCoverageMap &coverage_map) {
     auto p = paths.Add(std::move(path));
-    SubscribeCoverageMap(p.first, coverage_map);
-    SubscribeCoverageMap(p.second, coverage_map);
+    coverage_map.Subscribe(p);
+
     return p.first;
 }
 
@@ -411,8 +403,7 @@ public:
 
         auto p = path_storage_.CreatePair(path.SubPath(pos));
 
-        visited_cycles_coverage_map_.Subscribe(p.first);
-        visited_cycles_coverage_map_.Subscribe(p.second);
+        visited_cycles_coverage_map_.Subscribe(p);
         DEBUG("add cycle");
         p.first.PrintDEBUG();
     }
