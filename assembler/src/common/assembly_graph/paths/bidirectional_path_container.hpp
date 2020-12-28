@@ -14,9 +14,6 @@
 
 namespace path_extend {
 
-typedef std::pair<std::unique_ptr<BidirectionalPath>,
-                  std::unique_ptr<BidirectionalPath>> PathPair;
-
 class PathComparator {
 public:
     bool operator()(const BidirectionalPath& p1, const BidirectionalPath& p2) const {
@@ -36,6 +33,8 @@ using BidirectionalPathMap = std::map<BidirectionalPath*, Value, PathComparator>
 typedef std::multiset<BidirectionalPath *, PathComparator> BidirectionalPathMultiset;
 
 class PathContainer {
+    typedef std::pair<std::unique_ptr<BidirectionalPath>,
+                      std::unique_ptr<BidirectionalPath>> PathPair;
 public:
     typedef std::vector<PathPair> PathContainerT;
 
@@ -44,30 +43,20 @@ public:
         Iterator(const PathContainerT::iterator& iter)
             : PathContainerT::iterator(iter) {
         }
-        BidirectionalPath& get() const {
-            return *(this->operator *().first);
-        }
-        BidirectionalPath& getConjugate() const {
-            return *(this->operator *().second);
-        }
+        BidirectionalPath& get() const { return *(this->operator *().first); }
+        BidirectionalPath& getConjugate() const { return *(this->operator *().second); }
     };
 
     class ConstIterator : public PathContainerT::const_iterator {
     public:
         ConstIterator(const PathContainerT::const_iterator& iter)
-            : PathContainerT::const_iterator(iter) {
-        }
+            : PathContainerT::const_iterator(iter) { }
 
         ConstIterator(const PathContainer::Iterator& iter)
-            : PathContainerT::const_iterator(PathContainerT::iterator(iter)) {
-        }
+            : PathContainerT::const_iterator(PathContainerT::iterator(iter)) { }
 
-        const BidirectionalPath& get() const {
-            return *(this->operator *().first);
-        }
-        const BidirectionalPath& getConjugate() const {
-            return *(this->operator *().second);
-        }
+        const BidirectionalPath& get() const { return *(this->operator *().first);  }
+        const BidirectionalPath& getConjugate() const { return *(this->operator *().second); }
     };
 
     PathContainer() {}
@@ -207,7 +196,7 @@ private:
         pp.second.reset();
     }
 
-    std::vector<PathPair> data_;
+    PathContainerT data_;
 
 protected:
     DECL_LOGGER("BidirectionalPath");
