@@ -24,19 +24,18 @@
 namespace path_extend {
 
 using namespace debruijn_graph;
-using namespace std;
 using namespace omnigraph::de;
 
-vector<shared_ptr<ConnectionCondition>>
-    PathExtendLauncher::ConstructPairedConnectionConditions(const ScaffoldingUniqueEdgeStorage& edge_storage) const {
+std::vector<std::shared_ptr<ConnectionCondition>>
+PathExtendLauncher::ConstructPairedConnectionConditions(const ScaffoldingUniqueEdgeStorage& edge_storage) const {
 
-    vector<shared_ptr<ConnectionCondition>> conditions;
+    std::vector<std::shared_ptr<ConnectionCondition>> conditions;
     const pe_config::ParamSetT::ScaffoldGraphParamsT &params = params_.pset.scaffold_graph_params;
 
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
         const auto &lib = dataset_info_.reads[lib_index];
         if (lib.is_paired()) {
-            shared_ptr<PairedInfoLibrary> paired_lib;
+            std::shared_ptr<PairedInfoLibrary> paired_lib;
             if (lib.is_mate_pair())
                 paired_lib = MakeNewLib(graph_, lib, gp_.get<UnclusteredPairedInfoIndicesT<Graph>>()[lib_index]);
             else if (lib.type() == io::LibraryType::PairedEnd)
@@ -45,17 +44,17 @@ vector<shared_ptr<ConnectionCondition>>
                 INFO("Unusable for scaffold graph paired lib #" << lib_index);
                 continue;
             }
-            conditions.push_back(make_shared<ScaffoldGraphPairedConnectionCondition>(graph_, edge_storage.unique_edges(),
-                                                                                     paired_lib, lib_index,
-                                                                                     params.always_add,
-                                                                                     params.never_add,
-                                                                                     params.relative_threshold));
+            conditions.push_back(std::make_shared<ScaffoldGraphPairedConnectionCondition>(graph_, edge_storage.unique_edges(),
+                                                                                          paired_lib, lib_index,
+                                                                                          params.always_add,
+                                                                                          params.never_add,
+                                                                                          params.relative_threshold));
         }
     }
     return conditions;
 }
 
-shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructScaffoldGraph(const ScaffoldingUniqueEdgeStorage &edge_storage) const {
+std::shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructScaffoldGraph(const ScaffoldingUniqueEdgeStorage &edge_storage) const {
     using namespace scaffold_graph;
 
     const pe_config::ParamSetT::ScaffoldGraphParamsT &params = params_.pset.scaffold_graph_params;
@@ -63,11 +62,10 @@ shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructScaffoldG
     INFO("Constructing connections");
     LengthLowerBound edge_condition(graph_, edge_storage.min_length());
 
-    vector<shared_ptr<ConnectionCondition>> conditions =
-        ConstructPairedConnectionConditions(edge_storage);
+    auto conditions = ConstructPairedConnectionConditions(edge_storage);
 
     if (params.use_graph_connectivity) {
-        auto as_con = make_shared<AssemblyGraphConnectionCondition>(graph_, params.max_path_length, edge_storage);
+        auto as_con = std::make_shared<AssemblyGraphConnectionCondition>(graph_, params.max_path_length, edge_storage);
         as_con->AddInterestingEdges(edge_condition);
         conditions.push_back(as_con);
     }
@@ -85,13 +83,13 @@ shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructScaffoldG
 }
 
 void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph &scaffold_graph,
-                                            const set<EdgeId> &main_edge_set,
+                                            const std::set<EdgeId> &main_edge_set,
                                             const debruijn_graph::GenomeConsistenceChecker &genome_checker,
-                                            const string &filename) const {
+                                            const std::string &filename) const {
     using namespace scaffold_graph;
 
-    auto vertex_colorer = make_shared<ScaffoldVertexSetColorer>(main_edge_set);
-    auto edge_colorer = make_shared<ScaffoldEdgeColorer>();
+    auto vertex_colorer = std::make_shared<ScaffoldVertexSetColorer>(main_edge_set);
+    auto edge_colorer = std::make_shared<ScaffoldEdgeColorer>();
     graph_colorer::CompositeGraphColorer<ScaffoldGraph> colorer(vertex_colorer, edge_colorer);
 
     INFO("Visualizing scaffold graph");
@@ -111,7 +109,7 @@ void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph 
 
 void PathExtendLauncher::MakeAndOutputScaffoldGraph() const {
     //Scaffold graph
-    shared_ptr<scaffold_graph::ScaffoldGraph> scaffold_graph;
+    std::shared_ptr<scaffold_graph::ScaffoldGraph> scaffold_graph;
     if (params_.pset.scaffold_graph_params.construct) {
         debruijn_graph::GenomeConsistenceChecker genome_checker(gp_,
                                                                 params_.pset.genome_consistency_checker.max_gap,
@@ -133,6 +131,7 @@ void PathExtendLauncher::MakeAndOutputScaffoldGraph() const {
 void PathExtendLauncher::CountMisassembliesWithReference(const PathContainer &paths) const {
     if (!gp_.get<GenomeStorage>().size())
         return;
+    
     bool use_main_storage = params_.pset.genome_consistency_checker.use_main_storage;
     size_t unresolvable_gap = unique_data_.main_unique_storage_.min_length();
     ScaffoldingUniqueEdgeStorage tmp_storage;
@@ -185,7 +184,7 @@ void PathExtendLauncher::EstimateUniqueEdgesParams() {
     bool uniform_coverage = false;
     if (params_.pset.uniqueness_analyser.enabled) {
         INFO("Autodetecting unique edge set parameters...");
-        unique_data_.min_unique_length_ = max(unique_data_.min_unique_length_, support_.FindMaxMPIS());
+        unique_data_.min_unique_length_ = std::max(unique_data_.min_unique_length_, support_.FindMaxMPIS());
         INFO("Minimal unique edge length set to the smallest MP library IS: " << unique_data_.min_unique_length_);
 
         CoverageUniformityAnalyzer coverage_analyzer(graph_, unique_data_.min_unique_length_);
@@ -213,10 +212,10 @@ void PathExtendLauncher::FillUniqueEdgeStorage() {
     unique_edge_analyzer.FillUniqueEdgeStorage(unique_data_.main_unique_storage_);
 }
 
-void PathExtendLauncher::DebugOutputPaths(const PathContainer &paths, const string &name) const {
-    if (!params_.pe_cfg.debug_output) {
+void PathExtendLauncher::DebugOutputPaths(const PathContainer &paths, const std::string &name) const {
+    if (!params_.pe_cfg.debug_output)
         return;
-    }
+
     PathVisualizer visualizer;
 
     writer_.OutputPaths(paths, params_.etc_dir + name + ".fasta");
@@ -291,7 +290,7 @@ void PathExtendLauncher::CleanPaths(PathContainer &paths, const pe_config::Param
 size_t PathExtendLauncher::GetLengthCutoff(size_t abs_cutoff, double rel_cutoff) const {
     int rel_len = int(rel_cutoff * double(cfg::get().ds.RL)) - int(cfg::get().K);
     int abs_len = int(abs_cutoff) - int(cfg::get().K);
-    size_t result = (size_t) max(0, max(rel_len, abs_len));
+    size_t result = (size_t) std::max(0, std::max(rel_len, abs_len));
 
     INFO("Read length relative cutoff " << rel_cutoff << " converted to " << rel_len);
     INFO("Read length absolute cutoff " << abs_cutoff << " bp converted to " << result);
@@ -324,7 +323,7 @@ Extenders PathExtendLauncher::ConstructMPExtenders(const ExtendersGenerator &gen
     const pe_config::ParamSetT &pset = params_.pset;
 
     size_t cur_length = unique_data_.min_unique_length_ - pset.scaffolding2015.unique_length_step;
-    size_t lower_bound = max(pset.scaffolding2015.unique_length_lower_bound, pset.scaffolding2015.unique_length_step);
+    size_t lower_bound = std::max(pset.scaffolding2015.unique_length_lower_bound, pset.scaffolding2015.unique_length_step);
 
     while (cur_length > lower_bound) {
         INFO("Will add extenders for length " << cur_length);
@@ -453,17 +452,17 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
     //Fixes distances for paths gaps and tries to fill them in
     INFO("Closing gaps in paths");
 
-    vector<shared_ptr<PathGapCloser>> gap_closers;
+    std::vector<std::shared_ptr<PathGapCloser>> gap_closers;
 
-    gap_closers.push_back(make_shared<DijkstraGapCloser>(graph_, params_.max_polisher_gap));
+    gap_closers.push_back(std::make_shared<DijkstraGapCloser>(graph_, params_.max_polisher_gap));
 
     const auto &paired_indices = gp_.get<UnclusteredPairedInfoIndicesT<Graph>>();
     for (size_t i = 0; i < dataset_info_.reads.lib_count(); i++) {
         auto lib = dataset_info_.reads[i];
         if (lib.type() == io::LibraryType::HQMatePairs || lib.type() == io::LibraryType::MatePairs) {
             auto paired_lib = MakeNewLib(graph_, lib, paired_indices[i]);
-            gap_closers.push_back(make_shared<MatePairGapCloser> (graph_, params_.max_polisher_gap, paired_lib,
-                                                                   unique_data_.main_unique_storage_));
+            gap_closers.push_back(std::make_shared<MatePairGapCloser>(graph_, params_.max_polisher_gap, paired_lib,
+                                                                      unique_data_.main_unique_storage_));
         }
     }
 
