@@ -47,7 +47,7 @@ inline void FormPaths(const Graph &g,
 inline std::set<size_t> FindPath(const PathContainer &paths, const BidirectionalPath &path) {
     std::set<size_t> answer;
     for (size_t i = 0; i < paths.size(); ++i)
-        if (*paths.Get(i) == path || *paths.GetConjugate(i) == path)
+        if (paths.Get(i) == path || paths.GetConjugate(i) == path)
             answer.insert(i);
     return answer;
 }
@@ -458,7 +458,7 @@ TEST( OverlapRemoval, DeduplicateDiffGap ) {
     PathContainer container;
 
     FormPaths(g, finder, cov_map, container, path_ids);
-    container.Get(1)->SetGapAt(2, Gap(100));
+    container.Get(1).SetGapAt(2, Gap(100));
 
     //PathsInit result_ids = {{20129, 17993, 20131, 17993, 19506}};
     PathsInit result_ids = {{20129, 17993, 19506}};

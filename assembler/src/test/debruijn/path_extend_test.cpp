@@ -514,8 +514,8 @@ TEST( PathExtend, BidirectionalPathAddRemoveConjugate ) {
     EdgeId e4 = *(g.OutgoingEdges(g.EdgeEnd(e3)).begin());
 
     auto cp = BidirectionalPath::create(g);
-    cp->Subscribe(p.get());
-    p->Subscribe(cp.get());
+    cp->Subscribe(*p);
+    p->Subscribe(*cp);
 
     EXPECT_TRUE(p->Conjugate().Empty());
     EXPECT_TRUE(cp->Conjugate().Empty());
@@ -687,7 +687,7 @@ TEST( PathExtend, BidirectionalPathLoopDetector ) {
     auto path1 = BidirectionalPath::create(g);
     GraphCoverageMap cover_map(g);
     LoopDetector loop_detect(*path1, cover_map);
-    path1->Subscribe(&cover_map);
+    path1->Subscribe(cover_map);
 
     // 98 26 145 70 3 139 139
     EdgeId e1 = g.conjugate(start);
