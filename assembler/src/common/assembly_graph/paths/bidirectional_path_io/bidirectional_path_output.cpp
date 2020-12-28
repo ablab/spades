@@ -14,7 +14,7 @@ void path_extend::ContigWriter::OutputPaths(const PathContainer &paths, const st
     ScaffoldSequenceMaker scaffold_maker(g_);
     DEBUG("started" << paths.size());
     for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-        const BidirectionalPath &path = *iter.get();
+        const BidirectionalPath &path = iter.get();
         DEBUG("path: " <<  path.Length());
         if (path.Length() <= 0)
             continue;

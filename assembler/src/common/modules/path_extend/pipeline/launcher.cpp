@@ -150,7 +150,7 @@ void PathExtendLauncher::CountMisassembliesWithReference(const PathContainer &pa
 
     size_t total_mis = 0, gap_mis = 0;
     for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-        const BidirectionalPath &path = *iter.get();
+        const BidirectionalPath &path = iter.get();
         VERIFY(path.GetConjPath());
         auto map_res = genome_checker.CountMisassemblies(path);
         if (map_res.misassemblies > 0) {
@@ -222,7 +222,7 @@ void PathExtendLauncher::DebugOutputPaths(const PathContainer &paths, const std:
     if (params_.pe_cfg.output.write_paths) {
         std::ofstream oss(params_.etc_dir + name + ".dat");
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-            iter.get()->Print(oss);
+            iter.get().Print(oss);
         }
         oss.close();
     }
@@ -234,11 +234,11 @@ void PathExtendLauncher::DebugOutputPaths(const PathContainer &paths, const std:
 void FilterInterstandBulges(PathContainer &paths) {
     DEBUG ("Try to delete paths with interstand bulges");
     for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-        if (EndsWithInterstrandBulge(*iter.get())) {
-            iter.get()->PopBack();
-        }
-        if (EndsWithInterstrandBulge(*iter.getConjugate())) {
-            iter.getConjugate()->PopBack();
+        if (EndsWithInterstrandBulge(iter.get()))
+            iter.get().PopBack();
+
+        if (EndsWithInterstrandBulge(iter.getConjugate())) {
+            iter.getConjugate().PopBack();
         }
     }
     DEBUG("deleted paths with interstand bulges");

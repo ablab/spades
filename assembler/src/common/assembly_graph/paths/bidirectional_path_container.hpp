@@ -44,11 +44,11 @@ public:
         Iterator(const PathContainerT::iterator& iter)
             : PathContainerT::iterator(iter) {
         }
-        BidirectionalPath* get() const {
-            return this->operator *().first.get();
+        BidirectionalPath& get() const {
+            return *(this->operator *().first);
         }
-        BidirectionalPath* getConjugate() const {
-            return this->operator *().second.get();
+        BidirectionalPath& getConjugate() const {
+            return *(this->operator *().second);
         }
     };
 
@@ -62,11 +62,11 @@ public:
             : PathContainerT::const_iterator(PathContainerT::iterator(iter)) {
         }
 
-        BidirectionalPath* get() const {
-            return this->operator *().first.get();
+        const BidirectionalPath& get() const {
+            return *(this->operator *().first);
         }
-        BidirectionalPath* getConjugate() const {
-            return this->operator *().second.get();
+        const BidirectionalPath& getConjugate() const {
+            return *(this->operator *().second);
         }
     };
 
@@ -81,8 +81,8 @@ public:
     PathContainer(ConstIterator begin, ConstIterator end) {
         clear();
         for (ConstIterator it = begin; it != end; ++it) {
-            AddPair(BidirectionalPath::clone(*(it.get())),
-                    BidirectionalPath::clone(*(it.getConjugate())));
+            AddPair(BidirectionalPath::clone(it.get()),
+                    BidirectionalPath::clone(it.getConjugate()));
         }
     }
 

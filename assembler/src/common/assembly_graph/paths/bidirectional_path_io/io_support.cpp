@@ -35,8 +35,8 @@ void path_extend::TranscriptToGeneJoiner::Init(const PathContainer &paths) {
     TRACE("Path size " << paths.size());
     size_t path_num = 0;
     for (auto iter = paths.begin(); iter != paths.end(); ++iter, ++path_num) {
-        path_id_.emplace(iter.get(), path_num);
-        path_id_.emplace(iter.getConjugate(), path_num);
+        path_id_.emplace(iter.get().GetId(), path_num);
+        path_id_.emplace(iter.getConjugate().GetId(), path_num);
         MakeSet(path_num);
     }
 
@@ -57,8 +57,9 @@ size_t path_extend::TranscriptToGeneJoiner::FindTree(size_t x) {
     return parent;
 }
 
-size_t path_extend::TranscriptToGeneJoiner::GetPathId(const BidirectionalPath *path) {
-    return path_id_[path];
+size_t path_extend::TranscriptToGeneJoiner::GetPathId(const BidirectionalPath &path) const {
+    auto entry = path_id_.find(path.GetId());
+    return (entry == path_id_.end() ? -1 : entry->second);
 }
 
 void path_extend::TranscriptToGeneJoiner::Construct(const PathContainer &paths) {
@@ -79,8 +80,8 @@ void path_extend::TranscriptToGeneJoiner::Construct(const PathContainer &paths) 
         DEBUG("Long edge " << edge.int_id() << " Paths " << edge_paths.size());
         // For all other paths covering this edge join then into single gene with the first path
         for (auto it_edge = std::next(edge_paths.begin()); it_edge != edge_paths.end(); ++it_edge) {
-            size_t first = path_id_[edge_paths.begin()->first];
-            size_t next = path_id_[it_edge->first];
+            size_t first = path_id_[edge_paths.begin()->first->GetId()];
+            size_t next = path_id_[it_edge->first->GetId()];
             DEBUG("Edge " << edge.int_id() << " First " << first << " Next " << next);
 
             JoinTrees(first, next);
@@ -155,7 +156,7 @@ void path_extend::ScaffoldBreaker::SplitPath(const BidirectionalPath &path, Path
 
 void path_extend::ScaffoldBreaker::Break(const PathContainer &paths, PathContainer &result) const {
     for (auto it = paths.begin(); it != paths.end(); ++it) {
-        SplitPath(*it.get(), result);
+        SplitPath(it.get(), result);
     }
     result.SortByLength();
 }

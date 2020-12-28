@@ -40,8 +40,8 @@ class ScaffoldSequenceMaker {
     const Graph &g_;
     const size_t k_;
 public:
-    ScaffoldSequenceMaker(const Graph& g) : g_(g), k_(g_.k()) {
-    }
+    ScaffoldSequenceMaker(const Graph& g)
+            : g_(g), k_(g_.k()) {}
 
     std::string MakeSequence(const BidirectionalPath &scaffold) const;
 };
@@ -53,7 +53,7 @@ private:
     const Graph &g_;
     size_t min_edge_len_; //minimal length for joining transcripts into a gene
 
-    std::unordered_map<const BidirectionalPath *, size_t> path_id_; //path ids
+    std::unordered_map<uint64_t, size_t> path_id_; //path ids
     std::vector<size_t> parents_; //node parents in
     std::vector<size_t> ranks_; //tree depth
 
@@ -69,7 +69,7 @@ public:
 
     size_t FindTree(size_t x);
 
-    size_t GetPathId(const BidirectionalPath *path);
+    size_t GetPathId(const BidirectionalPath &path) const;
 
     void Construct(const PathContainer &paths);
 };
@@ -133,7 +133,7 @@ public:
     }
 
     std::string MakeContigName(size_t index, const ScaffoldInfo &scaffold_info) override {
-        size_t id = transcript_joiner_.GetPathId(scaffold_info.path);
+        size_t id = transcript_joiner_.GetPathId(*scaffold_info.path);
         size_t parent_id = transcript_joiner_.FindTree(id);
         DEBUG("Path " << id << " Parent " << parent_id);
         if (gene_ids_.find(parent_id) == gene_ids_.end()) {

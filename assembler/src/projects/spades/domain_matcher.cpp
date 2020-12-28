@@ -32,12 +32,12 @@ extern "C" {
 
 namespace nrps {
 
-static void match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::BidirectionalPath* path,
+static void match_contigs_internal(hmmer::HMMMatcher &matcher, const path_extend::BidirectionalPath &path,
                                    const std::string &path_string,
                                    const std::string &type, const std::string &desc,
                                    ContigAlnInfo &res, io::OFastaReadStream &oss_contig, size_t model_length) {
     for (size_t shift = 0; shift < 3; ++shift) {
-        std::string ref_shift = std::to_string(path->GetId()) + "_" + std::to_string(shift);
+        std::string ref_shift = std::to_string(path.GetId()) + "_" + std::to_string(shift);
         std::string seq_aas = aa::translate(path_string.c_str() + shift);
         matcher.match(ref_shift.c_str(), seq_aas.c_str());
     }
@@ -67,7 +67,9 @@ static void match_contigs_internal(hmmer::HMMMatcher &matcher, path_extend::Bidi
             }
             DEBUG(name);
             DEBUG("First - " << seqpos.first << ", second - " << seqpos.second);
-            res.push_back({name, type, desc, unsigned(seqpos.first), unsigned(seqpos.second), path_string.substr(seqpos.first, std::max(seqpos.second - seqpos.first, (int)path->g().k() + 1))});
+            res.push_back({name, type, desc,
+                           unsigned(seqpos.first), unsigned(seqpos.second),
+                           path_string.substr(seqpos.first, std::max(seqpos.second - seqpos.first, (int)path.g().k() + 1))});
         }
     }
     matcher.reset_top_hits();
@@ -80,18 +82,20 @@ static void match_contigs(const path_extend::PathContainer &contig_paths, const 
     DEBUG("Model length - " << hmm.length());
     hmmer::HMMMatcher matcher(hmm, cfg);
     for (auto iter = contig_paths.begin(); iter != contig_paths.end(); ++iter) {
-        path_extend::BidirectionalPath* path = iter.get();
-        if (path->Length() <= 0)
+        const path_extend::BidirectionalPath &path = iter.get();
+        if (path.Length() <= 0)
             continue;
-        std::string path_string = scaffold_maker.MakeSequence(*path);
+
+        std::string path_string = scaffold_maker.MakeSequence(path);
         match_contigs_internal(matcher, path, path_string,
                                hmm.name(), hmm.desc() ? hmm.desc() : "",
                                res, oss_contig, hmm.length());
 
-        path_extend::BidirectionalPath* conj_path = path->GetConjPath();
-        if (conj_path->Length() <= 0)
+        const path_extend::BidirectionalPath& conj_path = iter.getConjugate();
+        if (conj_path.Length() <= 0)
             continue;
-        std::string path_string_conj = scaffold_maker.MakeSequence(*conj_path);
+
+        std::string path_string_conj = scaffold_maker.MakeSequence(conj_path);
         match_contigs_internal(matcher, conj_path, path_string_conj,
                                hmm.name(), hmm.desc() ? hmm.desc() : "",
                                res, oss_contig, hmm.length());
