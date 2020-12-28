@@ -122,8 +122,7 @@ class LoopTraverser {
         BidirectionalPath& start_path = **start_cover_paths.begin();
         BidirectionalPath& end_path = **end_cover_paths.begin();
 
-        //TODO isn't it enough to check pointer equality?
-        if (start_path == end_path.Conjugate())
+        if (start_path.GetId() == end_path.GetConjPath()->GetId())
             return false;
 
         //Checking that paths ends are within component
