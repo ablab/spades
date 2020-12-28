@@ -10,6 +10,7 @@ project(path_extend CXX)
 add_library(path_extend STATIC
             pe_config_struct.cpp
             loop_detector.cpp
+            loop_traverser.cpp
             gap_analyzer.cpp
             path_extenders.cpp
             pe_resolver.cpp
