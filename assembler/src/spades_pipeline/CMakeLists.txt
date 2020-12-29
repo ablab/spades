@@ -14,7 +14,6 @@ install(FILES
         process_cfg.py
         support.py
         options_storage.py
-        lucigen_nxmate.py
         options_parser.py
         DESTINATION share/spades/spades_pipeline
         COMPONENT runtime)

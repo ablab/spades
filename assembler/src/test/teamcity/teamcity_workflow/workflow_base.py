@@ -139,7 +139,7 @@ def make_spades_cmd(args, dataset_info, test, spades_params_list, spades_dir, ou
     #Correct paths in params
     input_file_option_list = ['-1', '-2', "--12", "-s", "--merged",
                               "--pe", "--s", "--mp",
-                              "--hqmp", "--nxmate",
+                              "--hqmp",
                               "--sanger", "--pacbio", "--nanopore",
                               "--tslr", "--trusted-contigs", "--untrusted-contigs"]
 

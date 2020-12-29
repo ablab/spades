@@ -797,13 +797,6 @@ def dataset_has_additional_contigs(dataset_data):
     return False
 
 
-def dataset_has_nxmate_reads(dataset_data):
-    for reads_library in dataset_data:
-        if reads_library["type"] == "nxmate":
-            return True
-    return False
-
-
 def pretty_print_reads(dataset_data, log, indent="    "):
     READS_TYPES = ["left reads", "right reads", "interlaced reads", "single reads", "merged reads"]
     for id, reads_library in enumerate(dataset_data):

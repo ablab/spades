@@ -310,20 +310,6 @@ Illumina and IonTorrent libraries should not be assembled together. All other ty
 
 SPAdes supports mate-pair only assembly. However, we recommend to use only high-quality mate-pair libraries in this case (e.g. that do not have a paired-end part). We tested mate-pair only pipeline using Illumina Nextera mate-pairs. See more [here](#hqmp).
 
-Current version SPAdes also supports Lucigen NxSeq® Long Mate Pair libraries, which always have forward-reverse orientation. If you wish to use Lucigen NxSeq® Long Mate Pair reads, you will need Python [regex library](https://pypi.python.org/pypi/regex) to be pre-installed on your machine. You can install it with Python [pip-installer](http://www.pip-installer.org/):
-
-``` bash
-
-    pip install regex
-```
-
-or with the [Easy Install](http://peak.telecommunity.com/DevCenter/EasyInstall) Python module:
-
-``` bash
-
-    easy_install regex
-```
-
 Notes:
 
 -   It is strongly suggested to provide multiple paired-end and mate-pair libraries according to their insert size (from smallest to longest).
@@ -586,15 +572,6 @@ Since all files will be overwritten, do not forget to copy your assembly from th
 `--hqmp<#>-<or> `
     Orientation of reads for high-quality mate-pair library number `<#>` (`<#>` = 1,2,..,9; `<or>` = "fr","rf","ff").
     The default orientation for high-quality mate-pair libraries is forward-reverse (`--> <--`). For example, to specify reverse-forward orientation for the first high-quality mate-pair library, you should use the flag: `--hqmp1-rf `
-
-<a name="lxmp"></a>
-**_Lucigen NxSeq® Long Mate Pair libraries_** (see [section 3.1](#sec3.1) for details)
-
-`--nxmate<#>-1 <file_name> `
-    File with left reads for Lucigen NxSeq® Long Mate Pair library number `<#>` (`<#>` = 1,2,..,9).
-
-`--nxmate<#>-2 <file_name> `
-    File with right reads for Lucigen NxSeq® Long Mate Pair library number `<#>` (`<#>` = 1,2,..,9).
 
 **_Specifying data for hybrid assembly_**
 

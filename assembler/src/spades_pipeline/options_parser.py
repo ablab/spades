@@ -260,16 +260,6 @@ def add_deprecated_input_data_args(pgroup_input_data):
                                        nargs=1,
                                        help=argparse.SUPPRESS,
                                        action=AddToDatasetAction)
-        pgroup_input_data.add_argument("--nxmate%d-1" % num,
-                                       metavar="<filename>",
-                                       nargs=1,
-                                       help=argparse.SUPPRESS,
-                                       action=AddToDatasetAction)
-        pgroup_input_data.add_argument("--nxmate%d-2" % num,
-                                       metavar="<filename>",
-                                       nargs=1,
-                                       help=argparse.SUPPRESS,
-                                       action=AddToDatasetAction)
 
 
 def add_basic_args(pgroup_basic):
@@ -424,7 +414,6 @@ def add_input_data_args(pgroup_input_data):
                                    action=AddToDatasetAction)
     add_library_args("mp", "mate-pair", ["12", "1", "2", "s", "or"], pgroup_input_data, help_hidden)
     add_library_args("hqmp", "high-quality mate-pair", ["12", "1", "2", "s", "or"], pgroup_input_data, help_hidden)
-    add_library_args("nxmate", "Lucigen NxMate", ["1", "2"], pgroup_input_data, help_hidden)
 
     pgroup_input_data.add_argument("--sanger",
                                    metavar="<filename>",

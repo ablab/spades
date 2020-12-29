@@ -99,73 +99,6 @@ class PreprocessInterlacedReads(stage.Stage):
         self.tmp_dir = tmp_dir
 
 
-class PreprocessNxmateReads(stage.Stage):
-    STAGE_NAME = "Preprocess nxmate reads"
-
-    # {infile1, infile2}
-    update_list = []
-
-    def get_new_names(self, infilename1, infilename2):
-        basename1 = os.path.basename(infilename1)
-        if os.path.splitext(basename1)[1] == ".gz":
-            basename1 = os.path.splitext(basename1)[0]
-        basename2 = os.path.basename(infilename2)
-        if os.path.splitext(basename2)[1] == ".gz":
-            basename2 = os.path.splitext(basename2)[0]
-        # open three outfiles
-        splitfilenameleft = os.path.join(self.dst, "R1_IJS7_mates_ICC4_" + basename1)
-
-        splitfilenameright = os.path.join(self.dst, "R2_IJS7_mates_ICC4_" + basename2)
-
-        unsplitfilename = os.path.join(self.dst, "unsplit_IJS7_mates_ICC4_" + basename1.replace("_R1_", "_R1R2_"))
-        return splitfilenameleft, splitfilenameright, unsplitfilename
-
-    def process_nxmate_reads(self, dataset_data, dst, log):
-        self.dst = dst
-        for reads_library in dataset_data:
-            if reads_library["type"] == "nxmate":
-                raw_left_reads = reads_library["left reads"]
-                raw_right_reads = reads_library["right reads"]
-                reads_library["left reads"] = []
-                reads_library["right reads"] = []
-                reads_library["single reads"] = []
-                for id, left_reads_fpath in enumerate(raw_left_reads):
-                    right_reads_fpath = raw_right_reads[id]
-                    processed_left_reads_fpath, processed_right_reads_fpath, single_reads_fpath = \
-                        self.get_new_names(left_reads_fpath, right_reads_fpath)
-                    reads_library["left reads"].append(processed_left_reads_fpath)
-                    reads_library["right reads"].append(processed_right_reads_fpath)
-                    reads_library["single reads"].append(single_reads_fpath)
-                    self.update_list.append({"infile1": left_reads_fpath,
-                                             "infile2": right_reads_fpath})
-                reads_library["type"] = "mate-pairs"
-                reads_library["orientation"] = "fr"
-
-    def generate_config(self, cfg):
-        self.process_nxmate_reads(self.dataset_data, self.dst, self.log)
-        with open(os.path.join(self.tmp_dir, "nxmate"), "w") as fw:
-            for update_item in self.update_list:
-                fw.write(update_item["infile1"] + "\n")
-                fw.write(update_item["infile2"] + "\n")
-
-    def get_command(self, cfg):
-        command = [commands_parser.Command(STAGE=self.STAGE_NAME,
-                                           path=sys.executable,
-                                           args=[
-                                               os.path.join(self.python_modules_home, "spades_pipeline", "scripts",
-                                                            "preprocess_nxmate_reads.py"),
-                                               "--args_filename", os.path.join(self.tmp_dir, "nxmate"),
-                                               "--dst", self.dst,
-                                               "--threads", str(options_storage.args.threads)],
-                                           short_name=self.short_name)]
-        return command
-
-    def __init__(self, dir_for_split_reads, tmp_dir, *args):
-        super(PreprocessNxmateReads, self).__init__(*args)
-        self.tmp_dir = tmp_dir
-        self.dst = dir_for_split_reads
-
-
 class PreprocessContigs(stage.Stage):
     STAGE_NAME = "Preprocess additional contigs"
 
@@ -242,14 +175,6 @@ class PreprocessReadsStage(stage.Stage):
                                                           self.ext_python_modules_home,
                                                           self.python_modules_home))
 
-        if support.dataset_has_nxmate_reads(self.dataset_data):
-            self.stages.append(PreprocessNxmateReads(self.dir_for_split_reads, self.tmp_dir, "preporocess_nxmate",
-                                                     self.output_files, self.tmp_configs_dir,
-                                                     self.dataset_data, self.log,
-                                                     self.bin_home,
-                                                     self.ext_python_modules_home,
-                                                     self.python_modules_home))
-
         if support.dataset_has_additional_contigs(self.dataset_data):
             self.stages.append(PreprocessContigs(self.dir_for_split_reads, self.tmp_dir, "preprocess_ac",
                                                  self.output_files, self.tmp_configs_dir,
@@ -297,7 +222,6 @@ class PreprocessReadsStage(stage.Stage):
 def add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log,
                     bin_home, ext_python_modules_home, python_modules_home):
     if (support.dataset_has_interlaced_reads(options_storage.original_dataset_data) \
-            or support.dataset_has_additional_contigs(options_storage.original_dataset_data) \
-            or support.dataset_has_nxmate_reads(options_storage.original_dataset_data)):
+            or support.dataset_has_additional_contigs(options_storage.original_dataset_data)):
         pipeline.add(PreprocessReadsStage(cfg, "preprocess", output_files, tmp_configs_dir,
                                           options_storage.original_dataset_data, log, bin_home, ext_python_modules_home, python_modules_home))
