@@ -1,4 +1,5 @@
-<html>     <head>         <title>SPAdes 3.15.0-dev Manual</title>         <style type="text/css">             .highlight  pre {               background-color: #f0f2f4;               border-radius: 2px;               font-size: 100%;               line-height: 1.45;               overflow: auto;               padding: 16px;             }         </style>     </head>     <body> <meta charset="UTF-8"> <p><strong>SPAdes 3.14.1 Manual</strong></p>
+<html>     <head>         <title>SPAdes 3.15.0 Manual</title>         <style type="text/css">             .highlight  pre {               background-color: #f0f2f4;               border-radius: 2px;               font-size: 100%;               line-height: 1.45;               overflow: auto;               padding: 16px;             }         </style>     </head>     <body><p><a href="http://chihua.cab.spbu.ru:3000/buildConfiguration/SPAdesBasicTests_RunAll?mode=builds" rel="nofollow"><img src="https://camo.githubusercontent.com/21b928ad15b5735360cb555da4951c8dee2ef5633fd61c3fce22bb157f9dc1c5/687474703a2f2f6368696875612e6361622e737062752e72753a333030302f6170702f726573742f6275696c64732f6275696c64547970653a2869643a535041646573426173696354657374735f52756e416c6c292f73746174757349636f6e" alt="TeamCity Simple Build Status" data-canonical-src="http://chihua.cab.spbu.ru:3000/app/rest/builds/buildType:(id:SPAdesBasicTests_RunAll)/statusIcon" style="max-width:100%;"></a><br>
+ <meta charset="UTF-8"> <p><strong>SPAdes 3.15.0 Manual</strong></p>
 <ol>
 <li><a href="#sec1">About SPAdes</a> <br>
     1.1. <a href="#sec1.1">Supported data types</a><br>
@@ -15,9 +16,10 @@
     3.3. <a href="#sec3.3">Assembling IonTorrent reads</a><br>
     3.4. <a href="#sec3.4">Assembling long Illumina paired reads (2x150 and 2x250)</a><br>
     3.5. <a href="#sec3.5">SPAdes output</a><br>
-    3.6. <a href="#sec3.6">plasmidSPAdes and metaplasmidSPAdes output</a><br>
-    3.7. <a href="#sec3.7">biosyntheticSPAdes output</a><br>
-    3.8. <a href="#sec3.8">Assembly evaluation</a><br></li>
+    3.6. <a href="#sec3.6">plasmidSPAdes output</a><br>
+    3.7. <a href="#sec3.7">metaplasmidSPAdes and metaviralSPAdes output</a><br>
+    3.8. <a href="#sec3.8">biosyntheticSPAdes output</a><br>
+    3.9. <a href="#sec3.9">Assembly evaluation</a><br></li>
 <li><a href="#sec4">Stand-alone binaries released within SPAdes package</a><br>
     4.1. <a href="#sec4.1">k-mer counting</a><br>
     4.2. <a href="#sec4.2">k-mer coverage read filter</a><br>
@@ -31,14 +33,14 @@
 </ol>
 <p><a name="sec1"></a></p>
 <h1>About SPAdes</h1>
-<p>SPAdes – St. Petersburg genome assembler – is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.14.1 was released under GPLv2 on April 27, 2020 and can be downloaded from <a href="http://cab.spbu.ru/software/spades/" rel="nofollow">http://cab.spbu.ru/software/spades/</a>.</p>
+<p>SPAdes – St. Petersburg genome assembler – is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.15 was released under GPLv2 on December 31, 2020 and can be downloaded from <a href="http://cab.spbu.ru/software/spades/" rel="nofollow">http://cab.spbu.ru/software/spades/</a>.</p>
 <p>The latest SPAdes paper describing various pipelines in a protocol format is available <a href="https://currentprotocols.onlinelibrary.wiley.com/doi/abs/10.1002/cpbi.102" rel="nofollow">here</a>.</p>
 <p><a name="sec1.1"></a></p>
 <h2>Supported data types</h2>
 <p>The current version of SPAdes works with Illumina or IonTorrent reads and is capable of providing hybrid assemblies using PacBio, Oxford Nanopore and Sanger reads. You can also provide additional contigs that will be used as long reads.</p>
-<p>Version 3.14.1 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. Note, that SPAdes was initially designed for small genomes. It was tested on bacterial (both single-cell MDA and standard isolates), fungal and other small genomes. SPAdes is not intended for larger genomes (e.g. mammalian size genomes). For such purposes you can use it at your own risk.</p>
+<p>Version 3.15.0 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. Note, that SPAdes was initially designed for small genomes. It was tested on bacterial (both single-cell MDA and standard isolates), fungal and other small genomes. SPAdes is not intended for larger genomes (e.g. mammalian size genomes). For such purposes you can use it at your own risk.</p>
 <p>If you have high-coverage data for bacterial/viral isolate or multi-cell organism, we highly recommend to use <a href="#isolate"><code>--isolate</code></a> option.</p>
-<p>SPAdes 3.14.1 includes the following additional pipelines:</p>
+<p>SPAdes 3.15.0 includes the following additional pipelines:</p>
 <ul>
 <li>metaSPAdes – a pipeline for metagenomic data sets (see <a href="#meta">metaSPAdes options</a>).</li>
 <li>plasmidSPAdes – a pipeline for extracting and assembling plasmids from WGS data sets (see <a href="#plasmid">plasmid options</a>).</li>
@@ -134,7 +136,8 @@
 <li><code>spades.py</code> (main executable script)</li>
 <li><code>metaspades.py</code> (main executable script for <a href="#meta">metaSPAdes</a>)</li>
 <li><code>plasmidspades.py</code> (main executable script for <a href="#plasmid">plasmidSPAdes</a>)</li>
-<li><code>metaplasmidspades.py</code> (main executable script for <a href="#plasmid">metaplasmidSPAdes</a>)</li>
+<li><code>metaplasmidspades.py</code> (main executable script for <a href="#metaextrachromosomal">metaplasmidSPAdes</a>)</li>
+<li><code>metaviralspades.py</code> (main executable script for <a href="#metaextrachromosomal">metaviralSPAdes</a>)</li>
 <li><code>rnaspades.py</code> (main executable script for <a href="rnaspades_manual.html">rnaSPAdes</a>)</li>
 <li><code>truspades.py</code> (main executable script for <a href="truspades_manual.html">truSPAdes</a>)</li>
 <li><code>spades-core</code>  (assembly module)</li>
@@ -149,18 +152,18 @@
 </ul>
 <p><a name="sec2.1"></a></p>
 <h2>Downloading SPAdes Linux binaries</h2>
-<p>To download <a href="http://cab.spbu.ru/files/release3.14.1/SPAdes-3.14.1-Linux.tar.gz" rel="nofollow">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:</p>
-<div class="highlight highlight-source-shell"><pre>    wget http://cab.spbu.ru/files/release3.14.1/SPAdes-3.14.1-Linux.tar.gz
-    tar -xzf SPAdes-3.14.1-Linux.tar.gz
-    <span class="pl-c1">cd</span> SPAdes-3.14.1-Linux/bin/</pre></div>
+<p>To download <a href="http://cab.spbu.ru/files/release3.15.0/SPAdes-3.15.0-Linux.tar.gz" rel="nofollow">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:</p>
+<div class="highlight highlight-source-shell"><pre>    wget http://cab.spbu.ru/files/release3.15.0/SPAdes-3.15.0-Linux.tar.gz
+    tar -xzf SPAdes-3.15.0-Linux.tar.gz
+    <span class="pl-c1">cd</span> SPAdes-3.15.0-Linux/bin/</pre></div>
 <p>In this case you do not need to run any installation scripts – SPAdes is ready to use. We also suggest adding SPAdes installation directory to the <code>PATH</code> variable. <a href=""></a></p>
 <p>Note, that pre-build binaries do not work on new Linux kernels.</p>
 <p><a name="sec2.2"></a></p>
 <h2>Downloading SPAdes binaries for Mac</h2>
-<p>To obtain <a href="http://cab.spbu.ru/files/release3.14.1/SPAdes-3.14.1-Darwin.tar.gz" rel="nofollow">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:</p>
-<div class="highlight highlight-source-shell"><pre>    curl http://cab.spbu.ru/files/release3.14.1/SPAdes-3.14.1-Darwin.tar.gz -o SPAdes-3.14.1-Darwin.tar.gz
-    tar -zxf SPAdes-3.14.1-Darwin.tar.gz
-    <span class="pl-c1">cd</span> SPAdes-3.14.1-Darwin/bin/</pre></div>
+<p>To obtain <a href="http://cab.spbu.ru/files/release3.15.0/SPAdes-3.15.0-Darwin.tar.gz" rel="nofollow">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:</p>
+<div class="highlight highlight-source-shell"><pre>    curl http://cab.spbu.ru/files/release3.15.0/SPAdes-3.15.0-Darwin.tar.gz -o SPAdes-3.15.0-Darwin.tar.gz
+    tar -zxf SPAdes-3.15.0-Darwin.tar.gz
+    <span class="pl-c1">cd</span> SPAdes-3.15.0-Darwin/bin/</pre></div>
 <p>Just as in Linux, SPAdes is ready to use and no further installation steps are required. We also suggest adding SPAdes installation directory to the <code>PATH</code> variable. <a href=""></a></p>
 <p><a name="sec2.3"></a></p>
 <h2>Downloading and compiling SPAdes source code</h2>
@@ -171,10 +174,10 @@
 <li>zlib</li>
 <li>libbz2</li>
 </ul>
-<p>If you meet these requirements, you can download the <a href="http://cab.spbu.ru/files/release3.14.1/SPAdes-3.14.1.tar.gz" rel="nofollow">SPAdes source code</a>:</p>
-<div class="highlight highlight-source-shell"><pre>    wget http://cab.spbu.ru/files/release3.14.1/SPAdes-3.14.1.tar.gz
-    tar -xzf SPAdes-3.14.1.tar.gz
-    <span class="pl-c1">cd</span> SPAdes-3.14.1</pre></div>
+<p>If you meet these requirements, you can download the <a href="http://cab.spbu.ru/files/release3.15.0/SPAdes-3.15.0.tar.gz" rel="nofollow">SPAdes source code</a>:</p>
+<div class="highlight highlight-source-shell"><pre>    wget http://cab.spbu.ru/files/release3.15.0/SPAdes-3.15.0.tar.gz
+    tar -xzf SPAdes-3.15.0.tar.gz
+    <span class="pl-c1">cd</span> SPAdes-3.15.0</pre></div>
 <p>and build it with the following script:</p>
 <div class="highlight highlight-source-shell"><pre>    ./spades_compile.sh</pre></div>
 <p>SPAdes will be built in the directory <code>./bin</code>. If you wish to install SPAdes into another directory, you can specify full path of destination folder by running the following command in <code>bash</code> or <code>sh</code>:</p>
@@ -215,7 +218,7 @@ Thank you for using SPAdes!
 <p><a name="sec3.1"></a></p>
 <h2>SPAdes input</h2>
 <p>SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ. For IonTorrent data SPAdes also supports unpaired reads in unmapped BAM format (like the one produced by Torrent Server). However, in order to run read error correction, reads should be in FASTQ or BAM format. Sanger, Oxford Nanopore and PacBio CLR reads can be provided in both formats since SPAdes does not run error correction for these types of data.</p>
-<p>To run SPAdes 3.14.1 you need at least one library of the following types:</p>
+<p>To run SPAdes 3.15.0 you need at least one library of the following types:</p>
 <ul>
 <li>Illumina paired-end/high-quality mate-pairs/unpaired reads</li>
 <li>IonTorrent paired-end/high-quality mate-pairs/unpaired reads</li>
@@ -223,10 +226,6 @@ Thank you for using SPAdes!
 </ul>
 <p>Illumina and IonTorrent libraries should not be assembled together. All other types of input data are compatible. SPAdes should not be used if only PacBio CLR, Oxford Nanopore, Sanger reads or additional contigs are available.</p>
 <p>SPAdes supports mate-pair only assembly. However, we recommend to use only high-quality mate-pair libraries in this case (e.g. that do not have a paired-end part). We tested mate-pair only pipeline using Illumina Nextera mate-pairs. See more <a href="#hqmp">here</a>.</p>
-<p>Current version SPAdes also supports Lucigen NxSeq® Long Mate Pair libraries, which always have forward-reverse orientation. If you wish to use Lucigen NxSeq® Long Mate Pair reads, you will need Python <a href="https://pypi.python.org/pypi/regex" rel="nofollow">regex library</a> to be pre-installed on your machine. You can install it with Python <a href="http://www.pip-installer.org/" rel="nofollow">pip-installer</a>:</p>
-<div class="highlight highlight-source-shell"><pre>    pip install regex</pre></div>
-<p>or with the <a href="http://peak.telecommunity.com/DevCenter/EasyInstall" rel="nofollow">Easy Install</a> Python module:</p>
-<div class="highlight highlight-source-shell"><pre>    easy_install regex</pre></div>
 <p>Notes:</p>
 <ul>
 <li>It is strongly suggested to provide multiple paired-end and mate-pair libraries according to their insert size (from smallest to longest).</li>
@@ -288,16 +287,21 @@ This option is not compatible with <code>--only-error-correction</code> or <code
 <p><a href=""></a></p>
 <p><a name="plasmid"></a><br>
 <code>--plasmid </code>   (same as <code>plasmidspades.py</code>)<br>
-    This flag is required when assembling only plasmids from WGS data sets (runs plasmidSPAdes, see <a href="https://academic.oup.com/bioinformatics/article/32/22/3380/2525610" rel="nofollow">paper</a> for the algorithm details). Note, that plasmidSPAdes is not compatible with <a href="#sc">single-cell mode</a>. Additionally, we do not recommend to run plasmidSPAdes on more than one library.<br>
-If options <code>--meta</code> and <code>--plasmid</code> are combined (same as <code>metaplasmidspades.py</code>) then metaplasmidSPAdes algorithm for extracting plasmids from metagenomic data sets is run (see <a href="https://genome.cshlp.org/content/29/6/961.short" rel="nofollow">paper</a> for algorithm details).</p>
+    This flag is required when assembling only plasmids from WGS data sets (runs plasmidSPAdes, see <a href="https://academic.oup.com/bioinformatics/article/32/22/3380/2525610" rel="nofollow">paper</a> for the algorithm details). Note, that plasmidSPAdes is not compatible with <a href="#sc">single-cell mode</a>. Additionally, we do not recommend to run plasmidSPAdes on more than one library.</p>
+<p>For plasmidSPAdes output details see <a href="#sec3.6">section 3.6</a>.</p>
 <p><a href=""></a></p>
-<p>For plasmidSPAdes and metaplasmidSPAdes output details see <a href="#sec3.6">section 3.6</a>.</p>
+<p><a name="metaextrachromosomal"></a><br>
+<code>--metaplasmid </code>   (same as <code>metaplasmidspades.py</code> and <code>--meta</code> <code>--plasmid</code>) and</p>
+<p><code>--metaviral </code>   (same as <code>metaviralspades.py</code>)</p>
+<p>These options works specially for extracting extrachromosomal elements from metagenomic assemblies. They run similar pipelines that slightly differ in the simplification step; another difference is that for metaviral mode we output linear putative extrachromosomal contigs and for metaplasmid mode we do not.<br>
+See <a href="https://genome.cshlp.org/content/29/6/961.short" rel="nofollow">metaplasmid paper</a> and <a href="https://academic.oup.com/bioinformatics/article-abstract/36/14/4126/5837667" rel="nofollow">metaviral paper</a> for the algorithms details.</p>
+<p>For metaplasmidSPAdes/metaviralSPAdes output details see <a href="#sec3.7">section 3.7</a>.</p>
 <p><a href=""></a></p>
-<p>Additionally for plasmidSPAdes and metaplasmidSPAdes we recommend to additionally verify resulting contigs with <a href="https://github.com/ablab/plasmidVerify">plasmidVerify tool</a>.</p>
+<p>Additionally for plasmidSPAdes, metaplasmidSPAdes and metaviralSPAdes we recommend to additionally verify resulting contigs with <a href="https://github.com/ablab/viralVerify">viralVerify tool</a>.</p>
 <p><a href=""></a></p>
 <p><a name="biosynthetic"></a><br>
 <code>--bio </code><br>
-    This flag is required when assembling only non-ribosomal and polyketide gene clusters from WGS data sets (runs biosyntheticSPAdes, see <a href="https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1" rel="nofollow">paper</a> for the algorithm details). biosyntheticSPAdes is supposed to work on isolate or metagenomic WGS dataset. Note, that biosyntheticSPAdes is not compatible with any other modes. See <a href="#sec3.7">section 3.7</a> for biosyntheticSPAdes output details.</p>
+    This flag is required when assembling only non-ribosomal and polyketide gene clusters from WGS data sets (runs biosyntheticSPAdes, see <a href="https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1" rel="nofollow">paper</a> for the algorithm details). biosyntheticSPAdes is supposed to work on isolate or metagenomic WGS dataset. Note, that biosyntheticSPAdes is not compatible with any other modes. See <a href="#sec3.8">section 3.8</a> for biosyntheticSPAdes output details.</p>
 <p><a href=""></a></p>
 <p><a name="rna"></a><br>
 <code>--rna </code>   (same as <code>rnaspades.py</code>)<br>
@@ -405,12 +409,6 @@ Should not be confused with FR and RF strand-specificity for RNA-Seq data (see <
 <p><code>--hqmp&lt;#&gt;-&lt;or&gt; </code><br>
     Orientation of reads for high-quality mate-pair library number <code>&lt;#&gt;</code> (<code>&lt;#&gt;</code> = 1,2,..,9; <code>&lt;or&gt;</code> = "fr","rf","ff").<br>
     The default orientation for high-quality mate-pair libraries is forward-reverse (<code>--&gt; &lt;--</code>). For example, to specify reverse-forward orientation for the first high-quality mate-pair library, you should use the flag: <code>--hqmp1-rf </code></p>
-<p><a name="lxmp"></a><br>
-<strong><em>Lucigen NxSeq® Long Mate Pair libraries</em></strong> (see <a href="#sec3.1">section 3.1</a> for details)</p>
-<p><code>--nxmate&lt;#&gt;-1 &lt;file_name&gt; </code><br>
-    File with left reads for Lucigen NxSeq® Long Mate Pair library number <code>&lt;#&gt;</code> (<code>&lt;#&gt;</code> = 1,2,..,9).</p>
-<p><code>--nxmate&lt;#&gt;-2 &lt;file_name&gt; </code><br>
-    File with right reads for Lucigen NxSeq® Long Mate Pair library number <code>&lt;#&gt;</code> (<code>&lt;#&gt;</code> = 1,2,..,9).</p>
 <p><strong><em>Specifying data for hybrid assembly</em></strong></p>
 <p><code>--pacbio &lt;file_name&gt; </code><br>
     File with PacBio CLR reads. For PacBio CCS reads use <code>-s</code> option. More information on PacBio reads is provided in <a href="#pacbio">section 3.1</a>.</p>
@@ -506,8 +504,6 @@ Notes:</p>
     Read coverage cutoff value. Must be a positive float value, or "auto", or "off". Default value is "off". When set to "auto" SPAdes automatically computes coverage threshold using conservative strategy. Note, that this option is not supported by metaSPAdes.</p>
 <p><code>--phred-offset &lt;33 or 64&gt;</code><br>
     PHRED quality offset for the input reads, can be either 33 or 64. It will be auto-detected if it is not specified.</p>
-<p><code>--custom-hmms &lt;dir_name&gt;</code><br>
-        Path to the directory with user-defined set of hmms that replaces the default ones. Can be used for genome mining of any multidomain BGCs. Folder should contain files with .hmm of .hmm.gz extensions. Works only with biosyntheticSPAdes mode.</p>
 <p><a name="examples"></a></p>
 <h3>Examples</h3>
 <p>To test the toy data set, you can also run the following command from the SPAdes <code>bin</code> directory:</p>
@@ -674,13 +670,18 @@ Here <code>3</code> is the number of the contig/scaffold, <code>237403</code> is
 <h2>plasmidSPAdes output</h2>
 <p>plasmidSPAdes and metaplasmidSPAdes output only DNA sequences from putative plasmids. Output file names and formats remain the same as in SPAdes (see <a href="#sec3.5">previous</a> section), with the following differences.</p>
 <p>For all plasmidSPAdes' contig names in <code>contigs.fasta</code>, <code>scaffolds.fasta</code> and <code>assembly_graph.fastg</code> we append suffix <code>_component_X</code>, where <code>X</code> is the id of the putative plasmid, which the contig belongs to. Note that plasmidSPAdes may not be able to separate similar plasmids and thus their contigs may appear with the same id. <a href=""></a></p>
-<p>The repeat resolution and plasmid detection in metaplasmidSPAdes is run independently for different coverage cutoffs values (see <a href="https://genome.cshlp.org/content/29/6/961.short" rel="nofollow">paper</a> for details). In order to distinguish contigs with putative plasmids detected at different cutoff levels we extend the contig name in FASTA file with cutoff value used for this particular contig (in format <code>_cutoff_N</code>). This is why, in the contrast to regular SPAdes pipeline, there might be a contig with <code>NODE_1_</code> prefix for each cutoff with potential plasmids detected. In following example, there were detected two potential plasmids using cutoff 0, one plasmid was detected with cutoff 5 and one with cutoff 10.</p>
-<pre lang="plain"><code>&gt;NODE_1_length_40003_cov_13.48_cutoff_0
-&gt;NODE_2_length_30000_cov_4.20_cutoff_0
-&gt;NODE_1_length_20000_cov_20.42_cutoff_5
-&gt;NODE_1_length_10000_cov_198.4_cutoff_10
-</code></pre>
 <p><a name="sec3.7"></a></p>
+<h2>metaplasmidSPAdes/metaviralSPAdes output</h2>
+<p>The repeat resolution and extrachromosomal element detection in metaplasmidSPAdes/metaviralSPAdes is run independently for different coverage cutoffs values (see <a href="https://genome.cshlp.org/content/29/6/961.short" rel="nofollow">paper</a> for details). In order to distinguish contigs with putative plasmids detected at different cutoff levels we extend the contig name in FASTA file with cutoff value used for this particular contig (in format <code>_cutoff_N</code>). This is why, in the contrast to regular SPAdes pipeline, there might be a contig with <code>NODE_1_</code> prefix for each cutoff with potential plasmids detected. In following example, there were detected two potential viruses using cutoff 0, one virus was detected with cutoff 5 and one with cutoff 10.<br>
+Also, we add a suffix that shows the structure of the suspective extrachromosomal element.<br>
+For metaplasmid mode we output only circular putative plasmids.<br>
+For metaviral mode we also output linear putative viruses and linear viruses with simple repeats ('9'-shaped components in the assembly graph) sequences.</p>
+<pre lang="plain"><code>&gt;NODE_1_length_40003_cov_13.48_cutoff_0_type_circular
+&gt;NODE_2_length_30000_cov_4.20_cutoff_0_type_linear
+&gt;NODE_1_length_20000_cov_20.42_cutoff_5_type_circular
+&gt;NODE_1_length_10000_cov_198.4_cutoff_10_type_linearrepeat
+</code></pre>
+<p><a name="sec3.8"></a></p>
 <h2>biosyntheticSPAdes output</h2>
 <p>biosyntheticSPAdes outputs three files of interest:</p>
 <ul>
@@ -688,7 +689,7 @@ Here <code>3</code> is the number of the contig/scaffold, <code>237403</code> is
 <li>bgc_statistics.txt – contains statistics about BGC composition in the sample. First, it outputs number of domain hits in the sample. Then, for each BGC candidate we output domain order with positions on the corresponding DNA sequence from gene_clusters.fasta.</li>
 <li>domain_graph.dot – contains domain graph structure, that can be used to assess complexity of the sample and structure of BGCs. For more information about domain graph construction, please refer to the paper.</li>
 </ul>
-<p><a name="sec3.8"></a></p>
+<p><a name="sec3.9"></a></p>
 <h2>Assembly evaluation</h2>
 <p><a href="http://cab.spbu.ru/software/quast/" rel="nofollow">QUAST</a> may be used to generate summary statistics (N50, maximum contig length, GC %, # genes found in a reference list or with built-in gene finding tools, etc.) for a single assembly. It may also be used to compare statistics for multiple assemblies of the same data set (e.g., SPAdes run with different parameters, or several different assemblers).<br>
 <a href=""></a></p>
@@ -825,6 +826,7 @@ output directory to use (default: spaligner_result/)</p>
 <p>If you use metaSPAdes please cite <a href="https://genome.cshlp.org/content/27/5/824.short" rel="nofollow">Nurk et al., 2017</a>.</p>
 <p>If you use plasmidSPAdes please cite <a href="https://academic.oup.com/bioinformatics/article/32/22/3380/2525610" rel="nofollow">Antipov et al., 2016</a>.</p>
 <p>If you use metaplasmidSPAdes and/or plasmidVerify please cite <a href="https://genome.cshlp.org/content/29/6/961.short" rel="nofollow">Antipov et al., 2019</a></p>
+<p>If you use metaviralSPAdes and/or viralVerify please cite <a href="https://academic.oup.com/bioinformatics/article-abstract/36/14/4126/5837667" rel="nofollow">Antipov et al., 2020</a></p>
 <p>For rnaSPAdes citation use <a href="https://academic.oup.com/gigascience/article/8/9/giz100/5559527" rel="nofollow">Bushmanova et al., 2019</a>.</p>
 <p>If you use biosyntheticSPAdes please cite <a href="https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1" rel="nofollow">Meleshko et al., 2019</a>.</p>
 <p>In addition, we would like to list your publications that use our software on our website. Please email the reference, the name of your lab, department and institution to <a href="mailto:spades.support@cab.spbu.ru">spades.support@cab.spbu.ru</a>.<br>
