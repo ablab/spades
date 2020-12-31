@@ -58,8 +58,8 @@ SPAdes 3.15.0 includes the following additional pipelines:
 -   plasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from WGS data sets (see [plasmid options](#plasmid)).
 -   metaplasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from *metagenomic* data sets (see [plasmid options](#plasmid)).
 -   rnaSPAdes &ndash; a *de novo* transcriptome assembler from RNA-Seq data (see [rnaSPAdes manual](assembler/rnaspades_manual.html)).
--   truSPAdes &ndash; a module for TruSeq barcode assembly (see [truSPAdes manual](assembler/truspades_manual.html)).
 -   biosyntheticSPAdes &ndash; a module for biosynthetic gene cluster assembly with paired-end reads (see [biosynthicSPAdes options](#biosynthetic)).
+-   truSPAdes &ndash; a module for TruSeq barcode assembly (see [truSPAdes manual](assembler/truspades_manual.html)).
 
 In addition, we provide several stand-alone binaries with relatively simple command-line interface: [k-mer counting](#sec4.1) (`spades-kmercounter`), [assembly graph construction](#sec4.2) (`spades-gbuilder`) and [long read to graph aligner](#sec4.3) (`spades-gmapper`). To learn options of these tools you can either run them without any parameters or read [this section](#sec4).
 
