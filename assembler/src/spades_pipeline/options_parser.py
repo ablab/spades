@@ -463,14 +463,6 @@ def add_input_data_args(pgroup_input_data):
                                    help="file with Nanopore reads",
                                    action=AddToDatasetAction)
 
-    help_hidden = (mode == "rna")
-    pgroup_input_data.add_argument("--tslr",
-                                   metavar="<filename>",
-                                   nargs=1,
-                                   help="file with TSLR-contigs"
-                                   if not help_hidden else argparse.SUPPRESS,
-                                   action=AddToDatasetAction)
-
     help_hidden = (mode == "meta")
     pgroup_input_data.add_argument("--trusted-contigs",
                                    metavar="<filename>",
@@ -1089,12 +1081,12 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
     if args.meta and not args.only_error_correction and not args.rnaviral:
         paired_end_libs = max(1, len(support.get_lib_ids_by_type(dataset_data, "paired-end")))
         graph_libs = max(1, len(support.get_lib_ids_by_type(dataset_data, "assembly-graph")))
-        long_read_libs = max(1, len(support.get_lib_ids_by_type(dataset_data, ["tslr", "pacbio", "nanopore"])))
+        long_read_libs = max(1, len(support.get_lib_ids_by_type(dataset_data, ["pacbio", "nanopore"])))
         
         if len(dataset_data) > paired_end_libs + graph_libs + long_read_libs:
             support.error("you cannot specify any data types except a single paired-end library "
                           "(optionally accompanied by a single library of "
-                          "TSLR-contigs, or PacBio reads, or Nanopore reads) in metaSPAdes mode!")
+                          "PacBio reads or Nanopore reads) in metaSPAdes mode!")
 
     if existing_dataset_data is None:
         with open(args.dataset_yaml_filename, 'w') as f:

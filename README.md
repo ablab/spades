@@ -59,7 +59,7 @@ SPAdes 3.15.0 includes the following additional pipelines:
 -   metaplasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from *metagenomic* data sets (see [plasmid options](#plasmid)).
 -   rnaSPAdes &ndash; a *de novo* transcriptome assembler from RNA-Seq data (see [rnaSPAdes manual](assembler/rnaspades_manual.html)).
 -   biosyntheticSPAdes &ndash; a module for biosynthetic gene cluster assembly with paired-end reads (see [biosynthicSPAdes options](#biosynthetic)).
--   truSPAdes &ndash; a module for TruSeq barcode assembly (see [truSPAdes manual](assembler/truspades_manual.html)).
+-   truSPAdes &ndash; (DEPRECATED) a module for TruSeq barcode assembly (see [truSPAdes manual](assembler/truspades_manual.html)).
 
 In addition, we provide several stand-alone binaries with relatively simple command-line interface: [k-mer counting](#sec4.1) (`spades-kmercounter`), [assembly graph construction](#sec4.2) (`spades-gbuilder`) and [long read to graph aligner](#sec4.3) (`spades-gmapper`). To learn options of these tools you can either run them without any parameters or read [this section](#sec4).
 
@@ -166,7 +166,7 @@ In case of successful installation the following files will be placed in the `bi
 -   `metaplasmidspades.py` (main executable script for [metaplasmidSPAdes](#metaextrachromosomal))
 -   `metaviralspades.py` (main executable script for [metaviralSPAdes](#metaextrachromosomal))
 -   `rnaspades.py` (main executable script for [rnaSPAdes](rnaspades_manual.html))
--   `truspades.py` (main executable script for [truSPAdes](truspades_manual.html))
+-   `truspades.py` (main executable script for [truSPAdes](truspades_manual.html), DEPRECATED)
 -   `spades-core`  (assembly module)
 -   `spades-gbuilder`  (standalone graph builder application)
 -   `spades-gmapper`  (standalone long read to graph aligner)
