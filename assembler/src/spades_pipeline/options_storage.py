@@ -31,7 +31,7 @@ MAX_LIBS_NUMBER = 9
 OLD_STYLE_READS_OPTIONS = ["--12", "-1", "-2", "-s", "--merged"]
 SHORT_READS_TYPES = {"pe": "paired-end", "s": "single", "mp": "mate-pairs", "hqmp": "hq-mate-pairs"}
 # other libs types:
-LONG_READS_TYPES = ["pacbio", "sanger", "nanopore", "tslr", "trusted-contigs", "untrusted-contigs", "fl-rna"]
+LONG_READS_TYPES = ["pacbio", "sanger", "nanopore", "trusted-contigs", "untrusted-contigs", "fl-rna"]
 GRAPH_READS_TYPES = ["assembly-graph"]
 
 SHORT_STAGES_NAME = ["ec", "as", "mc", "scc", "tpp"]

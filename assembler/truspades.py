@@ -156,6 +156,7 @@ def CheckTestSuccess(options, log):
 
 
 def main(argv):
+    print("WARNING: TruSPAdes is deprecated since version 3.15")
     options = launch_options.Options(argv, spades_home, truspades_home, spades_version)
     support.ensure_dir_existence(options.output_dir)
     if options.test and not options.continue_launch:
