@@ -349,7 +349,7 @@ public:
 
     size_t Run(bool force_primary_launch = false,
                double iter_run_progress = 1.) override {
-        bool primary_launch = force_primary_launch ;
+        bool primary_launch = true;
         if (!it_.IsAttached()) {
             it_.Attach();
             primary_launch = true;
