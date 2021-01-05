@@ -914,7 +914,7 @@ private:
             }
 
             if (!cover_map_.IsCovered(*paths.Get(i))) {
-                AddPath(result, *paths.Get(i), cover_map_);
+                //AddPath(result, *paths.Get(i), cover_map_);
                 BidirectionalPath * path = new BidirectionalPath(*paths.Get(i));
                 BidirectionalPath * conjugatePath = new BidirectionalPath(*paths.GetConjugate(i));
                 SubscribeCoverageMap(path, cover_map_);

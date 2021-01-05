@@ -408,6 +408,7 @@ protected:
 
     bool Process(EdgeId e) override {
         TRACE("Checking edge " << this->g().str(e) << " for the removal condition");
+
         if (remove_condition_(e)) {
             TRACE("Check passed, removing");
             edge_remover_.DeleteEdge(e);

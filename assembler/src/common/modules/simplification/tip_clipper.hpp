@@ -129,9 +129,11 @@ class MismatchTipCondition : public EdgeCondition<Graph> {
                 auto diff_bound = math::ge(max_diff_, 1.) ? max_diff_ : max_diff_ * double(len);
                 if (Hamming(e, alt) <= size_t(math::round(diff_bound)))
                     return true;
+                else
+                    return false;
             }
         }
-        return false;
+        return true;
     }
 
 public:
