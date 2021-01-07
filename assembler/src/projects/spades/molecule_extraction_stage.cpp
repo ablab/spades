@@ -352,6 +352,7 @@ namespace debruijn_graph {
 
         void extractLongReadsPE(debruijn_graph::conj_graph_pack &graph_pack, path_extend::PathContainer &path_set, const std::vector<EdgeId> &out_edges, const std::string &barcode, const lib_t& lib_10x) {
 
+
             path_extend::PathExtendParamsContainer params(cfg::get().ds,
                                               cfg::get().pe_params,
                                               cfg::get().ss,
@@ -540,10 +541,11 @@ namespace debruijn_graph {
                     pif.StopProcessLibrary();
                     INFO("Here");
                     std::vector<EdgeId> good_edges;
+
                     extractor.extractEdges(paths, good_edges, current_barcode);
                     INFO("Here");
-
-                    extractor.extractLongReadsPE(graph_pack, long_reads_temp_container, good_edges, current_barcode, lib_10x);
+                    if (paths.size() < cfg::get().pe_params.param_set.rna_10x.min_cloud_size)
+                        extractor.extractLongReadsPE(graph_pack, long_reads_temp_container, good_edges, current_barcode, lib_10x);
                     INFO("Here");
 
                     for (auto path : long_reads_temp_container) {
