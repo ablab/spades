@@ -66,7 +66,7 @@ terms of the MIT license. A copy of the license can be found in the file
 #elif defined(_MSC_VER)
   // cannot override malloc unless using a dll.
   // we just override new/delete which does work in a static library.
-#else
+#elif defined(MI_MALLOC_OVERRIDE_GLIBC)
   // On all other systems forward to our API
   void* malloc(size_t size)              MI_FORWARD1(mi_malloc, size);
   void* calloc(size_t size, size_t n)    MI_FORWARD2(mi_calloc, size, n);
@@ -189,7 +189,7 @@ void* aligned_alloc(size_t alignment, size_t size)   { return mi_aligned_alloc(a
 #endif
 
 
-#if defined(__GLIBC__) && defined(__linux__)
+#if defined(MI_MALLOC_OVERRIDE_GLIBC) && defined(__GLIBC__) && defined(__linux__)
   // forward __libc interface (needed for glibc-based Linux distributions)
   void* __libc_malloc(size_t size)                  MI_FORWARD1(mi_malloc,size);
   void* __libc_calloc(size_t count, size_t size)    MI_FORWARD2(mi_calloc,count,size);
