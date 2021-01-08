@@ -13,6 +13,7 @@ terms of the MIT license. A copy of the license can be found in the file
 
 #define MI_IN_ALLOC_C
 #include "alloc-override.c"
+#include "alloc-wrap.c"
 #undef MI_IN_ALLOC_C
 
 // ------------------------------------------------------
