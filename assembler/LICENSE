@@ -1,5 +1,5 @@
 SPADES: SAINT-PETERSBURG GENOME ASSEMBLER
-Copyright (c) 2015-2020 Saint Petersburg State University
+Copyright (c) 2015-2021 Saint Petersburg State University
 Copyright (c) 2011-2014 Saint Petersburg Academic University
 
 SPAdes is free software; you can redistribute it and/or modify
@@ -69,17 +69,5 @@ Address for communication: spades.support@cab.spbu.ru
 
 References:
 
-Anton Bankevich, Sergey Nurk, Dmitry Antipov, Alexey A. Gurevich, Mikhail
-Dvorkin, Alexander S. Kulikov, Valery M. Lesin, Sergey I. Nikolenko, Son Pham,
-Andrey D. Prjibelski, Alexey V. Pyshkin, Alexander V. Sirotkin, Nikolay Vyahhi,
-Glenn Tesler, Max A. Alekseyev, and Pavel A. Pevzner. SPAdes: A New Genome
-Assembly Algorithm and Its Applications to Single-Cell Sequencing.  Journal of
-Computational Biology 19(5) (2012), 455-477. doi:10.1089/cmb.2012.0021
-
-Sergey Nurk, Anton Bankevich, Dmitry Antipov, Alexey Gurevich, Anton Korobeynikov, 
-Alla Lapidus, Andrey Prjibelsky, Alexey Pyshkin, Alexander Sirotkin, 
-Yakov Sirotkin, Ramunas Stepanauskas, Jeffrey McLean, Roger Lasken, 
-Scott Clingenpeel, Tanja Woyke, Glenn Tesler, Max Alekseyev, and Pavel Pevzner.
-Assembling Genomes and Mini-metagenomes from Highly Chimeric Reads. Lecture Notes 
-in Computer Science 7821 (2013), pp. 158-170. doi:10.1007/978-3-642-37195-0_13
+Prjibelski, A., Antipov, D., Meleshko, D., Lapidus, A. and Korobeynikov, A., 2020. Using SPAdes de novo assembler. Current Protocols in Bioinformatics, 70(1), p.e102.
 
