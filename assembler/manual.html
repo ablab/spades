@@ -1,4 +1,6 @@
-<html>     <head>         <title>SPAdes 3.15.0 Manual</title>         <style type="text/css">             .highlight  pre {               background-color: #f0f2f4;               border-radius: 2px;               font-size: 100%;               line-height: 1.45;               overflow: auto;               padding: 16px;             }         </style>     </head>     <body><p><br>
+<html>     <head>         <title>SPAdes 3.15.0 Manual</title>         <style type="text/css">             .highlight  pre {               background-color: #f0f2f4;               border-radius: 2px;               font-size: 100%;               line-height: 1.45;               overflow: auto;               padding: 16px;             }         </style>     </head>     <body><p>
+
+</p>
  <meta charset="UTF-8"> <p><strong>SPAdes 3.15.0 Manual</strong></p>
 <ol>
 <li><a href="#sec1">About SPAdes</a> <br>
@@ -15,11 +17,12 @@
     3.2. <a href="#sec3.2">SPAdes command line options</a><br>
     3.3. <a href="#sec3.3">Assembling IonTorrent reads</a><br>
     3.4. <a href="#sec3.4">Assembling long Illumina paired reads (2x150 and 2x250)</a><br>
-    3.5. <a href="#sec3.5">SPAdes output</a><br>
-    3.6. <a href="#sec3.6">plasmidSPAdes output</a><br>
-    3.7. <a href="#sec3.7">metaplasmidSPAdes and metaviralSPAdes output</a><br>
-    3.8. <a href="#sec3.8">biosyntheticSPAdes output</a><br>
-    3.9. <a href="#sec3.9">Assembly evaluation</a><br></li>
+    3.5. <a href="#hmm">HMM-guided mode</a><br>
+    3.6. <a href="#spadesoutsec">SPAdes output</a><br>
+    3.7. <a href="#plasmidout">plasmidSPAdes output</a><br>
+    3.8. <a href="#metapv">metaplasmidSPAdes and metaviralSPAdes output</a><br>
+    3.9. <a href="#bgc">biosyntheticSPAdes output</a><br>
+    3.10. <a href="#eval">Assembly evaluation</a><br></li>
 <li><a href="#sec4">Stand-alone binaries released within SPAdes package</a><br>
     4.1. <a href="#sec4.1">k-mer counting</a><br>
     4.2. <a href="#sec4.2">k-mer coverage read filter</a><br>
@@ -33,7 +36,7 @@
 </ol>
 <p><a name="sec1"></a></p>
 <h1>About SPAdes</h1>
-<p>SPAdes – St. Petersburg genome assembler – is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.15 was released under GPLv2 on December 31, 2020 and can be downloaded from <a href="http://cab.spbu.ru/software/spades/" rel="nofollow">http://cab.spbu.ru/software/spades/</a>.</p>
+<p>SPAdes – St. Petersburg genome assembler – is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.15 was released under GPLv2 on January 11, 2021 and can be downloaded from <a href="http://cab.spbu.ru/software/spades/" rel="nofollow">http://cab.spbu.ru/software/spades/</a>.</p>
 <p>The latest SPAdes paper describing various pipelines in a protocol format is available <a href="https://currentprotocols.onlinelibrary.wiley.com/doi/abs/10.1002/cpbi.102" rel="nofollow">here</a>.</p>
 <p><a name="sec1.1"></a></p>
 <h2>Supported data types</h2>
@@ -46,8 +49,10 @@
 <li>plasmidSPAdes – a pipeline for extracting and assembling plasmids from WGS data sets (see <a href="#plasmid">plasmid options</a>).</li>
 <li>metaplasmidSPAdes – a pipeline for extracting and assembling plasmids from <em>metagenomic</em> data sets (see <a href="#plasmid">plasmid options</a>).</li>
 <li>rnaSPAdes – a <em>de novo</em> transcriptome assembler from RNA-Seq data (see <a href="rnaspades_manual.html">rnaSPAdes manual</a>).</li>
-<li>truSPAdes – a module for TruSeq barcode assembly (see <a href="truspades_manual.html">truSPAdes manual</a>).</li>
 <li>biosyntheticSPAdes – a module for biosynthetic gene cluster assembly with paired-end reads (see <a href="#biosynthetic">biosynthicSPAdes options</a>).</li>
+<li>rnaviralSPAdes – a <em>de novo</em> assembler tailored for RNA viral datasets (transcriptome, metatranscriptome and metavirome).</li>
+<li>coronaSPAdes is a special mode of rnaviralSPAdes specifically aimed for SARS-CoV-2 <em>de novo</em> assembly.</li>
+<li>truSPAdes – (DEPRECATED) a module for TruSeq barcode assembly (see <a href="truspades_manual.html">truSPAdes manual</a>).</li>
 </ul>
 <p>In addition, we provide several stand-alone binaries with relatively simple command-line interface: <a href="#sec4.1">k-mer counting</a> (<code>spades-kmercounter</code>), <a href="#sec4.2">assembly graph construction</a> (<code>spades-gbuilder</code>) and <a href="#sec4.3">long read to graph aligner</a> (<code>spades-gmapper</code>). To learn options of these tools you can either run them without any parameters or read <a href="#sec4">this section</a>.</p>
 <p><a href=""></a></p>
@@ -139,7 +144,9 @@
 <li><code>metaplasmidspades.py</code> (main executable script for <a href="#metaextrachromosomal">metaplasmidSPAdes</a>)</li>
 <li><code>metaviralspades.py</code> (main executable script for <a href="#metaextrachromosomal">metaviralSPAdes</a>)</li>
 <li><code>rnaspades.py</code> (main executable script for <a href="rnaspades_manual.html">rnaSPAdes</a>)</li>
-<li><code>truspades.py</code> (main executable script for <a href="truspades_manual.html">truSPAdes</a>)</li>
+<li><code>truspades.py</code> (main executable script for <a href="truspades_manual.html">truSPAdes</a>, DEPRECATED)</li>
+<li><code>rnaviralspades.py</code> (main executable script for rnaviralSPAdes)</li>
+<li><code>coronaspades.py</code> (wrapper script for coronaSPAdes mode)</li>
 <li><code>spades-core</code>  (assembly module)</li>
 <li><code>spades-gbuilder</code>  (standalone graph builder application)</li>
 <li><code>spades-gmapper</code>  (standalone long read to graph aligner)</li>
@@ -288,24 +295,29 @@ This option is not compatible with <code>--only-error-correction</code> or <code
 <p><a name="plasmid"></a><br>
 <code>--plasmid </code>   (same as <code>plasmidspades.py</code>)<br>
     This flag is required when assembling only plasmids from WGS data sets (runs plasmidSPAdes, see <a href="https://academic.oup.com/bioinformatics/article/32/22/3380/2525610" rel="nofollow">paper</a> for the algorithm details). Note, that plasmidSPAdes is not compatible with <a href="#sc">single-cell mode</a>. Additionally, we do not recommend to run plasmidSPAdes on more than one library.</p>
-<p>For plasmidSPAdes output details see <a href="#sec3.6">section 3.6</a>.</p>
+<p>For plasmidSPAdes output details see <a href="#plasmidout">section 3.6</a>.</p>
 <p><a href=""></a></p>
 <p><a name="metaextrachromosomal"></a><br>
 <code>--metaplasmid </code>   (same as <code>metaplasmidspades.py</code> and <code>--meta</code> <code>--plasmid</code>) and</p>
 <p><code>--metaviral </code>   (same as <code>metaviralspades.py</code>)</p>
 <p>These options works specially for extracting extrachromosomal elements from metagenomic assemblies. They run similar pipelines that slightly differ in the simplification step; another difference is that for metaviral mode we output linear putative extrachromosomal contigs and for metaplasmid mode we do not.<br>
 See <a href="https://genome.cshlp.org/content/29/6/961.short" rel="nofollow">metaplasmid paper</a> and <a href="https://academic.oup.com/bioinformatics/article-abstract/36/14/4126/5837667" rel="nofollow">metaviral paper</a> for the algorithms details.</p>
-<p>For metaplasmidSPAdes/metaviralSPAdes output details see <a href="#sec3.7">section 3.7</a>.</p>
+<p>For metaplasmidSPAdes/metaviralSPAdes output details see <a href="#metapv">section 3.7</a>.</p>
 <p><a href=""></a></p>
 <p>Additionally for plasmidSPAdes, metaplasmidSPAdes and metaviralSPAdes we recommend to additionally verify resulting contigs with <a href="https://github.com/ablab/viralVerify">viralVerify tool</a>.</p>
 <p><a href=""></a></p>
 <p><a name="biosynthetic"></a><br>
 <code>--bio </code><br>
-    This flag is required when assembling only non-ribosomal and polyketide gene clusters from WGS data sets (runs biosyntheticSPAdes, see <a href="https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1" rel="nofollow">paper</a> for the algorithm details). biosyntheticSPAdes is supposed to work on isolate or metagenomic WGS dataset. Note, that biosyntheticSPAdes is not compatible with any other modes. See <a href="#sec3.8">section 3.8</a> for biosyntheticSPAdes output details.</p>
+    This flag is required when assembling only non-ribosomal and polyketide gene clusters from WGS data sets (runs biosyntheticSPAdes, see <a href="https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1" rel="nofollow">paper</a> for the algorithm details). biosyntheticSPAdes is supposed to work on isolate or metagenomic WGS dataset. Note, that biosyntheticSPAdes is not compatible with any other modes. See <a href="#bgc">section 3.8</a> for biosyntheticSPAdes output details.</p>
 <p><a href=""></a></p>
 <p><a name="rna"></a><br>
 <code>--rna </code>   (same as <code>rnaspades.py</code>)<br>
     This flag should be used when assembling RNA-Seq data sets (runs rnaSPAdes). To learn more, see <a href="rnaspades_manual.html">rnaSPAdes manual</a>.<br>
+Not compatible with <code>--only-error-correction</code> or <code>--careful</code> options.</p>
+<p><a href=""></a></p>
+<p><a name="rnaviral"></a><br>
+<code>--rnaviral</code>   (same as <code>rnaviralspades.py</code>)<br>
+    This flag should be used when assembling viral RNA-Seq data sets (runs rnaviralSPAdes).<br>
 Not compatible with <code>--only-error-correction</code> or <code>--careful</code> options.</p>
 <p><code>--iontorrent </code><br>
     This flag is required when assembling IonTorrent data. Allows BAM files as input. Carefully read <a href="#sec3.3">section 3.3</a> before using this option.</p>
@@ -420,6 +432,9 @@ Should not be confused with FR and RF strand-specificity for RNA-Seq data (see <
     Reliable contigs of the same genome, which are likely to have no misassemblies and small rate of other errors (e.g. mismatches and indels). This option is not intended for contigs of the related species.</p>
 <p><code>--untrusted-contigs &lt;file_name&gt; </code><br>
     Contigs of the same genome, quality of which is average or unknown. Contigs of poor quality can be used but may introduce errors in the assembly. This option is also not intended for contigs of the related species.</p>
+<p><strong><em>Other input</em></strong></p>
+<p><code>--assembly-graph &lt;file_name&gt; </code><br>
+    File with assembly graph. Could only be used in plasmid, metaplasmid, metaviral and biosynthetic mode. The primary purpose of this option to run these pipelines on already constructed and simplified assembly graph this way skipping a large part of SPAdes pipeline. Original reads the graph was constructed from need to be specified as well. Exact k-mer length (via <code>-k</code> option) should be provided. Note that the output would be different as compared to standalone runs of these pipelines as they setup graph simplification options as well.</p>
 <p><a name="yaml"></a><br>
 <strong><em>Specifying input data with YAML data set file (advanced)</em></strong></p>
 <p>An alternative way to specify an input data set for SPAdes is to create a <a href="http://www.yaml.org/" rel="nofollow">YAML</a> data set file. By using a YAML file you can provide an unlimited number of paired-end, mate-pair and unpaired libraries. Basically, YAML data set file is a text file, in which input libraries are provided as a comma-separated list in square brackets. Each library is provided in braces as a comma-separated list of attributes. The following attributes are available:</p>
@@ -504,6 +519,8 @@ Notes:</p>
     Read coverage cutoff value. Must be a positive float value, or "auto", or "off". Default value is "off". When set to "auto" SPAdes automatically computes coverage threshold using conservative strategy. Note, that this option is not supported by metaSPAdes.</p>
 <p><code>--phred-offset &lt;33 or 64&gt;</code><br>
     PHRED quality offset for the input reads, can be either 33 or 64. It will be auto-detected if it is not specified.</p>
+<p><code>--custom-hmms &lt;file or directory&gt;</code><br>
+    File or directory with amino acid HMMs for <a href="#hmm">HMM-guided mode</a>.</p>
 <p><a name="examples"></a></p>
 <h3>Examples</h3>
 <p>To test the toy data set, you can also run the following command from the SPAdes <code>bin</code> directory:</p>
@@ -587,7 +604,13 @@ Notes:</p>
 <p>The default k-mer lengths are recommended. For single-cell data sets SPAdes selects k-mer sizes 21, 33 and 55.</p>
 <p>However, it might be tricky to fully utilize the advantages of long reads you have. Consider contacting us for more information and to discuss assembly strategy.<br>
 <a href=""></a></p>
-<p><a name="sec3.5"></a></p>
+<p><a name="hmm"></a></p>
+<h2>HMM-guided mode</h2>
+<p>The majority of SPAdes assembly modes (normal multicell, single-cell, rnaviral, meta and of course biosynthetic) also supports HMM-guided mode as implemented in biosyntheticSPAdes. The detailed description could be found in <a href="https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118" rel="nofollow">biosyntheticSPAdes paper</a>, but in short: amino acid profile HMMs are aligned to the edges of assembly graph. After this the subgraphs containing the set of matches ("domains") are extracted and all possible paths through the domains that are supported both by paired-end data (via scaffolds) and graph topology are obtained (putative biosynthetic gene clusters).</p>
+<p>HMM-guided mode could be enabled via providing a set of HMMs via <code>--custom-hmms</code> option. In HMM guided mode the set of contigs and scaffolds (see section <a href="#spadesoutsec">SPAdes output</a> for more information about SPAdes output) is kept intact, however additional <a href="#bgc">biosyntheticSPAdes output</a> represents the output of HMM-guided assembly.</p>
+<p>Note that normal biosyntheticSPAdes mode (via <code>--bio</code> option) is a bit different from HMM-guided mode: besides using the special set of profile HMMS representing a family of NRSP/PKS domains also includes a set of assembly graph simplification and processing settings aimed for fuller recovery of biosynthetic gene clusters.</p>
+<p>Given an increased interest in coronavirus research we developed a coronavirus assembly mode for SPAdes assembler (also known as coronaSPAdes). It allows to assemble full-length coronaviridae genomes from the transcriptomic and metatranscriptomic data. Algorithmically, coronaSPAdes is an rnaviralSPAdes that uses Pfam SARS-CoV-2 2.0 set of HMMs. coronaSPAdes could be run via a dedicated <code>coronaspades.py</code> script. See <a href="https://www.biorxiv.org/content/10.1101/2020.07.28.224584v1" rel="nofollow">coronaSPAdes preprint</a> for more information about rnaviralSPAdes,  coronaSPAdes and HMM-guided mode.</p>
+<p><a name="spadesoutsec"></a></p>
 <h2>SPAdes output</h2>
 <p>SPAdes stores all output files in <code>&lt;output_dir&gt; </code>, which is set by the user.</p>
 <ul>
@@ -666,11 +689,11 @@ Here <code>3</code> is the number of the contig/scaffold, <code>237403</code> is
 </li>
 </ul>
 <p>SPAdes will overwrite these files and directories if they exist in the specified <code>&lt;output_dir&gt;</code>. <a href=""></a></p>
-<p><a name="sec3.6"></a></p>
+<p><a name="plasmidout"></a></p>
 <h2>plasmidSPAdes output</h2>
-<p>plasmidSPAdes and metaplasmidSPAdes output only DNA sequences from putative plasmids. Output file names and formats remain the same as in SPAdes (see <a href="#sec3.5">previous</a> section), with the following differences.</p>
+<p>plasmidSPAdes and metaplasmidSPAdes output only DNA sequences from putative plasmids. Output file names and formats remain the same as in SPAdes (see <a href="#spadesoutsec">previous</a> section), with the following differences.</p>
 <p>For all plasmidSPAdes' contig names in <code>contigs.fasta</code>, <code>scaffolds.fasta</code> and <code>assembly_graph.fastg</code> we append suffix <code>_component_X</code>, where <code>X</code> is the id of the putative plasmid, which the contig belongs to. Note that plasmidSPAdes may not be able to separate similar plasmids and thus their contigs may appear with the same id. <a href=""></a></p>
-<p><a name="sec3.7"></a></p>
+<p><a name="metapv"></a></p>
 <h2>metaplasmidSPAdes/metaviralSPAdes output</h2>
 <p>The repeat resolution and extrachromosomal element detection in metaplasmidSPAdes/metaviralSPAdes is run independently for different coverage cutoffs values (see <a href="https://genome.cshlp.org/content/29/6/961.short" rel="nofollow">paper</a> for details). In order to distinguish contigs with putative plasmids detected at different cutoff levels we extend the contig name in FASTA file with cutoff value used for this particular contig (in format <code>_cutoff_N</code>). This is why, in the contrast to regular SPAdes pipeline, there might be a contig with <code>NODE_1_</code> prefix for each cutoff with potential plasmids detected. In following example, there were detected two potential viruses using cutoff 0, one virus was detected with cutoff 5 and one with cutoff 10.<br>
 Also, we add a suffix that shows the structure of the suspective extrachromosomal element.<br>
@@ -681,7 +704,7 @@ For metaviral mode we also output linear putative viruses and linear viruses wit
 &gt;NODE_1_length_20000_cov_20.42_cutoff_5_type_circular
 &gt;NODE_1_length_10000_cov_198.4_cutoff_10_type_linearrepeat
 </code></pre>
-<p><a name="sec3.8"></a></p>
+<p><a name="bgc"></a></p>
 <h2>biosyntheticSPAdes output</h2>
 <p>biosyntheticSPAdes outputs three files of interest:</p>
 <ul>
@@ -689,7 +712,7 @@ For metaviral mode we also output linear putative viruses and linear viruses wit
 <li>bgc_statistics.txt – contains statistics about BGC composition in the sample. First, it outputs number of domain hits in the sample. Then, for each BGC candidate we output domain order with positions on the corresponding DNA sequence from gene_clusters.fasta.</li>
 <li>domain_graph.dot – contains domain graph structure, that can be used to assess complexity of the sample and structure of BGCs. For more information about domain graph construction, please refer to the paper.</li>
 </ul>
-<p><a name="sec3.9"></a></p>
+<p><a name="eval"></a></p>
 <h2>Assembly evaluation</h2>
 <p><a href="http://cab.spbu.ru/software/quast/" rel="nofollow">QUAST</a> may be used to generate summary statistics (N50, maximum contig length, GC %, # genes found in a reference list or with built-in gene finding tools, etc.) for a single assembly. It may also be used to compare statistics for multiple assemblies of the same data set (e.g., SPAdes run with different parameters, or several different assemblers).<br>
 <a href=""></a></p>
@@ -820,18 +843,20 @@ output directory to use (default: spaligner_result/)</p>
 <p><a name="sec5"></a></p>
 <h1>Citation</h1>
 <p>If you use SPAdes in your research, please cite <a href="https://currentprotocols.onlinelibrary.wiley.com/doi/abs/10.1002/cpbi.102" rel="nofollow">our latest paper</a>.</p>
-<p>You may also include <a href="http://link.springer.com/chapter/10.1007%2F978-3-642-37195-0_13" rel="nofollow">Nurk, Bankevich et al., 2013</a> or <a href="http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021" rel="nofollow">Bankevich, Nurk et al., 2012</a>, epecially if you assemble single-cell data.</p>
-<p>In case you perform hybrid assembly ussing  PacBio or Nanopore reads, you may also cite <a href="http://bioinformatics.oxfordjournals.org/content/early/2015/11/20/bioinformatics.btv688.short" rel="nofollow">Antipov et al., 2015</a>.</p>
-<p>If you use multiple paired-end and/or mate-pair libraries you may also cite papers describing SPAdes repeat resolution algorithms <a href="http://bioinformatics.oxfordjournals.org/content/30/12/i293.short" rel="nofollow">Prjibelski et al., 2014</a> and <a href="http://bioinformatics.oxfordjournals.org/content/31/20/3262.abstract" rel="nofollow">Vasilinetc et al., 2015</a>.</p>
-<p>If you use metaSPAdes please cite <a href="https://genome.cshlp.org/content/27/5/824.short" rel="nofollow">Nurk et al., 2017</a>.</p>
-<p>If you use plasmidSPAdes please cite <a href="https://academic.oup.com/bioinformatics/article/32/22/3380/2525610" rel="nofollow">Antipov et al., 2016</a>.</p>
-<p>If you use metaplasmidSPAdes and/or plasmidVerify please cite <a href="https://genome.cshlp.org/content/29/6/961.short" rel="nofollow">Antipov et al., 2019</a></p>
-<p>If you use metaviralSPAdes and/or viralVerify please cite <a href="https://academic.oup.com/bioinformatics/article-abstract/36/14/4126/5837667" rel="nofollow">Antipov et al., 2020</a></p>
-<p>For rnaSPAdes citation use <a href="https://academic.oup.com/gigascience/article/8/9/giz100/5559527" rel="nofollow">Bushmanova et al., 2019</a>.</p>
-<p>If you use biosyntheticSPAdes please cite <a href="https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1" rel="nofollow">Meleshko et al., 2019</a>.</p>
-<p>In addition, we would like to list your publications that use our software on our website. Please email the reference, the name of your lab, department and institution to <a href="mailto:spades.support@cab.spbu.ru">spades.support@cab.spbu.ru</a>.<br>
-<a href=""></a></p>
+<p>In case you perform hybrid assembly using  PacBio or Nanopore reads, you may also cite <a href="http://bioinformatics.oxfordjournals.org/content/early/2015/11/20/bioinformatics.btv688.short" rel="nofollow">Antipov et al., 2015</a>. If you use multiple paired-end and/or mate-pair libraries you may additionally cite papers describing SPAdes repeat resolution algorithms <a href="http://bioinformatics.oxfordjournals.org/content/30/12/i293.short" rel="nofollow">Prjibelski et al., 2014</a> and <a href="http://bioinformatics.oxfordjournals.org/content/31/20/3262.abstract" rel="nofollow">Vasilinetc et al., 2015</a>.</p>
+<p>If you use other pipelines, please cite the following papers:</p>
+<ul>
+<li>metaSPAdes: <a href="https://genome.cshlp.org/content/27/5/824.short" rel="nofollow">Nurk et al., 2017</a>.</li>
+<li>plasmidSPAdes: <a href="https://academic.oup.com/bioinformatics/article/32/22/3380/2525610" rel="nofollow">Antipov et al., 2016</a>.</li>
+<li>metaplasmidSPAdes / plasmidVerify: <a href="https://genome.cshlp.org/content/29/6/961.short" rel="nofollow">Antipov et al., 2019</a></li>
+<li>metaviralSPAdes / viralVerify: <a href="https://academic.oup.com/bioinformatics/article-abstract/36/14/4126/5837667" rel="nofollow">Antipov et al., 2020</a></li>
+<li>rnaSPAdes: <a href="https://academic.oup.com/gigascience/article/8/9/giz100/5559527" rel="nofollow">Bushmanova et al., 2019</a>.</li>
+<li>biosyntheticSPAdes: <a href="https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1" rel="nofollow">Meleshko et al., 2019</a>.</li>
+<li>coronaSPAdes paper is currently available at <a href="https://www.biorxiv.org/content/10.1101/2020.07.28.224584v1.abstract" rel="nofollow">bioRxiv</a>.</li>
+</ul>
+<p>You may also include older papers <a href="http://link.springer.com/chapter/10.1007%2F978-3-642-37195-0_13" rel="nofollow">Nurk, Bankevich et al., 2013</a> or <a href="http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021" rel="nofollow">Bankevich, Nurk et al., 2012</a>, epecially if you assemble single-cell data.</p>
+<p>In addition, we would like to list your publications that use our software on our website. Please email the reference, the name of your lab, department and institution to <a href="mailto:spades.support@cab.spbu.ru">spades.support@cab.spbu.ru</a></p>
 <p><a name="sec6"></a></p>
 <h1>Feedback and bug reports</h1>
 <p>Your comments, bug reports, and suggestions are very welcomed. They will help us to further improve SPAdes. If you have any troubles running SPAdes, please send us <code>params.txt</code> and <code>spades.log</code> from the directory <code>&lt;output_dir&gt;</code>.</p>
-<p>You can leave your comments and bug reports at <a href="https://github.com/ablab/spades/issues">our GitHub repository tracker</a> or sent it via e-mail: <a href="mailto:spades.support@cab.spbu.ru">spades.support@cab.spbu.ru</a>.</p><br/><br/><br/><br/><br/> </body> </html>
+<p>You can leave your comments and bug reports at <a href="https://github.com/ablab/spades/issues">our GitHub repository tracker</a> or sent it via e-mail: <a href="mailto:spades.support@cab.spbu.ru">spades.support@cab.spbu.ru</a></p><br/><br/><br/><br/><br/> </body> </html>
