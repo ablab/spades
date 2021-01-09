@@ -2,11 +2,11 @@
 #error "this file should be included from 'alloc.c' (so aliases can work)"
 #endif
 
+#if defined(MI_MALLOC_OVERRIDE_WRAP)
+
 #if defined(_WIN32) || defined(__MACH__)
 #error "this file is supported only on Linux"
 #endif
-
-#if defined(MI_MALLOC_OVERRIDE_WRAP)
 
 #if !defined(MI_FORWARD)
   #if (defined(__GNUC__) && __GNUC__ >= 9)
