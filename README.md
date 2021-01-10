@@ -54,11 +54,14 @@ Version 3.15.0 of SPAdes supports paired-end reads, mate-pairs and unpaired read
 If you have high-coverage data for bacterial/viral isolate or multi-cell organism, we highly recommend to use [`--isolate`](#isolate) option.
 
 SPAdes 3.15.0 includes the following additional pipelines:
+
 -   metaSPAdes &ndash; a pipeline for metagenomic data sets (see [metaSPAdes options](#meta)).
 -   plasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from WGS data sets (see [plasmid options](#plasmid)).
 -   metaplasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from *metagenomic* data sets (see [plasmid options](#plasmid)).
 -   rnaSPAdes &ndash; a *de novo* transcriptome assembler from RNA-Seq data (see [rnaSPAdes manual](assembler/rnaspades_manual.html)).
 -   biosyntheticSPAdes &ndash; a module for biosynthetic gene cluster assembly with paired-end reads (see [biosynthicSPAdes options](#biosynthetic)).
+-   rnaviralSPAdes &ndash; a *de novo* assembler tailored for RNA viral datasets (transcriptome, metatranscriptome and metavirome). 
+-   coronaSPAdes is a special mode of rnaviralSPAdes specifically aimed for SARS-CoV-2 *de novo* assembly.
 -   truSPAdes &ndash; (DEPRECATED) a module for TruSeq barcode assembly (see [truSPAdes manual](assembler/truspades_manual.html)).
 
 In addition, we provide several stand-alone binaries with relatively simple command-line interface: [k-mer counting](#sec4.1) (`spades-kmercounter`), [assembly graph construction](#sec4.2) (`spades-gbuilder`) and [long read to graph aligner](#sec4.3) (`spades-gmapper`). To learn options of these tools you can either run them without any parameters or read [this section](#sec4).
@@ -167,6 +170,8 @@ In case of successful installation the following files will be placed in the `bi
 -   `metaviralspades.py` (main executable script for [metaviralSPAdes](#metaextrachromosomal))
 -   `rnaspades.py` (main executable script for [rnaSPAdes](rnaspades_manual.html))
 -   `truspades.py` (main executable script for [truSPAdes](truspades_manual.html), DEPRECATED)
+-   `rnaviralspades.py` (main executable script for rnaviralSPAdes)
+-   `coronaspades.py` (wrapper script for coronaSPAdes mode)
 -   `spades-core`  (assembly module)
 -   `spades-gbuilder`  (standalone graph builder application)
 -   `spades-gmapper`  (standalone long read to graph aligner)
@@ -440,6 +445,12 @@ Additionally for plasmidSPAdes, metaplasmidSPAdes and metaviralSPAdes we recomme
     This flag should be used when assembling RNA-Seq data sets (runs rnaSPAdes). To learn more, see [rnaSPAdes manual](assembler/rnaspades_manual.html).
     Not compatible with `--only-error-correction` or `--careful` options. 
 
+[]()
+
+<a name="rnaviral"></a>
+`--rnaviral`   (same as `rnaviralspades.py`)
+    This flag should be used when assembling viral RNA-Seq data sets (runs rnaviralSPAdes).
+    Not compatible with `--only-error-correction` or `--careful` options. 
 
 `--iontorrent `
     This flag is required when assembling IonTorrent data. Allows BAM files as input. Carefully read [section 3.3](#sec3.3) before using this option.
@@ -600,6 +611,12 @@ Since all files will be overwritten, do not forget to copy your assembly from th
 `--untrusted-contigs <file_name> `
     Contigs of the same genome, quality of which is average or unknown. Contigs of poor quality can be used but may introduce errors in the assembly. This option is also not intended for contigs of the related species.
 
+**_Other input_**
+
+`--assembly-graph <file_name> `
+    File with assembly graph. Could only be used in plasmid, metaplasmid, metaviral and biosynthetic mode. The primary purpose of this option to run these pipelines on already constructed and simplified assembly graph this way skipping a large part of SPAdes pipeline. Original reads the graph was constructed from need to be specified as well. Exact k-mer length (via `-k` option) should be provided. Note that the output would be different as compared to standalone runs of these pipelines as they setup graph simplification options as well.
+
+
 <a name="yaml"></a>
 **_Specifying input data with YAML data set file (advanced)_**
 
@@ -714,6 +731,9 @@ Notes:
 
 `--phred-offset <33 or 64>`
     PHRED quality offset for the input reads, can be either 33 or 64. It will be auto-detected if it is not specified.
+
+`--custom-hmms <file or directory>`
+    File or directory with amino acid HMMs for [HMM-guided mode](#hmm).
 
 
 <a name="examples"></a>
@@ -903,6 +923,17 @@ The default k-mer lengths are recommended. For single-cell data sets SPAdes sele
 
 However, it might be tricky to fully utilize the advantages of long reads you have. Consider contacting us for more information and to discuss assembly strategy.
 []()
+
+<a name="hmm"></a>
+## HMM-guided mode
+The majority of SPAdes assembly modes (normal multicell, single-cell, rnaviral, meta and of course biosynthetic) also supports HMM-guided mode as implemented in biosyntheticSPAdes. The detailed description could be found in [biosyntheticSPAdes paper](https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118), but in short: amino acid profile HMMs are aligned to the edges of assembly graph. After this the subgraphs containing the set of matches ("domains") are extracted and all possible paths through the domains that are supported both by paired-end data (via scaffolds) and graph topology are obtained (
+putative biosynthetic gene clusters).
+
+HMM-guided mode could be enabled via providing a set of HMMs via `--custom-hmms` option. In HMM guided mode the set of contigs and scaffolds (see section [SPAdes output](#sec3.5) for more information about SPAdes output) is kept intact, however additional [biosyntheticSPAdes output](#sec3.8) represents the output of HMM-guided assembly.
+
+Note that normal biosyntheticSPAdes mode (via `--bio` option) is a bit different from HMM-guided mode: besides using the special set of profile HMMS representing a family of NRSP/PKS domains also includes a set of assembly graph simplification and processing settings aimed for fuller recovery of biosynthetic gene clusters.
+
+Given an increased interest in coronavirus research we developed a coronavirus assembly mode for SPAdes assembler (also known as coronaSPAdes). It allows to assemble full-length coronaviridae genomes from the transcriptomic and metatranscriptomic data. Algorithmically, coronaSPAdes is an rnaviralSPAdes that uses [Pfam SARS-CoV-2 2.0](ftp://ftp.ebi.ac.uk/pub/databases/Pfam/releases/Pfam_SARS-CoV-2_2.0/) set of HMMs. coronaSPAdes could be run via a dedicated `coronaspades.py` script. See [coronaSPAdes preprint](https://www.biorxiv.org/content/10.1101/2020.07.28.224584v1) for more information about rnaviralSPAdes,  coronaSPAdes and HMM-guided mode.
 
 <a name="sec3.5"></a>
 ## SPAdes output
