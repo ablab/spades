@@ -13,8 +13,6 @@ cp assembler/src/CMakeLists.txt $SRC_DIR/
 
 cp -r assembler/configs $TARGET_DIR/configs
 cp -r assembler/ext $TARGET_DIR/ext
-rm -r $TARGET_DIR/ext/include/cute
-rm -r $TARGET_DIR/ext/include/teamcity_boost
 
 # cleaning .pyc and .pyo
 rm -f $SRC_DIR/*.pyc
