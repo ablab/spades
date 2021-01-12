@@ -10,6 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#define __STDC_FORMAT_MACROS
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
@@ -31,7 +32,6 @@
 #include <iterator>
 #include <sys/stat.h>
 #include <system_error>
-#define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
 // <fcntl.h> may provide O_BINARY.
