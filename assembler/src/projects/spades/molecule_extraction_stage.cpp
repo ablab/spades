@@ -536,38 +536,29 @@ namespace debruijn_graph {
             std::string barcode_string = GetTenXBarcodeFromRead(read);
             if (barcode_string != "") {
                 if (barcode_string != current_barcode && !paths.empty()) {
-                    INFO("graph_pack.barcode_indices[0].size() - " << graph_pack.barcode_indices[0].size());
+                    DEBUG("graph_pack.barcode_indices[0].size() - " << graph_pack.barcode_indices[0].size());
                     DEBUG("Processing barcode " << current_barcode);
                     pif.StopProcessLibrary();
-                    INFO("Here");
                     std::vector<EdgeId> good_edges;
 
                     extractor.extractEdges(paths, good_edges, current_barcode);
-                    INFO("Here");
                     if (paths.size() > cfg::get().pe_params.param_set.rna_10x.min_cloud_size)
                         extractor.extractLongReadsPE(graph_pack, long_reads_temp_container, good_edges, current_barcode, lib_10x);
-                    INFO("Here");
 
                     for (auto path : long_reads_temp_container) {
-                        path.first->PrintINFO();
-                        INFO(path.first->ToVector()[0]);
-                        INFO(path.first->ToVector()[path.first->ToVector().size() - 1]);
+                        DEBUG(path.first->ToVector()[0]);
+                        DEBUG(path.first->ToVector()[path.first->ToVector().size() - 1]);
                         DEBUG(graph_pack.barcode_coverage[0].GetLeftMostPosition(path.first->ToVector()[0], current_barcode));
                         DEBUG(graph_pack.barcode_coverage[0].GetRightMostPosition(path.first->ToVector()[path.first->ToVector().size() - 1], current_barcode));
-
                         long_reads_temp_storage.AddPath(path.first->ToVector(), 1, true, current_barcode, graph_pack.barcode_coverage[0].GetLeftMostPosition(path.first->ToVector()[0], current_barcode),
                                                         graph_pack.barcode_coverage[0].GetRightMostPosition(path.first->ToVector()[path.first->ToVector().size() - 1], current_barcode));
                     }
-                    INFO("Here");
 
                     if (long_reads_temp_container.size())
                         ++passed_counter;
                     else
                         ++failed_counter;
-
                     long_reads_temp_container.clear();
-                    INFO("Here");
-
                     if (used_barcodes.count(current_barcode) && current_barcode != "") {
                         WARN("Path with " << current_barcode << " barcode was previously extracted");
                     }
@@ -578,8 +569,6 @@ namespace debruijn_graph {
                         }
                         graph_pack.barcode_coverage[0].Clear(current_barcode);
                     }
-                    INFO("Here");
-
                     graph_pack.barcode_indices[0].Clear();
                     graph_pack.barcode_clustered_indices[0].Clear();
                     paths.clear();
