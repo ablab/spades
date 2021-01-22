@@ -131,14 +131,17 @@ public:
 
     void StartProcessLibrary(size_t /* threads_count */) override {
         paired_index_.clear();
+        if (out_tip_map_.size() == 0) {
+            PrepareTipMap(out_tip_map_);
+        }
     }
 
     void StopProcessLibrary() override {
         paired_index_.Merge(buffer_pi_);
         buffer_pi_.clear();
+        out_tip_map_.clear();
         --cnt_libs_to_process_;
         if (cnt_libs_to_process_ == 0) {
-            out_tip_map_.clear();
             index_.Detach();
             index_.clear();
         }
