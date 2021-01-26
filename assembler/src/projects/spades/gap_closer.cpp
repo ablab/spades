@@ -56,6 +56,7 @@ private:
     }
 
     void PrepareTipMap(TipMap &OutTipMap) const {
+        OutTipMap.clear();
         size_t nthreads = omp_get_max_threads();
 
         omnigraph::IterationHelper<Graph, EdgeId> edges(graph_);
