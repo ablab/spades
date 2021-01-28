@@ -1,6 +1,0 @@
-#!/bin/bash
-
-DIR="$( cd "$( dirname "$0" )" && pwd )"
-BASE="$( cd "$( dirname "$0" )" && cd ../.. && pwd )"
-pushd $BASE/data/input > /dev/null
-python $BASE/src/tools/dataset.py check $BASE/configs/debruijn/datasets.info
