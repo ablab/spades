@@ -30,7 +30,7 @@ private:
     TipMap out_tip_map_;
     debruijn_graph::EdgeIndex<ConjugateDeBruijnGraph> index_;
     std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> mapper_ = nullptr;
-    const int max_dist_to_tip_;
+    const size_t max_dist_to_tip_;
     size_t cnt_libs_to_process_ = 0;
 
     void ProcessPairedRead(const MappingPath<EdgeId> &path1, const MappingPath<EdgeId> &path2) {
@@ -44,12 +44,10 @@ private:
                 if (InTipIter == out_tip_map_.cend())
                     continue;
 
-                auto e1 = OutTipIter->second;
-                auto e2 = graph_.conjugate(InTipIter->second);
-                //FIXME: Normalize fake points
-                auto sp = std::make_pair(e1, e2);
-                auto cp = buffer_pi_.ConjugatePair(e1, e2);
-                auto ip = std::min(sp, cp);
+                EdgeId e1 = OutTipIter->second;
+                EdgeId e2 = graph_.conjugate(InTipIter->second);
+                auto ip = std::min(std::make_pair(e1, e2),
+                                   buffer_pi_.ConjugatePair(e1, e2));
                 buffer_pi_.Add(ip.first, ip.second, omnigraph::de::RawPoint(0, 1.));
             }
         }
@@ -77,7 +75,7 @@ private:
                     VertexId start = graph_.EdgeStart(checking_pair.first);
                     checking_pair.second += graph_.length(checking_pair.first);
 
-                    if (!graph_.CheckUniqueOutgoingEdge(start) || checking_pair.second > size_t(max_dist_to_tip_)) {
+                    if (!graph_.CheckUniqueOutgoingEdge(start) || checking_pair.second > max_dist_to_tip_) {
                         continue;
                     }
 
@@ -95,7 +93,7 @@ private:
         }
 
         size_t out_length =
-                std::accumulate(OutTipMap.begin(), OutTipMap.end(), 0,
+                std::accumulate(OutTipMap.begin(), OutTipMap.end(), size_t(0),
                                 [this](size_t val, const std::pair<EdgeId, EdgeId> &p) { return val + graph_.length(p.first); });
 
         INFO("Total edges in tip neighborhood: " << OutTipMap.size() << " out of " << graph_.e_size() << ", length: " << out_length);
@@ -103,7 +101,7 @@ private:
 
 public:
     GapCloserPairedIndexFiller(const GraphPack &gp, omnigraph::de::PairedInfoIndexT<Graph> &paired_index,
-                               int max_dist_to_tip, size_t cnt_libs_to_process)
+                               size_t max_dist_to_tip, size_t cnt_libs_to_process)
             :  graph_(gp.get<Graph>()), paired_index_(paired_index), buffer_pi_(graph_),
             index_(graph_, gp.workdir()), max_dist_to_tip_(max_dist_to_tip), cnt_libs_to_process_(cnt_libs_to_process) {
         PrepareTipMap(out_tip_map_);
@@ -113,10 +111,9 @@ public:
         for (const auto &entry : out_tip_map_) {
             edges.push_back(entry.first);
 
-            const auto& conj_id = graph_.conjugate(entry.first);
-            if (out_tip_map_.count(conj_id) == 0) {
+            EdgeId conj_id = graph_.conjugate(entry.first);
+            if (!out_tip_map_.count(conj_id))
                 edges.push_back(conj_id);
-            }
         }
         edges.shrink_to_fit();
 
@@ -132,17 +129,15 @@ public:
 
     void StartProcessLibrary(size_t /* threads_count */) override {
         paired_index_.clear();
-        if (out_tip_map_.size() == 0) {
+        if (IsTipAreaEmpty())
             PrepareTipMap(out_tip_map_);
-        }
     }
 
     void StopProcessLibrary() override {
         paired_index_.Merge(buffer_pi_);
         buffer_pi_.clear();
         out_tip_map_.clear();
-        --cnt_libs_to_process_;
-        if (cnt_libs_to_process_ == 0) {
+        if (--cnt_libs_to_process_ == 0) {
             index_.Detach();
             index_.clear();
         }
@@ -316,7 +311,8 @@ class GapCloser {
         TRACE("Checking possible gaps from 1 to " << k_ - min_intersection_);
         for (int gap = 1; gap <= k_ - (int) min_intersection_; ++gap) {
             int overlap = k_ - gap;
-            size_t hamming_distance = LimitedHammingDistance(seq1.Last(overlap), seq2.First(overlap), hamming_dist_bound_);
+            size_t hamming_distance = LimitedHammingDistance(seq1.Last(overlap), seq2.First(overlap),
+                                                             hamming_dist_bound_);
             if (hamming_distance > hamming_dist_bound_)
                 continue;
 
@@ -337,56 +333,80 @@ class GapCloser {
                 }
             }
 
-            DEBUG("For edges " << g_.str(first) << " and " << g_.str(second)
-                  << ". For gap value " << gap << " (overlap " << overlap << "bp) hamming distance was " <<
+            DEBUG("For edges " << g_.str(first) << " and " << g_.str(second) <<
+                  ". For gap value " << gap << " (overlap " << overlap << "bp) hamming distance was " <<
                   hamming_distance);
             //        DEBUG("Sequences of distance " << tip_distance << " :"
             //                << seq1.Subseq(seq1.size() - k).str() << "  "
             //                << seq2.Subseq(0, k).str());
 
-            if (hamming_distance > 0) {
-                return HandlePositiveHammingDistanceCase(first, second, overlap);
-            } else {
-                return HandleSimpleCase(first, second, overlap);
-            }
+            return (hamming_distance > 0 ?
+                    HandlePositiveHammingDistanceCase(first, second, overlap) :
+                    HandleSimpleCase(first, second, overlap));
         }
         return false;
+    }
+
+    std::vector<std::pair<EdgeId, EdgeId>> CollectCandidates() const {
+        size_t nthreads = omp_get_max_threads();
+        omnigraph::IterationHelper<Graph, EdgeId> edges(g_);
+        auto ranges = edges.Ranges(nthreads);
+        std::vector<std::pair<EdgeId, EdgeId>> candidates;
+#pragma omp parallel for
+        for (size_t i = 0; i < ranges.size(); ++i) {
+            for (EdgeId first_edge : ranges[i]) {
+                if (!g_.IsDeadEnd(g_.EdgeEnd(first_edge)))
+                    continue;
+                       
+                for (auto i : tips_paired_idx_.Get(first_edge)) {
+                    EdgeId second_edge = i.first;
+                    if (first_edge == second_edge)
+                        continue;
+
+                    if (!g_.IsDeadStart(g_.EdgeStart(second_edge)))
+                        continue;
+
+                    bool found = false;
+                    for (auto point : i.second) {
+                        if (math::ls(point.weight, weight_threshold_))
+                            continue;
+#pragma omp critical
+                        {
+                            candidates.emplace_back(first_edge, second_edge);
+                        }
+                        found = true;
+                        break;
+                    }
+
+                    if (found)
+                        break;
+                } // second_edge
+            } // first_edge
+        }
+
+        return candidates;
     }
 
 public:
     //TODO extract methods
     void CloseShortGaps() {
-        INFO("Closing short gaps");
-        size_t gaps_filled = 0;
-        size_t gaps_checked = 0;
-        for (auto edge = g_.SmartEdgeBegin(); !edge.IsEnd(); ++edge) {
-            EdgeId first_edge = *edge;
-            for (auto i : tips_paired_idx_.Get(first_edge)) {
-                EdgeId second_edge = i.first;
-                if (first_edge == second_edge)
-                    continue;
+        INFO("Collecting gap candidates");
+        std::vector<std::pair<EdgeId, EdgeId>> candidates = CollectCandidates();
+        INFO("Total " << candidates.size() << " candidates collected");
 
-                if (!g_.IsDeadEnd(g_.EdgeEnd(first_edge)) || !g_.IsDeadStart(g_.EdgeStart(second_edge))) {
-                    // WARN("Topologically wrong tips");
-                    continue;
-                }
+        size_t gaps_filled = 0, gaps_checked = 0;
+        // It is safe just to iterate here as we do not delete any edges from
+        // the graph, just connecting tips.
+        for (auto pair : candidates) {
+            EdgeId first_edge = pair.first, second_edge = pair.second;
+            // This could happen in rare case when we have multiple candidates to connect
+            if (!g_.IsDeadEnd(g_.EdgeEnd(first_edge)) ||
+                !g_.IsDeadStart(g_.EdgeStart(second_edge)))
+                continue;
 
-                bool closed = false;
-                for (auto point : i.second) {
-                    if (math::ls(point.weight, weight_threshold_))
-                        continue;
-
-                    ++gaps_checked;
-                    closed = ProcessPair(first_edge, second_edge);
-                    if (closed) {
-                        ++gaps_filled;
-                        break;
-                    }
-                }
-                if (closed)
-                    break;
-            } // second edge
-        } // first edge
+            gaps_checked += 1;
+            gaps_filled += ProcessPair(first_edge, second_edge);
+        }
 
         INFO("Closing short gaps complete: filled " << gaps_filled
              << " gaps after checking " << gaps_checked
