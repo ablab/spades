@@ -347,17 +347,18 @@ class GapCloser {
         return false;
     }
 
-    std::vector<std::pair<EdgeId, EdgeId>> CollectCandidates() const {
+    btree::btree_map<EdgeId, std::vector<EdgeId>> CollectCandidates() const {
         size_t nthreads = omp_get_max_threads();
         omnigraph::IterationHelper<Graph, EdgeId> edges(g_);
         auto ranges = edges.Ranges(nthreads);
-        std::vector<std::pair<EdgeId, EdgeId>> candidates;
+        btree::btree_map<EdgeId, std::vector<EdgeId>> candidates;
 #pragma omp parallel for
         for (size_t i = 0; i < ranges.size(); ++i) {
             for (EdgeId first_edge : ranges[i]) {
                 if (!g_.IsDeadEnd(g_.EdgeEnd(first_edge)))
                     continue;
-                       
+
+                std::vector<std::pair<EdgeId, float>> candidates_for_edge;
                 for (auto i : tips_paired_idx_.Get(first_edge)) {
                     EdgeId second_edge = i.first;
                     if (first_edge == second_edge)
@@ -366,21 +367,29 @@ class GapCloser {
                     if (!g_.IsDeadStart(g_.EdgeStart(second_edge)))
                         continue;
 
-                    bool found = false;
                     for (auto point : i.second) {
                         if (math::ls(point.weight, weight_threshold_))
                             continue;
-#pragma omp critical
-                        {
-                            candidates.emplace_back(first_edge, second_edge);
-                        }
-                        found = true;
-                        break;
-                    }
 
-                    if (found)
-                        break;
+                        candidates_for_edge.emplace_back(second_edge, point.weight);
+                    }
                 } // second_edge
+
+                if (!candidates_for_edge.size())
+                    continue;
+
+                std::stable_sort(candidates_for_edge.begin(), candidates_for_edge.end(),
+                                 [](const auto &lhs, const auto &rhs) {
+                                     if (math::gr(lhs.second, rhs.second))
+                                         return true;
+                                     return lhs.first < rhs.first;
+                                 });
+#pragma omp critical
+                {
+                    candidates[first_edge].reserve(candidates_for_edge.size());
+                    for (auto el : candidates_for_edge)
+                        candidates[first_edge].push_back(el.first);
+                }
             } // first_edge
         }
 
@@ -391,21 +400,28 @@ public:
     //TODO extract methods
     void CloseShortGaps() {
         INFO("Collecting gap candidates");
-        std::vector<std::pair<EdgeId, EdgeId>> candidates = CollectCandidates();
-        INFO("Total " << candidates.size() << " candidates collected");
+        auto candidates = CollectCandidates();
+        size_t sz = std::accumulate(candidates.begin(), candidates.end(), size_t(0),
+                                    [](size_t val, const auto &entry) { return val + entry.second.size(); });
+        INFO("Total " << candidates.size() << " tips collected, total " << sz << " connection candidates");
 
         size_t gaps_filled = 0, gaps_checked = 0;
         // It is safe just to iterate here as we do not delete any edges from
         // the graph, just connecting tips.
-        for (auto pair : candidates) {
-            EdgeId first_edge = pair.first, second_edge = pair.second;
-            // This could happen in rare case when we have multiple candidates to connect
-            if (!g_.IsDeadEnd(g_.EdgeEnd(first_edge)) ||
-                !g_.IsDeadStart(g_.EdgeStart(second_edge)))
-                continue;
+        for (const auto &entry : candidates) {
+            EdgeId first_edge = entry.first;
+            for (EdgeId second_edge : entry.second) {
+                // This could happen in rare case when we have multiple candidates to connect
+                if (!g_.IsDeadEnd(g_.EdgeEnd(first_edge)) ||
+                    !g_.IsDeadStart(g_.EdgeStart(second_edge)))
+                    continue;
 
-            gaps_checked += 1;
-            gaps_filled += ProcessPair(first_edge, second_edge);
+                gaps_checked += 1;
+                if (ProcessPair(first_edge, second_edge)) {
+                    gaps_filled += 1;
+                    break;
+                }
+            }
         }
 
         INFO("Closing short gaps complete: filled " << gaps_filled
