@@ -380,9 +380,10 @@ class GapCloser {
 
                 std::stable_sort(candidates_for_edge.begin(), candidates_for_edge.end(),
                                  [](const auto &lhs, const auto &rhs) {
-                                     if (math::gr(lhs.second, rhs.second))
-                                         return true;
-                                     return lhs.first < rhs.first;
+                                     if (math::eq(lhs.second, rhs.second))
+                                         return lhs.first < rhs.first;
+
+                                     return math::gr(lhs.second, rhs.second);
                                  });
 #pragma omp critical
                 {
