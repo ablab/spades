@@ -97,7 +97,7 @@ long long CastTo<long long>(std::string && t) {
 template<>
 char CastTo<char>(std::string && t) {
     if (t.size() != 1)
-        throw std::string("blat output file is corrupted");
+        throw std::string("aligner output file is corrupted");
     return t.front();
 }
 
@@ -220,7 +220,7 @@ private:
             >
     void Fill(TokenIterator & it, Record<Columns, columns ...> & rd) {
         if (it.IsEnd())
-            throw std::string("blat output file is corrupted");
+            throw std::string("aligner output file is corrupted");
         constexpr auto el = static_cast<Columns>(columns_index);
         constexpr auto contains = rd.template Contains<el>();
         PushIfNeeded<contains, el>(it, rd);
@@ -231,7 +231,7 @@ private:
     template<size_t columns_index, size_t used>
     void Fill(...) {
         if (used != sizeof...(columns))
-            throw std::string("blat output file is corrupted");
+            throw std::string("aligner output file is corrupted");
     }
 
     template<bool b, Columns el, typename = std::enable_if_t<b>>

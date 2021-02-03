@@ -1,6 +1,6 @@
 #pragma once
 
-#include "blat_output_reader.hpp"
+#include "aligner_output_reader.hpp"
 #include "common.hpp"
 
 double GetCov(std::string const & edge_name) {

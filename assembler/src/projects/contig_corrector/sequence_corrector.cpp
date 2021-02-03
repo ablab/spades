@@ -6,8 +6,8 @@
 
 #include "common.hpp"
 #include "sequence_corrector.hpp"
-#include "blat_output_reader.hpp"
-#include "blat_output_postprocessing.hpp"
+#include "aligner_output_reader.hpp"
+#include "aligner_output_postprocessing.hpp"
 
 #include "common/assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "common/assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
@@ -51,7 +51,7 @@ struct gcfg {
     std::string saves_folder;
     std::string paths_save_file;
     std::string output_dir;
-    std::string blat_output;
+    std::string aligner_output;
     unsigned int nthreads;
 } cfg;
 
@@ -62,7 +62,7 @@ clipp::group GetCLI() {
   auto cli = (
       cfg.saves_folder << value("saves folder"),
       cfg.canu_contigs_file << value("canu contigs"),
-      cfg.blat_output << value("blat_output.psl"),
+      cfg.aligner_output << value("aligner_output"),
       (required("-k") & integer("int", cfg.k)) % "k-mer length to use",
       (required("-d") & integer("int", cfg.drop_alg)) % "0 = drop nothing, 1 = full drop, 2 = transitive drop by IDY",
       (option("-t") & integer("int", cfg.nthreads)) % "# of threads to use",
@@ -216,7 +216,7 @@ int main(int argc, char * argv[]) {
     auto k = cfg.k;
     std::string &output_dir = cfg.output_dir;
 
-    START_BANNER("SPAdes standalone Blat paths corrector");
+    START_BANNER("SPAdes standalone contig corrector");
     utils::limit_memory(15 * GB);
 
     CHECK_FATAL_ERROR(runtime_k::MIN_K <= k, "k-mer size " << k << " is too low");
@@ -255,16 +255,16 @@ int main(int argc, char * argv[]) {
         ReadScaffolds(scaffolds, graph, cfg.paths_save_file);
 
 
-    ifstream blat_output_stream(cfg.blat_output);
-    if (!blat_output_stream.is_open())
-        throw "Cannot open " + cfg.blat_output;
+    ifstream aligner_output_stream(cfg.aligner_output);
+    if (!aligner_output_stream.is_open())
+        throw "Cannot open " + cfg.aligner_output;
 
     auto unique_edge_storage = GetUniqueEdgeStorage(gp);
     auto unique_edge_checker = [&unique_edge_storage](EdgeId id) { return unique_edge_storage.IsUnique(id); };
     auto filter = GetFilter<WISHED_COLUMNS>(std::move(unique_edge_checker), graph);
 
-    INFO("Started blat output reading");
-    auto res = Read2(blat_output_stream, filter);
+    INFO("Started aligner output reading");
+    auto res = Read2(aligner_output_stream, filter);
     auto fragments = GetContigFragments(res, GetDropAlg<WISHED_COLUMNS>(cfg.drop_alg), graph.k());
     // DropAnother(res, fragments);
     MakeAllFilteredEdgesDump(res, fragments, graph, output_dir);
@@ -286,7 +286,7 @@ int main(int argc, char * argv[]) {
         WriteWithWidth(contigs_output, contig.seq);
     }
 
-    INFO("SPAdes standalone blat paths corrector finished");
+    INFO("SPAdes standalone contig corrector finished");
 
     return 0;
 }
