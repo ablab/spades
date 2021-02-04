@@ -49,8 +49,6 @@ struct SeqString {
 
 using PathWithEdgePostionsContainer = std::vector<PathWithEdgePostions>;
 
-PathWithEdgePostionsContainer ParseInputPaths(const std::string& transcript_paths_file, const debruijn_graph::Graph& graph);
-
 path_extend::PathContainer Launch(debruijn_graph::GraphPack const & gp, 
                                   PathThreadingParams params,
                                   PathWithEdgePostionsContainer const & input_paths,

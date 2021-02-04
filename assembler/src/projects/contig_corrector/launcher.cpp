@@ -14,7 +14,7 @@
 #include "common/assembly_graph/paths/path_processor.hpp"
 #include "common/assembly_graph/paths/bidirectional_path_io/io_support.hpp"
 #include "common/modules/path_extend/pe_utils.hpp"
-#include "ssw/ssw_cpp.h"
+#include "common/sequence/sequence_tools.hpp"
 
 #include <string>
 #include <unordered_map>
@@ -78,8 +78,10 @@ private:
 
     size_t Size() const noexcept { return path_info.edges.size(); }
 
+    /// @returns amount of nucls from the end of the 'start_pos' edge to the start of the 'end_pos' edge.
+    /// @returns -1ull when the distance is negative.
     size_t GetDistance(size_t start_pos, size_t end_pos) const { 
-        long long dist = GetStartPos(end_pos) - GetStartPos(start_pos) + graph.k();
+        long long dist = GetStartPos(end_pos) - GetEndPos(start_pos);
         if (dist >= 0)
             return dist;
         DEBUG("Negative distance between " << graph.int_id(GetEdge(start_pos)) << " and " << graph.int_id(GetEdge(end_pos)));
@@ -162,8 +164,9 @@ boost::optional<pair<SimpleBidirectionalPath, size_t>> SequenceCorrector<filler_
             size_t distance = GetDistance(start_pos, end_pos);
             if (distance == -1ull)
                 return {};
-            VERIFY(GetStartPos(end_pos) >= (long long)distance);
-            size_t start_after_edge = GetStartPos(end_pos) - distance;
+            distance += 2 * graph.k(); // add overlaping with start_edge and end_edge
+            VERIFY(GetEndPos(start_pos) >= (long long)graph.k());
+            size_t start_after_edge = GetEndPos(start_pos) - (long long)graph.k();
             if (filler_mode == PathFiller::UseDistance)
                 current_path = GetBestMachedPathUsingDistance(start_edge, end_edge, distance, seq.substr(start_after_edge, distance));
             else
@@ -218,8 +221,7 @@ SimpleBidirectionalPath SequenceCorrector<filler_mode>::GetBestMachedPathUsingDi
 template<PathFiller filler_mode>
 SimpleBidirectionalPath SequenceCorrector<filler_mode>::GetBestMachedPathUsingAligner(EdgeId start_edge, EdgeId end_edge, size_t distance, string const & ref) const {
     ScaffoldSequenceMaker seq_maker(graph);
-    StripedSmithWaterman::Aligner aligner(1, 1, 1, 1);
-    aligner.SetReferenceSequence(ref.data(), (int)ref.size());
+
     VertexId target_vertex = graph.EdgeStart(end_edge);
     VertexId start_vertex = graph.EdgeEnd(start_edge);
     omnigraph::PathStorageCallback<Graph> path_storage(graph);
@@ -234,26 +236,25 @@ SimpleBidirectionalPath SequenceCorrector<filler_mode>::GetBestMachedPathUsingAl
         // #pragma omp parallel for num_threads(nthreads) schedule(dynamic)
         #pragma omp parallel for schedule(runtime)
         for (size_t i = 0; i < detected_paths.size(); ++i) {
-            StripedSmithWaterman::Alignment alignment;
             auto path = BidirectionalPath::create(graph, detected_paths[i]);
             auto query_seq = seq_maker.MakeSequence(*path);
-            StripedSmithWaterman::Filter filter(false, false, 0, uint8_t(1 + std::max(ref.size(), query_seq.size())));
-            
-            if (aligner.Align(query_seq.data(), filter, &alignment)) {
+            int edit_distance = StringDistance(query_seq, ref);
+
+            if (edit_distance < std::numeric_limits<int>::max()) {
                 #pragma omp critical
                 {
-                    scores.emplace_back(alignment.sw_score, i);
+                    scores.emplace_back(edit_distance, i);
                 }
             }
         }
 
         if (scores.size() > 1) {
-            auto by_score = [](const std::pair<size_t, size_t>& a, const std::pair<size_t, size_t>& b) { return a.first > b.first; };
+            auto by_score = [](const std::pair<size_t, size_t>& a, const std::pair<size_t, size_t>& b) { return a.first < b.first; };
             std::sort(scores.begin(), scores.end(), by_score);
         }
     }
 
-    if (!scores.empty() && scores.front().first > 0) {
+    if (!scores.empty()) {
         size_t index = scores.front().second;
         answer.PushBack(detected_paths[index]);
     }
@@ -315,16 +316,13 @@ path_extend::PathContainer Launch(debruijn_graph::GraphPack const & gp,
         #endif
         auto & contig = *find_if(contigs.begin(), contigs.end(), [&path_name](SeqString const & contig){return contig.name == path_name;});
         INFO("Processing path [" << contig.name << "] # " << i + 1 << " (of " << input_paths.size() << ") with " << input_paths[i].edges.size() << " edges");
-        SequenceCorrector<PathFiller::UseDistance> corrector(graph, params, cover_map, input_paths[i], contig.seq, nthreads);
+        SequenceCorrector<PathFiller::UseAligner> corrector(graph, params, cover_map, input_paths[i], contig.seq, nthreads);
 
         auto data = corrector.GetBestSequence();
         contig.seq = data.first;
         PathContainer result;
-        for (auto const & path : data.second) {
-            auto p = BidirectionalPath::create(graph, std::move(path.path));
-            auto cp = BidirectionalPath::clone_conjugate(p);
-            result.AddPair(move(p), move(cp));
-        }
+        for (auto const & path : data.second)
+            result.Add(BidirectionalPath::create(graph, std::move(path.path)));
 
         // #pragma omp critical
         {
