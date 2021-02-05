@@ -485,7 +485,7 @@ public:
 
         std::vector<LinkRecord> records;
         INFO("Total " << 2*sequences.size() << " edges to create");
-        graph.ereserve(2*sequences.size());
+        graph.ereserve(size_t(2.01*sequences.size()));
         INFO("Collecting link records")
         CollectLinkRecords(helper, graph, records, sequences);
         INFO("Ordering link records")
@@ -501,7 +501,7 @@ public:
         }
         size_t size = vertex_pos.size();
         INFO("Total " << size << " vertices to create");
-        graph.vreserve(2*size);
+        graph.vreserve(size_t(2.01*size));
 
         INFO("Connecting the graph");
         uint64_t min_id = graph.min_id();
