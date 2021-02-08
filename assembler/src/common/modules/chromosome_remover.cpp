@@ -388,6 +388,7 @@ void ChromosomeRemover::RunMetaPipeline() {
 
     OutputEdgesByID(graph, cfg::get().output_dir + "edges_before" + suffix);
     RemoveNearlyEverythingByCoverage((double) ext_limit_);
+    FilterSmallComponents(); 
 //Graph is not changed after this line and before next chromosome remover iteration
 
     if (plasmid_config_.output_linear) {
@@ -403,8 +404,6 @@ void ChromosomeRemover::RunMetaPipeline() {
         }
     }
 
-    OutputEdgesByID(graph, cfg::get().output_dir + "edges_before" + suffix);
-    RemoveNearlyEverythingByCoverage((double) ext_limit_);
 }
 
 void ChromosomeRemover::RunIsolatedPipeline() {
@@ -429,6 +428,7 @@ void ChromosomeRemover::RunIsolatedPipeline() {
             break;
         }
     }
+    FilterSmallComponents();
 }
 
 void ChromosomeRemover::FilterSmallComponents() {
