@@ -22,7 +22,6 @@ void ChromosomeRemoval::run(GraphPack &gp, const char*) {
     } else {
         remover.RunIsolatedPipeline();
     }
-    remover.FilterSmallComponents();
     INFO("Counting average coverage after genomic edge removal");
     omnigraph::AvgCovereageCounter<Graph> cov_counter(graph);
     cfg::get_writable().ds.average_coverage = cov_counter.Count();
