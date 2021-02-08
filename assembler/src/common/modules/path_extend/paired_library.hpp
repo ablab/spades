@@ -57,7 +57,7 @@ public:
     size_t GetRL() const { return read_length_; }
     double GetIsVar() const { return is_var_; }
     bool IsMp() const { return is_mate_pairs_; }
-
+    virtual size_t size() const = 0;
 protected:
     const Graph& g_;
     size_t k_;
@@ -81,7 +81,9 @@ public:
                                const std::map<int, size_t>& is_distribution)
         : PairedInfoLibrary(g, read_length, is, is_min, is_max, is_div, is_mp, is_distribution),
           index_(index) {}
-
+    size_t size() const override {
+        return index_.size();
+    }
     size_t FindJumpEdges(EdgeId e, std::set<EdgeId>& result, int min_dist, int max_dist, size_t min_len = 0) const override {
         VERIFY(index_.size() > 0);
         result.clear();

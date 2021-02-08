@@ -342,6 +342,7 @@ shared_ptr<SimpleExtender> ExtendersGenerator::MakePEExtender(size_t lib_index, 
     auto extension_chooser = make_shared<SimpleExtensionChooser>(graph_, wc,
                                                          opts.weight_threshold,
                                                          opts.priority_coeff);
+    INFO ("Creating extender; library index size: " << extension_chooser->wc()->PairedLibrary().size());
 
     return make_shared<SimpleExtender>(gp_, cover_map_,
                                        used_unique_storage_,

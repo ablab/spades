@@ -18,9 +18,6 @@ void SecondPhaseSetup::run(GraphPack &gp, const char*) {
     INFO("Preparing second phase");
     gp.ClearRRIndices();
     gp.ClearPaths();
-    // Clearing used edges for plasmids
-    if (gp.count<omnigraph::SmartContainer<std::unordered_set<EdgeId>, Graph>>("used_edges"))
-        gp.get_mutable<omnigraph::SmartContainer<std::unordered_set<EdgeId>, Graph>>("used_edges").clear();
 
     std::string old_pe_contigs_filename = fs::append_path(cfg::get().output_dir, cfg::get().co.contigs_name + ".fasta");
     std::string new_pe_contigs_filename = fs::append_path(cfg::get().output_dir, "first_pe_contigs.fasta");

@@ -352,6 +352,9 @@ void ChromosomeRemover::RunMetaPipeline() {
     using namespace omnigraph;
     using namespace omnigraph::de;
     const auto& graph = gp_.get<Graph>();
+    using UsedEdges = omnigraph::SmartContainer<std::unordered_set<EdgeId>, Graph>;
+    if (!gp_.count<UsedEdges>("used_edges"))
+        gp_.add("used_edges", UsedEdges(graph));
     if (plasmid_config_.reference_removal != "") {
         VERIFY_MSG(false, "Reference-based chromosome removal is switched off");
         INFO("Removing all edges with no genomic sequence");

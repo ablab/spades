@@ -421,6 +421,7 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
     ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map,
                                  unique_data_, used_unique_storage, support_);
     Extenders extenders = generator.MakeBasicExtenders();
+    DEBUG("Total number of basic extenders is " << extenders.size());
 
     //long reads scaffolding extenders.
 
