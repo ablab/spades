@@ -183,7 +183,7 @@ namespace nrps {
             stat_file << "Custom";
         }
         stat_file << std::endl;
-        stat_file << "Domain cordinates:" << std::endl;
+        stat_file << "Domain coordinates:" << std::endl;
         size_t current_coord = 0;
         auto p = path_extend::BidirectionalPath::create(g_);
         for (size_t i = 0; i < single_candidate.size(); ++i) {
@@ -205,6 +205,9 @@ namespace nrps {
             for (EdgeId e2 : domain_edges(v)) {
                 sum += g_.length(e2);
             }
+
+            stat_file << GetStartCoord(v) + current_coord - sum << " ";
+            stat_file << GetEndCoord(v) + current_coord - g_.length(p->Back()) << std::endl;
 
             //TODO: check if can be improved
             if (i != single_candidate.size() - 1) {
