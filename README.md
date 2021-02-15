@@ -2,10 +2,10 @@
 [![License](https://img.shields.io/badge/licence-GPLv2-blue)](https://www.gnu.org/licenses/old-licenses/gpl-2.0)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/ablab/spades)](https://github.com/ablab/spades/releases/)
 [![GitHub Downloads](https://img.shields.io/github/downloads/ablab/spades/total.svg?style=social&logo=github&label=Download)](https://github.com/ablab/spades/releases)
+[![BioConda Downloads](https://anaconda.org/bioconda/spades/badges/downloads.svg)](https://anaconda.org/bioconda/spades)
 
 
-
-<font size=20>__SPAdes 3.15.0 Manual__</font>
+<font size=20>__SPAdes 3.15.1 Manual__</font>
 
 1. [About SPAdes](#sec1) </br>
     1.1. [Supported data types](#sec1.1)</br>
@@ -41,7 +41,7 @@
 <a name="sec1"></a>
 # About SPAdes
 
-SPAdes &ndash; St. Petersburg genome assembler &ndash; is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.15 was released under GPLv2 on January 11, 2021 and can be downloaded from <http://cab.spbu.ru/software/spades/>. 
+SPAdes &ndash; St. Petersburg genome assembler &ndash; is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.15.1 was released under GPLv2 on February 18, 2021 and can be downloaded from <http://cab.spbu.ru/software/spades/>. 
 
 The latest SPAdes paper describing various pipelines in a protocol format is available [here](https://currentprotocols.onlinelibrary.wiley.com/doi/abs/10.1002/cpbi.102).
 
@@ -50,11 +50,11 @@ The latest SPAdes paper describing various pipelines in a protocol format is ava
 
 The current version of SPAdes works with Illumina or IonTorrent reads and is capable of providing hybrid assemblies using PacBio, Oxford Nanopore and Sanger reads. You can also provide additional contigs that will be used as long reads.
 
-Version 3.15.0 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. Note, that SPAdes was initially designed for small genomes. It was tested on bacterial (both single-cell MDA and standard isolates), fungal and other small genomes. SPAdes is not intended for larger genomes (e.g. mammalian size genomes). For such purposes you can use it at your own risk.
+Version 3.15.1 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. Note, that SPAdes was initially designed for small genomes. It was tested on bacterial (both single-cell MDA and standard isolates), fungal and other small genomes. SPAdes is not intended for larger genomes (e.g. mammalian size genomes). For such purposes you can use it at your own risk.
 
 If you have high-coverage data for bacterial/viral isolate or multi-cell organism, we highly recommend to use [`--isolate`](#isolate) option.
 
-SPAdes 3.15.0 includes the following additional pipelines:
+SPAdes 3.15.1 includes the following additional pipelines:
 
 -   metaSPAdes &ndash; a pipeline for metagenomic data sets (see [metaSPAdes options](#meta)).
 -   plasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from WGS data sets (see [plasmid options](#plasmid)).
@@ -186,13 +186,13 @@ In case of successful installation the following files will be placed in the `bi
 <a name="sec2.1"></a>
 ## Downloading SPAdes Linux binaries
 
-To download [SPAdes Linux binaries](http://cab.spbu.ru/files/release3.15.0/SPAdes-3.15.0-Linux.tar.gz) and extract them, go to the directory in which you wish SPAdes to be installed and run:
+To download [SPAdes Linux binaries](http://cab.spbu.ru/files/release3.15.1/SPAdes-3.15.1-Linux.tar.gz) and extract them, go to the directory in which you wish SPAdes to be installed and run:
 
 ``` bash
 
-    wget http://cab.spbu.ru/files/release3.15.0/SPAdes-3.15.0-Linux.tar.gz
-    tar -xzf SPAdes-3.15.0-Linux.tar.gz
-    cd SPAdes-3.15.0-Linux/bin/
+    wget http://cab.spbu.ru/files/release3.15.1/SPAdes-3.15.1-Linux.tar.gz
+    tar -xzf SPAdes-3.15.1-Linux.tar.gz
+    cd SPAdes-3.15.1-Linux/bin/
 ```
 
 In this case you do not need to run any installation scripts &ndash; SPAdes is ready to use. We also suggest adding SPAdes installation directory to the `PATH` variable. []()
@@ -202,13 +202,13 @@ Note, that pre-build binaries do not work on new Linux kernels.
 <a name="sec2.2"></a>
 ## Downloading SPAdes binaries for Mac
 
-To obtain [SPAdes binaries for Mac](http://cab.spbu.ru/files/release3.15.0/SPAdes-3.15.0-Darwin.tar.gz), go to the directory in which you wish SPAdes to be installed and run:
+To obtain [SPAdes binaries for Mac](http://cab.spbu.ru/files/release3.15.1/SPAdes-3.15.1-Darwin.tar.gz), go to the directory in which you wish SPAdes to be installed and run:
 
 ``` bash
 
-    curl http://cab.spbu.ru/files/release3.15.0/SPAdes-3.15.0-Darwin.tar.gz -o SPAdes-3.15.0-Darwin.tar.gz
-    tar -zxf SPAdes-3.15.0-Darwin.tar.gz
-    cd SPAdes-3.15.0-Darwin/bin/
+    curl http://cab.spbu.ru/files/release3.15.1/SPAdes-3.15.1-Darwin.tar.gz -o SPAdes-3.15.1-Darwin.tar.gz
+    tar -zxf SPAdes-3.15.1-Darwin.tar.gz
+    cd SPAdes-3.15.1-Darwin/bin/
 ```
 
 Just as in Linux, SPAdes is ready to use and no further installation steps are required. We also suggest adding SPAdes installation directory to the `PATH` variable. []()
@@ -223,13 +223,13 @@ If you wish to compile SPAdes by yourself you will need the following libraries 
 -   zlib
 -   libbz2
 
-If you meet these requirements, you can download the [SPAdes source code](http://cab.spbu.ru/files/release3.15.0/SPAdes-3.15.0.tar.gz):
+If you meet these requirements, you can download the [SPAdes source code](http://cab.spbu.ru/files/release3.15.1/SPAdes-3.15.1.tar.gz):
 
 ``` bash
 
-    wget http://cab.spbu.ru/files/release3.15.0/SPAdes-3.15.0.tar.gz
-    tar -xzf SPAdes-3.15.0.tar.gz
-    cd SPAdes-3.15.0
+    wget http://cab.spbu.ru/files/release3.15.1/SPAdes-3.15.1.tar.gz
+    tar -xzf SPAdes-3.15.1.tar.gz
+    cd SPAdes-3.15.1
 ```
 
 and build it with the following script:
@@ -307,7 +307,7 @@ Thank you for using SPAdes!
 
 SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ. For IonTorrent data SPAdes also supports unpaired reads in unmapped BAM format (like the one produced by Torrent Server). However, in order to run read error correction, reads should be in FASTQ or BAM format. Sanger, Oxford Nanopore and PacBio CLR reads can be provided in both formats since SPAdes does not run error correction for these types of data.
 
-To run SPAdes 3.15.0 you need at least one library of the following types:
+To run SPAdes 3.15.1 you need at least one library of the following types:
 
 -   Illumina paired-end/high-quality mate-pairs/unpaired reads
 -   IonTorrent paired-end/high-quality mate-pairs/unpaired reads
