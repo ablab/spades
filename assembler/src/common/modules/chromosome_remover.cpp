@@ -451,6 +451,9 @@ void ChromosomeRemover::FilterSmallComponents() {
 //removing edges of coverage ~chromosome coverage that before this iteration were in relatively large components and now are in relatively small ones - both isolated and small components.
         for (auto iter = graph.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
             EdgeId e = *iter;
+            if (long_component_[e] >= 2 * plasmid_config_.small_component_size)
+                continue;
+
             if (graph.IsDeadEnd(graph.EdgeEnd(e)) && graph.IsDeadStart(graph.EdgeStart(e)) &&
                 old_vertex_weights.count(graph.EdgeStart(e)) &&
                 // * 2 - because all coverages are taken with rc
