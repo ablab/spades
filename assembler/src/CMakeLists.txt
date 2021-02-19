@@ -131,9 +131,6 @@ install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../rnaviralspades.py"
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../coronaspades.py"
         DESTINATION bin
         COMPONENT runtime)      
-install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../truspades.py"
-        DESTINATION bin
-        COMPONENT runtime)
 
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../spades_init.py"
         DESTINATION bin
@@ -144,8 +141,6 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../VERSION"
         COMPONENT runtime)
 # Test datasets
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../test_dataset"
-        DESTINATION share/spades)
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../test_dataset_truspades"
         DESTINATION share/spades)
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../test_dataset_plasmid"
         DESTINATION share/spades)
@@ -160,9 +155,6 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../manual.html"
         DESTINATION share/spades
         COMPONENT runtime)
 install(FILES "${README_MD_PATH}"
-        DESTINATION share/spades
-        COMPONENT runtime)
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../truspades_manual.html"
         DESTINATION share/spades
         COMPONENT runtime)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../rnaspades_manual.html"

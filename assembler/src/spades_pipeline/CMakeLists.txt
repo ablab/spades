@@ -9,7 +9,6 @@ project(spades_pipeline)
 
 # SPAdes pipeline scripts
 install(FILES
-        run_contig_breaker.py
         commands_parser.py
         process_cfg.py
         support.py
@@ -25,12 +24,6 @@ install(DIRECTORY scripts
 
 
 install(DIRECTORY stages
-        DESTINATION share/spades/spades_pipeline/
-        COMPONENT runtime
-        PATTERN "*.pyc" EXCLUDE)
-
-# TruSpades module
-install(DIRECTORY truspades
         DESTINATION share/spades/spades_pipeline/
         COMPONENT runtime
         PATTERN "*.pyc" EXCLUDE)

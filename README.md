@@ -63,7 +63,6 @@ SPAdes 3.15.1 includes the following additional pipelines:
 -   biosyntheticSPAdes &ndash; a module for biosynthetic gene cluster assembly with paired-end reads (see [biosynthicSPAdes options](#biosynthetic)).
 -   rnaviralSPAdes &ndash; a *de novo* assembler tailored for RNA viral datasets (transcriptome, metatranscriptome and metavirome). 
 -   coronaSPAdes is a special mode of rnaviralSPAdes specifically aimed for SARS-CoV-2 *de novo* assembly.
--   truSPAdes &ndash; (DEPRECATED) a module for TruSeq barcode assembly (see [truSPAdes manual](assembler/truspades_manual.html)).
 
 In addition, we provide several stand-alone binaries with relatively simple command-line interface: [k-mer counting](#sec4.1) (`spades-kmercounter`), [assembly graph construction](#sec4.2) (`spades-gbuilder`) and [long read to graph aligner](#sec4.3) (`spades-gmapper`). To learn options of these tools you can either run them without any parameters or read [this section](#sec4).
 
@@ -170,7 +169,6 @@ In case of successful installation the following files will be placed in the `bi
 -   `metaplasmidspades.py` (main executable script for [metaplasmidSPAdes](#metaextrachromosomal))
 -   `metaviralspades.py` (main executable script for [metaviralSPAdes](#metaextrachromosomal))
 -   `rnaspades.py` (main executable script for [rnaSPAdes](rnaspades_manual.html))
--   `truspades.py` (main executable script for [truSPAdes](truspades_manual.html), DEPRECATED)
 -   `rnaviralspades.py` (main executable script for rnaviralSPAdes)
 -   `coronaspades.py` (wrapper script for coronaSPAdes mode)
 -   `spades-core`  (assembly module)
@@ -181,7 +179,6 @@ In case of successful installation the following files will be placed in the `bi
 -   `spades-ionhammer`  (read error correcting module for IonTorrent reads)
 -   `spades-bwa`  ([BWA](http://bio-bwa.sourceforge.net) alignment module which is required for mismatch correction)
 -   `spades-corrector-core`  (mismatch correction module)
--   `spades-truseq-scfcorrection`  (executable used in truSPAdes pipeline)
 
 <a name="sec2.1"></a>
 ## Downloading SPAdes Linux binaries

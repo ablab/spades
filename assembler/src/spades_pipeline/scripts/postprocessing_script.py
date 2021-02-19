@@ -68,7 +68,7 @@ def main():
 
     # init python_lib_folder
     python_modules_home = abspath(dirname(realpath(__file__)))
-    source_dirs = ["..", "../truspades", "../common", "../executors"]
+    source_dirs = ["..", "../common", "../executors"]
     for dir_name in source_dirs:
         sys.path.append(join(python_modules_home, dir_name))
 
