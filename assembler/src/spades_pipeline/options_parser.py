@@ -31,11 +31,12 @@ def get_mode():
     mode_parser.add_argument("--metaviral", dest="metaviral", action="store_true")
     mode_parser.add_argument("--metaplasmid", dest="metaplasmid", action="store_true")
     mode_parser.add_argument("--rnaviral", dest="rnaviral", action="store_true")
+    mode_parser.add_argument("--corona", dest="corona", action="store_true")
     nargs, unknown_args = mode_parser.parse_known_args(options)
 
     if script_basename == "rnaspades.py" or nargs.rna:
         mode = "rna"
-    elif script_basename == "rnaviralspades.py" or nargs.rnaviral or script_basename == "coronaspades.py":
+    elif script_basename == "rnaviralspades.py" or nargs.rnaviral:
         mode = "rnaviral"
     elif script_basename == "plasmidspades.py" or nargs.plasmid:
         mode = "plasmid"
@@ -47,6 +48,8 @@ def get_mode():
         mode = "metaplasmid"
     if script_basename == "metaviralspades.py" or nargs.metaviral:
         mode = "metaviral"
+    if script_basename == "coronaspades.py":
+        mode = "corona"
     return mode
 
 
@@ -72,6 +75,11 @@ def add_mode_to_args(args):
     elif mode == "rnaviral":
         args.meta = True
         args.rnaviral = True
+    elif mode == "corona":
+        args.meta = True
+        args.rnaviral = True
+        args.corona = True
+
 
 
 def version():
@@ -305,6 +313,11 @@ def add_basic_args(pgroup_basic):
     pgroup_basic.add_argument("--bio",
                               dest="bio",
                               help="this flag is required for biosyntheticSPAdes mode"
+                              if not help_hidden else argparse.SUPPRESS,
+                              action="store_true")
+    pgroup_basic.add_argument("--corona",
+                              dest="corona",
+                              help="this flag is required for coronaSPAdes mode"
                               if not help_hidden else argparse.SUPPRESS,
                               action="store_true")
     pgroup_basic.add_argument("--rna",
@@ -920,6 +933,9 @@ def add_to_cfg(cfg, log, bin_home, spades_home, args):
         hmms_path = args.custom_hmms
     elif args.bio:
         hmms_path = os.path.join(spades_home, options_storage.biosyntheticspades_hmms)
+    elif args.corona:
+        hmms_path = os.path.join(spades_home, options_storage.coronaspades_hmms)
+
     if hmms_path is not None:
         hmms = ""
         is_hmmfile= lambda hmmfile: os.path.isfile(hmmfile) \
