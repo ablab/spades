@@ -1596,7 +1596,7 @@ auto fast_local_transfer(T &v, int root = 0) {
     return FastLocalTransferWrap<T>(v, root);
 }
 
-inline std::vector<size_t> chunks_rr(size_t sz) {
+inline auto chunks_rr(size_t sz) {
     std::vector<size_t> chunks;
     size_t mpi_size = world_size();
     size_t mpi_rank = world_rank();
@@ -1608,10 +1608,10 @@ inline std::vector<size_t> chunks_rr(size_t sz) {
     return chunks;
 }
 
-template <class ReadType>
-void swap_streams(io::ReadStreamList<ReadType> &all_streams,
-                    io::ReadStreamList<ReadType> &streams,
-                    const std::vector<size_t> &chunks) {
+template<class StreamListType>
+void swap_streams(StreamListType &all_streams,
+                  StreamListType &streams,
+                  const std::vector<size_t> &chunks) {
     VERIFY(streams.size() == chunks.size());
     for (size_t i = 0; i < chunks.size(); ++i) {
         DEBUG("Swapping: " << i << " <-> " << chunks[i]);
@@ -1619,14 +1619,23 @@ void swap_streams(io::ReadStreamList<ReadType> &all_streams,
     }
 }
 
-template <class ReadType>
+template<class StreamListType>
 auto create_empty_stream_list(size_t size) {
-    io::ReadStreamList<ReadType> streams;
+    StreamListType streams;
     for (size_t i = 0; i < size; ++i) {
-        io::ReadStream<ReadType> empty_stream;
-        streams.push_back(std::move(empty_stream));
+        streams.push_back({});
     }
     return streams;
+}
+
+template<class StreamListType, class F>
+void execute_on_subset(StreamListType &all_streams,
+                       const std::vector<size_t> &chunks,
+                       F f) {
+    auto local_streams = partask::create_empty_stream_list<StreamListType>(chunks.size());
+    partask::swap_streams(all_streams, local_streams, chunks);
+    f(local_streams);
+    partask::swap_streams(all_streams, local_streams, chunks);
 }
 
 }  // namespace partask

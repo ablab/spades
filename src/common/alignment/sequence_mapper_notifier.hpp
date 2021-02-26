@@ -53,7 +53,7 @@ public:
     virtual const char* name() const {
         return typeid(*this).name();
     }
-    
+
     virtual ~SequenceMapperListener() {}
 };
 
@@ -138,7 +138,7 @@ protected:
 
 class SequenceMapperNotifierMPI : public SequenceMapperNotifier {
     void PyramidMergeMPI(SequenceMapperListener &listener);
-    
+
 public:
     using SequenceMapperNotifier::SequenceMapperNotifier;
 
@@ -149,16 +149,15 @@ public:
         // Select streams
         std::vector<size_t> chunks = partask::chunks_rr(streams.size());
         INFO("Selected streams: " << chunks);
-        auto local_streams = partask::create_empty_stream_list<ReadType>(chunks.size());
-        partask::swap_streams(streams, local_streams, chunks);
 
-        // Run ProcessLibrary
-        INFO("Running ProcessLibrary");
-        SequenceMapperNotifier::ProcessLibrary(local_streams, lib_index, mapper, threads_count);
-        INFO("ProcessLibrary done");
-
-        // Swap streams back
-        partask::swap_streams(streams, local_streams, chunks);
+        partask::execute_on_subset(streams,
+                                   chunks,
+                                   [&](io::ReadStreamList<ReadType>& local_streams) {
+                                       // Run ProcessLibrary
+                                       INFO("Running ProcessLibrary");
+                                       SequenceMapperNotifier::ProcessLibrary(local_streams, lib_index, mapper, threads_count);
+                                       INFO("ProcessLibrary done");
+                                   });
 
         INFO("Merging results...");
         for (const auto& listener : listeners_[lib_index]) {
