@@ -1596,6 +1596,18 @@ auto fast_local_transfer(T &v, int root = 0) {
     return FastLocalTransferWrap<T>(v, root);
 }
 
+inline std::vector<size_t> chunks_rr(size_t sz) {
+    std::vector<size_t> chunks;
+    size_t mpi_size = world_size();
+    size_t mpi_rank = world_rank();
+    for (size_t i = 0; i < sz; ++i) {
+        if (i % mpi_size == mpi_rank)
+            chunks.push_back(i);
+    }
+
+    return chunks;
+}
+
 template <class ReadType>
 void swap_streams(io::ReadStreamList<ReadType> &all_streams,
                     io::ReadStreamList<ReadType> &streams,

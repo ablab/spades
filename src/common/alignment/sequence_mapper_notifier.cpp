@@ -14,7 +14,7 @@
 
 namespace debruijn_graph {
 
-void SequenceMapperNotifier::PyramidMergeMPI(SequenceMapperListener &listener) {
+void SequenceMapperNotifierMPI::PyramidMergeMPI(SequenceMapperListener &listener) {
     size_t mpi_size = partask::world_size();
     size_t mpi_rank = partask::world_rank();
     const size_t deadbeef = 0xDEADBEEF;
