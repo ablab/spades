@@ -150,8 +150,7 @@ public:
         std::vector<size_t> chunks = partask::chunks_rr(streams.size());
         INFO("Selected streams: " << chunks);
 
-        partask::execute_on_subset(streams,
-                                   chunks,
+        partask::execute_on_subset(streams, chunks,
                                    [&](io::ReadStreamList<ReadType>& local_streams) {
                                        // Run ProcessLibrary
                                        INFO("Running ProcessLibrary");

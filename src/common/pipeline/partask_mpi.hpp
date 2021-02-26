@@ -8,11 +8,11 @@
 #pragma once
 
 #include "io/binary/binary.hpp"
-#include "io/reads/read_stream_vector.hpp"
 
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/verify.hpp"
 #include "utils/logger/logger.hpp"
+#include "utils/stl_utils.hpp"
 
 #include <algorithm>
 #include <functional>
@@ -1626,6 +1626,15 @@ auto create_empty_stream_list(size_t size) {
         streams.push_back({});
     }
     return streams;
+}
+
+template<class StreamListType, class F>
+void execute_on_subset(StreamListType &all_streams,
+                       F f) {
+    // Select streams
+    std::vector<size_t> chunks = partask::chunks_rr(all_streams.size());
+    INFO("Selected streams: " << chunks);
+    execute_on_subset(all_streams, chunks, std::move(f));
 }
 
 template<class StreamListType, class F>
