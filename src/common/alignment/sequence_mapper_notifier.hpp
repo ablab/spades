@@ -39,42 +39,19 @@ public:
     virtual void MergeBuffer(size_t /* thread_index */) {}
 
     virtual void Serialize(std::ostream&) const {
-        VERIFY_MSG(false, "Method Serialize is not implemented. Using default realization.");
+        VERIFY_MSG(false, "Serialize() is not implemented");
     }
 
     virtual void Deserialize(std::istream&) {
-        VERIFY_MSG(false, "Method Deserialize is not implemented. Using default realization.");
+        VERIFY_MSG(false, "Deserialize() is not implemented");
     }
 
     virtual void MergeFromStream(std::istream&) {
-        VERIFY_MSG(false, "Method MergeFromStream is not implemented. Using default realization.");
+        VERIFY_MSG(false, "MergeFromStream() is not implemented");
     }
 
     virtual ~SequenceMapperListener() {}
 };
-
-inline void PyramidMergeMPI(SequenceMapperListener &listener) {
-    size_t mpi_size = partask::world_size();
-    size_t mpi_rank = partask::world_rank();
-    const size_t deadbeef = 0xDEADBEEF;
-
-    for (size_t step = 1; step < mpi_size; step *= 2) {
-        if ((mpi_rank % (2*step) == 0) && (mpi_rank + step < mpi_size)) {
-            partask::InputMPIStream is(mpi_rank + step);
-            size_t sz;
-            io::binary::BinRead(is, sz);
-            VERIFY_MSG(sz == deadbeef, "Listener type: " << typeid(listener).name());
-            listener.MergeFromStream(is);
-            io::binary::BinRead(is, sz);
-            VERIFY_MSG(sz == deadbeef, "Listener type: " << typeid(listener).name());
-        } else if (mpi_rank % (2*step) == step) {
-            partask::OutputMPIStream os(mpi_rank - step);
-            io::binary::BinWrite(os, deadbeef);
-            listener.Serialize(os);
-            io::binary::BinWrite(os, deadbeef);
-        }
-    }
-}
 
 class SequenceMapperNotifier {
     static constexpr size_t BUFFER_SIZE = 200000;
@@ -86,6 +63,8 @@ public:
     SequenceMapperNotifier(size_t lib_count = 1);
 
     void Subscribe(SequenceMapperListener* listener, size_t lib_index = 0);
+
+    void PyramidMergeMPI(SequenceMapperListener &listener);
 
     template<class ReadType>
     void ProcessLibraryMPI(io::ReadStreamList<ReadType>& streams,
@@ -122,7 +101,7 @@ public:
         const size_t deadbeef = 0xDEADBEEF;
         if (mpi_size > 1) {
             INFO("Syncing listeners...");
-            if (mpi_rank == 0) {
+            if (partask::master()) {
                 partask::OutputMPIStreamBcast os(0);
                 for (const auto& listener : listeners_[lib_index]) {
                     io::binary::BinWrite(os, deadbeef);
