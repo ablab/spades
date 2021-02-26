@@ -10,7 +10,7 @@ project(stages CXX)
 
 set(stages_src read_conversion.cpp construction.cpp simplification.cpp ss_edge_split.cpp genomic_info_filler.cpp)
 if (MPI_FOUND)
-  set(stages_src ${stages_src} test_mpi.cpp)
+  set(stages_src ${stages_src} test_mpi.cpp construction_mpi.cpp)
 endif()
 
 add_library(stages STATIC ${stages_src})

@@ -6,7 +6,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "construction.hpp"
+#include "construction_mpi.hpp"
 
 #include "alignment/edge_index.hpp"
 #include "assembly_graph/construction/early_simplification.hpp"
@@ -102,7 +102,7 @@ static void add_additional_contigs_to_lib(std::filesystem::path path_to_addition
     merge_read_streams(trusted_list, lib_streams);
 }
 
-void Construction::init(graph_pack::GraphPack &gp, const char *) {
+void ConstructionMPI::init(graph_pack::GraphPack &gp, const char *) {
     init_storage(unsigned(gp.k()));
 
     auto& dataset = cfg::get_writable().ds;
@@ -156,18 +156,18 @@ void Construction::init(graph_pack::GraphPack &gp, const char *) {
     INFO("Average read length " << dataset.aRL);
 }
 
-void Construction::fini(graph_pack::GraphPack &) {
+void ConstructionMPI::fini(graph_pack::GraphPack &) {
     reset_storage();
 }
 
-Construction::~Construction() {}
+ConstructionMPI::~ConstructionMPI() {}
 
 namespace {
 
-class CoverageFilter: public Construction::Phase {
+class CoverageFilter: public ConstructionMPI::Phase {
   public:
     CoverageFilter()
-            : Construction::Phase("k-mer multiplicity estimation", "cqf_filter") { }
+            : ConstructionMPI::Phase("k-mer multiplicity estimation", "cqf_filter") { }
     virtual ~CoverageFilter() = default;
 
     void run(graph_pack::GraphPack &, const char*) override {
@@ -212,11 +212,11 @@ void save(const graph_pack::GraphPack&,
 };
 
 
-class KMerCounting : public Construction::Phase {
+class KMerCounting : public ConstructionMPI::Phase {
     typedef rolling_hash::SymmetricCyclicHash<> SeqHasher;
 public:
     KMerCounting()
-            : Construction::Phase("k+1-mer counting", "kpomer_counting") { }
+            : ConstructionMPI::Phase("k+1-mer counting", "kpomer_counting") { }
 
     virtual ~KMerCounting() = default;
 
@@ -256,10 +256,10 @@ public:
     }
 };
 
-class ExtensionIndexBuilder : public Construction::Phase {
+class ExtensionIndexBuilder : public ConstructionMPI::Phase {
 public:
     ExtensionIndexBuilder()
-            : Construction::Phase("Extension index construction", "extension_index_construction") { }
+            : ConstructionMPI::Phase("Extension index construction", "extension_index_construction") { }
 
     virtual ~ExtensionIndexBuilder() = default;
 
@@ -286,10 +286,10 @@ public:
 };
 
 
-class EarlyTipClipper : public Construction::Phase {
+class EarlyTipClipper : public ConstructionMPI::Phase {
 public:
     EarlyTipClipper()
-            : Construction::Phase("Early tip clipping", "early_tip_clipper") { }
+            : ConstructionMPI::Phase("Early tip clipping", "early_tip_clipper") { }
 
     virtual ~EarlyTipClipper() = default;
 
@@ -314,10 +314,10 @@ public:
     }
 };
 
-class EarlyATClipper : public Construction::Phase {
+class EarlyATClipper : public ConstructionMPI::Phase {
 public:
     EarlyATClipper()
-            : Construction::Phase("Early A/T remover", "early_at_remover") { }
+            : ConstructionMPI::Phase("Early A/T remover", "early_at_remover") { }
 
     virtual ~EarlyATClipper() = default;
 
@@ -340,10 +340,10 @@ public:
     }
 };
 
-class GraphCondenser : public Construction::Phase {
+class GraphCondenser : public ConstructionMPI::Phase {
 public:
     GraphCondenser()
-            : Construction::Phase("Condensing graph", "graph_condensing") { }
+            : ConstructionMPI::Phase("Condensing graph", "graph_condensing") { }
 
     virtual ~GraphCondenser() = default;
 
@@ -368,10 +368,10 @@ public:
     }
 };
 
-class PHMCoverageFiller : public Construction::Phase {
+class PHMCoverageFiller : public ConstructionMPI::Phase {
 public:
     PHMCoverageFiller()
-            : Construction::Phase("Filling coverage indices (PHM)", "coverage_filling_phm") {}
+            : ConstructionMPI::Phase("Filling coverage indices (PHM)", "coverage_filling_phm") {}
     virtual ~PHMCoverageFiller() = default;
 
     void run(graph_pack::GraphPack &gp, const char *) override {
@@ -436,8 +436,8 @@ public:
 
 } // namespace
 
-Construction::Construction()
-        : spades::CompositeStageDeferred<ConstructionStorage>("de Bruijn graph construction", "construction") {
+ConstructionMPI::ConstructionMPI()
+        : spades::MPICompositeStageDeferred<ConstructionStorage>("de Bruijn graph construction", "construction") {
     if (cfg::get().con.read_cov_threshold)
         add<CoverageFilter>();
 
