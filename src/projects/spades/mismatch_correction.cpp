@@ -450,7 +450,7 @@ private:
         MismatchStatistics statistics(gp_);
         INFO("Potential mismatches collected");
 
-        SequenceMapperNotifier notifier(cfg::get_writable().ds.reads.lib_count());
+        SequenceMapperNotifierMPI notifier(cfg::get_writable().ds.reads.lib_count());
 
         auto& dataset = cfg::get_writable().ds;
 
@@ -463,7 +463,7 @@ private:
             auto &reads = dataset.reads[i];
             size_t num_readers = partask::overall_num_threads();
             auto single_streams = single_binary_readers(reads, /*followed by rc */true, /*binary*/true, num_readers);
-            notifier.ProcessLibraryMPI(single_streams, i, *mapper);
+            notifier.ProcessLibrary(single_streams, i, *mapper);
         }
 
         return CorrectAllEdges(statistics);
