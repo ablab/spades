@@ -157,7 +157,7 @@ size_t ProcessSingleReads(graph_pack::GraphPack &gp, size_t ilib,
     auto& reads = cfg::get_writable().ds.reads[ilib];
     const auto &graph = gp.get<Graph>();
 
-    SequenceMapperNotifier notifier;
+    SequenceMapperNotifierMPI notifier(cfg::get_writable().ds.reads.lib_count());
 
     auto &single_long_reads = gp.get_mutable<LongReadContainer<Graph>>()[ilib];
     auto& trusted_paths = gp.get_mutable<path_extend::TrustedPathsContainer>()[ilib];
@@ -181,11 +181,11 @@ size_t ProcessSingleReads(graph_pack::GraphPack &gp, size_t ilib,
     size_t num_readers = partask::overall_num_threads();
     if (use_binary) {
         auto single_streams = single_binary_readers(reads, false, map_paired, num_readers);
-        notifier.ProcessLibraryMPI(single_streams, ilib, *mapper_ptr);
+        notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
     } else {
         auto single_streams = single_easy_readers(reads, false,
                                                   map_paired, /*handle Ns*/false);
-        notifier.ProcessLibraryMPI(single_streams, ilib, *mapper_ptr);
+        notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
     }
 
     return single_long_reads.size();
@@ -204,7 +204,7 @@ void ProcessPairedReads(graph_pack::GraphPack &gp,
         round_thr = unsigned(std::min(cfg::get().de.max_distance_coeff * data.insert_size_deviation * cfg::get().de.rounding_coeff,
                                       cfg::get().de.rounding_thr));
 
-    SequenceMapperNotifier notifier(cfg::get_writable().ds.reads.lib_count());
+    SequenceMapperNotifierMPI notifier(cfg::get_writable().ds.reads.lib_count());
     INFO("Left insert size quantile " << data.insert_size_left_quantile <<
          ", right insert size quantile " << data.insert_size_right_quantile <<
          ", filtering threshold " << filter_threshold <<
@@ -230,7 +230,7 @@ void ProcessPairedReads(graph_pack::GraphPack &gp,
     size_t num_readers = partask::overall_num_threads();
     auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, (size_t) data.mean_insert_size,
                                                 /*include merged*/true, num_readers);
-    notifier.ProcessLibraryMPI(paired_streams, ilib, *ChooseProperMapper(gp, reads));
+    notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
 }
 } // namespace
 
@@ -299,7 +299,7 @@ void PairInfoCount::run(graph_pack::GraphPack &gp, const char *) {
 
                     INFO("Filtering data for library #" << i);
                     {
-                        SequenceMapperNotifier notifier(cfg::get_writable().ds.reads.lib_count());
+                        SequenceMapperNotifierMPI notifier(cfg::get_writable().ds.reads.lib_count());
                         DEFilter filter_counter(*filter, graph);
                         notifier.Subscribe(&filter_counter, i);
 
@@ -307,7 +307,7 @@ void PairInfoCount::run(graph_pack::GraphPack &gp, const char *) {
                         size_t num_readers = partask::overall_num_threads();
                         auto reads = paired_binary_readers(lib, /*followed by rc*/false,
                             0, /*include merged*/true, num_readers);
-                        notifier.ProcessLibraryMPI(reads, i, *ChooseProperMapper(gp, lib));
+                        notifier.ProcessLibrary(reads, i, *ChooseProperMapper(gp, lib));
                     }
                 }
 
