@@ -1643,7 +1643,9 @@ void execute_on_subset(StreamListType &all_streams,
                        F f) {
     auto local_streams = partask::create_empty_stream_list<StreamListType>(chunks.size());
     partask::swap_streams(all_streams, local_streams, chunks);
+    local_streams.reset();
     f(local_streams);
+    local_streams.close();
     partask::swap_streams(all_streams, local_streams, chunks);
 }
 
