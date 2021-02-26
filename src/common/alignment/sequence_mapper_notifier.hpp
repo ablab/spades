@@ -50,6 +50,10 @@ public:
         VERIFY_MSG(false, "MergeFromStream() is not implemented");
     }
 
+    virtual const char* name() const {
+        return typeid(*this).name();
+    }
+    
     virtual ~SequenceMapperListener() {}
 };
 
@@ -93,7 +97,7 @@ public:
 
         INFO("Merging results...");
         for (const auto& listener : listeners_[lib_index]) {
-            INFO("Merging listener " << typeid(*listener).name());
+            INFO("Merging listener " << listener->name());
             PyramidMergeMPI(*listener);
         }
         INFO("Listeners merged");
