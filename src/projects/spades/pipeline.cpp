@@ -29,6 +29,7 @@
 #include "stages/genomic_info_filler.hpp"
 #include "stages/read_conversion.hpp"
 #include "stages/construction.hpp"
+#include "stages/construction_mpi.hpp"
 #include "stages/simplification.hpp"
 #include "stages/ss_edge_split.hpp"
 #include "configs/config_struct.hpp"
@@ -186,11 +187,14 @@ static void AddSimplificationStages(StageManager &SPAdes) {
         SPAdes.add<debruijn_graph::SSEdgeSplit>();
 }
 
-static void AddConstructionStages(StageManager &SPAdes) {
+static void AddConstructionStages(StageManager &SPAdes, bool mpi = false) {
     using namespace debruijn_graph::config;
     pipeline_type mode = cfg::get().mode;
 
-    SPAdes.add<debruijn_graph::Construction>();
+    if (mpi)
+        SPAdes.add<debruijn_graph::ConstructionMPI>();
+    else
+        SPAdes.add<debruijn_graph::Construction>();
     if (!PipelineHelper::IsMetagenomicPipeline(mode))
         SPAdes.add<debruijn_graph::GenomicInfoFiller>();
 }
@@ -265,7 +269,7 @@ void assemble_genome(bool mpi = false) {
     SPAdes->add<ReadConversion>();
 
     if (!AssemblyGraphPresent()) {
-        AddConstructionStages(*SPAdes);
+        AddConstructionStages(*SPAdes, mpi);
         if (cfg::get().sewage)
             SPAdes->add<debruijn_graph::RestrictedEdgesFilling>();
 
