@@ -11,6 +11,7 @@
 
 #include "io/kmers/mmapped_reader.hpp"
 #include "io/kmers/mmapped_writer.hpp"
+#include "io/binary/binary.hpp"
 
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/memory_limit.hpp"
@@ -96,7 +97,7 @@ class KMerDiskStorage {
   static_assert(std::is_nothrow_move_constructible<kmer_iterator>::value, "kmer_iterator must be nonthrow move constructible");
 
   KMerDiskStorage() {}
-  
+
   KMerDiskStorage(fs::TmpDir work_dir, unsigned k,
                   KMerSegmentPolicy policy)
       : work_dir_(work_dir), k_(k), segment_policy_(std::move(policy)) {
@@ -106,7 +107,7 @@ class KMerDiskStorage {
 
   KMerDiskStorage(KMerDiskStorage &&) = default;
   KMerDiskStorage &operator=(KMerDiskStorage &&) = default;
-  
+
   fs::DependentTmpFile create() {
     fs::DependentTmpFile res;
 #pragma omp critical
@@ -180,6 +181,22 @@ class KMerDiskStorage {
     ofs.close();
   }
 
+  void BinRead(std::istream& is) {
+    // WARNING: the deserialized object is non-owning
+    io::binary::BinRead(is,
+                        k_, segment_policy_,
+                        work_dir_,
+                        kmer_prefix_, all_kmers_,
+                        buckets_);
+  }
+
+  void BinWrite(std::ostream& os) const {
+    io::binary::BinWrite(os,
+                         k_, segment_policy_,
+                         work_dir_,
+                         kmer_prefix_, all_kmers_);
+    io::binary::BinWrite(os, buckets_);
+  }
 
  private:
   fs::TmpDir work_dir_;
@@ -402,7 +419,7 @@ class KMerIndexBuilder {
         index.index_.emplace_back(kmer_storage.bucket_size(i),
                                   Index::KMerDataIndex::ConflictPolicy::Ignore,
                                   /* gamma */ 4.0);
-         
+
 #     pragma omp parallel for shared(index) num_threads(num_threads_)
       for (size_t i = 0; i < kmer_storage.num_buckets(); ++i) {
           index.segment_starts_[i + 1] = kmer_storage.bucket_size(i);

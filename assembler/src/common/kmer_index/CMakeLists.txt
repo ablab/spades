@@ -6,4 +6,4 @@
 
 project(mph_index CXX)
 
-add_library(mph_index INTERFACE)
+add_library(mph_index STATIC kmer_mph/kmer_buckets.cpp)
