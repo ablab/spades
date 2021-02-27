@@ -18,6 +18,8 @@
 #include "modules/graph_construction.hpp"
 #include "pipeline/genomic_info.hpp"
 #include "pipeline/graph_pack.hpp"
+#include "pipeline/mpi_stage.hpp"
+#include "pipeline/partask_mpi.hpp"
 #include "utils/filesystem/temporary.hpp"
 
 namespace debruijn_graph {
@@ -127,9 +129,11 @@ void ConstructionMPI::init(graph_pack::GraphPack &gp, const char *) {
     storage().params = cfg::get().con;
     storage().workdir = fs::tmp::make_temp_dir(gp.workdir(), "construction");
     //FIXME needs to be changed if we move to hash only filtering
-    storage().read_streams = io::single_binary_readers_for_libs(dataset.reads, libs_for_construction);
+    size_t num_readers = partask::overall_num_threads();
+    storage().read_streams = io::single_binary_readers_for_libs(dataset.reads, libs_for_construction, true, true, num_readers);
+    INFO("Overall number of readers (actual): " << storage().read_streams.size());
 
-    //Updating dataset stats
+    // Updating dataset stats
     VERIFY(dataset.RL == 0 && dataset.aRL == 0.);
     size_t merged_max_len = 0;
     uint64_t total_nucls = 0;
@@ -138,7 +142,7 @@ void ConstructionMPI::init(graph_pack::GraphPack &gp, const char *) {
         auto lib_data = dataset.reads[lib_id].data();
         if (lib_data.unmerged_read_length == 0) {
             FATAL_ERROR("Failed to determine read length for library #" << lib_data.lib_index << ". "
-                    "Check that not only merged reads are present.");
+                        "Check that not only merged reads are present.");
         }
         dataset.no_merge_RL = std::max(dataset.no_merge_RL, lib_data.unmerged_read_length);
         merged_max_len = std::max(merged_max_len, lib_data.merged_read_length);
@@ -232,7 +236,7 @@ public:
 
         io::ReadStreamList<io::SingleReadSeq> merge_streams = temp_merge_read_streams(read_streams, contigs_streams);
 
-        unsigned nthreads = (unsigned)merge_streams.size();
+        unsigned nthreads = cfg::get().max_threads;
         using Splitter =  kmers::DeBruijnReadKMerSplitter<io::SingleReadSeq,
                                                           kmers::StoringTypeFilter<storing_type>>;
 
@@ -268,7 +272,7 @@ public:
         kmers::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromKPOMers(storage().workdir,
                                                                               storage().ext_index,
                                                                               *storage().kmers,
-                                                                              unsigned(storage().read_streams.size()),
+                                                                              cfg::get().max_threads,
                                                                               storage().params.read_buffer_size);
     }
 
@@ -368,34 +372,70 @@ public:
     }
 };
 
+template <typename Index>
+class CollectKMerCoverageTask {
+    using ReadStreams = io::ReadStreamList<io::SingleReadSeq>;
+
+public:
+    CollectKMerCoverageTask() = default;
+    CollectKMerCoverageTask(std::istream &is) { deserialize(is); }
+    std::ostream &serialize(std::ostream &os) const { return os; }
+    std::istream &deserialize(std::istream &is) { return is; }
+
+    auto make_splitter(size_t, ReadStreams &read_streams, Index &) {
+        return partask::make_seq_along_generator(read_streams);
+    }
+
+    void process(std::istream &is, std::ostream &, ReadStreams &read_streams, Index &index) {
+        auto chunks = partask::get_seq(is);
+        if (!chunks.size())
+            return;
+
+        INFO("Selected streams: " << chunks);
+        partask::execute_on_subset(read_streams, chunks,
+                                   [&](ReadStreams& local_streams) {
+                                       # pragma omp parallel for
+                                       for (size_t i = 0; i < local_streams.size(); ++i)
+                                           kmers::CoverageHashMapBuilder().FillCoverageFromStream(local_streams[i], index);
+                                   });
+    }
+
+    void sync(ReadStreams & /*read_streams*/, Index &index) {
+        auto &values = index.values();
+        partask::allreduce(values.data(), values.size(), MPI_SUM);
+    }
+};
+
+
 class PHMCoverageFiller : public ConstructionMPI::Phase {
 public:
     PHMCoverageFiller()
             : ConstructionMPI::Phase("Filling coverage indices (PHM)", "coverage_filling_phm") {}
     virtual ~PHMCoverageFiller() = default;
 
+    bool distributed() const override { return true; }
+
     void run(graph_pack::GraphPack &gp, const char *) override {
+        if (!storage().kmers)
+            storage().kmers.reset(new kmers::KMerDiskStorage<RtSeq>());
+        partask::broadcast(*storage().kmers);
+
         storage().coverage_map.reset(new ConstructionStorage::CoverageMap(storage().kmers->k()));
         auto &coverage_map = *storage().coverage_map;
+        auto &streams = storage().read_streams;
 
-        kmers::CoverageHashMapBuilder().BuildIndex(coverage_map,
-                                                   *storage().kmers,
-                                                   storage().read_streams);
-        /*
-        INFO("Checking the PHM");
+        unsigned nthreads = cfg::get().max_threads;
+        kmers::PerfectHashMapBuilder().BuildIndex(coverage_map, *storage().kmers, nthreads);
 
-        auto &index = gp.index.inner_index();
-        for (auto I = index.value_cbegin(), E = index.value_cend();
-             I != E; ++I) {
-            const auto& edge_info = *I;
-
-            Sequence sk = gp.g.EdgeNucls(edge_info.edge_id).Subseq(edge_info.offset, edge_info.offset + index.k());
-            auto kwh = coverage_map.ConstructKWH(sk.start<RtSeq>(index.k()));
-
-            uint32_t cov = coverage_map.get_value(kwh, utils::InvertableStoring::trivial_inverter<uint32_t>());
-            if (edge_info.count != cov)
-                INFO("" << kwh << ":" << edge_info.count << ":" << cov);
-        } */
+        INFO("Collecting k-mer coverage information from reads, this takes a while.");
+        {
+            partask::TaskRegistry treg;
+            auto fill_kmer_coverage = treg.add<CollectKMerCoverageTask<ConstructionStorage::CoverageMap>>(std::ref(streams), std::ref(coverage_map));
+            treg.listen();
+            if (partask::master())
+                fill_kmer_coverage();
+            treg.stop_listening();
+        }
 
         INFO("Filling coverage and flanking coverage from PHM");
         FillCoverageAndFlankingFromPHM(coverage_map,
