@@ -151,6 +151,8 @@ public:
     auto value_cbegin() const { return data_.cbegin(); }
     auto value_end() const { return data_.end(); }
     auto value_cend() const { return data_.cend(); }
+    auto& values() { return data_; }
+    const auto& values() const { return data_; }
 
     friend struct PerfectHashMapBuilder;
 
