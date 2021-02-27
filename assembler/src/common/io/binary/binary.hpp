@@ -6,14 +6,15 @@
 
 #pragma once
 
+#include "utils/verify.hpp"
+#include "io/binary/access.hpp"
+#include "io/binary/binary_fwd.hpp"
+
 #include <iostream>
 #include <vector>
 #include <map>
 #include <unordered_map>
 #include <memory>
-
-#include "utils/verify.hpp"
-#include "io/binary/access.hpp"
 
 namespace io {
 
@@ -37,9 +38,6 @@ static constexpr Encoding GetEncoding() {
            std::is_signed<T>::value ? Encoding::SLEB128 :
            Encoding::Unknown;
 }
-
-template <typename T, typename Enable = void>
-class Serializer;
 
 // Motivated by declval, the same stuff but returns lvalue reference
 template <class T>

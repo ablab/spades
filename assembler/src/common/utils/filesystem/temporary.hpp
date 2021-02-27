@@ -7,6 +7,7 @@
 #pragma once
 
 #include "utils/logger/decl_logger.hpp"
+#include "io/binary/binary_fwd.hpp"
 
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
 #include <filesystem>
@@ -65,10 +66,6 @@ class TmpFileImpl : public llvm::ThreadSafeRefCountedBase<TmpFileImpl>, non_copy
 
     const std::filesystem::path &file() const { return file_; }
     operator std::filesystem::path() const { return file_; }
-    const std::filesystem::path &dir() const {
-        static std::filesystem::path noparent("");
-        return (parent_ ? parent_->dir() : noparent);
-    }
     int fd() const { return fd_; }
     void close();
     DependentTmpFile CreateDep(const std::string &suffix);
@@ -86,10 +83,11 @@ class TmpFileImpl : public llvm::ThreadSafeRefCountedBase<TmpFileImpl>, non_copy
 class DependentTmpFileImpl : public llvm::ThreadSafeRefCountedBase<DependentTmpFileImpl>, non_copy_move_assign_able {
   public:
     DependentTmpFileImpl(const std::string &suffix, TmpFile parent);
+    // Acquire existing file
+    DependentTmpFileImpl(std::nullptr_t, const std::string &file, TmpFile parent = nullptr);
     ~DependentTmpFileImpl();
 
     const std::filesystem::path &file() const { return file_; }
-    const std::filesystem::path &dir() const { return parent_->dir(); }
     operator std::filesystem::path() const { return file_; }
     const std::filesystem::path &release();
 
@@ -117,6 +115,10 @@ inline TmpFile acquire_temp_file(const std::filesystem::path &file, TmpDir paren
     return new TmpFileImpl(nullptr, file, parent);
 }
 
+inline DependentTmpFile acquire_dependent_temp_file(const std::string &file, TmpFile parent = nullptr) {
+    return new DependentTmpFileImpl(nullptr, file, parent);
+}
+
 }  // namespace impl
 
 using impl::DependentTmpFile;
@@ -125,8 +127,34 @@ using impl::TmpFile;
 
 namespace tmp {
 using impl::acquire_temp_file;
+using impl::acquire_dependent_temp_file;
 using impl::acquire_temp_dir;
 using impl::make_temp_dir;
 using impl::make_temp_file;
 }  // namespace tmp
 }  // namespace fs
+
+namespace io {
+namespace binary {
+namespace impl {
+template<>
+class Serializer<fs::TmpDir> {
+public:
+    static void Write(std::ostream &, const fs::TmpDir &);
+    static void Read(std::istream &, fs::TmpDir &);
+};
+template<>
+class Serializer<fs::TmpFile> {
+public:
+    static void Write(std::ostream &, const fs::TmpFile &);
+    static void Read(std::istream &, fs::TmpFile &);
+};
+template<>
+class Serializer<fs::DependentTmpFile> {
+public:
+    static void Write(std::ostream &, const fs::DependentTmpFile &);
+    static void Read(std::istream &, fs::DependentTmpFile &);
+};
+}
+}
+}

@@ -6,6 +6,8 @@
 
 #include "temporary.hpp"
 
+#include "io/binary/binary.hpp"
+#include "io/binary/types/fs.hpp"
 #include "path_helper.hpp"
 #include "utils/verify.hpp"
 #include "utils/logger/logger.hpp"
@@ -28,9 +30,9 @@ TmpDirImpl::TmpDirImpl(std::nullptr_t, const std::filesystem::path &dir)
 }
 
 TmpDirImpl::~TmpDirImpl() {
-    if (released_) {
+    if (released_)
         return;
-    }
+
     TRACE("Removing " << dir_);
     remove_all(dir_);
 }
@@ -91,6 +93,11 @@ DependentTmpFileImpl::DependentTmpFileImpl(const std::string &suffix, TmpFile pa
     TRACE("Dependent: " << file_);
 }
 
+DependentTmpFileImpl::DependentTmpFileImpl(std::nullptr_t, const std::string &file, TmpFile parent)
+        : parent_(parent), file_(file), released_(false) {
+    TRACE("Dependent: " << file_);
+}
+
 DependentTmpFileImpl::~DependentTmpFileImpl() {
     if (released_) {
         return;
@@ -107,3 +114,63 @@ const std::filesystem::path &DependentTmpFileImpl::release() {
 
 }  // namespace impl
 }  // namespace fs
+
+namespace io {
+namespace binary {
+namespace impl {
+void Serializer<fs::TmpDir>::Read(std::istream &is, fs::TmpDir &dir) {
+    bool initialized = false;
+    io::binary::BinRead(is, initialized);
+    if (initialized) {
+        std::string str;
+        io::binary::BinRead(is, str);
+        dir = fs::tmp::acquire_temp_dir(str);
+        dir->release();
+    } else
+        dir.reset();
+}
+
+void Serializer<fs::TmpDir>::Write(std::ostream &os, const fs::TmpDir &dir) {
+    io::binary::BinWrite(os, (bool)dir);
+    if (dir)
+        io::binary::BinWrite(os, dir->dir());
+}
+
+void Serializer<fs::TmpFile>::Read(std::istream &is, fs::TmpFile &f) {
+    bool initialized = false;
+    io::binary::BinRead(is, initialized);
+    if (initialized) {
+        std::string str;
+        io::binary::BinRead(is, str);
+        f = fs::tmp::acquire_temp_file(str);
+        f->release();
+    } else
+        f.reset();
+}
+
+void Serializer<fs::TmpFile>::Write(std::ostream &os, const fs::TmpFile &f) {
+    io::binary::BinWrite(os, (bool)f);
+    if (f)
+        io::binary::BinWrite(os, f->file());
+}
+
+void Serializer<fs::DependentTmpFile>::Read(std::istream &is, fs::DependentTmpFile &f) {
+    bool initialized = false;
+    io::binary::BinRead(is, initialized);
+    if (initialized) {
+        std::string str;
+        io::binary::BinRead(is, str);
+        f = fs::tmp::acquire_dependent_temp_file(str);
+        f->release();
+    } else
+        f.reset();
+}
+
+void Serializer<fs::DependentTmpFile>::Write(std::ostream &os, const fs::DependentTmpFile &f) {
+    io::binary::BinWrite(os, (bool)f);
+    if (f)
+        io::binary::BinWrite(os, f->file());
+}
+}
+}
+}
