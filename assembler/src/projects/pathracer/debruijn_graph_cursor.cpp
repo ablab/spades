@@ -15,7 +15,7 @@ std::vector<DebruijnGraphCursor> DebruijnGraphCursor::prev(DebruijnGraphCursor::
     const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
 
     // Case 1: edge is a tip and we're inside the terminal vertex
-    if (position() == 0) {
+    if (position() == 0 && g.IncomingEdgeCount(g.EdgeStart(edge())) == 0) {
         // assert(pg_->ingoing_[edge_id_].size() == 0);
         return {};
     }

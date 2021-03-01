@@ -1160,7 +1160,7 @@ int pathracer_main(int argc, char* argv[]) {
     gfa::GFAReader gfa(cfg.load_from);
     INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
     VERIFY_MSG(gfa.k() != -1U, "Failed to determine k-mer length");
-    VERIFY_MSG(gfa.k() % 2 == 1, "k-mer length must be odd");
+    VERIFY_MSG(gfa.k() % 2 == 1 || gfa.k() == 0, "k-mer length must be odd");
     debruijn_graph::ConjugateDeBruijnGraph graph(gfa.k());
     gfa.to_graph(graph, id_mapper.get());
     scaffold_paths.reserve(gfa.num_paths());
