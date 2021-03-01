@@ -85,7 +85,6 @@ public:
         return index_.size();
     }
     size_t FindJumpEdges(EdgeId e, std::set<EdgeId>& result, int min_dist, int max_dist, size_t min_len = 0) const override {
-        VERIFY(index_.size() > 0);
         result.clear();
 
         auto infos = index_.Get(e);
@@ -110,7 +109,6 @@ public:
 
 
     void CountDistances(EdgeId e1, EdgeId e2, std::vector<int> &dist, std::vector<double> &w) const override {
-        VERIFY(index_.size() > 0);
         if (e1 == e2)
             return;
 
@@ -123,7 +121,6 @@ public:
 
     double CountPairedInfo(EdgeId e1, EdgeId e2, int distance,
                            bool from_interval = false) const override {
-        VERIFY(index_.size() != 0);
         double weight = 0.0;
 
         for (auto point : index_.Get(e1, e2)) {
@@ -145,7 +142,6 @@ public:
     }
 
     double CountPairedInfo(EdgeId e1, EdgeId e2, int dist_min, int dist_max) const override {
-        VERIFY(index_.size() != 0);
         double weight = 0.0;
         for (const auto &point : index_.Get(e1, e2)) {
             int dist = omnigraph::de::rounded_d(point);
