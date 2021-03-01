@@ -452,10 +452,10 @@ Extenders ExtendersGenerator::MakePBScaffoldingExtenders() const {
 
 Extenders ExtendersGenerator::MakeCoverageExtenders() const {
     Extenders result;
-    if (gp_.get<PairedInfoIndicesT<Graph>>("clustered_indices")[0].size() > 0) {
-        INFO("Using additional coordinated coverage extender");
-        result.push_back(MakeCoordCoverageExtender(0 /* lib index */));
-    }
+
+    INFO("Using additional coordinated coverage extender");
+    result.push_back(MakeCoordCoverageExtender(0 /* lib index */));
+
     return result;
 }
 
@@ -467,7 +467,6 @@ Extenders ExtendersGenerator::MakeBasicExtenders() const {
     size_t single_read_libs = 0;
     size_t pe_libs = 0;
     size_t scf_pe_libs = 0;
-    const auto &clustered_indices = gp_.get<PairedInfoIndicesT<Graph>>("clustered_indices");
 
     const auto &pset = params_.pset;
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
@@ -494,20 +493,15 @@ Extenders ExtendersGenerator::MakeBasicExtenders() const {
         if (support_.IsForPEExtender(lib)) {
             ++pe_libs;
             if (IsOldPEEnabled(pset.sm)) {
-                if (clustered_indices[lib_index].size() == 0) {
-                    INFO ("Lib " << lib_index << "is used for the exSPAnder but clustered paired index is empty, skipping");
-                    --pe_libs;
+                if (params_.mode == config::pipeline_type::moleculo) {
+                    basic_extenders.emplace_back(lib.type(), lib_index, MakeLongEdgePEExtender(lib_index, false));
+                } else if (pset.multi_path_extend) {
+                    basic_extenders.emplace_back(lib.type(), lib_index, MakePEExtender(lib_index, false));
+                    if (pset.simple_coverage_resolver.enabled)
+                        basic_extenders.emplace_back(lib.type(), lib_index, MakeSimpleCoverageExtender(lib_index));
+                    basic_extenders.emplace_back(lib.type(), lib_index, MakeRNAExtender(lib_index, false));
                 } else {
-                    if (params_.mode == config::pipeline_type::moleculo) {
-                        basic_extenders.emplace_back(lib.type(), lib_index, MakeLongEdgePEExtender(lib_index, false));
-                    } else if (pset.multi_path_extend) {
-                        basic_extenders.emplace_back(lib.type(), lib_index, MakePEExtender(lib_index, false));
-                        if (pset.simple_coverage_resolver.enabled)
-                            basic_extenders.emplace_back(lib.type(), lib_index, MakeSimpleCoverageExtender(lib_index));
-                        basic_extenders.emplace_back(lib.type(), lib_index, MakeRNAExtender(lib_index, false));
-                    } else {
-                        basic_extenders.emplace_back(lib.type(), lib_index, MakePEExtender(lib_index, false));
-                    }
+                    basic_extenders.emplace_back(lib.type(), lib_index, MakePEExtender(lib_index, false));
                 }
             } else if (pset.sm == scaffolding_mode::sm_2015) {
                 basic_extenders.emplace_back(lib.type(), lib_index,
@@ -516,7 +510,7 @@ Extenders ExtendersGenerator::MakeBasicExtenders() const {
             }
         }
         //TODO logic is very cryptic!
-        if (support_.IsForShortLoopExtender(lib) && IsOldPEEnabled(pset.sm) && clustered_indices[lib_index].size() != 0) {
+        if (support_.IsForShortLoopExtender(lib) && IsOldPEEnabled(pset.sm)) {
             loop_resolving_extenders.emplace_back(lib.type(), lib_index, MakePEExtender(lib_index, true));
             //TODO what about moleculo and rna here?
         }
