@@ -182,11 +182,10 @@ public:
             queue.pop();
             // TRACE("Vertex " << graph_.str(vertex) << " with distance " << distance << " fetched from queue");
 
-            if (DistanceCounted(vertex)) {
+            if (!distances_.try_emplace(vertex, distance).second) {
                 // TRACE("Distance to vertex " << graph_.str(vertex) << " already counted. Proceeding to next queue entry.");
                 continue;
             }
-            distances_.emplace(vertex, distance);
 
             // TRACE("Vertex " << graph_.str(vertex) << " is found to be at distance "
             //       << distance << " from vertex " << graph_.str(start));
