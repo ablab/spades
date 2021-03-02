@@ -81,8 +81,10 @@ class Dijkstra {
 
     void Init(VertexId start, queue_t &queue) {
         vertex_number_ = 0;
+        distances_.reserve(std::max(2 * max_vertex_number_, size_t(8192)));
         distances_.clear();
         processed_vertices_.clear();
+        processed_vertices_.reserve(std::max(2 * max_vertex_number_, size_t(8192)));
         prev_vert_map_.clear();
         set_finished(false);
         settings_.Init(start);
