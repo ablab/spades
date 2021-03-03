@@ -20,14 +20,16 @@
 
 namespace omnigraph {
 
-template<class Graph, class DijkstraSettings, typename distance_t = size_t>
+template<class Graph, class DijkstraSettings, bool EnableTraceback = false,
+         typename distance_t = size_t>
 class Dijkstra {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
     typedef distance_t DistanceType;
 
     class Queue {
-        struct QueueElement {
+      public:
+        struct QueueElementFull {
             typedef typename Graph::VertexId VertexId;
             typedef typename Graph::EdgeId EdgeId;
 
@@ -35,15 +37,37 @@ class Dijkstra {
             VertexId prev_vertex;
             EdgeId edge_between;
 
-            QueueElement(VertexId new_cur_vertex,
-                         VertexId new_prev_vertex = VertexId(), EdgeId new_edge_between = EdgeId()) noexcept
+            QueueElementFull(VertexId new_cur_vertex,
+                             VertexId new_prev_vertex, EdgeId new_edge_between) noexcept
                     : curr_vertex(new_cur_vertex), prev_vertex(new_prev_vertex),
                       edge_between(new_edge_between) { }
         };
-      public:
-        void push(DistanceType dist, VertexId v,
-                  VertexId previous, EdgeId e) noexcept {
+
+        struct QueueElementSmall {
+            typedef typename Graph::VertexId VertexId;
+            typedef typename Graph::EdgeId EdgeId;
+
+            VertexId curr_vertex;
+
+            QueueElementSmall(VertexId new_cur_vertex) noexcept
+                    : curr_vertex(new_cur_vertex) { }
+        };
+
+        using QueueElement = typename std::conditional<EnableTraceback, QueueElementFull, QueueElementSmall>::type;
+
+
+        template<bool Traceback = EnableTraceback>
+        typename std::enable_if<Traceback>::type
+        push(DistanceType dist, VertexId v,
+             VertexId previous = VertexId(), EdgeId e = EdgeId()) noexcept {
             q.emplace(dist, v, previous, e);
+        }
+
+        template<bool Traceback = EnableTraceback>
+        typename std::enable_if<!Traceback>::type
+        push(DistanceType dist, VertexId v,
+             VertexId = VertexId(), EdgeId = EdgeId()) noexcept {
+            q.emplace(dist, v);
         }
 
         auto top() noexcept { return q.top_value(); }
@@ -52,6 +76,7 @@ class Dijkstra {
         void pop() noexcept { q.pop(); }
         bool empty() const noexcept { return q.empty(); }
 
+      private:
         radix_heap::pair_radix_heap<DistanceType, QueueElement> q;
     };
 
@@ -59,7 +84,6 @@ class Dijkstra {
     const Graph& graph_;
     DijkstraSettings settings_;
     const size_t max_vertex_number_;
-    bool collect_traceback_;
 
     // changeable parameters
     bool finished_;
@@ -70,6 +94,18 @@ class Dijkstra {
     phmap::flat_hash_map<VertexId, distance_t> distances_;
     phmap::flat_hash_map<VertexId, std::pair<VertexId, EdgeId>> prev_vert_map_;
 
+    template<bool Traceback = EnableTraceback>
+    void MaybeCollectTraceback(VertexId v,
+                               typename std::enable_if<Traceback, typename Queue::QueueElement>::type next) {
+        prev_vert_map_[v] =  { next.prev_vertex, next.edge_between };
+    }
+
+    template<bool Traceback = EnableTraceback>
+    void MaybeCollectTraceback(VertexId,
+                               typename std::enable_if<!Traceback, typename Queue::QueueElement>::type) {
+        // Do nothing
+    }
+
     void Init(VertexId start, Queue &queue) {
         vertex_number_ = 0;
         distances_.reserve(std::max(2 * max_vertex_number_, size_t(8192)));
@@ -78,7 +114,7 @@ class Dijkstra {
         set_finished(false);
         settings_.Init(start);
         queue.push(0, start);
-        if (collect_traceback_)
+        if (EnableTraceback)
             prev_vert_map_[start] = std::pair<VertexId, EdgeId>(VertexId(), EdgeId());
     }
 
@@ -125,12 +161,10 @@ class Dijkstra {
 
 public:
     Dijkstra(const Graph &graph, DijkstraSettings settings,
-             size_t max_vertex_number = size_t(-1),
-             bool collect_traceback = false)
+             size_t max_vertex_number = size_t(-1))
             : graph_(graph),
               settings_(settings),
               max_vertex_number_(max_vertex_number),
-              collect_traceback_(collect_traceback),
               finished_(false),
               vertex_number_(0),
               vertex_limit_exceeded_(false) {}
@@ -171,8 +205,7 @@ public:
             distance_t distance = queue.top_distance();
             VertexId vertex = next.curr_vertex;
 
-            if (collect_traceback_)
-                prev_vert_map_[vertex] = std::pair<VertexId, EdgeId>(next.prev_vertex, next.edge_between);
+            MaybeCollectTraceback(vertex, next);
             queue.pop();
             // TRACE("Vertex " << graph_.str(vertex) << " with distance " << distance << " fetched from queue");
 
@@ -194,7 +227,7 @@ public:
     }
 
     std::vector<EdgeId> GetShortestPathTo(VertexId vertex) {
-        VERIFY_MSG(collect_traceback_, "GetShortestPathTo() is available only if traceback is collected");
+        VERIFY_MSG(EnableTraceback, "GetShortestPathTo() is available only if traceback is collected");
         std::vector<EdgeId> path;
         if (prev_vert_map_.find(vertex) == prev_vert_map_.end())
             return path;

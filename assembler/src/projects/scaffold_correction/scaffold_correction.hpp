@@ -103,7 +103,7 @@ namespace scaffold_correction {
             typedef omnigraph::DijkstraHelper<Graph>::PathIgnoringDijkstraSettings DS;
             size_t max_path_length = max_insert_ + 2 * max_cut_length_;
             DS ds(DS::LC(graph_, path), DS::VPrC(max_path_length), DS::VPuC(max_path_length), DS::NIF(graph_));
-            omnigraph::Dijkstra<Graph, DS> dj(graph_, ds, -1ul, true /* collect traceback */);
+            omnigraph::Dijkstra<Graph, DS, true> dj(graph_, ds);
             dj.Run(v1);
             if(dj.DistanceCounted(v2) && dj.GetDistance(v2) <= max_insert_) {
                 auto result = dj.GetShortestPathTo(v2);

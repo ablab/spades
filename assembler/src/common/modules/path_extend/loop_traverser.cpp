@@ -131,9 +131,8 @@ bool LoopTraverser::TraverseLoop(EdgeId start, EdgeId end, const std::set<Vertex
         VertexId first_vertex = g_.EdgeStart(end_path.Front());
 
         if (first_vertex != last_vertex) {
-            auto dijkstra = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, shortest_path_limit_,
-                                                                                    DIJKSTRA_LIMIT,
-                                                                                    true /* collect traceback */);
+            auto dijkstra = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstraWithTraceback(g_, shortest_path_limit_,
+                                                                                                 DIJKSTRA_LIMIT);
             dijkstra.Run(last_vertex);
             auto shortest_path = dijkstra.GetShortestPathTo(first_vertex);
 

@@ -281,8 +281,7 @@ private:
         const auto &g = gp_.get<Graph>();
         for (size_t i = first_mapping_end + 1; i < second_mapping_start; ++i) {
             if (answer.size() != 0 && g.EdgeEnd(answer.back()) != g.EdgeStart(path[i])) {
-                auto dijkstra = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(g, 500,
-                                                                                        30, true /* collect traceback */);
+                auto dijkstra = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstraWithTraceback(g, 500, 30);
                 dijkstra.Run(g.EdgeEnd(answer.back()));
                 auto shortest_path = dijkstra.GetShortestPathTo(g.EdgeStart(path[i]));
                 DEBUG("Shortest path");
