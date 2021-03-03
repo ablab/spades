@@ -34,8 +34,8 @@ class Dijkstra {
             VertexId prev_vertex;
             EdgeId edge_between;
 
-            QueueElement(VertexId new_cur_vertex, VertexId new_prev_vertex,
-                         EdgeId new_edge_between) noexcept
+            QueueElement(VertexId new_cur_vertex,
+                         VertexId new_prev_vertex = VertexId(), EdgeId new_edge_between = EdgeId()) noexcept
                     : curr_vertex(new_cur_vertex), prev_vertex(new_prev_vertex),
                       edge_between(new_edge_between) { }
         };
@@ -80,7 +80,7 @@ class Dijkstra {
         prev_vert_map_.clear();
         set_finished(false);
         settings_.Init(start);
-        queue.push(0, start, VertexId(), EdgeId());
+        queue.push(0, start);
         if (collect_traceback_)
             prev_vert_map_[start] = std::pair<VertexId, EdgeId>(VertexId(), EdgeId());
     }
