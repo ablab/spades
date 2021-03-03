@@ -12,31 +12,33 @@ namespace omnigraph {
 
 template<class Graph>
 class DijkstraHelper {
-      typedef typename Graph::VertexId VertexId;
-      typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
 public:
-    typedef Dijkstra<Graph, ComposedDijkstraSettings<Graph,
-            LengthCalculator<Graph>,
-                VertexProcessChecker<Graph>,
-                VertexPutChecker<Graph>,
-                UnorientedNeighbourIteratorFactory<Graph> > > UnorientedDijkstra;
+    typedef Dijkstra<Graph,
+                     ComposedDijkstraSettings<Graph,
+                                              LengthCalculator<Graph>,
+                                              VertexProcessChecker<Graph>,
+                                              VertexPutChecker<Graph>,
+                                              UnorientedNeighbourIteratorFactory<Graph> > > UnorientedDijkstra;
 
     //------------------------------
 
-    typedef Dijkstra<Graph, ComposedDijkstraSettings<Graph,
-            LengthCalculator<Graph>,
-              VertexProcessChecker<Graph>,
-              VertexPutChecker<Graph>,
-            BackwardNeighbourIteratorFactory<Graph> > > BackwardDijkstra;
+    typedef Dijkstra<Graph,
+                     ComposedDijkstraSettings<Graph,
+                                              LengthCalculator<Graph>,
+                                              VertexProcessChecker<Graph>,
+                                              VertexPutChecker<Graph>,
+                                              BackwardNeighbourIteratorFactory<Graph> > > BackwardDijkstra;
 
     //------------------------------
     // bounded dijkstra
     //------------------------------
     typedef ComposedDijkstraSettings<Graph,
-            LengthCalculator<Graph>,
-            BoundProcessChecker<Graph>,
-            BoundPutChecker<Graph>,
-            ForwardNeighbourIteratorFactory<Graph> > BoundedDijkstraSettings;
+                                     LengthCalculator<Graph>,
+                                     BoundProcessChecker<Graph>,
+                                     BoundPutChecker<Graph>,
+                                     ForwardNeighbourIteratorFactory<Graph> > BoundedDijkstraSettings;
 
     typedef Dijkstra<Graph, BoundedDijkstraSettings> BoundedDijkstra;
 
@@ -58,10 +60,10 @@ public:
     //------------------------------
 
     typedef ComposedDijkstraSettings<Graph,
-            LengthCalculator<Graph>,
-            BoundProcessChecker<Graph>,
-            BoundPutChecker<Graph>,
-            BackwardNeighbourIteratorFactory<Graph> > BackwardBoundedDijkstraSettings;
+                                     LengthCalculator<Graph>,
+                                     BoundProcessChecker<Graph>,
+                                     BoundPutChecker<Graph>,
+                                     BackwardNeighbourIteratorFactory<Graph> > BackwardBoundedDijkstraSettings;
 
     typedef Dijkstra<Graph, BackwardBoundedDijkstraSettings> BackwardBoundedDijkstra;
 
@@ -82,41 +84,44 @@ public:
 
     //------------------------------
 
-    typedef Dijkstra<Graph, ComposedDijkstraSettings<Graph,
-            LengthCalculator<Graph>,
-            VertexProcessChecker<Graph>,
-            EdgeComponentPutChecker<Graph>,
-            UnorientedNeighbourIteratorFactory<Graph> > > ComponentFinder;
+    typedef Dijkstra<Graph,
+                     ComposedDijkstraSettings<Graph,
+                                              LengthCalculator<Graph>,
+                                              VertexProcessChecker<Graph>,
+                                              EdgeComponentPutChecker<Graph>,
+                                              UnorientedNeighbourIteratorFactory<Graph> > > ComponentFinder;
     //------------------------------
 
-    typedef Dijkstra<Graph, ComposedDijkstraSettings<Graph,
-            ComponentLenCalculator<Graph>,
-            BoundProcessChecker<Graph>,
-            VertexPutChecker<Graph>,
-            UnorientedNeighbourIteratorFactory<Graph> > > NeighbourhoodFinder;
+    typedef Dijkstra<Graph,
+                     ComposedDijkstraSettings<Graph,
+                                              ComponentLenCalculator<Graph>,
+                                              BoundProcessChecker<Graph>,
+                                              VertexPutChecker<Graph>,
+                                              UnorientedNeighbourIteratorFactory<Graph> > > NeighbourhoodFinder;
     //------------------------------
 
-    typedef Dijkstra<Graph, ComposedDijkstraSettings<Graph,
-            LengthCalculator<Graph>,
-            VertexProcessChecker<Graph>,
-            SubgraphPutChecker<Graph>,
-            UnorientedNeighbourIteratorFactory<Graph> > > SubgraphDijkstra;
+    typedef Dijkstra<Graph,
+                     ComposedDijkstraSettings<Graph,
+                                              LengthCalculator<Graph>,
+                                              VertexProcessChecker<Graph>,
+                                              SubgraphPutChecker<Graph>,
+                                              UnorientedNeighbourIteratorFactory<Graph> > > SubgraphDijkstra;
 
     typedef ComposedDijkstraSettings<Graph,
-            PathIgnoringLengthCalculator<Graph>,
-            BoundProcessChecker<Graph>,
-            BoundPutChecker<Graph>,
-            ForwardNeighbourIteratorFactory<Graph> > PathIgnoringDijkstraSettings;
+                                     PathIgnoringLengthCalculator<Graph>,
+                                     BoundProcessChecker<Graph>,
+                                     BoundPutChecker<Graph>,
+                                     ForwardNeighbourIteratorFactory<Graph> > PathIgnoringDijkstraSettings;
 
 
     //------------------------------
     // short edge dijkstra settings
     //------------------------------
     typedef ComposedDijkstraSettings<Graph,
-            BoundedEdgeLenCalculator<Graph>,
-            ZeroLengthProcessChecker<Graph>,
-            VertexPutChecker<Graph>,
-            UnorientedNeighbourIteratorFactory<Graph> > ShortEdgeDijkstraSettings;
+                                     BoundedEdgeLenCalculator<Graph>,
+                                     ZeroLengthProcessChecker<Graph>,
+                                     VertexPutChecker<Graph>,
+                                     UnorientedNeighbourIteratorFactory<Graph> > ShortEdgeDijkstraSettings;
 
     typedef Dijkstra<Graph, ShortEdgeDijkstraSettings> ShortEdgeDijkstra;
 
@@ -124,11 +129,10 @@ public:
                                                      size_t max_vertex_number = size_t(-1),
                                                      bool collect_traceback = false) {
         return ShortEdgeDijkstra(graph,
-                                 ShortEdgeDijkstraSettings(
-                                     BoundedEdgeLenCalculator<Graph>(graph, edge_length_bound),
-                                     ZeroLengthProcessChecker<Graph>(),
-                                     VertexPutChecker<Graph>(),
-                                     UnorientedNeighbourIteratorFactory<Graph>(graph)),
+                                 ShortEdgeDijkstraSettings(BoundedEdgeLenCalculator<Graph>(graph, edge_length_bound),
+                                                           ZeroLengthProcessChecker<Graph>(),
+                                                           VertexPutChecker<Graph>(),
+                                                           UnorientedNeighbourIteratorFactory<Graph>(graph)),
                                  max_vertex_number,
                                  collect_traceback);
     }
@@ -137,7 +141,7 @@ public:
     // counting dijkstra
     //------------------------------
     typedef CountingDijkstraSettings<Graph,
-            UnorientedNeighbourIteratorFactory<Graph> > UnorientCountingDijkstraSettings;
+                                     UnorientedNeighbourIteratorFactory<Graph> > UnorientCountingDijkstraSettings;
 
     typedef Dijkstra<Graph, UnorientCountingDijkstraSettings> CountingDijkstra;
 
@@ -146,10 +150,9 @@ public:
                                                    size_t max_vertex_number = size_t(-1),
                                                    bool collect_traceback = false) {
         return CountingDijkstra(graph,
-                                UnorientCountingDijkstraSettings(
-                                    graph,
-                                    UnorientedNeighbourIteratorFactory<Graph>(graph),
-                                    max_size, edge_length_bound),
+                                UnorientCountingDijkstraSettings(graph,
+                                                                 UnorientedNeighbourIteratorFactory<Graph>(graph),
+                                                                 max_size, edge_length_bound),
                                 max_vertex_number,
                                 collect_traceback);
     }
@@ -160,10 +163,10 @@ public:
     //------------------------------
 
     typedef ComposedDijkstraSettings<Graph,
-            LengthCalculator<Graph>,
-            BoundedVertexTargetedProcessChecker<Graph>,
-            BoundPutChecker<Graph>,
-            ForwardNeighbourIteratorFactory<Graph> > TargetedBoundedDijkstraSettings;
+                                     LengthCalculator<Graph>,
+                                     BoundedVertexTargetedProcessChecker<Graph>,
+                                     BoundPutChecker<Graph>,
+                                     ForwardNeighbourIteratorFactory<Graph> > TargetedBoundedDijkstraSettings;
 
     typedef Dijkstra<Graph, TargetedBoundedDijkstraSettings> TargetedBoundedDijkstra;
 
@@ -183,24 +186,23 @@ public:
     // coverage bounded dijkstra
     //------------------------------
     typedef ComposedDijkstraSettings<Graph,
-            LengthCalculator<Graph>,
-            BoundProcessChecker<Graph>,
-            CoveragePutChecker<Graph>,
-            ForwardNeighbourIteratorFactory<Graph> > CoverageBoundedDijkstraSettings;
+                                     LengthCalculator<Graph>,
+                                     BoundProcessChecker<Graph>,
+                                     CoveragePutChecker<Graph>,
+                                     ForwardNeighbourIteratorFactory<Graph> > CoverageBoundedDijkstraSettings;
 
     typedef Dijkstra<Graph, CoverageBoundedDijkstraSettings> CoverageBoundedDijkstra;
 
     static CoverageBoundedDijkstra CreateCoverageBoundedDijkstra(const Graph &graph, size_t length_bound, double min_coverage,
                                                                  size_t max_vertex_number = -1ul, bool collect_traceback = false) {
-        return CoverageBoundedDijkstra(graph, CoverageBoundedDijkstraSettings(
-                LengthCalculator<Graph>(graph),
-                BoundProcessChecker<Graph>(length_bound),
-                CoveragePutChecker<Graph>(min_coverage, graph, length_bound),
-                ForwardNeighbourIteratorFactory<Graph>(graph)),
-                                       max_vertex_number, collect_traceback);
+        return CoverageBoundedDijkstra(graph,
+                                       CoverageBoundedDijkstraSettings(LengthCalculator<Graph>(graph),
+                                                                       BoundProcessChecker<Graph>(length_bound),
+                                                                       CoveragePutChecker<Graph>(min_coverage, graph, length_bound),
+                                                                       ForwardNeighbourIteratorFactory<Graph>(graph)),
+                                       max_vertex_number,
+                                       collect_traceback);
     }
-
-
 };
 
 }

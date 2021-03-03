@@ -17,11 +17,11 @@
 namespace omnigraph {
 
 template<class Graph,
-        class LengthCalculator,
-        class VertexProcessChecker,
-        class VertexPutChecker,
-        class NeighbourIteratorFactory,
-        typename distance_t = size_t>
+         class LengthCalculator,
+         class VertexProcessChecker,
+         class VertexPutChecker,
+         class NeighbourIteratorFactory,
+         typename distance_t = size_t>
 class ComposedDijkstraSettings {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
@@ -38,22 +38,20 @@ public:
     typedef NeighbourIteratorFactory NIF;
 
     ComposedDijkstraSettings(LengthCalculator len_calc,
-            VertexProcessChecker vert_proc_checker,
-            VertexPutChecker vert_put_checker,
-            NeighbourIteratorFactory neigh_iter_factory) :
-                len_calc_(len_calc),
-                vert_proc_checker_(vert_proc_checker),
-                vert_put_checker_(vert_put_checker),
-                neigh_iter_factory_(neigh_iter_factory) { }
+                             VertexProcessChecker vert_proc_checker,
+                             VertexPutChecker vert_put_checker,
+                             NeighbourIteratorFactory neigh_iter_factory)
+            :  len_calc_(len_calc),
+               vert_proc_checker_(vert_proc_checker),
+               vert_put_checker_(vert_put_checker),
+               neigh_iter_factory_(neigh_iter_factory) { }
+    void Init(VertexId /*vertex*/) {}
 
-    void Init(VertexId /*vertex*/){
-    }
-
-    distance_t GetLength(EdgeId edge) const{
+    distance_t GetLength(EdgeId edge) const {
         return len_calc_.GetLength(edge);
     }
 
-    bool CheckProcessVertex(VertexId vertex, distance_t distance){
+    bool CheckProcessVertex(VertexId vertex, distance_t distance) const {
         return vert_proc_checker_.Check(vertex, distance);
     }
 
@@ -93,17 +91,17 @@ public:
         current_ = 0;
     }
 
-    distance_t GetLength(EdgeId edge) const{
+    distance_t GetLength(EdgeId edge) const {
         if (graph_.length(edge) <= edge_length_bound_)
             return graph_.length(edge);
         return inf;
     }
 
-    bool CheckProcessVertex(VertexId , distance_t ){
+    bool CheckProcessVertex(VertexId , distance_t) const {
         return current_ < max_size_;
     }
 
-    bool CheckPutVertex(VertexId , EdgeId edge, distance_t ) const{
+    bool CheckPutVertex(VertexId , EdgeId edge, distance_t ) const {
         if (current_ < max_size_)
             ++current_;
         return current_ < max_size_ && GetLength(edge) < inf;

@@ -18,51 +18,47 @@
 
 namespace omnigraph {
 
-template<typename Graph, typename distance_t = size_t>
-struct element_t {
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-
-    distance_t distance;
-    VertexId curr_vertex;
-    VertexId prev_vertex;
-    EdgeId edge_between;
-
-    element_t(distance_t new_distance, VertexId new_cur_vertex, VertexId new_prev_vertex,
-              EdgeId new_edge_between) noexcept
-            : distance(new_distance),
-              curr_vertex(new_cur_vertex), prev_vertex(new_prev_vertex),
-              edge_between(new_edge_between) { }
-};
-
-template<typename T>
-class ReverseDistanceComparator {
-public:
-    ReverseDistanceComparator() {}
-
-    bool operator()(T obj1, T obj2) const {
-        if (obj1.distance != obj2.distance)
-            return obj2.distance < obj1.distance;
-        if (obj2.curr_vertex != obj1.curr_vertex)
-            return obj2.curr_vertex < obj1.curr_vertex;
-        if (obj2.prev_vertex != obj1.prev_vertex)
-            return obj2.prev_vertex < obj1.prev_vertex;
-        return obj2.edge_between < obj1.edge_between;
-    }
-};
-
 template<class Graph, class DijkstraSettings, typename distance_t = size_t>
 class Dijkstra {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
     typedef distance_t DistanceType;
-    using queue_element = element_t<Graph, distance_t>;
 
-    typedef phmap::flat_hash_map<VertexId, distance_t> distances_map;
-    typedef typename distances_map::const_iterator distances_map_ci;
-    typedef typename std::priority_queue<queue_element,
-                                         std::vector<queue_element>,
-                                         ReverseDistanceComparator<queue_element>> queue_t;
+    struct QueueElement {
+        typedef typename Graph::VertexId VertexId;
+        typedef typename Graph::EdgeId EdgeId;
+
+        DistanceType distance;
+        VertexId curr_vertex;
+        VertexId prev_vertex;
+        EdgeId edge_between;
+
+        QueueElement(DistanceType new_distance,
+                     VertexId new_cur_vertex, VertexId new_prev_vertex,
+                     EdgeId new_edge_between) noexcept
+                : distance(new_distance),
+                  curr_vertex(new_cur_vertex), prev_vertex(new_prev_vertex),
+                  edge_between(new_edge_between) { }
+    };
+
+    class ReverseDistanceComparator {
+      public:
+        ReverseDistanceComparator() {}
+
+        bool operator()(const QueueElement &obj1, const QueueElement &obj2) const {
+            if (obj1.distance != obj2.distance)
+                return obj2.distance < obj1.distance;
+            if (obj2.curr_vertex != obj1.curr_vertex)
+                return obj2.curr_vertex < obj1.curr_vertex;
+            if (obj2.prev_vertex != obj1.prev_vertex)
+                return obj2.prev_vertex < obj1.prev_vertex;
+            return obj2.edge_between < obj1.edge_between;
+        }
+    };
+
+    typedef typename std::priority_queue<QueueElement,
+                                         std::vector<QueueElement>,
+                                         ReverseDistanceComparator> Queue;
     // constructor parameters
     const Graph& graph_;
     DijkstraSettings settings_;
@@ -75,11 +71,12 @@ class Dijkstra {
     bool vertex_limit_exceeded_;
 
     // accumulative structures
-    distances_map distances_;
+    phmap::flat_hash_map<VertexId, distance_t> distances_;
+    // FIXME: remove or switch to vector
     phmap::flat_hash_set<VertexId> processed_vertices_;
     phmap::flat_hash_map<VertexId, std::pair<VertexId, EdgeId>> prev_vert_map_;
 
-    void Init(VertexId start, queue_t &queue) {
+    void Init(VertexId start, Queue &queue) {
         vertex_number_ = 0;
         distances_.reserve(std::max(2 * max_vertex_number_, size_t(8192)));
         distances_.clear();
@@ -88,7 +85,7 @@ class Dijkstra {
         prev_vert_map_.clear();
         set_finished(false);
         settings_.Init(start);
-        queue.push(queue_element(0, start, VertexId(), EdgeId()));
+        queue.push(QueueElement(0, start, VertexId(), EdgeId()));
         if (collect_traceback_)
             prev_vert_map_[start] = std::pair<VertexId, EdgeId>(VertexId(), EdgeId());
     }
@@ -114,19 +111,20 @@ class Dijkstra {
         return settings_.GetLength(edge);
     }
 
-    void AddNeighboursToQueue(VertexId cur_vertex, distance_t cur_dist, queue_t& queue) {
+    void AddNeighboursToQueue(VertexId cur_vertex, distance_t cur_dist, Queue& queue) {
         auto neigh_iterator = settings_.GetIterator(cur_vertex);
         while (neigh_iterator.HasNext()) {
             // TRACE("Checking new neighbour of vertex " << graph_.str(cur_vertex) << " started");
             auto cur_pair = neigh_iterator.Next();
-            if (!DistanceCounted(cur_pair.vertex)) {
-                // TRACE("Adding new entry to queue");
-                distance_t new_dist = GetLength(cur_pair.edge) + cur_dist;
-                // TRACE("Entry: vertex " << graph_.str(cur_vertex) << " distance " << new_dist);
-                if (CheckPutVertex(cur_pair.vertex, cur_pair.edge, new_dist)) {
-                    // TRACE("CheckPutVertex returned true and new entry is added");
-                    queue.push(queue_element(new_dist, cur_pair.vertex, cur_vertex, cur_pair.edge));
-                }
+            if (DistanceCounted(cur_pair.vertex))
+                continue;
+
+            // TRACE("Adding new entry to queue");
+            distance_t new_dist = GetLength(cur_pair.edge) + cur_dist;
+            // TRACE("Entry: vertex " << graph_.str(cur_vertex) << " distance " << new_dist);
+            if (CheckPutVertex(cur_pair.vertex, cur_pair.edge, new_dist)) {
+                // TRACE("CheckPutVertex returned true and new entry is added");
+                queue.push(QueueElement(new_dist, cur_pair.vertex, cur_vertex, cur_pair.edge));
             }
             // TRACE("Checking new neighbour of vertex " << graph_.str(cur_vertex) << " finished");
         }
@@ -167,7 +165,7 @@ public:
 
     void Run(VertexId start) {
         TRACE("Starting dijkstra run from vertex " << graph_.str(start));
-        queue_t queue;
+        Queue queue;
         Init(start, queue);
         TRACE("Priority queue initialized. Starting search");
 
