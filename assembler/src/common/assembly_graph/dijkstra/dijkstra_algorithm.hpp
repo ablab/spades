@@ -108,8 +108,11 @@ class Dijkstra {
 
     void Init(VertexId start, Queue &queue) {
         vertex_number_ = 0;
-        distances_.reserve(std::max(2 * max_vertex_number_, size_t(8192)));
+        size_t sz = 8192;
+        if (max_vertex_number_ != size_t(-1) && max_vertex_number_ > sz)
+            sz = 2 * max_vertex_number_;
         distances_.clear();
+        distances_.reserve(sz);
         prev_vert_map_.clear();
         set_finished(false);
         settings_.Init(start);
