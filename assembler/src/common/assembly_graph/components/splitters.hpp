@@ -596,7 +596,7 @@ public:
     GraphComponent<Graph> Find(VertexId v) const {
         auto cd = DijkstraHelper<Graph>::CreateShortEdgeDijkstra(this->graph(), edge_length_bound_);
         cd.Run(v);
-        return GraphComponent<Graph>::FromVertices(this->graph(), cd.ProcessedVertices());
+        return GraphComponent<Graph>::FromVertices(this->graph(), cd.ReachedVertices());
     }
 
     std::vector<VertexId> InnerVertices(const GraphComponent<Graph> &component) const {

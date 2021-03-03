@@ -138,12 +138,15 @@ private:
         chooser.reset();
     }
 
-    std::vector<VertexId> VerticesReachedFrom(VertexId start_vertex) {
+    std::unordered_set<VertexId> VerticesReachedFrom(VertexId start_vertex) {
         auto bounded_dijkstra = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(gp_.get<Graph>(),
                                                                                         4000, 10000);
         bounded_dijkstra.Run(start_vertex);
-        TRACE("Reached vertices size - " << bounded_dijkstra.ReachedVertices());
-        return bounded_dijkstra.ReachedVertices();
+        std::unordered_set<VertexId> res;
+        for (auto entry : bounded_dijkstra.reached())
+            res.insert(entry.first);
+        TRACE("Reached vertices size - " << res.size());
+        return res;
     }
 
     void ConstructWeakEdges() {
@@ -163,10 +166,9 @@ private:
                 continue;
 
             auto reached_vertices = VerticesReachedFrom(g.EdgeEnd(domain_graph_.domain_edges(v1).back()));
-            std::set<VertexId> reached_vertices_set(reached_vertices.begin(), reached_vertices.end());
 
             for (VertexId v2 : domain_graph_.vertices()) {
-                if (reached_vertices_set.count(g.EdgeStart(domain_graph_.domain_edges(v2).front())) &&
+                if (reached_vertices.count(g.EdgeStart(domain_graph_.domain_edges(v2).front())) &&
                     v1 != v2 &&
                     domain_graph_.conjugate(v1) != v2 &&  domain_graph_.GetEdgesBetween(v1, v2).size() == 0 &&
                     !domain_graph_.HasStrongIncomingEdge(v2) && domain_graph_.NearContigStart(v2)) {

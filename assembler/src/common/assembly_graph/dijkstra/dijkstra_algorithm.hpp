@@ -10,6 +10,7 @@
 
 #include "utils/stl_utils.hpp"
 #include "utils/logger/logger.hpp"
+#include "adt/iterator_range.hpp"
 
 #include <parallel_hashmap/phmap.h>
 #include <radix_heap/radix_heap.h>
@@ -67,16 +68,12 @@ class Dijkstra {
 
     // accumulative structures
     phmap::flat_hash_map<VertexId, distance_t> distances_;
-    // FIXME: remove or switch to vector
-    phmap::flat_hash_set<VertexId> processed_vertices_;
     phmap::flat_hash_map<VertexId, std::pair<VertexId, EdgeId>> prev_vert_map_;
 
     void Init(VertexId start, Queue &queue) {
         vertex_number_ = 0;
         distances_.reserve(std::max(2 * max_vertex_number_, size_t(8192)));
         distances_.clear();
-        processed_vertices_.clear();
-        processed_vertices_.reserve(std::max(2 * max_vertex_number_, size_t(8192)));
         prev_vert_map_.clear();
         set_finished(false);
         settings_.Init(start);
@@ -148,8 +145,12 @@ public:
         return finished_;
     }
 
-    bool DistanceCounted(VertexId vertex) const {
-        return distances_.count(vertex);
+    bool DistanceCounted(VertexId v) const {
+        return distances_.count(v);
+    }
+
+    bool ReachedVertex(VertexId v) const {
+        return DistanceCounted(v);
     }
 
     distance_t GetDistance(VertexId vertex) const {
@@ -186,7 +187,6 @@ public:
                 // TRACE("Check for processing vertex failed. Proceeding to the next queue entry.");
                 continue;
             }
-            processed_vertices_.insert(vertex);
             AddNeighboursToQueue(vertex, distance, queue);
         }
         set_finished(true);
@@ -216,6 +216,10 @@ public:
         return path;
     }
 
+    auto reached_begin() const { return distances_.begin(); }
+    auto reached_end() const { return distances_.end(); }
+    auto reached() const { return adt::make_range(reached_begin(), reached_end()); }
+
     std::vector<VertexId> ReachedVertices() const {
         std::vector<VertexId> result;
         result.reserve(distances_.size());
@@ -225,10 +229,6 @@ public:
         std::sort(result.begin(), result.end());
 
         return result;
-    }
-
-    const auto& ProcessedVertices() const {
-        return processed_vertices_;
     }
 
     bool VertexLimitExceeded() const {

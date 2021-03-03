@@ -76,11 +76,12 @@ void Launch(size_t K, string saves_path, size_t edge_length_bound,
             dijkstra.Run(graph.EdgeEnd(e));
 
             set<EdgeId> long_reachable;
-            for (VertexId v : dijkstra.ProcessedVertices()) {
-                for (EdgeId out_e : graph.OutgoingEdges(v)) {
-                    if (graph.length(out_e) > edge_length_bound) {
-                        long_reachable.insert(out_e);
-                    }
+            for (auto entry : dijkstra.reached()) {
+                for (EdgeId out_e : graph.OutgoingEdges(entry.first)) {
+                    if (graph.length(out_e) <= edge_length_bound)
+                        continue;
+
+                    long_reachable.insert(out_e);
                 }
             }
 

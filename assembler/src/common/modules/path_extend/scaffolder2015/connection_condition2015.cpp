@@ -244,9 +244,9 @@ Connections AssemblyGraphConnectionCondition::ConnectedWith(debruijn_graph::Edge
     }
     auto dijkstra = omnigraph::DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_, max_connection_length_);
     dijkstra.Run(g_.EdgeEnd(e));
-    for (auto v: dijkstra.ReachedVertices()) {
-        for (auto connected: g_.OutgoingEdges(v)) {
-            if (interesting_edge_set_.find(connected) != interesting_edge_set_.end() && dijkstra.GetDistance(v) < max_connection_length_) {
+    for (auto entry : dijkstra.reached()) {
+        for (auto connected : g_.OutgoingEdges(entry.first)) {
+            if (interesting_edge_set_.count(connected) && entry.second < max_connection_length_) {
                 stored_distances_[e].emplace(connected, 1);
             }
         }

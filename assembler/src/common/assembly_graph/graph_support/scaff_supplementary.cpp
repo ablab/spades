@@ -192,10 +192,10 @@ set<VertexId> ScaffoldingUniqueEdgeAnalyzer::GetChildren(VertexId v, map<VertexI
             DijkstraHelper<Graph>::CreateBoundedDijkstra(graph_, max_dijkstra_depth_, max_dijkstra_vertices_));
     dijkstra.Run(v);
 
-    if (dijkstra_cash_.find(v) == dijkstra_cash_.end()) {
-        auto tmp = dijkstra.ReachedVertices();
-        tmp.push_back(v);
-        dijkstra_cash_[v] = set<VertexId> (tmp.begin(), tmp.end());
+    if (!dijkstra_cash_.count(v)) {
+        dijkstra_cash_[v].insert(v); // FIXME: is this really necessary?
+        for (auto entry : dijkstra.reached())
+            dijkstra_cash_[v].insert(entry.first);
     }
     return dijkstra_cash_[v];
 }

@@ -35,14 +35,13 @@ GapFillerResult GapFiller::BestScoredPathDijkstra(const string &s,
     auto path_searcher = omnigraph::DijkstraHelper<debruijn_graph::Graph>::
                                 CreateBoundedDijkstra(g_, path_max_length);
     path_searcher.Run(start_v);
-    const auto &reached_vertices_b = path_searcher_b.ProcessedVertices();
-    const auto &reached_vertices = path_searcher.ProcessedVertices();
 
-    unordered_map<VertexId, size_t> vertex_pathlen;
-    for (auto v : reached_vertices_b) {
-        if (reached_vertices.count(v) > 0) {
-            vertex_pathlen[v] = path_searcher_b.GetDistance(v);
-        }
+    std::unordered_map<VertexId, size_t> vertex_pathlen;
+    for (auto entry : path_searcher_b.reached()) {
+        if (!path_searcher.ReachedVertex(entry.first))
+            continue;
+        
+        vertex_pathlen.emplace(entry.first, entry.second);
     }
     int s_len = int(s.size());
     int ed_limit = score;
