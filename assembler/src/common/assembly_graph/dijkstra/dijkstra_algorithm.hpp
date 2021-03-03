@@ -12,6 +12,7 @@
 #include "utils/logger/logger.hpp"
 
 #include <parallel_hashmap/phmap.h>
+#include <radix_heap/radix_heap.h>
 
 #include <queue>
 #include <vector>
@@ -24,41 +25,35 @@ class Dijkstra {
     typedef typename Graph::EdgeId EdgeId;
     typedef distance_t DistanceType;
 
-    struct QueueElement {
-        typedef typename Graph::VertexId VertexId;
-        typedef typename Graph::EdgeId EdgeId;
+    class Queue {
+        struct QueueElement {
+            typedef typename Graph::VertexId VertexId;
+            typedef typename Graph::EdgeId EdgeId;
 
-        DistanceType distance;
-        VertexId curr_vertex;
-        VertexId prev_vertex;
-        EdgeId edge_between;
+            VertexId curr_vertex;
+            VertexId prev_vertex;
+            EdgeId edge_between;
 
-        QueueElement(DistanceType new_distance,
-                     VertexId new_cur_vertex, VertexId new_prev_vertex,
-                     EdgeId new_edge_between) noexcept
-                : distance(new_distance),
-                  curr_vertex(new_cur_vertex), prev_vertex(new_prev_vertex),
-                  edge_between(new_edge_between) { }
-    };
-
-    class ReverseDistanceComparator {
+            QueueElement(VertexId new_cur_vertex, VertexId new_prev_vertex,
+                         EdgeId new_edge_between) noexcept
+                    : curr_vertex(new_cur_vertex), prev_vertex(new_prev_vertex),
+                      edge_between(new_edge_between) { }
+        };
       public:
-        ReverseDistanceComparator() {}
-
-        bool operator()(const QueueElement &obj1, const QueueElement &obj2) const {
-            if (obj1.distance != obj2.distance)
-                return obj2.distance < obj1.distance;
-            if (obj2.curr_vertex != obj1.curr_vertex)
-                return obj2.curr_vertex < obj1.curr_vertex;
-            if (obj2.prev_vertex != obj1.prev_vertex)
-                return obj2.prev_vertex < obj1.prev_vertex;
-            return obj2.edge_between < obj1.edge_between;
+        void push(DistanceType dist, VertexId v,
+                  VertexId previous, EdgeId e) noexcept {
+            q.emplace(dist, v, previous, e);
         }
+
+        auto top() noexcept { return q.top_value(); }
+        DistanceType top_distance() noexcept { return q.top_key(); }
+
+        void pop() noexcept { q.pop(); }
+        bool empty() const noexcept { return q.empty(); }
+
+        radix_heap::pair_radix_heap<DistanceType, QueueElement> q;
     };
 
-    typedef typename std::priority_queue<QueueElement,
-                                         std::vector<QueueElement>,
-                                         ReverseDistanceComparator> Queue;
     // constructor parameters
     const Graph& graph_;
     DijkstraSettings settings_;
@@ -85,7 +80,7 @@ class Dijkstra {
         prev_vert_map_.clear();
         set_finished(false);
         settings_.Init(start);
-        queue.push(QueueElement(0, start, VertexId(), EdgeId()));
+        queue.push(0, start, VertexId(), EdgeId());
         if (collect_traceback_)
             prev_vert_map_[start] = std::pair<VertexId, EdgeId>(VertexId(), EdgeId());
     }
@@ -124,7 +119,7 @@ class Dijkstra {
             // TRACE("Entry: vertex " << graph_.str(cur_vertex) << " distance " << new_dist);
             if (CheckPutVertex(cur_pair.vertex, cur_pair.edge, new_dist)) {
                 // TRACE("CheckPutVertex returned true and new entry is added");
-                queue.push(QueueElement(new_dist, cur_pair.vertex, cur_vertex, cur_pair.edge));
+                queue.push(new_dist, cur_pair.vertex, cur_vertex, cur_pair.edge);
             }
             // TRACE("Checking new neighbour of vertex " << graph_.str(cur_vertex) << " finished");
         }
@@ -172,7 +167,7 @@ public:
         while (!queue.empty() && !finished()) {
             // TRACE("Dijkstra iteration started");
             const auto& next = queue.top();
-            distance_t distance = next.distance;
+            distance_t distance = queue.top_distance();
             VertexId vertex = next.curr_vertex;
 
             if (collect_traceback_)
