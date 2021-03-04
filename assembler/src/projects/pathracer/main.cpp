@@ -267,6 +267,7 @@ auto ScoreSequences(const StringArray &seqs,
 
     for (size_t i = 0; i < seqs.size(); ++i) {
         std::string seq = seqs[i];
+        INFO(seq);
         std::string ref = refs.size() > i ? refs[i] : std::to_string(i);
         if (!hmm_in_aas) {
             matcher.match(ref.c_str(), seq.c_str());
