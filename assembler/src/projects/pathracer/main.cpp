@@ -267,12 +267,12 @@ auto ScoreSequences(const StringArray &seqs,
 
     for (size_t i = 0; i < seqs.size(); ++i) {
         std::string seq = seqs[i];
-//        INFO(seq);
+        if (seq.size() < 20)
+            continue;
         std::string ref = refs.size() > i ? refs[i] : std::to_string(i);
         if (!hmm_in_aas) {
             matcher.match(ref.c_str(), seq.c_str());
         } else {
-//          VERIFY(seq.size() >= 2);
             for (size_t shift = 0; shift < 3; ++shift) {
                 std::string ref_shift = ref + "/" + std::to_string(shift);
                 std::string seq_aas = aa::translate(seq.c_str() + shift);
