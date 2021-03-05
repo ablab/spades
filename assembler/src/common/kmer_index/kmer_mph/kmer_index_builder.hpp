@@ -26,7 +26,7 @@
 
 #include <boomphf/BooPHF.h>
 
-#include <pdqsort/pdqsort.h>
+#include <pdqsort/pdqsort_pod.h>
 
 #include <algorithm>
 #ifdef USE_GLIBCXX_PARALLEL
@@ -367,7 +367,7 @@ private:
       return total;
     } else {
       // Sort the stuff
-      pdqsort_branchless(ins.begin(), ins.end(), adt::array_less<typename Seq::DataType>());
+      pdqsort_pod(ins.data(), ins.data() + ins.size() * ins.elcnt(), ins.elcnt());
 
       // FIXME: Use something like parallel version of unique_copy but with explicit
       // resizing.

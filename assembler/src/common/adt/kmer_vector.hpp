@@ -143,6 +143,10 @@ public:
         return vector_[size_-1];
     }
     
+    ElTy *data() {
+        return storage_;
+    }
+
     const ElTy *data() const {
         return storage_;
     }
