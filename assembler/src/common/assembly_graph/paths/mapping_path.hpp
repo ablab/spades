@@ -296,6 +296,11 @@ class MappingPath {
         range_mappings_.clear();
     }
 
+    void set(size_t pos, ElementId edge, MappingRange range) noexcept {
+        edges_[pos] = edge;
+        range_mappings_[pos] = range;
+    }
+
  private:
     std::vector<ElementId> edges_;
     std::vector<MappingRange> range_mappings_;
