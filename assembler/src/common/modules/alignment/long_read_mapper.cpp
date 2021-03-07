@@ -41,6 +41,9 @@ public:
 protected:
     MappingPath<EdgeId> FilterBadMappings(const std::vector<EdgeId> &corrected_path,
                                           const MappingPath<EdgeId> &mapping_path) const override;
+
+private:
+    void RemoveMappingsWithBadTotalLength(MappingPath<EdgeId> & new_corrected_path) const noexcept;
 };
 
 /// finds the first subsequence in 'mapping_path' starting from 'mapping_index' witch contains only edges equal to 'edge'.
@@ -92,7 +95,7 @@ PathExtractionF ChooseProperReadPathExtractor(const Graph& g, io::LibraryType li
 }
 
 template<class T>
-inline bool InBounds(T const & min_value, T const & middle_value, T const & max_value) {
+inline bool InBounds(T min_value, T middle_value, T max_value) {
     return math::ls(min_value, middle_value) && math::ls(middle_value, max_value);
 }
 
@@ -104,8 +107,12 @@ std::vector<path_extend::SimpleBidirectionalPath> MergePaths (const std::vector<
         auto start_pos = paths[i-1].MappingRangeOntoRead_.initial_range.end_pos;
         start_pos += g_.length(paths[i-1].Path_.back()) - paths[i-1].MappingRangeOntoRead_.mapped_range.end_pos;
 
-        size_t end_pos = paths[i].MappingRangeOntoRead_.initial_range.start_pos;
-        end_pos -= paths[i].MappingRangeOntoRead_.mapped_range.start_pos;
+        size_t end_pos = 0;
+        auto& range = paths[i].MappingRangeOntoRead_;
+        if (range.initial_range.start_pos >= range.mapped_range.start_pos)
+            end_pos = range.initial_range.start_pos - range.mapped_range.start_pos;
+        else
+            start_pos = 0;
 
         std::string gap_seq = (end_pos > start_pos ? r.GetSequenceString().substr(start_pos, end_pos-start_pos) : "");
 
@@ -247,8 +254,42 @@ MappingPath<EdgeId> GappedPathExtractorForTrustedContigs::FilterBadMappings(cons
             new_corrected_path.push_back(edge, range_of_mapped_edge);
         }
     }
+
+    RemoveMappingsWithBadTotalLength(new_corrected_path);
+
     return new_corrected_path;
 }
+
+inline bool IsGoodMapping(const Graph & graph, const Range & edge, EdgeId id) {
+    auto edge_len = static_cast<double>(graph.length(id));
+    auto fuzzy_coverage = (edge_len > 1000 ? 0.95 : 0.90);
+    return InBounds(fuzzy_coverage, (double)(edge.end_pos - edge.start_pos) / edge_len, 2 - fuzzy_coverage);
+}
+
+void GappedPathExtractorForTrustedContigs::RemoveMappingsWithBadTotalLength(MappingPath<EdgeId> & path) const noexcept {
+    size_t bad_mapping_pos = -1;
+    for (size_t i = 0; i < path.size(); ++i) {
+        if (!IsGoodMapping(g_, path.mapping_at(i).mapped_range, path.edge_at(i))) {
+            bad_mapping_pos = i;
+            break;
+        }
+    }
+
+    if (bad_mapping_pos == -1)
+        return;
+
+    auto last_free_pos = bad_mapping_pos;
+    for (size_t i = bad_mapping_pos + 1; i < path.size(); ++i) {
+        if (IsGoodMapping(g_, path.mapping_at(i).mapped_range, path.edge_at(i)))
+            path.set(last_free_pos++, path.edge_at(i), path.mapping_at(i));
+    }
+
+    while (path.size() > last_free_pos)
+        path.pop_back();
+}
+
+
+#include <iostream>
 
 std::vector<PathWithMappingInfo> GappedPathExtractor::FindReadPathWithGaps(MappingPath<EdgeId> &path) const {
     std::vector<PathWithMappingInfo> result;
