@@ -10,6 +10,7 @@
 
 #include "alignment/edge_index.hpp"
 #include "assembly_graph/construction/early_simplification.hpp"
+#include "assembly_graph/construction/debruijn_graph_constructor_mpi.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
 #include "io/dataset_support/read_converter.hpp"
 #include "io/reads/coverage_filtering_read_wrapper.hpp"
@@ -267,8 +268,14 @@ public:
 
     virtual ~ExtensionIndexBuilder() = default;
 
+    bool distributed() const override { return true; }
+
     void run(graph_pack::GraphPack &, const char*) override {
         // FIXME: We just need files here, not the full counter. Implement refererence counting scheme!
+        if (!storage().kmers)
+            storage().kmers.reset(new kmers::KMerDiskStorage<RtSeq>());
+        partask::broadcast(*storage().kmers);
+
         kmers::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromKPOMers(storage().workdir,
                                                                               storage().ext_index,
                                                                               *storage().kmers,
@@ -296,6 +303,8 @@ public:
             : ConstructionMPI::Phase("Early tip clipping", "early_tip_clipper") { }
 
     virtual ~EarlyTipClipper() = default;
+
+    bool distributed() const override { return true; }
 
     void run(graph_pack::GraphPack &gp, const char*) override {
         if (!storage().params.early_tc.length_bound) {
@@ -325,6 +334,8 @@ public:
 
     virtual ~EarlyATClipper() = default;
 
+    bool distributed() const override { return true; }
+
     void run(graph_pack::GraphPack &, const char*) override {
         EarlyLowComplexityClipperProcessor at_processor(storage().ext_index, 0.8, 10, 200);
         at_processor.RemoveATEdges();
@@ -347,15 +358,28 @@ public:
 class GraphCondenser : public ConstructionMPI::Phase {
 public:
     GraphCondenser()
-            : ConstructionMPI::Phase("Condensing graph", "graph_condensing") { }
+            : ConstructionMPI::Phase("Condensing graph (MPI)", "graph_condensing_mpi") { }
 
     virtual ~GraphCondenser() = default;
+
+    bool distributed() const override { return true; }
 
     void run(graph_pack::GraphPack &gp, const char*) override {
         auto &index = gp.get_mutable<EdgeIndex<Graph>>();
         if (index.IsAttached())
             index.Detach();
-        DeBruijnGraphExtentionConstructor<Graph>(gp.get_mutable<Graph>(), storage().ext_index).ConstructGraph(storage().params.keep_perfect_loops);
+
+        partask::TaskRegistry treg;
+        using GraphT = std::decay_t<decltype(gp.get_mutable<Graph>())>;
+        auto condence = treg.add<DeBruijnGraphExtentionConstructorTask<GraphT>>(std::ref(gp.get_mutable<Graph>()), std::ref(storage().ext_index));
+        treg.listen();
+        if (partask::master()) {
+            condence(storage().params.keep_perfect_loops);
+        }
+        treg.stop_listening();
+        INFO("Graph synced, edges " << gp.get<Graph>().e_size() << ", vertices " << gp.get<Graph>().size());
+        VERIFY(partask::all_equal(gp.get<Graph>().e_size()));
+        VERIFY(partask::all_equal(gp.get<Graph>().size()));
     }
 
     void load(graph_pack::GraphPack&,
