@@ -156,10 +156,14 @@ public:
 
     friend struct PerfectHashMapBuilder;
 
-  private:
+ protected:
     void resize(size_t sz) {
         data_.resize(sz);
     }
+
+    size_t raw_size() const { return sizeof(V) * data_.size(); }
+    char *raw_data() { return reinterpret_cast<char*>(data_.data()); }
+    const char *raw_data() const { return reinterpret_cast<const char*>(data_.data()); }
 
     Container data_;
 };

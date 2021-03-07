@@ -39,6 +39,20 @@ inline uint8_t invert_byte(uint8_t a) {
     return precalc[a];
 }
 
+// TODO Force data alignment and implement more efficient bitwise ops
+// TODO Use OpenMP here
+inline void memor(char *self, const char *rhs, size_t count) {
+    for (size_t i = 0; i < count; ++i) {
+        self[i] |= rhs[i];
+    }
+}
+
+inline void memand(char *self, const char *rhs, size_t count) {
+    for (size_t i = 0; i < count; ++i) {
+        self[i] &= rhs[i];
+    }
+}
+
 class InOutMask {
 private:
     uint8_t mask_;
@@ -244,6 +258,7 @@ class DeBruijnExtensionIndex : public KeyIteratingMap<typename traits::SeqType, 
     typedef KeyIteratingMap<typename traits::SeqType, InOutMask, traits, StoringType> base;
 
 public:
+    typedef DeBruijnExtensionIndex<traits, StoringType> This;
     typedef typename base::traits_t traits_t;
     typedef StoringType storing_type;
     typedef typename base::KeyType KMer;
@@ -254,6 +269,29 @@ public:
 
     DeBruijnExtensionIndex(unsigned K)
             : base(K) {}
+
+    using PerfectHashMap<typename traits::SeqType, InOutMask, traits, StoringType>::raw_data;
+    using PerfectHashMap<typename traits::SeqType, InOutMask, traits, StoringType>::raw_size;
+
+    This &operator|=(const char *data) {
+        memor(this->raw_data(), data, this->raw_size());
+        return *this;
+    }
+
+    This &operator|=(const This &rhs) {
+        VERIFY(this->size() == rhs.size());
+        return *this |= rhs.raw_data();
+    }
+
+    This &operator&=(const char *data) {
+        memand(this->raw_data(), data, this->raw_size());
+        return *this;
+    }
+
+    This &operator&=(const This &rhs) {
+        VERIFY(this->size() == rhs.size());
+        return *this &= rhs.raw_data();
+    }
 
     void AddOutgoing(const KeyWithHash &kwh, char nucl) {
         TRACE("Add outgoing " << kwh << " " << ::nucl(nucl) << " " << kwh.is_minimal());
