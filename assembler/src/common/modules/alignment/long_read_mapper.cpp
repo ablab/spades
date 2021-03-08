@@ -287,9 +287,6 @@ void GappedPathExtractorForTrustedContigs::RemoveMappingsWithBadTotalLength(Mapp
         path.pop_back();
 }
 
-
-#include <iostream>
-
 std::vector<PathWithMappingInfo> GappedPathExtractor::FindReadPathWithGaps(MappingPath<EdgeId> &path) const {
     std::vector<PathWithMappingInfo> result;
     if (path.empty()) {
