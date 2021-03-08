@@ -48,7 +48,7 @@ def get_mode():
         mode = "metaplasmid"
     if script_basename == "metaviralspades.py" or nargs.metaviral:
         mode = "metaviral"
-    if script_basename == "coronaspades.py":
+    if script_basename == "coronaspades.py" or nargs.corona:
         mode = "corona"
     return mode
 
