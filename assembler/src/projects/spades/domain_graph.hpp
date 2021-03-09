@@ -46,7 +46,7 @@ namespace nrps {
         DomainVertexData()
                 : domain_name_("None"),
                   start_coord_(0), end_coord_(0),
-                  max_visited_(1), current_visited_(0), visited_(false) {
+                  max_visited_(1), current_visited_(0), visited_(false), was_started_(false) {
         }
 
         DomainVertexData(const omnigraph::MappingPath<EdgeId> &mapping_path,
@@ -58,11 +58,12 @@ namespace nrps {
                          size_t current_visited = 0,
                          bool near_contig_end = false,
                          bool near_contig_start = false,
-                         bool visited = false)
+                         bool visited = false,
+                         bool was_started = false)
         : mapping_path_(mapping_path),
           domain_name_(domain_name), domain_desc_(domain_desc),
           start_coord_(start_coord), end_coord_(end_coord),
-          max_visited_(max_visited), current_visited_(current_visited), visited_(visited),
+          max_visited_(max_visited), current_visited_(current_visited), visited_(visited), was_started_(was_started),
           near_contig_end_(near_contig_end), near_contig_start_(near_contig_start) {}
 
         size_t GetStartCoord() const { return start_coord_; }
@@ -109,7 +110,7 @@ namespace nrps {
             return DomainVertexData(conjugate_rc, domain_name_, domain_desc_,
                                     g.length(conjugate_rc.front().first) - end_coord_,
                                     g.length(conjugate_rc.back().first) - start_coord_, max_visited_,
-                                    current_visited_, near_contig_start_, near_contig_end_, visited_);
+                                    current_visited_, near_contig_start_, near_contig_end_, visited_, was_started_);
         }
 
         size_t length(const debruijn_graph::Graph &g) const {
