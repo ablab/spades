@@ -12,6 +12,11 @@ namespace nrps {
         data(conjugate(v)).SetVisited();
     }
 
+    void DomainGraph::SetWasStarted(VertexId v) {
+        data(v).SetWasStarted();
+        data(conjugate(v)).SetWasStarted();
+    }
+
     void DomainGraph::SetMaxVisited(VertexId v, size_t value) {
         data(v).SetMaxVisited(value);
     }
@@ -65,6 +70,10 @@ namespace nrps {
 
     bool DomainGraph::Visited(VertexId v) const {
         return data(v).Visited();
+    }
+
+    bool DomainGraph::WasStarted(VertexId v) const {
+        return data(v).WasStarted();
     }
 
     const std::vector<DomainGraph::EdgeId> &DomainGraph::domain_edges(VertexId v) const {
@@ -390,7 +399,7 @@ DomainGraph::Arrangements DomainGraph::FindAllPossibleArrangements(VertexId v,
             }
         }
 
-        if (current.size() >= accepted_component_size && !was_extended)
+        if (current.size() >= accepted_component_size && !was_extended && (current.size() == 1 || !WasStarted(current.back())))
             answer.push_back(current);
 
         DecrementVisited(v);
@@ -475,6 +484,8 @@ void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp,
     path_extend::ContigWriter writer(graph, path_extend::MakeContigNameGenerator(cfg::get().mode, gp));
 
     std::vector<VertexId> start_nodes;
+    std::vector<VertexId> additional_start_nodes;
+
     for (VertexId v : vertices()) {
         if (IsDeadStart(v) &&
             !(component_min_size > 1 && !IsDeadEnd(v)))
@@ -483,7 +494,7 @@ void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp,
     if (!start_only_from_tips) {
         for (VertexId v : vertices()) {
             if ((!HasStrongIncomingEdge(v) && IncomingEdgeCount(v)))
-                start_nodes.push_back(v);
+                additional_start_nodes.push_back(v);
         }
     }
 
@@ -494,6 +505,17 @@ void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp,
     std::vector<DomainGraph::Arrangements> answer;
 
     for (VertexId v : start_nodes) {
+        if (WasStarted(v))
+            continue;
+
+        auto res = FindAllPossibleArrangements(v,
+                                               component_size_part, component_min_size);
+        SetWasStarted(v);
+        if (!res.empty())
+            answer.emplace_back(std::move(res));
+    }
+
+    for (VertexId v : additional_start_nodes) {
         if (Visited(v))
             continue;
 

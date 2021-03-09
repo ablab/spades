@@ -33,6 +33,7 @@ namespace nrps {
         size_t max_visited_;
         size_t current_visited_;
         bool visited_;
+        bool was_started_;
         bool near_contig_end_;
         bool near_contig_start_;
 
@@ -84,7 +85,10 @@ namespace nrps {
         size_t GetCurrentVisited() const { return current_visited_; }
 
         bool Visited() const { return visited_; }
+        bool WasStarted() const { return was_started_; }
+
         void SetVisited() { visited_ = true; }
+        void SetWasStarted() { was_started_ = true; }
 
         const std::vector<EdgeId> &domain_edges() const {
             return mapping_path_.simple_path();
@@ -188,6 +192,7 @@ namespace nrps {
         typedef omnigraph::ObservableGraph<DomainGraphDataMaster> base;
 
         void SetVisited(VertexId v);
+        void SetWasStarted(VertexId v);
         void SetMaxVisited(VertexId v, size_t value);
         size_t GetMaxVisited(VertexId v) const;
         size_t GetCurrentVisited(VertexId v) const;
@@ -233,6 +238,7 @@ namespace nrps {
         bool NearContigStart(VertexId v) const;
         bool NearContigEnd(VertexId v) const;
         bool Visited(VertexId v) const;
+        bool WasStarted(VertexId v) const;
         const std::string &GetDomainName(VertexId v) const;
         const std::string &GetDomainDesc(VertexId v) const;
 
