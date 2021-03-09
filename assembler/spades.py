@@ -430,7 +430,7 @@ def print_info_about_output_files(cfg, log, output_files):
     if "assembly" in cfg:
         check_and_report_output_file("result_contigs_filename", " * Assembled contigs are in ")
 
-        if options_storage.args.bio or options_storage.args.custom_hmms:
+        if options_storage.args.bio or options_storage.args.custom_hmms or options_storage.args.corona:
             check_and_report_output_file("result_domain_graph_filename", " * Domain graph is in ")
             check_and_report_output_file("result_gene_clusters_filename", " * Gene cluster sequences are in ")
             check_and_report_output_file("result_bgc_stats_filename", " * BGC cluster statistics ")
