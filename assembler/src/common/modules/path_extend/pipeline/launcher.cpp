@@ -424,7 +424,7 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
     Extenders extenders = generator.MakeBasicExtenders();
     DEBUG("Total number of basic extenders is " << extenders.size());
 
-    //long reads s caffolding extenders.
+    //long reads scaffolding extenders.
 
     if (!config::PipelineHelper::IsPlasmidPipeline(params_.mode) && support_.HasLongReads()) {
         if (params_.pset.sm == scaffolding_mode::sm_old) {

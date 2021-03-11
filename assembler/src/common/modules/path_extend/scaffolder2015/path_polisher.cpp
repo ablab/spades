@@ -11,15 +11,17 @@
 namespace path_extend {
 
 void PathPolisher::InfoAboutGaps(const PathContainer & result){
-    for (const auto& p_iter: result) {
-        for (size_t i = 1; i < p_iter.first->Size(); ++i) {
-            if (p_iter.first->GapAt(i).gap > 0) {
-                DEBUG("Gap "<< p_iter.first->GapAt(i).gap
-                            << " left between " << g_.int_id(p_iter.first->At(i-1))
-                            << " and " << g_.int_id(p_iter.first->At(i)));
+    DEBUG_EXPR(
+        for (const auto& p_iter: result) {
+            for (size_t i = 1; i < p_iter.first->Size(); ++i) {
+                if (p_iter.first->GapAt(i).gap > 0) {
+                    DEBUG("Gap "<< p_iter.first->GapAt(i).gap
+                          << " left between " << g_.int_id(p_iter.first->At(i-1))
+                          << " and " << g_.int_id(p_iter.first->At(i)));
+                }
             }
         }
-    }
+               );
 }
 
 PathContainer PathPolisher::PolishPaths(const PathContainer &paths) {
