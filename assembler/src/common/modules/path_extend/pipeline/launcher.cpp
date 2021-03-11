@@ -423,7 +423,7 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
     Extenders extenders = generator.MakeBasicExtenders();
     DEBUG("Total number of basic extenders is " << extenders.size());
 
-    //long reads scaffolding extenders.
+    //long reads s caffolding extenders.
 
     if (!config::PipelineHelper::IsPlasmidPipeline(params_.mode) && support_.HasLongReads()) {
         if (params_.pset.sm == scaffolding_mode::sm_old) {
@@ -616,34 +616,33 @@ void PathExtendLauncher::Launch() {
     if (fl_paths.size() > 0)
         writer_.OutputPaths(fl_paths, params_.output_dir + "fl_transcripts" + ".fasta");
 
-    PathExtendResolver resolver(graph_);
-
-    auto seeds = resolver.MakeSimpleSeeds();
-
-    seeds.SortByLength();
-    DebugOutputPaths(seeds, "init_paths");
-
-    if (params_.pe_cfg.debug_output)
-        MakeConjugateEdgePairsDump(graph_);
-
-    GraphCoverageMap cover_map(graph_);
-    UsedUniqueStorage used_unique_storage(unique_data_.main_unique_storage_, graph_);
-    Extenders extenders = ConstructExtenders(cover_map, used_unique_storage);
-    CompositeExtender composite_extender(graph_, cover_map,
-                                         used_unique_storage,
-                                         extenders);
-
-    auto paths = resolver.ExtendSeeds(seeds, composite_extender);
-    DebugOutputPaths(paths, "raw_paths");
-
-    RemoveOverlapsAndArtifacts(paths, cover_map, resolver);
-    DebugOutputPaths(paths, "before_path_polishing");
-
     auto &contig_paths = gp_.get_mutable<PathContainer>("exSPAnder paths");
+    PathExtendResolver resolver(graph_);
+    {
+        auto seeds = resolver.MakeSimpleSeeds();
+        seeds.SortByLength();
+        DebugOutputPaths(seeds, "init_paths");
 
-    //TODO does path polishing correctly work with coverage map
-    PolishPaths(paths, contig_paths, cover_map);
-    //TODO use move assignment to original map here
+        if (params_.pe_cfg.debug_output)
+            MakeConjugateEdgePairsDump(graph_);
+
+        GraphCoverageMap cover_map(graph_);
+        UsedUniqueStorage used_unique_storage(unique_data_.main_unique_storage_, graph_);
+        Extenders extenders = ConstructExtenders(cover_map, used_unique_storage);
+        CompositeExtender composite_extender(graph_, cover_map,
+                                             used_unique_storage,
+                                             extenders);
+
+        auto paths = resolver.ExtendSeeds(seeds, composite_extender);
+        DebugOutputPaths(paths, "raw_paths");
+
+        RemoveOverlapsAndArtifacts(paths, cover_map, resolver);
+        DebugOutputPaths(paths, "before_path_polishing");
+
+        //TODO does path polishing correctly work with coverage map
+        PolishPaths(paths, contig_paths, cover_map);
+    }
+    
     GraphCoverageMap polished_map(graph_, contig_paths, true);
     DebugOutputPaths(contig_paths, "polished_paths");
 
