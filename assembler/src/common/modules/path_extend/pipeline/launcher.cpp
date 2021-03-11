@@ -108,9 +108,11 @@ void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph 
 
 
 void PathExtendLauncher::MakeAndOutputScaffoldGraph() const {
-    //Scaffold graph
-    std::shared_ptr<scaffold_graph::ScaffoldGraph> scaffold_graph;
-    if (params_.pset.scaffold_graph_params.construct) {
+    if (!params_.pset.scaffold_graph_params.construct)
+        return;
+
+    auto scaffold_graph = ConstructScaffoldGraph(unique_data_.main_unique_storage_);
+    if (params_.pset.scaffold_graph_params.output) {
         debruijn_graph::GenomeConsistenceChecker genome_checker(gp_,
                                                                 params_.pset.genome_consistency_checker.max_gap,
                                                                 params_.pset.genome_consistency_checker.relative_max_gap,
@@ -118,13 +120,10 @@ void PathExtendLauncher::MakeAndOutputScaffoldGraph() const {
                                                                 unique_data_.main_unique_storage_,
                                                                 unique_data_.long_reads_cov_map_,
                                                                 dataset_info_.reads);
-        scaffold_graph = ConstructScaffoldGraph(unique_data_.main_unique_storage_);
-        if (params_.pset.scaffold_graph_params.output) {
-            PrintScaffoldGraph(*scaffold_graph,
-                               unique_data_.main_unique_storage_.unique_edges(),
-                               genome_checker,
-                               params_.etc_dir + "scaffold_graph");
-        }
+        PrintScaffoldGraph(*scaffold_graph,
+                           unique_data_.main_unique_storage_.unique_edges(),
+                           genome_checker,
+                           params_.etc_dir + "scaffold_graph");
     }
 }
 
@@ -170,13 +169,14 @@ void PathExtendLauncher::CountMisassembliesWithReference(const PathContainer &pa
 }
 
 void PathExtendLauncher::CheckCoverageUniformity() {
-    if (params_.mode == config::pipeline_type::base) {
-        CoverageUniformityAnalyzer coverage_analyzer(graph_, std::min(size_t(1000), stats::Nx(graph_, 50) - 1));
-        double median_coverage = coverage_analyzer.CountMedianCoverage();
-        double uniformity_fraction = coverage_analyzer.UniformityFraction(unique_data_.unique_variation_, median_coverage);
-        if (math::ge(uniformity_fraction, 0.8) and math::ge(median_coverage, 50.0)) {
-            WARN("Your data seems to have high uniform coverage depth. It is strongly recommended to use --isolate option.")
-        }
+    if (params_.mode != config::pipeline_type::base)
+        return;
+    
+    CoverageUniformityAnalyzer coverage_analyzer(graph_, std::min(size_t(1000), stats::Nx(graph_, 50) - 1));
+    double median_coverage = coverage_analyzer.CountMedianCoverage();
+    double uniformity_fraction = coverage_analyzer.UniformityFraction(unique_data_.unique_variation_, median_coverage);
+    if (math::ge(uniformity_fraction, 0.8) and math::ge(median_coverage, 50.0)) {
+        WARN("Your data seems to have high uniform coverage depth. It is strongly recommended to use --isolate option.");
     }
 }
 
@@ -226,6 +226,7 @@ void PathExtendLauncher::DebugOutputPaths(const PathContainer &paths, const std:
         }
         oss.close();
     }
+
     if (params_.pe_cfg.viz.print_paths) {
         visualizer.writeGraphWithPathsSimple(gp_, params_.etc_dir + name + ".dot", name, paths);
     }
@@ -484,8 +485,7 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
     INFO("Gap closing completed")
 }
 
-void PathExtendLauncher::FilterPaths() {
-    auto &contig_paths = gp_.get_mutable<PathContainer>("exSPAnder paths");
+void PathExtendLauncher::FilterPaths(PathContainer &contig_paths) {
     auto default_filtration = params_.pset.path_filtration.end();
     for (auto it = params_.pset.path_filtration.begin(); it != params_.pset.path_filtration.end(); ++it) {
         if (!it->second.enabled)
@@ -494,8 +494,7 @@ void PathExtendLauncher::FilterPaths() {
         const auto& filtration_name = it->first;
         if (filtration_name == "default") {
             default_filtration = it;
-        }
-        else {
+        } else {
             INFO("Finalizing paths - " + filtration_name);
             PathContainer to_clean(contig_paths.begin(), contig_paths.end());
             CleanPaths(to_clean, it->second);
@@ -657,7 +656,7 @@ void PathExtendLauncher::Launch() {
 
     SelectStrandSpecificPaths(contig_paths);
 
-    FilterPaths();
+    FilterPaths(contig_paths);
 
     CountMisassembliesWithReference(contig_paths);
 

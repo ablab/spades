@@ -78,7 +78,7 @@ class PathExtendLauncher {
 
     Extenders ConstructPBExtenders(const ExtendersGenerator &generator);
 
-    void FilterPaths();
+    void FilterPaths(PathContainer& paths);
 
     void AddFLPaths(PathContainer& paths) const;
 

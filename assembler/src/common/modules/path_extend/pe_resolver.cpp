@@ -37,7 +37,6 @@ static bool InTwoEdgeCycle(EdgeId e, const Graph &g) {
 }
 
 PathContainer PathExtendResolver::MakeSimpleSeeds() const {
-    std::set<EdgeId> included;
     PathContainer edges;
     for (EdgeId e : g_.canonical_edges()) {
         if (g_.int_id(e) <= 0 || InTwoEdgeCycle(e, g_))
