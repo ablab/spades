@@ -634,6 +634,7 @@ void PathExtendLauncher::Launch() {
                                              extenders);
 
         auto paths = resolver.ExtendSeeds(seeds, composite_extender);
+        seeds.clear();
         DebugOutputPaths(paths, "raw_paths");
 
         RemoveOverlapsAndArtifacts(paths, cover_map, resolver);
