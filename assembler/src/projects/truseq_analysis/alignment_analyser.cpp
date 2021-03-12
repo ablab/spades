@@ -34,7 +34,7 @@ namespace alignment_analysis {
         if (alignments.empty()) {
             return vector<ConsistentMapping>();
         }
-        auto d = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(graph_, 3000 + graph_.k(), 1000, true);
+        auto d = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstraWithTraceback(graph_, 3000 + graph_.k(), 1000);
         vector <ConsistentMapping> result = {alignments.front()};
         for (size_t i = 0; i + 1 < alignments.size(); i++) {
             ConsistentMapping &prev = result.back();
