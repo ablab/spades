@@ -63,16 +63,15 @@ void Launch(size_t K, string saves_path, size_t edge_length_bound,
                     VertexPutChecker<Graph>,
                     ForwardNeighbourIteratorFactory<Graph>> ForwardShortEdgeDijkstraSettings;
 
-            typedef Dijkstra<Graph, ForwardShortEdgeDijkstraSettings> ForwardShortEdgeDijkstra;
+            typedef Dijkstra<Graph, ForwardShortEdgeDijkstraSettings, true> ForwardShortEdgeDijkstraWithTraceback;
 
             ForwardShortEdgeDijkstraSettings settings(
                     BoundedEdgeLenCalculator<Graph>(graph, edge_length_bound),
                     ZeroLengthProcessChecker<Graph>(),
                     VertexPutChecker<Graph>(),
                     ForwardNeighbourIteratorFactory<Graph>(graph));
-            ForwardShortEdgeDijkstra dijkstra(graph, settings,
-                                              std::numeric_limits<size_t>::max(),
-                                              true /* collect traceback */);
+            ForwardShortEdgeDijkstraWithTraceback dijkstra(graph, settings,
+                                                           std::numeric_limits<size_t>::max());
             dijkstra.Run(graph.EdgeEnd(e));
 
             set<EdgeId> long_reachable;
