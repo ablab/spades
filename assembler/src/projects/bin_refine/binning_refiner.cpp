@@ -5,6 +5,7 @@
 //***************************************************************************
 
 #include "binning.hpp"
+#include "binning_propagation.hpp"
 
 #include "modules/alignment/kmer_mapper.hpp"
 #include "pipeline/graph_pack.hpp"
@@ -16,13 +17,14 @@
 #include <string>
 
 using namespace debruijn_graph;
+using namespace bin_stats;
 
 struct gcfg {
   size_t k = 55;
   std::string graph;
   std::string binning_file;
   std::string scaffolds_file;
-  double eps = 0.5;
+  double eps = 0.01;
 };
 
 static void process_cmdline(int argc, char** argv, gcfg& cfg) {
@@ -60,10 +62,13 @@ int main(int argc, char** argv) {
       gp.get_mutable<KmerMapper<Graph>>().Attach();
       gp.EnsureBasicMapping();
 
-      bin_stats::BinStats binning(graph);
+      BinStats binning(graph);
       binning.LoadBinning(cfg.binning_file, cfg.scaffolds_file, gp);
 
       INFO("" << binning);
+      BinningPropagation::PropagateBinning(binning, cfg.eps);
+      INFO("" << binning);
+
   } catch (const std::string& s) {
       std::cerr << s << std::endl;
       return EINTR;

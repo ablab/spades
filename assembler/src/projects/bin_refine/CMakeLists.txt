@@ -10,7 +10,7 @@ project(bin-refine CXX)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 
-add_executable(bin-refine binning_refiner.cpp binning.cpp)
+add_executable(bin-refine binning_refiner.cpp binning.cpp binning_propagation.cpp)
 target_link_libraries(bin-refine graphio common_modules ${COMMON_LIBRARIES})
 
 install(TARGETS bin-refine
