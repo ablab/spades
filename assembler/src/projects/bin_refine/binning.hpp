@@ -4,6 +4,8 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#pragma once
+
 #include "assembly_graph/core/graph.hpp"
 #include "pipeline/graph_pack.hpp"
 #include <unordered_set>
