@@ -19,11 +19,6 @@ class GraphPack;
 namespace bin_stats {
 
 class BinStats {
-    using bin_id_t = std::string;
-    using scaffold_id_t = std::string;
-    using edge_binning_t = std::set<bin_id_t>;
-
-
     void ScaffoldsToEdges(const std::string& scaffolds_file,
                           const debruijn_graph::GraphPack &gp);
 
@@ -31,6 +26,11 @@ class BinStats {
     static const std::string UNBINNED_ID;
 
  public:
+    using BinLabel = std::string;
+    using BinId = uint64_t;
+    using ScaffoldName = std::string;
+    using EdgeBinning = std::set<BinId>;
+
     explicit BinStats(const debruijn_graph::Graph& g)
             : graph_(g) {}
 
@@ -48,13 +48,16 @@ class BinStats {
     auto& unbinned_edges() { return unbinned_edges_; }
 
     const auto& bins() const { return bins_; }
+    const auto& bin_labels() const { return bin_labels_; }
 
     friend std::ostream &operator<<(std::ostream &os, const BinStats &stats);
 private:
     const debruijn_graph::Graph& graph_;
-    std::unordered_map<scaffold_id_t, bin_id_t> scaffolds_binning_{};
-    std::unordered_map<debruijn_graph::EdgeId, edge_binning_t> edges_binning_{};
+
+    std::unordered_map<ScaffoldName, BinId> scaffolds_binning_{};
+    std::unordered_map<BinId, BinLabel> bin_labels_{};
+    std::unordered_map<BinLabel, BinId> bins_{};
+    std::unordered_map<debruijn_graph::EdgeId, EdgeBinning> edges_binning_{};
     std::unordered_set<debruijn_graph::EdgeId> unbinned_edges_{};
-    std::unordered_set<bin_id_t> bins_{};
 };
 }
