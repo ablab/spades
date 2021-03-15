@@ -53,11 +53,18 @@ void BinningPropagation::PropagateBinning(BinStats& bin_stats, double eps) {
 }
 
 void BinningPropagation::StateToBinning(const propagation_state_t& cur_state, BinStats& bin_stats) {
-  for (EdgeId e : bin_stats.unbinned_edges()) {
-    bin_stats.edges_binning()[e] = ChooseMostProbableBins(cur_state.at(e).labels_probabilities);
-  }
+    std::vector<EdgeId> binned;
+    for (EdgeId e : bin_stats.unbinned_edges()) {
+        auto assignment = ChooseMostProbableBins(cur_state.at(e).labels_probabilities);
+        if (assignment.empty())
+            continue;
 
-  bin_stats.unbinned_edges().clear();
+        binned.push_back(e);
+        bin_stats.edges_binning()[e] = std::move(assignment);
+    }
+
+    for (EdgeId e : binned)
+        bin_stats.unbinned_edges().erase(e);
 }
 
 BinningPropagation::propagation_iteration_t BinningPropagation::PropagationIteration(const BinningPropagation::propagation_state_t& cur_state,
