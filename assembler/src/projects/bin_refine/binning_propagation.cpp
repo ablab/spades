@@ -76,19 +76,22 @@ BinningPropagation::propagation_iteration_t BinningPropagation::PropagationItera
   for (EdgeId e : bin_stats.unbinned_edges()) {
     const EdgeLabels& edge_labels = cur_state.at(e);
     const auto& neighbours = edge_labels.neighbours;
-    EdgeLabels& next_labels = new_state.at(e);
+    auto& next_probs = new_state.at(e).labels_probabilities;
 
-    for (size_t i = 0; i < edge_labels.labels_probabilities.size(); ++i) {
-        double new_label_probability = 0.0;
-        for (EdgeId neighbour : neighbours)
-            new_label_probability += cur_state.at(neighbour).labels_probabilities[i];
+    std::fill(next_probs.begin(), next_probs.end(), 0.0);
+    for (EdgeId neighbour : neighbours) {
+        const auto& neig_probs = cur_state.at(neighbour).labels_probabilities;
+        for (size_t i = 0; i < next_probs.size(); ++i)
+            next_probs[i] += neig_probs[i];
+    }
 
-        if (!neighbours.empty())
-            new_label_probability /= double(neighbours.size());
-
-        after_prob += new_label_probability;
-        sum_diff += std::abs(new_label_probability - edge_labels.labels_probabilities[i]);
-        next_labels.labels_probabilities[i] = new_label_probability;
+    if (neighbours.empty())
+        continue;
+    
+    for (size_t i = 0; i <next_probs.size(); ++i) {
+        next_probs[i] /= double(neighbours.size());
+        after_prob += next_probs[i];
+        sum_diff += std::abs(next_probs[i] - edge_labels.labels_probabilities[i]);
     }
   }
 
