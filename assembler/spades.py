@@ -98,8 +98,6 @@ def print_used_values(cfg, log):
             log.info("  Metagenomic mode")
         elif options_storage.args.large_genome:
             log.info("  Large genome mode")
-        elif options_storage.args.truseq_mode:
-            log.info("  Illumina TruSeq mode")
         elif options_storage.args.isolate:
             log.info("  Isolate mode")
         elif options_storage.args.rna:
@@ -479,8 +477,6 @@ def get_output_files(cfg):
     output_files["result_bgc_stats_filename"] = os.path.join(cfg["common"].output_dir, options_storage.bgc_stats_name)
     output_files["result_domain_graph_filename"] = os.path.join(cfg["common"].output_dir, options_storage.domain_graph_name)
     output_files["result_gene_clusters_filename"] = os.path.join(cfg["common"].output_dir, options_storage.gene_clusters_name)
-    output_files["truseq_long_reads_file_base"] = os.path.join(cfg["common"].output_dir, "truseq_long_reads")
-    output_files["truseq_long_reads_file"] = output_files["truseq_long_reads_file_base"] + ".fasta"
     output_files["misc_dir"] = os.path.join(cfg["common"].output_dir, "misc")
     ### if mismatch correction is enabled then result contigs are copied to misc directory
     output_files["assembled_contigs_filename"] = os.path.join(output_files["misc_dir"], "assembled_contigs.fasta")
@@ -519,7 +515,6 @@ def build_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, l
     from stages import before_start_stage
     from stages import error_correction_stage
     from stages import spades_stage
-    from stages import postprocessing_stage
     from stages import correction_stage
     from stages import check_test_stage
     from stages import breaking_scaffolds_stage
@@ -536,8 +531,6 @@ def build_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, l
     get_stage.cfg, get_stage.restart_stage = cfg, None
     spades_stage.add_to_pipeline(pipeline, get_stage, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
                                  ext_python_modules_home, python_modules_home)
-    postprocessing_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
-                                         ext_python_modules_home, python_modules_home)
     correction_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
                                      ext_python_modules_home, python_modules_home)
     check_test_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,

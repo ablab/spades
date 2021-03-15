@@ -442,18 +442,6 @@ struct debruijn_config {
     bool use_additional_contigs;
     std::string additional_contigs;
 
-    struct scaffold_correction {
-        std::string scaffolds_file;
-        bool output_unfilled;
-        size_t max_insert;
-        size_t max_cut_length;
-    };
-
-    struct truseq_analysis {
-        std::string scaffolds_file;
-        std::string genome_file;
-    };
-
     struct contig_output {
         std::string contigs_name;
         std::string scaffolds_name;
@@ -473,9 +461,6 @@ struct debruijn_config {
     };
     
     contig_output co;
-
-    boost::optional<scaffold_correction> sc_cor;
-    truseq_analysis tsa;
 
     std::string load_from;
     std::string entry_point;

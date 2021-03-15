@@ -20,9 +20,7 @@ class CheckStageStage(stage.Stage):
 
     def get_command(self, cfg):
         args = [os.path.join(self.python_modules_home, "spades_pipeline", "scripts", "check_test_script.py")]
-        if options_storage.args.truseq_mode:
-            args += ["--mode", "truseq", "--truseq_long_reads_file", self.output_files["truseq_long_reads_file"]]
-        elif options_storage.args.rna:
+        if options_storage.args.rna:
             args += ["--mode", "rna", "--result_transcripts_filename", self.output_files["result_transcripts_filename"]]
         else:
             if options_storage.args.plasmid:

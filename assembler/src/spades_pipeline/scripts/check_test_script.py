@@ -17,11 +17,8 @@ from os.path import abspath, dirname, realpath, join
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode",
-                        choices=["common", "truseq", "rna", "plasmid"],
+                        choices=["common", "rna", "plasmid"],
                         help="running mode",
-                        action="store")
-    parser.add_argument("--truseq_long_reads_file",
-                        help="path to truseq long reads",
                         action="store")
     parser.add_argument("--result_transcripts_filename",
                         help="path to file with result transcripts",
@@ -51,10 +48,7 @@ def main():
     console.setLevel(logging.DEBUG)
     log.addHandler(console)
 
-    if args.mode == "truseq":
-        if not os.path.isfile(args.truseq_long_reads_file):
-            support.error("TEST FAILED: %s does not exist!" % args.truseq_long_reads_file)
-    elif args.mode == "rna":
+    if args.mode == "rna":
         if not os.path.isfile(args.result_transcripts_filename):
             support.error("TEST FAILED: %s does not exist!" % args.result_transcripts_filename)
     else:

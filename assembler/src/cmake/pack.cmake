@@ -16,7 +16,7 @@ set(CPACK_PACKAGE_VERSION "3.16.0-dev")
 set(CPACK_PACKAGE_VERSION_MAJOR "3")
 set(CPACK_PACKAGE_VERSION_MINOR "16")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
-set(CPACK_STRIP_FILES bin/spades-bwa bin/spades-core bin/spades-corrector-core bin/spades-gbuilder bin/spades-gmapper bin/spades-hammer bin/spades-ionhammer bin/spades-kmercount bin/spades-truseq-scfcorrection)
+set(CPACK_STRIP_FILES bin/spades-bwa bin/spades-core bin/spades-corrector-core bin/spades-gbuilder bin/spades-gmapper bin/spades-hammer bin/spades-ionhammer bin/spades-kmercount)
 
 
 # Source stuff

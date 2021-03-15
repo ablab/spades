@@ -603,9 +603,7 @@ def load_info(dataset_path):
     info.__dict__["dataset_path"] = os.path.split(dataset_path)[0]
 
     if "mode" not in info.__dict__:
-        if 'truseq' in info.__dict__ and info.truseq:
-            info.__dict__["mode"] = "tru"
-        elif 'meta' in info.__dict__ and info.meta:
+        if 'meta' in info.__dict__ and info.meta:
             info.__dict__["mode"] = "meta"
         elif 'rna' in info.__dict__ and info.rna:
             info.__dict__["mode"] = "rna"
@@ -628,8 +626,6 @@ def get_contigs_list(args, dataset_info, before_rr = False):
     if dataset_info.mode == "bio":
         contigs = [("gene_clusters", "gene_clusters", "bio", "", "fasta")]
 
-    if dataset_info.mode == "tru":
-        contigs = [("contigs", "truseq_long_reads", "", "", "fasta")]
     if dataset_info.mode == "rna":
         contigs = [("transcripts", "transcripts", "", "", "fasta")]
     if dataset_info.mode == "meta":

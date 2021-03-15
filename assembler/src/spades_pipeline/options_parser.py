@@ -698,12 +698,6 @@ def add_hidden_args(pgroup_hidden):
                                help="runs SPAdes until the specified check-point ('ec', 'as', 'k<int>', 'mc') inclusive"
                                if show_help_hidden else argparse.SUPPRESS,
                                action="store")
-    pgroup_hidden.add_argument("--truseq",
-                               dest="truseq_mode",
-                               default=None,
-                               help="runs SPAdes in TruSeq mode"
-                               if show_help_hidden else argparse.SUPPRESS,
-                               action="store_true")
 
     mismatch_correction_group = pgroup_hidden.add_mutually_exclusive_group()
     mismatch_correction_group.add_argument("--mismatch-correction",
@@ -902,8 +896,6 @@ def add_to_option(args, log, skip_output_dir):
         args.continue_mode = True
     if args.careful is not None:
         args.mismatch_corrector = args.careful
-    if args.truseq_mode:
-        enable_truseq_mode()
     if (args.isolate or args.rna or args.rnaviral) and not args.iontorrent:
         args.only_assembler = True
 
@@ -986,7 +978,6 @@ def add_to_cfg(cfg, log, bin_home, spades_home, args):
         cfg["assembly"].__dict__["save_gp"] = args.save_gp
         if args.read_buffer_size:
             cfg["assembly"].__dict__["read_buffer_size"] = args.read_buffer_size
-        cfg["assembly"].__dict__["correct_scaffolds"] = options_storage.correct_scaffolds
 
     # corrector can work only if contigs exist (not only error correction)
     if (not args.only_error_correction) and args.mismatch_corrector:
@@ -995,7 +986,6 @@ def add_to_cfg(cfg, log, bin_home, spades_home, args):
         cfg["mismatch_corrector"].__dict__["bwa"] = os.path.join(bin_home, "spades-bwa")
         cfg["mismatch_corrector"].__dict__["threads"] = args.threads
         cfg["mismatch_corrector"].__dict__["output-dir"] = args.output_dir
-    cfg["run_truseq_postprocessing"] = options_storage.run_truseq_postprocessing
 
 
 def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dataset, restart_from, options=None):
@@ -1044,10 +1034,10 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
         if args.careful:
             support.error("you cannot specify --careful in RNA-Seq mode!", log)
 
-    modes_count =  [args.meta, args.large_genome, args.truseq_mode, args.rna, args.plasmid, args.single_cell, args.isolate, args.rnaviral].count(True)
+    modes_count =  [args.meta, args.large_genome, args.rna, args.plasmid, args.single_cell, args.isolate, args.rnaviral].count(True)
     if modes_count > 1 and ([args.meta, args.plasmid].count(True) < 2 and [args.meta, args.bio].count(True) < 2 and [args.meta, args.rnaviral].count(True) < 2):
         support.error("you cannot simultaneously use more than one mode out of "
-                      "Isolate, Metagenomic, Large genome, Illumina TruSeq, RNA-Seq, Plasmid, and Single-cell (except combining Metagenomic and Plasmid)!", log)
+                      "Isolate, Metagenomic, Large genome, RNA-Seq, Plasmid, and Single-cell (except combining Metagenomic and Plasmid)!", log)
     elif modes_count == 0:
         support.warning("No assembly mode was specified! If you intend to assemble high-coverage multi-cell/isolate data, use '--isolate' option.")
 
@@ -1190,8 +1180,6 @@ def set_default_values():
         options_storage.args.tmp_dir = os.path.join(options_storage.args.output_dir, options_storage.TMP_DIR)
     if options_storage.args.large_genome is None:
         options_storage.args.large_genome = False
-    if options_storage.args.truseq_mode is None:
-        options_storage.args.truseq_mode = False
     if options_storage.args.save_gp is None:
         options_storage.args.save_gp = False
     if options_storage.args.only_assembler is None:
@@ -1219,16 +1207,6 @@ def load_restart_options():
     for option in options_storage.restart.__dict__:
         if options_storage.restart.__dict__[option] is not None:
             options_storage.args.__dict__[option] = options_storage.restart.__dict__[option]
-
-
-def enable_truseq_mode():
-    options_storage.K_MERS_SHORT = [21, 33, 45, 55]
-    options_storage.K_MERS_150 = [21, 33, 45, 55, 77]
-    options_storage.K_MERS_250 = [21, 33, 45, 55, 77, 99, 127]
-    options_storage.args.truseq_mode = True
-    options_storage.correct_scaffolds = True
-    options_storage.run_truseq_postprocessing = True
-    options_storage.args.only_assembler = True
 
 
 def will_rerun(options):

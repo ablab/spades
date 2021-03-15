@@ -15,7 +15,6 @@ from site import addsitedir
 import commands_parser
 import options_storage
 from stages import stage
-from stages import scaffold_correction_stage
 from stages import spades_iteration_stage
 import support
 from process_cfg import merge_configs
@@ -186,16 +185,13 @@ class SpadesCopyFileStage(stage.Stage):
     STAGE_NAME = "Copy files"
 
     def always_copy(self, output_file, latest, cfg):
-        return not cfg.correct_scaffolds
+        return True
 
     def rna_copy(self, output_file, latest, cfg):
         return options_storage.args.rna and self.always_copy(output_file, latest, cfg)
 
     def has_hmm(self, output_file, latest, cfg):
         return options_storage.args.bio or options_storage.args.custom_hmms or options_storage.args.corona
-
-    def correct_scaffolds_copy(self, output_file, latest, cfg):
-        return cfg.correct_scaffolds
 
     def not_rna_copy(self, output_file, latest, cfg):
         return (not options_storage.args.rna) and self.always_copy(output_file, latest, cfg)
@@ -211,7 +207,6 @@ class SpadesCopyFileStage(stage.Stage):
 
     def set_output_files(self):
         self.output = [
-            self.OutputFile(self.cfg.result_scaffolds, "corrected_scaffolds.fasta", self.correct_scaffolds_copy),
             self.OutputFile(os.path.join(os.path.dirname(self.cfg.result_contigs), "before_rr.fasta"),
                             "before_rr.fasta", self.always_copy),
             self.OutputFile(os.path.join(os.path.dirname(self.cfg.result_contigs), "assembly_graph_after_simplification.gfa"),
@@ -323,16 +318,6 @@ class SpadesStage(stage.Stage):
             if last_one:
                 break
 
-        if self.cfg.correct_scaffolds:
-            self.stages.append(scaffold_correction_stage.ScaffoldCorrectionStage(self.latest,
-                                                                                 "scc",
-                                                                                 self.output_files,
-                                                                                 self.tmp_configs_dir,
-                                                                                 self.dataset_data, self.log,
-                                                                                 self.bin_home,
-                                                                                 self.ext_python_modules_home,
-                                                                                 self.python_modules_home))
-            self.latest = os.path.join(os.path.join(self.cfg.output_dir, "SCC"), "K21")
         if options_storage.args.plasmid and options_storage.args.meta:
             self.stages.append(PlasmidGlueFileStage(self.latest, "plasmid_copy_files", 
                                                     self.output_files,

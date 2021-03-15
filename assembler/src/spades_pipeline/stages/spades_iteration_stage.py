@@ -24,7 +24,6 @@ def add_configs(command, configs_dir, cfg):
     mode_config_mapping = [("isolate", "isolate_mode"),
                            ("single_cell", "mda_mode"),
                            ("meta", "meta_mode"),
-                           ("truseq_mode", "moleculo_mode"),
                            ("rna", "rna_mode"),
                            ("large_genome", "large_genome_mode"),
                            ("plasmid", "plasmid_mode"),
