@@ -5,6 +5,7 @@
 //***************************************************************************
 
 #include "binning_propagation.hpp"
+#include "projects/bin_refine/binning.hpp"
 
 using namespace bin_stats;
 using namespace debruijn_graph;
@@ -15,26 +16,26 @@ double BinningPropagation::EPS = 1e-1;
 bin_stats::BinningPropagation::EdgeLabels::EdgeLabels(const EdgeId e,
                                                       const BinStats& bin_stats)
         : e(e), conjugate(bin_stats.graph().conjugate(e)) {
-  is_binned = bin_stats.edges_binning().count(e) > 0;
-  for (const std::string& bin : bin_stats.bins())
-    labels_probabilities[bin] = 0.0;
+    auto bins = bin_stats.edges_binning().find(e);
+    is_binned = bins != bin_stats.edges_binning().end();
+    labels_probabilities.resize(bin_stats.bins().size(), 0.0);
 
-  if (is_binned) {
-    for (const std::string& bin : bin_stats.edges_binning().at(e)) {
-      labels_probabilities[bin] = 1.0 / static_cast<double>(bin_stats.edges_binning().at(e).size());
+    if (is_binned) {
+        size_t sz = bins->second.size();
+        for (bin_stats::BinStats::BinId bin : bins->second)
+            labels_probabilities[bin] = 1.0 / static_cast<double>(sz);
     }
-  }
 
-  const Graph& graph = bin_stats.graph();
-  const VertexId start = graph.EdgeStart(e);
-  const VertexId end = graph.EdgeEnd(e);
-  for (EdgeId neighbour : graph.IncidentEdges(start))
-    neighbours.insert(neighbour);
+    const Graph& graph = bin_stats.graph();
+    const VertexId start = graph.EdgeStart(e);
+    const VertexId end = graph.EdgeEnd(e);
+    for (EdgeId neighbour : graph.IncidentEdges(start))
+        neighbours.insert(neighbour);
 
-  for (EdgeId neighbour : graph.IncidentEdges(end))
-    neighbours.insert(neighbour);
+    for (EdgeId neighbour : graph.IncidentEdges(end))
+        neighbours.insert(neighbour);
 
-  neighbours.erase(e);
+    neighbours.erase(e);
 }
 
 void BinningPropagation::PropagateBinning(BinStats& bin_stats, double eps) {
@@ -68,24 +69,24 @@ void BinningPropagation::StateToBinning(const propagation_state_t& cur_state, Bi
 }
 
 BinningPropagation::propagation_iteration_t BinningPropagation::PropagationIteration(const BinningPropagation::propagation_state_t& cur_state,
-                                                                                 const BinStats& bin_stats) {
+                                                                                     const BinStats& bin_stats) {
   propagation_state_t new_state(cur_state);
   double sum_diff = 0.0, after_prob = 0;
   
-  for (const EdgeId e : bin_stats.unbinned_edges()) {
+  for (EdgeId e : bin_stats.unbinned_edges()) {
     const EdgeLabels& edge_labels = cur_state.at(e);
     const auto& neighbours = edge_labels.neighbours;
-    for (auto& probabilities : edge_labels.labels_probabilities) {
-      double new_label_probability = 0.0;
-      for (const EdgeId neighbour : neighbours) {
-        new_label_probability += cur_state.at(neighbour).labels_probabilities.at(probabilities.first);
-      }
-      if (!neighbours.empty())
-        new_label_probability /= double(neighbours.size());
+    for (size_t i = 0; i < edge_labels.labels_probabilities.size(); ++i) {
+        double new_label_probability = 0.0;
+        for (EdgeId neighbour : neighbours)
+            new_label_probability += cur_state.at(neighbour).labels_probabilities[i];
 
-      after_prob += new_label_probability;
-      sum_diff += std::abs(new_label_probability - probabilities.second);
-      new_state.at(e).labels_probabilities[probabilities.first] = new_label_probability;
+        if (!neighbours.empty())
+            new_label_probability /= double(neighbours.size());
+
+        after_prob += new_label_probability;
+        sum_diff += std::abs(new_label_probability - edge_labels.labels_probabilities[i]);
+        new_state.at(e).labels_probabilities[i] = new_label_probability;
     }
   }
 
@@ -99,41 +100,38 @@ BinningPropagation::propagation_iteration_t BinningPropagation::PropagationItera
 }
 
 BinningPropagation::propagation_state_t BinningPropagation::InitLabels(const BinStats& bin_stats) {
-  propagation_state_t state;
-  const Graph& graph = bin_stats.graph();
-  for (const EdgeId e : graph.edges()) {
-    state.emplace(e, EdgeLabels(e, bin_stats));
-  }
-  EqualizeConjugates(state, bin_stats);
+    propagation_state_t state;
+    for (EdgeId e : bin_stats.graph().edges())
+        state.emplace(e, EdgeLabels(e, bin_stats));
+    
+    EqualizeConjugates(state, bin_stats);
 
-  return state;
+    return state;
 }
 
 void BinningPropagation::EqualizeConjugates(BinningPropagation::propagation_state_t& state, const BinStats& bin_stats) {
-  for (const EdgeId e : bin_stats.unbinned_edges()) {
-    EdgeLabels& edge_labels = state.at(e);
-    EdgeLabels& conjugate_labels = state.at(edge_labels.conjugate);
-    for (auto& p : edge_labels.labels_probabilities) {
-      p.second = (p.second + conjugate_labels.labels_probabilities.at(p.first)) / 2;
-      conjugate_labels.labels_probabilities[p.first] = p.second;
+    for (EdgeId e : bin_stats.unbinned_edges()) {
+        EdgeLabels& edge_labels = state.at(e);
+        EdgeLabels& conjugate_labels = state.at(edge_labels.conjugate);
+        for (size_t i = 0; i < edge_labels.labels_probabilities.size(); ++i) {
+            edge_labels.labels_probabilities[i] = (edge_labels.labels_probabilities[i] + conjugate_labels.labels_probabilities[i]) / 2;
+            conjugate_labels.labels_probabilities[i] = edge_labels.labels_probabilities[i];
+        }
     }
-  }
 }
 
-std::set<std::string> BinningPropagation::ChooseMostProbableBins(const std::map<std::string, double>& labels_probabilities) {
+std::set<bin_stats::BinStats::BinId> BinningPropagation::ChooseMostProbableBins(const std::vector<double>& labels_probabilities) {
   double max_probability = 0.0;
-  for (const auto& p : labels_probabilities)
-    max_probability = std::max(max_probability, p.second);
+  for (double p : labels_probabilities)
+    max_probability = std::max(max_probability, p);
 
-  if (max_probability == 0.0) {
+  if (max_probability == 0.0)
     return {};
-  }
 
-  std::set<std::string> most_probable_bins;
-  for (const auto& p : labels_probabilities) {
-    if (p.second == max_probability) {
-      most_probable_bins.insert(p.first);
-    }
+  std::set<bin_stats::BinStats::BinId> most_probable_bins;
+  for (size_t i = 0; i < labels_probabilities.size(); ++i) {
+    if (labels_probabilities[i] == max_probability)
+      most_probable_bins.insert(i);
   }
 
   return most_probable_bins;

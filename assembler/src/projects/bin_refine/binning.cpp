@@ -37,13 +37,13 @@ void BinStats::ScaffoldsToEdges(const std::string& scaffolds_file,
       continue;
     }
     
-    const bin_id_t bin_id = scaffolds_binning_[scaffold_name];
+    BinId bin_id = scaffolds_binning_[scaffold_name];
     const auto scaffold_path = mapper->MapRead(scaffold);
 
     for (size_t i = 0; i < scaffold_path.size(); ++i) {
-      const EdgeId edge = scaffold_path[i].first;
-      edges_binning_[edge].insert(bin_id);
-      edges_binning_[graph_.conjugate(edge)].insert(bin_id);
+        EdgeId edge = scaffold_path[i].first;
+        edges_binning_[edge].insert(bin_id);
+        edges_binning_[graph_.conjugate(edge)].insert(bin_id);
     }
   }
 
@@ -65,19 +65,27 @@ void BinStats::LoadBinning(const std::string& binning_file, const std::string& s
   bins_.clear();
   std::ifstream binning_reader(binning_file);
 
+  BinId max_bin_id = 0;
   for (std::string line; std::getline(binning_reader, line, '\n');) {
     std::string scaffold_name;
     std::istringstream line_stream(line);
     line_stream >> scaffold_name;
-    bin_id_t bin_id;
-    line_stream >> bin_id;
-    if (bin_id == UNBINNED_ID) { // unbinned scaffold, skip
+    BinLabel bin_label;
+    line_stream >> bin_label;
+    if (bin_label == UNBINNED_ID) // unbinned scaffold, skip
       continue;
+
+    BinId cbin_id;
+    auto entry = bins_.find(bin_label);
+    if (entry == bins_.end()) { // new bin label
+        cbin_id = max_bin_id++;
+        bin_labels_.emplace(cbin_id, bin_label);
+        bins_.emplace(bin_label, cbin_id);
+    } else {
+        cbin_id = entry->second;
     }
-
-    bins_.insert(bin_id);
-
-    scaffolds_binning_[scaffold_name] = bin_id;
+    
+    scaffolds_binning_[scaffold_name] = cbin_id;
   }
 
   ScaffoldsToEdges(scaffolds_file, gp);
