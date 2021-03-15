@@ -72,10 +72,12 @@ BinningPropagation::propagation_iteration_t BinningPropagation::PropagationItera
                                                                                      const BinStats& bin_stats) {
   propagation_state_t new_state(cur_state);
   double sum_diff = 0.0, after_prob = 0;
-  
+
   for (EdgeId e : bin_stats.unbinned_edges()) {
     const EdgeLabels& edge_labels = cur_state.at(e);
     const auto& neighbours = edge_labels.neighbours;
+    EdgeLabels& next_labels = new_state.at(e);
+
     for (size_t i = 0; i < edge_labels.labels_probabilities.size(); ++i) {
         double new_label_probability = 0.0;
         for (EdgeId neighbour : neighbours)
@@ -86,7 +88,7 @@ BinningPropagation::propagation_iteration_t BinningPropagation::PropagationItera
 
         after_prob += new_label_probability;
         sum_diff += std::abs(new_label_probability - edge_labels.labels_probabilities[i]);
-        new_state.at(e).labels_probabilities[i] = new_label_probability;
+        next_labels.labels_probabilities[i] = new_label_probability;
     }
   }
 
@@ -103,7 +105,7 @@ BinningPropagation::propagation_state_t BinningPropagation::InitLabels(const Bin
     propagation_state_t state;
     for (EdgeId e : bin_stats.graph().edges())
         state.emplace(e, EdgeLabels(e, bin_stats));
-    
+
     EqualizeConjugates(state, bin_stats);
 
     return state;
