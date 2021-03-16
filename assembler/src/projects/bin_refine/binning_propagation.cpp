@@ -41,15 +41,16 @@ bin_stats::BinningPropagation::EdgeLabels::EdgeLabels(const EdgeId e,
 void BinningPropagation::PropagateBinning(BinStats& bin_stats, double eps) {
   BinningPropagation::iteration_step = 0;
   BinningPropagation::EPS = eps;
-  propagation_state_t state = InitLabels(bin_stats);
+  propagation_state_t state = InitLabels(bin_stats), new_state(state);
   while (true) {
-    propagation_iteration_t new_iteration = PropagationIteration(state, bin_stats);
-    if (!new_iteration.first) {
-      StateToBinning(new_iteration.second, bin_stats);
-      return;
-    }
+      bool res = PropagationIteration(state, new_state,
+                                      bin_stats);
+      if (!res) {
+          StateToBinning(new_state, bin_stats);
+          return;
+      }
 
-    state = std::move(new_iteration.second);
+      std::swap(state, new_state);
   }
 }
 
@@ -68,9 +69,9 @@ void BinningPropagation::StateToBinning(const propagation_state_t& cur_state, Bi
         bin_stats.unbinned_edges().erase(e);
 }
 
-BinningPropagation::propagation_iteration_t BinningPropagation::PropagationIteration(const BinningPropagation::propagation_state_t& cur_state,
-                                                                                     const BinStats& bin_stats) {
-  propagation_state_t new_state(cur_state);
+bool BinningPropagation::PropagationIteration(BinningPropagation::propagation_state_t& new_state,
+                                              const BinningPropagation::propagation_state_t& cur_state,
+                                              const BinStats& bin_stats) {
   double sum_diff = 0.0, after_prob = 0;
 
   for (EdgeId e : bin_stats.unbinned_edges()) {
@@ -87,9 +88,10 @@ BinningPropagation::propagation_iteration_t BinningPropagation::PropagationItera
 
     if (neighbours.empty())
         continue;
-    
-    for (size_t i = 0; i <next_probs.size(); ++i) {
-        next_probs[i] /= double(neighbours.size());
+
+    double inv_sz = 1.0 / double(neighbours.size()) ;
+    for (size_t i = 0; i < next_probs.size(); ++i) {
+        next_probs[i] *= inv_sz;
         after_prob += next_probs[i];
         sum_diff += std::abs(next_probs[i] - edge_labels.labels_probabilities[i]);
     }
@@ -98,10 +100,10 @@ BinningPropagation::propagation_iteration_t BinningPropagation::PropagationItera
   INFO("Iteration " << (++BinningPropagation::iteration_step) << ", prob " << after_prob << ", diff " << sum_diff << ", eps " << sum_diff / after_prob);
 
   if (sum_diff / after_prob < EPS)
-    return {false, cur_state};
+      return false;
 
   EqualizeConjugates(new_state, bin_stats);
-  return {true, new_state};
+  return true;
 }
 
 BinningPropagation::propagation_state_t BinningPropagation::InitLabels(const BinStats& bin_stats) {
