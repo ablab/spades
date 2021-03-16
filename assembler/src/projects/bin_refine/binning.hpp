@@ -11,6 +11,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <set>
+#include <assembly_graph/paths/mapping_path.hpp>
 
 namespace debruijn_graph {
 class GraphPack;
@@ -22,7 +23,6 @@ class BinStats {
     void ScaffoldsToEdges(const std::string& scaffolds_file,
                           const debruijn_graph::GraphPack &gp);
 
-    static const std::string SCAFFOLD_NAME_PREFIX;
     static const std::string UNBINNED_ID;
 
  public:
@@ -38,6 +38,9 @@ class BinStats {
     /// FIXME: Scaffolds should not be necessary
     void LoadBinning(const std::string& binning_file, const std::string& scaffolds_file,
                      const debruijn_graph::GraphPack &gp);
+
+    void WriteToBinningFile(const std::string& binning_file, const std::string& scaffolds_file,
+                            const debruijn_graph::GraphPack &gp);
 
     const debruijn_graph::Graph& graph() const { return graph_;  }
 
@@ -59,5 +62,7 @@ private:
     std::unordered_map<BinLabel, BinId> bins_{};
     std::unordered_map<debruijn_graph::EdgeId, EdgeBinning> edges_binning_{};
     std::unordered_set<debruijn_graph::EdgeId> unbinned_edges_{};
+
+    BinId ChooseMajorBin(const omnigraph::MappingPath<debruijn_graph::EdgeId>& path);
 };
 }
