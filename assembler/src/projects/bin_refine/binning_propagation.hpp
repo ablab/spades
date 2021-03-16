@@ -31,7 +31,9 @@ class BinningPropagation {
 
   static propagation_state_t InitLabels(const BinStats& bin_stats);
   static void EqualizeConjugates(propagation_state_t& state, const BinStats& bin_stats);
-  static propagation_iteration_t PropagationIteration(const propagation_state_t& cur_state, const BinStats& bin_stats);
+  static bool PropagationIteration(propagation_state_t& new_state,
+                                   const propagation_state_t& cur_state,
+                                   const BinStats& bin_stats);
   static void StateToBinning(const propagation_state_t& cur_state, BinStats& bin_stats);
   static std::set<bin_stats::BinStats::BinId> ChooseMostProbableBins(const std::vector<double>& labels_probabilities);
  public:
