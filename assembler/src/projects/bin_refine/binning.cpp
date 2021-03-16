@@ -14,7 +14,6 @@
 using namespace debruijn_graph;
 using namespace bin_stats;
 
-const std::string BinStats::SCAFFOLD_NAME_PREFIX = "NODE_";
 const std::string BinStats::UNBINNED_ID = "0";
 
 
@@ -31,12 +30,12 @@ void BinStats::ScaffoldsToEdges(const std::string& scaffolds_file,
 
   while (!scaffolds_stream.eof()) {
     scaffolds_stream >> scaffold;
-    const std::string scaffold_name = scaffold.name();
+    const std::string& scaffold_name = scaffold.name();
     if (!scaffolds_binning_.count(scaffold_name)) {
       DEBUG("No such scaffold " + scaffold_name + " with name " + scaffold_name);
       continue;
     }
-    
+
     BinId bin_id = scaffolds_binning_[scaffold_name];
     const auto scaffold_path = mapper->MapRead(scaffold);
 
@@ -84,11 +83,63 @@ void BinStats::LoadBinning(const std::string& binning_file, const std::string& s
     } else {
         cbin_id = entry->second;
     }
-    
+
     scaffolds_binning_[scaffold_name] = cbin_id;
   }
 
   ScaffoldsToEdges(scaffolds_file, gp);
+}
+
+void BinStats::WriteToBinningFile(const std::string& binning_file,
+                                  const std::string& scaffolds_file,
+                                  const debruijn_graph::GraphPack &gp) {
+    fs::CheckFileExistenceFATAL(scaffolds_file);
+    std::ofstream out(binning_file);
+
+    io::SingleStream scaffolds_stream = io::EasyStream(scaffolds_file, false);
+    io::SingleRead scaffold;
+    auto mapper = MapperInstance(gp);
+
+    while (!scaffolds_stream.eof()) {
+        scaffolds_stream >> scaffold;
+        const std::string& scaffold_name = scaffold.name();
+        // FIXME: workaround solution to remove _SUBSTR* suffix
+        unsigned long suffix_pos = scaffold_name.find("_SUBSTR");
+        size_t name_len = scaffold_name.size();
+        if (suffix_pos != std::string::npos) {
+            name_len = suffix_pos;
+        }
+        const auto scaffold_path = mapper->MapRead(scaffold);
+
+        out << scaffold_name.substr(0, name_len) << "\t" << ChooseMajorBin(scaffold_path) << "\n";
+    }
+
+    out.close();
+}
+
+BinStats::BinId BinStats::ChooseMajorBin(const omnigraph::MappingPath<debruijn_graph::EdgeId>& path) {
+    std::vector<size_t> bins_lengths(bins_.size());
+    size_t max_len = 0;
+    BinId major_bin = 0;
+    for (const auto& path_item : path) {
+        EdgeId edge = path_item.first;
+        if (unbinned_edges_.count(edge) > 0) {
+            continue;
+        }
+
+        size_t length = graph_.length(edge);
+        const auto& bins = edges_binning_.at(edge);
+        for (auto bin_id : bins) {
+            size_t& cur_bin_len = bins_lengths[bin_id];
+            cur_bin_len += length;
+            if (cur_bin_len > max_len) {
+                max_len = cur_bin_len;
+                major_bin = bin_id;
+            }
+        }
+    }
+
+    return major_bin;
 }
 
 namespace bin_stats {
@@ -105,7 +156,7 @@ std::ostream &operator<<(std::ostream &os, const BinStats &stats) {
         unbinned_length += length;
       }
     }
-    
+
     os << "Total edges: " << graph.e_size() << std::endl
        << "Total edges length: " << sum_length << std::endl
        << "Total binned edges: " << stats.edges_binning().size() << std::endl

@@ -24,6 +24,7 @@ struct gcfg {
   std::string graph;
   std::string binning_file;
   std::string scaffolds_file;
+  std::string output_file;
   double eps = 0.01;
 };
 
@@ -34,6 +35,7 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       cfg.graph << value("graph (in binary or GFA)"),
       cfg.binning_file << value("file with binning from binner in .tsv format"),
       cfg.scaffolds_file << value("scaffolds in .fasta format"),
+      cfg.output_file << value("path to file to write binning after propagation"),
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-e") & value("eps", cfg.eps)) % "iteration min epsilon"
   );
@@ -68,6 +70,7 @@ int main(int argc, char** argv) {
       INFO("" << binning);
       BinningPropagation::PropagateBinning(binning, cfg.eps);
       INFO("" << binning);
+      binning.WriteToBinningFile(cfg.output_file, cfg.scaffolds_file, gp);
 
   } catch (const std::string& s) {
       std::cerr << s << std::endl;
