@@ -59,6 +59,8 @@ private:
     std::unordered_map<debruijn_graph::EdgeId, EdgeBinning> edges_binning_{};
     std::unordered_set<debruijn_graph::EdgeId> unbinned_edges_{};
 
-    BinId ChooseMajorBin(const std::vector<debruijn_graph::EdgeId>& path);
+    BinId ChooseMajorBin(const std::vector<debruijn_graph::EdgeId>& path) const;
+    BinId ChooseMajorBin(const std::vector<size_t>& bins_lengths) const;
+    std::vector<size_t> BinAssignment(const std::vector<debruijn_graph::EdgeId>& path) const;
 };
 }
