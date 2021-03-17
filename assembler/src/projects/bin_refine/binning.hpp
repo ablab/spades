@@ -33,11 +33,8 @@ class BinStats {
             : graph_(g) {}
 
     /// binning file in .tsv format (NODE_{scaffold_id}_* -> bin_id); scaffolds_file in .fasta format
-    void LoadBinning(const std::string& binning_file, const std::string& scaffolds_file,
-                     const ScaffoldsPaths &scaffolds_paths);
-
-    void WriteToBinningFile(const std::string& binning_file, const std::string& scaffolds_file,
-                            const ScaffoldsPaths &scaffolds_paths);
+    void LoadBinning(const std::string& binning_file, const ScaffoldsPaths &scaffolds_paths);
+    void WriteToBinningFile(const std::string& binning_file, const ScaffoldsPaths &scaffolds_paths);
 
     const debruijn_graph::Graph& graph() const { return graph_;  }
 
@@ -52,7 +49,7 @@ class BinStats {
 
     friend std::ostream &operator<<(std::ostream &os, const BinStats &stats);
 private:
-    void ScaffoldsToEdges(const std::string& scaffolds_file, const ScaffoldsPaths &scaffolds_paths);
+    void ScaffoldsToEdges(const ScaffoldsPaths &scaffolds_paths);
 
     const debruijn_graph::Graph& graph_;
 

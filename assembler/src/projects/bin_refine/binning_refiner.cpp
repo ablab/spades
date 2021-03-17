@@ -90,13 +90,12 @@ int main(int argc, char** argv) {
       }
 
       BinStats binning(graph);
-      binning.LoadBinning(cfg.binning_file, cfg.scaffolds_file,
-                          scaffolds_paths);
+      binning.LoadBinning(cfg.binning_file, scaffolds_paths);
 
       INFO("" << binning);
       BinningPropagation(graph, cfg.eps).PropagateBinning(binning);
       INFO("" << binning);
-      binning.WriteToBinningFile(cfg.output_file, cfg.scaffolds_file, scaffolds_paths);
+      binning.WriteToBinningFile(cfg.output_file, scaffolds_paths);
 
   } catch (const std::string& s) {
       std::cerr << s << std::endl;

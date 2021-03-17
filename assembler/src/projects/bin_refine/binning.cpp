@@ -16,35 +16,24 @@ using namespace bin_stats;
 
 const std::string BinStats::UNBINNED_ID = "0";
 
-void BinStats::ScaffoldsToEdges(const std::string& scaffolds_file,
-                                const ScaffoldsPaths &scaffolds_paths) {
-  fs::CheckFileExistenceFATAL(scaffolds_file);
-
+void BinStats::ScaffoldsToEdges(const ScaffoldsPaths &scaffolds_paths) {
   edges_binning_.clear();
   unbinned_edges_.clear();
 
-  io::SingleStream scaffolds_stream = io::EasyStream(scaffolds_file, false);
-  io::SingleRead scaffold;
+  for (const auto &scaffold_entry : scaffolds_binning_) {
+      const std::string& scaffold_name = scaffold_entry.first;
 
-  while (!scaffolds_stream.eof()) {
-    scaffolds_stream >> scaffold;
-    const std::string& scaffold_name = scaffold.name();
-    if (!scaffolds_binning_.count(scaffold_name)) {
-      DEBUG("No such scaffold " + scaffold_name + " with name " + scaffold_name);
-      continue;
-    }
+      BinId bin_id = scaffold_entry.second;
+      auto path_entry = scaffolds_paths.find(scaffold_name);
+      if (path_entry == scaffolds_paths.end()) {
+          INFO("No path for scaffold " << scaffold_name);
+          continue;
+      }
 
-    BinId bin_id = scaffolds_binning_[scaffold_name];
-    auto entry = scaffolds_paths.find(scaffold_name);
-    if (entry == scaffolds_paths.end()) {
-        INFO("No path for scaffold " << scaffold_name);
-        continue;
-    }
-
-    for (EdgeId e : entry->second) {
-        edges_binning_[e].insert(bin_id);
-        edges_binning_[graph_.conjugate(e)].insert(bin_id);
-    }
+      for (EdgeId e : path_entry->second) {
+          edges_binning_[e].insert(bin_id);
+          edges_binning_[graph_.conjugate(e)].insert(bin_id);
+      }
   }
 
   // find unbinned edges
@@ -57,8 +46,7 @@ void BinStats::ScaffoldsToEdges(const std::string& scaffolds_file,
   }
 }
 
-void BinStats::LoadBinning(const std::string& binning_file,
-                           const std::string& scaffolds_file, const ScaffoldsPaths &scaffolds_paths) {
+void BinStats::LoadBinning(const std::string& binning_file, const ScaffoldsPaths &scaffolds_paths) {
   fs::CheckFileExistenceFATAL(binning_file);
 
   scaffolds_binning_.clear();
@@ -88,32 +76,19 @@ void BinStats::LoadBinning(const std::string& binning_file,
     scaffolds_binning_[scaffold_name] = cbin_id;
   }
 
-  ScaffoldsToEdges(scaffolds_file, scaffolds_paths);
+  ScaffoldsToEdges(scaffolds_paths);
 }
 
-void BinStats::WriteToBinningFile(const std::string& binning_file, const std::string& scaffolds_file,
-                                  const ScaffoldsPaths &scaffolds_paths) {
-    fs::CheckFileExistenceFATAL(scaffolds_file);
+void BinStats::WriteToBinningFile(const std::string& binning_file, const ScaffoldsPaths &scaffolds_paths) {
     std::ofstream out(binning_file);
 
-    io::SingleStream scaffolds_stream = io::EasyStream(scaffolds_file, false);
-    io::SingleRead scaffold;
+    for (const auto &path_entry : scaffolds_paths) {
+      const std::string& scaffold_name = path_entry.first;
 
-    while (!scaffolds_stream.eof()) {
-        scaffolds_stream >> scaffold;
-        const std::string& scaffold_name = scaffold.name();
-        auto entry = scaffolds_paths.find(scaffold_name);
-        if (entry == scaffolds_paths.end()) {
-            INFO("No path for scaffold " << scaffold_name);
-            continue;
-        }
-
-        std::vector<EdgeId> scaffold_path(entry->second.begin(), entry->second.end());
-        BinId bin_id = ChooseMajorBin(scaffold_path);
-        out << scaffold_name << "\t" << (bin_id == UNBINNED ? UNBINNED_ID : bin_labels_.at(bin_id)) << "\n";
+      std::vector<EdgeId> scaffold_path(path_entry.second.begin(), path_entry.second.end());
+      BinId new_bin_id = ChooseMajorBin(scaffold_path);
+      out << scaffold_name << "\t" << (new_bin_id == UNBINNED ? UNBINNED_ID : bin_labels_.at(new_bin_id)) << "\n";
     }
-
-    out.close();
 }
 
 BinStats::BinId BinStats::ChooseMajorBin(const std::vector<debruijn_graph::EdgeId>& path) {
