@@ -4,6 +4,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "assembly_graph/core/graph.hpp"
 #include "binning.hpp"
 #include "binning_propagation.hpp"
 
@@ -36,7 +37,6 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       cfg.binning_file << value("file with binning from binner in .tsv format"),
       cfg.scaffolds_file << value("scaffolds in .fasta format"),
       cfg.output_file << value("path to file to write binning after propagation"),
-      (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-e") & value("eps", cfg.eps)) % "iteration min epsilon"
   );
 
@@ -55,11 +55,22 @@ int main(int argc, char** argv) {
 
   toolchain::create_console_logger();
 
+  START_BANNER("Binning refiner & propagator");
+
   try {
-      // FIXME: infer k from GFA
-      debruijn_graph::GraphPack gp(cfg.k, "", 0);
+      std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
+
+      gfa::GFAReader gfa(cfg.graph);
+      INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
+      VERIFY_MSG(gfa.k() != -1U, "Failed to determine k-mer length");
+      VERIFY_MSG(gfa.k() % 2 == 1, "k-mer length must be odd");
+
+      debruijn_graph::GraphPack gp(gfa.k(), "", 0);
+      gfa.to_graph(gp.get_mutable<Graph>(), id_mapper.get());
+
       const auto& graph = gp.get<Graph>();
-      toolchain::LoadGraph(gp, cfg.graph);
+      INFO("Graph loaded. Total vertices: " << graph.size() << " Total edges: " << graph.e_size());
+
       // FIXME: do not need this
       gp.get_mutable<KmerMapper<Graph>>().Attach();
       gp.EnsureBasicMapping();
