@@ -80,38 +80,52 @@ void BinStats::LoadBinning(const std::string& binning_file, const ScaffoldsPaths
 }
 
 void BinStats::WriteToBinningFile(const std::string& binning_file, const ScaffoldsPaths &scaffolds_paths) {
-    std::ofstream out(binning_file);
+    std::ofstream out_tsv(binning_file);
+    std::ofstream out_lens(binning_file + ".bin_weights");
 
     for (const auto &path_entry : scaffolds_paths) {
       const std::string& scaffold_name = path_entry.first;
 
       std::vector<EdgeId> scaffold_path(path_entry.second.begin(), path_entry.second.end());
-      BinId new_bin_id = ChooseMajorBin(scaffold_path);
-      out << scaffold_name << "\t" << (new_bin_id == UNBINNED ? UNBINNED_ID : bin_labels_.at(new_bin_id)) << "\n";
+      std::vector<size_t> bins_lengths = BinAssignment(scaffold_path);
+      BinId new_bin_id = ChooseMajorBin(bins_lengths);
+      out_tsv << scaffold_name << "\t" << (new_bin_id == UNBINNED ? UNBINNED_ID : bin_labels_.at(new_bin_id)) << "\n";
+      out_lens << scaffold_name << "\t" << bins_lengths << "\n";
     }
 }
 
-BinStats::BinId BinStats::ChooseMajorBin(const std::vector<debruijn_graph::EdgeId>& path) {
-    std::vector<size_t> bins_lengths(bins_.size());
-    size_t max_len = 0;
-    BinId major_bin = UNBINNED;
+std::vector<size_t> BinStats::BinAssignment(const std::vector<debruijn_graph::EdgeId>& path) const {
+    std::vector<size_t> bins_lengths(bins_.size(), 0);
+
     for (EdgeId edge : path) {
         if (unbinned_edges_.count(edge) > 0)
             continue;
 
         size_t length = graph_.length(edge);
-        const auto& bins = edges_binning_.at(edge);
-        for (auto bin_id : bins) {
-            size_t& cur_bin_len = bins_lengths[bin_id];
-            cur_bin_len += length;
-            if (cur_bin_len > max_len) {
-                max_len = cur_bin_len;
-                major_bin = bin_id;
-            }
+        for (auto bin_id : edges_binning_.at(edge))
+            bins_lengths[bin_id] += length;
+    }
+
+    return bins_lengths;
+}
+
+
+BinStats::BinId BinStats::ChooseMajorBin(const std::vector<size_t>& bins_lengths) const {
+    size_t max_len = 0;
+    BinId major_bin = UNBINNED;
+    for (BinId bin_id = 0; bin_id < bins_.size(); ++bin_id) {
+        if (bins_lengths[bin_id] > max_len) {
+            max_len = bins_lengths[bin_id];
+            major_bin = bin_id;
         }
     }
 
     return major_bin;
+}
+
+
+BinStats::BinId BinStats::ChooseMajorBin(const std::vector<debruijn_graph::EdgeId>& path) const {
+    return ChooseMajorBin(BinAssignment(path));
 }
 
 namespace bin_stats {
