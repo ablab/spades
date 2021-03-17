@@ -16,14 +16,12 @@ using namespace bin_stats;
 
 const std::string BinStats::UNBINNED_ID = "0";
 
-
 void BinStats::ScaffoldsToEdges(const std::string& scaffolds_file,
-                                const debruijn_graph::GraphPack &gp) {
+                                const ScaffoldsPaths &scaffolds_paths) {
   fs::CheckFileExistenceFATAL(scaffolds_file);
 
   edges_binning_.clear();
   unbinned_edges_.clear();
-  auto mapper = MapperInstance(gp);
 
   io::SingleStream scaffolds_stream = io::EasyStream(scaffolds_file, false);
   io::SingleRead scaffold;
@@ -37,12 +35,15 @@ void BinStats::ScaffoldsToEdges(const std::string& scaffolds_file,
     }
 
     BinId bin_id = scaffolds_binning_[scaffold_name];
-    const auto scaffold_path = mapper->MapRead(scaffold);
+    auto entry = scaffolds_paths.find(scaffold_name);
+    if (entry == scaffolds_paths.end()) {
+        INFO("No path for scaffold " << scaffold_name);
+        continue;
+    }
 
-    for (size_t i = 0; i < scaffold_path.size(); ++i) {
-        EdgeId edge = scaffold_path[i].first;
-        edges_binning_[edge].insert(bin_id);
-        edges_binning_[graph_.conjugate(edge)].insert(bin_id);
+    for (EdgeId e : entry->second) {
+        edges_binning_[e].insert(bin_id);
+        edges_binning_[graph_.conjugate(e)].insert(bin_id);
     }
   }
 
@@ -56,8 +57,8 @@ void BinStats::ScaffoldsToEdges(const std::string& scaffolds_file,
   }
 }
 
-void BinStats::LoadBinning(const std::string& binning_file, const std::string& scaffolds_file,
-                           const debruijn_graph::GraphPack &gp) {
+void BinStats::LoadBinning(const std::string& binning_file,
+                           const std::string& scaffolds_file, const ScaffoldsPaths &scaffolds_paths) {
   fs::CheckFileExistenceFATAL(binning_file);
 
   scaffolds_binning_.clear();
@@ -87,45 +88,41 @@ void BinStats::LoadBinning(const std::string& binning_file, const std::string& s
     scaffolds_binning_[scaffold_name] = cbin_id;
   }
 
-  ScaffoldsToEdges(scaffolds_file, gp);
+  ScaffoldsToEdges(scaffolds_file, scaffolds_paths);
 }
 
-void BinStats::WriteToBinningFile(const std::string& binning_file,
-                                  const std::string& scaffolds_file,
-                                  const debruijn_graph::GraphPack &gp) {
+void BinStats::WriteToBinningFile(const std::string& binning_file, const std::string& scaffolds_file,
+                                  const ScaffoldsPaths &scaffolds_paths) {
     fs::CheckFileExistenceFATAL(scaffolds_file);
     std::ofstream out(binning_file);
 
     io::SingleStream scaffolds_stream = io::EasyStream(scaffolds_file, false);
     io::SingleRead scaffold;
-    auto mapper = MapperInstance(gp);
 
     while (!scaffolds_stream.eof()) {
         scaffolds_stream >> scaffold;
         const std::string& scaffold_name = scaffold.name();
-        // FIXME: workaround solution to remove _SUBSTR* suffix
-        unsigned long suffix_pos = scaffold_name.find("_SUBSTR");
-        size_t name_len = scaffold_name.size();
-        if (suffix_pos != std::string::npos) {
-            name_len = suffix_pos;
+        auto entry = scaffolds_paths.find(scaffold_name);
+        if (entry == scaffolds_paths.end()) {
+            INFO("No path for scaffold " << scaffold_name);
+            continue;
         }
-        const auto scaffold_path = mapper->MapRead(scaffold);
 
-        out << scaffold_name.substr(0, name_len) << "\t" << bin_labels_.at(ChooseMajorBin(scaffold_path)) << "\n";
+        std::vector<EdgeId> scaffold_path(entry->second.begin(), entry->second.end());
+        BinId bin_id = ChooseMajorBin(scaffold_path);
+        out << scaffold_name << "\t" << (bin_id == UNBINNED ? UNBINNED_ID : bin_labels_.at(bin_id)) << "\n";
     }
 
     out.close();
 }
 
-BinStats::BinId BinStats::ChooseMajorBin(const omnigraph::MappingPath<debruijn_graph::EdgeId>& path) {
+BinStats::BinId BinStats::ChooseMajorBin(const std::vector<debruijn_graph::EdgeId>& path) {
     std::vector<size_t> bins_lengths(bins_.size());
     size_t max_len = 0;
-    BinId major_bin = 0;
-    for (const auto& path_item : path) {
-        EdgeId edge = path_item.first;
-        if (unbinned_edges_.count(edge) > 0) {
+    BinId major_bin = UNBINNED;
+    for (EdgeId edge : path) {
+        if (unbinned_edges_.count(edge) > 0)
             continue;
-        }
 
         size_t length = graph_.length(edge);
         const auto& bins = edges_binning_.at(edge);

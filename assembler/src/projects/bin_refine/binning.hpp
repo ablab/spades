@@ -11,7 +11,6 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <set>
-#include <assembly_graph/paths/mapping_path.hpp>
 
 namespace debruijn_graph {
 class GraphPack;
@@ -20,27 +19,25 @@ class GraphPack;
 namespace bin_stats {
 
 class BinStats {
-    void ScaffoldsToEdges(const std::string& scaffolds_file,
-                          const debruijn_graph::GraphPack &gp);
-
     static const std::string UNBINNED_ID;
-
  public:
     using BinLabel = std::string;
     using BinId = uint64_t;
     using ScaffoldName = std::string;
     using EdgeBinning = std::set<BinId>;
+    using ScaffoldsPaths = std::unordered_map<ScaffoldName, std::unordered_set<debruijn_graph::EdgeId>>;
 
+    static constexpr BinId UNBINNED = BinId(-1);
+    
     explicit BinStats(const debruijn_graph::Graph& g)
             : graph_(g) {}
 
     /// binning file in .tsv format (NODE_{scaffold_id}_* -> bin_id); scaffolds_file in .fasta format
-    /// FIXME: Scaffolds should not be necessary
     void LoadBinning(const std::string& binning_file, const std::string& scaffolds_file,
-                     const debruijn_graph::GraphPack &gp);
+                     const ScaffoldsPaths &scaffolds_paths);
 
     void WriteToBinningFile(const std::string& binning_file, const std::string& scaffolds_file,
-                            const debruijn_graph::GraphPack &gp);
+                            const ScaffoldsPaths &scaffolds_paths);
 
     const debruijn_graph::Graph& graph() const { return graph_;  }
 
@@ -55,6 +52,8 @@ class BinStats {
 
     friend std::ostream &operator<<(std::ostream &os, const BinStats &stats);
 private:
+    void ScaffoldsToEdges(const std::string& scaffolds_file, const ScaffoldsPaths &scaffolds_paths);
+
     const debruijn_graph::Graph& graph_;
 
     std::unordered_map<ScaffoldName, BinId> scaffolds_binning_{};
@@ -63,6 +62,6 @@ private:
     std::unordered_map<debruijn_graph::EdgeId, EdgeBinning> edges_binning_{};
     std::unordered_set<debruijn_graph::EdgeId> unbinned_edges_{};
 
-    BinId ChooseMajorBin(const omnigraph::MappingPath<debruijn_graph::EdgeId>& path);
+    BinId ChooseMajorBin(const std::vector<debruijn_graph::EdgeId>& path);
 };
 }
