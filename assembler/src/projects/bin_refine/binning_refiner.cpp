@@ -47,6 +47,15 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
   }
 }
 
+std::vector<EdgeId> conjugate_path(const std::vector<EdgeId> &path,
+                                   const debruijn_graph::ConjugateDeBruijnGraph &g) {
+    std::vector<EdgeId> cpath;
+    for (auto it = path.crbegin(), e = path.crend(); it != e; ++it) {
+        cpath.push_back(g.conjugate(*it));
+    }
+    return cpath;
+}
+
 int main(int argc, char** argv) {
   utils::segfault_handler sh;
   gcfg cfg;
@@ -71,17 +80,23 @@ int main(int argc, char** argv) {
       const auto& graph = gp.get<Graph>();
       INFO("Graph loaded. Total vertices: " << graph.size() << " Total edges: " << graph.e_size());
 
-      // FIXME: do not need this
-      gp.get_mutable<KmerMapper<Graph>>().Attach();
-      gp.EnsureBasicMapping();
+      // TODO: For now the edges is a set, we need to decide what to do with
+      // repeats (so, we may want to count multiplicity here somehow)
+      BinStats::ScaffoldsPaths scaffolds_paths;
+      for (const auto &path : gfa.paths()) {
+          const std::string &name = path.name;
+          // SPAdes outputs paths of scaffolds in the file, so we need to strip the path segment id from the end
+          scaffolds_paths[name.substr(0, name.find_last_of("_"))].insert(path.edges.begin(), path.edges.end());
+      }
 
       BinStats binning(graph);
-      binning.LoadBinning(cfg.binning_file, cfg.scaffolds_file, gp);
+      binning.LoadBinning(cfg.binning_file, cfg.scaffolds_file,
+                          scaffolds_paths);
 
       INFO("" << binning);
       BinningPropagation(graph, cfg.eps).PropagateBinning(binning);
       INFO("" << binning);
-      binning.WriteToBinningFile(cfg.output_file, cfg.scaffolds_file, gp);
+      binning.WriteToBinningFile(cfg.output_file, cfg.scaffolds_file, scaffolds_paths);
 
   } catch (const std::string& s) {
       std::cerr << s << std::endl;
