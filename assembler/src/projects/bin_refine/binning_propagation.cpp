@@ -10,12 +10,9 @@
 using namespace bin_stats;
 using namespace debruijn_graph;
 
-size_t BinningPropagation::iteration_step = 0;
-double BinningPropagation::EPS = 1e-1;
-
 bin_stats::BinningPropagation::EdgeLabels::EdgeLabels(const EdgeId e,
                                                       const BinStats& bin_stats)
-        : e(e), conjugate(bin_stats.graph().conjugate(e)) {
+        : e(e) {
     auto bins = bin_stats.edges_binning().find(e);
     is_binned = bins != bin_stats.edges_binning().end();
     labels_probabilities.resize(bin_stats.bins().size(), 0.0);
@@ -25,26 +22,14 @@ bin_stats::BinningPropagation::EdgeLabels::EdgeLabels(const EdgeId e,
         for (bin_stats::BinStats::BinId bin : bins->second)
             labels_probabilities[bin] = 1.0 / static_cast<double>(sz);
     }
-
-    const Graph& graph = bin_stats.graph();
-    const VertexId start = graph.EdgeStart(e);
-    const VertexId end = graph.EdgeEnd(e);
-    for (EdgeId neighbour : graph.IncidentEdges(start))
-        neighbours.insert(neighbour);
-
-    for (EdgeId neighbour : graph.IncidentEdges(end))
-        neighbours.insert(neighbour);
-
-    neighbours.erase(e);
 }
 
-void BinningPropagation::PropagateBinning(BinStats& bin_stats, double eps) {
-  BinningPropagation::iteration_step = 0;
-  BinningPropagation::EPS = eps;
+void BinningPropagation::PropagateBinning(BinStats& bin_stats) {
+  unsigned iteration_step = 0;
   propagation_state_t state = InitLabels(bin_stats), new_state(state);
   while (true) {
       bool res = PropagationIteration(state, new_state,
-                                      bin_stats);
+                                      bin_stats, iteration_step++);
       if (!res) {
           StateToBinning(new_state, bin_stats);
           return;
@@ -71,39 +56,50 @@ void BinningPropagation::StateToBinning(const propagation_state_t& cur_state, Bi
 
 bool BinningPropagation::PropagationIteration(BinningPropagation::propagation_state_t& new_state,
                                               const BinningPropagation::propagation_state_t& cur_state,
-                                              const BinStats& bin_stats) {
+                                              const BinStats& bin_stats, unsigned iteration_step) {
   double sum_diff = 0.0, after_prob = 0;
 
   for (EdgeId e : bin_stats.unbinned_edges()) {
     const EdgeLabels& edge_labels = cur_state.at(e);
-    const auto& neighbours = edge_labels.neighbours;
     auto& next_probs = new_state.at(e).labels_probabilities;
 
     std::fill(next_probs.begin(), next_probs.end(), 0.0);
-    for (EdgeId neighbour : neighbours) {
+    double e_sum = 0.0;
+    // Not used now, but might be in the future
+    double incoming_weight = 1.0; // / double(g_.IncomingEdgeCount(g_.EdgeStart(e)));
+    for (EdgeId neighbour : g_.IncomingEdges(g_.EdgeStart(e))) {
+        if (neighbour == e)
+            continue;
+
         const auto& neig_probs = cur_state.at(neighbour).labels_probabilities;
-        for (size_t i = 0; i < next_probs.size(); ++i)
-            next_probs[i] += neig_probs[i];
+        for (size_t i = 0; i < next_probs.size(); ++i) {
+            double p = neig_probs[i] * incoming_weight;
+            next_probs[i] += p;
+            e_sum += p;
+        }
     }
 
-    if (neighbours.empty())
+    // Note that e_sum is actually equals to # of non-empty predecessors,
+    // however, we use true sum here in order to compensate for possible
+    // rounding-off errors
+    if (e_sum == 0.0)
         continue;
 
-    double inv_sz = 1.0 / double(neighbours.size()) ;
+    double inv_sum = 1.0 / e_sum;
     for (size_t i = 0; i < next_probs.size(); ++i) {
-        next_probs[i] *= inv_sz;
+        next_probs[i] *= inv_sum;
         after_prob += next_probs[i];
         sum_diff += std::abs(next_probs[i] - edge_labels.labels_probabilities[i]);
     }
   }
 
-  INFO("Iteration " << (++BinningPropagation::iteration_step) << ", prob " << after_prob << ", diff " << sum_diff << ", eps " << sum_diff / after_prob);
-
-  if (sum_diff / after_prob < EPS)
-      return false;
-
+  VERBOSE_POWER_T2(iteration_step, 0,
+                   "Iteration " << iteration_step << ", prob " << after_prob << ", diff " << sum_diff << ", eps " << sum_diff / after_prob);
   EqualizeConjugates(new_state, bin_stats);
-  return true;
+
+  // FIXME: We need to refine the condition:
+  // We always need to ensure that all edges are reached (so, after_prob will be stable)
+  return (sum_diff / after_prob > eps_);
 }
 
 BinningPropagation::propagation_state_t BinningPropagation::InitLabels(const BinStats& bin_stats) {
@@ -119,7 +115,7 @@ BinningPropagation::propagation_state_t BinningPropagation::InitLabels(const Bin
 void BinningPropagation::EqualizeConjugates(BinningPropagation::propagation_state_t& state, const BinStats& bin_stats) {
     for (EdgeId e : bin_stats.unbinned_edges()) {
         EdgeLabels& edge_labels = state.at(e);
-        EdgeLabels& conjugate_labels = state.at(edge_labels.conjugate);
+        EdgeLabels& conjugate_labels = state.at(g_.conjugate(e));
         for (size_t i = 0; i < edge_labels.labels_probabilities.size(); ++i) {
             edge_labels.labels_probabilities[i] = (edge_labels.labels_probabilities[i] + conjugate_labels.labels_probabilities[i]) / 2;
             conjugate_labels.labels_probabilities[i] = edge_labels.labels_probabilities[i];

@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
       binning.LoadBinning(cfg.binning_file, cfg.scaffolds_file, gp);
 
       INFO("" << binning);
-      BinningPropagation::PropagateBinning(binning, cfg.eps);
+      BinningPropagation(graph, cfg.eps).PropagateBinning(binning);
       INFO("" << binning);
       binning.WriteToBinningFile(cfg.output_file, cfg.scaffolds_file, gp);
 
