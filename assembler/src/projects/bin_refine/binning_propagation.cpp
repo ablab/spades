@@ -10,36 +10,22 @@
 using namespace bin_stats;
 using namespace debruijn_graph;
 
-bin_stats::BinningPropagation::EdgeLabels::EdgeLabels(const EdgeId e,
-                                                      const BinStats& bin_stats)
-        : e(e) {
-    auto bins = bin_stats.edges_binning().find(e);
-    is_binned = bins != bin_stats.edges_binning().end();
-    labels_probabilities.resize(bin_stats.bins().size(), 0.0);
-
-    if (is_binned) {
-        size_t sz = bins->second.size();
-        for (bin_stats::BinStats::BinId bin : bins->second)
-            labels_probabilities[bin] = 1.0 / static_cast<double>(sz);
-    }
-}
-
-void BinningPropagation::PropagateBinning(BinStats& bin_stats) {
+SoftBinsAssignment BinningPropagation::PropagateBinning(BinStats& bin_stats) {
   unsigned iteration_step = 0;
-  propagation_state_t state = InitLabels(bin_stats), new_state(state);
+  SoftBinsAssignment state = InitLabels(bin_stats), new_state(state);
   while (true) {
       bool res = PropagationIteration(state, new_state,
                                       bin_stats, iteration_step++);
       if (!res) {
           StateToBinning(new_state, bin_stats);
-          return;
+          return new_state;
       }
 
       std::swap(state, new_state);
   }
 }
 
-void BinningPropagation::StateToBinning(const propagation_state_t& cur_state, BinStats& bin_stats) {
+void BinningPropagation::StateToBinning(const SoftBinsAssignment& cur_state, BinStats& bin_stats) {
     std::vector<EdgeId> binned;
     for (EdgeId e : bin_stats.unbinned_edges()) {
         auto assignment = ChooseMostProbableBins(cur_state.at(e).labels_probabilities);
@@ -54,8 +40,8 @@ void BinningPropagation::StateToBinning(const propagation_state_t& cur_state, Bi
         bin_stats.unbinned_edges().erase(e);
 }
 
-bool BinningPropagation::PropagationIteration(BinningPropagation::propagation_state_t& new_state,
-                                              const BinningPropagation::propagation_state_t& cur_state,
+bool BinningPropagation::PropagationIteration(SoftBinsAssignment& new_state,
+                                              const SoftBinsAssignment& cur_state,
                                               const BinStats& bin_stats, unsigned iteration_step) {
   double sum_diff = 0.0, after_prob = 0;
 
@@ -102,8 +88,8 @@ bool BinningPropagation::PropagationIteration(BinningPropagation::propagation_st
   return (sum_diff / after_prob > eps_);
 }
 
-BinningPropagation::propagation_state_t BinningPropagation::InitLabels(const BinStats& bin_stats) {
-    propagation_state_t state;
+SoftBinsAssignment BinningPropagation::InitLabels(const BinStats& bin_stats) {
+    SoftBinsAssignment state;
     for (EdgeId e : bin_stats.graph().edges())
         state.emplace(e, EdgeLabels(e, bin_stats));
 
@@ -112,7 +98,7 @@ BinningPropagation::propagation_state_t BinningPropagation::InitLabels(const Bin
     return state;
 }
 
-void BinningPropagation::EqualizeConjugates(BinningPropagation::propagation_state_t& state, const BinStats& bin_stats) {
+void BinningPropagation::EqualizeConjugates(SoftBinsAssignment& state, const BinStats& bin_stats) {
     for (EdgeId e : bin_stats.unbinned_edges()) {
         EdgeLabels& edge_labels = state.at(e);
         EdgeLabels& conjugate_labels = state.at(g_.conjugate(e));

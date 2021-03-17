@@ -6,6 +6,7 @@
 
 #include "binning.hpp"
 
+#include "io/utils/id_mapper.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 
 #include "io/reads/io_helper.hpp"
@@ -15,6 +16,19 @@ using namespace debruijn_graph;
 using namespace bin_stats;
 
 const std::string BinStats::UNBINNED_ID = "0";
+
+EdgeLabels::EdgeLabels(const EdgeId e, const BinStats& bin_stats)
+        : e(e) {
+    auto bins = bin_stats.edges_binning().find(e);
+    is_binned = bins != bin_stats.edges_binning().end();
+    labels_probabilities.resize(bin_stats.bins().size(), 0.0);
+
+    if (is_binned) {
+        size_t sz = bins->second.size();
+        for (bin_stats::BinStats::BinId bin : bins->second)
+            labels_probabilities[bin] = 1.0 / static_cast<double>(sz);
+    }
+}
 
 void BinStats::ScaffoldsToEdges(const ScaffoldsPaths &scaffolds_paths) {
   edges_binning_.clear();
@@ -79,9 +93,11 @@ void BinStats::LoadBinning(const std::string& binning_file, const ScaffoldsPaths
   ScaffoldsToEdges(scaffolds_paths);
 }
 
-void BinStats::WriteToBinningFile(const std::string& binning_file, const ScaffoldsPaths &scaffolds_paths) {
+void BinStats::WriteToBinningFile(const std::string& binning_file, const ScaffoldsPaths &scaffolds_paths,
+                                  const SoftBinsAssignment &soft_edge_labels, const io::IdMapper<std::string> &edge_mapper) {
     std::ofstream out_tsv(binning_file);
     std::ofstream out_lens(binning_file + ".bin_weights");
+    std::ofstream out_edges(binning_file + ".edge_weights");
 
     for (const auto &path_entry : scaffolds_paths) {
       const std::string& scaffold_name = path_entry.first;
@@ -91,6 +107,12 @@ void BinStats::WriteToBinningFile(const std::string& binning_file, const Scaffol
       BinId new_bin_id = ChooseMajorBin(bins_lengths);
       out_tsv << scaffold_name << "\t" << (new_bin_id == UNBINNED ? UNBINNED_ID : bin_labels_.at(new_bin_id)) << "\n";
       out_lens << scaffold_name << "\t" << bins_lengths << "\n";
+    }
+
+    out_edges.precision(3);
+    for (EdgeId e : graph_.canonical_edges()) {
+        const EdgeLabels& edge_labels = soft_edge_labels.at(e);
+        out_edges << edge_mapper[graph_.int_id(e)] << "\t" << edge_labels.is_binned << "\t" << !unbinned_edges_.count(e) << "\t" << edge_labels.labels_probabilities << "\n";
     }
 }
 

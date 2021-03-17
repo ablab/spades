@@ -16,7 +16,27 @@ namespace debruijn_graph {
 class GraphPack;
 }
 
+namespace io {
+template<typename T>
+class IdMapper;
+}
+
 namespace bin_stats {
+
+class BinStats;
+
+struct EdgeLabels {
+    // TODO: Could pack e and is_binned into single 64 bits
+    debruijn_graph::EdgeId e;
+    bool is_binned;
+    std::vector<double> labels_probabilities;
+
+    EdgeLabels(debruijn_graph::EdgeId e, const BinStats& bin_stats);
+    EdgeLabels(const EdgeLabels& edge_labels) = default;
+    EdgeLabels& operator=(const EdgeLabels& edge_labels) = default;
+};
+
+using SoftBinsAssignment = std::unordered_map<debruijn_graph::EdgeId, EdgeLabels>;
 
 class BinStats {
     static const std::string UNBINNED_ID;
@@ -34,7 +54,8 @@ class BinStats {
 
     /// binning file in .tsv format (NODE_{scaffold_id}_* -> bin_id); scaffolds_file in .fasta format
     void LoadBinning(const std::string& binning_file, const ScaffoldsPaths &scaffolds_paths);
-    void WriteToBinningFile(const std::string& binning_file, const ScaffoldsPaths &scaffolds_paths);
+    void WriteToBinningFile(const std::string& binning_file, const ScaffoldsPaths &scaffolds_paths,
+                            const SoftBinsAssignment &edge_soft_labels, const io::IdMapper<std::string> &edge_mapper);
 
     const debruijn_graph::Graph& graph() const { return graph_;  }
 
