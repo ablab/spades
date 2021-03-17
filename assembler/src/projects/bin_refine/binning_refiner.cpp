@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
       std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
 
       gfa::GFAReader gfa(cfg.graph);
-      INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
+      INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: " << gfa.num_paths());
       VERIFY_MSG(gfa.k() != -1U, "Failed to determine k-mer length");
       VERIFY_MSG(gfa.k() % 2 == 1, "k-mer length must be odd");
 
@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
       gfa.to_graph(gp.get_mutable<Graph>(), id_mapper.get());
 
       const auto& graph = gp.get<Graph>();
-      INFO("Graph loaded. Total vertices: " << graph.size() << " Total edges: " << graph.e_size());
+      INFO("Graph loaded. Total vertices: " << graph.size() << ", total edges: " << graph.e_size());
 
       // TODO: For now the edges is a set, we need to decide what to do with
       // repeats (so, we may want to count multiplicity here somehow)
@@ -93,9 +93,10 @@ int main(int argc, char** argv) {
       binning.LoadBinning(cfg.binning_file, scaffolds_paths);
 
       INFO("" << binning);
-      BinningPropagation(graph, cfg.eps).PropagateBinning(binning);
+      auto soft_edge_labels = BinningPropagation(graph, cfg.eps).PropagateBinning(binning);
       INFO("" << binning);
-      binning.WriteToBinningFile(cfg.output_file, scaffolds_paths);
+      binning.WriteToBinningFile(cfg.output_file, scaffolds_paths,
+                                 soft_edge_labels, *id_mapper);
 
   } catch (const std::string& s) {
       std::cerr << s << std::endl;
