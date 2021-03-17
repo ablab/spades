@@ -111,7 +111,7 @@ void BinStats::WriteToBinningFile(const std::string& binning_file,
         }
         const auto scaffold_path = mapper->MapRead(scaffold);
 
-        out << scaffold_name.substr(0, name_len) << "\t" << ChooseMajorBin(scaffold_path) << "\n";
+        out << scaffold_name.substr(0, name_len) << "\t" << bin_labels_.at(ChooseMajorBin(scaffold_path)) << "\n";
     }
 
     out.close();
