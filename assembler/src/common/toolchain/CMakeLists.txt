@@ -8,4 +8,4 @@ project(toolchain CXX)
 
 add_library(toolchain STATIC
             utils.cpp)
-target_link_libraries(toolchain graphio utils)
+target_link_libraries(toolchain graphio binary_io utils)
