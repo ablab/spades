@@ -14,9 +14,9 @@ SoftBinsAssignment BinningPropagation::PropagateBinning(BinStats& bin_stats) {
   unsigned iteration_step = 0;
   SoftBinsAssignment state = InitLabels(bin_stats), new_state(state);
   while (true) {
-      bool res = PropagationIteration(state, new_state,
-                                      bin_stats, iteration_step++);
-      if (!res) {
+      FinalIteration is_final_iteration = PropagationIteration(state, new_state,
+                                                               bin_stats, iteration_step++);
+      if (is_final_iteration) {
           StateToBinning(new_state, bin_stats);
           return new_state;
       }
@@ -40,7 +40,7 @@ void BinningPropagation::StateToBinning(const SoftBinsAssignment& cur_state, Bin
         bin_stats.unbinned_edges().erase(e);
 }
 
-bool BinningPropagation::PropagationIteration(SoftBinsAssignment& new_state,
+BinningPropagation::FinalIteration BinningPropagation::PropagationIteration(SoftBinsAssignment& new_state,
                                               const SoftBinsAssignment& cur_state,
                                               const BinStats& bin_stats, unsigned iteration_step) {
   double sum_diff = 0.0, after_prob = 0;
@@ -85,7 +85,7 @@ bool BinningPropagation::PropagationIteration(SoftBinsAssignment& new_state,
 
   // FIXME: We need to refine the condition:
   // We always need to ensure that all edges are reached (so, after_prob will be stable)
-  return (sum_diff / after_prob > eps_);
+  return (sum_diff / after_prob <= eps_);
 }
 
 SoftBinsAssignment BinningPropagation::InitLabels(const BinStats& bin_stats) {

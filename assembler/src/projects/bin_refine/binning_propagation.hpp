@@ -11,21 +11,23 @@
 namespace bin_stats {
 
 class BinningPropagation {
-    SoftBinsAssignment InitLabels(const BinStats& bin_stats);
-    void EqualizeConjugates(SoftBinsAssignment& state, const BinStats& bin_stats);
-    bool PropagationIteration(SoftBinsAssignment& new_state,
-                              const SoftBinsAssignment& cur_state,
-                              const BinStats& bin_stats, unsigned iteration_step);
-    void StateToBinning(const SoftBinsAssignment& cur_state, BinStats& bin_stats);
-    std::unordered_set<bin_stats::BinStats::BinId> ChooseMostProbableBins(const std::vector<double>& labels_probabilities);
+ public:
+    using FinalIteration = bool;
 
-  public:
     BinningPropagation(const debruijn_graph::Graph &g, double eps)
-            : g_(g), eps_(eps) {}
+        : g_(g), eps_(eps) {}
 
     SoftBinsAssignment PropagateBinning(BinStats& bin_stats);
 
   private:
+    SoftBinsAssignment InitLabels(const BinStats& bin_stats);
+    void EqualizeConjugates(SoftBinsAssignment& state, const BinStats& bin_stats);
+    FinalIteration PropagationIteration(SoftBinsAssignment& new_state,
+                                        const SoftBinsAssignment& cur_state,
+                                        const BinStats& bin_stats, unsigned iteration_step);
+    void StateToBinning(const SoftBinsAssignment& cur_state, BinStats& bin_stats);
+    std::unordered_set<bin_stats::BinStats::BinId> ChooseMostProbableBins(const std::vector<double>& labels_probabilities);
+
     const debruijn_graph::Graph &g_;
     double eps_;
 };
