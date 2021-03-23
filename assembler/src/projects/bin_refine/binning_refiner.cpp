@@ -14,8 +14,6 @@
 #include "utils/segfault_handler.hpp"
 
 #include <clipp/clipp.h>
-#include <iostream>
-#include <string>
 
 using namespace debruijn_graph;
 using namespace bin_stats;
@@ -24,7 +22,6 @@ struct gcfg {
   size_t k = 55;
   std::string graph;
   std::string binning_file;
-  std::string scaffolds_file;
   std::string output_file;
   double eps = 0.01;
 };
@@ -35,7 +32,6 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
   auto cli = (
       cfg.graph << value("graph (in binary or GFA)"),
       cfg.binning_file << value("file with binning from binner in .tsv format"),
-      cfg.scaffolds_file << value("scaffolds in .fasta format"),
       cfg.output_file << value("path to file to write binning after propagation"),
       (option("-e") & value("eps", cfg.eps)) % "iteration min epsilon"
   );
@@ -86,7 +82,7 @@ int main(int argc, char** argv) {
       for (const auto &path : gfa.paths()) {
           const std::string &name = path.name;
           // SPAdes outputs paths of scaffolds in the file, so we need to strip the path segment id from the end
-          scaffolds_paths[name.substr(0, name.find_last_of("_"))].insert(path.edges.begin(), path.edges.end());
+          scaffolds_paths[name.substr(0, name.find_last_of('_'))].insert(path.edges.begin(), path.edges.end());
       }
 
       BinStats binning(graph);
