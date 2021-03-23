@@ -44,7 +44,7 @@ class BinStats {
     using BinLabel = std::string;
     using BinId = uint64_t;
     using ScaffoldName = std::string;
-    using EdgeBinning = std::set<BinId>;
+    using EdgeBinning = std::unordered_set<BinId>;
     using ScaffoldsPaths = std::unordered_map<ScaffoldName, std::unordered_set<debruijn_graph::EdgeId>>;
 
     static constexpr BinId UNBINNED = BinId(-1);
