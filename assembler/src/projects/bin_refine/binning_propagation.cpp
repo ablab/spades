@@ -109,7 +109,7 @@ void BinningPropagation::EqualizeConjugates(SoftBinsAssignment& state, const Bin
     }
 }
 
-std::set<bin_stats::BinStats::BinId> BinningPropagation::ChooseMostProbableBins(const std::vector<double>& labels_probabilities) {
+std::unordered_set<bin_stats::BinStats::BinId> BinningPropagation::ChooseMostProbableBins(const std::vector<double>& labels_probabilities) {
   double max_probability = 0.0;
   for (double p : labels_probabilities)
     max_probability = std::max(max_probability, p);
@@ -117,7 +117,7 @@ std::set<bin_stats::BinStats::BinId> BinningPropagation::ChooseMostProbableBins(
   if (max_probability == 0.0)
     return {};
 
-  std::set<bin_stats::BinStats::BinId> most_probable_bins;
+  std::unordered_set<bin_stats::BinStats::BinId> most_probable_bins;
   for (size_t i = 0; i < labels_probabilities.size(); ++i) {
     if (labels_probabilities[i] == max_probability)
       most_probable_bins.insert(i);

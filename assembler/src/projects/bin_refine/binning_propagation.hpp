@@ -17,7 +17,7 @@ class BinningPropagation {
                               const SoftBinsAssignment& cur_state,
                               const BinStats& bin_stats, unsigned iteration_step);
     void StateToBinning(const SoftBinsAssignment& cur_state, BinStats& bin_stats);
-    std::set<bin_stats::BinStats::BinId> ChooseMostProbableBins(const std::vector<double>& labels_probabilities);
+    std::unordered_set<bin_stats::BinStats::BinId> ChooseMostProbableBins(const std::vector<double>& labels_probabilities);
 
   public:
     BinningPropagation(const debruijn_graph::Graph &g, double eps)
