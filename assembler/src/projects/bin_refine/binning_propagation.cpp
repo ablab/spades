@@ -57,13 +57,13 @@ BinningPropagation::FinalIteration BinningPropagation::PropagationIteration(Soft
         if (neighbour == e)
             continue;
 
-        PropagateFromEdge(next_probs, neighbour, cur_state, incoming_weight, e_sum);
+        e_sum += PropagateFromEdge(next_probs, neighbour, cur_state, incoming_weight);
     }
     for (EdgeId neighbour : g_.OutgoingEdges(g_.EdgeEnd(e))) {
         if (neighbour == e)
             continue;
 
-        PropagateFromEdge(next_probs, neighbour, cur_state, incoming_weight, e_sum);
+        e_sum += PropagateFromEdge(next_probs, neighbour, cur_state, incoming_weight);
     }
 
     // Note that e_sum is actually equals to # of non-empty predecessors,
@@ -88,17 +88,19 @@ BinningPropagation::FinalIteration BinningPropagation::PropagationIteration(Soft
   return (sum_diff / after_prob <= eps_);
 }
 
-void BinningPropagation::PropagateFromEdge(std::vector<double>& labels_probabilities,
-                                           debruijn_graph::EdgeId neighbour,
-                                           const SoftBinsAssignment& cur_state,
-                                           double weight,
-                                           double& sum) {
+double BinningPropagation::PropagateFromEdge(std::vector<double>& labels_probabilities,
+                                             debruijn_graph::EdgeId neighbour,
+                                             const SoftBinsAssignment& cur_state,
+                                             double weight) {
+    double sum = 0;
     const auto& neig_probs = cur_state.at(neighbour).labels_probabilities;
     for (size_t i = 0; i < labels_probabilities.size(); ++i) {
         double p = neig_probs[i] * weight;
         labels_probabilities[i] += p;
         sum += p;
     }
+
+    return sum;
 }
 
 SoftBinsAssignment BinningPropagation::InitLabels(const BinStats& bin_stats) {
