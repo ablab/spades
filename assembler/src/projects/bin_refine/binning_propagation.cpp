@@ -14,9 +14,9 @@ SoftBinsAssignment BinningPropagation::PropagateBinning(BinStats& bin_stats) {
   unsigned iteration_step = 0;
   SoftBinsAssignment state = InitLabels(bin_stats), new_state(state);
   while (true) {
-      FinalIteration is_final_iteration = PropagationIteration(state, new_state,
-                                                               bin_stats, iteration_step++);
-      if (is_final_iteration) {
+      FinalIteration converged = PropagationIteration(state, new_state,
+                                                      bin_stats, iteration_step++);
+      if (converged) {
           StateToBinning(new_state, bin_stats);
           return new_state;
       }
@@ -85,7 +85,12 @@ BinningPropagation::FinalIteration BinningPropagation::PropagationIteration(Soft
 
   // FIXME: We need to refine the condition:
   // We always need to ensure that all edges are reached (so, after_prob will be stable)
-  return (sum_diff / after_prob <= eps_);
+  bool converged = (sum_diff / after_prob <= eps_);
+  if (converged)
+      INFO("Converged at iteration " << iteration_step << ", prob " << after_prob << ", diff " << sum_diff << ", eps " << sum_diff / after_prob);
+
+
+  return converged;
 }
 
 double BinningPropagation::PropagateFromEdge(std::vector<double>& labels_probabilities,
