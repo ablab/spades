@@ -28,11 +28,10 @@ class BinningPropagation {
                                         unsigned iteration_step);
     void StateToBinning(const SoftBinsAssignment& cur_state, BinStats& bin_stats);
     std::unordered_set<bin_stats::BinStats::BinId> ChooseMostProbableBins(const std::vector<double>& labels_probabilities);
-    void PropagateFromEdge(std::vector<double>& labels_probabilities,
-                           debruijn_graph::EdgeId neighbour,
-                           const SoftBinsAssignment& cur_state,
-                           double weight,
-                           double& sum);
+    double PropagateFromEdge(std::vector<double>& labels_probabilities,
+                             debruijn_graph::EdgeId neighbour,
+                             const SoftBinsAssignment& cur_state,
+                             double weight);
 
     const debruijn_graph::Graph &g_;
     double eps_;
