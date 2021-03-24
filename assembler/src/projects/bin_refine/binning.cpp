@@ -7,7 +7,6 @@
 #include "binning.hpp"
 
 #include "io/utils/id_mapper.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
 
 #include "io/reads/io_helper.hpp"
 #include "utils/filesystem/path_helper.hpp"
