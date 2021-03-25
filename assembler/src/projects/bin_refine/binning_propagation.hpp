@@ -17,23 +17,21 @@ class BinningPropagation {
     BinningPropagation(const debruijn_graph::Graph &g, double eps)
         : g_(g), eps_(eps) {}
 
-    SoftBinsAssignment PropagateBinning(BinStats& bin_stats);
+    SoftBinsAssignment PropagateBinning(BinStats& bin_stats) const;
 
   private:
-    SoftBinsAssignment InitLabels(const BinStats& bin_stats);
-    void EqualizeConjugates(SoftBinsAssignment& state, const BinStats& bin_stats);
+    SoftBinsAssignment InitLabels(const BinStats& bin_stats) const;
+    void EqualizeConjugates(SoftBinsAssignment& state, const BinStats& bin_stats) const;
     FinalIteration PropagationIteration(SoftBinsAssignment& new_state,
                                         const SoftBinsAssignment& cur_state,
                                         const BinStats& bin_stats,
-                                        unsigned iteration_step);
-    void StateToBinning(const SoftBinsAssignment& cur_state, BinStats& bin_stats);
-    std::unordered_set<bin_stats::BinStats::BinId> ChooseMostProbableBins(const std::vector<double>& labels_probabilities);
+                                        unsigned iteration_step) const;
     double PropagateFromEdge(std::vector<double>& labels_probabilities,
                              debruijn_graph::EdgeId neighbour,
                              const SoftBinsAssignment& cur_state,
-                             double weight);
+                             double weight) const;
 
     const debruijn_graph::Graph &g_;
-    double eps_;
+    const double eps_;
 };
 }

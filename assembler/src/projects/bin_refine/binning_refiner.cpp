@@ -7,6 +7,7 @@
 #include "assembly_graph/core/graph.hpp"
 #include "binning.hpp"
 #include "binning_propagation.hpp"
+#include "majority_length_binning_assignment_strategy.hpp"
 
 #include "modules/alignment/kmer_mapper.hpp"
 #include "pipeline/graph_pack.hpp"
@@ -23,6 +24,7 @@ struct gcfg {
   std::string graph;
   std::string binning_file;
   std::string output_file;
+  std::string assignment_strategy = "m";
   double eps = 0.01;
 };
 
@@ -33,7 +35,8 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       cfg.graph << value("graph (in binary or GFA)"),
       cfg.binning_file << value("file with binning from binner in .tsv format"),
       cfg.output_file << value("path to file to write binning after propagation"),
-      (option("-e") & value("eps", cfg.eps)) % "iteration min epsilon"
+      (option("-e") & value("eps", cfg.eps)) % "iteration min epsilon",
+      (option("-s") & value("strategy", cfg.assignment_strategy)) % "binning assignment strategy"
   );
 
   auto result = parse(argc, argv, cli);
@@ -50,6 +53,14 @@ std::vector<EdgeId> conjugate_path(const std::vector<EdgeId> &path,
         cpath.push_back(g.conjugate(*it));
     }
     return cpath;
+}
+
+std::unique_ptr<BinningAssignmentStrategy> get_strategy(const std::string& strategy_name) {
+    if (strategy_name == "m") {
+        return std::make_unique<MajorityLengthBinningAssignmentStrategy>(MajorityLengthBinningAssignmentStrategy());
+    }
+
+    return std::make_unique<MajorityLengthBinningAssignmentStrategy>(MajorityLengthBinningAssignmentStrategy());
 }
 
 int main(int argc, char** argv) {
@@ -90,6 +101,8 @@ int main(int argc, char** argv) {
 
       INFO("" << binning);
       auto soft_edge_labels = BinningPropagation(graph, cfg.eps).PropagateBinning(binning);
+      auto assignment_strategy = get_strategy(cfg.assignment_strategy);
+      binning.AssignBins(soft_edge_labels, *assignment_strategy);
       INFO("" << binning);
       binning.WriteToBinningFile(cfg.output_file, scaffolds_paths,
                                  soft_edge_labels, *id_mapper);

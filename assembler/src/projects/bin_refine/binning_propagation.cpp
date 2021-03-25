@@ -10,14 +10,13 @@
 using namespace bin_stats;
 using namespace debruijn_graph;
 
-SoftBinsAssignment BinningPropagation::PropagateBinning(BinStats& bin_stats) {
+SoftBinsAssignment BinningPropagation::PropagateBinning(BinStats& bin_stats) const {
   unsigned iteration_step = 0;
   SoftBinsAssignment state = InitLabels(bin_stats), new_state(state);
   while (true) {
       FinalIteration converged = PropagationIteration(state, new_state,
                                                       bin_stats, iteration_step++);
       if (converged) {
-          StateToBinning(new_state, bin_stats);
           return new_state;
       }
 
@@ -25,24 +24,10 @@ SoftBinsAssignment BinningPropagation::PropagateBinning(BinStats& bin_stats) {
   }
 }
 
-void BinningPropagation::StateToBinning(const SoftBinsAssignment& cur_state, BinStats& bin_stats) {
-    std::vector<EdgeId> binned;
-    for (EdgeId e : bin_stats.unbinned_edges()) {
-        auto assignment = ChooseMostProbableBins(cur_state.at(e).labels_probabilities);
-        if (assignment.empty())
-            continue;
-
-        binned.push_back(e);
-        bin_stats.edges_binning()[e] = std::move(assignment);
-    }
-
-    for (EdgeId e : binned)
-        bin_stats.unbinned_edges().erase(e);
-}
-
 BinningPropagation::FinalIteration BinningPropagation::PropagationIteration(SoftBinsAssignment& new_state,
-                                              const SoftBinsAssignment& cur_state,
-                                              const BinStats& bin_stats, unsigned iteration_step) {
+                                                                            const SoftBinsAssignment& cur_state,
+                                                                            const BinStats& bin_stats,
+                                                                            unsigned iteration_step) const {
   double sum_diff = 0.0, after_prob = 0;
 
   for (EdgeId e : bin_stats.unbinned_edges()) {
@@ -96,7 +81,7 @@ BinningPropagation::FinalIteration BinningPropagation::PropagationIteration(Soft
 double BinningPropagation::PropagateFromEdge(std::vector<double>& labels_probabilities,
                                              debruijn_graph::EdgeId neighbour,
                                              const SoftBinsAssignment& cur_state,
-                                             double weight) {
+                                             double weight) const {
     double sum = 0;
     const auto& neig_probs = cur_state.at(neighbour).labels_probabilities;
     for (size_t i = 0; i < labels_probabilities.size(); ++i) {
@@ -108,7 +93,7 @@ double BinningPropagation::PropagateFromEdge(std::vector<double>& labels_probabi
     return sum;
 }
 
-SoftBinsAssignment BinningPropagation::InitLabels(const BinStats& bin_stats) {
+SoftBinsAssignment BinningPropagation::InitLabels(const BinStats& bin_stats) const {
     SoftBinsAssignment state;
     for (EdgeId e : bin_stats.graph().edges())
         state.emplace(e, EdgeLabels(e, bin_stats));
@@ -118,7 +103,7 @@ SoftBinsAssignment BinningPropagation::InitLabels(const BinStats& bin_stats) {
     return state;
 }
 
-void BinningPropagation::EqualizeConjugates(SoftBinsAssignment& state, const BinStats& bin_stats) {
+void BinningPropagation::EqualizeConjugates(SoftBinsAssignment& state, const BinStats& bin_stats) const {
     for (EdgeId e : bin_stats.unbinned_edges()) {
         EdgeLabels& edge_labels = state.at(e);
         EdgeLabels& conjugate_labels = state.at(g_.conjugate(e));
@@ -127,21 +112,4 @@ void BinningPropagation::EqualizeConjugates(SoftBinsAssignment& state, const Bin
             conjugate_labels.labels_probabilities[i] = edge_labels.labels_probabilities[i];
         }
     }
-}
-
-std::unordered_set<bin_stats::BinStats::BinId> BinningPropagation::ChooseMostProbableBins(const std::vector<double>& labels_probabilities) {
-  double max_probability = 0.0;
-  for (double p : labels_probabilities)
-    max_probability = std::max(max_probability, p);
-
-  if (max_probability == 0.0)
-    return {};
-
-  std::unordered_set<bin_stats::BinStats::BinId> most_probable_bins;
-  for (size_t i = 0; i < labels_probabilities.size(); ++i) {
-    if (labels_probabilities[i] == max_probability)
-      most_probable_bins.insert(i);
-  }
-
-  return most_probable_bins;
 }
