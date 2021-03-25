@@ -37,7 +37,7 @@ void SSEdgeSplit::run(GraphPack& gp, const char *) {
         }
 
         INFO("Running strand-specific edge splitter only for library # " << i);
-        SequenceMapperNotifier notifier(gp);
+        SequenceMapperNotifier notifier;
         const auto& params = cfg::get().ss_coverage_splitter;
         SSCoverageSplitter splitter(gp.get_mutable<Graph>(), params.bin_size, params.min_edge_len,
             params.min_edge_coverage, params.coverage_margin, params.min_flanking_coverage);

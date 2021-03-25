@@ -15,20 +15,23 @@
 #include "pipeline/library_fwd.hpp"
 
 namespace debruijn_graph {
+// FIXME: get rid of this
+using omnigraph::MappingPath;
+using omnigraph::MappingRange;
 
-struct PathWithMappingInfo { 
+struct PathWithMappingInfo {
     using PathType = std::vector<EdgeId>;
     PathType Path_;
-    MappingRange MappingRangeOntoRead_;
+    omnigraph::MappingRange MappingRangeOntoRead_;
 
     PathWithMappingInfo() = default;
-    PathWithMappingInfo(std::vector<EdgeId> && path, MappingRange && range = MappingRange());
+    PathWithMappingInfo(std::vector<EdgeId> && path, omnigraph::MappingRange && range = omnigraph::MappingRange());
 };
 
-using PathExtractionF = std::function<std::vector<PathWithMappingInfo> (const MappingPath<EdgeId>&)>;
+using PathExtractionF = std::function<std::vector<PathWithMappingInfo> (const omnigraph::MappingPath<EdgeId>&)>;
 
 class LongReadMapper: public SequenceMapperListener {
-public:
+  public:
     LongReadMapper(const Graph& g,
                    PathStorage<Graph>& storage,
                    path_extend::GappedPathStorage& bidirectional_path_storage,
@@ -41,20 +44,21 @@ public:
 
     void ProcessSingleRead(size_t thread_index,
                            const io::SingleRead& r,
-                           const MappingPath<EdgeId>& read) override;
+                           const omnigraph::MappingPath<EdgeId>& read) override;
 
     void ProcessSingleRead(size_t thread_index,
                            const io::SingleReadSeq&,
-                           const MappingPath<EdgeId>& read) override;
+                           const omnigraph::MappingPath<EdgeId>& read) override;
 
     const Graph& g() const noexcept {
         return g_;
     }
 
 private:
-    void ProcessSingleRead(size_t thread_index, const MappingPath<EdgeId>& mapping, const io::SingleRead& r);
 
-    void ProcessSingleRead(size_t thread_index, const MappingPath<EdgeId>& mapping);
+    void ProcessSingleRead(size_t thread_index, const omnigraph::MappingPath<EdgeId>& mapping, const io::SingleRead& r);
+
+    void ProcessSingleRead(size_t thread_index, const omnigraph::MappingPath<EdgeId>& mapping);
 
     const Graph& g_;
     PathStorage<Graph>& storage_;

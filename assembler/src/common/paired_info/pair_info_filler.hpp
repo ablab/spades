@@ -13,6 +13,9 @@
 
 namespace debruijn_graph {
 
+using omnigraph::MappingPath;
+using omnigraph::MappingRange;
+
 /**
  * As for now it ignores sophisticated case of repeated consecutive
  * occurrence of edge in path due to gaps in mapping

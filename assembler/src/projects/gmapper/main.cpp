@@ -107,7 +107,7 @@ static void ProcessSingleReads(GraphPack &gp, DataSet &dataset,
                                bool use_binary = true,
                                bool map_paired = false) {
     SequencingLib &lib = dataset[ilib];
-    SequenceMapperNotifier notifier(gp);
+    SequenceMapperNotifier notifier;
 
     const auto &graph = gp.get<Graph>();
     auto& single_long_reads = gp.get_mutable<LongReadContainer<Graph>>()[ilib];

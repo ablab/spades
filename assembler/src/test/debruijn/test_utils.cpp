@@ -6,6 +6,8 @@
 
 #include "test_utils.hpp"
 
+#include "modules/alignment/sequence_mapper.hpp"
+#include "modules/alignment/sequence_mapper_notifier.hpp"
 #include "modules/graph_construction.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "io/reads/rc_reader_wrapper.hpp"
@@ -16,7 +18,6 @@
 #include "paired_info/paired_info_helpers.hpp"
 #include "paired_info/weights.hpp"
 
-#include "modules/alignment/sequence_mapper_notifier.hpp"
 #include "paired_info/pair_info_filler.hpp"
 
 #include <gtest/gtest.h>
@@ -219,7 +220,7 @@ void AssertGraph(size_t k, const std::vector<MyPairedRead> &paired_reads, size_t
 
     io::ReadStreamList<io::PairedRead> paired_streams(std::move(single_stream_vector[0].recover<SquashingWrapper>().recover<RawStream>()));
 
-    SequenceMapperNotifier notifier(gp);
+    SequenceMapperNotifier notifier;
     LatePairedIndexFiller pif(graph, PairedReadCountWeight, 0, paired_indices[0]);
     notifier.Subscribe(&pif);
     notifier.ProcessLibrary(paired_streams, *MapperInstance(gp));

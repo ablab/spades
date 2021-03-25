@@ -8,7 +8,7 @@
 #ifndef SEQUENCE_MAPPER_NOTIFIER_HPP_
 #define SEQUENCE_MAPPER_NOTIFIER_HPP_
 
-#include "sequence_mapper.hpp"
+#include "sequence_mapper_fwd.hpp"
 
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/core/graph.hpp"
@@ -29,11 +29,11 @@ public:
 
     //TODO: think about read ierarchy
     virtual void ProcessPairedRead(size_t /* thread_index */, const io::PairedRead&  /* pr */,
-                                   const MappingPath<EdgeId>& /* read1 */, const MappingPath<EdgeId>& /* read2 */) {}
+                                   const omnigraph::MappingPath<EdgeId>& /* read1 */, const omnigraph::MappingPath<EdgeId>& /* read2 */) {}
     virtual void ProcessPairedRead(size_t /* thread_index */, const io::PairedReadSeq& /* pr */,
-                                   const MappingPath<EdgeId>& /* read1 */, const MappingPath<EdgeId>& /* read2 */) {}
-    virtual void ProcessSingleRead(size_t /* thread_index */, const io::SingleRead& /* r */, const MappingPath<EdgeId>& /* read */) {}
-    virtual void ProcessSingleRead(size_t /* thread_index */, const io::SingleReadSeq& /* r */, const MappingPath<EdgeId>& /* read */) {}
+                                   const omnigraph::MappingPath<EdgeId>& /* read1 */, const omnigraph::MappingPath<EdgeId>& /* read2 */) {}
+    virtual void ProcessSingleRead(size_t /* thread_index */, const io::SingleRead& /* r */, const omnigraph::MappingPath<EdgeId>& /* read */) {}
+    virtual void ProcessSingleRead(size_t /* thread_index */, const io::SingleReadSeq& /* r */, const omnigraph::MappingPath<EdgeId>& /* read */) {}
 
     virtual void MergeBuffer(size_t /* thread_index */) {}
     
@@ -47,7 +47,7 @@ public:
 
     typedef std::vector<SequenceMapperListener*> ListenersContainer;
 
-    SequenceMapperNotifier(const GraphPack &gp, size_t lib_count = 1);
+    SequenceMapperNotifier(size_t lib_count = 1);
 
     void Subscribe(SequenceMapperListener* listener, size_t lib_index = 0);
 
@@ -111,8 +111,6 @@ private:
     void NotifyStopProcessLibrary(size_t ilib) const;
 
     void NotifyMergeBuffer(size_t ilib, size_t ithread) const;
-
-    const GraphPack& gp_;
 
     std::vector<std::vector<SequenceMapperListener*> > listeners_;  //first vector's size = count libs
 };

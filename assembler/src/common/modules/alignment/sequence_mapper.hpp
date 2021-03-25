@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "sequence_mapper_fwd.hpp"
+
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
@@ -40,21 +42,6 @@ MappingPath<typename Graph::EdgeId> ConjugateMapping(const Graph& g,
     }
     return answer;
 }
-
-template<class Graph>
-class SequenceMapper {
-public:
-    typedef typename Graph::EdgeId EdgeId;
-    typedef RtSeq Kmer;
-
-    virtual ~SequenceMapper() = default;
-
-    virtual MappingPath<EdgeId> MapSequence(const Sequence &sequence,
-                                            bool only_simple = false) const = 0;
-
-    virtual MappingPath<EdgeId> MapRead(const io::SingleRead &read,
-                                        bool only_simple = false) const = 0;
-};
 
 template<class Graph>
 class AbstractSequenceMapper : public SequenceMapper<Graph> {

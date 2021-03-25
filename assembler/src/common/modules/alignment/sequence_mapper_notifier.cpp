@@ -12,9 +12,8 @@
 
 namespace debruijn_graph {
 
-SequenceMapperNotifier::SequenceMapperNotifier(const GraphPack& gp, size_t lib_count)
-    : gp_(gp)
-    , listeners_(lib_count) 
+SequenceMapperNotifier::SequenceMapperNotifier(size_t lib_count)
+    : listeners_(lib_count) 
 {}
 
 void SequenceMapperNotifier::Subscribe(SequenceMapperListener* listener, size_t lib_index) {

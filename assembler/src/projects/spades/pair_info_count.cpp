@@ -8,8 +8,8 @@
 #include "pair_info_count.hpp"
 
 #include "assembly_graph/core/basic_graph_stats.hpp"
-#include "paired_info/is_counter.hpp"
 #include "paired_info/pair_info_filler.hpp"
+#include "paired_info/paired_info_utils.hpp"
 
 #include "modules/alignment/long_read_mapper.hpp"
 #include "modules/alignment/bwa_sequence_mapper.hpp"
@@ -17,19 +17,11 @@
 
 #include "io/dataset_support/read_converter.hpp"
 
-#include "adt/bf.hpp"
-#include "adt/hll.hpp"
-
-#define XXH_INLINE_ALL
-#include "xxh/xxhash.h"
-
 namespace debruijn_graph {
 
 namespace {
 
-using SequencingLib = io::SequencingLibrary<config::LibraryData>;
-using PairedInfoFilter = bf::counting_bloom_filter<std::pair<EdgeId, EdgeId>, 2>;
-using EdgePairCounter = hll::hll_with_hasher<std::pair<EdgeId, EdgeId>>;
+using paired_info::SequencingLib;
 
 std::shared_ptr<SequenceMapper<Graph>> ChooseProperMapper(const GraphPack& gp,
                                                           const SequencingLib& library) {
@@ -48,93 +40,6 @@ std::shared_ptr<SequenceMapper<Graph>> ChooseProperMapper(const GraphPack& gp,
     INFO("Selecting usual mapper");
     return MapperInstance(gp);
 }
-
-class DEFilter : public SequenceMapperListener {
-  public:
-    DEFilter(PairedInfoFilter &filter, const Graph &g)
-            : bf_(filter), g_(g) {}
-
-    void ProcessPairedRead(size_t,
-                           const io::PairedRead&,
-                           const MappingPath<EdgeId>& read1,
-                           const MappingPath<EdgeId>& read2) override {
-        ProcessPairedRead(read1, read2);
-    }
-    void ProcessPairedRead(size_t,
-                           const io::PairedReadSeq&,
-                           const MappingPath<EdgeId>& read1,
-                           const MappingPath<EdgeId>& read2) override {
-        ProcessPairedRead(read1, read2);
-    }
-  private:
-    void ProcessPairedRead(const MappingPath<EdgeId>& path1,
-                           const MappingPath<EdgeId>& path2) {
-        for (size_t i = 0; i < path1.size(); ++i) {
-            EdgeId edge1 = path1.edge_at(i);
-            for (size_t j = 0; j < path2.size(); ++j) {
-                EdgeId edge2 = path2.edge_at(j);
-                bf_.add({edge1, edge2});
-                bf_.add({g_.conjugate(edge2), g_.conjugate(edge1)});
-            }
-        }
-    }
-
-    PairedInfoFilter &bf_;
-    const Graph &g_;
-};
-
-class EdgePairCounterFiller : public SequenceMapperListener {
-    static uint64_t EdgePairHash(const std::pair<EdgeId, EdgeId> &e) {
-        uint64_t h1 = e.first.hash();
-
-        return XXH3_64bits_withSeed(&h1, sizeof(h1), e.second.hash());
-    }
-
-  public:
-    EdgePairCounterFiller(size_t thread_num)
-            : counter_(EdgePairHash) {
-        buf_.reserve(thread_num);
-        for (unsigned i = 0; i < thread_num; ++i)
-          buf_.emplace_back(EdgePairHash);
-    }
-
-    void MergeBuffer(size_t i) override {
-        counter_.merge(buf_[i]);
-        buf_[i].clear();
-    }
-
-    void ProcessPairedRead(size_t idx,
-                           const io::PairedRead&,
-                           const MappingPath<EdgeId>& read1,
-                           const MappingPath<EdgeId>& read2) override {
-        ProcessPairedRead(buf_[idx], read1, read2);
-    }
-    void ProcessPairedRead(size_t idx,
-                           const io::PairedReadSeq&,
-                           const MappingPath<EdgeId>& read1,
-                           const MappingPath<EdgeId>& read2) override {
-        ProcessPairedRead(buf_[idx], read1, read2);
-    }
-
-    double cardinality() const {
-        return counter_.cardinality();
-    }
-  private:
-    void ProcessPairedRead(EdgePairCounter &buf,
-                           const MappingPath<EdgeId>& path1,
-                           const MappingPath<EdgeId>& path2) {
-        for (size_t i = 0; i < path1.size(); ++i) {
-            EdgeId edge1 = path1.edge_at(i);
-            for (size_t j = 0; j < path2.size(); ++j) {
-                EdgeId edge2 = path2.edge_at(j);
-                buf.add({edge1, edge2});
-            }
-        }
-    }
-
-    std::vector<EdgePairCounter> buf_;
-    EdgePairCounter counter_;
-};
 
 bool HasGoodRRLibs() {
     for (const auto &lib : cfg::get().ds.reads) {
@@ -196,58 +101,13 @@ bool ShouldObtainSingleReadsPaths(size_t ilib) {
     return false;
 }
 
-bool CollectLibInformation(const GraphPack &gp,
-                           size_t &edgepairs, SequencingLib &reads,
-                           size_t edge_length_threshold) {
-    INFO("Estimating insert size (takes a while)");
-    InsertSizeCounter hist_counter(gp.get<Graph>(), edge_length_threshold);
-    EdgePairCounterFiller pcounter(cfg::get().max_threads);
-
-    SequenceMapperNotifier notifier(gp);
-    notifier.Subscribe(&hist_counter);
-    notifier.Subscribe(&pcounter);
-
-    auto &data = reads.data();
-    auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, /*insert_size*/0,
-                                                /*include_merged*/true);
-
-    notifier.ProcessLibrary(paired_streams, *ChooseProperMapper(gp, reads));
-    //Check read length after lib processing since mate pairs a not used until this step
-    VERIFY(reads.data().unmerged_read_length != 0);
-
-    edgepairs = size_t(pcounter.cardinality());
-    INFO("Edge pairs: " << edgepairs);
-
-    INFO(hist_counter.mapped() << " paired reads (" <<
-         ((double) hist_counter.mapped() * 100.0 / (double) hist_counter.total()) <<
-         "% of all) aligned to long edges");
-    if (hist_counter.negative() > 3 * hist_counter.mapped())
-        WARN("Too much reads aligned with negative insert size. Is the library orientation set properly?");
-    if (hist_counter.mapped() == 0)
-        return false;
-
-
-    std::map<size_t, size_t> percentiles;
-    hist_counter.FindMean(data.mean_insert_size, data.insert_size_deviation, percentiles);
-    hist_counter.FindMedian(data.median_insert_size, data.insert_size_mad,
-                            data.insert_size_distribution);
-    if (data.median_insert_size < double(gp.k() + 2))
-        return false;
-
-    std::tie(data.insert_size_left_quantile,
-             data.insert_size_right_quantile) = omnigraph::GetISInterval(0.8,
-                                                                         data.insert_size_distribution);
-
-    return !data.insert_size_distribution.empty();
-}
-
 size_t ProcessSingleReads(GraphPack &gp, size_t ilib,
                           bool use_binary = true, bool map_paired = false) {
     //FIXME make const
     auto& reads = cfg::get_writable().ds.reads[ilib];
     const auto &graph = gp.get<Graph>();
 
-    SequenceMapperNotifier notifier(gp);
+    SequenceMapperNotifier notifier;
 
     auto &single_long_reads = gp.get_mutable<LongReadContainer<Graph>>()[ilib];
     auto& trusted_paths = gp.get_mutable<path_extend::TrustedPathsContainer>()[ilib];
@@ -280,43 +140,6 @@ size_t ProcessSingleReads(GraphPack &gp, size_t ilib,
     return single_long_reads.size();
 }
 
-
-using PairedIndex = omnigraph::de::UnclusteredPairedInfoIndexT<Graph>;
-
-void ProcessPairedReads(GraphPack &gp,
-                        SequencingLib &reads,
-                        PairedIndex &index,
-                        std::unique_ptr<PairedInfoFilter> filter, unsigned filter_threshold,
-                        unsigned round_thr = 0) {
-    const auto &data = reads.data();
-
-    SequenceMapperNotifier notifier(gp);
-    INFO("Left insert size quantile " << data.insert_size_left_quantile <<
-         ", right insert size quantile " << data.insert_size_right_quantile <<
-         ", filtering threshold " << filter_threshold <<
-         ", rounding threshold " << round_thr);
-
-    LatePairedIndexFiller::WeightF weight;
-    if (filter) {
-        weight = [&](const std::pair<EdgeId, EdgeId> &ep,
-                     const MappingRange&, const MappingRange&) {
-            return (filter->lookup(ep) > filter_threshold ? 1. : 0.);
-        };
-    } else {
-        weight = [&](const std::pair<EdgeId, EdgeId> &,
-                     const MappingRange&, const MappingRange&) {
-            return 1.;
-        };
-    }
-
-    LatePairedIndexFiller pif(gp.get<Graph>(), weight, round_thr, index);
-    notifier.Subscribe(&pif);
-
-    auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, (size_t) data.mean_insert_size,
-                                                /*include merged*/true);
-    notifier.ProcessLibrary(paired_streams, *ChooseProperMapper(gp, reads));
-}
-
 } // namespace
 
 void PairInfoCount::run(GraphPack &gp, const char *) {
@@ -347,7 +170,8 @@ void PairInfoCount::run(GraphPack &gp, const char *) {
                 size_t k = cfg::get().K;
 
                 size_t edgepairs = 0;
-                if (!CollectLibInformation(gp, edgepairs, lib, edge_length_threshold)) {
+                if (!paired_info::CollectLibInformation(graph, *ChooseProperMapper(gp, lib),
+                                                        edgepairs, lib, edge_length_threshold)) {
                     cfg::get_writable().ds.reads[i].data().mean_insert_size = 0.0;
                     WARN("Unable to estimate insert size for paired library #" << i);
                     if (rl > 0 && rl <= k) {
@@ -370,27 +194,13 @@ void PairInfoCount::run(GraphPack &gp, const char *) {
                     WARN("Estimated mean insert size " << lib_data.mean_insert_size
                          << " is very small compared to read length " << rl);
 
-                std::unique_ptr<PairedInfoFilter> filter;
+                std::unique_ptr<paired_info::PairedInfoFilter> filter;
                 unsigned filter_threshold = cfg::get().de.raw_filter_threshold;
 
                 // Only filter paired-end libraries
                 if (filter_threshold && lib.type() == io::LibraryType::PairedEnd) {
-                    filter.reset(new PairedInfoFilter([](const std::pair<EdgeId, EdgeId> &e, uint64_t seed) {
-                                uint64_t h1 = e.first.hash();
-                                return XXH3_64bits_withSeed(&h1, sizeof(h1), (e.second.hash() * seed) ^ seed);
-                            },
-                            12 * edgepairs));
-
                     INFO("Filtering data for library #" << i);
-                    {
-                        SequenceMapperNotifier notifier(gp);
-                        DEFilter filter_counter(*filter, graph);
-                        notifier.Subscribe(&filter_counter);
-
-                        VERIFY(lib.data().unmerged_read_length != 0);
-                        auto reads = paired_binary_readers(lib, /*followed by rc*/false, 0, /*include merged*/true);
-                        notifier.ProcessLibrary(reads, *ChooseProperMapper(gp, lib));
-                    }
+                    filter = paired_info::FillEdgePairFilter(graph, *ChooseProperMapper(gp, lib), lib, edgepairs);
                 }
 
                 INFO("Mapping library #" << i);
@@ -404,8 +214,9 @@ void PairInfoCount::run(GraphPack &gp, const char *) {
                         round_thr = unsigned(std::min(cfg::get().de.max_distance_coeff * lib.data().insert_size_deviation * cfg::get().de.rounding_coeff,
                                                       cfg::get().de.rounding_thr));
 
-                    ProcessPairedReads(gp, lib, gp.get_mutable<Indices>()[i],
-                                       std::move(filter), filter_threshold, round_thr);
+                    paired_info::FillPairedIndex(graph, *ChooseProperMapper(gp, lib),
+                                                 lib, gp.get_mutable<Indices>()[i],
+                                                 std::move(filter), filter_threshold, round_thr);
                 }
             }
 

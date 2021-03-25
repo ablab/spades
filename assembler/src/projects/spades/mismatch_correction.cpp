@@ -408,7 +408,7 @@ private:
             if (!dataset.reads[i].is_mismatch_correctable())
                 continue;
 
-            SequenceMapperNotifier notifier(gp_, cfg::get().ds.reads.lib_count());
+            SequenceMapperNotifier notifier;
             notifier.Subscribe(&statistics);
             auto &reads = cfg::get_writable().ds.reads[i];
             auto single_streams = single_binary_readers(reads, /*followed by rc */true, /*binary*/true);

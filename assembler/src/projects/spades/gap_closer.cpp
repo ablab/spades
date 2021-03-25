@@ -480,7 +480,7 @@ void GapClosing::run(GraphPack &gp, const char *) {
         if (dataset.reads[i].type() != io::LibraryType::PairedEnd)
             continue;
 
-        SequenceMapperNotifier notifier(gp);
+        SequenceMapperNotifier notifier;
         notifier.Subscribe(&gcpif);
         io::BinaryPairedStreams paired_streams = paired_binary_readers(dataset.reads[i], false, 0, false);
         notifier.ProcessLibrary(paired_streams, *gcpif.GetMapper());

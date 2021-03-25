@@ -355,7 +355,7 @@ void HybridLibrariesAligning::run(GraphPack& gp, const char*) {
                 gap_closing::GapTrackingListener mapping_listener(graph, gap_storage);
                 INFO("Processing reads from hybrid library " << lib_id);
 
-                SequenceMapperNotifier notifier(gp);
+                SequenceMapperNotifier notifier;
                 //FIXME pretty awful, would be much better if listeners were shared ptrs
                 LongReadMapper read_mapper(graph, path_storage, trusted_paths_container[lib_id], lib.type());
 
