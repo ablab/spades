@@ -7,6 +7,7 @@
 #pragma once
 
 #include "assembly_graph/core/graph.hpp"
+#include "binning_assignment_strategy.hpp"
 #include "pipeline/graph_pack.hpp"
 #include <unordered_set>
 #include <unordered_map>
@@ -56,6 +57,8 @@ class BinStats {
     void LoadBinning(const std::string& binning_file, const ScaffoldsPaths &scaffolds_paths);
     void WriteToBinningFile(const std::string& binning_file, const ScaffoldsPaths &scaffolds_paths,
                             const SoftBinsAssignment &edge_soft_labels, const io::IdMapper<std::string> &edge_mapper);
+    void AssignBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy);
+
 
     const debruijn_graph::Graph& graph() const { return graph_;  }
 

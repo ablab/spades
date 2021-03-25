@@ -149,6 +149,10 @@ BinStats::BinId BinStats::ChooseMajorBin(const std::vector<debruijn_graph::EdgeI
     return ChooseMajorBin(BinAssignment(path));
 }
 
+void BinStats::AssignBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy) {
+    assignment_strategy.AssignBins(soft_bins_assignment, this);
+}
+
 namespace bin_stats {
 std::ostream &operator<<(std::ostream &os, const BinStats &stats) {
     const auto &graph = stats.graph();
