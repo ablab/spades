@@ -47,10 +47,16 @@ public:
 
     typedef std::vector<SequenceMapperListener*> ListenersContainer;
 
-    SequenceMapperNotifier(const GraphPack &gp, size_t lib_count);
+    SequenceMapperNotifier(const GraphPack &gp, size_t lib_count = 1);
 
-    void Subscribe(size_t lib_index, SequenceMapperListener* listener);
+    void Subscribe(SequenceMapperListener* listener, size_t lib_index = 0);
 
+    template<class ReadType>
+    void ProcessLibrary(io::ReadStreamList<ReadType>& streams,
+                        const SequenceMapperT& mapper, size_t threads_count = 0) {
+        return ProcessLibrary(streams, 0, mapper, threads_count);
+    }
+    
     template<class ReadType>
     void ProcessLibrary(io::ReadStreamList<ReadType>& streams,
                         size_t lib_index, const SequenceMapperT& mapper, size_t threads_count = 0) {

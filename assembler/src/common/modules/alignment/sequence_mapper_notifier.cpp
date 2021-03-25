@@ -17,7 +17,7 @@ SequenceMapperNotifier::SequenceMapperNotifier(const GraphPack& gp, size_t lib_c
     , listeners_(lib_count) 
 {}
 
-void SequenceMapperNotifier::Subscribe(size_t lib_index, SequenceMapperListener* listener) {
+void SequenceMapperNotifier::Subscribe(SequenceMapperListener* listener, size_t lib_index) {
     VERIFY(lib_index < listeners_.size());
     listeners_[lib_index].push_back(listener);
 }

@@ -401,7 +401,6 @@ private:
         MismatchStatistics statistics(gp_);
         INFO("Potential mismatches collected");
 
-        SequenceMapperNotifier notifier(gp_, cfg::get().ds.reads.lib_count());
         auto& dataset = cfg::get_writable().ds;
         auto mapper = MapperInstance(gp_);
 
@@ -409,10 +408,11 @@ private:
             if (!dataset.reads[i].is_mismatch_correctable())
                 continue;
 
-            notifier.Subscribe(i, &statistics);
+            SequenceMapperNotifier notifier(gp_, cfg::get().ds.reads.lib_count());
+            notifier.Subscribe(&statistics);
             auto &reads = cfg::get_writable().ds.reads[i];
             auto single_streams = single_binary_readers(reads, /*followed by rc */true, /*binary*/true);
-            notifier.ProcessLibrary(single_streams, i, *mapper);
+            notifier.ProcessLibrary(single_streams, *mapper);
         }
 
         return CorrectAllEdges(statistics);

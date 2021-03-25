@@ -107,7 +107,7 @@ static void ProcessSingleReads(GraphPack &gp, DataSet &dataset,
                                bool use_binary = true,
                                bool map_paired = false) {
     SequencingLib &lib = dataset[ilib];
-    SequenceMapperNotifier notifier(gp, dataset.lib_count());
+    SequenceMapperNotifier notifier(gp);
 
     const auto &graph = gp.get<Graph>();
     auto& single_long_reads = gp.get_mutable<LongReadContainer<Graph>>()[ilib];
@@ -116,17 +116,17 @@ static void ProcessSingleReads(GraphPack &gp, DataSet &dataset,
 
     if (lib.is_contig_lib()) {
         //FIXME pretty awful, would be much better if listeners were shared ptrs
-        notifier.Subscribe(ilib, &read_mapper);
+        notifier.Subscribe(&read_mapper);
     }
 
     auto mapper_ptr = ChooseProperMapper(gp, lib);
     if (use_binary) {
         auto single_streams = single_binary_readers(lib, false, map_paired);
-        notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
+        notifier.ProcessLibrary(single_streams, *mapper_ptr);
     } else {
         auto single_streams = single_easy_readers(lib, false,
                                                   map_paired, /*handle Ns*/false);
-        notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
+        notifier.ProcessLibrary(single_streams, *mapper_ptr);
     }
 }
 

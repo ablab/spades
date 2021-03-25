@@ -475,16 +475,15 @@ void GapClosing::run(GraphPack &gp, const char *) {
         return;
     }
 
-    SequenceMapperNotifier notifier(gp, cfg::get().ds.reads.lib_count());
-
     auto& dataset = cfg::get_writable().ds;
     for (size_t i = 0; i < dataset.reads.lib_count(); ++i) {
         if (dataset.reads[i].type() != io::LibraryType::PairedEnd)
             continue;
 
-        notifier.Subscribe(i, &gcpif);
+        SequenceMapperNotifier notifier(gp);
+        notifier.Subscribe(&gcpif);
         io::BinaryPairedStreams paired_streams = paired_binary_readers(dataset.reads[i], false, 0, false);
-        notifier.ProcessLibrary(paired_streams, i, *gcpif.GetMapper());
+        notifier.ProcessLibrary(paired_streams, *gcpif.GetMapper());
 
         INFO("Initializing gap closer");
         GapCloser gap_closer(g, tips_paired_idx,

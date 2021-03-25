@@ -37,17 +37,17 @@ void SSEdgeSplit::run(GraphPack& gp, const char *) {
         }
 
         INFO("Running strand-specific edge splitter only for library # " << i);
-        SequenceMapperNotifier notifier(gp, cfg::get().ds.reads.lib_count());
+        SequenceMapperNotifier notifier(gp);
         const auto& params = cfg::get().ss_coverage_splitter;
         SSCoverageSplitter splitter(gp.get_mutable<Graph>(), params.bin_size, params.min_edge_len,
             params.min_edge_coverage, params.coverage_margin, params.min_flanking_coverage);
         SSBinCoverageFiller ss_coverage_filler(splitter);
-        notifier.Subscribe(i, &ss_coverage_filler);
+        notifier.Subscribe(&ss_coverage_filler);
 
         INFO("Selecting usual mapper");
         auto mapper_ptr = MapperInstance(gp);
         auto single_streams = io::single_binary_readers(reads, /*followed_by_rc*/ false, /*map_paired*/true);
-        notifier.ProcessLibrary(single_streams, i, *mapper_ptr);
+        notifier.ProcessLibrary(single_streams, *mapper_ptr);
 
         auto &index = gp.get_mutable<EdgeIndex<Graph>>();
         if (index.IsAttached())

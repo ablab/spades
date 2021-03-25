@@ -219,10 +219,10 @@ void AssertGraph(size_t k, const std::vector<MyPairedRead> &paired_reads, size_t
 
     io::ReadStreamList<io::PairedRead> paired_streams(std::move(single_stream_vector[0].recover<SquashingWrapper>().recover<RawStream>()));
 
-    SequenceMapperNotifier notifier(gp, 1);
+    SequenceMapperNotifier notifier(gp);
     LatePairedIndexFiller pif(graph, PairedReadCountWeight, 0, paired_indices[0]);
-    notifier.Subscribe(0, &pif);
-    notifier.ProcessLibrary(paired_streams, 0, *MapperInstance(gp));
+    notifier.Subscribe(&pif);
+    notifier.ProcessLibrary(paired_streams, *MapperInstance(gp));
     
     AssertPairInfo(graph, paired_indices[0], AddComplement(AddBackward(etalon_pair_info)));
 }

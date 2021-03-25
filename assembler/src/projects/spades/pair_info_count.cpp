@@ -203,16 +203,16 @@ bool CollectLibInformation(const GraphPack &gp,
     InsertSizeCounter hist_counter(gp.get<Graph>(), edge_length_threshold);
     EdgePairCounterFiller pcounter(cfg::get().max_threads);
 
-    SequenceMapperNotifier notifier(gp, cfg::get_writable().ds.reads.lib_count());
-    notifier.Subscribe(ilib, &hist_counter);
-    notifier.Subscribe(ilib, &pcounter);
+    SequenceMapperNotifier notifier(gp);
+    notifier.Subscribe(&hist_counter);
+    notifier.Subscribe(&pcounter);
 
     SequencingLib &reads = cfg::get_writable().ds.reads[ilib];
     auto &data = reads.data();
     auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, /*insert_size*/0,
                                                 /*include_merged*/true);
 
-    notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
+    notifier.ProcessLibrary(paired_streams, *ChooseProperMapper(gp, reads));
     //Check read length after lib processing since mate pairs a not used until this step
     VERIFY(reads.data().unmerged_read_length != 0);
 
@@ -232,7 +232,7 @@ bool CollectLibInformation(const GraphPack &gp,
     hist_counter.FindMean(data.mean_insert_size, data.insert_size_deviation, percentiles);
     hist_counter.FindMedian(data.median_insert_size, data.insert_size_mad,
                             data.insert_size_distribution);
-    if (data.median_insert_size < gp.k() + 2)
+    if (data.median_insert_size < double(gp.k() + 2))
         return false;
 
     std::tie(data.insert_size_left_quantile,
@@ -243,12 +243,12 @@ bool CollectLibInformation(const GraphPack &gp,
 }
 
 size_t ProcessSingleReads(GraphPack &gp, size_t ilib,
-                                 bool use_binary = true, bool map_paired = false) {
+                          bool use_binary = true, bool map_paired = false) {
     //FIXME make const
     auto& reads = cfg::get_writable().ds.reads[ilib];
     const auto &graph = gp.get<Graph>();
 
-    SequenceMapperNotifier notifier(gp, cfg::get_writable().ds.reads.lib_count());
+    SequenceMapperNotifier notifier(gp);
 
     auto &single_long_reads = gp.get_mutable<LongReadContainer<Graph>>()[ilib];
     auto& trusted_paths = gp.get_mutable<path_extend::TrustedPathsContainer>()[ilib];
@@ -256,7 +256,7 @@ size_t ProcessSingleReads(GraphPack &gp, size_t ilib,
 
     if (ShouldObtainSingleReadsPaths(ilib) || reads.is_contig_lib()) {
         //FIXME pretty awful, would be much better if listeners were shared ptrs
-        notifier.Subscribe(ilib, &read_mapper);
+        notifier.Subscribe(&read_mapper);
         cfg::get_writable().ds.reads[ilib].data().single_reads_mapped = true;
     }
 
@@ -265,7 +265,7 @@ size_t ProcessSingleReads(GraphPack &gp, size_t ilib,
     if (cfg::get().calculate_coverage_for_each_lib) {
         INFO("Will calculate lib coverage as well");
         map_paired = true;
-        notifier.Subscribe(ilib, &ss_coverage_filler);
+        notifier.Subscribe(&ss_coverage_filler);
     }
 
     auto mapper_ptr = ChooseProperMapper(gp, reads);
@@ -283,9 +283,9 @@ size_t ProcessSingleReads(GraphPack &gp, size_t ilib,
 
 
 void ProcessPairedReads(GraphPack &gp,
-                               std::unique_ptr<PairedInfoFilter> filter,
-                               unsigned filter_threshold,
-                               size_t ilib) {
+                        std::unique_ptr<PairedInfoFilter> filter,
+                        unsigned filter_threshold,
+                        size_t ilib) {
     SequencingLib &reads = cfg::get_writable().ds.reads[ilib];
     const auto &data = reads.data();
 
@@ -295,7 +295,7 @@ void ProcessPairedReads(GraphPack &gp,
         round_thr = unsigned(std::min(cfg::get().de.max_distance_coeff * data.insert_size_deviation * cfg::get().de.rounding_coeff,
                                       cfg::get().de.rounding_thr));
 
-    SequenceMapperNotifier notifier(gp, cfg::get_writable().ds.reads.lib_count());
+    SequenceMapperNotifier notifier(gp);
     INFO("Left insert size quantile " << data.insert_size_left_quantile <<
          ", right insert size quantile " << data.insert_size_right_quantile <<
          ", filtering threshold " << filter_threshold <<
@@ -316,11 +316,11 @@ void ProcessPairedReads(GraphPack &gp,
 
     using Indices = omnigraph::de::UnclusteredPairedInfoIndicesT<Graph>;
     LatePairedIndexFiller pif(gp.get<Graph>(), weight, round_thr, gp.get_mutable<Indices>()[ilib]);
-    notifier.Subscribe(ilib, &pif);
+    notifier.Subscribe(&pif);
 
     auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, (size_t) data.mean_insert_size,
                                                 /*include merged*/true);
-    notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
+    notifier.ProcessLibrary(paired_streams, *ChooseProperMapper(gp, reads));
 }
 
 } // namespace
@@ -389,13 +389,13 @@ void PairInfoCount::run(GraphPack &gp, const char *) {
 
                     INFO("Filtering data for library #" << i);
                     {
-                        SequenceMapperNotifier notifier(gp, cfg::get_writable().ds.reads.lib_count());
+                        SequenceMapperNotifier notifier(gp);
                         DEFilter filter_counter(*filter, graph);
-                        notifier.Subscribe(i, &filter_counter);
+                        notifier.Subscribe(&filter_counter);
 
                         VERIFY(lib.data().unmerged_read_length != 0);
                         auto reads = paired_binary_readers(lib, /*followed by rc*/false, 0, /*include merged*/true);
-                        notifier.ProcessLibrary(reads, i, *ChooseProperMapper(gp, lib));
+                        notifier.ProcessLibrary(reads, *ChooseProperMapper(gp, lib));
                     }
                 }
 

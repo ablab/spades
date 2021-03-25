@@ -355,19 +355,19 @@ void HybridLibrariesAligning::run(GraphPack& gp, const char*) {
                 gap_closing::GapTrackingListener mapping_listener(graph, gap_storage);
                 INFO("Processing reads from hybrid library " << lib_id);
 
-                SequenceMapperNotifier notifier(gp, cfg::get_writable().ds.reads.lib_count());
+                SequenceMapperNotifier notifier(gp);
                 //FIXME pretty awful, would be much better if listeners were shared ptrs
                 LongReadMapper read_mapper(graph, path_storage, trusted_paths_container[lib_id], lib.type());
 
-                notifier.Subscribe(lib_id, &mapping_listener);
-                notifier.Subscribe(lib_id, &read_mapper);
+                notifier.Subscribe(&mapping_listener);
+                notifier.Subscribe(&read_mapper);
 
                 //TODO think of N's proper handling
                 // (currently handled by BasicSequenceMapper and concatenated in single MappingPath)
                 auto single_streams = single_easy_readers(lib, false,
                                                           /*map_paired*/false, /*handle Ns*/false);
 
-                notifier.ProcessLibrary(single_streams, lib_id, *MapperInstance(gp));
+                notifier.ProcessLibrary(single_streams, *MapperInstance(gp));
                 cfg::get_writable().ds.reads[lib_id].data().single_reads_mapped = true;
 
                 INFO("Finished processing long reads from lib " << lib_id);
