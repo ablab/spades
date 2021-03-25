@@ -8,4 +8,5 @@
 project(paired_info CXX)
 
 add_library(paired_info STATIC
-        distance_estimation.cpp weighted_distance_estimation.cpp smoothing_distance_estimation.cpp)
+            distance_estimation.cpp weighted_distance_estimation.cpp smoothing_distance_estimation.cpp)
+target_link_libraries(paired_info modules)
