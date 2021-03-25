@@ -5,8 +5,6 @@
 //***************************************************************************
 
 #pragma once
-#include "assembly_graph/index/edge_multi_index.hpp"
-
 #include "modules/alignment/bwa_sequence_mapper.hpp"
 #include "modules/alignment/gap_info.hpp"
 
