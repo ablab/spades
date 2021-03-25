@@ -25,7 +25,7 @@ void MajorityLengthBinningAssignmentStrategy::AssignBins(const SoftBinsAssignmen
         bin_stats.unbinned_edges().erase(e);
 }
 
-std::unordered_set<BinStats::BinId> MajorityLengthBinningAssignmentStrategy::ChooseMostProbableBins(const std::vector<double>& labels_probabilities) const {
+std::unordered_set<BinStats::BinId> MajorityLengthBinningAssignmentStrategy::ChooseMostProbableBins(const std::vector<double>& labels_probabilities) {
     double max_probability = 0.0;
     for (double p : labels_probabilities)
         max_probability = std::max(max_probability, p);

@@ -15,6 +15,6 @@ public:
     void AssignBins(const SoftBinsAssignment& soft_bins_assignment, BinStats& bin_stats) const override;
 
 private:
-    std::unordered_set<bin_stats::BinStats::BinId> ChooseMostProbableBins(const std::vector<double>& labels_probabilities) const;
+    static std::unordered_set<bin_stats::BinStats::BinId> ChooseMostProbableBins(const std::vector<double>& labels_probabilities) ;
 };
 }
