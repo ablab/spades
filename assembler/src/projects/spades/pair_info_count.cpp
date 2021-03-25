@@ -197,8 +197,8 @@ bool ShouldObtainSingleReadsPaths(size_t ilib) {
 }
 
 bool CollectLibInformation(const GraphPack &gp,
-                           size_t &edgepairs,
-                           size_t ilib, size_t edge_length_threshold) {
+                           size_t &edgepairs, SequencingLib &reads,
+                           size_t edge_length_threshold) {
     INFO("Estimating insert size (takes a while)");
     InsertSizeCounter hist_counter(gp.get<Graph>(), edge_length_threshold);
     EdgePairCounterFiller pcounter(cfg::get().max_threads);
@@ -207,7 +207,6 @@ bool CollectLibInformation(const GraphPack &gp,
     notifier.Subscribe(&hist_counter);
     notifier.Subscribe(&pcounter);
 
-    SequencingLib &reads = cfg::get_writable().ds.reads[ilib];
     auto &data = reads.data();
     auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, /*insert_size*/0,
                                                 /*include_merged*/true);
@@ -282,18 +281,14 @@ size_t ProcessSingleReads(GraphPack &gp, size_t ilib,
 }
 
 
-void ProcessPairedReads(GraphPack &gp,
-                        std::unique_ptr<PairedInfoFilter> filter,
-                        unsigned filter_threshold,
-                        size_t ilib) {
-    SequencingLib &reads = cfg::get_writable().ds.reads[ilib];
-    const auto &data = reads.data();
+using PairedIndex = omnigraph::de::UnclusteredPairedInfoIndexT<Graph>;
 
-    unsigned round_thr = 0;
-    // Do not round if filtering is disabled
-    if (filter)
-        round_thr = unsigned(std::min(cfg::get().de.max_distance_coeff * data.insert_size_deviation * cfg::get().de.rounding_coeff,
-                                      cfg::get().de.rounding_thr));
+void ProcessPairedReads(GraphPack &gp,
+                        SequencingLib &reads,
+                        PairedIndex &index,
+                        std::unique_ptr<PairedInfoFilter> filter, unsigned filter_threshold,
+                        unsigned round_thr = 0) {
+    const auto &data = reads.data();
 
     SequenceMapperNotifier notifier(gp);
     INFO("Left insert size quantile " << data.insert_size_left_quantile <<
@@ -314,8 +309,7 @@ void ProcessPairedReads(GraphPack &gp,
         };
     }
 
-    using Indices = omnigraph::de::UnclusteredPairedInfoIndicesT<Graph>;
-    LatePairedIndexFiller pif(gp.get<Graph>(), weight, round_thr, gp.get_mutable<Indices>()[ilib]);
+    LatePairedIndexFiller pif(gp.get<Graph>(), weight, round_thr, index);
     notifier.Subscribe(&pif);
 
     auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, (size_t) data.mean_insert_size,
@@ -353,7 +347,7 @@ void PairInfoCount::run(GraphPack &gp, const char *) {
                 size_t k = cfg::get().K;
 
                 size_t edgepairs = 0;
-                if (!CollectLibInformation(gp, edgepairs, i, edge_length_threshold)) {
+                if (!CollectLibInformation(gp, edgepairs, lib, edge_length_threshold)) {
                     cfg::get_writable().ds.reads[i].data().mean_insert_size = 0.0;
                     WARN("Unable to estimate insert size for paired library #" << i);
                     if (rl > 0 && rl <= k) {
@@ -402,7 +396,16 @@ void PairInfoCount::run(GraphPack &gp, const char *) {
                 INFO("Mapping library #" << i);
                 if (lib.data().mean_insert_size != 0.0) {
                     INFO("Mapping paired reads (takes a while) ");
-                    ProcessPairedReads(gp, std::move(filter), filter_threshold, i);
+                    using Indices = omnigraph::de::UnclusteredPairedInfoIndicesT<Graph>;
+
+                    unsigned round_thr = 0;
+                    // Do not round if filtering is disabled
+                    if (filter)
+                        round_thr = unsigned(std::min(cfg::get().de.max_distance_coeff * lib.data().insert_size_deviation * cfg::get().de.rounding_coeff,
+                                                      cfg::get().de.rounding_thr));
+
+                    ProcessPairedReads(gp, lib, gp.get_mutable<Indices>()[i],
+                                       std::move(filter), filter_threshold, round_thr);
                 }
             }
 
