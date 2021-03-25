@@ -150,7 +150,7 @@ BinStats::BinId BinStats::ChooseMajorBin(const std::vector<debruijn_graph::EdgeI
 }
 
 void BinStats::AssignBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy) {
-    assignment_strategy.AssignBins(soft_bins_assignment, this);
+    assignment_strategy.AssignBins(soft_bins_assignment, *this);
 }
 
 namespace bin_stats {
