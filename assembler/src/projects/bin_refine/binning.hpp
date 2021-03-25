@@ -24,6 +24,8 @@ class IdMapper;
 
 namespace bin_stats {
 
+class BinningAssignmentStrategy;
+
 class BinStats;
 
 struct EdgeLabels {
@@ -49,7 +51,7 @@ class BinStats {
     using ScaffoldsPaths = std::unordered_map<ScaffoldName, std::unordered_set<debruijn_graph::EdgeId>>;
 
     static constexpr BinId UNBINNED = BinId(-1);
-    
+
     explicit BinStats(const debruijn_graph::Graph& g)
             : graph_(g) {}
 
@@ -72,7 +74,7 @@ class BinStats {
     const auto& bin_labels() const { return bin_labels_; }
 
     friend std::ostream &operator<<(std::ostream &os, const BinStats &stats);
-private:
+ private:
     void ScaffoldsToEdges(const ScaffoldsPaths &scaffolds_paths);
 
     const debruijn_graph::Graph& graph_;
