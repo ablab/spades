@@ -130,11 +130,11 @@ size_t ProcessSingleReads(GraphPack &gp, size_t ilib,
     auto mapper_ptr = ChooseProperMapper(gp, reads);
     if (use_binary) {
         auto single_streams = single_binary_readers(reads, false, map_paired);
-        notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
+        notifier.ProcessLibrary(single_streams, *mapper_ptr);
     } else {
         auto single_streams = single_easy_readers(reads, false,
                                                   map_paired, /*handle Ns*/false);
-        notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
+        notifier.ProcessLibrary(single_streams, *mapper_ptr);
     }
 
     return single_long_reads.size();

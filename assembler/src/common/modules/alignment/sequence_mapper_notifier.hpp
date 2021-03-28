@@ -56,7 +56,8 @@ public:
                         const SequenceMapperT& mapper, size_t threads_count = 0) {
         return ProcessLibrary(streams, 0, mapper, threads_count);
     }
-    
+
+  private:
     template<class ReadType>
     void ProcessLibrary(io::ReadStreamList<ReadType>& streams,
                         size_t lib_index, const SequenceMapperT& mapper, size_t threads_count = 0) {
