@@ -86,6 +86,8 @@ private:
                     // Additionally round, if necessary
                     if (round_distance_ > 1)
                         edge_distance = int(std::round(edge_distance / double(round_distance_))) * round_distance_;
+                    else if (round_distance_ == std::numeric_limits<decltype(round_distance_)>::max())
+                        edge_distance = 0;
 
                     buffer_pi_.Add(mapping_edge_1.first, mapping_edge_2.first,
                                    omnigraph::de::RawPoint(edge_distance, weight));
