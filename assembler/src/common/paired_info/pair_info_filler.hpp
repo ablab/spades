@@ -29,7 +29,8 @@ public:
     LatePairedIndexFiller(const Graph &graph, WeightF weight_f,
                           unsigned round_distance,
                           omnigraph::de::UnclusteredPairedInfoIndexT<Graph>& paired_index)
-            : weight_f_(std::move(weight_f)),
+            : graph_(graph),
+              weight_f_(std::move(weight_f)),
               paired_index_(paired_index),
               buffer_pi_(graph),
               round_distance_(round_distance) {}
@@ -85,7 +86,7 @@ private:
 
                     // Additionally round, if necessary
                     if (round_distance_ == std::numeric_limits<decltype(round_distance_)>::max())
-                        edge_distance = 0;
+                        edge_distance = int(graph_.length(mapping_edge_1.first));
                     else if (round_distance_ > 1)
                         edge_distance = int(std::round(edge_distance / double(round_distance_))) * round_distance_;
 
@@ -98,6 +99,7 @@ private:
     }
 
 private:
+    const Graph &graph_;
     WeightF weight_f_;
     omnigraph::de::UnclusteredPairedInfoIndexT<Graph>& paired_index_;
     omnigraph::de::ConcurrentPairedInfoBuffer<Graph> buffer_pi_;
