@@ -31,6 +31,7 @@
 
 #include "version.hpp"
 
+#include "threadpool/threadpool.hpp"
 #include <clipp/clipp.h>
 
 #include <sys/types.h>
@@ -210,10 +211,13 @@ int main(int argc, char* argv[]) {
             paired_info::PairedIndex index(graph);
             auto mapper = std::make_shared<alignment::BWAReadMapper<Graph>>(graph);
 
+            std::unique_ptr<ThreadPool::ThreadPool> pool;
+            if (cfg.nthreads > 1)
+                pool = std::make_unique<ThreadPool::ThreadPool>(cfg.nthreads);
+            io::ReadConverter::ConvertToBinary(lib, pool.get());
             paired_info::FillPairedIndex(graph,
                                          *mapper,
-                                         lib, index, { }, 0, std::numeric_limits<unsigned>::max(),
-                                         false);
+                                         lib, index, { }, 0, std::numeric_limits<unsigned>::max());
 
             INFO("Saving to " << cfg.outfile);
 
