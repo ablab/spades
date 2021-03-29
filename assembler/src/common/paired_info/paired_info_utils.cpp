@@ -130,7 +130,7 @@ void FillPairedIndex(const Graph &graph,
                      SequencingLib &reads,
                      PairedIndex &index,
                      std::unique_ptr<PairedInfoFilter> filter, unsigned filter_threshold,
-                     unsigned round_thr) {
+                     unsigned round_thr, bool use_binary) {
     const auto &data = reads.data();
 
     SequenceMapperNotifier notifier;
@@ -155,9 +155,15 @@ void FillPairedIndex(const Graph &graph,
     LatePairedIndexFiller pif(graph, weight, round_thr, index);
     notifier.Subscribe(&pif);
 
-    auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, (size_t) data.mean_insert_size,
-                                                /*include merged*/true);
-    notifier.ProcessLibrary(paired_streams, mapper);
+    if (use_binary) {
+        auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, (size_t) data.mean_insert_size,
+                                                    /*include merged*/true);
+        notifier.ProcessLibrary(paired_streams, mapper);
+    } else {
+        auto paired_streams = paired_easy_readers(reads, /*followed by rc*/false,
+                                                  (size_t)data.mean_insert_size, /*use_orientation*/false);
+        notifier.ProcessLibrary(paired_streams, mapper);
+    }
 }
 
 class DEFilter : public SequenceMapperListener {

@@ -17,6 +17,7 @@
 
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 
+#include "paired_info/paired_info_utils.hpp"
 #include "utils/logger/log_writers.hpp"
 #include "utils/logger/logger.hpp"
 #include "utils/segfault_handler.hpp"
@@ -35,6 +36,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <limits>
 #include <string>
 #include <fstream>
 
@@ -71,7 +73,7 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
       cfg.file << value("dataset description (in YAML)"),
       cfg.graph << value("graph (in GFA)"),
       cfg.outfile << value("output filename"),
-      cfg.libindex << value("library index (0-based, default: 0)"),
+      (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
       (option("--tmp-dir") & value("dir", cfg.tmpdir)) % "scratch directory to use"
@@ -169,9 +171,6 @@ int main(int argc, char* argv[]) {
         // FIXME: Get rid of this "/" junk
         debruijn_graph::config::init_libs(dataset, nthreads, tmpdir + "/");
 
-        gp.get_mutable<KmerMapper<Graph>>().Attach();
-        gp.EnsureBasicMapping();
-
         auto &lib = dataset[cfg.libindex];
 
         if (lib.is_contig_lib() || lib.is_long_read_lib() || lib.is_single()) {
@@ -180,7 +179,7 @@ int main(int argc, char* argv[]) {
 
             if (lib.is_contig_lib() || lib.is_single()) {
                 INFO("Mapping sequencing library #" << cfg.libindex);
-                ProcessContigs(gp.get<Graph>(),
+                ProcessContigs(graph,
                                lib,
                                path_storage,
                                trusted_paths);
@@ -206,6 +205,24 @@ int main(int argc, char* argv[]) {
                 idx += 1;
                 gfa_writer.WritePaths(entry.path(), std::string("PATH_") + std::to_string(idx) + "_length_" + std::to_string(entry.path().size()) + "_weigth_" + std::to_string(entry.weight()),
                                       "Z:W:" + std::to_string(entry.weight()));
+            }
+        } else if (lib.is_paired()) {
+            paired_info::PairedIndex index(graph);
+            auto mapper = std::make_shared<alignment::BWAReadMapper<Graph>>(graph);
+
+            paired_info::FillPairedIndex(graph,
+                                         *mapper,
+                                         lib, index, { }, 0, std::numeric_limits<unsigned>::max(),
+                                         false);
+
+            INFO("Saving to " << cfg.outfile);
+
+            std::ofstream os(cfg.outfile);
+            for (EdgeId e : graph.edges()) {
+                for (auto entry : index.Get(e)) {
+                    for (const auto &point : entry.second)
+                        os << e << "\t" << entry.first << "\t" << point << "\n";
+                }
             }
         }
     } catch (const std::string &s) {

@@ -22,6 +22,16 @@ PairedStream paired_easy_reader(const SequencingLibraryBase &lib,
                                 bool handle_Ns,
                                 FileReadFlags flags,
                                 ThreadPool::ThreadPool *pool) {
+    return MultifileWrap<PairedRead>(paired_easy_readers(lib, followed_by_rc, insert_size,
+                                                         use_orientation, flags, pool));
+}
+
+ReadStreamList<PairedRead> paired_easy_readers(const SequencingLibraryBase &lib,
+                                               bool followed_by_rc,
+                                               size_t insert_size,
+                                               bool use_orientation,
+                                               FileReadFlags flags,
+                                               ThreadPool::ThreadPool *pool) {
     ReadStreamList<PairedRead> streams;
     for (const auto &read_pair : lib.paired_reads()) {
         streams.push_back(PairedEasyStream(read_pair.first, read_pair.second, followed_by_rc, insert_size,
@@ -32,7 +42,7 @@ PairedStream paired_easy_reader(const SequencingLibraryBase &lib,
         streams.push_back(PairedEasyStream(read_pair, followed_by_rc, insert_size,
                                            use_orientation, handle_Ns, lib.orientation(), flags, pool));
     }
-    return MultifileWrap<PairedRead>(std::move(streams));
+    return streams;
 }
 
 ReadStreamList<SingleRead> single_easy_readers(const SequencingLibraryBase &lib,

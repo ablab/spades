@@ -13,6 +13,12 @@ namespace io {
 
 class SequencingLibraryBase;
 
+ReadStreamList<PairedRead> paired_easy_readers(const SequencingLibraryBase &lib,
+                                               bool followed_by_rc,
+                                               size_t insert_size,
+                                               bool use_orientation = true,
+                                               FileReadFlags flags = FileReadFlags(),
+                                               ThreadPool::ThreadPool *pool = nullptr);
 PairedStream paired_easy_reader(const SequencingLibraryBase &lib,
                                 bool followed_by_rc,
                                 size_t insert_size,
@@ -20,6 +26,7 @@ PairedStream paired_easy_reader(const SequencingLibraryBase &lib,
                                 bool handle_Ns=true,
                                 FileReadFlags flags = FileReadFlags(),
                                 ThreadPool::ThreadPool *pool = nullptr);
+
 ReadStreamList<SingleRead> single_easy_readers(const SequencingLibraryBase &lib,
                                                bool followed_by_rc,
                                                bool including_paired_reads,
@@ -32,6 +39,7 @@ SingleStream single_easy_reader(const SequencingLibraryBase &lib,
                                 bool handle_Ns = true,
                                 FileReadFlags flags = FileReadFlags(),
                                 ThreadPool::ThreadPool *pool = nullptr);
+
 ReadStreamList<SingleRead> merged_easy_readers(const SequencingLibraryBase &lib,
                                                bool followed_by_rc,
                                                bool handle_Ns = true,

@@ -32,7 +32,7 @@ void FillPairedIndex(const debruijn_graph::Graph &gp,
                      SequencingLib &reads,
                      PairedIndex &index,
                      std::unique_ptr<PairedInfoFilter> filter, unsigned filter_threshold,
-                     unsigned round_thr = 0);
+                     unsigned round_thr = 0, bool use_binary = true);
 
 std::unique_ptr<PairedInfoFilter> FillEdgePairFilter(const debruijn_graph::Graph &gp,
                                                      const debruijn_graph::SequenceMapper<debruijn_graph::Graph> &mapper,
