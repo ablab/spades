@@ -196,6 +196,10 @@ public:
                type_ == io::LibraryType::HQMatePairs;
     }
 
+    bool is_single() const {
+        return type_ == io::LibraryType::SingleReads;
+    }
+
     bool is_mate_pair() const {
         return type_ == io::LibraryType::MatePairs ||
                type_ == io::LibraryType::HQMatePairs;

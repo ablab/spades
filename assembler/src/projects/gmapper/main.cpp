@@ -174,12 +174,12 @@ int main(int argc, char* argv[]) {
 
         auto &lib = dataset[cfg.libindex];
 
-        if (lib.is_contig_lib() || lib.is_long_read_lib()) {
+        if (lib.is_contig_lib() || lib.is_long_read_lib() || lib.is_single()) {
             auto& path_storage = gp.get_mutable<LongReadContainer<Graph>>()[cfg.libindex];
             auto& trusted_paths = gp.get_mutable<path_extend::TrustedPathsContainer>()[cfg.libindex];
 
-            if (lib.is_contig_lib()) {
-                INFO("Mapping contigs library #" << cfg.libindex);
+            if (lib.is_contig_lib() || lib.is_single()) {
+                INFO("Mapping sequencing library #" << cfg.libindex);
                 ProcessContigs(gp.get<Graph>(),
                                lib,
                                path_storage,
@@ -190,7 +190,7 @@ int main(int argc, char* argv[]) {
                                    path_storage, gap_storage,
                                    nthreads, debruijn_graph::config::pacbio_processor());
             }
-                
+
             INFO("Saving to " << cfg.outfile);
 
             std::ofstream os(cfg.outfile);
