@@ -51,7 +51,8 @@ using namespace debruijn_graph;
 struct gcfg {
     gcfg()
         : k(21), tmpdir("tmp"), outfile("-"),
-          nthreads(omp_get_max_threads() / 2 + 1)
+          nthreads(omp_get_max_threads() / 2 + 1),
+          libindex(0)
     {}
 
     unsigned k;
@@ -60,6 +61,7 @@ struct gcfg {
     std::string tmpdir;
     std::string outfile;
     unsigned nthreads;
+    unsigned libindex;
 };
 
 void process_cmdline(int argc, char **argv, gcfg &cfg) {
@@ -69,6 +71,7 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
       cfg.file << value("dataset description (in YAML)"),
       cfg.graph << value("graph (in GFA)"),
       cfg.outfile << value("output filename"),
+      cfg.libindex << value("library index (0-based, default: 0)"),
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
       (option("--tmp-dir") & value("dir", cfg.tmpdir)) % "scratch directory to use"
@@ -85,8 +88,7 @@ typedef io::DataSet<debruijn_graph::config::LibraryData> DataSet;
 typedef io::SequencingLibrary<debruijn_graph::config::LibraryData> SequencingLib;
 
 std::shared_ptr<SequenceMapper<Graph>> ChooseProperMapper(const GraphPack& gp,
-                                                          const SequencingLib& library) 
-{
+                                                          const SequencingLib& library) {
     const auto &graph = gp.get<Graph>();
     if (library.type() == io::LibraryType::MatePairs) {
         INFO("Mapping mate pairs using BWA-mem mapper");
@@ -102,44 +104,19 @@ std::shared_ptr<SequenceMapper<Graph>> ChooseProperMapper(const GraphPack& gp,
     return MapperInstance(gp);
 }
 
-static void ProcessSingleReads(GraphPack &gp, DataSet &dataset,
-                               size_t ilib,
-                               bool use_binary = true,
-                               bool map_paired = false) {
-    SequencingLib &lib = dataset[ilib];
+static void ProcessContigs(const Graph &graph,
+                           SequencingLib &lib,
+                           PathStorage<Graph> &single_long_reads,
+                           path_extend::GappedPathStorage &trusted_paths) {
     SequenceMapperNotifier notifier;
-
-    const auto &graph = gp.get<Graph>();
-    auto& single_long_reads = gp.get_mutable<LongReadContainer<Graph>>()[ilib];
-    auto& trusted_paths = gp.get_mutable<path_extend::TrustedPathsContainer>()[ilib];
     LongReadMapper read_mapper(graph, single_long_reads, trusted_paths, lib.type());
+    notifier.Subscribe(&read_mapper);
 
-    if (lib.is_contig_lib()) {
-        //FIXME pretty awful, would be much better if listeners were shared ptrs
-        notifier.Subscribe(&read_mapper);
-    }
-
-    auto mapper_ptr = ChooseProperMapper(gp, lib);
-    if (use_binary) {
-        auto single_streams = single_binary_readers(lib, false, map_paired);
-        notifier.ProcessLibrary(single_streams, *mapper_ptr);
-    } else {
-        auto single_streams = single_easy_readers(lib, false,
-                                                  map_paired, /*handle Ns*/false);
-        notifier.ProcessLibrary(single_streams, *mapper_ptr);
-    }
+    INFO("Mapping using BWA-mem mapper");
+    auto mapper_ptr = std::make_shared<alignment::BWAReadMapper<Graph>>(graph);
+    auto single_streams = single_easy_readers(lib, false, false, /*handle Ns*/ false);
+    notifier.ProcessLibrary(single_streams, *mapper_ptr);
 }
-
-#if 0
-static void ProcessPairedReads(GraphPack &gp,
-                               DataSet &dataset, size_t ilib) {
-    SequencingLib &lib = dataset[ilib];
-    SequenceMapperNotifier notifier(gp, dataset.lib_count());
-
-    auto paired_streams = paired_binary_readers(lib, /*followed by rc*/false, 0, /*include merged*/true);
-    notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, lib));
-}
-#endif
 
 void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::string &filename,
                io::IdMapper<std::string> *id_mapper) {
@@ -179,19 +156,15 @@ int main(int argc, char* argv[]) {
         DataSet dataset;
         dataset.load(dataset_desc);
 
+        CHECK_FATAL_ERROR(cfg.libindex < dataset.lib_count(), "invalid library index");
+
         debruijn_graph::GraphPack gp(k, tmpdir, dataset.lib_count());
         std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
 
         const auto &graph = gp.get<Graph>();
         INFO("Loading de Bruijn graph from " << cfg.graph);
         LoadGraph(gp.get_mutable<Graph>(), cfg.graph, id_mapper.get());
-        {
-            size_t sz = 0;
-            for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it)
-                sz += 1;
-
-            INFO("Graph loaded. Total vertices: " << graph.size() << " Total edges: " << sz);
-        }
+        INFO("Graph loaded. Total vertices: " << graph.size() << ", total edges: " << graph.e_size());
 
         // FIXME: Get rid of this "/" junk
         debruijn_graph::config::init_libs(dataset, nthreads, tmpdir + "/");
@@ -199,24 +172,25 @@ int main(int argc, char* argv[]) {
         gp.get_mutable<KmerMapper<Graph>>().Attach();
         gp.EnsureBasicMapping();
 
-        for (size_t i = 0; i < dataset.lib_count(); ++i) {
-            auto &lib = dataset[i];
-            auto& path_storage = gp.get_mutable<LongReadContainer<Graph>>()[i];
+        auto &lib = dataset[cfg.libindex];
+
+        if (lib.is_contig_lib() || lib.is_long_read_lib()) {
+            auto& path_storage = gp.get_mutable<LongReadContainer<Graph>>()[cfg.libindex];
+            auto& trusted_paths = gp.get_mutable<path_extend::TrustedPathsContainer>()[cfg.libindex];
+
             if (lib.is_contig_lib()) {
-                INFO("Mapping contigs library #" << i);
-                ProcessSingleReads(gp, dataset, i, false);
-            } else if (lib.is_long_read_lib()) {
+                INFO("Mapping contigs library #" << cfg.libindex);
+                ProcessContigs(gp.get<Graph>(),
+                               lib,
+                               path_storage,
+                               trusted_paths);
+            } else {
                 gap_closing::GapStorage gap_storage(graph);
-
-                debruijn_graph::config::pacbio_processor pb;
-
                 PacbioAlignLibrary(graph, lib,
                                    path_storage, gap_storage,
-                                   nthreads, pb);
-            } else {
-                WARN("Could only map contigs or long reads so far, skipping the library");
-                continue;
+                                   nthreads, debruijn_graph::config::pacbio_processor());
             }
+                
             INFO("Saving to " << cfg.outfile);
 
             std::ofstream os(cfg.outfile);
@@ -234,7 +208,6 @@ int main(int argc, char* argv[]) {
                                       "Z:W:" + std::to_string(entry.weight()));
             }
         }
-
     } catch (const std::string &s) {
         std::cerr << s << std::endl;
         return EINTR;
