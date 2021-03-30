@@ -90,23 +90,6 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
 typedef io::DataSet<debruijn_graph::config::LibraryData> DataSet;
 typedef io::SequencingLibrary<debruijn_graph::config::LibraryData> SequencingLib;
 
-std::shared_ptr<SequenceMapper<Graph>> ChooseProperMapper(const GraphPack& gp,
-                                                          const SequencingLib& library) {
-    const auto &graph = gp.get<Graph>();
-    if (library.type() == io::LibraryType::MatePairs) {
-        INFO("Mapping mate pairs using BWA-mem mapper");
-        return std::make_shared<alignment::BWAReadMapper<Graph>>(graph);
-    }
-
-    if (library.data().unmerged_read_length < gp.k() && library.type() == io::LibraryType::PairedEnd) {
-        INFO("Mapping PE reads shorter than K with BWA-mem mapper");
-        return std::make_shared<alignment::BWAReadMapper<Graph>>(graph);
-    }
-
-    INFO("Selecting usual mapper");
-    return MapperInstance(gp);
-}
-
 static void ProcessContigs(const Graph &graph,
                            SequencingLib &lib,
                            PathStorage<Graph> &single_long_reads,
@@ -116,9 +99,9 @@ static void ProcessContigs(const Graph &graph,
     notifier.Subscribe(&read_mapper);
 
     INFO("Mapping using BWA-mem mapper");
-    auto mapper_ptr = std::make_shared<alignment::BWAReadMapper<Graph>>(graph);
+    alignment::BWAReadMapper<Graph> mapper(graph);
     auto single_streams = single_easy_readers(lib, false, false, /*handle Ns*/ false);
-    notifier.ProcessLibrary(single_streams, *mapper_ptr);
+    notifier.ProcessLibrary(single_streams, mapper);
 }
 
 void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::string &filename,
@@ -209,14 +192,14 @@ int main(int argc, char* argv[]) {
             }
         } else if (lib.is_paired()) {
             paired_info::PairedIndex index(graph);
-            auto mapper = std::make_shared<alignment::BWAReadMapper<Graph>>(graph);
+            alignment::BWAReadMapper<Graph> mapper(graph);
 
             std::unique_ptr<ThreadPool::ThreadPool> pool;
             if (cfg.nthreads > 1)
                 pool = std::make_unique<ThreadPool::ThreadPool>(cfg.nthreads);
             io::ReadConverter::ConvertToBinary(lib, pool.get());
             paired_info::FillPairedIndex(graph,
-                                         *mapper,
+                                         mapper,
                                          lib, index, { }, 0, std::numeric_limits<unsigned>::max());
 
             INFO("Saving to " << cfg.outfile);
