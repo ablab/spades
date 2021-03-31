@@ -58,6 +58,7 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
             skip_secondary_ = false;
             break;
         case AlignmentMode::HiC:
+            INFO("Setting BWA alignment mode to 'hic'");
             // -M5
             // FIXME: Do we realy need -M here?
             memopt_->flag |= MEM_F_NO_MULTI;  // -M
@@ -315,7 +316,7 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
         // FIXME: what about other scoring systems?
         double qual = double(a.score)/double(a.qe - a.qb);
         DEBUG("Edge: "<< ids_[a.rid] << " quality from score: " << qual);
-        
+
         if (!is_rev) {
             res.push_back(ids_[a.rid],
                           { { (size_t)a.qb, initial_range_end },
@@ -348,7 +349,7 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::AlignSequence(const Seq
 
     free(ar.a);
     delete[] seq;
-    
+
     return res;
 }
 
