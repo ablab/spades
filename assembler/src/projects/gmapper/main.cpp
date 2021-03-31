@@ -18,6 +18,7 @@
 
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 
+#include "paired_info/index_point.hpp"
 #include "paired_info/paired_info_utils.hpp"
 #include "utils/logger/log_writers.hpp"
 #include "utils/logger/logger.hpp"
@@ -57,7 +58,8 @@ struct gcfg {
         : k(21), tmpdir("tmp"), outfile("-"),
           nthreads(omp_get_max_threads() / 2 + 1),
           libindex(0),
-          mode(alignment::BWAIndex::AlignmentMode::Default)
+          mode(alignment::BWAIndex::AlignmentMode::Default),
+          hic(false)
     {}
 
     unsigned k;
@@ -68,6 +70,7 @@ struct gcfg {
     unsigned nthreads;
     unsigned libindex;
     alignment::BWAIndex::AlignmentMode mode;
+    bool hic;
 };
 
 void process_cmdline(int argc, char **argv, gcfg &cfg) {
@@ -81,9 +84,12 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
       (option("--tmp-dir") & value("dir", cfg.tmpdir)) % "scratch directory to use",
-      (with_prefix("-X", option("pacbio").set(cfg.mode, alignment::BWAIndex::AlignmentMode::PacBio) |
-                         option("intractg").set(cfg.mode, alignment::BWAIndex::AlignmentMode::IntraCtg) |
-                         option("hic").set(cfg.mode, alignment::BWAIndex::AlignmentMode::HiC)) % "inner alignment mode (for paired-end / contigs)")
+      (option("--hic").set(cfg.hic)) % "enable HiC-aware paired-end processing (implies -Xhic unless mode is specified)",
+      (with_prefix("-X",
+                   option("illumina").set(cfg.mode, alignment::BWAIndex::AlignmentMode::Illumina) |
+                   option("pacbio").set(cfg.mode, alignment::BWAIndex::AlignmentMode::PacBio) |
+                   option("intractg").set(cfg.mode, alignment::BWAIndex::AlignmentMode::IntraCtg) |
+                   option("hic").set(cfg.mode, alignment::BWAIndex::AlignmentMode::HiC)) % "inner alignment mode (for paired-end / contigs)")
   );
 
   auto result = parse(argc, argv, cli);
@@ -133,6 +139,9 @@ int main(int argc, char* argv[]) {
     srandom(42);
 
     process_cmdline(argc, argv, cfg);
+    // Enforce HiC alignment mode by default
+    if (cfg.hic && cfg.mode == alignment::BWAIndex::AlignmentMode::Default)
+        cfg.mode = alignment::BWAIndex::AlignmentMode::HiC;
 
     create_console_logger();
 
@@ -214,10 +223,40 @@ int main(int argc, char* argv[]) {
             INFO("Saving to " << cfg.outfile);
 
             std::ofstream os(cfg.outfile);
-            for (EdgeId e : graph.edges()) {
-                for (auto entry : index.GetHalf(e)) {
-                    for (const auto &point : entry.second)
-                        os << (*id_mapper)[e.int_id()] << "\t" << (*id_mapper)[entry.first.int_id()] << "\t" << point << "\n";
+            if (cfg.hic) {
+                for (EdgeId e1 : graph.canonical_edges()) {
+                    for (auto entry : index.GetHalf(e1)) {
+                        EdgeId e2 = entry.first, ce2 = graph.conjugate(e2);
+                        VERIFY(entry.second.size() == 1);
+                        if (!(e2 <= ce2))
+                            continue;
+
+                        omnigraph::de::DEWeight w = 0;
+                        auto AddToWeight = [&](EdgeId e1, EdgeId e2) {
+                            w += index.Get(e1, e2).begin()->weight;
+                        };
+                        
+                        
+                        if (e2 != e1) {
+                            // Need to aggregate links:
+                            // e1 => e2, e1 => e2', e2' => e1, e2 => e1
+                            AddToWeight(e1, e2); AddToWeight(e1, ce2);
+                            AddToWeight(e2, e1); AddToWeight(ce2, e1);
+                        } else { // e2 == e1
+                            // Need to aggregate links:
+                            // e1 => e1, e1' => e1, e1 => e1'
+                            AddToWeight(e1, e1); AddToWeight(ce2, e1); AddToWeight(e1, ce2);
+                        }
+
+                        os << (*id_mapper)[e1.int_id()] << "\t" << (*id_mapper)[e2.int_id()] << "\t" << w << "\n";
+                    }
+                }
+            } else {
+                for (EdgeId e : graph.edges()) {
+                    for (auto entry : index.GetHalf(e)) {
+                        for (const auto &point : entry.second)
+                            os << (*id_mapper)[e.int_id()] << "\t" << (*id_mapper)[entry.first.int_id()] << "\t" << point << "\n";
+                    }
                 }
             }
         }

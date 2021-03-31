@@ -27,6 +27,7 @@ class BWAIndex {
   public:
     enum class AlignmentMode {
         Default,
+        Illumina,
         IntraCtg,
         PacBio,
         Ont2D,

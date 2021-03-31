@@ -34,6 +34,7 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
     memopt_->flag |= MEM_F_SOFTCLIP;
     switch (mode_) {
         default:
+        case AlignmentMode::Illumina:
         case AlignmentMode::Default:
             INFO("Setting BWA alignment mode to 'default'");
             break;
