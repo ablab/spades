@@ -32,7 +32,7 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
           mode_(mode),
           skip_secondary_(true) {
     memopt_->flag |= MEM_F_SOFTCLIP;
-    switch (mode) {
+    switch (mode_) {
         default:
         case AlignmentMode::Default:
             break;
@@ -56,6 +56,7 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
             break;
     };
 
+    bwa_fill_scmat(memopt_->a, memopt_->b, memopt_->mat);
     Init();
 }
 
