@@ -537,7 +537,9 @@ def get_lib_type_and_number(option):
 
     if get_short_reads_type(option):
         lib_type = get_short_reads_type(option)
-        lib_number = int(option[re.search("\d", option).start()])
+        start_num_pos = re.search("\d+", option).start()
+        end_num_pos = re.search("\d+", option).end()
+        lib_number = int(option[start_num_pos:end_num_pos])
     elif get_long_reads_type(option):
         lib_type = get_long_reads_type(option)
     elif get_graph_type(option):
