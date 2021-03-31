@@ -215,7 +215,7 @@ int main(int argc, char* argv[]) {
 
             std::ofstream os(cfg.outfile);
             for (EdgeId e : graph.edges()) {
-                for (auto entry : index.Get(e)) {
+                for (auto entry : index.GetHalf(e)) {
                     for (const auto &point : entry.second)
                         os << (*id_mapper)[e.int_id()] << "\t" << (*id_mapper)[entry.first.int_id()] << "\t" << point << "\n";
                 }
