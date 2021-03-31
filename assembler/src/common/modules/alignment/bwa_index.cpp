@@ -35,14 +35,17 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
     switch (mode_) {
         default:
         case AlignmentMode::Default:
+            INFO("Setting BWA alignment mode to 'default'");
             break;
         case AlignmentMode::IntraCtg:
+            INFO("Setting BWA alignment mode to 'intractg'");
             memopt_->o_del = 16; memopt_->o_ins = 16;
             memopt_->b = 9;
             memopt_->pen_clip5 = 5; memopt_->pen_clip3 = 5;
             break;
         case AlignmentMode::PacBio:
         case AlignmentMode::Ont2D:
+            INFO("Setting BWA alignment mode to 'pacbio'");
             memopt_->o_del = 1; memopt_->e_del = 1;
             memopt_->o_ins = 1; memopt_->e_ins = 1;
             memopt_->b = 1;

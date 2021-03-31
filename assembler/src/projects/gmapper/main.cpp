@@ -6,6 +6,7 @@
 
 #include "assembly_graph/core/graph.hpp"
 
+#include "modules/alignment/bwa_index.hpp"
 #include "modules/alignment/sequence_mapper_notifier.hpp"
 #include "modules/alignment/bwa_sequence_mapper.hpp"
 #include "modules/alignment/long_read_mapper.hpp"
@@ -55,7 +56,8 @@ struct gcfg {
     gcfg()
         : k(21), tmpdir("tmp"), outfile("-"),
           nthreads(omp_get_max_threads() / 2 + 1),
-          libindex(0)
+          libindex(0),
+          mode(alignment::BWAIndex::AlignmentMode::Default)
     {}
 
     unsigned k;
@@ -65,6 +67,7 @@ struct gcfg {
     std::string outfile;
     unsigned nthreads;
     unsigned libindex;
+    alignment::BWAIndex::AlignmentMode mode;
 };
 
 void process_cmdline(int argc, char **argv, gcfg &cfg) {
@@ -77,12 +80,17 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
       (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
-      (option("--tmp-dir") & value("dir", cfg.tmpdir)) % "scratch directory to use"
+      (option("--tmp-dir") & value("dir", cfg.tmpdir)) % "scratch directory to use",
+      (with_prefix("-X", option("pacbio").set(cfg.mode, alignment::BWAIndex::AlignmentMode::PacBio) |
+                         option("intractg").set(cfg.mode, alignment::BWAIndex::AlignmentMode::IntraCtg)) % "inner alignment mode (for paired-end / contigs)")
   );
 
   auto result = parse(argc, argv, cli);
   if (!result) {
-      std::cout << make_man_page(cli, argv[0]);
+      auto fmt = doc_formatting{}
+                 .merge_alternative_flags_with_common_prefix(true);
+
+      std::cout << make_man_page(cli, argv[0], fmt);
       exit(1);
   }
 }
@@ -90,7 +98,7 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
 typedef io::DataSet<debruijn_graph::config::LibraryData> DataSet;
 typedef io::SequencingLibrary<debruijn_graph::config::LibraryData> SequencingLib;
 
-static void ProcessContigs(const Graph &graph,
+static void ProcessContigs(const Graph &graph, alignment::BWAIndex::AlignmentMode mode,
                            SequencingLib &lib,
                            PathStorage<Graph> &single_long_reads,
                            path_extend::GappedPathStorage &trusted_paths) {
@@ -99,7 +107,7 @@ static void ProcessContigs(const Graph &graph,
     notifier.Subscribe(&read_mapper);
 
     INFO("Mapping using BWA-mem mapper");
-    alignment::BWAReadMapper<Graph> mapper(graph);
+    alignment::BWAReadMapper<Graph> mapper(graph, mode);
     auto single_streams = single_easy_readers(lib, false, false, /*handle Ns*/ false);
     notifier.ProcessLibrary(single_streams, mapper);
 }
@@ -163,7 +171,7 @@ int main(int argc, char* argv[]) {
 
             if (lib.is_contig_lib() || lib.is_single()) {
                 INFO("Mapping sequencing library #" << cfg.libindex);
-                ProcessContigs(graph,
+                ProcessContigs(graph, cfg.mode,
                                lib,
                                path_storage,
                                trusted_paths);
@@ -192,7 +200,7 @@ int main(int argc, char* argv[]) {
             }
         } else if (lib.is_paired()) {
             paired_info::PairedIndex index(graph);
-            alignment::BWAReadMapper<Graph> mapper(graph);
+            alignment::BWAReadMapper<Graph> mapper(graph, cfg.mode);
 
             std::unique_ptr<ThreadPool::ThreadPool> pool;
             if (cfg.nthreads > 1)
