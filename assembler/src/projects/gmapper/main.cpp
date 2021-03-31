@@ -82,7 +82,8 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
       (option("--tmp-dir") & value("dir", cfg.tmpdir)) % "scratch directory to use",
       (with_prefix("-X", option("pacbio").set(cfg.mode, alignment::BWAIndex::AlignmentMode::PacBio) |
-                         option("intractg").set(cfg.mode, alignment::BWAIndex::AlignmentMode::IntraCtg)) % "inner alignment mode (for paired-end / contigs)")
+                         option("intractg").set(cfg.mode, alignment::BWAIndex::AlignmentMode::IntraCtg) |
+                         option("hic").set(cfg.mode, alignment::BWAIndex::AlignmentMode::HiC)) % "inner alignment mode (for paired-end / contigs)")
   );
 
   auto result = parse(argc, argv, cli);

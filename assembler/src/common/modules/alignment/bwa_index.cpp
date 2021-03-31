@@ -57,6 +57,12 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
             memopt_->min_chain_weight = 40;
             skip_secondary_ = false;
             break;
+        case AlignmentMode::HiC:
+            // -M5
+            // FIXME: Do we realy need -M here?
+            memopt_->flag |= MEM_F_NO_MULTI;  // -M
+            memopt_->flag |= MEM_F_PRIMARY5;  // -5
+            break;
     };
 
     bwa_fill_scmat(memopt_->a, memopt_->b, memopt_->mat);
