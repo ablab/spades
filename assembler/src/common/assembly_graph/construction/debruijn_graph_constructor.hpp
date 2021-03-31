@@ -522,11 +522,14 @@ public:
         std::vector<LinkRecord> records;
         INFO("Total " << 2*sequences.size() << " edges to create");
         graph.ereserve(size_t(2.01*sequences.size()));
+
         INFO("Collecting link records")
         CollectLinkRecords(helper, graph, records, sequences);
-        INFO("Sorting LinkRecords...");
+        INFO("Ordering link records")
         // We sort by Vertex and then by EdgeID and RC/Start mask in order to combine together records accociated with the same vertex with a special order in each group
         parallel::sort(records.begin(), records.end(), LinkRecord::CompareByVertexKMerEdgeIdAndMask);
+        INFO("Sorting done");
+
         // Now we extract starting positions of each vertex group
         std::vector<size_t> unique_record_indices;
         for (size_t i = 0; i < records.size(); i++) {
@@ -538,11 +541,15 @@ public:
         }
         // Now we sort vertices by their lowest edge and mask (they are unique since each edge has only one start and one stop).
         // It is a deterministic order while ordering by vertex kmer perfect hash is not (hashes are dependent on nthreads/nnodes)
+        INFO("Sorting LinkRecords...");
         parallel::sort(unique_record_indices.begin(), unique_record_indices.end(),
                        [&records](size_t i, size_t j) { return records[i].EdgeAndMask() < records[j].EdgeAndMask(); });
         INFO("LinkRecords sorted");
         size_t size = unique_record_indices.size();
+        INFO("Total " << size << " vertices to create");
         graph.vreserve(size_t(2.01 * size));
+
+        INFO("Connecting the graph");
         uint64_t min_id = graph.min_id();
 #       pragma omp parallel for schedule(guided)
         for (size_t vertex_num = 0; vertex_num < size; ++vertex_num) {
