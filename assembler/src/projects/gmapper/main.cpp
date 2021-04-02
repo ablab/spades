@@ -248,7 +248,7 @@ int main(int argc, char* argv[]) {
                             AddToWeight(e1, e1); AddToWeight(ce2, e1); AddToWeight(e1, ce2);
                         }
 
-                        os << (*id_mapper)[e1.int_id()] << "\t" << (*id_mapper)[e2.int_id()] << "\t" << w << "\n";
+                        os << (*id_mapper)[e1.int_id()] << "\t" << e1 << "\t" << (*id_mapper)[e2.int_id()] << "\t" << e2 << "\t" << w << "\n";
                     }
                 }
             } else {
