@@ -5,7 +5,9 @@
 //***************************************************************************
 
 #include "binning_propagation.hpp"
-#include "projects/bin_refine/binning.hpp"
+#include "binning.hpp"
+
+#include "blaze/math/DynamicVector.h"
 
 using namespace bin_stats;
 using namespace debruijn_graph;
@@ -16,12 +18,21 @@ SoftBinsAssignment BinningPropagation::PropagateBinning(BinStats& bin_stats) con
   while (true) {
       FinalIteration converged = PropagationIteration(state, new_state,
                                                       bin_stats, iteration_step++);
-      if (converged) {
+      if (converged)
           return new_state;
-      }
 
       std::swap(state, new_state);
   }
+}
+
+static double PropagateFromEdge(blaze::DynamicVector<double>& labels_probabilities,
+                                debruijn_graph::EdgeId neighbour,
+                                const SoftBinsAssignment& cur_state,
+                                double weight) {
+    const auto& neig_probs = cur_state.at(neighbour).labels_probabilities;
+    labels_probabilities += weight * neig_probs;
+
+    return weight * blaze::sum(neig_probs);
 }
 
 BinningPropagation::FinalIteration BinningPropagation::PropagationIteration(SoftBinsAssignment& new_state,
@@ -32,9 +43,8 @@ BinningPropagation::FinalIteration BinningPropagation::PropagationIteration(Soft
 
   for (EdgeId e : bin_stats.unbinned_edges()) {
     const EdgeLabels& edge_labels = cur_state.at(e);
-    auto& next_probs = new_state.at(e).labels_probabilities;
+    blaze::DynamicVector<double> next_probs(num_bins_, 0);
 
-    std::fill(next_probs.begin(), next_probs.end(), 0.0);
     double e_sum = 0.0;
     // Not used now, but might be in the future
     double incoming_weight = 1.0; // / double(g_.IncomingEdgeCount(g_.EdgeStart(e)));
@@ -54,15 +64,19 @@ BinningPropagation::FinalIteration BinningPropagation::PropagationIteration(Soft
     // Note that e_sum is actually equals to # of non-empty predecessors,
     // however, we use true sum here in order to compensate for possible
     // rounding-off errors
-    if (e_sum == 0.0)
+    if (e_sum == 0.0) {
+        new_state.at(e).labels_probabilities.reset();
         continue;
+    }
 
     double inv_sum = 1.0 / e_sum;
+    // FIXME: iterator over labels_probabilities
     for (size_t i = 0; i < next_probs.size(); ++i) {
         next_probs[i] *= inv_sum;
         after_prob += next_probs[i];
         sum_diff += std::abs(next_probs[i] - edge_labels.labels_probabilities[i]);
     }
+    new_state.at(e).labels_probabilities = next_probs;
   }
 
   VERBOSE_POWER_T2(iteration_step, 0,
@@ -76,21 +90,6 @@ BinningPropagation::FinalIteration BinningPropagation::PropagationIteration(Soft
 
 
   return converged;
-}
-
-double BinningPropagation::PropagateFromEdge(std::vector<double>& labels_probabilities,
-                                             debruijn_graph::EdgeId neighbour,
-                                             const SoftBinsAssignment& cur_state,
-                                             double weight) const {
-    double sum = 0;
-    const auto& neig_probs = cur_state.at(neighbour).labels_probabilities;
-    for (size_t i = 0; i < labels_probabilities.size(); ++i) {
-        double p = neig_probs[i] * weight;
-        labels_probabilities[i] += p;
-        sum += p;
-    }
-
-    return sum;
 }
 
 SoftBinsAssignment BinningPropagation::InitLabels(const BinStats& bin_stats) const {
@@ -107,9 +106,7 @@ void BinningPropagation::EqualizeConjugates(SoftBinsAssignment& state, const Bin
     for (EdgeId e : bin_stats.unbinned_edges()) {
         EdgeLabels& edge_labels = state.at(e);
         EdgeLabels& conjugate_labels = state.at(g_.conjugate(e));
-        for (size_t i = 0; i < edge_labels.labels_probabilities.size(); ++i) {
-            edge_labels.labels_probabilities[i] = (edge_labels.labels_probabilities[i] + conjugate_labels.labels_probabilities[i]) / 2;
-            conjugate_labels.labels_probabilities[i] = edge_labels.labels_probabilities[i];
-        }
+        edge_labels.labels_probabilities = (edge_labels.labels_probabilities + conjugate_labels.labels_probabilities) / 2;
+        conjugate_labels.labels_probabilities = edge_labels.labels_probabilities;
     }
 }

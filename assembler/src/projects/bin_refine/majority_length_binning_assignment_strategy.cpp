@@ -5,9 +5,28 @@
 //***************************************************************************
 
 #include "majority_length_binning_assignment_strategy.hpp"
+#include "math/xmath.h"
 
 using namespace debruijn_graph;
 using namespace bin_stats;
+
+static std::unordered_set<BinStats::BinId> ChooseMostProbableBins(const LabelProbabilities& labels_probabilities) {
+    double max_probability = blaze::max(labels_probabilities);
+
+    if (max_probability == 0.0)
+        return {};
+
+    std::unordered_set<bin_stats::BinStats::BinId> most_probable_bins;
+
+    for (const auto &entry : labels_probabilities) {
+        if (!math::eq(entry.value(),  max_probability))
+            continue;
+
+        most_probable_bins.insert(entry.index());
+    }
+
+    return most_probable_bins;
+}
 
 void MajorityLengthBinningAssignmentStrategy::AssignBins(const SoftBinsAssignment& soft_bins_assignment,
                                                          BinStats& bin_stats) const {
@@ -23,21 +42,4 @@ void MajorityLengthBinningAssignmentStrategy::AssignBins(const SoftBinsAssignmen
 
     for (EdgeId e : binned)
         bin_stats.unbinned_edges().erase(e);
-}
-
-std::unordered_set<BinStats::BinId> MajorityLengthBinningAssignmentStrategy::ChooseMostProbableBins(const std::vector<double>& labels_probabilities) {
-    double max_probability = 0.0;
-    for (double p : labels_probabilities)
-        max_probability = std::max(max_probability, p);
-
-    if (max_probability == 0.0)
-        return {};
-
-    std::unordered_set<bin_stats::BinStats::BinId> most_probable_bins;
-    for (size_t i = 0; i < labels_probabilities.size(); ++i) {
-        if (labels_probabilities[i] == max_probability)
-            most_probable_bins.insert(i);
-    }
-
-    return most_probable_bins;
 }

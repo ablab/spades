@@ -20,12 +20,12 @@ EdgeLabels::EdgeLabels(const EdgeId e, const BinStats& bin_stats)
         : e(e) {
     auto bins = bin_stats.edges_binning().find(e);
     is_binned = bins != bin_stats.edges_binning().end();
-    labels_probabilities.resize(bin_stats.bins().size(), 0.0);
+    labels_probabilities.resize(bin_stats.bins().size());
 
     if (is_binned) {
         size_t sz = bins->second.size();
         for (bin_stats::BinStats::BinId bin : bins->second)
-            labels_probabilities[bin] = 1.0 / static_cast<double>(sz);
+            labels_probabilities.set(bin, 1.0 / static_cast<double>(sz));
     }
 }
 
@@ -104,14 +104,15 @@ void BinStats::WriteToBinningFile(const std::string& binning_file, const Scaffol
       std::vector<EdgeId> scaffold_path(path_entry.second.begin(), path_entry.second.end());
       std::vector<size_t> bins_lengths = BinAssignment(scaffold_path);
       BinId new_bin_id = ChooseMajorBin(bins_lengths);
-      out_tsv << scaffold_name << "\t" << (new_bin_id == UNBINNED ? UNBINNED_ID : bin_labels_.at(new_bin_id)) << "\n";
-      out_lens << scaffold_name << "\t" << bins_lengths << "\n";
+      out_tsv << scaffold_name << '\t' << (new_bin_id == UNBINNED ? UNBINNED_ID : bin_labels_.at(new_bin_id)) << '\n';
+      out_lens << scaffold_name << '\t' << bins_lengths << '\n';
     }
 
     out_edges.precision(3);
+    out_edges << "# edge_id\tbinned\twas_binned\tedge probs\n";
     for (EdgeId e : graph_.canonical_edges()) {
         const EdgeLabels& edge_labels = soft_edge_labels.at(e);
-        out_edges << edge_mapper[graph_.int_id(e)] << "\t" << edge_labels.is_binned << "\t" << !unbinned_edges_.count(e) << "\t" << edge_labels.labels_probabilities << "\n";
+        out_edges << edge_mapper[graph_.int_id(e)] << '\t' << !unbinned_edges_.count(e) << '\t' << edge_labels << '\n';
     }
 }
 
@@ -178,4 +179,14 @@ std::ostream &operator<<(std::ostream &os, const BinStats &stats) {
 
     return os;
 }
+
+std::ostream &operator<<(std::ostream &os, const EdgeLabels &labels) {
+    os << labels.is_binned << '\t';
+    os << "nz: " << labels.labels_probabilities.nonZeros();
+    for (const auto &entry : labels.labels_probabilities)
+        os << '\t' << entry.index() << ":" << entry.value();
+
+    return os;
 }
+
+} // namespace bin_stats

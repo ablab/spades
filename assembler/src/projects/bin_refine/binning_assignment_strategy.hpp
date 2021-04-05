@@ -18,5 +18,6 @@ using SoftBinsAssignment = std::unordered_map<debruijn_graph::EdgeId, EdgeLabels
 class BinningAssignmentStrategy {
 public:
     virtual void AssignBins(const SoftBinsAssignment& soft_bins_assignment, BinStats& bin_stats) const = 0;
+    virtual ~BinningAssignmentStrategy() = default;
 };
 }

@@ -9,6 +9,8 @@
 #include "assembly_graph/core/graph.hpp"
 #include "binning_assignment_strategy.hpp"
 
+#include "blaze/math/CompressedVector.h"
+
 #include <unordered_set>
 #include <unordered_map>
 #include <set>
@@ -24,15 +26,19 @@ class BinningAssignmentStrategy;
 
 class BinStats;
 
+using LabelProbabilities = blaze::CompressedVector<double>;
+
 struct EdgeLabels {
     // TODO: Could pack e and is_binned into single 64 bits
     debruijn_graph::EdgeId e;
     bool is_binned;
-    std::vector<double> labels_probabilities;
+    LabelProbabilities labels_probabilities;
 
     EdgeLabels(debruijn_graph::EdgeId e, const BinStats& bin_stats);
     EdgeLabels(const EdgeLabels& edge_labels) = default;
     EdgeLabels& operator=(const EdgeLabels& edge_labels) = default;
+
+    friend std::ostream &operator<<(std::ostream &os, const EdgeLabels &labels);
 };
 
 using SoftBinsAssignment = std::unordered_map<debruijn_graph::EdgeId, EdgeLabels>;
