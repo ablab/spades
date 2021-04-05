@@ -87,8 +87,8 @@ class BinStats {
     std::unordered_map<debruijn_graph::EdgeId, EdgeBinning> edges_binning_{};
     std::unordered_set<debruijn_graph::EdgeId> unbinned_edges_{};
 
-    BinId ChooseMajorBin(const std::vector<debruijn_graph::EdgeId>& path) const;
-    BinId ChooseMajorBin(const blaze::CompressedVector<double>& bins_lengths) const;
+    std::vector<BinStats::BinId> ChooseMajorBins(const std::vector<debruijn_graph::EdgeId>& path) const;
+    std::vector<BinStats::BinId> ChooseMajorBins(const blaze::CompressedVector<double>& bins_weights) const;
     blaze::CompressedVector<double> BinAssignment(const std::vector<debruijn_graph::EdgeId>& path) const;
 };
 }
