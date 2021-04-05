@@ -1,0 +1,139 @@
+Installation instructions
+*************************
+
+Since Blaze is a header-only library, setting up the Blaze library on a particular system is
+a fairly easy two step process. In the following, this two step process is explained in detail,
+preceded only by a short summary of the requirements.
+
+
+Requirements
+************
+
+For maximum performance the Blaze library expects you to have a BLAS library installed (Intel
+MKL, ACML, Atlas, Goto, ...). If you don't have a BLAS library installed on your system, Blaze
+will still work and will not be reduced in functionality, but performance may be limited. Thus
+it is strongly recommended to install a BLAS library.
+
+Additionally, for computing the determinant of a dense matrix, for the decomposition of dense
+matrices, for the dense matrix inversion, and for the computation of eigenvalues and singular
+values Blaze requires LAPACK. When either of these features is used it is necessary to link
+the LAPACK library to the final executable. If no LAPACK library is available the use of these
+features will result in a linker error.
+
+Furthermore, it is possible to use Boost threads to run numeric operations in parallel. In this
+case the Boost library is required to be installed on your system. It is recommended to use the
+newest Boost library available, but Blaze requires at minimum the Boost version 1.54.0. If you
+don't have Boost installed on your system, you can download it for free from 'www.boost.org'.
+
+
+Step 1: Installation
+********************
+
+Installation via CMake
+----------------------
+
+The first step is the installation of the Blaze header files. The most convenient way to do this
+is via CMake (https://cmake.org). Linux and macOS users can use the following two lines to copy
+the Blaze headers in the './blaze' subdirectory to the directory '${CMAKE_INSTALL_PREFIX}/include'
+and the package configuration files to '${CMAKE_INSTALL_PREFIX}/share/blaze/cmake'.
+
+cmake -DCMAKE_INSTALL_PREFIX=/usr/local/
+sudo make install
+
+Windows users can do the same via the cmake-gui. Alternatively, it is possible to include Blaze
+by adding the following lines in any 'CMakeLists.txt' file:
+
+find_package( blaze )
+if( blaze_FOUND )
+   add_library( blaze_target INTERFACE )
+   target_link_libraries( blaze_target INTERFACE blaze::blaze )
+endif()
+
+
+Installation via the VC++ Packaging Tool
+----------------------------------------
+
+An alternate way to install Blaze for Windows users is Microsoft's VC++ Packaging Tool (vcpkg;
+https://github.com/Microsoft/vcpkg). Blaze can be installed via the command line:
+
+C:\src\vcpkg> .\vcpkg install blaze
+
+The tool automatically downloads the latest Blaze release and copies the header files to the
+common include directory.
+
+
+Manual Installation on Linux/macOS
+----------------------------------
+
+Since Blaze only consists of header files, the './blaze' subdirectory can be simply copied to a
+standard include directory (note that this requires root privileges):
+
+cp -r ./blaze /usr/local/include
+
+Alternatively, on Unix-based machines (which includes Linux and Mac OS X) the 'CPLUS_INCLUDE_PATH'
+environment variable can be set. The specified directory will be searched after any directories
+specified on the command line with the option \c -I and before the standard default directories
+(such as '/usr/local/include' and ‘/usr/include'). Assuming a user named 'Jon', the environment
+variable can be set as follows:
+
+CPLUS_INCLUDE_PATH=/usr/home/jon/blaze
+export CPLUS_INCLUDE_PATH
+
+Last but not least, the './blaze' subdirectory can be explicitly specified on the command line.
+The following example demonstrates this by means of the GNU C++ compiler:
+
+g++ -I/usr/home/jon/blaze -o BlazeTest BlazeTest.cpp
+
+
+Manual Installation on Windows
+------------------------------
+
+Windows doesn't have a standard include directory. Therefore the Blaze header files can be copied
+to any other directory or simply left in the default Blaze directory. However, the chosen include
+directory has to be explicitly specified as include path. In Visual Studio, this is done via the
+project property pages, configuration properties, C/C++, General settings. Here the additional
+include directories can be specified.
+
+
+Step 2: Configuration
+*********************
+
+The second step is the configuration and customization of the Blaze library. Many aspects of Blaze
+can be adapted to specific requirements, environments and architectures. The most convenient way
+to configure Blaze is to modify the headers in the './blaze/config/' subdirectory by means of
+CMake (https://cmake.org). Alternatively these header files can be customized manually. In both
+cases, however, the files are modified. If this is not an option it is possible to configure Blaze
+via the command line (see https://bitbucket.org/blaze-lib/blaze/wiki/Configuration%20Files or
+or the documentation in the configuration files).
+
+Since the default settings are reasonable for most systems this step can also be skipped. However,
+in order to achieve maximum performance a customization of at least the following configuration
+files is required:
+
+ - <blaze/config/BLAS.h>: Via this configuration file Blaze can be enabled to use a third-party
+   BLAS library for several basic linear algebra functions (such as for instance dense matrix
+   multiplications). In case no BLAS library is used, all linear algebra functions use the default
+   implementations of the Blaze library and therefore BLAS is not a requirement for the compilation
+   process. However, please note that performance may be limited.
+ - <blaze/config/CacheSize.h>: This file contains the hardware specific cache settings. Blaze
+   uses this information to optimize its cache usage. For maximum performance it is recommended to
+   adapt these setting to a specific target architecture.
+ - <blaze/config/Thresholds.h>: This file contains all thresholds for the customization of the
+   Blaze compute kernels. In order to tune the kernels for a specific architecture and to maximize
+   performance it can be necessary to adjust the thresholds, especially for a parallel execution.
+
+For an overview of other customization options and more details, please see the Blaze wiki at
+https://bitbucket.org/blaze-lib/blaze/wiki/Home.
+
+
+Blaze Version
+*************
+
+The current major and minor version number of the Blaze library can be found in the
+<blaze/system/Version.h> header file. It is automatically included via the <blaze/Blaze.h> header
+file. The file contains the two following macros, which can for instance be used for conditional
+compilation:
+
+#define BLAZE_MAJOR_VERSION 3
+#define BLAZE_MINOR_VERSION 5
+#define BLAZE_PATCH_VERSION 0
