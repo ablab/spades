@@ -8,14 +8,10 @@
 
 #include "assembly_graph/core/graph.hpp"
 #include "binning_assignment_strategy.hpp"
-#include "pipeline/graph_pack.hpp"
+
 #include <unordered_set>
 #include <unordered_map>
 #include <set>
-
-namespace debruijn_graph {
-class GraphPack;
-}
 
 namespace io {
 template<typename T>
