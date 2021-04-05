@@ -93,11 +93,12 @@ int main(int argc, char** argv) {
       INFO("Initial binning:\n" << binning);
       auto soft_edge_labels = BinningPropagation(graph, binning.bins().size(), cfg.eps).PropagateBinning(binning);
       auto assignment_strategy = get_strategy(cfg.assignment_strategy);
-      binning.AssignBins(soft_edge_labels, *assignment_strategy);
+      binning.AssignEdgeBins(soft_edge_labels, *assignment_strategy);
       INFO("Final binning:\n" << binning);
       INFO("Writing final binning");
       binning.WriteToBinningFile(cfg.output_file, scaffolds_paths,
-                                 soft_edge_labels, *id_mapper);
+                                 soft_edge_labels, *assignment_strategy,
+                                 *id_mapper);
   } catch (const std::string& s) {
       std::cerr << s << std::endl;
       return EINTR;
