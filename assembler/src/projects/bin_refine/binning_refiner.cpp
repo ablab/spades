@@ -19,7 +19,7 @@
 using namespace debruijn_graph;
 using namespace bin_stats;
 
-enum class AssignStategy {
+enum class AssignStrategy {
     MajorityLength,
     MaxLikelihood
 };
@@ -29,7 +29,7 @@ struct gcfg {
     std::string graph;
     std::string binning_file;
     std::string output_file;
-    AssignStategy assignment_strategy = AssignStategy::MajorityLength;
+    AssignStrategy assignment_strategy = AssignStrategy::MajorityLength;
     double eps = 0.01;
 };
 
@@ -42,8 +42,8 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       cfg.output_file << value("path to file to write binning after propagation"),
       (option("-e") & value("eps", cfg.eps)) % "convergence relative tolerance threshold",
       (with_prefix("-S",
-                   option("max").set(cfg.assignment_strategy, AssignStategy::MajorityLength) |
-                   option("mle").set(cfg.assignment_strategy, AssignStategy::MaxLikelihood)) % "binning assignment strategy")
+                   option("max").set(cfg.assignment_strategy, AssignStrategy::MajorityLength) |
+                   option("mle").set(cfg.assignment_strategy, AssignStrategy::MaxLikelihood)) % "binning assignment strategy")
   );
 
   auto result = parse(argc, argv, cli);
@@ -53,11 +53,11 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
   }
 }
 
-std::unique_ptr<BinningAssignmentStrategy> get_strategy(AssignStategy strategy) {
+std::unique_ptr<BinningAssignmentStrategy> get_strategy(AssignStrategy strategy) {
     switch (strategy) {
         default:
             FATAL_ERROR("Unknown binning assignment strategy");
-        case AssignStategy::MajorityLength:
+        case AssignStrategy::MajorityLength:
             return std::make_unique<MajorityLengthBinningAssignmentStrategy>(MajorityLengthBinningAssignmentStrategy());
     }
 }
