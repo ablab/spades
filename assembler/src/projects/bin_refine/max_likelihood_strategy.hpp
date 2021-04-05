@@ -10,8 +10,11 @@
 
 namespace bin_stats {
 
-class MajorityLengthBinningAssignmentStrategy : public BinningAssignmentStrategy {
-public:
+class MaxLikelihoodBinningAssignmentStrategy : public BinningAssignmentStrategy {
+  public:
+    MaxLikelihoodBinningAssignmentStrategy(double thr = 1e-6)
+            : thr_(thr) {}
+    
     void AssignEdgeBins(const SoftBinsAssignment& soft_bins_assignment, BinStats& bin_stats) const override;
     blaze::CompressedVector<double> AssignScaffoldBins(const std::vector<debruijn_graph::EdgeId>& path,
                                                        const SoftBinsAssignment& soft_bins_assignment,
@@ -20,5 +23,7 @@ public:
                                           const SoftBinsAssignment& soft_bins_assignment,
                                           const BinStats& bin_stats) const override;
 
+  private:
+    double thr_;
 };
 }

@@ -8,9 +8,8 @@
 #include "binning.hpp"
 #include "binning_propagation.hpp"
 #include "majority_length_binning_assignment_strategy.hpp"
+#include "max_likelihood_strategy.hpp"
 
-#include "modules/alignment/kmer_mapper.hpp"
-#include "pipeline/graph_pack.hpp"
 #include "toolchain/utils.hpp"
 #include "utils/segfault_handler.hpp"
 
@@ -58,7 +57,9 @@ std::unique_ptr<BinningAssignmentStrategy> get_strategy(AssignStrategy strategy)
         default:
             FATAL_ERROR("Unknown binning assignment strategy");
         case AssignStrategy::MajorityLength:
-            return std::make_unique<MajorityLengthBinningAssignmentStrategy>(MajorityLengthBinningAssignmentStrategy());
+            return std::make_unique<MajorityLengthBinningAssignmentStrategy>();
+        case AssignStrategy::MaxLikelihood:
+            return std::make_unique<MaxLikelihoodBinningAssignmentStrategy>();
     }
 }
 

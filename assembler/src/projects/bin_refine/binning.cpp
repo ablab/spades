@@ -103,8 +103,10 @@ void BinStats::WriteToBinningFile(const std::string& binning_file, const Scaffol
       const std::string& scaffold_name = path_entry.first;
 
       std::vector<EdgeId> scaffold_path(path_entry.second.begin(), path_entry.second.end());
-      auto bins_weights = assignment_strategy.AssignScaffoldBins(scaffold_path, *this);
-      std::vector<BinId> new_bin_id = assignment_strategy.ChooseMajorBins(bins_weights, *this);
+      auto bins_weights = assignment_strategy.AssignScaffoldBins(scaffold_path,
+                                                                 soft_edge_labels, *this);
+      std::vector<BinId> new_bin_id = assignment_strategy.ChooseMajorBins(bins_weights,
+                                                                          soft_edge_labels, *this);
       out_tsv << scaffold_name;
       if (new_bin_id.empty())
           out_tsv << '\t' << UNBINNED_ID;
