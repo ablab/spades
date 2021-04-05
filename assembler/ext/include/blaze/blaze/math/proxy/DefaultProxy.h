@@ -1,0 +1,227 @@
+//=================================================================================================
+/*!
+//  \file blaze/math/proxy/DefaultProxy.h
+//  \brief Header file for the DefaultProxy class
+//
+//  Copyright (C) 2012-2020 Klaus Iglberger - All Rights Reserved
+//
+//  This file is part of the Blaze library. You can redistribute it and/or modify it under
+//  the terms of the New (Revised) BSD License. Redistribution and use in source and binary
+//  forms, with or without modification, are permitted provided that the following conditions
+//  are met:
+//
+//  1. Redistributions of source code must retain the above copyright notice, this list of
+//     conditions and the following disclaimer.
+//  2. Redistributions in binary form must reproduce the above copyright notice, this list
+//     of conditions and the following disclaimer in the documentation and/or other materials
+//     provided with the distribution.
+//  3. Neither the names of the Blaze development group nor the names of its contributors
+//     may be used to endorse or promote products derived from this software without specific
+//     prior written permission.
+//
+//  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+//  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+//  OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+//  SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+//  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+//  TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+//  BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+//  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+//  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+//  DAMAGE.
+*/
+//=================================================================================================
+
+#ifndef _BLAZE_MATH_PROXY_DEFAULTPROXY_H_
+#define _BLAZE_MATH_PROXY_DEFAULTPROXY_H_
+
+
+//*************************************************************************************************
+// Includes
+//*************************************************************************************************
+
+#include <blaze/system/Inline.h>
+
+
+namespace blaze {
+
+//=================================================================================================
+//
+//  CLASS DEFINITION
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*!\brief Default proxy backend for built-in and alternate user-specific class types.
+// \ingroup math
+//
+// The DefaultProxy class serves as a backend for the Proxy class. It is used in case the data
+// type represented by the proxy is a built-in or alternate user-specific class type. This proxy
+// does not augment the Proxy interface by any additional interface.
+*/
+template< typename PT    // Type of the proxy
+        , typename RT >  // Type of the represented element
+class DefaultProxy
+{
+ public:
+   //**Conversion operators************************************************************************
+   /*!\name Conversion operators */
+   //@{
+   [[deprecated]] BLAZE_ALWAYS_INLINE PT&       operator~()       noexcept;
+   [[deprecated]] BLAZE_ALWAYS_INLINE const PT& operator~() const noexcept;
+
+   BLAZE_ALWAYS_INLINE PT&       operator*()       noexcept;
+   BLAZE_ALWAYS_INLINE const PT& operator*() const noexcept;
+   //@}
+   //**********************************************************************************************
+
+ protected:
+   //**Special member functions********************************************************************
+   /*!\name Special member functions */
+   //@{
+   DefaultProxy() = default;
+   DefaultProxy( const DefaultProxy& ) = default;
+   DefaultProxy( DefaultProxy&& ) = default;
+   ~DefaultProxy() = default;
+   DefaultProxy& operator=( const DefaultProxy& ) = default;
+   DefaultProxy& operator=( DefaultProxy&& ) = default;
+   //@}
+   //**********************************************************************************************
+};
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  CONVERSION OPERATORS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*!\brief Conversion operator for non-constant proxies.
+//
+// \return Mutable reference to the actual type of the proxy.
+//
+// This operator performs the CRTP-based type-safe downcast to the actual type \a PT of the
+// proxy. It will return a mutable reference to the actual type \a PT.
+*/
+template< typename PT    // Type of the proxy
+        , typename RT >  // Type of the represented element
+[[deprecated]] BLAZE_ALWAYS_INLINE PT& DefaultProxy<PT,RT>::operator~() noexcept
+{
+   return static_cast<PT&>( *this );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Conversion operator for constant proxies.
+//
+// \return Constant reference to the actual type of the proxy.
+//
+// This operator performs the CRTP-based type-safe downcast to the actual type \a PT of the
+// proxy. It will return a constant reference to the actual type \a PT.
+*/
+template< typename PT    // Type of the proxy
+        , typename RT >  // Type of the represented element
+[[deprecated]] BLAZE_ALWAYS_INLINE const PT& DefaultProxy<PT,RT>::operator~() const noexcept
+{
+   return static_cast<const PT&>( *this );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Conversion operator for non-constant proxies.
+//
+// \return Mutable reference to the actual type of the proxy.
+//
+// This operator performs the CRTP-based type-safe downcast to the actual type \a PT of the
+// proxy. It will return a mutable reference to the actual type \a PT.
+*/
+template< typename PT    // Type of the proxy
+        , typename RT >  // Type of the represented element
+BLAZE_ALWAYS_INLINE PT& DefaultProxy<PT,RT>::operator*() noexcept
+{
+   return static_cast<PT&>( *this );
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief Conversion operator for constant proxies.
+//
+// \return Constant reference to the actual type of the proxy.
+//
+// This operator performs the CRTP-based type-safe downcast to the actual type \a PT of the
+// proxy. It will return a constant reference to the actual type \a PT.
+*/
+template< typename PT    // Type of the proxy
+        , typename RT >  // Type of the represented element
+BLAZE_ALWAYS_INLINE const PT& DefaultProxy<PT,RT>::operator*() const noexcept
+{
+   return static_cast<const PT&>( *this );
+}
+//*************************************************************************************************
+
+
+
+
+//=================================================================================================
+//
+//  GLOBAL FUNCTIONS
+//
+//=================================================================================================
+
+//*************************************************************************************************
+/*!\name DefaultProxy global functions */
+//@{
+template< typename PT, typename RT >
+PT& crtp_cast( DefaultProxy<PT,RT>& proxy );
+
+template< typename PT, typename RT >
+const PT& crtp_cast( const DefaultProxy<PT,RT>& proxy );
+//@}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief CRTP-based conversion operation for non-constant proxies.
+//
+// \param proxy The proxy to be downcast.
+// \return Mutable reference of the actual type of the proxy.
+//
+// This operator performs the CRTP-based type-safe downcast to the actual type \a PT of the
+// proxy. It will return a mutable reference to the actual type \a PT.
+*/
+template< typename PT    // Type of the proxy
+        , typename RT >  // Type of the represented element
+BLAZE_ALWAYS_INLINE PT& crtp_cast( DefaultProxy<PT,RT>& proxy )
+{
+   return *proxy;
+}
+//*************************************************************************************************
+
+
+//*************************************************************************************************
+/*!\brief CRTP-based conversion operation for constant proxies.
+//
+// \param proxy The proxy to be downcast.
+// \return Const reference of the actual type of the proxy.
+//
+// This operator performs the CRTP-based type-safe downcast to the actual type \a PT of the
+// proxy. It will return a constant reference to the actual type \a PT.
+*/
+template< typename PT    // Type of the proxy
+        , typename RT >  // Type of the represented element
+BLAZE_ALWAYS_INLINE const PT& crtp_cast( const DefaultProxy<PT,RT>& proxy )
+{
+   return *proxy;
+}
+//*************************************************************************************************
+
+} // namespace blaze
+
+#endif
