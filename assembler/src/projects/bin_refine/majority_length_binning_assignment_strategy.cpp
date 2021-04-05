@@ -19,7 +19,7 @@ static std::unordered_set<BinStats::BinId> ChooseMostProbableBins(const LabelPro
     std::unordered_set<bin_stats::BinStats::BinId> most_probable_bins;
 
     for (const auto &entry : labels_probabilities) {
-        if (!math::eq(entry.value(),  max_probability))
+        if (!math::eq(entry.value(), max_probability))
             continue;
 
         most_probable_bins.insert(entry.index());
@@ -46,6 +46,7 @@ void MajorityLengthBinningAssignmentStrategy::AssignEdgeBins(const SoftBinsAssig
 
 blaze::CompressedVector<double>
 MajorityLengthBinningAssignmentStrategy::AssignScaffoldBins(const std::vector<debruijn_graph::EdgeId>& path,
+                                                            const SoftBinsAssignment&,
                                                             const BinStats& bin_stats) const {
 
     blaze::CompressedVector<double> res(bin_stats.bins().size());
@@ -72,6 +73,7 @@ MajorityLengthBinningAssignmentStrategy::AssignScaffoldBins(const std::vector<de
 
 std::vector<BinStats::BinId>
 MajorityLengthBinningAssignmentStrategy::ChooseMajorBins(const blaze::CompressedVector<double>& bins_weights,
+                                                         const SoftBinsAssignment&,
                                                          const BinStats&) const {
 
     double max_prob = 0.0;
