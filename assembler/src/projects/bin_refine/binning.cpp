@@ -93,7 +93,8 @@ void BinStats::LoadBinning(const std::string& binning_file, const ScaffoldsPaths
 }
 
 void BinStats::WriteToBinningFile(const std::string& binning_file, const ScaffoldsPaths &scaffolds_paths,
-                                  const SoftBinsAssignment &soft_edge_labels, const io::IdMapper<std::string> &edge_mapper) {
+                                  const SoftBinsAssignment &soft_edge_labels, const BinningAssignmentStrategy& assignment_strategy,
+                                  const io::IdMapper<std::string> &edge_mapper) {
     std::ofstream out_tsv(binning_file + ".tsv");
     std::ofstream out_lens(binning_file + ".bin_weights");
     std::ofstream out_edges(binning_file + ".edge_weights");
@@ -102,12 +103,12 @@ void BinStats::WriteToBinningFile(const std::string& binning_file, const Scaffol
       const std::string& scaffold_name = path_entry.first;
 
       std::vector<EdgeId> scaffold_path(path_entry.second.begin(), path_entry.second.end());
-      auto bins_weights = BinAssignment(scaffold_path);
-      std::vector<BinId> new_bin_id = ChooseMajorBins(bins_weights);
+      auto bins_weights = assignment_strategy.AssignScaffoldBins(scaffold_path, *this);
+      std::vector<BinId> new_bin_id = assignment_strategy.ChooseMajorBins(bins_weights, *this);
       out_tsv << scaffold_name;
       if (new_bin_id.empty())
           out_tsv << '\t' << UNBINNED_ID;
-      else 
+      else
           for (BinId bin : new_bin_id)
               out_tsv << '\t' << bin_labels_.at(bin);
       out_tsv << '\n';
@@ -126,52 +127,8 @@ void BinStats::WriteToBinningFile(const std::string& binning_file, const Scaffol
     }
 }
 
-blaze::CompressedVector<double> BinStats::BinAssignment(const std::vector<debruijn_graph::EdgeId>& path) const {
-    blaze::CompressedVector<double> res(bins_.size());
-
-    size_t total_length = 0;
-    for (EdgeId edge : path) {
-        if (unbinned_edges_.count(edge) > 0)
-            continue;
-
-        size_t length = graph_.length(edge);
-        for (auto bin_id : edges_binning_.at(edge)) {
-            res[bin_id] += double(length);
-            total_length += length;
-        }
-    }
-
-    if (total_length) {
-        double inv_length = 1.0/double(total_length);
-        res *= inv_length;
-    }
-
-    return res;
-}
-
-std::vector<BinStats::BinId> BinStats::ChooseMajorBins(const blaze::CompressedVector<double>& bins_weights) const {
-    double max_prob = 0.0;
-    BinId major_bin = UNBINNED;
-    for (const auto &entry : bins_weights) {
-        if (math::le(entry.value(), max_prob))
-            continue;
-
-        max_prob = entry.value();
-        major_bin = entry.index();
-    }
-
-    if (math::eq(max_prob, 0.0))
-        return { };
-    
-    return { major_bin };
-}
-
-std::vector<BinStats::BinId> BinStats::ChooseMajorBins(const std::vector<debruijn_graph::EdgeId>& path) const {
-    return ChooseMajorBins(BinAssignment(path));
-}
-
-void BinStats::AssignBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy) {
-    assignment_strategy.AssignBins(soft_bins_assignment, *this);
+void BinStats::AssignEdgeBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy) {
+    assignment_strategy.AssignEdgeBins(soft_bins_assignment, *this);
 }
 
 namespace bin_stats {

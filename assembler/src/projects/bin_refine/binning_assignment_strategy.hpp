@@ -7,6 +7,9 @@
 #pragma once
 
 #include "binning.hpp"
+#include "blaze/Forward.h"
+
+#include <unordered_map>
 
 namespace bin_stats {
 
@@ -17,7 +20,18 @@ using SoftBinsAssignment = std::unordered_map<debruijn_graph::EdgeId, EdgeLabels
 
 class BinningAssignmentStrategy {
 public:
-    virtual void AssignBins(const SoftBinsAssignment& soft_bins_assignment, BinStats& bin_stats) const = 0;
+    virtual void AssignEdgeBins(const SoftBinsAssignment& soft_bins_assignment,
+                                BinStats& bin_stats) const = 0;
+    virtual blaze::CompressedVector<double> AssignScaffoldBins(const std::vector<debruijn_graph::EdgeId>& path,
+                                                               const BinStats& bin_stats) const = 0;
+    // FIXME: temporary return uint64_t, not BinId, until we refine cyclic deps
+    virtual std::vector<uint64_t> ChooseMajorBins(const blaze::CompressedVector<double>& bins_weights,
+                                                  const BinStats& bin_stats) const = 0;
+    virtual std::vector<uint64_t> ChooseMajorBins(const std::vector<debruijn_graph::EdgeId>& path,
+                                                  const BinStats& bin_stats) const {
+        return ChooseMajorBins(AssignScaffoldBins(path, bin_stats), bin_stats);
+    }
+
     virtual ~BinningAssignmentStrategy() = default;
 };
 }

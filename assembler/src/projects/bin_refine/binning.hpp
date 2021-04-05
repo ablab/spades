@@ -7,9 +7,10 @@
 #pragma once
 
 #include "assembly_graph/core/graph.hpp"
-#include "binning_assignment_strategy.hpp"
 
 #include "blaze/math/CompressedVector.h"
+
+#include "binning_assignment_strategy.hpp"
 
 #include <unordered_set>
 #include <unordered_map>
@@ -60,9 +61,9 @@ class BinStats {
     /// binning file in .tsv format (NODE_{scaffold_id}_* -> bin_id); scaffolds_file in .fasta format
     void LoadBinning(const std::string& binning_file, const ScaffoldsPaths &scaffolds_paths);
     void WriteToBinningFile(const std::string& binning_file, const ScaffoldsPaths &scaffolds_paths,
-                            const SoftBinsAssignment &edge_soft_labels, const io::IdMapper<std::string> &edge_mapper);
-    void AssignBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy);
-
+                            const SoftBinsAssignment &edge_soft_labels, const BinningAssignmentStrategy& assignment_strategy,
+                            const io::IdMapper<std::string> &edge_mapper);
+    void AssignEdgeBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy);
 
     const debruijn_graph::Graph& graph() const { return graph_;  }
 
@@ -86,9 +87,5 @@ class BinStats {
     std::unordered_map<BinLabel, BinId> bins_{};
     std::unordered_map<debruijn_graph::EdgeId, EdgeBinning> edges_binning_{};
     std::unordered_set<debruijn_graph::EdgeId> unbinned_edges_{};
-
-    std::vector<BinStats::BinId> ChooseMajorBins(const std::vector<debruijn_graph::EdgeId>& path) const;
-    std::vector<BinStats::BinId> ChooseMajorBins(const blaze::CompressedVector<double>& bins_weights) const;
-    blaze::CompressedVector<double> BinAssignment(const std::vector<debruijn_graph::EdgeId>& path) const;
 };
 }
