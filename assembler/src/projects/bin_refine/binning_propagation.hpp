@@ -14,8 +14,9 @@ class BinningPropagation {
  public:
     using FinalIteration = bool;
 
-    BinningPropagation(const debruijn_graph::Graph& g, double eps)
-        : g_(g), eps_(eps) {}
+    BinningPropagation(const debruijn_graph::Graph& g,
+                       size_t num_bins, double eps)
+            : g_(g), num_bins_(num_bins), eps_(eps) {}
 
     SoftBinsAssignment PropagateBinning(BinStats& bin_stats) const;
 
@@ -29,12 +30,8 @@ class BinningPropagation {
                                         const BinStats& bin_stats,
                                         unsigned iteration_step) const;
 
-    double PropagateFromEdge(std::vector<double>& labels_probabilities,
-                             debruijn_graph::EdgeId neighbour,
-                             const SoftBinsAssignment& cur_state,
-                             double weight) const;
-
     const debruijn_graph::Graph& g_;
+    const size_t num_bins_;
     const double eps_;
 };
 }

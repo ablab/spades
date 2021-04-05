@@ -7,10 +7,13 @@
 
 project(bin-refine CXX)
 
+set(BLAZE_LIBRARY_PATH ${EXT_DIR}/include/blaze)
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-
-add_executable(bin-refine binning_refiner.cpp binning.cpp binning_propagation.cpp majority_length_binning_assignment_strategy.cpp)
+add_executable(bin-refine
+               binning_refiner.cpp binning.cpp binning_propagation.cpp majority_length_binning_assignment_strategy.cpp)
+target_include_directories(bin-refine PRIVATE ${BLAZE_LIBRARY_PATH})
 target_link_libraries(bin-refine graphio common_modules ${COMMON_LIBRARIES})
 
 install(TARGETS bin-refine

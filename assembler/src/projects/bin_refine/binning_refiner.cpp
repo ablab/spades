@@ -46,15 +46,6 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
   }
 }
 
-std::vector<EdgeId> conjugate_path(const std::vector<EdgeId> &path,
-                                   const debruijn_graph::ConjugateDeBruijnGraph &g) {
-    std::vector<EdgeId> cpath;
-    for (auto it = path.crbegin(), e = path.crend(); it != e; ++it) {
-        cpath.push_back(g.conjugate(*it));
-    }
-    return cpath;
-}
-
 std::unique_ptr<BinningAssignmentStrategy> get_strategy(const std::string& strategy_name) {
     if (strategy_name == "m") {
         return std::make_unique<MajorityLengthBinningAssignmentStrategy>(MajorityLengthBinningAssignmentStrategy());
@@ -99,14 +90,14 @@ int main(int argc, char** argv) {
       BinStats binning(graph);
       binning.LoadBinning(cfg.binning_file, scaffolds_paths);
 
-      INFO("" << binning);
-      auto soft_edge_labels = BinningPropagation(graph, cfg.eps).PropagateBinning(binning);
+      INFO("Initial binning:\n" << binning);
+      auto soft_edge_labels = BinningPropagation(graph, binning.bins().size(), cfg.eps).PropagateBinning(binning);
       auto assignment_strategy = get_strategy(cfg.assignment_strategy);
       binning.AssignBins(soft_edge_labels, *assignment_strategy);
-      INFO("" << binning);
+      INFO("Final binning:\n" << binning);
+      INFO("Writing final binning");
       binning.WriteToBinningFile(cfg.output_file, scaffolds_paths,
                                  soft_edge_labels, *id_mapper);
-
   } catch (const std::string& s) {
       std::cerr << s << std::endl;
       return EINTR;
@@ -114,6 +105,7 @@ int main(int argc, char** argv) {
       std::cerr << "ERROR: " << e.what() << std::endl;
       return EINTR;
   }
+  INFO("Binning refining & propagation finished. Thanks for useful refining!");
 
   return 0;
 }
