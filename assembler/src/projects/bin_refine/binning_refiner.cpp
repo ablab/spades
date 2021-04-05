@@ -19,13 +19,18 @@
 using namespace debruijn_graph;
 using namespace bin_stats;
 
+enum class AssignStategy {
+    MajorityLength,
+    MaxLikelihood
+};
+
 struct gcfg {
-  size_t k = 55;
-  std::string graph;
-  std::string binning_file;
-  std::string output_file;
-  std::string assignment_strategy = "m";
-  double eps = 0.01;
+    size_t k = 55;
+    std::string graph;
+    std::string binning_file;
+    std::string output_file;
+    AssignStategy assignment_strategy = AssignStategy::MajorityLength;
+    double eps = 0.01;
 };
 
 static void process_cmdline(int argc, char** argv, gcfg& cfg) {
@@ -35,8 +40,10 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       cfg.graph << value("graph (in binary or GFA)"),
       cfg.binning_file << value("file with binning from binner in .tsv format"),
       cfg.output_file << value("path to file to write binning after propagation"),
-      (option("-e") & value("eps", cfg.eps)) % "iteration min epsilon",
-      (option("-s") & value("strategy", cfg.assignment_strategy)) % "binning assignment strategy"
+      (option("-e") & value("eps", cfg.eps)) % "convergence relative tolerance threshold",
+      (with_prefix("-S",
+                   option("max").set(cfg.assignment_strategy, AssignStategy::MajorityLength) |
+                   option("mle").set(cfg.assignment_strategy, AssignStategy::MaxLikelihood)) % "binning assignment strategy")
   );
 
   auto result = parse(argc, argv, cli);
@@ -46,12 +53,13 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
   }
 }
 
-std::unique_ptr<BinningAssignmentStrategy> get_strategy(const std::string& strategy_name) {
-    if (strategy_name == "m") {
-        return std::make_unique<MajorityLengthBinningAssignmentStrategy>(MajorityLengthBinningAssignmentStrategy());
+std::unique_ptr<BinningAssignmentStrategy> get_strategy(AssignStategy strategy) {
+    switch (strategy) {
+        default:
+            FATAL_ERROR("Unknown binning assignment strategy");
+        case AssignStategy::MajorityLength:
+            return std::make_unique<MajorityLengthBinningAssignmentStrategy>(MajorityLengthBinningAssignmentStrategy());
     }
-
-    return std::make_unique<MajorityLengthBinningAssignmentStrategy>(MajorityLengthBinningAssignmentStrategy());
 }
 
 int main(int argc, char** argv) {
@@ -65,6 +73,8 @@ int main(int argc, char** argv) {
   START_BANNER("Binning refiner & propagator");
 
   try {
+      auto assignment_strategy = get_strategy(cfg.assignment_strategy);
+
       std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
 
       gfa::GFAReader gfa(cfg.graph);
@@ -92,7 +102,7 @@ int main(int argc, char** argv) {
 
       INFO("Initial binning:\n" << binning);
       auto soft_edge_labels = BinningPropagation(graph, binning.bins().size(), cfg.eps).PropagateBinning(binning);
-      auto assignment_strategy = get_strategy(cfg.assignment_strategy);
+      INFO("Assigning edges to bins");
       binning.AssignEdgeBins(soft_edge_labels, *assignment_strategy);
       INFO("Final binning:\n" << binning);
       INFO("Writing final binning");
