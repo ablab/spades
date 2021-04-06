@@ -12,7 +12,7 @@ namespace bin_stats {
 
 class BinningRefiner {
  public:
-    BinningRefiner(const debruijn_graph::Graph& g) : g_(g) {}
+    explicit BinningRefiner(const debruijn_graph::Graph& g) : g_(g) {}
 
     virtual SoftBinsAssignment RefineBinning(const BinStats& bin_stats) const = 0;
  protected:
