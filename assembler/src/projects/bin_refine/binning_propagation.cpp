@@ -12,12 +12,12 @@
 using namespace bin_stats;
 using namespace debruijn_graph;
 
-SoftBinsAssignment BinningPropagation::PropagateBinning(BinStats& bin_stats) const {
+SoftBinsAssignment BinningPropagation::PropagateBinning(const BinStats& bin_stats) const {
   unsigned iteration_step = 0;
   SoftBinsAssignment state = InitLabels(bin_stats), new_state(state);
   while (true) {
       FinalIteration converged = PropagationIteration(state, new_state,
-                                                      bin_stats, iteration_step++);
+                                                      iteration_step++);
       if (converged)
           return new_state;
 
@@ -37,46 +37,49 @@ static double PropagateFromEdge(blaze::DynamicVector<double>& labels_probabiliti
 
 BinningPropagation::FinalIteration BinningPropagation::PropagationIteration(SoftBinsAssignment& new_state,
                                                                             const SoftBinsAssignment& cur_state,
-                                                                            const BinStats& bin_stats,
                                                                             unsigned iteration_step) const {
   double sum_diff = 0.0, after_prob = 0;
 
-  for (EdgeId e : bin_stats.unbinned_edges()) {
-    const EdgeLabels& edge_labels = cur_state.at(e);
-    blaze::DynamicVector<double> next_probs(num_bins_, 0);
+  for (const auto &entry : cur_state) {
+      EdgeId e = entry.first;
+      const EdgeLabels& edge_labels = entry.second;
+      if (edge_labels.is_binned)
+          continue;
 
-    double e_sum = 0.0;
-    // Not used now, but might be in the future
-    double incoming_weight = 1.0; // / double(g_.IncomingEdgeCount(g_.EdgeStart(e)));
-    for (EdgeId neighbour : g_.IncomingEdges(g_.EdgeStart(e))) {
-        if (neighbour == e)
-            continue;
+      blaze::DynamicVector<double> next_probs(num_bins_, 0);
 
-        e_sum += PropagateFromEdge(next_probs, neighbour, cur_state, incoming_weight);
-    }
-    for (EdgeId neighbour : g_.OutgoingEdges(g_.EdgeEnd(e))) {
-        if (neighbour == e)
-            continue;
+      double e_sum = 0.0;
+      // Not used now, but might be in the future
+      double incoming_weight = 1.0; // / double(g_.IncomingEdgeCount(g_.EdgeStart(e)));
+      for (EdgeId neighbour : g_.IncomingEdges(g_.EdgeStart(e))) {
+          if (neighbour == e)
+              continue;
 
-        e_sum += PropagateFromEdge(next_probs, neighbour, cur_state, incoming_weight);
-    }
+          e_sum += PropagateFromEdge(next_probs, neighbour, cur_state, incoming_weight);
+      }
+      for (EdgeId neighbour : g_.OutgoingEdges(g_.EdgeEnd(e))) {
+          if (neighbour == e)
+              continue;
 
-    // Note that e_sum is actually equals to # of non-empty predecessors,
-    // however, we use true sum here in order to compensate for possible
-    // rounding-off errors
-    if (e_sum == 0.0) {
-        new_state.at(e).labels_probabilities.reset();
-        continue;
-    }
+          e_sum += PropagateFromEdge(next_probs, neighbour, cur_state, incoming_weight);
+      }
 
-    double inv_sum = 1.0 / e_sum;
-    // FIXME: iterator over labels_probabilities
-    for (size_t i = 0; i < next_probs.size(); ++i) {
-        next_probs[i] *= inv_sum;
-        after_prob += next_probs[i];
-        sum_diff += std::abs(next_probs[i] - edge_labels.labels_probabilities[i]);
-    }
-    new_state.at(e).labels_probabilities = next_probs;
+      // Note that e_sum is actually equals to # of non-empty predecessors,
+      // however, we use true sum here in order to compensate for possible
+      // rounding-off errors
+      if (e_sum == 0.0) {
+          new_state.at(e).labels_probabilities.reset();
+          continue;
+      }
+
+      double inv_sum = 1.0 / e_sum;
+      // FIXME: iterator over labels_probabilities
+      for (size_t i = 0; i < next_probs.size(); ++i) {
+          next_probs[i] *= inv_sum;
+          after_prob += next_probs[i];
+          sum_diff += std::abs(next_probs[i] - edge_labels.labels_probabilities[i]);
+      }
+      new_state.at(e).labels_probabilities = next_probs;
   }
 
   VERBOSE_POWER_T2(iteration_step, 0,
@@ -97,16 +100,20 @@ SoftBinsAssignment BinningPropagation::InitLabels(const BinStats& bin_stats) con
     for (EdgeId e : bin_stats.graph().edges())
         state.emplace(e, EdgeLabels(e, bin_stats));
 
-    EqualizeConjugates(state, bin_stats);
+    EqualizeConjugates(state);
 
     return state;
 }
 
-void BinningPropagation::EqualizeConjugates(SoftBinsAssignment& state, const BinStats& bin_stats) const {
-    for (EdgeId e : bin_stats.unbinned_edges()) {
-        EdgeLabels& edge_labels = state.at(e);
-        EdgeLabels& conjugate_labels = state.at(g_.conjugate(e));
-        edge_labels.labels_probabilities = (edge_labels.labels_probabilities + conjugate_labels.labels_probabilities) / 2;
-        conjugate_labels.labels_probabilities = edge_labels.labels_probabilities;
-    }
+void BinningPropagation::EqualizeConjugates(SoftBinsAssignment& state) const {
+  for (auto &entry : state) {
+      EdgeId e = entry.first;
+      EdgeLabels& edge_labels = entry.second;
+      if (edge_labels.is_binned)
+          continue;
+
+      EdgeLabels& conjugate_labels = state.at(g_.conjugate(e));
+      edge_labels.labels_probabilities = (edge_labels.labels_probabilities + conjugate_labels.labels_probabilities) / 2;
+      conjugate_labels.labels_probabilities = edge_labels.labels_probabilities;
+  }
 }
