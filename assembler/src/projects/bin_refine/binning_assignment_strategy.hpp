@@ -20,6 +20,9 @@ using SoftBinsAssignment = std::unordered_map<debruijn_graph::EdgeId, EdgeLabels
 
 class BinningAssignmentStrategy {
 public:
+    BinningAssignmentStrategy(bool allow_multiple = false)
+            : allow_multiple_(allow_multiple) {}
+    
     virtual void AssignEdgeBins(const SoftBinsAssignment& soft_bins_assignment,
                                 BinStats& bin_stats) const = 0;
     virtual blaze::CompressedVector<double> AssignScaffoldBins(const std::vector<debruijn_graph::EdgeId>& path,
@@ -38,5 +41,8 @@ public:
     }
 
     virtual ~BinningAssignmentStrategy() = default;
+
+  protected:
+    bool allow_multiple_;
 };
 }

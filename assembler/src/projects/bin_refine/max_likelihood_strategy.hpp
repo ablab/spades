@@ -12,8 +12,8 @@ namespace bin_stats {
 
 class MaxLikelihoodBinningAssignmentStrategy : public BinningAssignmentStrategy {
   public:
-    MaxLikelihoodBinningAssignmentStrategy(double thr = 1e-6)
-            : thr_(thr) {}
+    MaxLikelihoodBinningAssignmentStrategy(bool multiple = false, double thr = 1e-6)
+            : BinningAssignmentStrategy(multiple), thr_(thr) {}
     
     void AssignEdgeBins(const SoftBinsAssignment& soft_bins_assignment, BinStats& bin_stats) const override;
     blaze::CompressedVector<double> AssignScaffoldBins(const std::vector<debruijn_graph::EdgeId>& path,
