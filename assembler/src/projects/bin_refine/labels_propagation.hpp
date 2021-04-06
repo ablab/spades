@@ -7,18 +7,18 @@
 #pragma once
 
 #include "binning.hpp"
+#include "binning_refiner.hpp"
 
 namespace bin_stats {
 
-class BinningPropagation {
+class LabelsPropagation : public BinningRefiner {
  public:
     using FinalIteration = bool;
 
-    BinningPropagation(const debruijn_graph::Graph& g,
-                       size_t num_bins, double eps)
-            : g_(g), num_bins_(num_bins), eps_(eps) {}
+    LabelsPropagation(const debruijn_graph::Graph& g, size_t num_bins, double eps)
+        : BinningRefiner(g), num_bins_(num_bins), eps_(eps) {}
 
-    SoftBinsAssignment PropagateBinning(const BinStats& bin_stats) const;
+    SoftBinsAssignment RefineBinning(const BinStats& bin_stats) const override;
 
  private:
     SoftBinsAssignment InitLabels(const BinStats& bin_stats) const;
@@ -27,9 +27,14 @@ class BinningPropagation {
 
     FinalIteration PropagationIteration(SoftBinsAssignment& new_state,
                                         const SoftBinsAssignment& cur_state,
+                                        const BinStats& bin_stats,
                                         unsigned iteration_step) const;
 
-    const debruijn_graph::Graph& g_;
+    static double PropagateFromEdge(blaze::DynamicVector<double>& labels_probabilities,
+                                    debruijn_graph::EdgeId neighbour,
+                                    const SoftBinsAssignment& cur_state,
+                                    double weight);
+
     const size_t num_bins_;
     const double eps_;
 };

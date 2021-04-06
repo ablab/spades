@@ -4,7 +4,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "binning_propagation.hpp"
+#include "labels_propagation.hpp"
 #include "binning.hpp"
 
 #include "blaze/math/DynamicVector.h"
@@ -12,7 +12,7 @@
 using namespace bin_stats;
 using namespace debruijn_graph;
 
-SoftBinsAssignment BinningPropagation::PropagateBinning(const BinStats& bin_stats) const {
+SoftBinsAssignment LabelsPropagation::RefineBinning(const BinStats& bin_stats) const {
   unsigned iteration_step = 0;
   SoftBinsAssignment state = InitLabels(bin_stats), new_state(state);
   while (true) {
@@ -35,9 +35,10 @@ static double PropagateFromEdge(blaze::DynamicVector<double>& labels_probabiliti
     return weight * blaze::sum(neig_probs);
 }
 
-BinningPropagation::FinalIteration BinningPropagation::PropagationIteration(SoftBinsAssignment& new_state,
-                                                                            const SoftBinsAssignment& cur_state,
-                                                                            unsigned iteration_step) const {
+LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBinsAssignment& new_state,
+                                                                          const SoftBinsAssignment& cur_state,
+
+                                                                          unsigned iteration_step) const {
   double sum_diff = 0.0, after_prob = 0;
 
   for (const auto &entry : cur_state) {
@@ -94,7 +95,7 @@ BinningPropagation::FinalIteration BinningPropagation::PropagationIteration(Soft
   return converged;
 }
 
-SoftBinsAssignment BinningPropagation::InitLabels(const BinStats& bin_stats) const {
+SoftBinsAssignment LabelsPropagation::InitLabels(const BinStats& bin_stats) const {
     SoftBinsAssignment state;
     for (EdgeId e : bin_stats.graph().edges())
         state.emplace(e, EdgeLabels(e, bin_stats));
@@ -104,7 +105,7 @@ SoftBinsAssignment BinningPropagation::InitLabels(const BinStats& bin_stats) con
     return state;
 }
 
-void BinningPropagation::EqualizeConjugates(SoftBinsAssignment& state) const {
+void LabelsPropagation::EqualizeConjugates(SoftBinsAssignment& state) const {
   for (auto &entry : state) {
       EdgeId e = entry.first;
       EdgeLabels& edge_labels = entry.second;

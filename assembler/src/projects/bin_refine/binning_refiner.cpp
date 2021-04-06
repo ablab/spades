@@ -6,10 +6,12 @@
 
 #include "assembly_graph/core/graph.hpp"
 #include "binning.hpp"
-#include "binning_propagation.hpp"
 #include "majority_length_binning_assignment_strategy.hpp"
 #include "max_likelihood_strategy.hpp"
+#include "labels_correction.hpp"
 
+#include "modules/alignment/kmer_mapper.hpp"
+#include "pipeline/graph_pack.hpp"
 #include "toolchain/utils.hpp"
 #include "utils/segfault_handler.hpp"
 
@@ -30,9 +32,12 @@ struct gcfg {
     std::string output_file;
     AssignStrategy assignment_strategy = AssignStrategy::MajorityLength;
     double eps = 0.01;
+    double labeled_alpha = 0.6;
+    double unlabeled_alpha = 0.999;
     bool allow_multiple = false;
 };
 
+// FIXME: add option to choose refiner
 static void process_cmdline(int argc, char** argv, gcfg& cfg) {
   using namespace clipp;
 
@@ -42,6 +47,8 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       cfg.output_file << value("path to file to write binning after propagation"),
       (option("-e") & value("eps", cfg.eps)) % "convergence relative tolerance threshold",
       (option("-m").set(cfg.allow_multiple) % "allow multiple bin assignment"),
+      (option("-la") & value("labeled alpha", cfg.labeled_alpha)) % "labels correction alpha for labeled data",
+      (option("-ua") & value("unlabeled alpha", cfg.unlabeled_alpha)) % "labels correction alpha for unlabeled data",
       (with_prefix("-S",
                    option("max").set(cfg.assignment_strategy, AssignStrategy::MajorityLength) |
                    option("mle").set(cfg.assignment_strategy, AssignStrategy::MaxLikelihood)) % "binning assignment strategy")
@@ -104,7 +111,8 @@ int main(int argc, char** argv) {
       binning.LoadBinning(cfg.binning_file, scaffolds_paths);
 
       INFO("Initial binning:\n" << binning);
-      auto soft_edge_labels = BinningPropagation(graph, binning.bins().size(), cfg.eps).PropagateBinning(binning);
+      auto soft_edge_labels = LabelsCorrection(graph, binning.bins().size(), cfg.eps, cfg.labeled_alpha, cfg.unlabeled_alpha)
+          .RefineBinning(binning);
       INFO("Assigning edges to bins");
       binning.AssignEdgeBins(soft_edge_labels, *assignment_strategy);
       INFO("Final binning:\n" << binning);
