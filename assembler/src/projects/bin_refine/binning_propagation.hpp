@@ -18,16 +18,15 @@ class BinningPropagation {
                        size_t num_bins, double eps)
             : g_(g), num_bins_(num_bins), eps_(eps) {}
 
-    SoftBinsAssignment PropagateBinning(BinStats& bin_stats) const;
+    SoftBinsAssignment PropagateBinning(const BinStats& bin_stats) const;
 
  private:
     SoftBinsAssignment InitLabels(const BinStats& bin_stats) const;
 
-    void EqualizeConjugates(SoftBinsAssignment& state, const BinStats& bin_stats) const;
+    void EqualizeConjugates(SoftBinsAssignment& state) const;
 
     FinalIteration PropagationIteration(SoftBinsAssignment& new_state,
                                         const SoftBinsAssignment& cur_state,
-                                        const BinStats& bin_stats,
                                         unsigned iteration_step) const;
 
     const debruijn_graph::Graph& g_;
