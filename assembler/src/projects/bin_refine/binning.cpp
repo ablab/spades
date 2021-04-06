@@ -22,10 +22,12 @@ EdgeLabels::EdgeLabels(const EdgeId e, const BinStats& bin_stats)
     is_binned = bins != bin_stats.edges_binning().end();
     labels_probabilities.resize(bin_stats.bins().size());
 
+    is_repetitive = false;
     if (is_binned) {
         size_t sz = bins->second.size();
         for (bin_stats::BinStats::BinId bin : bins->second)
             labels_probabilities.set(bin, 1.0 / static_cast<double>(sz));
+        is_repetitive = sz > 1;
     }
 }
 
@@ -42,6 +44,9 @@ void BinStats::ScaffoldsToEdges(const ScaffoldsPaths &scaffolds_paths) {
           INFO("No path for scaffold " << scaffold_name);
           continue;
       }
+
+      if (bin_id == UNBINNED)
+          continue;
 
       for (EdgeId e : path_entry->second) {
           edges_binning_[e].insert(bin_id);
@@ -69,21 +74,23 @@ void BinStats::LoadBinning(const std::string& binning_file, const ScaffoldsPaths
   BinId max_bin_id = 0;
   for (std::string line; std::getline(binning_reader, line, '\n');) {
     std::string scaffold_name;
+    BinLabel bin_label;
+
     std::istringstream line_stream(line);
     line_stream >> scaffold_name;
-    BinLabel bin_label;
     line_stream >> bin_label;
-    if (bin_label == UNBINNED_ID) // unbinned scaffold, skip
-      continue;
-
     BinId cbin_id;
-    auto entry = bins_.find(bin_label);
-    if (entry == bins_.end()) { // new bin label
-        cbin_id = max_bin_id++;
-        bin_labels_.emplace(cbin_id, bin_label);
-        bins_.emplace(bin_label, cbin_id);
-    } else {
-        cbin_id = entry->second;
+    if (bin_label == UNBINNED_ID) // unbinned scaffold
+        cbin_id = UNBINNED;
+    else {
+        auto entry = bins_.find(bin_label);
+        if (entry == bins_.end()) { // new bin label
+            cbin_id = max_bin_id++;
+            bin_labels_.emplace(cbin_id, bin_label);
+            bins_.emplace(bin_label, cbin_id);
+        } else {
+            cbin_id = entry->second;
+        }
     }
 
     scaffolds_binning_[scaffold_name] = cbin_id;
@@ -133,7 +140,7 @@ void BinStats::WriteToBinningFile(const std::string& binning_file, const Scaffol
         std::sort(weights.begin(), weights.end(), [] (const auto &lhs, const auto &rhs) {
             if (math::eq(rhs.second, lhs.second))
                 return lhs.first < rhs.first;
-            
+
             return rhs.second < lhs.second;
         });
         for (const auto &entry : weights)

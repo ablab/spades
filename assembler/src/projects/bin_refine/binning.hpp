@@ -32,7 +32,8 @@ using LabelProbabilities = blaze::CompressedVector<double>;
 struct EdgeLabels {
     // TODO: Could pack e and is_binned into single 64 bits
     debruijn_graph::EdgeId e;
-    bool is_binned;
+    bool is_binned : 1;
+    bool is_repetitive : 1;
     LabelProbabilities labels_probabilities;
 
     EdgeLabels(debruijn_graph::EdgeId e, const BinStats& bin_stats);
