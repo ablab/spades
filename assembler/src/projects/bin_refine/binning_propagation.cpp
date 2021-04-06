@@ -73,12 +73,10 @@ BinningPropagation::FinalIteration BinningPropagation::PropagationIteration(Soft
       }
 
       double inv_sum = 1.0 / e_sum;
-      // FIXME: iterator over labels_probabilities
-      for (size_t i = 0; i < next_probs.size(); ++i) {
-          next_probs[i] *= inv_sum;
-          after_prob += next_probs[i];
-          sum_diff += std::abs(next_probs[i] - edge_labels.labels_probabilities[i]);
-      }
+      next_probs *= inv_sum;
+      after_prob += sum(next_probs);
+      sum_diff += sum(abs(next_probs - edge_labels.labels_probabilities));
+
       new_state.at(e).labels_probabilities = next_probs;
   }
   EqualizeConjugates(new_state);
