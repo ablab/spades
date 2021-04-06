@@ -11,7 +11,7 @@
 namespace bin_stats {
 
 // FIXME: extract common with LabelsPropagation
-class LabelsCorrection : BinningRefiner {
+class LabelsCorrection : public BinningRefiner {
  public:
     using FinalIteration = bool;
 

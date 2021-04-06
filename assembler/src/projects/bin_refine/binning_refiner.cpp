@@ -8,6 +8,7 @@
 #include "binning.hpp"
 #include "majority_length_binning_assignment_strategy.hpp"
 #include "max_likelihood_strategy.hpp"
+#include "labels_propagation.hpp"
 #include "labels_correction.hpp"
 
 #include "modules/alignment/kmer_mapper.hpp"
@@ -25,6 +26,12 @@ enum class AssignStrategy {
     MaxLikelihood
 };
 
+// TODO: add opportunity to choose few types to run in some order
+enum class RefinerType {
+    Propagation,
+    Correction
+};
+
 struct gcfg {
     size_t k = 55;
     std::string graph;
@@ -35,9 +42,9 @@ struct gcfg {
     double labeled_alpha = 0.6;
     double unlabeled_alpha = 0.999;
     bool allow_multiple = false;
+    RefinerType refiner_type = RefinerType::Propagation;
 };
 
-// FIXME: add option to choose refiner
 static void process_cmdline(int argc, char** argv, gcfg& cfg) {
   using namespace clipp;
 
@@ -47,11 +54,13 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       cfg.output_file << value("path to file to write binning after propagation"),
       (option("-e") & value("eps", cfg.eps)) % "convergence relative tolerance threshold",
       (option("-m").set(cfg.allow_multiple) % "allow multiple bin assignment"),
-      (option("-la") & value("labeled alpha", cfg.labeled_alpha)) % "labels correction alpha for labeled data",
-      (option("-ua") & value("unlabeled alpha", cfg.unlabeled_alpha)) % "labels correction alpha for unlabeled data",
       (with_prefix("-S",
                    option("max").set(cfg.assignment_strategy, AssignStrategy::MajorityLength) |
-                   option("mle").set(cfg.assignment_strategy, AssignStrategy::MaxLikelihood)) % "binning assignment strategy")
+                   option("mle").set(cfg.assignment_strategy, AssignStrategy::MaxLikelihood)) % "binning assignment strategy"),
+      in_sequence(option("-Rcorr").set(cfg.refiner_type, RefinerType::Correction),
+           (option("-la") & value("labeled alpha", cfg.labeled_alpha)) % "labels correction alpha for labeled data",
+           (option("-ua") & value("unlabeled alpha", cfg.unlabeled_alpha)) % "labels correction alpha for unlabeled data") |
+      option("-Rprop").set(cfg.refiner_type, RefinerType::Propagation) % "binning refiner type"
   );
 
   auto result = parse(argc, argv, cli);
@@ -69,6 +78,17 @@ std::unique_ptr<BinningAssignmentStrategy> get_strategy(const gcfg &cfg) {
             return std::make_unique<MajorityLengthBinningAssignmentStrategy>(cfg.allow_multiple);
         case AssignStrategy::MaxLikelihood:
             return std::make_unique<MaxLikelihoodBinningAssignmentStrategy>(cfg.allow_multiple);
+    }
+}
+
+std::unique_ptr<BinningRefiner> get_refiner(const gcfg& cfg, const Graph& graph, size_t num_bins) {
+    switch (cfg.refiner_type) {
+        default:
+            FATAL_ERROR("Unknown binning refiner type");
+        case RefinerType::Propagation:
+            return std::make_unique<LabelsPropagation>(graph, num_bins, cfg.eps);
+        case RefinerType::Correction:
+            return std::make_unique<LabelsCorrection>(graph, num_bins, cfg.eps, cfg.labeled_alpha, cfg.unlabeled_alpha);
     }
 }
 
@@ -111,8 +131,8 @@ int main(int argc, char** argv) {
       binning.LoadBinning(cfg.binning_file, scaffolds_paths);
 
       INFO("Initial binning:\n" << binning);
-      auto soft_edge_labels = LabelsCorrection(graph, binning.bins().size(), cfg.eps, cfg.labeled_alpha, cfg.unlabeled_alpha)
-          .RefineBinning(binning);
+      auto binning_refiner = get_refiner(cfg, graph, binning.bins().size());
+      auto soft_edge_labels = binning_refiner->RefineBinning(binning);
       INFO("Assigning edges to bins");
       binning.AssignEdgeBins(soft_edge_labels, *assignment_strategy);
       INFO("Final binning:\n" << binning);
