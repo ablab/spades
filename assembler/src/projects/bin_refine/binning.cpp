@@ -117,7 +117,7 @@ void BinStats::WriteToBinningFile(const std::string& binning_file, const Scaffol
       out_lens << scaffold_name << '\t';
       out_lens << "nz: " << bins_weights.nonZeros();
       for (const auto &entry : bins_weights)
-          out_lens << '\t' << entry.index() << ":" << entry.value();
+          out_lens << '\t' << bin_labels_.at(entry.index()) << ":" << entry.value();
       out_lens << '\n';
     }
 
@@ -125,7 +125,15 @@ void BinStats::WriteToBinningFile(const std::string& binning_file, const Scaffol
     out_edges << "# edge_id\tbinned\twas_binned\tedge probs\n";
     for (EdgeId e : graph_.canonical_edges()) {
         const EdgeLabels& edge_labels = soft_edge_labels.at(e);
-        out_edges << edge_mapper[graph_.int_id(e)] << '\t' << !unbinned_edges_.count(e) << '\t' << edge_labels << '\n';
+        out_edges << edge_mapper[graph_.int_id(e)] << '\t' << !unbinned_edges_.count(e) << '\t'
+                  << edge_labels.is_binned << '\t' << "nz: " << edge_labels.labels_probabilities.nonZeros();
+        std::vector<std::pair<BinId, double>> weights;
+        for (const auto &entry : edge_labels.labels_probabilities)
+            weights.emplace_back(entry.index(), entry.value());
+        std::sort(weights.begin(), weights.end(), [] (const auto &lhs, const auto &rhs) { return rhs.second < lhs.second; });
+        for (const auto &entry : weights)
+            out_edges << '\t' << bin_labels_.at(entry.first) << ":" << entry.second;
+        out_edges << '\n';
     }
 }
 
