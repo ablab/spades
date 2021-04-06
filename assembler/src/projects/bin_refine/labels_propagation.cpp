@@ -25,7 +25,7 @@ SoftBinsAssignment LabelsPropagation::RefineBinning(const BinStats& bin_stats) c
   }
 }
 
-static double PropagateFromEdge(blaze::DynamicVector<double>& labels_probabilities,
+double LabelsPropagation::PropagateFromEdge(blaze::DynamicVector<double>& labels_probabilities,
                                 debruijn_graph::EdgeId neighbour,
                                 const SoftBinsAssignment& cur_state,
                                 double weight) {
@@ -37,7 +37,6 @@ static double PropagateFromEdge(blaze::DynamicVector<double>& labels_probabiliti
 
 LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBinsAssignment& new_state,
                                                                           const SoftBinsAssignment& cur_state,
-
                                                                           unsigned iteration_step) const {
   double sum_diff = 0.0, after_prob = 0;
 

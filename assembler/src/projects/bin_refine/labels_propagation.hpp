@@ -27,7 +27,6 @@ class LabelsPropagation : public BinningRefiner {
 
     FinalIteration PropagationIteration(SoftBinsAssignment& new_state,
                                         const SoftBinsAssignment& cur_state,
-                                        const BinStats& bin_stats,
                                         unsigned iteration_step) const;
 
     static double PropagateFromEdge(blaze::DynamicVector<double>& labels_probabilities,
