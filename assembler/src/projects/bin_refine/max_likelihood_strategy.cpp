@@ -71,5 +71,16 @@ MaxLikelihoodBinningAssignmentStrategy::ChooseMajorBins(const blaze::CompressedV
     if (major_bin == BinStats::UNBINNED)
         return { };
 
-    return { major_bin };
+    if (allow_multiple_) {
+        std::vector<BinStats::BinId> res;
+        for (const auto &entry : bins_weights) {
+            if (!math::eq(entry.value(), max_logL))
+                continue;
+
+            res.push_back(entry.index());
+        }
+        VERIFY(res.size() >= 1);
+        return res;
+    } else
+        return { major_bin };
 }

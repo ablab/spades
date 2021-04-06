@@ -30,6 +30,7 @@ struct gcfg {
     std::string output_file;
     AssignStrategy assignment_strategy = AssignStrategy::MajorityLength;
     double eps = 0.01;
+    bool allow_multiple = false;
 };
 
 static void process_cmdline(int argc, char** argv, gcfg& cfg) {
@@ -40,6 +41,7 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       cfg.binning_file << value("file with binning from binner in .tsv format"),
       cfg.output_file << value("path to file to write binning after propagation"),
       (option("-e") & value("eps", cfg.eps)) % "convergence relative tolerance threshold",
+      (option("-m").set(cfg.allow_multiple) % "allow multiple bin assignment"),
       (with_prefix("-S",
                    option("max").set(cfg.assignment_strategy, AssignStrategy::MajorityLength) |
                    option("mle").set(cfg.assignment_strategy, AssignStrategy::MaxLikelihood)) % "binning assignment strategy")
@@ -52,14 +54,14 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
   }
 }
 
-std::unique_ptr<BinningAssignmentStrategy> get_strategy(AssignStrategy strategy) {
-    switch (strategy) {
+std::unique_ptr<BinningAssignmentStrategy> get_strategy(const gcfg &cfg) {
+    switch (cfg.assignment_strategy) {
         default:
             FATAL_ERROR("Unknown binning assignment strategy");
         case AssignStrategy::MajorityLength:
-            return std::make_unique<MajorityLengthBinningAssignmentStrategy>();
+            return std::make_unique<MajorityLengthBinningAssignmentStrategy>(cfg.allow_multiple);
         case AssignStrategy::MaxLikelihood:
-            return std::make_unique<MaxLikelihoodBinningAssignmentStrategy>();
+            return std::make_unique<MaxLikelihoodBinningAssignmentStrategy>(cfg.allow_multiple);
     }
 }
 
@@ -74,7 +76,7 @@ int main(int argc, char** argv) {
   START_BANNER("Binning refiner & propagator");
 
   try {
-      auto assignment_strategy = get_strategy(cfg.assignment_strategy);
+      auto assignment_strategy = get_strategy(cfg);
 
       std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
 
