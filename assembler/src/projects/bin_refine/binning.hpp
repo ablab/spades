@@ -52,7 +52,8 @@ class BinStats {
     using ScaffoldName = std::string;
     using EdgeBinning = std::unordered_set<BinId>;
     using ScaffoldsPaths = std::unordered_map<ScaffoldName, std::unordered_set<debruijn_graph::EdgeId>>;
-
+    using BinLabels = std::unordered_map<BinId, BinLabel>;
+    
     static constexpr BinId UNBINNED = BinId(-1);
 
     explicit BinStats(const debruijn_graph::Graph& g)
@@ -83,7 +84,7 @@ class BinStats {
     const debruijn_graph::Graph& graph_;
 
     std::unordered_map<ScaffoldName, BinId> scaffolds_binning_{};
-    std::unordered_map<BinId, BinLabel> bin_labels_{};
+    BinLabels bin_labels_{};
     std::unordered_map<BinLabel, BinId> bins_{};
     std::unordered_map<debruijn_graph::EdgeId, EdgeBinning> edges_binning_{};
     std::unordered_set<debruijn_graph::EdgeId> unbinned_edges_{};
