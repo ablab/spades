@@ -81,6 +81,7 @@ BinningPropagation::FinalIteration BinningPropagation::PropagationIteration(Soft
       }
       new_state.at(e).labels_probabilities = next_probs;
   }
+  EqualizeConjugates(new_state);
 
   VERBOSE_POWER_T2(iteration_step, 0,
                    "Iteration " << iteration_step << ", prob " << after_prob << ", diff " << sum_diff << ", eps " << sum_diff / after_prob);
