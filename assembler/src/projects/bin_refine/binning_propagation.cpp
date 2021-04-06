@@ -43,7 +43,7 @@ BinningPropagation::FinalIteration BinningPropagation::PropagationIteration(Soft
   for (const auto &entry : cur_state) {
       EdgeId e = entry.first;
       const EdgeLabels& edge_labels = entry.second;
-      if (edge_labels.is_binned)
+      if (edge_labels.is_binned && !edge_labels.is_repetitive)
           continue;
 
       blaze::DynamicVector<double> next_probs(num_bins_, 0);
@@ -108,7 +108,7 @@ void BinningPropagation::EqualizeConjugates(SoftBinsAssignment& state) const {
   for (auto &entry : state) {
       EdgeId e = entry.first;
       EdgeLabels& edge_labels = entry.second;
-      if (edge_labels.is_binned)
+      if (edge_labels.is_binned && !edge_labels.is_repetitive)
           continue;
 
       EdgeLabels& conjugate_labels = state.at(g_.conjugate(e));

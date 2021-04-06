@@ -78,6 +78,8 @@ class BinStats {
     const auto& bins() const { return bins_; }
     const auto& bin_labels() const { return bin_labels_; }
 
+    const auto& multiplicities() const { return edges_multiplicity_; }
+
     friend std::ostream &operator<<(std::ostream &os, const BinStats &stats);
  private:
     void ScaffoldsToEdges(const ScaffoldsPaths &scaffolds_paths);
@@ -89,5 +91,6 @@ class BinStats {
     std::unordered_map<BinLabel, BinId> bins_{};
     std::unordered_map<debruijn_graph::EdgeId, EdgeBinning> edges_binning_{};
     std::unordered_set<debruijn_graph::EdgeId> unbinned_edges_{};
+    std::unordered_map<debruijn_graph::EdgeId, size_t> edges_multiplicity_{};
 };
 }

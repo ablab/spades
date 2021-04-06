@@ -25,9 +25,10 @@ EdgeLabels::EdgeLabels(const EdgeId e, const BinStats& bin_stats)
     is_repetitive = false;
     if (is_binned) {
         size_t sz = bins->second.size();
+        //size_t sz = bin_stats.multiplicities().at(e);
         for (bin_stats::BinStats::BinId bin : bins->second)
             labels_probabilities.set(bin, 1.0 / static_cast<double>(sz));
-        is_repetitive = sz > 1;
+        is_repetitive = bin_stats.multiplicities().at(e) > 1;
     }
 }
 
@@ -45,12 +46,13 @@ void BinStats::ScaffoldsToEdges(const ScaffoldsPaths &scaffolds_paths) {
           continue;
       }
 
-      if (bin_id == UNBINNED)
-          continue;
-
       for (EdgeId e : path_entry->second) {
-          edges_binning_[e].insert(bin_id);
-          edges_binning_[graph_.conjugate(e)].insert(bin_id);
+          if (bin_id != UNBINNED) {
+              edges_binning_[e].insert(bin_id);
+              edges_binning_[graph_.conjugate(e)].insert(bin_id);
+          }
+          edges_multiplicity_[e] += 1;
+          edges_multiplicity_[graph_.conjugate(e)] += 1;
       }
   }
 
