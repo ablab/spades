@@ -25,7 +25,12 @@ class LabelsCorrection : public BinningRefiner {
           labeled_alpha_(labeled_alpha),
           unlabeled_alpha_(unlabeled_alpha),
           num_bins_(num_bins),
-          stochastic_matrix_(CalcStochasticMatrix()) {}
+          stochastic_matrix_(CalcStochasticMatrix()) {
+        max_edge_length_ = 0;
+        for (debruijn_graph::EdgeId e : g.edges()) {
+            max_edge_length_ = std::max(max_edge_length_, g.length(e));
+        }
+    }
 
     SoftBinsAssignment RefineBinning(const BinStats& bin_stats) const override;
 
@@ -37,14 +42,17 @@ class LabelsCorrection : public BinningRefiner {
     FinalIteration PropagationIteration(SoftBinsAssignment& new_state,
                                         const SoftBinsAssignment& cur_state,
                                         const SoftBinsAssignment& origin_state,
+                                        const BinStats& bin_stats,
                                         unsigned iteration_step) const;
 
-    static double PropagateFromEdge(blaze::DynamicVector<double>& labels_probabilities,
-                                    debruijn_graph::EdgeId neighbour,
-                                    const SoftBinsAssignment& cur_state,
-                                    const SoftBinsAssignment& origin_state,
-                                    double stochastic_value,
-                                    double alpha);
+    double PropagateFromEdge(debruijn_graph::EdgeId e,
+                             blaze::DynamicVector<double>& labels_probabilities,
+                             debruijn_graph::EdgeId neighbour,
+                             const SoftBinsAssignment& cur_state,
+                             const SoftBinsAssignment& origin_state,
+                             const BinStats& bin_stats,
+                             double stochastic_value,
+                             double alpha) const;
 
     std::unordered_map<debruijn_graph::EdgeId,
                        std::unordered_map<debruijn_graph::EdgeId, double>> CalcStochasticMatrix();
@@ -55,5 +63,6 @@ class LabelsCorrection : public BinningRefiner {
     const size_t num_bins_;
     const std::unordered_map<debruijn_graph::EdgeId, std::unordered_map<debruijn_graph::EdgeId, double>>
         stochastic_matrix_;
+    size_t max_edge_length_;
 };
 }

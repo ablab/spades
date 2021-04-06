@@ -13,7 +13,7 @@ SoftBinsAssignment LabelsCorrection::RefineBinning(const BinStats& bin_stats) co
     unsigned iteration_step = 0;
     SoftBinsAssignment state = InitLabels(bin_stats), new_state(state), origin_state(state);
     while (true) {
-        FinalIteration converged = PropagationIteration(state, new_state, origin_state, iteration_step++);
+        FinalIteration converged = PropagationIteration(state, new_state, origin_state, bin_stats, iteration_step++);
         if (converged)
             return new_state;
 
@@ -24,6 +24,7 @@ SoftBinsAssignment LabelsCorrection::RefineBinning(const BinStats& bin_stats) co
 LabelsCorrection::FinalIteration LabelsCorrection::PropagationIteration(SoftBinsAssignment& new_state,
                                                                           const SoftBinsAssignment& cur_state,
                                                                           const SoftBinsAssignment& origin_state,
+                                                                          const BinStats& bin_stats,
                                                                           unsigned iteration_step) const {
     double sum_diff = 0.0, after_prob = 0;
 
@@ -43,13 +44,13 @@ LabelsCorrection::FinalIteration LabelsCorrection::PropagationIteration(SoftBins
             if (neighbour == e)
                 continue;
 
-            e_sum += PropagateFromEdge(next_probs, neighbour, cur_state, origin_state, e_stochastic_p.at(neighbour), alpha);
+            e_sum += PropagateFromEdge(e, next_probs, neighbour, cur_state, origin_state, bin_stats, e_stochastic_p.at(neighbour), alpha);
         }
         for (EdgeId neighbour : g_.OutgoingEdges(g_.EdgeEnd(e))) {
             if (neighbour == e)
                 continue;
 
-            e_sum += PropagateFromEdge(next_probs, neighbour, cur_state, origin_state, e_stochastic_p.at(neighbour), alpha);
+            e_sum += PropagateFromEdge(e, next_probs, neighbour, cur_state, origin_state, bin_stats, e_stochastic_p.at(neighbour), alpha);
         }
 
         // Note that e_sum is actually equals to # of non-empty predecessors,
@@ -166,12 +167,20 @@ std::unordered_map<debruijn_graph::EdgeId,
     return matrix_w;
 }
 
-double LabelsCorrection::PropagateFromEdge(blaze::DynamicVector<double>& labels_probabilities,
-                                           debruijn_graph::EdgeId neighbour,
+double LabelsCorrection::PropagateFromEdge(EdgeId e,
+                                           blaze::DynamicVector<double>& labels_probabilities,
+                                           EdgeId neighbour,
                                            const SoftBinsAssignment& cur_state,
                                            const SoftBinsAssignment& origin_state,
+                                           const BinStats& bin_stats,
                                            double stochastic_value,
-                                           double alpha) {
+                                           double alpha) const {
+    const double length_coefficient = static_cast<double>(max_edge_length_ - g_.length(e)) / static_cast<double>(max_edge_length_);
+    const size_t multiplicity = bin_stats.multiplicities().at(e);
+
+    alpha += (1.0 - alpha) / static_cast<double>(multiplicity) * static_cast<double>(multiplicity - 1);
+    alpha *= length_coefficient;
+
     double sum = 0.0;
     const double anti_alpha = 1.0 - alpha;
     for (const auto& neighbour_probs : cur_state.at(neighbour).labels_probabilities) {
