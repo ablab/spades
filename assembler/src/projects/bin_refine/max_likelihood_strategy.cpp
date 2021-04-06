@@ -39,7 +39,8 @@ MaxLikelihoodBinningAssignmentStrategy::AssignScaffoldBins(const std::vector<deb
                                                            const SoftBinsAssignment &soft_bins_assignment,
                                                            const BinStats& bin_stats) const {
     blaze::CompressedVector<double> res(bin_stats.bins().size());
-    
+
+    size_t total_length = 0;
     for (EdgeId edge : path) {
         if (bin_stats.unbinned_edges().count(edge) > 0)
             continue;
@@ -47,8 +48,14 @@ MaxLikelihoodBinningAssignmentStrategy::AssignScaffoldBins(const std::vector<deb
         size_t length = bin_stats.graph().length(edge);
         for (auto bin_id : bin_stats.edges_binning().at(edge)) {
             double bin_prob = soft_bins_assignment.at(edge).labels_probabilities[bin_id];
-            res[bin_id] += double(length) * (log(bin_prob) - 0.1); // This is necessary to ensure that logL is always negative, so we won't haze zeroes that will vanish in compressed vector
+            res[bin_id] += double(length) * bin_prob;
         }
+        total_length += length;
+    }
+
+    if (0 && total_length) {
+        double inv_length = 1.0/double(total_length);
+        res *= inv_length;
     }
 
     return res;
