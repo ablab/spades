@@ -53,41 +53,10 @@ MaxLikelihoodBinningAssignmentStrategy::AssignScaffoldBins(const std::vector<deb
         total_length += length;
     }
 
-    if (0 && total_length) {
+    if (total_length) {
         double inv_length = 1.0/double(total_length);
         res *= inv_length;
     }
 
     return res;
-}
-
-std::vector<BinStats::BinId>
-MaxLikelihoodBinningAssignmentStrategy::ChooseMajorBins(const blaze::CompressedVector<double> &bins_weights,
-                                                        const SoftBinsAssignment&,
-                                                        const BinStats&) const {
-    double max_logL = -std::numeric_limits<double>::infinity();
-    BinStats::BinId major_bin = BinStats::UNBINNED;
-    for (const auto &entry : bins_weights) {
-        if (math::le(entry.value(), max_logL))
-            continue;
-
-        max_logL = entry.value();
-        major_bin = entry.index();
-    }
-
-    if (major_bin == BinStats::UNBINNED)
-        return { };
-
-    if (allow_multiple_) {
-        std::vector<BinStats::BinId> res;
-        for (const auto &entry : bins_weights) {
-            if (!math::eq(entry.value(), max_logL))
-                continue;
-
-            res.push_back(entry.index());
-        }
-        VERIFY(res.size() >= 1);
-        return res;
-    } else
-        return { major_bin };
 }

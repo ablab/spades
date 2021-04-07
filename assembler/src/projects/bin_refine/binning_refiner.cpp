@@ -4,14 +4,13 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "assembly_graph/core/graph.hpp"
 #include "binning.hpp"
-#include "majority_length_binning_assignment_strategy.hpp"
-#include "max_likelihood_strategy.hpp"
 #include "labels_propagation.hpp"
 #include "labels_correction.hpp"
+#include "majority_length_strategy.hpp"
+#include "max_likelihood_strategy.hpp"
 
-#include "modules/alignment/kmer_mapper.hpp"
+#include "assembly_graph/core/graph.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "toolchain/utils.hpp"
 #include "utils/segfault_handler.hpp"

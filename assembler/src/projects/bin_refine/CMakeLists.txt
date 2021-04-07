@@ -13,7 +13,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(bin-refine
                binning_refiner.cpp binning.cpp labels_propagation.cpp labels_correction.cpp
-               majority_length_binning_assignment_strategy.cpp max_likelihood_strategy.cpp)
+               binning_assignment_strategy.cpp majority_length_strategy.cpp max_likelihood_strategy.cpp)
 target_include_directories(bin-refine PRIVATE ${BLAZE_LIBRARY_PATH})
 target_link_libraries(bin-refine graphio common_modules ${COMMON_LIBRARIES})
 

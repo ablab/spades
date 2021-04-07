@@ -19,10 +19,6 @@ class MaxLikelihoodBinningAssignmentStrategy : public BinningAssignmentStrategy 
     blaze::CompressedVector<double> AssignScaffoldBins(const std::vector<debruijn_graph::EdgeId>& path,
                                                        const SoftBinsAssignment& soft_bins_assignment,
                                                        const BinStats& bin_stats) const override;
-    std::vector<uint64_t> ChooseMajorBins(const blaze::CompressedVector<double>& bins_weights,
-                                          const SoftBinsAssignment& soft_bins_assignment,
-                                          const BinStats& bin_stats) const override;
-
   private:
     double thr_;
 };
