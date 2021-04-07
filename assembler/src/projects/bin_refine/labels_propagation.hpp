@@ -15,8 +15,8 @@ class LabelsPropagation : public BinningRefiner {
  public:
     using FinalIteration = bool;
 
-    LabelsPropagation(const debruijn_graph::Graph& g, size_t num_bins, double eps)
-        : BinningRefiner(g), num_bins_(num_bins), eps_(eps) {}
+    LabelsPropagation(const debruijn_graph::Graph& g, double eps)
+        : BinningRefiner(g), eps_(eps) {}
 
     SoftBinsAssignment RefineBinning(const BinStats& bin_stats) const override;
 
@@ -29,12 +29,6 @@ class LabelsPropagation : public BinningRefiner {
                                         const SoftBinsAssignment& cur_state,
                                         unsigned iteration_step) const;
 
-    static double PropagateFromEdge(blaze::DynamicVector<double>& labels_probabilities,
-                                    debruijn_graph::EdgeId neighbour,
-                                    const SoftBinsAssignment& cur_state,
-                                    double weight);
-
-    const size_t num_bins_;
     const double eps_;
 };
 }
