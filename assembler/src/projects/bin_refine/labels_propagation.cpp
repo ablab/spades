@@ -25,7 +25,7 @@ SoftBinsAssignment LabelsPropagation::RefineBinning(const BinStats& bin_stats) c
   }
 }
 
-double LabelsPropagation::PropagateFromEdge(blaze::DynamicVector<double>& labels_probabilities,
+static double PropagateFromEdge(blaze::DynamicVector<double>& labels_probabilities,
                                 debruijn_graph::EdgeId neighbour,
                                 const SoftBinsAssignment& cur_state,
                                 double weight) {
@@ -46,7 +46,7 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
       if (edge_labels.is_binned && !edge_labels.is_repetitive)
           continue;
 
-      blaze::DynamicVector<double> next_probs(num_bins_, 0);
+      blaze::DynamicVector<double> next_probs(edge_labels.labels_probabilities.size(), 0);
 
       double e_sum = 0.0;
       // Not used now, but might be in the future

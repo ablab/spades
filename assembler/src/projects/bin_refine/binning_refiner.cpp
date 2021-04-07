@@ -84,7 +84,7 @@ std::unique_ptr<BinningRefiner> get_refiner(const gcfg& cfg, const Graph& graph,
         default:
             FATAL_ERROR("Unknown binning refiner type");
         case RefinerType::Propagation:
-            return std::make_unique<LabelsPropagation>(graph, num_bins, cfg.eps);
+            return std::make_unique<LabelsPropagation>(graph, cfg.eps);
         case RefinerType::Correction:
             return std::make_unique<LabelsCorrection>(graph, num_bins, cfg.eps, cfg.labeled_alpha, cfg.unlabeled_alpha);
     }
