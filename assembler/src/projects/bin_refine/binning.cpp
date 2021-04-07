@@ -108,6 +108,13 @@ void BinStats::WriteToBinningFile(const std::string& binning_file, const Scaffol
     std::ofstream out_lens(binning_file + ".bin_weights");
     std::ofstream out_edges(binning_file + ".edge_weights");
 
+    auto weight_sorter = [] (const auto &lhs, const auto &rhs) {
+        if (math::eq(rhs.second, lhs.second))
+            return lhs.first < rhs.first;
+
+        return rhs.second < lhs.second;
+    };
+    
     for (const auto &path_entry : scaffolds_paths) {
       const std::string& scaffold_name = path_entry.first;
 
@@ -125,8 +132,13 @@ void BinStats::WriteToBinningFile(const std::string& binning_file, const Scaffol
       out_tsv << '\n';
       out_lens << scaffold_name << '\t';
       out_lens << "nz: " << bins_weights.nonZeros();
+      std::vector<std::pair<BinId, double>> weights;
       for (const auto &entry : bins_weights)
-          out_lens << '\t' << bin_labels_.at(entry.index()) << ":" << entry.value();
+          weights.emplace_back(entry.index(), entry.value());
+      std::sort(weights.begin(), weights.end(), weight_sorter);
+      for (const auto &entry : weights)
+          out_lens << '\t' << bin_labels_.at(entry.first) << ":" << entry.second;
+
       out_lens << '\n';
     }
 
@@ -139,12 +151,7 @@ void BinStats::WriteToBinningFile(const std::string& binning_file, const Scaffol
         std::vector<std::pair<BinId, double>> weights;
         for (const auto &entry : edge_labels.labels_probabilities)
             weights.emplace_back(entry.index(), entry.value());
-        std::sort(weights.begin(), weights.end(), [] (const auto &lhs, const auto &rhs) {
-            if (math::eq(rhs.second, lhs.second))
-                return lhs.first < rhs.first;
-
-            return rhs.second < lhs.second;
-        });
+        std::sort(weights.begin(), weights.end(), weight_sorter);
         for (const auto &entry : weights)
             out_edges << '\t' << bin_labels_.at(entry.first) << ":" << entry.second;
         out_edges << '\n';
