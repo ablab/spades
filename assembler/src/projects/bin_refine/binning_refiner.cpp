@@ -11,7 +11,6 @@
 #include "max_likelihood_strategy.hpp"
 
 #include "assembly_graph/core/graph.hpp"
-#include "pipeline/graph_pack.hpp"
 #include "toolchain/utils.hpp"
 #include "utils/segfault_handler.hpp"
 
@@ -111,10 +110,8 @@ int main(int argc, char** argv) {
       VERIFY_MSG(gfa.k() != -1U, "Failed to determine k-mer length");
       VERIFY_MSG(gfa.k() % 2 == 1, "k-mer length must be odd");
 
-      debruijn_graph::GraphPack gp(gfa.k(), "", 0);
-      gfa.to_graph(gp.get_mutable<Graph>(), id_mapper.get());
-
-      const auto& graph = gp.get<Graph>();
+      debruijn_graph::Graph graph(gfa.k());
+      gfa.to_graph(graph, id_mapper.get());
       INFO("Graph loaded. Total vertices: " << graph.size() << ", total edges: " << graph.e_size());
 
       // TODO: For now the edges is a set, we need to decide what to do with
