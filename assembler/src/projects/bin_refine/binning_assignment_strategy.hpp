@@ -31,7 +31,7 @@ public:
     // FIXME: temporary return uint64_t, not BinId, until we refine cyclic deps
     virtual std::vector<uint64_t> ChooseMajorBins(const blaze::CompressedVector<double>& bins_weights,
                                                   const SoftBinsAssignment& soft_bins_assignment,
-                                                  const BinStats& bin_stats) const = 0;
+                                                  const BinStats& bin_stats) const;
     virtual std::vector<uint64_t> ChooseMajorBins(const std::vector<debruijn_graph::EdgeId>& path,
                                                   const SoftBinsAssignment& soft_bins_assignment,
                                                   const BinStats& bin_stats) const {

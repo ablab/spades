@@ -4,7 +4,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "majority_length_binning_assignment_strategy.hpp"
+#include "majority_length_strategy.hpp"
 #include "math/xmath.h"
 
 using namespace debruijn_graph;
@@ -69,36 +69,4 @@ MajorityLengthBinningAssignmentStrategy::AssignScaffoldBins(const std::vector<de
     }
 
     return res;
-}
-
-std::vector<BinStats::BinId>
-MajorityLengthBinningAssignmentStrategy::ChooseMajorBins(const blaze::CompressedVector<double>& bins_weights,
-                                                         const SoftBinsAssignment&,
-                                                         const BinStats&) const {
-
-    double max_prob = 0.0;
-    BinStats::BinId major_bin = BinStats::UNBINNED;
-    for (const auto &entry : bins_weights) {
-        if (math::le(entry.value(), max_prob))
-            continue;
-
-        max_prob = entry.value();
-        major_bin = entry.index();
-    }
-
-    if (major_bin == BinStats::UNBINNED)
-        return { };
-
-    if (allow_multiple_) {
-        std::vector<BinStats::BinId> res;
-        for (const auto &entry : bins_weights) {
-            if (!math::eq(entry.value(), max_prob))
-                continue;
-
-            res.push_back(entry.index());
-        }
-        VERIFY(res.size() >= 1);
-        return res;
-    } else
-        return { major_bin };
 }
