@@ -55,16 +55,17 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       (with_prefix("-S",
                    option("max").set(cfg.assignment_strategy, AssignStrategy::MajorityLength) |
                    option("mle").set(cfg.assignment_strategy, AssignStrategy::MaxLikelihood)) % "binning assignment strategy"),
-      in_sequence(option("-Rcorr").set(cfg.refiner_type, RefinerType::Correction),
-           (option("-la") & value("labeled alpha", cfg.labeled_alpha)) % "labels correction alpha for labeled data",
-           (option("-ua") & value("unlabeled alpha", cfg.unlabeled_alpha)) % "labels correction alpha for unlabeled data") |
-      option("-Rprop").set(cfg.refiner_type, RefinerType::Propagation) % "binning refiner type"
+      (with_prefix("-R",
+                   option("corr").set(cfg.refiner_type, RefinerType::Correction) |
+                   option("prop").set(cfg.refiner_type, RefinerType::Propagation)) % "binning refiner type"),
+      (option("-la") & value("labeled alpha", cfg.labeled_alpha)) % "labels correction alpha for labeled data",
+      (option("-ua") & value("unlabeled alpha", cfg.unlabeled_alpha)) % "labels correction alpha for unlabeled data"
   );
 
   auto result = parse(argc, argv, cli);
   if (!result) {
-    std::cout << make_man_page(cli, argv[0]);
-    exit(1);
+      std::cout << make_man_page(cli, argv[0]);
+      exit(1);
   }
 }
 
