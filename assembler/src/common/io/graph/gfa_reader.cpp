@@ -72,6 +72,8 @@ void GFAReader::to_graph(ConjugateDeBruijnGraph &g,
         g.coverage_index().SetRawCoverage(g.conjugate(e), cov);
 
         if (id_mapper) {
+            DEBUG("Map ids: " << e.int_id() << ":" << seg->name);
+            DEBUG("Map ids: " << g.conjugate(e).int_id() << ":" << seg->name << "'");
             (*id_mapper)[e.int_id()] = seg->name;
             if (e != g.conjugate(e)) {
                 (*id_mapper)[g.conjugate(e).int_id()] = std::string(seg->name) + '\'';
