@@ -313,6 +313,21 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
         if (MostlyInVertex(pos, pos + a.re - a.rb, g_.length(ids_[a.rid]), g_.k()))
             continue;
 
+        DEBUG_EXPR({
+            std::string sseq = seq.str();
+            mem_aln_t aln = mem_reg2aln(memopt_.get(), idx_->bns, idx_->pac, int(sseq.length()), sseq.c_str(), &a);
+
+            fprintf(stderr, "%zu: [%zu, %lld)\t[%d, %d) %c %ld %s %d %d\n",
+                    i,
+                    pos, pos + a.re - a.rb, a.qb, a.qe,
+                    "+-"[is_rev], g_.int_id(ids_[a.rid]), a.secondary >= 0 ? "secondary" : "primary", aln.mapq, aln.NM);
+
+            // print alignment
+            for (int k = 0; k < aln.n_cigar; ++k) // print CIGAR
+                fprintf(stderr, "%d%c", aln.cigar[k]>>4, "MIDSH"[aln.cigar[k]&0xf]);
+            free(aln.cigar);
+        });
+
         DEBUG(a);
         // FIXME: what about other scoring systems?
         double qual = double(a.score)/double(a.qe - a.qb);
