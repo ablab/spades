@@ -55,7 +55,7 @@ using namespace debruijn_graph;
 
 struct gcfg {
     gcfg()
-        : k(21), tmpdir("tmp"), outfile("-"),
+        : k(-1U), tmpdir("tmp"), outfile("-"),
           nthreads(omp_get_max_threads() / 2 + 1),
           libindex(0),
           mode(alignment::BWAIndex::AlignmentMode::Default),
@@ -162,12 +162,26 @@ int main(int argc, char* argv[]) {
 
         CHECK_FATAL_ERROR(cfg.libindex < dataset.lib_count(), "invalid library index");
 
-        debruijn_graph::GraphPack gp(k, tmpdir, dataset.lib_count());
         std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
+        std::unique_ptr<gfa::GFAReader> gfa;
+        INFO("Loading de Bruijn graph from " << cfg.graph);
+        if (utils::ends_with(cfg.graph, ".gfa")) {
+            gfa.reset(new gfa::GFAReader(cfg.graph));
+            INFO("GFA segments: " << gfa->num_edges() << ", links: " << gfa->num_links() << ", paths: " << gfa->num_paths());
+            VERIFY_MSG(gfa->k() != -1U, "Failed to determine k-mer length");
+            VERIFY_MSG(gfa->k() % 2 == 1, "k-mer length must be odd");
+            k = gfa->k();
+        } else if (cfg.k == -1U)
+            FATAL_ERROR("k-mer length should be specified");
+
+        debruijn_graph::GraphPack gp(k, tmpdir, dataset.lib_count());
 
         const auto &graph = gp.get<Graph>();
-        INFO("Loading de Bruijn graph from " << cfg.graph);
-        LoadGraph(gp.get_mutable<Graph>(), cfg.graph, id_mapper.get());
+        if (gfa) {
+            gfa->to_graph(gp.get_mutable<Graph>(), id_mapper.get());
+        } else {
+            io::binary::Load(cfg.graph, gp.get_mutable<Graph>());
+        }
         INFO("Graph loaded. Total vertices: " << graph.size() << ", total edges: " << graph.e_size());
 
         // FIXME: Get rid of this "/" junk
@@ -235,8 +249,8 @@ int main(int argc, char* argv[]) {
                         auto AddToWeight = [&](EdgeId e1, EdgeId e2) {
                             w += index.Get(e1, e2).begin()->weight;
                         };
-                        
-                        
+
+
                         if (e2 != e1) {
                             // Need to aggregate links:
                             // e1 => e2, e1 => e2', e2' => e1, e2 => e1
