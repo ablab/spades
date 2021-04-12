@@ -23,13 +23,14 @@ PairedStream paired_easy_reader(const SequencingLibraryBase &lib,
                                 FileReadFlags flags,
                                 ThreadPool::ThreadPool *pool) {
     return MultifileWrap<PairedRead>(paired_easy_readers(lib, followed_by_rc, insert_size,
-                                                         use_orientation, flags, pool));
+                                                         use_orientation, handle_Ns, flags, pool));
 }
 
 ReadStreamList<PairedRead> paired_easy_readers(const SequencingLibraryBase &lib,
                                                bool followed_by_rc,
                                                size_t insert_size,
                                                bool use_orientation,
+                                               bool handle_Ns,
                                                FileReadFlags flags,
                                                ThreadPool::ThreadPool *pool) {
     ReadStreamList<PairedRead> streams;
