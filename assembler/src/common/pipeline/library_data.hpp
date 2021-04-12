@@ -45,15 +45,24 @@ struct LibraryData {
         size_t chunk_num = 0;
     } binary_reads_info;
 
-    LibraryData()
-            : unmerged_read_length(0), merged_read_length(0),
-              mean_insert_size(0.0),
-              insert_size_deviation(0.0), insert_size_left_quantile(0.0), insert_size_right_quantile(0.0),
-              median_insert_size(0.0), insert_size_mad(0.0),
-              lib_index(0),
-              single_reads_mapped(false),
-              total_nucls(0), read_count(0),
-              pi_threshold(0.0) {}
+    void clear() {
+        unmerged_read_length = merged_read_length = 0;
+        mean_insert_size = insert_size_deviation
+                         = insert_size_left_quantile
+                         = insert_size_right_quantile
+                         = median_insert_size
+                         = insert_size_mad = 0.0;
+        insert_size_distribution.clear();
+        lib_index = 0;
+        single_reads_mapped = false;
+        total_nucls = read_count = 0;
+        pi_threshold = 0.0;
+        binary_reads_info = BinaryReadsInfo();
+    }
+
+    LibraryData() {
+        clear();
+    }
 };
 
 } // namespace config

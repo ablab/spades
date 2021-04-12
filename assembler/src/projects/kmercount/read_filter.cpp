@@ -166,29 +166,54 @@ int main(int argc, char* argv[]) {
 
         const unsigned FILTER_READS_BUFF_SIZE = 1 << 20;
 
+        io::DataSet<debruijn_graph::config::LibraryData> outdataset;
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
+            auto outlib = dataset[i];
+            outlib.clear();
+            outlib.data().clear();
+
             INFO("Filtering library " << i);
             dataset[i].set_orientation(io::LibraryOrientation::Undefined);
             if (dataset[i].has_paired()) {
                 io::PairedStream paired_reads_stream =
                         io::paired_easy_reader(dataset[i], /*followed by rc*/false, /*insert size*/0, false /* use orientation */, false /* handle Ns */);
-                io::OFastqPairedStream ostream(args.workdir + "/" + to_string(i + 1) + ".1.fastq",
-                                               args.workdir + "/" + to_string(i + 1) + ".2.fastq",
-                                               dataset[i].orientation());
+                std::string left = fs::append_path(args.workdir, to_string(i + 1) + ".1.fastq");
+                std::string right = fs::append_path(args.workdir, to_string(i + 1) + ".1.fastq");
+
+                io::OFastqPairedStream ostream(left, right);
                 io::CoverageFilter<io::PairedRead, SeqHasher> filter(args.k, hasher, cqf, args.thr + 1);
                 filter_reads(paired_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
+                outlib.push_back_paired(left, right);
             }
 
             if (dataset[i].has_single()) {
                 io::SingleStream single_reads_stream =
-                        io::single_easy_reader(dataset[i], /*followed_by_rc*/ false, /*including_paired_reads*/ false, false);
+                        io::single_easy_reader(dataset[i], /*followed_by_rc*/ false, /*including_paired_reads*/ false,  /* handle Ns */ false);
                 io::CoverageFilter<io::SingleRead, SeqHasher> filter(args.k, hasher, cqf, args.thr + 1);
 
-                io::OFastqReadStream ostream(args.workdir + "/" + to_string(i + 1) + ".s.fastq");
+                std::string single = fs::append_path(args.workdir, to_string(i + 1) + ".s.fastq");
+                io::OFastqReadStream ostream(single);
                 filter_reads(single_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
+                outlib.push_back_single(single);
             }
+
+            if (dataset[i].has_merged()) {
+                io::SingleStream single_reads_stream =
+                        io::merged_easy_reader(dataset[i], /*followed_by_rc*/ false, /*handle_Ns*/ false);
+                io::CoverageFilter<io::SingleRead, SeqHasher> filter(args.k, hasher, cqf, args.thr + 1);
+
+                std::string merged = fs::append_path(args.workdir, to_string(i + 1) + ".m.fastq");
+                io::OFastqReadStream ostream(merged);
+                filter_reads(single_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
+                outlib.push_back_merged(merged);
+            }
+
+            outdataset.push_back(outlib);
         }
-        INFO("Filtering finished")
+        INFO("Filtering finished");
+        std::string fname = fs::append_path(args.workdir, "dataset.yaml");
+        INFO("Saving filtered dataset description to " << fname);
+        outdataset.save(fname);
     } catch (std::string const &s) {
         std::cerr << s;
         return EINTR;
