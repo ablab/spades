@@ -59,6 +59,7 @@ struct gcfg {
           nthreads(omp_get_max_threads() / 2 + 1),
           libindex(0),
           mode(alignment::BWAIndex::AlignmentMode::Default),
+          retain(alignment::BWAIndex::RetainAlignments::Default),
           hic(false)
     {}
 
@@ -70,6 +71,7 @@ struct gcfg {
     unsigned nthreads;
     unsigned libindex;
     alignment::BWAIndex::AlignmentMode mode;
+    alignment::BWAIndex::RetainAlignments retain;
     bool hic;
 };
 
@@ -89,7 +91,12 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
                    option("illumina").set(cfg.mode, alignment::BWAIndex::AlignmentMode::Illumina) |
                    option("pacbio").set(cfg.mode, alignment::BWAIndex::AlignmentMode::PacBio) |
                    option("intractg").set(cfg.mode, alignment::BWAIndex::AlignmentMode::IntraCtg) |
-                   option("hic").set(cfg.mode, alignment::BWAIndex::AlignmentMode::HiC)) % "inner alignment mode (for paired-end / contigs)")
+                   option("hic").set(cfg.mode, alignment::BWAIndex::AlignmentMode::HiC)) % "inner alignment mode (for paired-end / contigs)"),
+      (with_prefix("-R",
+                   option("default").set(cfg.retain, alignment::BWAIndex::RetainAlignments::Default) |
+                   option("all").set(cfg.retain, alignment::BWAIndex::RetainAlignments::All) |
+                   option("primary").set(cfg.retain, alignment::BWAIndex::RetainAlignments::OnlyPrimary) |
+                   option("quality").set(cfg.retain, alignment::BWAIndex::RetainAlignments::QualityPrimary)) % "retain alignments (for paired-end / contigs)")
   );
 
   auto result = parse(argc, argv, cli);
@@ -105,7 +112,8 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
 typedef io::DataSet<debruijn_graph::config::LibraryData> DataSet;
 typedef io::SequencingLibrary<debruijn_graph::config::LibraryData> SequencingLib;
 
-static void ProcessContigs(const Graph &graph, alignment::BWAIndex::AlignmentMode mode,
+static void ProcessContigs(const Graph &graph,
+                           alignment::BWAIndex::AlignmentMode mode, alignment::BWAIndex::RetainAlignments retain,
                            SequencingLib &lib,
                            PathStorage<Graph> &single_long_reads,
                            path_extend::GappedPathStorage &trusted_paths) {
@@ -114,7 +122,7 @@ static void ProcessContigs(const Graph &graph, alignment::BWAIndex::AlignmentMod
     notifier.Subscribe(&read_mapper);
 
     INFO("Mapping using BWA-mem mapper");
-    alignment::BWAReadMapper<Graph> mapper(graph, mode);
+    alignment::BWAReadMapper<Graph> mapper(graph, mode, retain);
     auto single_streams = single_easy_readers(lib, false, false, /*handle Ns*/ false);
     notifier.ProcessLibrary(single_streams, mapper);
 }
@@ -140,8 +148,10 @@ int main(int argc, char* argv[]) {
 
     process_cmdline(argc, argv, cfg);
     // Enforce HiC alignment mode by default
-    if (cfg.hic && cfg.mode == alignment::BWAIndex::AlignmentMode::Default)
+    if (cfg.hic && cfg.mode == alignment::BWAIndex::AlignmentMode::Default) {
         cfg.mode = alignment::BWAIndex::AlignmentMode::HiC;
+        cfg.retain = alignment::BWAIndex::RetainAlignments::QualityPrimary;
+    }
 
     create_console_logger();
 
@@ -195,7 +205,7 @@ int main(int argc, char* argv[]) {
 
             if (lib.is_contig_lib() || lib.is_single()) {
                 INFO("Mapping sequencing library #" << cfg.libindex);
-                ProcessContigs(graph, cfg.mode,
+                ProcessContigs(graph, cfg.mode, cfg.retain,
                                lib,
                                path_storage,
                                trusted_paths);
@@ -224,7 +234,7 @@ int main(int argc, char* argv[]) {
             }
         } else if (lib.is_paired()) {
             paired_info::PairedIndex index(graph);
-            alignment::BWAReadMapper<Graph> mapper(graph, cfg.mode);
+            alignment::BWAReadMapper<Graph> mapper(graph, cfg.mode, cfg.retain);
 
             std::unique_ptr<ThreadPool::ThreadPool> pool;
             if (cfg.nthreads > 1)

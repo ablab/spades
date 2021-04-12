@@ -21,16 +21,18 @@
 #define _get_pac(pac, l) ((pac)[(l)>>2]>>((~(l)&3)<<1)&3)
 extern "C" {
 int is_bwt(uint8_t *T, bwtint_t n);
+int mem_approx_mapq_se(const mem_opt_t *opt, const mem_alnreg_t *a);
 };
 
 namespace alignment {
 
-BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
+BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode,
+                   RetainAlignments retain)
         : g_(g),
           memopt_(mem_opt_init(), free),
           idx_(nullptr, bwa_idx_destroy),
           mode_(mode),
-          skip_secondary_(true) {
+          retain_(retain) {
     memopt_->flag |= MEM_F_SOFTCLIP;
     switch (mode_) {
         default:
@@ -56,7 +58,8 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
             memopt_->mask_level = 20;
             memopt_->drop_ratio = 20;
             memopt_->min_chain_weight = 40;
-            skip_secondary_ = false;
+            if (retain_ == RetainAlignments::Default)
+                retain_ = RetainAlignments::All;
             break;
         case AlignmentMode::HiC:
             INFO("Setting BWA alignment mode to 'hic'");
@@ -66,6 +69,9 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode)
             memopt_->flag |= MEM_F_PRIMARY5;  // -5
             break;
     };
+
+    if (retain_ == RetainAlignments::Default)
+        retain_ = RetainAlignments::OnlyPrimary;
 
     bwa_fill_scmat(memopt_->a, memopt_->b, memopt_->mat);
     Init();
@@ -283,7 +289,7 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
     for (size_t i = 0; i < ar.n; ++i) {
         const mem_alnreg_t &a = ar.a[i];
 
-        if (skip_secondary_ && a.secondary >= 0) continue; // skip secondary alignments
+        if (retain_ != RetainAlignments::All && a.secondary >= 0) continue; // skip secondary alignments
 
         if (is_short) {
             // Skipping alignments shorter than half of read length
@@ -311,6 +317,10 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
         }
         // Important for alignments shorter than K
         if (MostlyInVertex(pos, pos + a.re - a.rb, g_.length(ids_[a.rid]), g_.k()))
+            continue;
+
+        if (retain_ == RetainAlignments::QualityPrimary &&
+            mem_approx_mapq_se(memopt_.get(), &a) < 20) // Low-quality alignment: multi-mapped, etc.
             continue;
 
         DEBUG_EXPR({

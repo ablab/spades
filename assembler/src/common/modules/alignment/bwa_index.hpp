@@ -34,9 +34,20 @@ class BWAIndex {
         HiC
     };
 
+    enum class RetainAlignments {
+        Default,       // Default for the mode
+        All,           // All, including secondary
+        OnlyPrimary,   // Only primary
+        QualityPrimary // Primary with mapq > 20
+    };
+
     // bwaidx / memopt are incomplete below, therefore we need to outline ctor
     // and dtor.
-    BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode = AlignmentMode::Default);
+    // FIXME: the retain logic should be bound to AlignSequence, but we're
+    // making it state variable for the simplicity
+    BWAIndex(const debruijn_graph::Graph& g,
+             AlignmentMode mode = AlignmentMode::Default,
+             RetainAlignments retain = RetainAlignments::Default);
     ~BWAIndex();
 
     omnigraph::MappingPath<debruijn_graph::EdgeId> AlignSequence(const Sequence &sequence,
@@ -56,7 +67,7 @@ class BWAIndex {
     std::vector<debruijn_graph::EdgeId> ids_;
 
     AlignmentMode mode_;
-    bool skip_secondary_;
+    RetainAlignments retain_;
 
     DECL_LOGGER("BWAIndex");
 };
