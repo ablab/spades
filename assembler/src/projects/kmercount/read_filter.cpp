@@ -72,7 +72,7 @@ void process_cmdline(int argc, char **argv, read_filter::Args &args) {
 template<class IS, class OS, class Filter>
 void filter_reads(IS &input, OS &output, const Filter& filter, unsigned buffer_size, unsigned nthreads) {
     std::vector<typename OS::ReadT> reads_buffer(buffer_size);
-    std::vector<uint8_t> need_to_out(buffer_size);
+    std::vector<bool> need_to_out(buffer_size);
     std::vector<unsigned> chunk_start(nthreads), chunk_end(nthreads);
 
     while (!input.eof()) {
@@ -97,19 +97,14 @@ void filter_reads(IS &input, OS &output, const Filter& filter, unsigned buffer_s
                 typename OS::ReadT longest_valid_read = reads_buffer[j];
                 io::LongestValid(longest_valid_read);
 
-                if (filter(longest_valid_read)) {
-                    need_to_out[j] = 1;
-                } else {
-                    need_to_out[j] = 0;
-                }
+                need_to_out[j] = filter(longest_valid_read);
             }
         }
 
         for (size_t i = 0; i < reads_cnt; ++i) {
-            if (need_to_out[i] == 1) {
+            if (need_to_out[i])
                 output << reads_buffer[i];
-            }
-            need_to_out[i] = 0;
+            need_to_out[i] = false;
         }
     }
 }
@@ -174,7 +169,7 @@ int main(int argc, char* argv[]) {
             dataset[i].set_orientation(io::LibraryOrientation::Undefined);
             if (dataset[i].has_paired()) {
                 io::PairedStream paired_reads_stream =
-                        io::paired_easy_reader(dataset[i], /*followed by rc*/false, /*insert size*/0, true, false);
+                        io::paired_easy_reader(dataset[i], /*followed by rc*/false, /*insert size*/0, false /* use orientation */, false /* handle Ns */);
                 io::OFastqPairedStream ostream(args.workdir + "/" + to_string(i + 1) + ".1.fastq",
                                                args.workdir + "/" + to_string(i + 1) + ".2.fastq",
                                                dataset[i].orientation());
