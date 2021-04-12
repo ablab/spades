@@ -5,11 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "version.hpp"
-
-#include "adt/cyclichash.hpp"
-#include "adt/cqf.hpp"
-
 #include "io/dataset_support/read_converter.hpp"
 #include "io/reads/osequencestream.hpp"
 #include "io/reads/coverage_filtering_read_wrapper.hpp"
@@ -19,8 +14,15 @@
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
 #include "utils/kmer_counting.hpp"
+#include "utils/filesystem/path_helper.hpp"
+#include "utils/filesystem/temporary.hpp"
+
+#include "adt/cyclichash.hpp"
+#include "adt/cqf.hpp"
 
 #include "threadpool/threadpool.hpp"
+
+#include "version.hpp"
 
 #include <clipp/clipp.h>
 #include <sys/types.h>
@@ -37,7 +39,7 @@ void create_console_logger() {
     attach_logger(lg);
 }
 
-namespace read_filter { 
+namespace read_filter {
 struct Args {
     unsigned thr = 2, k = 21;
     std::string dataset_desc, workdir = ".";
@@ -48,7 +50,7 @@ struct Args {
 void process_cmdline(int argc, char **argv, read_filter::Args &args) {
     using namespace clipp;
     bool print_help = false;
-    
+
     auto cli = (
         (option("-k", "--kmer") & integer("value", args.k)) % "K-mer length",
         (option("-c", "--cov") & integer("value", args.thr)) % "Median kmer count threshold (read pairs, s.t. kmer count median for BOTH reads LESS OR EQUAL to this value will be ignored)",
@@ -135,8 +137,8 @@ int main(int argc, char* argv[]) {
         io::DataSet<debruijn_graph::config::LibraryData> dataset;
         dataset.load(args.dataset_desc);
 
-        fs::make_dirs(args.workdir + "/tmp/");
-        debruijn_graph::config::init_libs(dataset, args.nthreads, args.workdir + "/tmp/");
+        auto tmpdir = fs::tmp::make_temp_dir(args.workdir, "binreads");
+        debruijn_graph::config::init_libs(dataset, args.nthreads, tmpdir->dir());
 
         std::unique_ptr<ThreadPool::ThreadPool> pool;
 
