@@ -164,6 +164,10 @@ public:
         return !single_reads_.empty();
     }
 
+    bool has_merged() const {
+        return !merged_reads_.empty();
+    }
+
     adt::iterator_range<single_reads_iterator> single_reads() const {
         return adt::make_range(single_begin(), single_end());
     }
