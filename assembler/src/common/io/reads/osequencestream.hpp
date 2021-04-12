@@ -161,8 +161,8 @@ public:
     }
 
     OPairedReadStream &operator<<(const PairedRead &read) {
-        Writer::Write(left_stream_, rc1_ ? read.first() : !read.first());
-        Writer::Write(right_stream_, rc2_ ? read.second(): !read.second());
+        Writer::Write(left_stream_, rc1_ ? !read.first() : read.first());
+        Writer::Write(right_stream_, rc2_ ? !read.second(): read.second());
         return *this;
     }
 
