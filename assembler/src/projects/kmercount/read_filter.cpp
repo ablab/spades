@@ -6,6 +6,7 @@
 //***************************************************************************
 
 #include "io/dataset_support/read_converter.hpp"
+#include "io/reads/file_read_flags.hpp"
 #include "io/reads/osequencestream.hpp"
 #include "io/reads/coverage_filtering_read_wrapper.hpp"
 #include "io/reads/longest_valid_wrapper.hpp"
@@ -44,6 +45,8 @@ struct Args {
     unsigned thr = 2, k = 21;
     std::string dataset_desc, workdir = ".";
     unsigned nthreads = (omp_get_max_threads() / 2);
+    bool drop_names = false;
+    bool drop_quality = false;
 };
 }
 
@@ -57,6 +60,8 @@ void process_cmdline(int argc, char **argv, read_filter::Args &args) {
         (required("-d", "--dataset") & value("yaml", args.dataset_desc)) % "Dataset description (in YAML)",
         (option("-t", "--threads") & integer("value", args.nthreads)) % "# of threads to use",
         (option("-o", "--outdir") & value("dir", args.workdir)) %  "Output directory to use",
+        (option("--drop-names").set(args.drop_names)) % "Drop read names and quality (makes everything faster)",
+        (option("--drop-quality").set(args.drop_quality)) % "Drop read quality (makes everything faster)",
         (option("-h", "--help").set(print_help)) % "Show help"
     );
 
@@ -174,38 +179,66 @@ int main(int argc, char* argv[]) {
 
             INFO("Filtering library " << i);
             dataset[i].set_orientation(io::LibraryOrientation::Undefined);
+            io::FileReadFlags flags(io::PhredOffset, !args.drop_names, !args.drop_quality, false);
             if (dataset[i].has_paired()) {
                 io::PairedStream paired_reads_stream =
-                        io::paired_easy_reader(dataset[i], /*followed by rc*/false, /*insert size*/0, false /* use orientation */, false /* handle Ns */);
-                std::string left = fs::append_path(args.workdir, to_string(i + 1) + ".1.fastq");
-                std::string right = fs::append_path(args.workdir, to_string(i + 1) + ".1.fastq");
-
-                io::OFastqPairedStream ostream(left, right);
+                        io::paired_easy_reader(dataset[i], /*followed by rc*/false, /*insert size*/0, false /* use orientation */, false /* handle Ns */,
+                                               flags);
                 io::CoverageFilter<io::PairedRead, SeqHasher> filter(args.k, hasher, cqf, args.thr + 1);
-                filter_reads(paired_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
-                outlib.push_back_paired(left, right);
+                // FIXME: we cannot use unique_ptr here as OFasta / OFastq streams do not have common base class :(
+                if (args.drop_names || args.drop_quality) {
+                    std::string left = fs::append_path(args.workdir, to_string(i + 1) + ".1.fasta");
+                    std::string right = fs::append_path(args.workdir, to_string(i + 1) + ".2.fasta");
+
+                    io::OFastaPairedStream ostream(left, right);
+                    filter_reads(paired_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
+                    outlib.push_back_paired(left, right);
+                } else {
+                    std::string left = fs::append_path(args.workdir, to_string(i + 1) + ".1.fastq");
+                    std::string right = fs::append_path(args.workdir, to_string(i + 1) + ".2.fastq");
+
+                    io::OFastqPairedStream ostream(left, right);
+                    filter_reads(paired_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
+                    outlib.push_back_paired(left, right);
+                }
             }
 
             if (dataset[i].has_single()) {
                 io::SingleStream single_reads_stream =
-                        io::single_easy_reader(dataset[i], /*followed_by_rc*/ false, /*including_paired_reads*/ false,  /* handle Ns */ false);
+                        io::single_easy_reader(dataset[i], /*followed_by_rc*/ false, /*including_paired_reads*/ false,  /* handle Ns */ false,
+                                               flags);
                 io::CoverageFilter<io::SingleRead, SeqHasher> filter(args.k, hasher, cqf, args.thr + 1);
-
-                std::string single = fs::append_path(args.workdir, to_string(i + 1) + ".s.fastq");
-                io::OFastqReadStream ostream(single);
-                filter_reads(single_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
-                outlib.push_back_single(single);
+                // FIXME: we cannot use unique_ptr here as OFasta / OFastq streams do not have common base class :(
+                if (args.drop_names || args.drop_quality) {
+                    std::string single = fs::append_path(args.workdir, to_string(i + 1) + ".s.fasta");
+                    io::OFastaReadStream ostream(single);
+                    filter_reads(single_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
+                    outlib.push_back_single(single);
+                } else {
+                    std::string single = fs::append_path(args.workdir, to_string(i + 1) + ".s.fastq");
+                    io::OFastqReadStream ostream(single);
+                    filter_reads(single_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
+                    outlib.push_back_single(single);
+                }
             }
 
             if (dataset[i].has_merged()) {
                 io::SingleStream single_reads_stream =
-                        io::merged_easy_reader(dataset[i], /*followed_by_rc*/ false, /*handle_Ns*/ false);
+                        io::merged_easy_reader(dataset[i], /*followed_by_rc*/ false, /*handle_Ns*/ false,
+                                               flags);
                 io::CoverageFilter<io::SingleRead, SeqHasher> filter(args.k, hasher, cqf, args.thr + 1);
-
-                std::string merged = fs::append_path(args.workdir, to_string(i + 1) + ".m.fastq");
-                io::OFastqReadStream ostream(merged);
-                filter_reads(single_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
-                outlib.push_back_merged(merged);
+                // FIXME: we cannot use unique_ptr here as OFasta / OFastq streams do not have common base class :(
+                if (args.drop_names || args.drop_quality) {
+                    std::string merged = fs::append_path(args.workdir, to_string(i + 1) + ".m.fasta");
+                    io::OFastaReadStream ostream(merged);
+                    filter_reads(single_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
+                    outlib.push_back_merged(merged);
+                } else {
+                    std::string merged = fs::append_path(args.workdir, to_string(i + 1) + ".m.fastq");
+                    io::OFastqReadStream ostream(merged);
+                    filter_reads(single_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
+                    outlib.push_back_merged(merged);
+                }
             }
 
             outdataset.push_back(outlib);
