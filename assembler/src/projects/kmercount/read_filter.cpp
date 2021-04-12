@@ -82,11 +82,12 @@ void filter_reads(IS &input, OS &output, const Filter& filter, unsigned buffer_s
     std::vector<bool> need_to_out(buffer_size);
     std::vector<unsigned> chunk_start(nthreads), chunk_end(nthreads);
 
+    size_t read_count = 0, retained = 0;
     while (!input.eof()) {
         unsigned reads_cnt = 0;
         while (!input.eof() && reads_cnt < reads_buffer.size()) {
             input >> reads_buffer[reads_cnt];
-            ++reads_cnt;
+            ++reads_cnt; ++read_count;
         }
 
         unsigned reads_per_thread = reads_cnt/nthreads;
@@ -109,11 +110,16 @@ void filter_reads(IS &input, OS &output, const Filter& filter, unsigned buffer_s
         }
 
         for (size_t i = 0; i < reads_cnt; ++i) {
-            if (need_to_out[i])
+            if (need_to_out[i]) {
                 output << reads_buffer[i];
+                retained += 1;
+            }
             need_to_out[i] = false;
         }
+
+        VERBOSE_POWER(read_count, " reads processed");
     }
+    INFO("Total " << read_count << " reads processed, " << retained << " reads left after filtering");
 }
 
 int main(int argc, char* argv[]) {
