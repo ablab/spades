@@ -194,10 +194,11 @@ int main(int argc, char* argv[]) {
                 io::CoverageFilter<io::PairedRead, SeqHasher> filter(args.k, hasher, cqf, args.thr + 1);
                 // FIXME: we cannot use unique_ptr here as OFasta / OFastq streams do not have common base class :(
                 if (args.drop_names || args.drop_quality) {
-                    std::string left = fs::append_path(args.workdir, to_string(i + 1) + ".1.fasta");
-                    std::string right = fs::append_path(args.workdir, to_string(i + 1) + ".2.fasta");
+                    std::string left = to_string(i + 1) + ".1.fasta";
+                    std::string right = to_string(i + 1) + ".2.fasta";
 
-                    io::OFastaPairedStream ostream(left, right);
+                    io::OFastaPairedStream ostream(fs::append_path(args.workdir, left),
+                                                   fs::append_path(args.workdir, right));
                     filter_reads(paired_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
                     outlib.push_back_paired(left, right);
                 } else {
@@ -217,8 +218,8 @@ int main(int argc, char* argv[]) {
                 io::CoverageFilter<io::SingleRead, SeqHasher> filter(args.k, hasher, cqf, args.thr + 1);
                 // FIXME: we cannot use unique_ptr here as OFasta / OFastq streams do not have common base class :(
                 if (args.drop_names || args.drop_quality) {
-                    std::string single = fs::append_path(args.workdir, to_string(i + 1) + ".s.fasta");
-                    io::OFastaReadStream ostream(single);
+                    std::string single = to_string(i + 1) + ".s.fasta";
+                    io::OFastqReadStream ostream(fs::append_path(args.workdir, single));
                     filter_reads(single_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
                     outlib.push_back_single(single);
                 } else {
@@ -241,8 +242,8 @@ int main(int argc, char* argv[]) {
                     filter_reads(single_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
                     outlib.push_back_merged(merged);
                 } else {
-                    std::string merged = fs::append_path(args.workdir, to_string(i + 1) + ".m.fastq");
-                    io::OFastqReadStream ostream(merged);
+                    std::string merged = to_string(i + 1) + ".m.fastq";
+                    io::OFastqReadStream ostream(fs::append_path(args.workdir, merged));
                     filter_reads(single_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
                     outlib.push_back_merged(merged);
                 }
