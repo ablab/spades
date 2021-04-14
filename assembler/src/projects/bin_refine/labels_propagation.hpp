@@ -9,6 +9,8 @@
 #include "binning.hpp"
 #include "binning_refiner.hpp"
 
+#include "id_map.hpp"
+
 namespace bin_stats {
 
 class LabelsPropagation : public BinningRefiner {
@@ -30,7 +32,7 @@ class LabelsPropagation : public BinningRefiner {
 
     const double eps_;
 
-    std::unordered_map<debruijn_graph::EdgeId, double> rdeg_;
-    std::unordered_map<debruijn_graph::EdgeId, double> rweight_;
+    adt::id_map<double, debruijn_graph::EdgeId> rdeg_;
+    adt::id_map<double, debruijn_graph::EdgeId> rweight_;
 };
 }

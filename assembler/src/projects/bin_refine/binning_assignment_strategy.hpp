@@ -7,8 +7,9 @@
 #pragma once
 
 #include "binning.hpp"
-#include "blaze/Forward.h"
+#include "id_map.hpp"
 
+#include "blaze/Forward.h"
 #include <unordered_map>
 
 namespace bin_stats {
@@ -16,7 +17,9 @@ namespace bin_stats {
 class BinStats;
 struct EdgeLabels;
 
-using SoftBinsAssignment = std::unordered_map<debruijn_graph::EdgeId, EdgeLabels>;
+//using SoftBinsAssignment = std::unordered_map<debruijn_graph::EdgeId, EdgeLabels>;
+
+using SoftBinsAssignment = adt::id_map<EdgeLabels, debruijn_graph::EdgeId>;
 
 class BinningAssignmentStrategy {
 public:
