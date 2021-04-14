@@ -8,9 +8,54 @@
 #include "binning.hpp"
 
 #include "blaze/math/DynamicVector.h"
+#include "blaze/math/expressions/DMatNormExpr.h"
 
 using namespace bin_stats;
 using namespace debruijn_graph;
+
+LabelsPropagation::LabelsPropagation(const debruijn_graph::Graph& g, double eps)
+        : BinningRefiner(g), eps_(eps) {
+    // Calculate the reverse root degree
+    double avdeg = 0;
+    INFO("Calculating weights");
+    for (EdgeId e : g.canonical_edges()) {
+        // FIXME: iterator with weight
+        double links = double(g_.OutgoingEdgeCount(g.EdgeEnd(e)) +
+                              g_.IncomingEdgeCount(g.EdgeStart(e)));
+        avdeg += links;
+        if (links > 0) {
+            double val = 1 / sqrt(links);
+            rdeg_[e] = val;
+            rdeg_[g.conjugate(e)] = val;
+        }
+    }
+    // For simplifty count self-complement edges twice
+    avdeg /= (double(g.e_size()) / 2.0);
+    INFO("Average edge degree: " << avdeg);
+
+    double avweight = 0;
+    for (EdgeId e : g.canonical_edges()) {
+        double w = 0;
+        // FIXME: iterator with weight
+        for (EdgeId o : g_.OutgoingEdges(g.EdgeEnd(e))) {
+            w += 1 * rdeg_[o];
+        }
+
+        for (EdgeId o : g_.IncomingEdges(g.EdgeStart(e))) {
+            w += 1 * rdeg_[o];
+        }
+        avweight += w;
+        if (w > 0) {
+            double val = 1 / w;
+            rweight_[e] = val;
+            rweight_[g.conjugate(e)] = val;
+        }
+    }
+
+    // For simplifty count self-complement edges twice
+    avweight /= (double(g.e_size()) / 2.0);
+    INFO("Average edge weight: " << avweight);
+}
 
 SoftBinsAssignment LabelsPropagation::RefineBinning(const BinStats& bin_stats) const {
   unsigned iteration_step = 0;
@@ -25,14 +70,12 @@ SoftBinsAssignment LabelsPropagation::RefineBinning(const BinStats& bin_stats) c
   }
 }
 
-static double PropagateFromEdge(blaze::DynamicVector<double>& labels_probabilities,
-                                debruijn_graph::EdgeId neighbour,
-                                const SoftBinsAssignment& cur_state,
-                                double weight) {
+static void PropagateFromEdge(blaze::CompressedVector<double>& labels_probabilities,
+                              debruijn_graph::EdgeId neighbour,
+                              const SoftBinsAssignment& cur_state,
+                              double weight) {
     const auto& neig_probs = cur_state.at(neighbour).labels_probabilities;
     labels_probabilities += weight * neig_probs;
-
-    return weight * blaze::sum(neig_probs);
 }
 
 LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBinsAssignment& new_state,
@@ -46,39 +89,43 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
       if (edge_labels.is_binned && !edge_labels.is_repetitive)
           continue;
 
-      blaze::DynamicVector<double> next_probs(edge_labels.labels_probabilities.size(), 0);
-
-      double e_sum = 0.0;
-      // Not used now, but might be in the future
-      double incoming_weight = 1.0; // / double(g_.IncomingEdgeCount(g_.EdgeStart(e)));
-      for (EdgeId neighbour : g_.IncomingEdges(g_.EdgeStart(e))) {
-          if (neighbour == e)
-              continue;
-
-          e_sum += PropagateFromEdge(next_probs, neighbour, cur_state, incoming_weight);
-      }
-      for (EdgeId neighbour : g_.OutgoingEdges(g_.EdgeEnd(e))) {
-          if (neighbour == e)
-              continue;
-
-          e_sum += PropagateFromEdge(next_probs, neighbour, cur_state, incoming_weight);
-      }
-
-      // Note that e_sum is actually equals to # of non-empty predecessors,
-      // however, we use true sum here in order to compensate for possible
-      // rounding-off errors
-      if (e_sum == 0.0) {
+      auto rw = rweight_.find(e);
+      if (rw == rweight_.end()) { // No neighbours
           new_state.at(e).labels_probabilities.reset();
           continue;
       }
 
-      double inv_sum = 1.0 / e_sum;
-      next_probs *= inv_sum;
-      after_prob += sum(next_probs);
-      sum_diff += sum(abs(next_probs - edge_labels.labels_probabilities));
+      blaze::CompressedVector<double> next_probs(edge_labels.labels_probabilities.size());
 
-      new_state.at(e).labels_probabilities = next_probs;
+      double self_weight = rw->second;
+      for (EdgeId neighbour : g_.IncomingEdges(g_.EdgeStart(e))) {
+          double incoming_weight = 1 * rdeg_.at(neighbour);
+          PropagateFromEdge(next_probs, neighbour, cur_state, incoming_weight);
+      }
+      for (EdgeId neighbour : g_.OutgoingEdges(g_.EdgeEnd(e))) {
+          double incoming_weight = 1 * rdeg_.at(neighbour);
+          PropagateFromEdge(next_probs, neighbour, cur_state, incoming_weight);
+      }
+      next_probs *= self_weight;
+
+      after_prob += sum(next_probs);
+      sum_diff += blaze::l1Norm(next_probs - edge_labels.labels_probabilities); // Use L1-norm for the sake of simplicity
+
+      // Remove small values
+      if (1) {
+          new_state.at(e).labels_probabilities.reset();
+          for (const auto &entry : next_probs) {
+              if (entry.value() < 1e-6)
+                  continue;
+
+              new_state.at(e).labels_probabilities[entry.index()] = entry.value();
+          }
+      } else {
+          new_state.at(e).labels_probabilities = next_probs;
+      }
   }
+
+  // FIXME: This should not be necessary, but we do to remove round-off errors, etc.
   EqualizeConjugates(new_state);
 
   VERBOSE_POWER_T2(iteration_step, 0,
