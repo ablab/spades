@@ -12,6 +12,8 @@
 
 #include "binning_assignment_strategy.hpp"
 
+#include "id_map.hpp"
+
 #include <unordered_set>
 #include <unordered_map>
 #include <set>
@@ -36,6 +38,9 @@ struct EdgeLabels {
     bool is_repetitive : 1;
     LabelProbabilities labels_probabilities;
 
+    EdgeLabels()
+            : e(0), is_binned(false), is_repetitive(false) {}
+
     EdgeLabels(debruijn_graph::EdgeId e, const BinStats& bin_stats);
     EdgeLabels(const EdgeLabels& edge_labels) = default;
     EdgeLabels& operator=(const EdgeLabels& edge_labels) = default;
@@ -43,7 +48,8 @@ struct EdgeLabels {
     friend std::ostream &operator<<(std::ostream &os, const EdgeLabels &labels);
 };
 
-using SoftBinsAssignment = std::unordered_map<debruijn_graph::EdgeId, EdgeLabels>;
+using SoftBinsAssignment = adt::id_map<EdgeLabels, debruijn_graph::EdgeId>;
+//using SoftBinsAssignment = std::unordered_map<debruijn_graph::EdgeId, EdgeLabels>;
 
 class BinStats {
     static const std::string UNBINNED_ID;
@@ -54,7 +60,7 @@ class BinStats {
     using EdgeBinning = std::unordered_set<BinId>;
     using ScaffoldsPaths = std::unordered_map<ScaffoldName, std::unordered_set<debruijn_graph::EdgeId>>;
     using BinLabels = std::unordered_map<BinId, BinLabel>;
-    
+
     static constexpr BinId UNBINNED = BinId(-1);
 
     explicit BinStats(const debruijn_graph::Graph& g)

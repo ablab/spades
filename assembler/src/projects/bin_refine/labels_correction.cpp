@@ -83,7 +83,7 @@ LabelsCorrection::FinalIteration LabelsCorrection::PropagationIteration(SoftBins
 }
 
 SoftBinsAssignment LabelsCorrection::InitLabels(const BinStats& bin_stats) const {
-    SoftBinsAssignment state;
+    SoftBinsAssignment state(bin_stats.graph().max_eid());
     for (EdgeId e : bin_stats.graph().edges())
         state.emplace(e, EdgeLabels(e, bin_stats));
 
