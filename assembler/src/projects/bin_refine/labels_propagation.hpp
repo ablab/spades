@@ -15,8 +15,7 @@ class LabelsPropagation : public BinningRefiner {
  public:
     using FinalIteration = bool;
 
-    LabelsPropagation(const debruijn_graph::Graph& g, double eps)
-        : BinningRefiner(g), eps_(eps) {}
+    LabelsPropagation(const debruijn_graph::Graph& g, double eps);
 
     SoftBinsAssignment RefineBinning(const BinStats& bin_stats) const override;
 
@@ -30,5 +29,8 @@ class LabelsPropagation : public BinningRefiner {
                                         unsigned iteration_step) const;
 
     const double eps_;
+
+    std::unordered_map<debruijn_graph::EdgeId, double> rdeg_;
+    std::unordered_map<debruijn_graph::EdgeId, double> rweight_;
 };
 }
