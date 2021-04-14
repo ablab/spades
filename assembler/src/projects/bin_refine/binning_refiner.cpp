@@ -36,7 +36,7 @@ struct gcfg {
     std::string binning_file;
     std::string output_file;
     AssignStrategy assignment_strategy = AssignStrategy::MajorityLength;
-    double eps = 0.01;
+    double eps = 1e-5;
     double labeled_alpha = 0.6;
     double unlabeled_alpha = 0.999;
     bool allow_multiple = false;
