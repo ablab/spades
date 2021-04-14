@@ -20,11 +20,17 @@ LabelsPropagation::LabelsPropagation(const debruijn_graph::Graph& g, double eps)
     INFO("Calculating weights");
     for (EdgeId e : g.canonical_edges()) {
         // FIXME: iterator with weight
-        double links = double(g_.OutgoingEdgeCount(g.EdgeEnd(e)) +
-                              g_.IncomingEdgeCount(g.EdgeStart(e)));
-        avdeg += links;
-        if (links > 0) {
-            double val = 1 / sqrt(links);
+        double wlink = 0;
+        for (EdgeId o : g_.OutgoingEdges(g.EdgeEnd(e))) {
+            wlink += 1;
+        }
+        for (EdgeId o : g_.IncomingEdges(g.EdgeStart(e))) {
+            wlink += 1;
+        }
+
+        avdeg += wlink;
+        if (wlink > 0) {
+            double val = 1 / sqrt(wlink);
             rdeg_[e] = val;
             rdeg_[g.conjugate(e)] = val;
         }
