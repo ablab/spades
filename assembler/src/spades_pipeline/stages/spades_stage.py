@@ -191,7 +191,7 @@ class SpadesCopyFileStage(stage.Stage):
     def rna_copy(self, output_file, latest, cfg):
         return options_storage.args.rna and self.always_copy(output_file, latest, cfg)
 
-    def has_hmm(self, output_file, latest, cfg):
+    def has_hmm(self, output_file = None, latest = None, cfg = None):
         return options_storage.args.bio or options_storage.args.custom_hmms or options_storage.args.corona
 
     def correct_scaffolds_copy(self, output_file, latest, cfg):
@@ -210,6 +210,7 @@ class SpadesCopyFileStage(stage.Stage):
             self.need_to_copy = need_to_copy
 
     def set_output_files(self):
+
         self.output = [
             self.OutputFile(self.cfg.result_scaffolds, "corrected_scaffolds.fasta", self.correct_scaffolds_copy),
             self.OutputFile(os.path.join(os.path.dirname(self.cfg.result_contigs), "before_rr.fasta"),
@@ -229,9 +230,9 @@ class SpadesCopyFileStage(stage.Stage):
             self.OutputFile(self.cfg.result_graph, "assembly_graph.fastg", self.always_copy),
             self.OutputFile(self.cfg.result_contigs_paths, "final_contigs.paths", self.not_rna_copy),
             self.OutputFile(self.cfg.result_gene_clusters, "gene_clusters.fasta", self.has_hmm),
-            self.OutputFile(self.cfg.result_bgc_statistics, "bgc_statistics.txt", self.has_hmm),
+            self.OutputFile(self.cfg.result_gene_clusters_old, "gene_clusters.fasta", self.has_hmm),
+            self.OutputFile(self.cfg.result_bgc_statistics, "hmm_statistics.txt", self.has_hmm),
             self.OutputFile(self.cfg.result_domain_graph, "domain_graph.dot", self.has_hmm)
-
         ]
 
         for filtering_type in options_storage.filtering_types:
@@ -360,6 +361,7 @@ class SpadesStage(stage.Stage):
         self.cfg.__dict__["result_transcripts"] = output_files["result_transcripts_filename"]
         self.cfg.__dict__["result_transcripts_paths"] = output_files["result_transcripts_paths_filename"]
         self.cfg.__dict__["result_gene_clusters"] = output_files["result_gene_clusters_filename"]
+        self.cfg.__dict__["result_gene_clusters_old"] = output_files["result_gene_clusters_filename_old"]
         self.cfg.__dict__["result_bgc_statistics"] = output_files["result_bgc_stats_filename"]
         self.cfg.__dict__["result_domain_graph"] = output_files["result_domain_graph_filename"]
 
