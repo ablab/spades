@@ -15,7 +15,7 @@
     3.2. <a href="#sec3.2">SPAdes command line options</a><br>
     3.3. <a href="#sec3.3">Assembling IonTorrent reads</a><br>
     3.4. <a href="#sec3.4">Assembling long Illumina paired reads (2x150 and 2x250)</a><br>
-3.5. <a href="#hmm">HMM-guided mode</a><br>
+    3.5. <a href="#hmm">HMM-guided mode</a><br>
     3.6. <a href="#spadesoutsec">SPAdes output</a><br>
     3.7. <a href="#plasmidout">plasmidSPAdes output</a><br>
     3.8. <a href="#metapv">metaplasmidSPAdes and metaviralSPAdes output</a><br>
@@ -75,15 +75,15 @@
 <table border="1" cellpadding="4" cellspacing="0" role="table">
 <tbody><tr>
 <td align="right"> Data set   </td>
-<td colspan="3" align="center"> <i>E. coli</i> isolate </td> 
+<td colspan="3" align="center"> <i>E. coli</i> isolate </td>
 <td colspan="3" align="center"> <i>E. coli</i> single-cell </td>
 </tr>
 <tr>
 <td> Stage </td>
-<td align="center" width="110">  Time  </td> 
+<td align="center" width="110">  Time  </td>
 <td align="center" width="110">  Peak RAM <br> usage (Gb)  </td>
 <td align="center" width="110">  Additional <br> disk space (Gb)  </td>
-<td align="center" width="110">  Time </td> 
+<td align="center" width="110">  Time </td>
 <td align="center" width="110">  Peak RAM <br> usage (Gb)  </td>
 <td align="center" width="110">  Additional <br> disk space (Gb) </td>
 </tr>
@@ -465,18 +465,18 @@ Should not be confused with FR and RF strand-specificity for RNA-Seq data (see <
         type: <span class="pl-s"><span class="pl-pds">"</span>paired-end<span class="pl-pds">"</span></span>,
         right reads: [
           <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_pe1_right_1.fastq<span class="pl-pds">"</span></span>,
-          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_pe1_right_2.fastq<span class="pl-pds">"</span></span> 
+          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_pe1_right_2.fastq<span class="pl-pds">"</span></span>
         ],
         left reads: [
           <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_pe1_left_1.fastq<span class="pl-pds">"</span></span>,
-          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_pe1_left_2.fastq<span class="pl-pds">"</span></span> 
+          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_pe1_left_2.fastq<span class="pl-pds">"</span></span>
         ]
       },
       {
         orientation: <span class="pl-s"><span class="pl-pds">"</span>rf<span class="pl-pds">"</span></span>,
         type: <span class="pl-s"><span class="pl-pds">"</span>mate-pairs<span class="pl-pds">"</span></span>,
         right reads: [
-          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_mp1_right.fastq<span class="pl-pds">"</span></span> 
+          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_mp1_right.fastq<span class="pl-pds">"</span></span>
         ],
         left reads: [
           <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_mp1_left.fastq<span class="pl-pds">"</span></span>
@@ -485,13 +485,13 @@ Should not be confused with FR and RF strand-specificity for RNA-Seq data (see <
       {
         type: <span class="pl-s"><span class="pl-pds">"</span>single<span class="pl-pds">"</span></span>,
         single reads: [
-          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/pacbio_ccs.fastq<span class="pl-pds">"</span></span> 
+          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/pacbio_ccs.fastq<span class="pl-pds">"</span></span>
         ]
       },
       {
         type: <span class="pl-s"><span class="pl-pds">"</span>pacbio<span class="pl-pds">"</span></span>,
         single reads: [
-          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/pacbio_clr.fastq<span class="pl-pds">"</span></span> 
+          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/pacbio_clr.fastq<span class="pl-pds">"</span></span>
         ]
       }
     ]</pre></div>
@@ -608,6 +608,7 @@ Notes:</p>
 <p>HMM-guided mode could be enabled via providing a set of HMMs via <code>--custom-hmms</code> option. In HMM guided mode the set of contigs and scaffolds (see section <a href="#spadesoutsec">SPAdes output</a> for more information about SPAdes output) is kept intact, however additional <a href="#bgc">biosyntheticSPAdes output</a> represents the output of HMM-guided assembly.</p>
 <p>Note that normal biosyntheticSPAdes mode (via <code>--bio</code> option) is a bit different from HMM-guided mode: besides using the special set of profile HMMS representing a family of NRSP/PKS domains also includes a set of assembly graph simplification and processing settings aimed for fuller recovery of biosynthetic gene clusters.</p>
 <p>Given an increased interest in coronavirus research we developed a coronavirus assembly mode for SPAdes assembler (also known as coronaSPAdes). It allows to assemble full-length coronaviridae genomes from the transcriptomic and metatranscriptomic data. Algorithmically, coronaSPAdes is an rnaviralSPAdes that uses the set of HMMs from Pfam SARS-CoV-2 2.0 set as well as additional HMMs as outlined by <a href="https://doi.org/10.1093/ve/vey035" rel="nofollow">(Phan et al, 2019)</a>. coronaSPAdes could be run via a dedicated <code>coronaspades.py</code> script. See <a href="https://www.biorxiv.org/content/10.1101/2020.07.28.224584v1" rel="nofollow">coronaSPAdes preprint</a> for more information about rnaviralSPAdes,  coronaSPAdes and HMM-guided mode.</p>
+<p>Output for any HMM-related mode (--bio, --corona, or --cutom-hmms flags) is the same with biosyntheticSPAdes' output.</p>
 <p><a name="spadesoutsec"></a></p>
 <h2>SPAdes output</h2>
 <p>SPAdes stores all output files in <code>&lt;output_dir&gt; </code>, which is set by the user.</p>
@@ -706,8 +707,10 @@ For metaviral mode we also output linear putative viruses and linear viruses wit
 <h2>biosyntheticSPAdes output</h2>
 <p>biosyntheticSPAdes outputs three files of interest:</p>
 <ul>
-<li>gene_clusters.fasta – contains DNA sequences from putative biosynthetic gene clusters (BGC). Since eash sample may contain multiple BGCs and biosyntheticSPAdes can output several putative DNA sequences for eash cluster, for each contig name we append suffix <code>_cluster_X_candidate_Y</code>, where X is the id of the BGC and Y is the id of the candidate from the BGC.</li>
-<li>bgc_statistics.txt – contains statistics about BGC composition in the sample. First, it outputs number of domain hits in the sample. Then, for each BGC candidate we output domain order with positions on the corresponding DNA sequence from gene_clusters.fasta.</li>
+<li>scaffolds.fasta – contains DNA sequences from putative biosynthetic gene clusters (BGC). Since eash sample may contain multiple BGCs and biosyntheticSPAdes can output several putative DNA sequences for eash cluster, for each contig name we append suffix <code>_cluster_X_candidate_Y</code>, where X is the id of the BGC and Y is the id of the candidate from the BGC.</li>
+<li>gene_clusters.fasta – same as scaffolds.fasta (deprecated, will be removed in the future).</li>
+<li>raw_scaffolds.fasta – SPAdes scaffolds generated without domain-graph related algorithms. Very close to regular scaffolds.fasta file.</li>
+<li>hmm_statistics.txt – contains statistics about BGC composition in the sample. First, it outputs number of domain hits in the sample. Then, for each BGC candidate we output domain order with positions on the corresponding DNA sequence from gene_clusters.fasta.</li>
 <li>domain_graph.dot – contains domain graph structure, that can be used to assess complexity of the sample and structure of BGCs. For more information about domain graph construction, please refer to the paper.</li>
 </ul>
 <p><a name="eval"></a></p>
@@ -729,7 +732,7 @@ h nucleotide is coded with 2 bits: 00 - A, 01 - C, 10 - G, 11 - T.</p>
 <pre><code>    For kmer: AGCTCT
     Memory: 6 bits * 2 = 12, 64 bits (8 bytes)
     Let’s describe bytes:
-    data[0] = AGCT -&gt; 11 01 10 00 -&gt; 0xd8                                
+    data[0] = AGCT -&gt; 11 01 10 00 -&gt; 0xd8
     data[1] = CT00 -&gt; 00 00 11 01 -&gt; 0x0d
     data[2] = 0000 -&gt; 00 00 00 00 -&gt; 0x00
     data[3] = 0000 -&gt; 00 00 00 00 -&gt; 0x00
