@@ -6,7 +6,6 @@
 
 #include "binning.hpp"
 #include "labels_propagation.hpp"
-#include "labels_correction.hpp"
 #include "majority_length_strategy.hpp"
 #include "max_likelihood_strategy.hpp"
 
@@ -80,14 +79,18 @@ std::unique_ptr<BinningAssignmentStrategy> get_strategy(const gcfg &cfg) {
     }
 }
 
-std::unique_ptr<BinningRefiner> get_refiner(const gcfg& cfg, const Graph& graph, size_t num_bins) {
+std::unique_ptr<BinningRefiner> get_refiner(const gcfg& cfg, const Graph& graph) {
     switch (cfg.refiner_type) {
         default:
             FATAL_ERROR("Unknown binning refiner type");
         case RefinerType::Propagation:
             return std::make_unique<LabelsPropagation>(graph, cfg.eps);
         case RefinerType::Correction:
-            return std::make_unique<LabelsCorrection>(graph, num_bins, cfg.eps, cfg.labeled_alpha, cfg.unlabeled_alpha);
+            return std::make_unique<LabelsPropagation>(
+                graph,
+                cfg.eps,
+                std::make_unique<CorrectionParameters>(CorrectionParameters(cfg.labeled_alpha, cfg.unlabeled_alpha))
+            );
     }
 }
 
@@ -128,7 +131,7 @@ int main(int argc, char** argv) {
       binning.LoadBinning(cfg.binning_file, scaffolds_paths);
 
       INFO("Initial binning:\n" << binning);
-      auto binning_refiner = get_refiner(cfg, graph, binning.bins().size());
+      auto binning_refiner = get_refiner(cfg, graph);
       auto soft_edge_labels = binning_refiner->RefineBinning(binning);
       INFO("Assigning edges to bins");
       binning.AssignEdgeBins(soft_edge_labels, *assignment_strategy);
