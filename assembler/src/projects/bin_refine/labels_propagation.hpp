@@ -11,7 +11,7 @@
 
 #include "id_map.hpp"
 
-#define USE_LENGTH_AND_MULTIPLICITY 0
+//#define USE_LENGTH_AND_MULTIPLICITY
 
 namespace bin_stats {
 
@@ -39,9 +39,7 @@ class LabelsPropagation : public BinningRefiner {
     FinalIteration PropagationIteration(SoftBinsAssignment& new_state,
                                         const SoftBinsAssignment& cur_state,
                                         const std::shared_ptr<SoftBinsAssignment>& origin_state,
-    #ifdef USE_LENGTH_AND_MULTIPLICITY
                                         const BinStats& bin_stats,
-    #endif
                                         unsigned iteration_step) const;
 
     const double eps_;
