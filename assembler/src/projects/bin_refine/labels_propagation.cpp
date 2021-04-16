@@ -87,9 +87,7 @@ SoftBinsAssignment LabelsPropagation::RefineBinning(const BinStats& bin_stats) c
       FinalIteration converged = PropagationIteration(state,
                                                       new_state,
                                                       origin_state,
-      #ifdef USE_LENGTH_AND_MULTIPLICITY
                                                       bin_stats,
-      #endif
                                                       iteration_step++);
       if (converged)
           return new_state;
@@ -109,9 +107,7 @@ static void PropagateFromEdge(blaze::DynamicVector<double> &labels_probabilities
 LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBinsAssignment& new_state,
                                                                           const SoftBinsAssignment& cur_state,
                                                                           const std::shared_ptr<SoftBinsAssignment>& origin_state,
-    #ifdef USE_LENGTH_AND_MULTIPLICITY
                                                                           const BinStats& bin_stats,
-    #endif
                                                                           unsigned iteration_step) const {
   double sum_diff = 0.0, after_prob = 0;
 
