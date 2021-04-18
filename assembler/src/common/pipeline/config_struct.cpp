@@ -468,6 +468,8 @@ void load(pacbio_processor& pb,
   load(pb.path_limit_pressing, pt, "path_limit_pressing");
   load(pb.max_path_in_dijkstra, pt, "max_path_in_dijkstra");
   load(pb.max_vertex_in_dijkstra, pt, "max_vertex_in_dijkstra");
+  load(pb.rna_filtering, pt, "rna_filtering");
+
   load(pb.long_seq_limit, pt, "long_seq_limit");
   load(pb.enable_gap_closing, pt, "enable_gap_closing", false);
   load(pb.enable_fl_gap_closing, pt, "enable_fl_gap_closing", false);
