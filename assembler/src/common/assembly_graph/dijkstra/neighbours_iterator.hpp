@@ -92,7 +92,7 @@ public:
         out_edges_{graph.OutgoingEdges(vertex)} { }
 
     bool HasNext() const {
-        return in_edges_.first != in_edges_.second;
+        return in_edges_.first != in_edges_.second || out_edges_.first != out_edges_.second;
     }
 
     // first all outgoing edges are visited
