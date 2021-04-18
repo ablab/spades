@@ -85,6 +85,9 @@ class PacBioMappingIndex {
 
     static const size_t SHORT_SPURIOUS_LENGTH = 500;
     static const int SIMILARITY_LENGTH = 200;
+
+    static const size_t DISTANT_IN_GRAPH = 1000;
+    static const size_t MAX_VERTICES_IN_DIJKSTRA_FILTERING = 500;
     //presumably separate class for this and GetDistance
     mutable std::map<std::pair<VertexId, VertexId>, size_t> distance_cashed_;
     size_t read_count_;
@@ -150,7 +153,31 @@ class PacBioMappingIndex {
         DEBUG("Ended loading bwa")
         return res;
     }
+    bool UndirectedCloseInGraph(EdgeId a, EdgeId b) const {
 
+        std::vector<VertexId> first_edge = {g_.EdgeStart(a), g_.EdgeEnd(a)};
+        std::vector<VertexId> second_edge = {g_.EdgeStart(b), g_.EdgeEnd(b)};
+        size_t result = DISTANT_IN_GRAPH;
+        for (auto v: first_edge) {
+            omnigraph::DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
+                    omnigraph::DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_,
+                                                                                            DISTANT_IN_GRAPH,
+                                                                                            MAX_VERTICES_IN_DIJKSTRA_FILTERING
+                    ));
+            dijkstra.Run(v);
+            for (auto w: second_edge) {
+                if (dijkstra.DistanceCounted(w)) {
+                    result = std::min(dijkstra.GetDistance(w), result);
+                }
+            }
+        }
+        if (result < DISTANT_IN_GRAPH)
+            return true;
+        else
+            return false;
+
+
+    }
     typename omnigraph::MappingPath<EdgeId> FilterShortAlignments(typename omnigraph::MappingPath<EdgeId> mapped_path) const {
         omnigraph::MappingPath<EdgeId> res;
         size_t length_cutoff = pb_config_.internal_length_cutoff;
@@ -165,6 +192,10 @@ class PacBioMappingIndex {
                     if (i != j) {
                         if (mapped_path[i].second.initial_range.Intersect(mapped_path[j].second.initial_range) &&
                                 (mapped_path[i].second.quality * 0.7 < mapped_path[j].second.quality)) {
+                            if (pb_config_.rna_filtering) {
+                                if (!UndirectedCloseInGraph(mapped_path[i].first, mapped_path[j].first))
+                                    continue;
+                            }
                             size_t pos_start = std::max (mapped_path[i].second.initial_range.start_pos, mapped_path[j].second.initial_range.start_pos)
                                                - mapped_path[i].second.initial_range.start_pos;
                             size_t pos_end = std::min (mapped_path[i].second.initial_range.end_pos, mapped_path[j].second.initial_range.end_pos)

@@ -92,6 +92,35 @@ public:
                                        max_vertex_number);
     }
 
+
+    //------------------------------
+    // Undirected bounded dijkstra
+    //------------------------------
+
+    typedef ComposedDijkstraSettings<Graph,
+            LengthCalculator<Graph>,
+            BoundProcessChecker<Graph>,
+            BoundPutChecker<Graph>,
+            UnorientedNeighbourIteratorFactory<Graph> > UnorientedBoundedDijkstraSettings;
+
+    typedef Dijkstra<Graph, UnorientedBoundedDijkstraSettings> UnorientedBoundedDijkstra;
+
+    static UnorientedBoundedDijkstra
+    CreateUnorientedBoundedDijkstra(const Graph &graph,
+                                  size_t bound,
+                                  size_t max_vertex_number = size_t(-1),
+                                  bool collect_traceback = false) {
+        return UnorientedBoundedDijkstra(graph,
+                                       UnorientedBoundedDijkstraSettings(
+                                               LengthCalculator<Graph>(graph),
+                                               BoundProcessChecker<Graph>(bound),
+                                               BoundPutChecker<Graph>(bound),
+                                               UnorientedNeighbourIteratorFactory<Graph>(graph)),
+                                       max_vertex_number,
+                                       collect_traceback);
+    }
+
+
     //------------------------------
 
     typedef Dijkstra<Graph,
