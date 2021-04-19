@@ -34,6 +34,7 @@ bool GFAReader::open(const std::filesystem::path &filename) {
 
 uint32_t GFAReader::num_edges() const { return gfa_->n_seg; }
 uint64_t GFAReader::num_links() const { return gfa_->n_arc; }
+size_t GFAReader::num_paths() const { return gfa_->n_path; }
 
 unsigned GFAReader::k() const {
     unsigned k = -1U;
