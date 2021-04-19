@@ -10,8 +10,10 @@
 #include "library.hpp"
 #include "library_data.hpp"
 #include "utils/verify.hpp"
+
 #include "modules/path_extend/pe_config_struct.hpp"
 #include "configs/aligner_config.hpp"
+#include "configs/distance_estimation.hpp"
 #include "common/utils/logger/logger.hpp"
 
 #include <boost/optional.hpp>
@@ -314,16 +316,6 @@ struct debruijn_config {
     simplification simp;
     boost::optional<simplification> preliminary_simp;
 
-    struct distance_estimator {
-        double linkage_distance_coeff;
-        double max_distance_coeff;
-        double max_distance_coeff_scaff;
-        double clustered_filter_threshold;
-        unsigned raw_filter_threshold;
-        double rounding_thr;
-        double rounding_coeff;
-    };
-
     struct smoothing_distance_estimator {
         size_t threshold;
         double range_coeff;
@@ -405,12 +397,6 @@ struct debruijn_config {
         bool write_full_nc_graph;
     };
 
-    struct graph_read_corr_cfg {
-        bool enable;
-        std::string output_dir;
-        bool binary;
-    };
-
     struct kmer_coverage_model {
         double probability_threshold;
         double strong_probability_threshold;
@@ -474,8 +460,6 @@ struct debruijn_config {
     bool use_single_reads;
 
     bool correct_mismatches;
-    bool paired_info_statistics;
-    bool paired_info_scaffolder;
     bool gap_closer_enable;
 
     size_t max_repeat_length;
@@ -508,7 +492,6 @@ struct debruijn_config {
     position_handler pos;
     gap_closer gc;
     ss_coverage_splitter_t ss_coverage_splitter;
-    graph_read_corr_cfg graph_read_corr;
     info_printers_t info_printers;
     kmer_coverage_model kcm;
     bwa_aligner bwa;

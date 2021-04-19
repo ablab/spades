@@ -385,7 +385,7 @@ void load(debruijn_config::simplification::hidden_ec_remover& her,
   load(her.relative_threshold, pt, "relative_threshold");
 }
 
-void load(debruijn_config::distance_estimator& de,
+void load(distance_estimator& de,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
 
@@ -511,14 +511,6 @@ void load(debruijn_config::contig_output& co,
     load(co.contigs_name, pt, "contigs_name", complete);
     load(co.scaffolds_name, pt, "scaffolds_name", complete);
     load(co.obs_mode, pt, "output_broken_scaffolds", complete);
-}
-
-void load(debruijn_config::graph_read_corr_cfg& graph_read_corr,
-          boost::property_tree::ptree const& pt, bool /*complete*/) {
-  using config_common::load;
-  load(graph_read_corr.enable, pt, "enable");
-  load(graph_read_corr.output_dir, pt, "output_dir");
-  load(graph_read_corr.binary, pt, "binary");
 }
 
 void load(debruijn_config::strand_specificity& ss,
@@ -751,8 +743,6 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     load(cfg.preserve_raw_paired_index, pt, "preserve_raw_paired_index", complete);
 
     load(cfg.correct_mismatches, pt, "correct_mismatches", complete);
-    load(cfg.paired_info_statistics, pt, "paired_info_statistics", complete);
-    load(cfg.paired_info_scaffolder, pt, "paired_info_scaffolder", complete);
     load(cfg.gap_closer_enable, pt, "gap_closer_enable", complete);
 
     load(cfg.max_repeat_length, pt, "max_repeat_length", complete);
@@ -766,7 +756,6 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     load(cfg.ss_coverage_splitter, pt, "ss_coverage_splitter", complete);
     load(cfg.simp, pt, "simp", complete);
     load(cfg.flanking_range, pt, "flanking_range", complete);
-    load(cfg.graph_read_corr, pt, "graph_read_corr", complete);
     load(cfg.kcm, pt, "kmer_coverage_model", complete);
     //TODO come up with a fix to this hack
     load(cfg.simp.lcer, pt, "lcer", complete); //low coverage edge remover

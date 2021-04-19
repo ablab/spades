@@ -138,7 +138,6 @@ void estimate_distance(const Graph &graph,
                        const io::SequencingLibrary<config::LibraryData> &lib,
                        const UnclusteredPairedInfoIndexT<Graph> &paired_index,
                        PairedInfoIndexT<Graph> &clustered_index) {
-
     const config::debruijn_config& config = cfg::get();
     size_t delta = size_t(lib.data().insert_size_deviation);
     size_t linkage_distance = size_t(config.de.linkage_distance_coeff * lib.data().insert_size_deviation);
@@ -173,20 +172,23 @@ void DistanceEstimation::run(GraphPack &gp, const char*) {
     auto &paired_indices = gp.get_mutable<UnclusteredPairedInfoIndicesT<Graph>>();
     auto &clustered_indices = gp.get_mutable<PairedInfoIndicesT<Graph>>("clustered_indices");
     auto &scaffolding_indices = gp.get_mutable<PairedInfoIndicesT<Graph>>("scaffolding_indices");
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
-            if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0) {
-                INFO("Processing library #" << i);
-                estimate_distance(graph, cfg::get().ds.reads[i], paired_indices[i], clustered_indices[i]);
-                if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
-                    estimate_scaffolding_distance(graph, cfg::get().ds.reads[i], paired_indices[i], scaffolding_indices[i]);
-                }
-            }
-            if (!cfg::get().preserve_raw_paired_index) {
-                INFO("Clearing raw paired index");
-                paired_indices[i].clear();
-            }
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        const auto &lib = cfg::get().ds.reads[i];
+        if (lib.type() != io::LibraryType::PairedEnd)
+            continue;
+
+        if (lib.data().mean_insert_size != 0.0) {
+            INFO("Processing library #" << i);
+            estimate_distance(graph, lib, paired_indices[i], clustered_indices[i]);
+            if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info)
+                estimate_scaffolding_distance(graph, lib, paired_indices[i], scaffolding_indices[i]);
         }
+
+        if (!cfg::get().preserve_raw_paired_index) {
+            INFO("Clearing raw paired index");
+            paired_indices[i].clear();
+        }
+    }
 }
 
 }
