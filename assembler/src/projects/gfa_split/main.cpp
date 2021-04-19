@@ -18,6 +18,7 @@
 #include <clipp/clipp.h>
 #include <filesystem>
 #include <iostream>
+#include <iterator>
 #include <string>
 
 using namespace debruijn_graph;
@@ -71,7 +72,7 @@ class WeaklyConnectedComponentsFinder {
             for (EdgeId e : ranges[i]) {
                 VertexId v = graph_.EdgeStart(e);
                 VertexId u = graph_.EdgeEnd(e);
-                
+
                 components.unite(v.int_id(), u.int_id());
                 components.unite(graph_.conjugate(v).int_id(), u.int_id());
                 components.unite(graph_.conjugate(u).int_id(), v.int_id());
@@ -95,6 +96,7 @@ int main(int argc, char** argv) {
   try {
       std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
       std::unique_ptr<ConjugateDeBruijnGraph> graph;
+      std::vector<gfa::GFAReader::GFAPath> paths;
 
       {
           gfa::GFAReader gfa(cfg.graph);
@@ -104,8 +106,11 @@ int main(int argc, char** argv) {
           VERIFY_MSG(gfa.k() == 0 || gfa.k() % 2 == 1, "k-mer length must be odd");
 
           graph.reset(new ConjugateDeBruijnGraph(gfa.k()));
-      
+
           gfa.to_graph(*graph, id_mapper.get());
+          paths.insert(paths.end(),
+                       std::make_move_iterator(gfa.path_begin()),
+                       std::make_move_iterator(gfa.path_end()));
 
           INFO("Graph loaded. Total vertices: " << graph->size() << ", total edges: " << graph->e_size());
       }
