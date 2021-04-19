@@ -51,8 +51,8 @@ class GFAReader {
 
     uint32_t num_edges() const;
     uint64_t num_links() const;
+    size_t num_paths() const;
 
-    size_t num_paths() const { return paths_.size(); }
     path_iterator path_begin() const { return paths_.begin(); }
     path_iterator path_end() const { return paths_.end(); }
     adt::iterator_range<path_iterator> paths() const {
