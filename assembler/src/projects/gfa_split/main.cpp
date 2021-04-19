@@ -6,6 +6,7 @@
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/components/graph_component.hpp"
+#include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 
 #include "io/graph/gfa_writer.hpp"
 #include "toolchain/utils.hpp"
@@ -112,6 +113,8 @@ int main(int argc, char** argv) {
 
       INFO("Looking for weakly connected components");
       std::vector<std::vector<VertexId>> component_to_vertices;
+      std::vector<std::vector<gfa::GFAReader::GFAPath>> component_to_paths;
+
       size_t cnt = 0;
 
       {
@@ -121,6 +124,7 @@ int main(int argc, char** argv) {
 
           phmap::flat_hash_map<size_t, size_t> root_id_to_component_id;
           component_to_vertices.resize(cnt);
+          component_to_paths.resize(cnt);
 
           INFO("Assigning roots");
           {
@@ -142,6 +146,14 @@ int main(int argc, char** argv) {
               size_t cur_component_id = root_id_to_component_id[root];
               component_to_vertices[cur_component_id].push_back(v);
           }
+
+          INFO("Splitting paths");
+          for (auto &path : paths) {
+              VertexId v = graph->EdgeEnd(path.edges.front());
+              size_t root = weakly_connected_components.find_set(v.int_id());
+              size_t cur_component_id = root_id_to_component_id[root];
+              component_to_paths[cur_component_id].emplace_back(std::move(path));
+          }
       }
 
       INFO("Writing components");
@@ -155,9 +167,11 @@ int main(int argc, char** argv) {
                                                                                   component.begin(),  component.end(),
                                                                                   true);
           std::ofstream os(cfg.output_base / ("subgraph_" + std::to_string(i) + ".gfa"));
-          gfa::GFAComponentWriter writer(subgraph, os,
-                                         io::MapNamingF<debruijn_graph::ConjugateDeBruijnGraph>(*id_mapper));
-          writer.WriteSegmentsAndLinks();
+          path_extend::GFAPathWriter writer(*graph, os,
+                                            io::MapNamingF<debruijn_graph::ConjugateDeBruijnGraph>(*id_mapper));
+          writer.WriteSegmentsAndLinks(subgraph);
+          for (const auto& path : component_to_paths[i])
+              writer.WritePaths(path);
           VERBOSE_POWER_T2(i, 0, "Written " << i << " components, total vertices: " << total_v);
       }
       INFO("Written " << component_to_vertices.size() << " components, total vertices: " << total_v);
