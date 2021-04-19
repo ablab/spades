@@ -41,7 +41,8 @@ class GFAReader {
         std::string name;
         std::vector<EdgeId> edges;
     };
-    typedef std::vector<GFAPath>::const_iterator path_iterator;
+    typedef std::vector<GFAPath>::const_iterator path_const_iterator;
+    typedef std::vector<GFAPath>::iterator path_iterator;
 
     GFAReader();
     GFAReader(const std::filesystem::path &filename);
@@ -53,9 +54,15 @@ class GFAReader {
     uint64_t num_links() const;
     size_t num_paths() const;
 
-    path_iterator path_begin() const { return paths_.begin(); }
-    path_iterator path_end() const { return paths_.end(); }
-    adt::iterator_range<path_iterator> paths() const {
+    path_const_iterator path_begin() const { return paths_.begin(); }
+    path_const_iterator path_end() const { return paths_.end(); }
+    adt::iterator_range<path_const_iterator> paths() const {
+        return adt::make_range(path_begin(), path_end());
+    }
+
+    path_iterator path_begin() { return paths_.begin(); }
+    path_iterator path_end() { return paths_.end(); }
+    adt::iterator_range<path_iterator> paths() {
         return adt::make_range(path_begin(), path_end());
     }
 
