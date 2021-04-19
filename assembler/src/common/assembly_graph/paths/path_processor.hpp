@@ -7,8 +7,11 @@
 
 #pragma once
 
-#include "adt/bag.hpp"
+#include "assembly_graph/core/basic_graph_stats.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
+
+#include "adt/bag.hpp"
+
 #include <boost/optional.hpp>
 #include "utils/perf/timetracer.hpp"
 
@@ -34,13 +37,9 @@ class PathProcessor {
     typedef typename DijkstraHelper<Graph>::BoundedDijkstra DijkstraT;
 public:
     class Callback {
-
     public:
-        virtual ~Callback() {
-        }
-
+        virtual ~Callback() = default;
         virtual void HandleReversedPath(const std::vector<EdgeId> &reversed_path) = 0;
-
 
     protected:
         Path ReversePath(const Path &path) const {
@@ -52,7 +51,6 @@ public:
     };
 
 private:
-
     class Traversal {
         const PathProcessor& outer_;
         VertexId end_;
@@ -127,14 +125,15 @@ private:
                 return dijkstra_.DistanceCounted(g_.EdgeStart(e));
             });
 
-            std::sort(incoming.begin(), incoming.end(), [&] (EdgeId e1, EdgeId e2) {
-                auto first = dijkstra_.GetDistance(g_.EdgeStart(e1));
-                auto second = dijkstra_.GetDistance(g_.EdgeStart(e2));
-                if (first != second) {
-                    return first < second;
-                }
-                return g_.coverage(e1) > g_.coverage(e2);
-            });
+            std::sort(incoming.begin(), incoming.end(),
+                      [&] (EdgeId e1, EdgeId e2) {
+                          auto first = dijkstra_.GetDistance(g_.EdgeStart(e1));
+                          auto second = dijkstra_.GetDistance(g_.EdgeStart(e2));
+                          if (first != second) {
+                              return first < second;
+                          }
+                          return g_.coverage(e1) > g_.coverage(e2);
+                      });
 
             for (EdgeId e : incoming) {
                 VertexId start_v = g_.EdgeStart(e);

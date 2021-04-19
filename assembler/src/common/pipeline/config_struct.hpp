@@ -316,17 +316,6 @@ struct debruijn_config {
     simplification simp;
     boost::optional<simplification> preliminary_simp;
 
-    struct smoothing_distance_estimator {
-        size_t threshold;
-        double range_coeff;
-        double delta_coeff;
-        double percentage;
-        size_t cutoff;
-        size_t min_peak_points;
-        double inv_density;
-        double derivative_threshold;
-    };
-
     struct ambiguous_distance_estimator {
         bool enabled;
         double haplom_threshold;

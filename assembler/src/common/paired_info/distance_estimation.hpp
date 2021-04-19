@@ -8,13 +8,12 @@
 #ifndef DISTANCE_ESTIMATION_HPP_
 #define DISTANCE_ESTIMATION_HPP_
 
-#include "utils/parallel/openmp_wrapper.h"
-#include "assembly_graph/core/basic_graph_stats.hpp"
-#include "assembly_graph/core/graph.hpp"
-#include "assembly_graph/paths/path_processor.hpp"
-
-#include "paired_info/pair_info_bounds.hpp"
 #include "paired_info.hpp"
+#include "pair_info_bounds.hpp"
+
+#include "assembly_graph/core/graph.hpp"
+#include "utils/parallel/openmp_wrapper.h"
+
 #include "math/xmath.h"
 
 namespace omnigraph {

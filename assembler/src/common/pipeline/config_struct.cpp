@@ -398,7 +398,7 @@ void load(distance_estimator& de,
   load(de.rounding_thr, pt, "rounding_threshold", complete);
 }
 
-void load(debruijn_config::smoothing_distance_estimator& ade,
+void load(smoothing_distance_estimator& ade,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
