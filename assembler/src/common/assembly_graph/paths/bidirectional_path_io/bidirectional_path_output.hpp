@@ -8,6 +8,7 @@
 #pragma once
 
 #include "io/utils/edge_namer.hpp"
+#include "io/graph/gfa_reader.hpp"
 #include "io/graph/gfa_writer.hpp"
 #include "io/graph/fastg_writer.hpp"
 #include "io_support.hpp"
@@ -54,6 +55,10 @@ class GFAPathWriter : public gfa::GFAWriter {
                    const std::vector<std::string> &edge_strs,
                    const std::string &flags = "");
 
+    void WritePath(const std::string &name,
+                   const std::vector<std::string> &edge_strs,
+                   const std::string &flags = "");
+
     void WritePaths11(const std::vector<EdgeId> &edges,
                       const std::string &name,
                       const std::string &flags = "");
@@ -84,6 +89,9 @@ public:
                     const std::string &flags = "");
 
     void WritePaths(const ScaffoldStorage &scaffold_storage);
+
+    void WritePaths(const gfa::GFAReader::GFAPath &path,
+                    const std::string &flags = "");
 
 private:
     Version version_;

@@ -422,8 +422,8 @@ DomainGraph::Arrangements DomainGraph::FindAllPossibleArrangements(VertexId v,
                                                                                 edges.begin(), edges.end(), true);
         std::ofstream os(cfg::get().output_dir / ("bgc_in_gfa/" +
                          std::to_string(component_id) + "_" + std::to_string(ordering_id) + ".gfa"));
-        gfa::GFAComponentWriter writer(comp, os);
-        writer.WriteSegmentsAndLinks();
+        path_extend::GFAPathWriter writer(g_, os);
+        writer.WriteSegmentsAndLinks(comp);
     }
 
     DomainGraph::VertexId DomainGraph::AddVertex() {

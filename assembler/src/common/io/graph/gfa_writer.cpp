@@ -64,41 +64,17 @@ void GFAWriter::WriteSegments(const Component &gc) {
 
 void GFAWriter::WriteLinks(const Component &gc) {
     for (VertexId v : gc.vertices()) {
-        if (v <= graph_.conjugate(v) && !gc.IsBorder(v)) {
+        if (v <= graph_.conjugate(v)) {
             for (auto inc_edge : graph_.IncomingEdges(v)) {
+                if (!gc.contains(inc_edge))
+                    continue;
+
                 for (auto out_edge : graph_.OutgoingEdges(v)) {
+                    if (!gc.contains(out_edge))
+                        continue;
+
                     WriteLink(inc_edge, out_edge, graph_.k(),
                               os_, edge_namer_);
-
-                }
-            }
-        }
-    }
-}
-
-void GFAComponentWriter::WriteSegments() {
-    const Graph &graph = component_.g();
-    for (auto e : component_.edges()) {
-        if (e.int_id() > graph.conjugate(e).int_id())
-            continue;
-        WriteSegment(edge_namer_.EdgeString(e), component_.g().EdgeNucls(e),
-                     graph.coverage(e), graph.kmer_multiplicity(e),
-                     os_);
-    }
-}
-
-void GFAComponentWriter::WriteLinks() {
-    //TODO switch to constant vertex iterator
-    for (auto v : component_.vertices()) {
-        if (v.int_id() > component_.g().conjugate(v).int_id())
-            continue;
-        for (auto inc_edge : component_.g().IncomingEdges(v)) {
-            if (component_.contains(inc_edge)) {
-                for (auto out_edge : component_.g().OutgoingEdges(v)) {
-                    if (component_.contains(out_edge)) {
-                        WriteLink(inc_edge, out_edge, component_.g().k(),
-                                  os_, edge_namer_);
-                    }
                 }
             }
         }
@@ -106,10 +82,7 @@ void GFAComponentWriter::WriteLinks() {
 }
 
 void GFAWriter::WriteSegmentsAndLinks(const Component &gc) {
-    //TODO remove and add optional check?
-    auto rc_closure = Component::FromEdges(graph_, gc.edges().begin(), gc.edges().end(),
-                                           /*add_conjugate*/true);
-    WriteSegments(rc_closure);
-    WriteLinks(rc_closure);
+    WriteSegments(gc);
+    WriteLinks(gc);
 }
 
