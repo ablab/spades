@@ -61,6 +61,7 @@ public:
     template<class ReadType>
     void ProcessLibrary(io::ReadStreamList<ReadType>& streams,
                         size_t lib_index, const SequenceMapperT& mapper, size_t threads_count = 0) {
+        INFO("Starting sequence mapping");
         std::string lib_str = std::to_string(lib_index);
         TIME_TRACE_SCOPE("SequenceMapperNotifier::ProcessLibrary", lib_str);
         if (threads_count == 0)
