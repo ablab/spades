@@ -5,17 +5,22 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "pipeline/library.hpp"
-#include "io/dataset_support/dataset_readers.hpp"
-#include "paired_info/pair_info_improver.hpp"
+#include "distance_estimation.hpp"
 
+#include "paired_info/pair_info_improver.hpp"
 #include "paired_info/paired_info_helpers.hpp"
 #include "paired_info/pair_info_filters.hpp"
 #include "paired_info/distance_estimation.hpp"
 #include "paired_info/weighted_distance_estimation.hpp"
 #include "paired_info/smoothing_distance_estimation.hpp"
 #include "paired_info/weights.hpp"
-#include "distance_estimation.hpp"
+
+#include "pipeline/configs/distance_estimation.hpp"
+#include "pipeline/config_struct.hpp"
+#include "pipeline/library.hpp"
+#include "io/dataset_support/dataset_readers.hpp"
+
+#include "utils/parallel/openmp_wrapper.h"
 
 #include <set>
 #include <unordered_set>
@@ -26,32 +31,20 @@ namespace {
 
 using namespace omnigraph::de;
 
-void estimate_with_estimator(const Graph &graph,
-                             const AbstractDistanceEstimator &estimator,
-                             AbstractPairInfoChecker<Graph> &checker,
-                             PairedInfoIndexT<Graph> &clustered_index) {
+void EstimateWithEstimator(PairedInfoIndexT<Graph> &clustered_index,
+                           const AbstractDistanceEstimator &estimator,
+                           AbstractPairInfoChecker<Graph> &checker) {
     DEBUG("Estimating distances");
 
-    estimator.Estimate(clustered_index, cfg::get().max_threads);
+    estimator.Estimate(clustered_index, omp_get_max_threads());
 
     INFO("Filtering info");
-    if(cfg::get().amb_de.enabled){
-        AmbiguousPairInfoChecker<Graph> amb_de_checker(graph,
-                                            clustered_index,
-                                            checker,
-                                            cfg::get().amb_de.haplom_threshold,
-                                            cfg::get().amb_de.relative_length_threshold,
-                                            cfg::get().amb_de.relative_seq_threshold);
-        PairInfoFilter<Graph>(amb_de_checker).Filter(clustered_index);
-    } else
-        PairInfoFilter<Graph>(checker).Filter(clustered_index);
-//    filter.Filter(clustered_index);
+    PairInfoFilter<Graph>(checker).Filter(clustered_index);
     DEBUG("Info Filtered");
 }
 
-
 // Postprocessing, checking that clusters do not intersect
-void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_index) {
+void RefinePairedInfo(PairedInfoIndexT<Graph>& clustered_index, const Graph& graph) {
     for (auto iter = pair_begin(clustered_index); iter != pair_end(clustered_index); ++iter) {
         EdgeId first_edge = iter.first();
         EdgeId second_edge = iter.second();
@@ -98,17 +91,21 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
     }
 }
 
-void estimate_scaffolding_distance(const Graph &graph, const io::SequencingLibrary<config::LibraryData> &lib,
-                                   const UnclusteredPairedInfoIndexT<Graph> &paired_index,
-                                   PairedInfoIndexT<Graph> &scaffolding_index) {
+void EstimateScaffoldingDistances(PairedInfoIndexT<Graph> &scaffolding_index,
+                                  const Graph &graph, const io::SequencingLibrary<config::LibraryData> &lib,
+                                  const UnclusteredPairedInfoIndexT<Graph> &paired_index,
+                                  const debruijn_graph::config::debruijn_config::smoothing_distance_estimator &ade,
+                                  const debruijn_graph::config::distance_estimator &de_config =
+                                  debruijn_graph::config::distance_estimator()) {
     INFO("Filling scaffolding index");
 
     double is_var = lib.data().insert_size_deviation;
     size_t delta = size_t(is_var);
-    size_t linkage_distance = size_t(cfg::get().de.linkage_distance_coeff * is_var);
-    GraphDistanceFinder dist_finder(graph, (size_t) math::round(lib.data().mean_insert_size),
+    size_t linkage_distance = size_t(de_config.linkage_distance_coeff * is_var);
+    GraphDistanceFinder dist_finder(graph,
+                                    (size_t) math::round(lib.data().mean_insert_size),
                                     lib.data().unmerged_read_length, delta);
-    size_t max_distance = size_t(cfg::get().de.max_distance_coeff_scaff * is_var);
+    size_t max_distance = size_t(de_config.max_distance_coeff_scaff * is_var);
 
     DEBUG("Retaining insert size distribution for it");
     if (lib.data().insert_size_distribution.size() == 0) {
@@ -126,52 +123,53 @@ void estimate_scaffolding_distance(const Graph &graph, const io::SequencingLibra
     SmoothingDistanceEstimator estimator(graph, paired_index, dist_finder,
                                          [&] (int i) {return wrapper.CountWeight(i);},
                                          linkage_distance, max_distance,
-                                         cfg::get().ade.threshold, cfg::get().ade.range_coeff,
-                                         cfg::get().ade.delta_coeff, cfg::get().ade.cutoff,
-                                         cfg::get().ade.min_peak_points,
-                                         cfg::get().ade.percentage,
-                                         cfg::get().ade.derivative_threshold);
-    estimate_with_estimator(graph, estimator, checker, scaffolding_index);
+                                         ade.threshold, ade.range_coeff,
+                                         ade.delta_coeff, ade.cutoff,
+                                         ade.min_peak_points,
+                                         ade.percentage,
+                                         ade.derivative_threshold);
+    EstimateWithEstimator(scaffolding_index, estimator, checker);
 }
 
-void estimate_distance(const Graph &graph,
-                       const io::SequencingLibrary<config::LibraryData> &lib,
-                       const UnclusteredPairedInfoIndexT<Graph> &paired_index,
-                       PairedInfoIndexT<Graph> &clustered_index) {
-    const config::debruijn_config& config = cfg::get();
+void EstimatePairedDistances(PairedInfoIndexT<Graph> &clustered_index,
+                             const Graph &graph,
+                             const io::SequencingLibrary<config::LibraryData> &lib,
+                             const UnclusteredPairedInfoIndexT<Graph> &paired_index,
+                             size_t max_repeat_length = std::numeric_limits<size_t>::max(),
+                             const debruijn_graph::config::distance_estimator &de_config =
+                             debruijn_graph::config::distance_estimator()) {
     size_t delta = size_t(lib.data().insert_size_deviation);
-    size_t linkage_distance = size_t(config.de.linkage_distance_coeff * lib.data().insert_size_deviation);
+    size_t linkage_distance = size_t(de_config.linkage_distance_coeff * lib.data().insert_size_deviation);
     GraphDistanceFinder dist_finder(graph, (size_t)math::round(lib.data().mean_insert_size), lib.data().unmerged_read_length, delta);
-    size_t max_distance = size_t(config.de.max_distance_coeff * lib.data().insert_size_deviation);
+    size_t max_distance = size_t(de_config.max_distance_coeff * lib.data().insert_size_deviation);
 
-    PairInfoWeightChecker<Graph> checker(graph, config.de.clustered_filter_threshold);
+    PairInfoWeightChecker<Graph> checker(graph, de_config.clustered_filter_threshold);
 
     INFO("Weight Filter Done");
 
     DistanceEstimator estimator(graph, paired_index, dist_finder, linkage_distance, max_distance);
 
-    estimate_with_estimator(graph, estimator, checker, clustered_index);
+    EstimateWithEstimator(clustered_index, estimator, checker);
 
     INFO("Refining clustered pair information ");                             // this procedure checks, whether index
-    RefinePairedInfo(graph, clustered_index);                                  // contains intersecting paired info clusters,
+    RefinePairedInfo(clustered_index, graph);                                 // contains intersecting paired info clusters,
     INFO("The refining of clustered pair information has been finished ");    // if so, it resolves such conflicts.
 
     INFO("Improving paired information");
-    PairInfoImprover<Graph> improver(graph, clustered_index, lib,
-                                     (debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(config.mode))?
-                                     std::numeric_limits<size_t>::max() : config.max_repeat_length);
-
-    improver.ImprovePairedInfo((unsigned) config.max_threads);
-
+    PairInfoImprover<Graph>(graph, clustered_index, lib, max_repeat_length).ImprovePairedInfo(omp_get_max_threads());
 }
 
 } // namespace
 
 void DistanceEstimation::run(GraphPack &gp, const char*) {
+    const config::debruijn_config& config = cfg::get();
     const auto &graph = gp.get<Graph>();
     auto &paired_indices = gp.get_mutable<UnclusteredPairedInfoIndicesT<Graph>>();
     auto &clustered_indices = gp.get_mutable<PairedInfoIndicesT<Graph>>("clustered_indices");
     auto &scaffolding_indices = gp.get_mutable<PairedInfoIndicesT<Graph>>("scaffolding_indices");
+    size_t max_repeat_length =
+            debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(config.mode) ?
+            std::numeric_limits<size_t>::max() : config.max_repeat_length;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         const auto &lib = cfg::get().ds.reads[i];
         if (lib.type() != io::LibraryType::PairedEnd)
@@ -179,9 +177,11 @@ void DistanceEstimation::run(GraphPack &gp, const char*) {
 
         if (lib.data().mean_insert_size != 0.0) {
             INFO("Processing library #" << i);
-            estimate_distance(graph, lib, paired_indices[i], clustered_indices[i]);
+            EstimatePairedDistances(clustered_indices[i], graph, lib, paired_indices[i],
+                                    max_repeat_length, config.de);
             if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info)
-                estimate_scaffolding_distance(graph, lib, paired_indices[i], scaffolding_indices[i]);
+                EstimateScaffoldingDistances(scaffolding_indices[i], graph, lib, paired_indices[i],
+                                             config.ade, config.de);
         }
 
         if (!cfg::get().preserve_raw_paired_index) {
