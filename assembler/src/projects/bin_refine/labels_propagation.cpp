@@ -132,66 +132,29 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
 
       next_probs.reset();
       double self_weight = rweight_[e];
-      for (EdgeId neighbour : g_.OutgoingEdges(g_.EdgeEnd(e))) {
-          double prev_state_incoming_weight = 1 * rdeg_[neighbour];
-          double origin_state_incoming_weight = prev_state_incoming_weight;
 
-          double cur_alpha = 1.0;
-          if (correction_parameters_) {
-              cur_alpha = bin_stats.edges_binning().count(neighbour) > 0 ? correction_parameters_->labeled_alpha : correction_parameters_->unlabeled_alpha;
-          }
-
-          #ifdef USE_LENGTH_AND_MULTIPLICITY
-          const double length_coefficient = static_cast<double>(max_edge_length_ - g_.length(e)) / static_cast<double>(max_edge_length_);
-          const auto multiplicity_iter = bin_stats.multiplicities().find(e);
-          // Consider unbinned edges as unique
-          const size_t multiplicity = multiplicity_iter != bin_stats.multiplicities().end() ? multiplicity_iter->second : 1;
-          cur_alpha += (1.0 - cur_alpha) / static_cast<double>(multiplicity) * static_cast<double>(multiplicity - 1);
-          cur_alpha *= length_coefficient;
-          #endif
-
-          if (correction_parameters_) {
-              prev_state_incoming_weight *= cur_alpha;
-              origin_state_incoming_weight *= (1.0 - cur_alpha);
-
-              PropagateFromEdge(next_probs, neighbour, cur_state, prev_state_incoming_weight);
-              PropagateFromEdge(next_probs, neighbour, *origin_state, origin_state_incoming_weight);
-          } else {
-              PropagateFromEdge(next_probs, neighbour, cur_state, prev_state_incoming_weight);
-          }
+      if (correction_parameters_) {
+          const double cur_alpha = cur_state.at(e).is_binned ? correction_parameters_->labeled_alpha : correction_parameters_->unlabeled_alpha;
+          next_probs += (1.0 - cur_alpha) * origin_state->at(e).labels_probabilities;
       }
+
+      for (EdgeId neighbour : g_.OutgoingEdges(g_.EdgeEnd(e)))
+          PropagateFromNeighbour(neighbour, cur_state, next_probs, bin_stats);
+
       // This is actually iterates over conjugate edges as compared to expected:
       //  for (EdgeId neighbour : g_.IncomingEdges(g_.EdgeStart(e)))
       // However, we're saving lots of conjugate() calls under the hood
-      for (EdgeId neighbour : g_.OutgoingEdges(g_.EdgeEnd(ce))) {
-          double prev_state_incoming_weight = 1 * rdeg_[neighbour];
-          double origin_state_incoming_weight = prev_state_incoming_weight;
+      for (EdgeId neighbour : g_.OutgoingEdges(g_.EdgeEnd(ce)))
+          PropagateFromNeighbour(neighbour, cur_state, next_probs, bin_stats);
 
-          double cur_alpha = 1.0;
-          if (correction_parameters_) {
-              cur_alpha = bin_stats.edges_binning().count(neighbour) > 0 ? correction_parameters_->labeled_alpha : correction_parameters_->unlabeled_alpha;
-          }
-
-          #ifdef USE_LENGTH_AND_MULTIPLICITY
-          const double length_coefficient = static_cast<double>(max_edge_length_ - g_.length(e)) / static_cast<double>(max_edge_length_);
-          const auto multiplicity_iter = bin_stats.multiplicities().find(e);
-          // Consider unbinned edges as unique
-          const size_t multiplicity = multiplicity_iter != bin_stats.multiplicities().end() ? multiplicity_iter->second : 1;
-          cur_alpha += (1.0 - cur_alpha) / static_cast<double>(multiplicity) * static_cast<double>(multiplicity - 1);
-          cur_alpha *= length_coefficient;
-          #endif
-
-          if (correction_parameters_) {
-              prev_state_incoming_weight *= cur_alpha;
-              origin_state_incoming_weight *= (1.0 - cur_alpha);
-
-              PropagateFromEdge(next_probs, neighbour, cur_state, prev_state_incoming_weight);
-              PropagateFromEdge(next_probs, neighbour, *origin_state, origin_state_incoming_weight);
-          } else {
-              PropagateFromEdge(next_probs, neighbour, cur_state, prev_state_incoming_weight);
-          }
-      }
       next_probs *= self_weight;
+
+//      if (correction_parameters_) {
+//          const double cur_sum = sum(next_probs);
+//          if (cur_sum >= 1e-6) {
+//              next_probs /= cur_sum;
+//          }
+//      }
 
       after_prob += sum(next_probs);
       sum_diff += blaze::l1Norm(next_probs - edge_labels.labels_probabilities); // Use L1-norm for the sake of simplicity
@@ -229,6 +192,33 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
 
 
   return converged;
+}
+
+void LabelsPropagation::PropagateFromNeighbour(EdgeId neighbour,
+                                               const SoftBinsAssignment& cur_state,
+                                               blaze::DynamicVector<double>& next_probs,
+                                               const BinStats& bin_stats) const {
+    double prev_state_incoming_weight = 1 * rdeg_[neighbour];
+
+    double cur_alpha = 1.0;
+    if (correction_parameters_) {
+        cur_alpha = cur_state.at(neighbour).is_binned ? correction_parameters_->labeled_alpha : correction_parameters_->unlabeled_alpha;
+    }
+
+    #ifdef USE_LENGTH_AND_MULTIPLICITY
+    // good edge - big length and small multiplicity
+    const double length_coefficient = static_cast<double>(max_edge_length_ - g_.length(neighbour)) / static_cast<double>(max_edge_length_);
+
+    const auto multiplicity_iter = bin_stats.multiplicities().find(neighbour);
+    // Consider unbinned edges as unique
+    const size_t multiplicity = multiplicity_iter != bin_stats.multiplicities().end() ? multiplicity_iter->second : 1;
+
+    cur_alpha *= length_coefficient;
+    cur_alpha /= static_cast<double>(multiplicity);
+    #endif
+
+    prev_state_incoming_weight *= cur_alpha;
+    PropagateFromEdge(next_probs, neighbour, cur_state, prev_state_incoming_weight);
 }
 
 SoftBinsAssignment LabelsPropagation::InitLabels(const BinStats& bin_stats) const {

@@ -42,6 +42,11 @@ class LabelsPropagation : public BinningRefiner {
                                         const BinStats& bin_stats,
                                         unsigned iteration_step) const;
 
+    void PropagateFromNeighbour(debruijn_graph::EdgeId neighbour,
+                                const SoftBinsAssignment& cur_state,
+                                blaze::DynamicVector<double>& next_probs,
+                                const BinStats& bin_stats) const;
+
     const double eps_;
 
     adt::id_map<double, debruijn_graph::EdgeId> rdeg_;
