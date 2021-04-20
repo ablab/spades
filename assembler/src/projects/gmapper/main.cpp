@@ -73,6 +73,7 @@ struct gcfg {
     alignment::BWAIndex::AlignmentMode mode;
     alignment::BWAIndex::RetainAlignments retain;
     bool hic;
+    bool bin_load = false;
 };
 
 void process_cmdline(int argc, char **argv, gcfg &cfg) {
@@ -86,6 +87,7 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
       (option("--tmp-dir") & value("dir", cfg.tmpdir)) % "scratch directory to use",
+      (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option",
       (option("--hic").set(cfg.hic)) % "enable HiC-aware paired-end processing (implies -Xhic unless mode is specified)",
       (with_prefix("-X",
                    option("illumina").set(cfg.mode, alignment::BWAIndex::AlignmentMode::Illumina) |
@@ -239,7 +241,9 @@ int main(int argc, char* argv[]) {
             std::unique_ptr<ThreadPool::ThreadPool> pool;
             if (cfg.nthreads > 1)
                 pool = std::make_unique<ThreadPool::ThreadPool>(cfg.nthreads);
-            io::ReadConverter::ConvertToBinary(lib, pool.get());
+            if (!cfg.bin_load || !io::ReadConverter::LoadLibIfExists(lib))
+                io::ReadConverter::ConvertToBinary(lib, pool.get());
+
             paired_info::FillPairedIndex(graph,
                                          mapper,
                                          lib, index, { }, 0, std::numeric_limits<unsigned>::max());
@@ -257,7 +261,9 @@ int main(int argc, char* argv[]) {
 
                         omnigraph::de::DEWeight w = 0;
                         auto AddToWeight = [&](EdgeId e1, EdgeId e2) {
-                            w += index.Get(e1, e2).begin()->weight;
+                            const auto& hist = index.Get(e1, e2);
+                            if (!hist.empty())
+                                w += hist.begin()->weight;
                         };
 
 
