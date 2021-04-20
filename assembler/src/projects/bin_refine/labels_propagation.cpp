@@ -131,30 +131,32 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
       }
 
       next_probs.reset();
-      double self_weight = rweight_[e];
 
+      // formula for correction: next_probs[i] = alpha[e] * \sum{neighbour} (rw[e] * rd[neighbour] * cur_probs[i]) + (1 - alpha[e]) * origin_probs[i]
       if (correction_parameters_) {
           const double cur_alpha = cur_state.at(e).is_binned ? correction_parameters_->labeled_alpha : correction_parameters_->unlabeled_alpha;
           next_probs += (1.0 - cur_alpha) * origin_state->at(e).labels_probabilities;
       }
 
       for (EdgeId neighbour : g_.OutgoingEdges(g_.EdgeEnd(e)))
-          PropagateFromNeighbour(neighbour, cur_state, next_probs, bin_stats);
+          PropagateFromNeighbour(e, neighbour, cur_state, next_probs, bin_stats);
 
       // This is actually iterates over conjugate edges as compared to expected:
       //  for (EdgeId neighbour : g_.IncomingEdges(g_.EdgeStart(e)))
       // However, we're saving lots of conjugate() calls under the hood
       for (EdgeId neighbour : g_.OutgoingEdges(g_.EdgeEnd(ce)))
-          PropagateFromNeighbour(neighbour, cur_state, next_probs, bin_stats);
+          PropagateFromNeighbour(e, neighbour, cur_state, next_probs, bin_stats);
 
-      next_probs *= self_weight;
-
-//      if (correction_parameters_) {
-//          const double cur_sum = sum(next_probs);
-//          if (cur_sum >= 1e-6) {
-//              next_probs /= cur_sum;
-//          }
-//      }
+      double self_weight = rweight_[e];
+      if (!correction_parameters_)
+          next_probs *= self_weight;
+      else {
+          // FIXME: investigate what it wrong that we need normalization here
+          const double cur_sum = sum(next_probs);
+          if (cur_sum >= 1e-6) {
+              next_probs /= cur_sum;
+          }
+      }
 
       after_prob += sum(next_probs);
       sum_diff += blaze::l1Norm(next_probs - edge_labels.labels_probabilities); // Use L1-norm for the sake of simplicity
@@ -194,15 +196,21 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
   return converged;
 }
 
-void LabelsPropagation::PropagateFromNeighbour(EdgeId neighbour,
+void LabelsPropagation::PropagateFromNeighbour(EdgeId e,
+                                               EdgeId neighbour,
                                                const SoftBinsAssignment& cur_state,
                                                blaze::DynamicVector<double>& next_probs,
                                                const BinStats& bin_stats) const {
-    double prev_state_incoming_weight = 1 * rdeg_[neighbour];
+    double prev_state_incoming_weight;
+    if (correction_parameters_) {
+        prev_state_incoming_weight = rweight_[e] * rdeg_[neighbour];
+    } else {
+        prev_state_incoming_weight = 1 * rdeg_[neighbour];
+    }
 
     double cur_alpha = 1.0;
     if (correction_parameters_) {
-        cur_alpha = cur_state.at(neighbour).is_binned ? correction_parameters_->labeled_alpha : correction_parameters_->unlabeled_alpha;
+        cur_alpha = cur_state.at(e).is_binned ? correction_parameters_->labeled_alpha : correction_parameters_->unlabeled_alpha;
     }
 
     #ifdef USE_LENGTH_AND_MULTIPLICITY
