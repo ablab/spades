@@ -180,8 +180,9 @@ int main(int argc, char* argv[]) {
         if (utils::ends_with(cfg.graph, ".gfa")) {
             gfa.reset(new gfa::GFAReader(cfg.graph));
             INFO("GFA segments: " << gfa->num_edges() << ", links: " << gfa->num_links() << ", paths: " << gfa->num_paths());
+            INFO("Detected k:" << gfa->k());
             VERIFY_MSG(gfa->k() != -1U, "Failed to determine k-mer length");
-            VERIFY_MSG(gfa->k() % 2 == 1, "k-mer length must be odd");
+            VERIFY_MSG(gfa->k() == 0 || gfa->k() % 2 == 1, "k-mer length must be odd");
             k = gfa->k();
         } else if (cfg.k == -1U)
             FATAL_ERROR("k-mer length should be specified");
