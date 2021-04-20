@@ -150,9 +150,12 @@ int main(int argc, char* argv[]) {
 
     process_cmdline(argc, argv, cfg);
     // Enforce HiC alignment mode by default
-    if (cfg.hic && cfg.mode == alignment::BWAIndex::AlignmentMode::Default) {
-        cfg.mode = alignment::BWAIndex::AlignmentMode::HiC;
-        cfg.retain = alignment::BWAIndex::RetainAlignments::QualityPrimary;
+    if (cfg.hic) {
+        if (cfg.mode == alignment::BWAIndex::AlignmentMode::Default)
+            cfg.mode = alignment::BWAIndex::AlignmentMode::HiC;
+
+        if (cfg.retain == alignment::BWAIndex::RetainAlignments::Default)
+            cfg.retain = alignment::BWAIndex::RetainAlignments::QualityPrimary;
     }
 
     create_console_logger();
