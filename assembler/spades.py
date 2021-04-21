@@ -491,6 +491,8 @@ def get_output_files(cfg):
         output_files["result_scaffolds_filename"] = os.path.join(cfg["common"].output_dir, options_storage.secondary_scaffolds_name)
         output_files["result_scaffolds_paths_filename"] = os.path.join(cfg["common"].output_dir,
                                                                        options_storage.secondary_scaffolds_paths)
+        output_files["result_contigs_filename"] = os.path.join(cfg["common"].output_dir,
+                                                                       options_storage.secondary_contigs_name)
 
     return output_files
 
