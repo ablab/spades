@@ -150,13 +150,6 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
       double self_weight = rweight_[e];
       if (!correction_parameters_)
           next_probs *= self_weight;
-      else {
-          // FIXME: investigate what it wrong that we need normalization here
-          const double cur_sum = sum(next_probs);
-          if (cur_sum >= 1e-6) {
-              next_probs /= cur_sum;
-          }
-      }
 
       after_prob += sum(next_probs);
       sum_diff += blaze::l1Norm(next_probs - edge_labels.labels_probabilities); // Use L1-norm for the sake of simplicity
@@ -201,17 +194,13 @@ void LabelsPropagation::PropagateFromNeighbour(EdgeId e,
                                                const SoftBinsAssignment& cur_state,
                                                blaze::DynamicVector<double>& next_probs,
                                                const BinStats& bin_stats) const {
-    double prev_state_incoming_weight;
-    if (correction_parameters_) {
-        prev_state_incoming_weight = rweight_[e] * rdeg_[neighbour];
-    } else {
-        prev_state_incoming_weight = 1 * rdeg_[neighbour];
-    }
+    const double weight = GetPropagationWeight(e, neighbour, cur_state, bin_stats);
+    PropagateFromEdge(next_probs, neighbour, cur_state, weight);
+}
 
-    double cur_alpha = 1.0;
-    if (correction_parameters_) {
-        cur_alpha = cur_state.at(e).is_binned ? correction_parameters_->labeled_alpha : correction_parameters_->unlabeled_alpha;
-    }
+double LabelsPropagation::GetPropagationWeight(EdgeId e, EdgeId neighbour, const SoftBinsAssignment& cur_state, const BinStats& bin_stats) const {
+    double weight = correction_parameters_ ? (rweight_[e] * rdeg_[neighbour]) : (1 * rdeg_[neighbour]);
+    double cur_alpha = correction_parameters_ ? correction_parameters_->alpha(e, cur_state) : 1.0;
 
     #ifdef USE_LENGTH_AND_MULTIPLICITY
     // good edge - big length and small multiplicity
@@ -225,8 +214,7 @@ void LabelsPropagation::PropagateFromNeighbour(EdgeId e,
     cur_alpha /= static_cast<double>(multiplicity);
     #endif
 
-    prev_state_incoming_weight *= cur_alpha;
-    PropagateFromEdge(next_probs, neighbour, cur_state, prev_state_incoming_weight);
+    return weight * cur_alpha;
 }
 
 SoftBinsAssignment LabelsPropagation::InitLabels(const BinStats& bin_stats) const {

@@ -21,6 +21,10 @@ struct CorrectionParameters {
 
     CorrectionParameters(const double labeled_alpha, const double unlabeled_alpha)
         : labeled_alpha(labeled_alpha), unlabeled_alpha(unlabeled_alpha) {}
+
+    double alpha(debruijn_graph::EdgeId e, const SoftBinsAssignment& state) const {
+        return state.at(e).is_binned ? labeled_alpha : unlabeled_alpha;
+    }
 };
 
 class LabelsPropagation : public BinningRefiner {
@@ -47,6 +51,9 @@ class LabelsPropagation : public BinningRefiner {
                                 const SoftBinsAssignment& cur_state,
                                 blaze::DynamicVector<double>& next_probs,
                                 const BinStats& bin_stats) const;
+
+    double GetPropagationWeight(debruijn_graph::EdgeId e,
+                                debruijn_graph::EdgeId neighbour, const SoftBinsAssignment& cur_state, const BinStats& bin_stats) const;
 
     const double eps_;
 
