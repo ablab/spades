@@ -290,6 +290,9 @@ omnigraph::MappingPath<debruijn_graph::EdgeId> BWAIndex::GetMappingPath(const me
     for (size_t i = 0; i < ar.n; ++i) {
         const mem_alnreg_t &a = ar.a[i];
 
+        if (a.score < memopt_->T) // skip low-scored alignments
+            continue;
+
         if (retain_ != RetainAlignments::All && a.secondary >= 0) continue; // skip secondary alignments
 
         if (is_short) {
