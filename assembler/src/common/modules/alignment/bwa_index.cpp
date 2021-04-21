@@ -67,6 +67,7 @@ BWAIndex::BWAIndex(const debruijn_graph::Graph& g, AlignmentMode mode,
             // FIXME: Do we realy need -M here?
             memopt_->flag |= MEM_F_NO_MULTI;  // -M
             memopt_->flag |= MEM_F_PRIMARY5;  // -5
+            memopt_->pen_clip5 = 0; memopt_->pen_clip3 = 0;
             break;
     };
 
