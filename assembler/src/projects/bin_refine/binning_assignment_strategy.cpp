@@ -33,7 +33,7 @@ BinningAssignmentStrategy::ChooseMajorBins(const blaze::CompressedVector<double>
             res.push_back(entry.first);
             csum += entry.second;
             // FIXME: magic constants
-            if (csum >= 0.95 * sum || // Explain up to 95% of total weight
+            if ((csum >= 0.95 * sum && !math::eq(entry.second, prev_weight)) || // Explain up to 95% of total weight, but do not break the ties
                 (prev_weight > 0.0 && entry.second < prev_weight * 0.5)) // but do some pruning
                 break;
             prev_weight = entry.second;
