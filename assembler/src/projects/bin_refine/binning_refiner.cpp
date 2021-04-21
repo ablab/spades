@@ -37,7 +37,6 @@ struct gcfg {
     AssignStrategy assignment_strategy = AssignStrategy::MajorityLength;
     double eps = 1e-5;
     double labeled_alpha = 0.6;
-    double unlabeled_alpha = 0.999;
     bool allow_multiple = false;
     RefinerType refiner_type = RefinerType::Propagation;
 };
@@ -57,8 +56,7 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       (with_prefix("-R",
                    option("corr").set(cfg.refiner_type, RefinerType::Correction) |
                    option("prop").set(cfg.refiner_type, RefinerType::Propagation)) % "binning refiner type"),
-      (option("-la") & value("labeled alpha", cfg.labeled_alpha)) % "labels correction alpha for labeled data",
-      (option("-ua") & value("unlabeled alpha", cfg.unlabeled_alpha)) % "labels correction alpha for unlabeled data"
+      (option("-la") & value("labeled alpha", cfg.labeled_alpha)) % "labels correction alpha for labeled data"
   );
 
   auto result = parse(argc, argv, cli);
@@ -86,11 +84,7 @@ std::unique_ptr<BinningRefiner> get_refiner(const gcfg& cfg, const Graph& graph)
         case RefinerType::Propagation:
             return std::make_unique<LabelsPropagation>(graph, cfg.eps);
         case RefinerType::Correction:
-            return std::make_unique<LabelsPropagation>(
-                graph,
-                cfg.eps,
-                std::make_unique<CorrectionParameters>(CorrectionParameters(cfg.labeled_alpha, cfg.unlabeled_alpha))
-            );
+            return std::make_unique<LabelsPropagation>(graph, cfg.eps, cfg.labeled_alpha);
     }
 }
 
