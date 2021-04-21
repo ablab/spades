@@ -193,11 +193,11 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
 
 SoftBinsAssignment LabelsPropagation::InitLabels(const BinStats& bin_stats) const {
     SoftBinsAssignment state(bin_stats.graph().max_eid());
-    for (EdgeId e : g_.edges()) {
-        state.emplace(e, EdgeLabels(e, bin_stats));
+    for (EdgeId e : g_.canonical_edges()) {
+        EdgeLabels labels(e, bin_stats);
+        state.emplace(e, labels);
+        state.emplace(g_.conjugate(e), std::move(labels));
     }
-
-    EqualizeConjugates(state);
 
     return state;
 }
