@@ -14,13 +14,12 @@ using namespace bin_stats;
 using namespace debruijn_graph;
 
 LabelsPropagation::LabelsPropagation(const debruijn_graph::Graph& g,
-                                     double eps,
-                                     std::unique_ptr<CorrectionParameters> correction_parameters)
+                                     double eps, double labeled_alpha)
         : BinningRefiner(g),
           eps_(eps),
           rdeg_(g.max_eid()),
           rweight_(g.max_eid()),
-          correction_parameters_(std::move(correction_parameters)) {
+          labeled_alpha_(labeled_alpha) {
     // Calculate the reverse root degree
     double avdeg = 0;
     INFO("Calculating weights");
@@ -72,16 +71,17 @@ LabelsPropagation::LabelsPropagation(const debruijn_graph::Graph& g,
 SoftBinsAssignment LabelsPropagation::RefineBinning(const BinStats& bin_stats) const {
   unsigned iteration_step = 0;
 
-  SoftBinsAssignment state = InitLabels(bin_stats), new_state(state);
-  std::shared_ptr<SoftBinsAssignment> origin_state = nullptr;
-  if (correction_parameters_)
-      origin_state = std::make_shared<SoftBinsAssignment>(state);
+  SoftBinsAssignment state = InitLabels(bin_stats), new_state(state), origin_state(state);
 
   // Calculate the regularization coefficients
   adt::id_map<double, debruijn_graph::EdgeId> ealpha(g_.max_eid());
   for (EdgeId e : g_.canonical_edges()) {
-      double alpha = correction_parameters_ ?
-                     correction_parameters_->alpha(e, state) : 1.0;
+      double alpha = 0;
+      const EdgeLabels& edge_labels = state.at(e);
+
+      alpha = (edge_labels.is_binned && !edge_labels.is_repetitive ?
+               labeled_alpha_ : 1.0);
+
       ealpha.emplace(e, alpha);
       ealpha.emplace(g_.conjugate(e), alpha);
   }
@@ -108,7 +108,7 @@ static void PropagateFromEdge(blaze::DynamicVector<double> &labels_probabilities
 
 LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBinsAssignment& new_state,
                                                                           const SoftBinsAssignment& cur_state,
-                                                                          const std::shared_ptr<SoftBinsAssignment>& origin_state,
+                                                                          const SoftBinsAssignment& origin_state,
                                                                           const adt::id_map<double, debruijn_graph::EdgeId> &ealpha,
                                                                           unsigned iteration_step) const {
   double sum_diff = 0.0, after_prob = 0;
@@ -117,13 +117,14 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
   for (auto it = cur_state.cbegin(), end = cur_state.cend(); it != end; ++it) {
       EdgeId e = it.key(), ce = g_.conjugate(e);
       const EdgeLabels& edge_labels = it.value();
+      double alpha = ealpha[e];
 
       // Do only canonical edges
       if (!(e <= ce))
           continue;
 
-      // Skip already binned edges if we do not want to correct binning
-      if (edge_labels.is_binned && !edge_labels.is_repetitive && !correction_parameters_)
+      // No need to do anything if alpha is zero => we use the original binning
+      if (math::eq(alpha, 0.0))
           continue;
 
       if (!rweight_.count(e)) { // No neighbours
@@ -135,10 +136,9 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
       next_probs.reset();
 
       // formula for correction: next_probs[i] = alpha[e] * rw[e] * \sum{neighbour} (rd[neighbour] * cur_probs[neighbour]) + (1 - alpha[e]) * origin_probs[e]
-      double alpha = ealpha[e];
       double self_weight = rweight_[e] * alpha;
       if (alpha < 1.0)
-          next_probs += (1.0 - alpha) * origin_state->at(e).labels_probabilities;
+          next_probs += (1.0 - alpha) * origin_state.at(e).labels_probabilities;
 
       for (EdgeId neighbour : g_.OutgoingEdges(g_.EdgeEnd(e))) {
           double incoming_weight = self_weight * rdeg_.at(neighbour);

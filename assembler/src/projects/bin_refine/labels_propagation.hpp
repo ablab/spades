@@ -11,27 +11,13 @@
 
 #include "id_map.hpp"
 
-//#define USE_LENGTH_AND_MULTIPLICITY
-
 namespace bin_stats {
-
-struct CorrectionParameters {
-    const double labeled_alpha;
-    const double unlabeled_alpha;
-
-    CorrectionParameters(const double labeled_alpha, const double unlabeled_alpha)
-        : labeled_alpha(labeled_alpha), unlabeled_alpha(unlabeled_alpha) {}
-
-    double alpha(debruijn_graph::EdgeId e, const SoftBinsAssignment& state) const {
-        return state.at(e).is_binned ? labeled_alpha : unlabeled_alpha;
-    }
-};
 
 class LabelsPropagation : public BinningRefiner {
  public:
     using FinalIteration = bool;
 
-    LabelsPropagation(const debruijn_graph::Graph& g, double eps, std::unique_ptr<CorrectionParameters> correction_parameters = nullptr);
+    LabelsPropagation(const debruijn_graph::Graph& g, double eps, double labeled_alpha = 0.0);
 
     SoftBinsAssignment RefineBinning(const BinStats& bin_stats) const override;
 
@@ -42,14 +28,13 @@ class LabelsPropagation : public BinningRefiner {
 
     FinalIteration PropagationIteration(SoftBinsAssignment& new_state,
                                         const SoftBinsAssignment& cur_state,
-                                        const std::shared_ptr<SoftBinsAssignment>& origin_state,
+                                        const SoftBinsAssignment& origin_state,
                                         const adt::id_map<double, debruijn_graph::EdgeId> &alpha,
                                         unsigned iteration_step) const;
     const double eps_;
 
     adt::id_map<double, debruijn_graph::EdgeId> rdeg_;
     adt::id_map<double, debruijn_graph::EdgeId> rweight_;
-
-    std::unique_ptr<CorrectionParameters> correction_parameters_;
+    double labeled_alpha_;
 };
 }
