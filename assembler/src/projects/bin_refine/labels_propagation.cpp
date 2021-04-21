@@ -21,13 +21,6 @@ LabelsPropagation::LabelsPropagation(const debruijn_graph::Graph& g,
           rdeg_(g.max_eid()),
           rweight_(g.max_eid()),
           correction_parameters_(std::move(correction_parameters)) {
-    #ifdef USE_LENGTH_AND_MULTIPLICITY
-    max_edge_length_ = 0;
-    for (debruijn_graph::EdgeId e : g.canonical_edges()) {
-        max_edge_length_ = std::max(max_edge_length_, g.length(e));
-    }
-    #endif
-
     // Calculate the reverse root degree
     double avdeg = 0;
     INFO("Calculating weights");
@@ -78,16 +71,25 @@ LabelsPropagation::LabelsPropagation(const debruijn_graph::Graph& g,
 
 SoftBinsAssignment LabelsPropagation::RefineBinning(const BinStats& bin_stats) const {
   unsigned iteration_step = 0;
+
   SoftBinsAssignment state = InitLabels(bin_stats), new_state(state);
   std::shared_ptr<SoftBinsAssignment> origin_state = nullptr;
   if (correction_parameters_)
       origin_state = std::make_shared<SoftBinsAssignment>(state);
 
+  // Calculate the regularization coefficients
+  adt::id_map<double, debruijn_graph::EdgeId> ealpha(g_.max_eid());
+  for (EdgeId e : g_.canonical_edges()) {
+      double alpha = correction_parameters_ ?
+                     correction_parameters_->alpha(e, state) : 1.0;
+      ealpha.emplace(e, alpha);
+      ealpha.emplace(g_.conjugate(e), alpha);
+  }
+
   while (true) {
-      FinalIteration converged = PropagationIteration(state,
-                                                      new_state,
+      FinalIteration converged = PropagationIteration(new_state, state,
                                                       origin_state,
-                                                      bin_stats,
+                                                      ealpha,
                                                       iteration_step++);
       if (converged)
           return new_state;
@@ -107,7 +109,7 @@ static void PropagateFromEdge(blaze::DynamicVector<double> &labels_probabilities
 LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBinsAssignment& new_state,
                                                                           const SoftBinsAssignment& cur_state,
                                                                           const std::shared_ptr<SoftBinsAssignment>& origin_state,
-                                                                          const BinStats& bin_stats,
+                                                                          const adt::id_map<double, debruijn_graph::EdgeId> &ealpha,
                                                                           unsigned iteration_step) const {
   double sum_diff = 0.0, after_prob = 0;
 
@@ -132,24 +134,24 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
 
       next_probs.reset();
 
-      // formula for correction: next_probs[i] = alpha[e] * \sum{neighbour} (rw[e] * rd[neighbour] * cur_probs[i]) + (1 - alpha[e]) * origin_probs[i]
-      if (correction_parameters_) {
-          const double cur_alpha = cur_state.at(e).is_binned ? correction_parameters_->labeled_alpha : correction_parameters_->unlabeled_alpha;
-          next_probs += (1.0 - cur_alpha) * origin_state->at(e).labels_probabilities;
-      }
+      // formula for correction: next_probs[i] = alpha[e] * rw[e] * \sum{neighbour} (rd[neighbour] * cur_probs[neighbour]) + (1 - alpha[e]) * origin_probs[e]
+      double alpha = ealpha[e];
+      double self_weight = rweight_[e] * alpha;
+      if (alpha < 1.0)
+          next_probs += (1.0 - alpha) * origin_state->at(e).labels_probabilities;
 
-      for (EdgeId neighbour : g_.OutgoingEdges(g_.EdgeEnd(e)))
-          PropagateFromNeighbour(e, neighbour, cur_state, next_probs, bin_stats);
+      for (EdgeId neighbour : g_.OutgoingEdges(g_.EdgeEnd(e))) {
+          double incoming_weight = self_weight * rdeg_.at(neighbour);
+          PropagateFromEdge(next_probs, neighbour, cur_state, incoming_weight);
+      }
 
       // This is actually iterates over conjugate edges as compared to expected:
       //  for (EdgeId neighbour : g_.IncomingEdges(g_.EdgeStart(e)))
       // However, we're saving lots of conjugate() calls under the hood
-      for (EdgeId neighbour : g_.OutgoingEdges(g_.EdgeEnd(ce)))
-          PropagateFromNeighbour(e, neighbour, cur_state, next_probs, bin_stats);
-
-      double self_weight = rweight_[e];
-      if (!correction_parameters_)
-          next_probs *= self_weight;
+      for (EdgeId neighbour : g_.OutgoingEdges(g_.EdgeEnd(ce))) {
+          double incoming_weight = self_weight * rdeg_.at(neighbour);
+          PropagateFromEdge(next_probs, neighbour, cur_state, incoming_weight);
+      }
 
       after_prob += sum(next_probs);
       sum_diff += blaze::l1Norm(next_probs - edge_labels.labels_probabilities); // Use L1-norm for the sake of simplicity
@@ -189,37 +191,9 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
   return converged;
 }
 
-void LabelsPropagation::PropagateFromNeighbour(EdgeId e,
-                                               EdgeId neighbour,
-                                               const SoftBinsAssignment& cur_state,
-                                               blaze::DynamicVector<double>& next_probs,
-                                               const BinStats& bin_stats) const {
-    const double weight = GetPropagationWeight(e, neighbour, cur_state, bin_stats);
-    PropagateFromEdge(next_probs, neighbour, cur_state, weight);
-}
-
-double LabelsPropagation::GetPropagationWeight(EdgeId e, EdgeId neighbour, const SoftBinsAssignment& cur_state, const BinStats& bin_stats) const {
-    double weight = correction_parameters_ ? (rweight_[e] * rdeg_[neighbour]) : (1 * rdeg_[neighbour]);
-    double cur_alpha = correction_parameters_ ? correction_parameters_->alpha(e, cur_state) : 1.0;
-
-    #ifdef USE_LENGTH_AND_MULTIPLICITY
-    // good edge - big length and small multiplicity
-    const double length_coefficient = static_cast<double>(max_edge_length_ - g_.length(neighbour)) / static_cast<double>(max_edge_length_);
-
-    const auto multiplicity_iter = bin_stats.multiplicities().find(neighbour);
-    // Consider unbinned edges as unique
-    const size_t multiplicity = multiplicity_iter != bin_stats.multiplicities().end() ? multiplicity_iter->second : 1;
-
-    cur_alpha *= length_coefficient;
-    cur_alpha /= static_cast<double>(multiplicity);
-    #endif
-
-    return weight * cur_alpha;
-}
-
 SoftBinsAssignment LabelsPropagation::InitLabels(const BinStats& bin_stats) const {
     SoftBinsAssignment state(bin_stats.graph().max_eid());
-    for (EdgeId e : bin_stats.graph().edges()) {
+    for (EdgeId e : g_.edges()) {
         state.emplace(e, EdgeLabels(e, bin_stats));
     }
 

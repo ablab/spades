@@ -43,26 +43,12 @@ class LabelsPropagation : public BinningRefiner {
     FinalIteration PropagationIteration(SoftBinsAssignment& new_state,
                                         const SoftBinsAssignment& cur_state,
                                         const std::shared_ptr<SoftBinsAssignment>& origin_state,
-                                        const BinStats& bin_stats,
+                                        const adt::id_map<double, debruijn_graph::EdgeId> &alpha,
                                         unsigned iteration_step) const;
-
-    void PropagateFromNeighbour(debruijn_graph::EdgeId e,
-                                debruijn_graph::EdgeId neighbour,
-                                const SoftBinsAssignment& cur_state,
-                                blaze::DynamicVector<double>& next_probs,
-                                const BinStats& bin_stats) const;
-
-    double GetPropagationWeight(debruijn_graph::EdgeId e,
-                                debruijn_graph::EdgeId neighbour, const SoftBinsAssignment& cur_state, const BinStats& bin_stats) const;
-
     const double eps_;
 
     adt::id_map<double, debruijn_graph::EdgeId> rdeg_;
     adt::id_map<double, debruijn_graph::EdgeId> rweight_;
-
-    #ifdef USE_LENGTH_AND_MULTIPLICITY
-    size_t max_edge_length_;
-    #endif
 
     std::unique_ptr<CorrectionParameters> correction_parameters_;
 };
