@@ -129,7 +129,7 @@ if __name__ == "__main__":
             spaligner_res = dl.load_spaligner_paths(spaligner_res_file, reads, stat)
             res[read_type] = save_stats(reads, spaligner_res)
             if res[read_type] != TRUE_PERFORMANCE[org][read_type]:
-                print "Failed: ", org, read_type, res[read_type]
+                print (f"Failed:  {org} {read_type} {res[read_type]}")
                 failed = True
     if failed:
         exit(-1)
