@@ -76,7 +76,7 @@ FilterType<Columns, columns ...> GetFilter(std::function<bool(debruijn_graph::Ed
 
         auto const & edge_title = element.template Get<Columns::T_name>();
         return unique_edge_checker_(GetEdgeId(edge_title, graph)) &&
-               GetIDY(element) > 0.80 &&
+               GetIDY(element) > 0.90 &&
                ((double)edge_len_difference <= (double)edge_len * EDGE_LENGTH_ERROR_COEFF || (double)contig_len_difference <= (double)contig_len * EDGE_LENGTH_ERROR_COEFF) &&
                (double) lens_difference < (double) edge_delta * LENGTHS_ERROR_COEFF &&
                GetCov(edge_title) > 2;

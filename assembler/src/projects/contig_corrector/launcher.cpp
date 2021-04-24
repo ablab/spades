@@ -121,16 +121,27 @@ pair<std::string, std::vector<PathWithBorderEdgesIndexies>> SequenceCorrector::G
 }
 
 pair<SimpleBidirectionalPath, size_t> SequenceCorrector::GetNextPath(size_t start_pos, size_t & adjacent_edges_connected) const {
+    ScaffoldSequenceMaker seq_maker(graph);
     SimpleBidirectionalPath current_path;
     current_path.PushBack(GetEdge(start_pos));
     while (start_pos + 1 < Size()) {
         auto path = FindFiller(start_pos, adjacent_edges_connected);
         if (!path.is_initialized())
             break;
-        current_path.PushBack(std::move(path->first));
         start_pos = path->second;
-        if (current_path.Back() != GetEdge(start_pos))
+
+        if (path->first.Empty()) {
             current_path.PushBack(GetEdge(start_pos));
+            continue;
+        }
+
+        auto gap_str = seq_maker.MakeSequence(*BidirectionalPath::create(graph, std::move(path->first)));
+        assert(gap_str.size() >= graph.k());
+
+        auto gap_size_in_nucl = gap_str.size() - 2 * graph.k(); // cut off overlaping with start_edge and end_edge
+        gap_str = (gap_str.size() > 2 * graph.k() ? gap_str.substr(graph.k(), gap_size_in_nucl) : "");
+        current_path.PushBack(GetEdge(start_pos), Gap(std::move(gap_str), gap_size_in_nucl+graph.k()));
+
     }
     return {std::move(current_path), start_pos};
 }

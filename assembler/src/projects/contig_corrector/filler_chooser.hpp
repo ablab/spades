@@ -89,15 +89,14 @@ public:
         if (scores.size() > 1) {
             std::sort(scores.begin(), scores.end());
             if (IsDominantScore(scores[0].first, scores[1].first)) {
-            // if (scores[0].first == 0) {
-                INFO("domination! score[0] = " << scores[0].first << "; score[1] = " << scores[1].first << "; amount_of_paths = " << scores.size());
+                // INFO("domination! score[0] = " << scores[0].first << "; score[1] = " << scores[1].first << "; amount_of_paths = " << scores.size());
                 scores.resize(1);
             } else {
-                INFO("domination failed! score[0] = " << scores[0].first << "; score[1] = " << scores[1].first << "; amount_of_paths = " << scores.size());
+                // INFO("domination failed! score[0] = " << scores[0].first << "; score[1] = " << scores[1].first << "; amount_of_paths = " << scores.size());
             }
         }
 
-        if (scores.size() == 1)
+        if (scores.size() == 1 && math::le(scores.front().first, ref.size() * 0.005))
             return scores.front().second;
         return npos;
     }

@@ -217,7 +217,7 @@ int main(int argc, char * argv[]) {
     std::string &output_dir = cfg.output_dir;
 
     START_BANNER("SPAdes standalone contig corrector");
-    utils::limit_memory(15 * GB);
+    utils::limit_memory(30 * GB);
 
     CHECK_FATAL_ERROR(runtime_k::MIN_K <= k, "k-mer size " << k << " is too low");
     CHECK_FATAL_ERROR(k < runtime_k::MAX_K, "k-mer size " << k << " is too high, recompile with larger SPADES_MAX_K option");
