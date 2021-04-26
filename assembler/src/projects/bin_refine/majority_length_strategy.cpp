@@ -30,18 +30,17 @@ static std::unordered_set<BinStats::BinId> ChooseMostProbableBins(const LabelPro
 
 void MajorityLengthBinningAssignmentStrategy::AssignEdgeBins(const SoftBinsAssignment& soft_bins_assignment,
                                                              BinStats& bin_stats) const {
-    std::vector<EdgeId> binned;
-    for (EdgeId e : bin_stats.unbinned_edges()) {
-        auto assignment = ChooseMostProbableBins(soft_bins_assignment.at(e).labels_probabilities);
+    for (auto it = soft_bins_assignment.cbegin(), end = soft_bins_assignment.cend(); it != end; ++it) {
+        EdgeId e = it.key();
+        const EdgeLabels& edge_labels = it.value();
+
+        auto assignment = ChooseMostProbableBins(edge_labels.labels_probabilities);
         if (assignment.empty())
             continue;
 
-        binned.push_back(e);
+        bin_stats.unbinned_edges().erase(e);
         bin_stats.edges_binning()[e] = std::move(assignment);
     }
-
-    for (EdgeId e : binned)
-        bin_stats.unbinned_edges().erase(e);
 }
 
 blaze::CompressedVector<double>
