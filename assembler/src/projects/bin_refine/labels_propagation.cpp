@@ -127,11 +127,8 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
       if (math::eq(alpha, 0.0))
           continue;
 
-      if (!rweight_.count(e)) { // No neighbours
-          new_state[e].labels_probabilities.reset();
-          new_state[ce].labels_probabilities.reset();
+      if (!rweight_.count(e)) // No neighbours  => we use the original binning
           continue;
-      }
 
       next_probs.reset();
 
