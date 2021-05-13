@@ -22,7 +22,7 @@ namespace io {
 inline void WriteWrapped(const std::string &s, std::ostream &os, size_t max_width = 60) {
     size_t cur = 0;
     while (cur < s.size()) {
-        os << s.substr(cur, max_width) << "\n";
+        os << s.substr(cur, max_width) << '\n';
         cur += max_width;
     }
 }
@@ -110,17 +110,29 @@ public:
 
 struct FastaWriter {
     static void Write(std::ostream &stream, const SingleRead &read) {
-        stream << ">" << read.name() << "\n";
+        stream << '>' << read.name() << '\n';
         WriteWrapped(read.GetSequenceString(), stream);
+    }
+
+    static void Write(std::ostream &stream, const SingleReadSeq &read) {
+        stream << '>' << '\n'
+               << read.sequence() << '\n';
     }
 };
 
 struct FastqWriter {
     static void Write(std::ostream &stream, const SingleRead &read) {
-        stream << "@" << read.name() << std::endl
-               << read.GetSequenceString() << std::endl
-               << "+" << std::endl
-               << read.GetPhredQualityString() << std::endl;
+        stream << '@' << read.name() << '\n'
+               << read.GetSequenceString() << '\n'
+               << '+' << '\n'
+               << read.GetPhredQualityString() << '\n';
+    }
+
+    static void Write(std::ostream &stream, const SingleReadSeq &read) {
+        stream << '@' << '\n'
+               << read.sequence() << '\n'
+               << '+' << '\n'
+               << std::string(read.sequence().size(), '#') << '\n';
     }
 };
 
@@ -130,10 +142,14 @@ public:
     typedef SingleRead ReadT;
 
     OReadStream(const std::string &filename)
-            : stream_(filename) {
-    }
+            : stream_(filename) {}
 
     OReadStream &operator<<(const SingleRead &read) {
+        Writer::Write(stream_, read);
+        return *this;
+    }
+
+    OReadStream &operator<<(const SingleReadSeq &read) {
         Writer::Write(stream_, read);
         return *this;
     }
@@ -161,6 +177,12 @@ public:
     }
 
     OPairedReadStream &operator<<(const PairedRead &read) {
+        Writer::Write(left_stream_, rc1_ ? !read.first() : read.first());
+        Writer::Write(right_stream_, rc2_ ? !read.second(): read.second());
+        return *this;
+    }
+
+    OPairedReadStream &operator<<(const PairedReadSeq &read) {
         Writer::Write(left_stream_, rc1_ ? !read.first() : read.first());
         Writer::Write(right_stream_, rc2_ ? !read.second(): read.second());
         return *this;

@@ -218,9 +218,8 @@ private:
      * @variable The flag of SingleRead correctness.
      */
 
-    //Left and right offsets with respect to original sequence
+    // Left and right offsets with respect to original sequence
     SequenceOffsetT left_offset_;
-
     SequenceOffsetT right_offset_;
 
     bool valid_;
@@ -266,15 +265,13 @@ inline std::ostream &operator<<(std::ostream &os, const SingleRead &read) {
 }
 
 class SingleReadSeq {
-
 public:
     explicit SingleReadSeq(const Sequence &s,
-                  SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0) :
-            seq_(s), left_offset_(left_offset), right_offset_(right_offset) {
-    }
+                           SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0)
+            : seq_(s), left_offset_(left_offset), right_offset_(right_offset) {}
 
-    SingleReadSeq() : seq_(), left_offset_(0), right_offset_(0) {
-    }
+    SingleReadSeq()
+            : seq_(), left_offset_(0), right_offset_(0) {}
 
     bool BinRead(std::istream &file) {
         seq_.BinRead(file);
@@ -305,7 +302,7 @@ public:
         return seq_ == singleread.seq_;
     }
 
-    const Sequence sequence() const {
+    Sequence sequence() const {
         return seq_;
     }
 
@@ -332,7 +329,7 @@ public:
 private:
     Sequence seq_;
 
-    //Left and right offsets with respect to original sequence
+    // Left and right offsets with respect to original sequence
     SequenceOffsetT left_offset_;
     SequenceOffsetT right_offset_;
 };

@@ -6,14 +6,14 @@
 
 #include "binning.hpp"
 
-#include "blaze/math/dense/DynamicVector.h"
 #include "io/utils/id_mapper.hpp"
-
 #include "io/reads/io_helper.hpp"
-#include "utils/filesystem/path_helper.hpp"
 
-#include "csv/csv.h"
+#include "utils/filesystem/path_helper.hpp"
 #include "utils/stl_utils.hpp"
+
+#include <blaze/math/dense/DynamicVector.h>
+#include <csv/csv.h>
 
 using namespace debruijn_graph;
 using namespace bin_stats;
