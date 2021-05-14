@@ -15,6 +15,7 @@
 #include "kmer_index/ph_map/storing_traits.hpp"
 
 #include "sequence/rtseq.hpp"
+#include "sequence/sequence.hpp"
 #include "utils/stl_utils.hpp"
 #include <bitset>
 
@@ -72,9 +73,12 @@ public:
     typedef typename base::KeyWithHash KeyWithHash;
     typedef AbstractDeEdge<KeyWithHash> DeEdge;
     using base::ConstructKWH;
+    unsigned k_size_;
 
     DeBruijnExtensionIndex(unsigned K)
-            : base(K) {}
+            : base(K) {
+        k_size_ = K;
+    }
 
     using PerfectHashMap<typename traits::SeqType, InOutMask, traits, StoringType>::raw_data;
     using PerfectHashMap<typename traits::SeqType, InOutMask, traits, StoringType>::raw_size;
@@ -122,6 +126,24 @@ public:
     void IsolateVertex(const KeyWithHash &kwh) {
         TRACE("Isolate vertex " << kwh);
         this->get_raw_value_reference(kwh).IsolateVertex();
+    }
+
+    void removeSequence(const Sequence &sequence) {
+        RtSeq kmer = sequence.start<RtSeq>(k_size_);
+        KeyWithHash kwh = ConstructKWH(kmer);
+        IsolateVertex(kwh);
+        for (size_t pos = k_size_; pos < sequence.size(); pos++) {
+            kwh = kwh << sequence[pos];
+            IsolateVertex(kwh);
+        }
+    }
+
+    void removeSequences(const std::vector<Sequence> &sequences) {
+#       pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < sequences.size(); ++i) {
+            removeSequence(sequences[i]);
+            removeSequence(!sequences[i]);
+        }
     }
 
     bool CheckOutgoing(const KeyWithHash &kwh, char nucl) const {

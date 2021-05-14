@@ -52,9 +52,10 @@ class DeBruijnGraphExtentionConstructorTask {
                 local_iters.push_back(std::move(iters[i]));
             }
         }
+
         UnbranchingPathExtractor extractor(index, g.k());
         auto seqs = extractor.ExtractUnbranchingPaths(local_iters);
-        extractor.CleanCondensed(seqs);
+        index.removeSequences(seqs);
         partask::allreduce(index.raw_data(), index.raw_size(), MPI_BAND);
         io::binary::BinWrite(os, partask::fast_local_transfer(seqs));
     }
