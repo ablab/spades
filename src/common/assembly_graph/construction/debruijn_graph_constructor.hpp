@@ -312,6 +312,45 @@ private:
         }
     }
 
+public:
+    UnbranchingPathExtractor(Index &origin, size_t k)
+            : origin_(origin), kmer_size_(k) {}
+
+    //TODO very large vector is returned. But I hate to make all those artificial changes that can fix it.
+    const std::vector<Sequence> ExtractUnbranchingPaths(std::vector<kmer_iterator> &its) const {
+        INFO("Extracting unbranching paths");
+        if (its.size() == 0) {
+            INFO("No input iterators, returning empty vector");
+            return {};
+        }
+
+        std::vector<std::vector<Sequence>> sequences(its.size());
+#       pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < its.size(); ++i)
+            CalculateSequences(its[i], sequences[i]);
+
+        size_t snum = std::accumulate(sequences.begin(), sequences.end(),
+                                      0ULL,
+                                      [](size_t val, const std::vector<Sequence> &s) {
+                                          return val + s.size();
+                                      });
+        sequences[0].reserve(snum);
+        for (size_t i = 1; i < sequences.size(); ++i) {
+            sequences[0].insert(sequences[0].end(),
+                                std::make_move_iterator(sequences[i].begin()), std::make_move_iterator(sequences[i].end()));
+            sequences[i].clear();
+            sequences[i].shrink_to_fit();
+        }
+
+        INFO("Extracting unbranching paths finished. " << sequences[0].size() << " sequences extracted");
+        return sequences[0];
+    }
+
+    const std::vector<Sequence> ExtractUnbranchingPaths(unsigned nchunks) const {
+        auto its = origin_.kmer_begin(nchunks);
+        return ExtractUnbranchingPaths(its);
+    }
+
     // This methods collects all loops that were not extracted by finding
     // unbranching paths because there are no junctions on loops.
     const std::vector<Sequence> CollectLoops(unsigned nchunks) {
@@ -352,44 +391,6 @@ private:
         return result;
     }
 
-    //TODO very large vector is returned. But I hate to make all those artificial changes that can fix it.
-    const std::vector<Sequence> ExtractUnbranchingPaths(std::vector<kmer_iterator> &its) const {
-        INFO("Extracting unbranching paths");
-        if (its.size() == 0) {
-            INFO("No input iterators, returning empty vector");
-            return {};
-        }
-
-        std::vector<std::vector<Sequence>> sequences(its.size());
-#       pragma omp parallel for schedule(guided)
-        for (size_t i = 0; i < its.size(); ++i)
-            CalculateSequences(its[i], sequences[i]);
-
-        size_t snum = std::accumulate(sequences.begin(), sequences.end(),
-                                      0ULL,
-                                      [](size_t val, const std::vector<Sequence> &s) {
-                                          return val + s.size();
-                                      });
-        sequences[0].reserve(snum);
-        for (size_t i = 1; i < sequences.size(); ++i) {
-            sequences[0].insert(sequences[0].end(),
-                                std::make_move_iterator(sequences[i].begin()), std::make_move_iterator(sequences[i].end()));
-            sequences[i].clear();
-            sequences[i].shrink_to_fit();
-        }
-
-        INFO("Extracting unbranching paths finished. " << sequences[0].size() << " sequences extracted");
-        return sequences[0];
-    }
-public:
-    UnbranchingPathExtractor(Index &origin, size_t k)
-            : origin_(origin), kmer_size_(k) {}
-
-    const std::vector<Sequence> ExtractUnbranchingPaths(unsigned nchunks) const {
-        auto its = origin_.kmer_begin(nchunks);
-        return ExtractUnbranchingPaths(its);
-    }
-
     const std::vector<Sequence> ExtractUnbranchingPathsAndLoops(unsigned nchunks) {
         std::vector<Sequence> result = ExtractUnbranchingPaths(nchunks);
         origin_.removeSequences(result);
@@ -399,7 +400,6 @@ public:
         return result;
     }
 
-    template<class Graph> friend class DeBruijnGraphExtentionConstructorTask;
 private:
     DECL_LOGGER("UnbranchingPathExtractor")
 };
