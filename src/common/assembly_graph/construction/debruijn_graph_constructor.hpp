@@ -312,24 +312,6 @@ private:
         }
     }
 
-    void CleanCondensed(const Sequence &sequence) {
-        Kmer kmer = sequence.start<Kmer>(kmer_size_);
-        KeyWithHash kwh = origin_.ConstructKWH(kmer);
-        origin_.IsolateVertex(kwh);
-        for (size_t pos = kmer_size_; pos < sequence.size(); pos++) {
-            kwh = kwh << sequence[pos];
-            origin_.IsolateVertex(kwh);
-        }
-    }
-
-    void CleanCondensed(const std::vector<Sequence> &sequences) {
-#       pragma omp parallel for schedule(guided)
-        for (size_t i = 0; i < sequences.size(); ++i) {
-            CleanCondensed(sequences[i]);
-            CleanCondensed(!sequences[i]);
-        }
-    }
-
     // This methods collects all loops that were not extracted by finding
     // unbranching paths because there are no junctions on loops.
     const std::vector<Sequence> CollectLoops(unsigned nchunks) {
@@ -361,8 +343,8 @@ private:
                     else
                         result.push_back(s);
 
-                    CleanCondensed(s);
-                    CleanCondensed(s_rc);
+                    origin_.removeSequence(s);
+                    origin_.removeSequence(s_rc);
                 }
             }
         }
@@ -410,7 +392,7 @@ public:
 
     const std::vector<Sequence> ExtractUnbranchingPathsAndLoops(unsigned nchunks) {
         std::vector<Sequence> result = ExtractUnbranchingPaths(nchunks);
-        CleanCondensed(result);
+        origin_.removeSequences(result);
         std::vector<Sequence> loops = CollectLoops(nchunks);
         result.insert(result.end(),
                       std::make_move_iterator(loops.begin()), std::make_move_iterator(loops.end()));
