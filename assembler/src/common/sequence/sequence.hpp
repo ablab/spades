@@ -173,6 +173,8 @@ public:
     Sequence(const Sequence &s)
             : Sequence(s, s.from_, s.size_, s.rtl_) {}
 
+    Sequence(Sequence &&) = default;
+
     const Sequence &operator=(const Sequence &rhs) {
         if (&rhs == this)
             return *this;
@@ -184,6 +186,8 @@ public:
 
         return *this;
     }
+
+    Sequence &operator=(Sequence &&) = default;
 
     char operator[](const size_t index) const {
         VERIFY_DEV(index < size_);
