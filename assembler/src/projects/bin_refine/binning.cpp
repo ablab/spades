@@ -161,10 +161,10 @@ void BinStats::WriteToBinningFile(const std::string& binning_file, const Scaffol
     }
 
     out_edges.precision(3);
-    out_edges << "# edge_id\tinternal_edge_id\tbinned\twas_binned\trepetitive\tedge probs\n";
+    out_edges << "# edge_id\tinternal_edge_id\tlength\tbinned\twas_binned\trepetitive\tedge probs\n";
     for (EdgeId e : graph_.canonical_edges()) {
         const EdgeLabels& edge_labels = soft_edge_labels.at(e);
-        out_edges << edge_mapper[graph_.int_id(e)] << '\t' << e << '\t'
+        out_edges << edge_mapper[graph_.int_id(e)] << '\t' << e << '\t' << graph_.length(e) + graph_.k()
                   << !unbinned_edges_.count(e) << '\t' << edge_labels.is_binned << '\t' << edge_labels.is_repetitive << '\t'
                   << "nz: " << edge_labels.labels_probabilities.nonZeros();
         std::vector<std::pair<BinId, double>> weights;
