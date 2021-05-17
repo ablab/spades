@@ -114,32 +114,50 @@ void BinStats::WriteToBinningFile(const std::string& binning_file, const Scaffol
 
         return rhs.second < lhs.second;
     };
-    
+
+    std::vector<std::pair<std::string, size_t>> scaffold_names;
     for (const auto &path_entry : scaffolds_paths) {
-      const std::string& scaffold_name = path_entry.first;
+        size_t length = graph_.k();
+        for (EdgeId e : path_entry.second)
+            length += graph_.length(e);
 
-      std::vector<EdgeId> scaffold_path(path_entry.second.begin(), path_entry.second.end());
-      auto bins_weights = assignment_strategy.AssignScaffoldBins(scaffold_path,
-                                                                 soft_edge_labels, *this);
-      std::vector<BinId> new_bin_id = assignment_strategy.ChooseMajorBins(bins_weights,
-                                                                          soft_edge_labels, *this);
-      out_tsv << scaffold_name;
-      if (new_bin_id.empty())
-          out_tsv << '\t' << UNBINNED_ID;
-      else
-          for (BinId bin : new_bin_id)
-              out_tsv << '\t' << bin_labels_.at(bin);
-      out_tsv << '\n';
-      out_lens << scaffold_name << '\t';
-      out_lens << "nz: " << bins_weights.nonZeros();
-      std::vector<std::pair<BinId, double>> weights;
-      for (const auto &entry : bins_weights)
-          weights.emplace_back(entry.index(), entry.value());
-      std::sort(weights.begin(), weights.end(), weight_sorter);
-      for (const auto &entry : weights)
-          out_lens << '\t' << bin_labels_.at(entry.first) << ":" << entry.second;
+        scaffold_names.emplace_back(path_entry.first, length);
+    }
 
-      out_lens << '\n';
+    std::sort(scaffold_names.begin(), scaffold_names.end(),
+              [](const auto &lhs, const auto &rhs) {
+                  if (lhs.second == rhs.second)
+                      return lhs.first < lhs.first;
+
+                  return lhs.second > rhs.second;
+              });
+
+    for (const auto &entry : scaffold_names) {
+        const std::string &scaffold_name = entry.first;
+        const auto &path_entry = scaffolds_paths.at(scaffold_name);
+
+        std::vector<EdgeId> scaffold_path(path_entry.begin(), path_entry.end());
+        auto bins_weights = assignment_strategy.AssignScaffoldBins(scaffold_path,
+                                                                   soft_edge_labels, *this);
+        std::vector<BinId> new_bin_id = assignment_strategy.ChooseMajorBins(bins_weights,
+                                                                            soft_edge_labels, *this);
+        out_tsv << scaffold_name;
+        if (new_bin_id.empty())
+            out_tsv << '\t' << UNBINNED_ID;
+        else
+            for (BinId bin : new_bin_id)
+                out_tsv << '\t' << bin_labels_.at(bin);
+        out_tsv << '\n';
+        out_lens << scaffold_name << '\t';
+        out_lens << "nz: " << bins_weights.nonZeros();
+        std::vector<std::pair<BinId, double>> weights;
+        for (const auto &entry : bins_weights)
+            weights.emplace_back(entry.index(), entry.value());
+        std::sort(weights.begin(), weights.end(), weight_sorter);
+        for (const auto &entry : weights)
+            out_lens << '\t' << bin_labels_.at(entry.first) << ":" << entry.second;
+
+        out_lens << '\n';
     }
 
     out_edges.precision(3);
