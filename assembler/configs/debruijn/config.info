@@ -152,6 +152,8 @@ pacbio_processor
     path_limit_pressing 0.7
     max_path_in_dijkstra 15000
     max_vertex_in_dijkstra 2000
+    rna_filtering   false
+
 ;gap_closer
     long_seq_limit 400
     enable_gap_closing true

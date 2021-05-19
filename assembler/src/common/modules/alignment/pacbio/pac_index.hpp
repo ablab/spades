@@ -44,8 +44,11 @@ class PacBioMappingIndex {
         DEBUG("PB Mapping Index construction started");
         DEBUG("Index constructed");
         read_count_ = 0;
+        rna_filtering_count_ = 0;
     }
-
+    ~PacBioMappingIndex(){
+        INFO(rna_filtering_count_ << " times rna filtering worked" );
+    }
     std::vector<std::vector<QualityRange>> GetChainingPaths(const io::SingleRead &read) const {
         std::vector<ColoredRange> ranged_colors = GetRangedColors(read);
         size_t len = ranged_colors.size();
@@ -92,6 +95,9 @@ class PacBioMappingIndex {
     //presumably separate class for this and GetDistance
     mutable std::map<std::pair<VertexId, VertexId>, size_t> distance_cashed_;
     size_t read_count_;
+    
+    mutable size_t rna_filtering_count_;
+
     debruijn_graph::config::pacbio_processor pb_config_;
 
     alignment::BWAReadMapper<Graph> bwa_mapper_;
@@ -194,8 +200,14 @@ class PacBioMappingIndex {
                         if (mapped_path[i].second.initial_range.Intersect(mapped_path[j].second.initial_range) &&
                                 (mapped_path[i].second.quality * 0.7 < mapped_path[j].second.quality)) {
                             if (pb_config_.rna_filtering) {
-                                if (!UndirectedCloseInGraph(mapped_path[i].first, mapped_path[j].first))
+                                if (!UndirectedCloseInGraph(mapped_path[i].first, mapped_path[j].first)) {
+                                    DEBUG("RNA filtering worked for "<< mapped_path[i].first <<"("
+                                    << rlen<< ") and " << mapped_path[j].first
+                                    << "(" <<  mapped_path[j].second.initial_range.size()  << ")");
+                                    rna_filtering_count_ ++;
                                     continue;
+
+                                }
                             }
                             size_t pos_start = std::max (mapped_path[i].second.initial_range.start_pos, mapped_path[j].second.initial_range.start_pos)
                                                - mapped_path[i].second.initial_range.start_pos;
