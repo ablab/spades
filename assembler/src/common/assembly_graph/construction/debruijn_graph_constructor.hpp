@@ -447,15 +447,6 @@ private:
         LinkRecord()
                 : hash_and_mask_(-1ul) {}
 
-        Sequence VertexSequence(const Graph &g) const {
-            if (IsInvalid()) {
-                return Sequence();
-            }
-            Sequence seq = g.EdgeNucls(edge_);
-            seq = IsStart() ? seq.First(g.k()) : seq.Last(g.k());
-            return IsRC() ? !seq : seq;
-        }
-
         uint64_t EdgeAndMask() const {
             return (edge_.int_id() << 2) | (BitBool(IsRC()) << 1) | BitBool(IsStart());
         }
