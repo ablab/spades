@@ -9,6 +9,7 @@
 #include "adt/iterator_range.hpp"
 #include <boost/iterator/iterator_facade.hpp>
 
+#include <functional>
 #include <type_traits>
 #include <vector>
 
