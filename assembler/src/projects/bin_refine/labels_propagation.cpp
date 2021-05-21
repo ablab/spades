@@ -68,7 +68,7 @@ LabelsPropagation::LabelsPropagation(const debruijn_graph::Graph& g,
     INFO("Average edge weight: " << avweight);
 }
 
-SoftBinsAssignment LabelsPropagation::RefineBinning(const BinStats& bin_stats) const {
+SoftBinsAssignment LabelsPropagation::RefineBinning(const Binning& bin_stats) const {
   unsigned iteration_step = 0;
 
   SoftBinsAssignment state = InitLabels(bin_stats), new_state(state), origin_state(state);
@@ -188,7 +188,7 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
   return converged;
 }
 
-SoftBinsAssignment LabelsPropagation::InitLabels(const BinStats& bin_stats) const {
+SoftBinsAssignment LabelsPropagation::InitLabels(const Binning& bin_stats) const {
     SoftBinsAssignment state(bin_stats.graph().max_eid());
     for (EdgeId e : g_.canonical_edges()) {
         EdgeLabels labels(e, bin_stats);

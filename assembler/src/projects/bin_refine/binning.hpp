@@ -6,14 +6,12 @@
 
 #pragma once
 
-#include "assembly_graph/core/graph.hpp"
-
-#include "blaze/math/CompressedVector.h"
-
 #include "binning_assignment_strategy.hpp"
-
 #include "id_map.hpp"
 
+#include "assembly_graph/core/graph.hpp"
+
+#include <blaze/math/CompressedVector.h>
 #include <unordered_set>
 #include <unordered_map>
 #include <set>
@@ -27,7 +25,7 @@ namespace bin_stats {
 
 class BinningAssignmentStrategy;
 
-class BinStats;
+class Binning;
 
 using LabelProbabilities = blaze::CompressedVector<double>;
 
@@ -41,7 +39,7 @@ struct EdgeLabels {
     EdgeLabels()
             : e(0), is_binned(false), is_repetitive(false) {}
 
-    EdgeLabels(debruijn_graph::EdgeId e, const BinStats& bin_stats);
+    EdgeLabels(debruijn_graph::EdgeId e, const Binning& binning);
     EdgeLabels(const EdgeLabels& edge_labels) = default;
     EdgeLabels& operator=(const EdgeLabels& edge_labels) = default;
 
@@ -49,29 +47,44 @@ struct EdgeLabels {
 };
 
 using SoftBinsAssignment = adt::id_map<EdgeLabels, debruijn_graph::EdgeId>;
-//using SoftBinsAssignment = std::unordered_map<debruijn_graph::EdgeId, EdgeLabels>;
 
-class BinStats {
+class Binning {
     static const std::string UNBINNED_ID;
  public:
     using BinLabel = std::string;
     using BinId = uint64_t;
     using ScaffoldName = std::string;
+    using ScaffoldId = uint64_t;
+    using ScaffoldPath = std::unordered_set<debruijn_graph::EdgeId>;
+    using Scaffold = std::pair<ScaffoldName, ScaffoldPath>;
     using EdgeBinning = std::unordered_set<BinId>;
-    using ScaffoldsPaths = std::unordered_map<ScaffoldName, std::unordered_set<debruijn_graph::EdgeId>>;
+    using ScaffoldsPaths = std::unordered_map<ScaffoldId, ScaffoldPath>;
     using BinLabels = std::unordered_map<BinId, BinLabel>;
+    using ScaffoldLabels = std::unordered_map<ScaffoldId, ScaffoldName>;
 
     static constexpr BinId UNBINNED = BinId(-1);
 
-    explicit BinStats(const debruijn_graph::Graph& g)
+    explicit Binning(const debruijn_graph::Graph& g)
             : graph_(g) {}
+    
+    void InitScaffolds(const std::vector<Scaffold> &scaffold_paths) {
+        for (ScaffoldId id = 0; id < scaffold_paths.size(); ++id) {
+            scaffolds_.emplace(scaffold_paths[id].first, id);
+            scaffolds_labels_.emplace(id, scaffold_paths[id].first);
+            scaffolds_paths_.emplace(id, scaffold_paths[id].second);
+        }
+    }
 
     /// binning file in .tsv format (NODE_{scaffold_id}_* -> bin_id); scaffolds_file in .fasta format
-    void LoadBinning(const std::string& binning_file, const ScaffoldsPaths &scaffolds_paths);
-    void WriteToBinningFile(const std::string& binning_file, const ScaffoldsPaths &scaffolds_paths,
+    void LoadBinning(const std::string& binning_file);
+    void AssignEdgeBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy);
+    void RefineScaffoldBins(const SoftBinsAssignment& soft_bins_assignment);
+    
+    void BinDistance(const SoftBinsAssignment& soft_bins_assignment);
+
+    void WriteToBinningFile(const std::string& binning_file,
                             const SoftBinsAssignment &edge_soft_labels, const BinningAssignmentStrategy& assignment_strategy,
                             const io::IdMapper<std::string> &edge_mapper);
-    void AssignEdgeBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy);
 
     const debruijn_graph::Graph& graph() const { return graph_;  }
 
@@ -86,15 +99,23 @@ class BinStats {
 
     const auto& multiplicities() const { return edges_multiplicity_; }
 
-    friend std::ostream &operator<<(std::ostream &os, const BinStats &stats);
+    friend std::ostream &operator<<(std::ostream &os, const Binning &binning);
  private:
-    void ScaffoldsToEdges(const ScaffoldsPaths &scaffolds_paths);
+    void ScaffoldsToEdges();
 
     const debruijn_graph::Graph& graph_;
 
-    std::unordered_map<ScaffoldName, BinId> scaffolds_binning_{};
-    BinLabels bin_labels_{};
+    // All about scaffolds
+    std::unordered_map<ScaffoldId, BinId> scaffolds_binning_{};
+    ScaffoldsPaths scaffolds_paths_{};
+    ScaffoldLabels scaffolds_labels_{};
+    std::unordered_map<ScaffoldName, ScaffoldId> scaffolds_{};
+
+    // All about bins
     std::unordered_map<BinLabel, BinId> bins_{};
+    BinLabels bin_labels_{};
+
+    // all about edges
     std::unordered_map<debruijn_graph::EdgeId, EdgeBinning> edges_binning_{};
     std::unordered_set<debruijn_graph::EdgeId> unbinned_edges_{};
     std::unordered_map<debruijn_graph::EdgeId, size_t> edges_multiplicity_{};

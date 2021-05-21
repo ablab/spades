@@ -11,12 +11,12 @@ using namespace debruijn_graph;
 using namespace bin_stats;
 
 void MaxLikelihoodBinningAssignmentStrategy::AssignEdgeBins(const SoftBinsAssignment &soft_bins_assignment,
-                                                            BinStats &bin_stats) const {
+                                                            Binning &bin_stats) const {
     for (auto it = soft_bins_assignment.cbegin(), end = soft_bins_assignment.cend(); it != end; ++it) {
         EdgeId e = it.key();
         const EdgeLabels& edge_labels = it.value();
 
-        std::unordered_set<BinStats::BinId> assignment;
+        std::unordered_set<Binning::BinId> assignment;
         for (const auto &entry : edge_labels.labels_probabilities) {
             if (math::le(entry.value(), thr_))
                 continue;
@@ -36,7 +36,7 @@ void MaxLikelihoodBinningAssignmentStrategy::AssignEdgeBins(const SoftBinsAssign
 blaze::CompressedVector<double>
 MaxLikelihoodBinningAssignmentStrategy::AssignScaffoldBins(const std::vector<debruijn_graph::EdgeId>& path,
                                                            const SoftBinsAssignment &soft_bins_assignment,
-                                                           const BinStats& bin_stats) const {
+                                                           const Binning& bin_stats) const {
     blaze::CompressedVector<double> res(bin_stats.bins().size());
 
     size_t total_length = 0;

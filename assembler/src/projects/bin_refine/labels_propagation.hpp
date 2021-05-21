@@ -19,10 +19,10 @@ class LabelsPropagation : public BinningRefiner {
 
     LabelsPropagation(const debruijn_graph::Graph& g, double eps, double labeled_alpha = 0.0);
 
-    SoftBinsAssignment RefineBinning(const BinStats& bin_stats) const override;
+    SoftBinsAssignment RefineBinning(const Binning& bin_stats) const override;
 
  private:
-    SoftBinsAssignment InitLabels(const BinStats& bin_stats) const;
+    SoftBinsAssignment InitLabels(const Binning& bin_stats) const;
 
     void EqualizeConjugates(SoftBinsAssignment& state) const;
 

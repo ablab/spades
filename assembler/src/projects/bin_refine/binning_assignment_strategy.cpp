@@ -8,16 +8,23 @@
 
 using namespace bin_stats;
 
+std::vector<uint64_t> BinningAssignmentStrategy::ChooseMajorBins(const std::vector<debruijn_graph::EdgeId>& path,
+                                                                 const SoftBinsAssignment& soft_bins_assignment,
+                                                                 const Binning& bin_stats) const {
+    return ChooseMajorBins(AssignScaffoldBins(path,
+                                              soft_bins_assignment, bin_stats),
+                           soft_bins_assignment, bin_stats);
+}
 
-std::vector<BinStats::BinId>
+std::vector<Binning::BinId>
 BinningAssignmentStrategy::ChooseMajorBins(const blaze::CompressedVector<double> &bins_weights,
                                            const SoftBinsAssignment&,
-                                           const BinStats&) const {
-    std::vector<BinStats::BinId> res;
+                                           const Binning&) const {
+    std::vector<Binning::BinId> res;
     if (allow_multiple_) {
         double sum = blaze::sum(bins_weights);
 
-        std::vector<std::pair<BinStats::BinId, double>> weights;
+        std::vector<std::pair<Binning::BinId, double>> weights;
         for (const auto &entry : bins_weights)
             weights.emplace_back(entry.index(), entry.value());
         std::sort(weights.begin(), weights.end(),
@@ -40,7 +47,7 @@ BinningAssignmentStrategy::ChooseMajorBins(const blaze::CompressedVector<double>
         }
     } else {
         double max_weight = -std::numeric_limits<double>::infinity();
-        BinStats::BinId major_bin = BinStats::UNBINNED;
+        Binning::BinId major_bin = Binning::UNBINNED;
         for (const auto &entry : bins_weights) {
             if (math::le(entry.value(), max_weight))
                 continue;
@@ -49,7 +56,7 @@ BinningAssignmentStrategy::ChooseMajorBins(const blaze::CompressedVector<double>
             major_bin = entry.index();
         }
 
-        if (major_bin == BinStats::UNBINNED)
+        if (major_bin == Binning::UNBINNED)
             return { };
 
         for (const auto &entry : bins_weights) {

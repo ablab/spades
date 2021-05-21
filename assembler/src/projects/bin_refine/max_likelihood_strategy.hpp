@@ -15,10 +15,10 @@ class MaxLikelihoodBinningAssignmentStrategy : public BinningAssignmentStrategy 
     MaxLikelihoodBinningAssignmentStrategy(bool multiple = false, double thr = 1e-6)
             : BinningAssignmentStrategy(multiple), thr_(thr) {}
     
-    void AssignEdgeBins(const SoftBinsAssignment& soft_bins_assignment, BinStats& bin_stats) const override;
+    void AssignEdgeBins(const SoftBinsAssignment& soft_bins_assignment, Binning& bin_stats) const override;
     blaze::CompressedVector<double> AssignScaffoldBins(const std::vector<debruijn_graph::EdgeId>& path,
                                                        const SoftBinsAssignment& soft_bins_assignment,
-                                                       const BinStats& bin_stats) const override;
+                                                       const Binning& bin_stats) const override;
   private:
     double thr_;
 };

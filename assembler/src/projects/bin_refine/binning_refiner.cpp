@@ -114,15 +114,24 @@ int main(int argc, char** argv) {
 
       // TODO: For now the edges is a set, we need to decide what to do with
       // repeats (so, we may want to count multiplicity here somehow)
-      BinStats::ScaffoldsPaths scaffolds_paths;
-      for (const auto &path : gfa.paths()) {
-          const std::string &name = path.name;
-          // SPAdes outputs paths of scaffolds in the file, so we need to strip the path segment id from the end
-          scaffolds_paths[name.substr(0, name.find_last_of('_'))].insert(path.edges.begin(), path.edges.end());
+      Binning binning(graph);
+      {
+          std::vector<Binning::Scaffold> scaffolds_paths;
+          std::string scaffold_name;
+          for (const auto &path : gfa.paths()) {
+              const std::string &name = path.name;
+              std::string cname = name.substr(0, name.find_last_of('_'));
+              // SPAdes outputs paths of scaffolds in the file, so we need to strip the path segment id from the end
+              if (cname != scaffold_name) {
+                  scaffold_name = cname;
+                  scaffolds_paths.emplace_back(scaffold_name, Binning::ScaffoldPath{});
+              }
+              scaffolds_paths.back().second.insert(path.edges.begin(), path.edges.end());
+          }
+          binning.InitScaffolds(scaffolds_paths);
       }
-
-      BinStats binning(graph);
-      binning.LoadBinning(cfg.binning_file, scaffolds_paths);
+      
+      binning.LoadBinning(cfg.binning_file);
 
       INFO("Initial binning:\n" << binning);
       auto binning_refiner = get_refiner(cfg, graph);
@@ -130,9 +139,9 @@ int main(int argc, char** argv) {
       INFO("Assigning edges to bins");
       binning.AssignEdgeBins(soft_edge_labels, *assignment_strategy);
       INFO("Final binning:\n" << binning);
+      binning.BinDistance(soft_edge_labels);
       INFO("Writing final binning");
-      binning.WriteToBinningFile(cfg.output_file, scaffolds_paths,
-                                 soft_edge_labels, *assignment_strategy,
+      binning.WriteToBinningFile(cfg.output_file, soft_edge_labels, *assignment_strategy,
                                  *id_mapper);
   } catch (const std::string& s) {
       std::cerr << s << std::endl;
