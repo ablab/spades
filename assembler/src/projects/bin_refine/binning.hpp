@@ -79,8 +79,9 @@ class Binning {
     void LoadBinning(const std::string& binning_file);
     void AssignBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy);
 
-    void BinDistance(const SoftBinsAssignment& soft_bins_assignment);
-
+    blaze::DynamicMatrix<double> BinDistance(const SoftBinsAssignment& soft_bins_assignment,
+                                             bool edges = false);
+    
     void WriteToBinningFile(const std::string& binning_file,
                             const SoftBinsAssignment &edge_soft_labels, const BinningAssignmentStrategy& assignment_strategy,
                             const io::IdMapper<std::string> &edge_mapper);

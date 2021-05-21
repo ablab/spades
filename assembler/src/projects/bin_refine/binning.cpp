@@ -94,7 +94,7 @@ void Binning::LoadBinning(const std::string &binning_file) {
         INFO("Unknown scaffold: " << scaffold_name);
         continue;
     }
-    
+
     scaffolds_binning_[scaffold_entry->second] = cbin_id;
   }
 
@@ -183,6 +183,108 @@ void Binning::AssignBins(const SoftBinsAssignment& soft_edge_labels,
                 assignment_strategy.AssignScaffoldBins(scaffold_path,
                                                        soft_edge_labels, *this);
     }
+}
+
+static double WJaccard(const blaze::CompressedMatrix<double, blaze::rowMajor> &m,
+                       size_t i, size_t j) {
+    auto lhs = blaze::row(m, i), rhs = blaze::row(m, j);
+    double sl = blaze::sum(lhs), sr = blaze::sum(rhs), cap = blaze::sum(lhs * rhs);
+    return cap / (sl + sr - cap);
+}
+
+static double PJaccard(const blaze::CompressedMatrix<double, blaze::rowMajor> &m,
+                       size_t i, size_t j) {
+    auto lb = m.begin(i), le = m.end(i), rb = m.begin(j), re = m.end(j);
+    double res = 0;
+    while (lb != le && rb != re) {
+        size_t li = lb->index(), ri = rb->index();
+        if (li == ri) {
+            double x = lb->value(), y = rb->value();
+            double sum = 0;
+
+            if (x * y > 0) {
+                auto ljb = m.begin(i), lje = m.end(i), rjb = m.begin(j), rje = m.end(j);
+                while (ljb != lje || rjb != rje) {
+                    if (ljb != lje && rjb != rje &&
+                        ljb->index() == rjb->index()) {
+                        sum += blaze::max(ljb->value() * y, rjb->value() * x);
+                        ++ljb, ++rjb;
+                    } else if (rjb == rje ||
+                               (ljb != lje && ljb->index() < rjb->index())) {
+                        sum += ljb->value() * y;
+                        ++ljb;
+                    } else {
+                        sum += rjb->value() * x;
+                        ++rjb;
+                    }
+                }
+
+                res += x*y / sum;
+            }
+
+            ++lb, ++rb;
+        } else if (li < ri)
+            ++lb;
+        else
+            ++rb;
+    }
+
+    return res;
+}
+
+ blaze::DynamicMatrix<double> Binning::BinDistance(const SoftBinsAssignment& soft_bins_assignment,
+                                                   bool edges) {
+    size_t nbins = bins_.size();
+    size_t nrows = 0, nz = 0;
+
+    if (edges) {
+        for (EdgeId e : graph_.canonical_edges()) {
+            const EdgeLabels& edge_labels = soft_bins_assignment.at(e);
+            nrows += 1;
+            nz += edge_labels.labels_probabilities.nonZeros();
+        }
+    } else {
+        for (const auto &entry: scaffolds_bin_weights_) {
+            nrows += 1;
+            nz += entry.second.nonZeros();
+        }
+    }
+
+    blaze::CompressedMatrix<double, blaze::rowMajor> bin_probs(nrows, nbins);
+    bin_probs.reserve(nz);
+    if (edges) {
+        size_t row = 0;
+        for (EdgeId e : graph_.canonical_edges()) {
+            const EdgeLabels& edge_labels = soft_bins_assignment.at(e);
+            for (const auto &entry : edge_labels.labels_probabilities) {
+                bin_probs.append(row, entry.index(), entry.value());
+            }
+            bin_probs.finalize(row);
+            row += 1;
+        }
+    } else {
+        size_t row = 0;
+        for (const auto &entry: scaffolds_bin_weights_) {
+            for (const auto &prob : entry.second) {
+                bin_probs.append(row, prob.index(), prob.value());
+            }
+            bin_probs.finalize(row);
+            row += 1;
+        }
+    }
+
+    bin_probs.transpose();
+
+    // Now we're having single bin in a row
+    blaze::DynamicMatrix<double> dist(nbins, nbins);
+    for (size_t i = 0; i < nbins; ++i) {
+        for (size_t j = i; j < nbins; ++j) {
+            dist(i, j) = PJaccard(bin_probs, i, j);
+            dist(j, i) = dist(i, j);
+        }
+    }
+
+    return dist;
 }
 
 namespace bin_stats {
