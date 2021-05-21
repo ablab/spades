@@ -14,9 +14,9 @@
 using namespace debruijn_graph;
 using namespace bin_stats;
 
-const std::string BinStats::UNBINNED_ID = "0";
+const std::string Binning::UNBINNED_ID = "0";
 
-EdgeLabels::EdgeLabels(const EdgeId e, const BinStats& bin_stats)
+EdgeLabels::EdgeLabels(const EdgeId e, const Binning& bin_stats)
         : e(e) {
     auto bins = bin_stats.edges_binning().find(e);
     is_binned = bins != bin_stats.edges_binning().end();
@@ -26,27 +26,21 @@ EdgeLabels::EdgeLabels(const EdgeId e, const BinStats& bin_stats)
     if (is_binned) {
         size_t sz = bins->second.size();
         //size_t sz = bin_stats.multiplicities().at(e);
-        for (bin_stats::BinStats::BinId bin : bins->second)
+        for (bin_stats::Binning::BinId bin : bins->second)
             labels_probabilities.set(bin, 1.0 / static_cast<double>(sz));
         is_repetitive = bin_stats.multiplicities().at(e) > 1;
     }
 }
 
-void BinStats::ScaffoldsToEdges(const ScaffoldsPaths &scaffolds_paths) {
+void Binning::ScaffoldsToEdges() {
   edges_binning_.clear();
   unbinned_edges_.clear();
 
   for (const auto &scaffold_entry : scaffolds_binning_) {
-      const std::string& scaffold_name = scaffold_entry.first;
-
+      ScaffoldId scaffold = scaffold_entry.first;
       BinId bin_id = scaffold_entry.second;
-      auto path_entry = scaffolds_paths.find(scaffold_name);
-      if (path_entry == scaffolds_paths.end()) {
-          INFO("No path for scaffold " << scaffold_name);
-          continue;
-      }
 
-      for (EdgeId e : path_entry->second) {
+      for (EdgeId e : scaffolds_paths_.at(scaffold)) {
           if (bin_id != UNBINNED) {
               edges_binning_[e].insert(bin_id);
               edges_binning_[graph_.conjugate(e)].insert(bin_id);
@@ -66,7 +60,7 @@ void BinStats::ScaffoldsToEdges(const ScaffoldsPaths &scaffolds_paths) {
   }
 }
 
-void BinStats::LoadBinning(const std::string& binning_file, const ScaffoldsPaths &scaffolds_paths) {
+void Binning::LoadBinning(const std::string &binning_file) {
   fs::CheckFileExistenceFATAL(binning_file);
 
   scaffolds_binning_.clear();
@@ -95,13 +89,19 @@ void BinStats::LoadBinning(const std::string& binning_file, const ScaffoldsPaths
         }
     }
 
-    scaffolds_binning_[scaffold_name] = cbin_id;
+    auto scaffold_entry = scaffolds_.find(scaffold_name);
+    if (scaffold_entry == scaffolds_.end()) {
+        INFO("Unknown scaffold: " << scaffold_name);
+        continue;
+    }
+    
+    scaffolds_binning_[scaffold_entry->second] = cbin_id;
   }
 
-  ScaffoldsToEdges(scaffolds_paths);
+  ScaffoldsToEdges();
 }
 
-void BinStats::WriteToBinningFile(const std::string& binning_file, const ScaffoldsPaths &scaffolds_paths,
+void Binning::WriteToBinningFile(const std::string& binning_file,
                                   const SoftBinsAssignment &soft_edge_labels, const BinningAssignmentStrategy& assignment_strategy,
                                   const io::IdMapper<std::string> &edge_mapper) {
     std::ofstream out_tsv(binning_file + ".tsv");
@@ -115,16 +115,16 @@ void BinStats::WriteToBinningFile(const std::string& binning_file, const Scaffol
         return rhs.second < lhs.second;
     };
 
-    std::vector<std::pair<std::string, size_t>> scaffold_names;
-    for (const auto &path_entry : scaffolds_paths) {
+    std::vector<std::pair<ScaffoldId, size_t>> scaffolds_by_length;
+    for (const auto &path_entry : scaffolds_paths_) {
         size_t length = graph_.k();
         for (EdgeId e : path_entry.second)
             length += graph_.length(e);
 
-        scaffold_names.emplace_back(path_entry.first, length);
+        scaffolds_by_length.emplace_back(path_entry.first, length);
     }
 
-    std::sort(scaffold_names.begin(), scaffold_names.end(),
+    std::sort(scaffolds_by_length.begin(), scaffolds_by_length.end(),
               [](const auto &lhs, const auto &rhs) {
                   if (lhs.second == rhs.second)
                       return lhs.first < lhs.first;
@@ -132,9 +132,9 @@ void BinStats::WriteToBinningFile(const std::string& binning_file, const Scaffol
                   return lhs.second > rhs.second;
               });
 
-    for (const auto &entry : scaffold_names) {
-        const std::string &scaffold_name = entry.first;
-        const auto &path_entry = scaffolds_paths.at(scaffold_name);
+    for (const auto &entry : scaffolds_by_length) {
+        const std::string &scaffold_name = scaffolds_labels_.at(entry.first);
+        const auto &path_entry = scaffolds_paths_.at(entry.first);
 
         std::vector<EdgeId> scaffold_path(path_entry.begin(), path_entry.end());
         auto bins_weights = assignment_strategy.AssignScaffoldBins(scaffold_path,
@@ -177,12 +177,12 @@ void BinStats::WriteToBinningFile(const std::string& binning_file, const Scaffol
     }
 }
 
-void BinStats::AssignEdgeBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy) {
+void Binning::AssignEdgeBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy) {
     assignment_strategy.AssignEdgeBins(soft_bins_assignment, *this);
 }
 
 namespace bin_stats {
-std::ostream &operator<<(std::ostream &os, const BinStats &stats) {
+std::ostream &operator<<(std::ostream &os, const Binning &stats) {
     const auto &graph = stats.graph();
 
     os << "Total bins: " << stats.bins().size() << std::endl;
@@ -196,13 +196,13 @@ std::ostream &operator<<(std::ostream &os, const BinStats &stats) {
       }
     }
 
-    os << "Total edges: " << graph.e_size() << std::endl
-       << "Total edges length: " << sum_length << std::endl
-       << "Total binned edges: " << stats.edges_binning().size() << std::endl
-       << "Unbinned edges: " << stats.unbinned_edges().size() << std::endl
-       << "Unbinned edges total length: " << unbinned_length << std::endl
-       << "Unbinned edges number ratio: " << static_cast<double>(stats.unbinned_edges().size()) / static_cast<double>(graph.e_size()) << std::endl
-       << "Unbinned edges length ratio: " << static_cast<double>(unbinned_length) / static_cast<double>(sum_length) << std::endl;
+    os << "Total edges: " << graph.e_size()
+       << ", binned: " << stats.edges_binning().size()
+       << ", unbinned: " << stats.unbinned_edges().size()
+       << " (" << (static_cast<double>(stats.unbinned_edges().size()) / static_cast<double>(graph.e_size()) * 100) << "%)" << std::endl
+       << "Sum edge length: " << sum_length << std::endl
+       << "Unbinned edges sum length: " << unbinned_length
+       << " (" << (static_cast<double>(unbinned_length) / static_cast<double>(sum_length) * 100) << "%)" << std::endl;
 
     return os;
 }

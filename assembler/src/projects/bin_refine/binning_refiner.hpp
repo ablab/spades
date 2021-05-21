@@ -15,7 +15,7 @@ class BinningRefiner {
     explicit BinningRefiner(const debruijn_graph::Graph& g) : g_(g) {}
     virtual ~BinningRefiner() = default;
 
-    virtual SoftBinsAssignment RefineBinning(const BinStats& bin_stats) const = 0;
+    virtual SoftBinsAssignment RefineBinning(const Binning& binning) const = 0;
  protected:
     const debruijn_graph::Graph& g_;
 };

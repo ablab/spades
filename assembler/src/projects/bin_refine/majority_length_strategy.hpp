@@ -15,9 +15,9 @@ public:
     MajorityLengthBinningAssignmentStrategy(bool multiple = false)
             : BinningAssignmentStrategy(multiple) {}
     
-    void AssignEdgeBins(const SoftBinsAssignment& soft_bins_assignment, BinStats& bin_stats) const override;
+    void AssignEdgeBins(const SoftBinsAssignment& soft_bins_assignment, Binning& bin_stats) const override;
     blaze::CompressedVector<double> AssignScaffoldBins(const std::vector<debruijn_graph::EdgeId>& path,
                                                        const SoftBinsAssignment& soft_bins_assignment,
-                                                       const BinStats& bin_stats) const override;
+                                                       const Binning& bin_stats) const override;
 };
 }
