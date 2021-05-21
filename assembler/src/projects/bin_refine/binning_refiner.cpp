@@ -136,10 +136,10 @@ int main(int argc, char** argv) {
       INFO("Initial binning:\n" << binning);
       auto binning_refiner = get_refiner(cfg, graph);
       auto soft_edge_labels = binning_refiner->RefineBinning(binning);
-      INFO("Assigning edges to bins");
-      binning.AssignEdgeBins(soft_edge_labels, *assignment_strategy);
+      INFO("Assigning edges & scaffolds to bins");
+      binning.AssignBins(soft_edge_labels, *assignment_strategy);
       INFO("Final binning:\n" << binning);
-      binning.BinDistance(soft_edge_labels);
+      //binning.BinDistance(soft_edge_labels);
       INFO("Writing final binning");
       binning.WriteToBinningFile(cfg.output_file, soft_edge_labels, *assignment_strategy,
                                  *id_mapper);

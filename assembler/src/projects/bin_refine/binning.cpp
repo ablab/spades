@@ -134,13 +134,10 @@ void Binning::WriteToBinningFile(const std::string& binning_file,
 
     for (const auto &entry : scaffolds_by_length) {
         const std::string &scaffold_name = scaffolds_labels_.at(entry.first);
-        const auto &path_entry = scaffolds_paths_.at(entry.first);
-
-        std::vector<EdgeId> scaffold_path(path_entry.begin(), path_entry.end());
-        auto bins_weights = assignment_strategy.AssignScaffoldBins(scaffold_path,
-                                                                   soft_edge_labels, *this);
-        std::vector<BinId> new_bin_id = assignment_strategy.ChooseMajorBins(bins_weights,
-                                                                            soft_edge_labels, *this);
+        const auto &bins_weights = scaffolds_bin_weights_.at(entry.first);
+        std::vector<BinId> new_bin_id =
+                assignment_strategy.ChooseMajorBins(bins_weights,
+                                                    soft_edge_labels, *this);
         out_tsv << scaffold_name;
         if (new_bin_id.empty())
             out_tsv << '\t' << UNBINNED_ID;
@@ -177,8 +174,15 @@ void Binning::WriteToBinningFile(const std::string& binning_file,
     }
 }
 
-void Binning::AssignEdgeBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy) {
-    assignment_strategy.AssignEdgeBins(soft_bins_assignment, *this);
+void Binning::AssignBins(const SoftBinsAssignment& soft_edge_labels,
+                         const BinningAssignmentStrategy& assignment_strategy) {
+    assignment_strategy.AssignEdgeBins(soft_edge_labels, *this);
+    for (const auto &path_entry : scaffolds_paths_) {
+        std::vector<EdgeId> scaffold_path(path_entry.second.begin(), path_entry.second.end());
+        scaffolds_bin_weights_[path_entry.first] =
+                assignment_strategy.AssignScaffoldBins(scaffold_path,
+                                                       soft_edge_labels, *this);
+    }
 }
 
 namespace bin_stats {
@@ -202,7 +206,7 @@ std::ostream &operator<<(std::ostream &os, const Binning &stats) {
        << " (" << (static_cast<double>(stats.unbinned_edges().size()) / static_cast<double>(graph.e_size()) * 100) << "%)" << std::endl
        << "Sum edge length: " << sum_length << std::endl
        << "Unbinned edges sum length: " << unbinned_length
-       << " (" << (static_cast<double>(unbinned_length) / static_cast<double>(sum_length) * 100) << "%)" << std::endl;
+       << " (" << (static_cast<double>(unbinned_length) / static_cast<double>(sum_length) * 100) << "%)";
 
     return os;
 }
