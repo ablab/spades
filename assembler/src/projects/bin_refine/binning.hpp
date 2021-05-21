@@ -66,7 +66,7 @@ class Binning {
 
     explicit Binning(const debruijn_graph::Graph& g)
             : graph_(g) {}
-    
+
     void InitScaffolds(const std::vector<Scaffold> &scaffold_paths) {
         for (ScaffoldId id = 0; id < scaffold_paths.size(); ++id) {
             scaffolds_.emplace(scaffold_paths[id].first, id);
@@ -77,9 +77,8 @@ class Binning {
 
     /// binning file in .tsv format (NODE_{scaffold_id}_* -> bin_id); scaffolds_file in .fasta format
     void LoadBinning(const std::string& binning_file);
-    void AssignEdgeBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy);
-    void RefineScaffoldBins(const SoftBinsAssignment& soft_bins_assignment);
-    
+    void AssignBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy);
+
     void BinDistance(const SoftBinsAssignment& soft_bins_assignment);
 
     void WriteToBinningFile(const std::string& binning_file,
@@ -107,6 +106,7 @@ class Binning {
 
     // All about scaffolds
     std::unordered_map<ScaffoldId, BinId> scaffolds_binning_{};
+    std::unordered_map<ScaffoldId, LabelProbabilities> scaffolds_bin_weights_{};
     ScaffoldsPaths scaffolds_paths_{};
     ScaffoldLabels scaffolds_labels_{};
     std::unordered_map<ScaffoldName, ScaffoldId> scaffolds_{};
