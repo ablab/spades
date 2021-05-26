@@ -11,6 +11,7 @@
 #include "utils/logger/logger.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "common/assembly_graph/paths/path_processor.hpp"
+#include "common/assembly_graph/paths/bidirectional_path_io/io_support.hpp"
 #include "common/modules/path_extend/pe_utils.hpp"
 
 #include <string>
@@ -18,7 +19,6 @@
 #include <vector>
 #include <list>
 #include <fstream>
-#include <boost/optional.hpp>
 
 using namespace debruijn_graph;
 using namespace path_extend;
@@ -50,13 +50,13 @@ public:
         , nthreads(nthreads)
     {}
 
-    pair<std::string, std::vector<PathWithBorderEdgesIndexies>> GetBestSequence() const;
+    pair<std::list<ReplaceInfo>, std::vector<PathWithBorderEdgesIndexies>> GetBestSequence() const;
 private:
     pair<SimpleBidirectionalPath, size_t> GetNextPath(size_t start_pos, size_t & adjacent_edges_connected) const;
 
-    boost::optional<pair<SimpleBidirectionalPath, size_t>> FindFiller(size_t start_pos, size_t & adjacent_edges_connected) const;
+    boost::optional<pair<Gap, size_t>> FindFiller(size_t start_pos, size_t & adjacent_edges_connected) const;
 
-    SimpleBidirectionalPath GetBestMachedPath(EdgeId start_edge, EdgeId end_edge, string const & ref) const;
+    boost::optional<string> GetBestMachedPath(EdgeId start_edge, EdgeId end_edge, string const & ref) const;
 
     SimpleBidirectionalPath ConnectWithScaffolds(EdgeId start, EdgeId end) const;
 
@@ -103,7 +103,7 @@ std::list<ReplaceInfo> SequenceCorrector::ConvertToReplaceInfo(vector<PathWithBo
     return mapping_info;
 }
 
-pair<std::string, std::vector<PathWithBorderEdgesIndexies>> SequenceCorrector::GetBestSequence() const {
+pair<std::list<ReplaceInfo>, std::vector<PathWithBorderEdgesIndexies>> SequenceCorrector::GetBestSequence() const {
     std::vector<PathWithBorderEdgesIndexies> paths;
     size_t adjacent_edges_connected = 0;
     size_t start_pos = 0;
@@ -117,45 +117,31 @@ pair<std::string, std::vector<PathWithBorderEdgesIndexies>> SequenceCorrector::G
     INFO("Made " << paths.size() << " path" << (paths.size() != 1 ? "s" : ""));
     INFO("Connected " << adjacent_edges_connected << " adjacent edges pair" << (adjacent_edges_connected == 1 ? "" : "s"));
 
-    return {Replace(seq, ConvertToReplaceInfo(paths)), std::move(paths)};
+    return {ConvertToReplaceInfo(paths), std::move(paths)};
 }
 
 pair<SimpleBidirectionalPath, size_t> SequenceCorrector::GetNextPath(size_t start_pos, size_t & adjacent_edges_connected) const {
-    ScaffoldSequenceMaker seq_maker(graph);
     SimpleBidirectionalPath current_path;
     current_path.PushBack(GetEdge(start_pos));
     while (start_pos + 1 < Size()) {
-        auto path = FindFiller(start_pos, adjacent_edges_connected);
-        if (!path.is_initialized())
+        auto filler = FindFiller(start_pos, adjacent_edges_connected);
+        if (!filler.is_initialized())
             break;
-        start_pos = path->second;
-
-        if (path->first.Empty()) {
-            current_path.PushBack(GetEdge(start_pos));
-            continue;
-        }
-
-        auto gap_str = seq_maker.MakeSequence(*BidirectionalPath::create(graph, std::move(path->first)));
-        assert(gap_str.size() >= graph.k());
-
-        auto gap_size_in_nucl = gap_str.size() - 2 * graph.k(); // cut off overlaping with start_edge and end_edge
-        gap_str = (gap_str.size() > 2 * graph.k() ? gap_str.substr(graph.k(), gap_size_in_nucl) : "");
-        current_path.PushBack(GetEdge(start_pos), Gap(std::move(gap_str), gap_size_in_nucl+graph.k()));
-
+        start_pos = filler->second;
+        current_path.PushBack(GetEdge(start_pos), std::move(filler->first));
     }
     return {std::move(current_path), start_pos};
 }
 
-boost::optional<pair<SimpleBidirectionalPath, size_t>> SequenceCorrector::FindFiller(size_t start_pos, size_t & adjacent_edges_connected) const {
+boost::optional<pair<Gap, size_t>> SequenceCorrector::FindFiller(size_t start_pos, size_t & adjacent_edges_connected) const {
     size_t end_pos = start_pos + 1;
     auto start_edge = GetEdge(start_pos);
     for (; end_pos - start_pos <= params.max_steps_forward && end_pos < Size(); ++end_pos) {
-        SimpleBidirectionalPath current_path;
         auto end_edge  = GetEdge(end_pos);
 
         if (graph.EdgeStart(end_edge) == graph.EdgeEnd(start_edge) && GetStartPos(end_pos) + graph.k() == GetEndPos(start_pos)) {
             ++adjacent_edges_connected;
-            return {{std::move(current_path), end_pos}};
+            return {{Gap(), end_pos}};
         }
 
         if (params.use_agressive_filling) {
@@ -165,23 +151,28 @@ boost::optional<pair<SimpleBidirectionalPath, size_t>> SequenceCorrector::FindFi
             distance += 2 * graph.k(); // add overlaping with start_edge and end_edge
             VERIFY(GetEndPos(start_pos) >= (long long)graph.k());
             size_t start_after_edge = GetEndPos(start_pos) - (long long)graph.k();
-            current_path = GetBestMachedPath(start_edge, end_edge, seq.substr(start_after_edge, distance));
+            auto gap_str = GetBestMachedPath(start_edge, end_edge, seq.substr(start_after_edge, distance));
+
+            if (gap_str.is_initialized()) {
+                assert(gap_str->size() >= graph.k());
+                auto gap_size_in_nucl = gap_str->size() - 2 * graph.k(); // cut off overlaping with start_edge and end_edge
+                gap_str = (gap_str->size() > 2 * graph.k() ? gap_str->substr(graph.k(), gap_size_in_nucl) : "");
+                return {{Gap(std::move(*gap_str), gap_size_in_nucl+graph.k()), end_pos}};
+            }
         }
 
-        if (params.use_scaffolds && current_path.Empty())
-            current_path = ConnectWithScaffolds(start_edge, end_edge);
- 
-        if (!current_path.Empty()) {
-            return {{std::move(current_path), end_pos}};
+        /// TODO: think how to correct ConnectWithScaffolds
+        if (params.use_scaffolds) {
+            assert(false);
+            // ConnectWithScaffolds(start_edge, end_edge);
         }
     }
     return {};
 }
 
-SimpleBidirectionalPath SequenceCorrector::GetBestMachedPath(EdgeId start_edge, EdgeId end_edge, string const & ref) const {
-    SimpleBidirectionalPath answer;
+boost::optional<string> SequenceCorrector::GetBestMachedPath(EdgeId start_edge, EdgeId end_edge, string const & ref) const {
     if (ref.empty())
-        return answer;
+        return {};
 
     auto distance = ref.size();
     VertexId target_vertex = graph.EdgeStart(end_edge);
@@ -193,15 +184,11 @@ SimpleBidirectionalPath SequenceCorrector::GetBestMachedPath(EdgeId start_edge, 
 
     if (error) {
         WARN("WOW! omnigraph::ProcessPaths failed!, error: " << error);
-        return answer;
+        return {};
     }
 
     const auto& detected_paths = path_storage.paths();
-    auto index = filler_chooser(detected_paths, ref);
-    if (index != FillerChooser::npos)
-        answer.PushBack(detected_paths[index]);
-
-    return answer;
+    return filler_chooser(detected_paths, ref);
 }
 
 SimpleBidirectionalPath SequenceCorrector::ConnectWithScaffolds(EdgeId start, EdgeId end) const {
@@ -264,7 +251,7 @@ path_extend::PathContainer Launch(debruijn_graph::GraphPack const & gp,
         SequenceCorrector corrector(graph, filler_chooser, params, cover_map, input_paths[i], contig.seq, nthreads);
 
         auto data = corrector.GetBestSequence();
-        contig.seq = data.first;
+        contig.seq = ReplaceAndDump(contig.seq, std::move(data.first), contig.name);
         PathContainer result;
         for (auto const & path : data.second)
             result.Add(BidirectionalPath::create(graph, std::move(path.path)));

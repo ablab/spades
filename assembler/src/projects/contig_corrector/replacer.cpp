@@ -3,6 +3,8 @@
 #include "utils/logger/logger.hpp"
 
 #include <sstream>
+#include <iomanip>
+#include <fstream>
 
 using namespace std;
 
@@ -23,10 +25,48 @@ void ReplaceInfo::DropBehind(size_t size) noexcept {
 
 namespace {
 
+void DumpReplaceInfo(string const & seq_name, string const & seq, list<ReplaceInfo> const & mapping_info) {
+    static ofstream out("replace_info_dump.dump");
+    static bool once_flag = true;
+    auto Print = [&out](auto const & name, auto const & type, auto const & from, auto const & to, auto const & len) {
+        out << setw(15) << name << ' ' << setw(10) << type << ' ' << setw(10) << from << ' ' << setw(10) << to << ' ' << setw(10) << len << '\n';
+    };
+    if (once_flag) {
+        Print("name", "seq_type", "from", "to", "len");
+        once_flag = false;
+    }
+    size_t current_pos = 0;
+    size_t result_pos = 0;
+    size_t total_origin_len = 0;
+    size_t total_replaced_len = 0;
+    for (auto const & path : mapping_info) {
+        {
+            auto len = path.contig_start_pos - current_pos;
+            if (len > 0)
+                Print(seq_name, "origin", result_pos, result_pos + len, len);
+            result_pos += len;
+            total_origin_len += len;
+        }
+        {
+            auto len = path.ResultSize();
+            if (len > 0)
+                Print(seq_name, "replace", result_pos, result_pos + len, len);
+            result_pos += len;
+            total_replaced_len += len;
+        }
+        current_pos = path.contig_end_pos;
+    }
+    if (current_pos < seq.size()) {
+        auto len = seq.size() - current_pos;
+        Print(seq_name, "origin", result_pos, result_pos + len, len);
+       total_origin_len += len;
+    }
+    INFO("Corrected " << total_replaced_len << " nucls (" << 100.0*total_replaced_len / (total_replaced_len + total_origin_len) << "%) of " << seq_name);
+}
+
 string MakeSeq(string const & seq, list<ReplaceInfo> const & mapping_info) {
     size_t current_pos = 0;
     stringstream ss;
-    size_t i = 0;
     for (auto const & path : mapping_info) {
         if (path.drop_from_head > 0)
             WARN("The new path prefix with len=" << path.drop_from_head << " of " << path.Size() << " would be dropped");
@@ -79,5 +119,11 @@ void DropOverlappedPrefixes(list<ReplaceInfo> & mapping_info) {
 
 std::string Replace(std::string const & seq, std::list<ReplaceInfo> && replace_info) {
     DropOverlappedPrefixes(replace_info);
+    return MakeSeq(seq, replace_info);
+}
+
+std::string ReplaceAndDump(std::string const & seq, std::list<ReplaceInfo> && replace_info, std::string const & seq_name) {
+    DropOverlappedPrefixes(replace_info);
+    DumpReplaceInfo(seq_name, seq, replace_info);
     return MakeSeq(seq, replace_info);
 }

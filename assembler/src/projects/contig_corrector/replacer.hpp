@@ -33,3 +33,4 @@ struct ReplaceInfo {
 };
 
 std::string Replace(std::string const & seq, std::list<ReplaceInfo> && replace_info);
+std::string ReplaceAndDump(std::string const & seq, std::list<ReplaceInfo> && replace_info, std::string const & seq_name);

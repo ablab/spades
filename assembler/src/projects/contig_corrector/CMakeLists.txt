@@ -15,6 +15,7 @@ add_executable(contig_corrector
                parser.cpp
                launcher.cpp
                replacer.cpp
+               filler_chooser.cpp
               )
 
 target_link_libraries(contig_corrector graphio common_modules ${COMMON_LIBRARIES})
