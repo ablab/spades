@@ -478,12 +478,11 @@ def get_output_files(cfg):
     output_files["result_bgc_stats_filename"] = os.path.join(cfg["common"].output_dir, options_storage.bgc_stats_name)
     output_files["result_domain_graph_filename"] = os.path.join(cfg["common"].output_dir, options_storage.domain_graph_name)
     output_files["result_gene_clusters_filename"] = os.path.join(cfg["common"].output_dir, options_storage.scaffolds_name)
-    output_files["result_gene_clusters_filename_old"] = os.path.join(cfg["common"].output_dir, options_storage.gene_clusters_name)
     output_files["misc_dir"] = os.path.join(cfg["common"].output_dir, "misc")
     ### if mismatch correction is enabled then result contigs are copied to misc directory
     output_files["assembled_contigs_filename"] = os.path.join(output_files["misc_dir"], "assembled_contigs.fasta")
     output_files["assembled_scaffolds_filename"] = os.path.join(output_files["misc_dir"], "assembled_scaffolds.fasta")
-    if options_storage.args.bio or options_storage.args.custom_hmms or options_storage.args.corona:
+    if options_storage.hmm_mode():
         output_files["result_scaffolds_filename"] = os.path.join(cfg["common"].output_dir, options_storage.secondary_scaffolds_name)
         output_files["result_scaffolds_paths_filename"] = os.path.join(cfg["common"].output_dir,
                                                                        options_storage.secondary_scaffolds_paths)

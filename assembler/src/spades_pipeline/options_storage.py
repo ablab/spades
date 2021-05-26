@@ -99,3 +99,6 @@ def get_stage_filename(stage_num, stage_short_name):
 # kmers were set by default, not SC, not IonTorrent data and not rna and temporary not meta (except metaplasmid)
 def auto_K_allowed():
     return not args.k_mers and not args.single_cell and not args.iontorrent and not (args.meta and not args.plasmid)
+
+def hmm_mode():
+    return args.bio or args.custom_hmms or args.corona
