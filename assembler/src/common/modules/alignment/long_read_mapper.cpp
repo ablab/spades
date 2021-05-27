@@ -5,6 +5,8 @@
 //***************************************************************************
 
 #include "long_read_mapper.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
+#include "common/pipeline/config_struct.hpp"
 
 namespace debruijn_graph {
 
@@ -255,8 +257,11 @@ MappingPath<EdgeId> GappedPathExtractorForTrustedContigs::FilterBadMappings(cons
 }
 
 inline bool IsGoodMapping(const Graph & graph, const Range & edge, EdgeId id) {
+    auto const & config = cfg::get().ha.trusted_aligner_config;
     auto edge_len = graph.length(id);
-    auto fuzzy_coverage = (edge_len > 1000 ? 0.95 : 0.90);
+    auto fuzzy_coverage = (edge_len > config.long_read_threshold 
+                           ? config.long_read_fuzzy_coverage 
+                           : config.short_read_fuzzy_coverage);
     return math::InBounds(fuzzy_coverage, (double)(edge.end_pos - edge.start_pos) / (double)edge_len, 2 - fuzzy_coverage);
 }
 
