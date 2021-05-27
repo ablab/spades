@@ -335,6 +335,16 @@ struct debruijn_config {
         double derivative_threshold;
     };
 
+    struct hybrid_aligner {
+        struct trusted_aligner {
+            size_t long_read_threshold = 1000;
+            double long_read_fuzzy_coverage = 0.95;
+            double short_read_fuzzy_coverage = 0.90;
+        };
+
+        trusted_aligner trusted_aligner_config;
+    };
+
     struct ambiguous_distance_estimator {
         bool enabled;
         double haplom_threshold;
@@ -515,6 +525,7 @@ struct debruijn_config {
 
     construction con;
     distance_estimator de;
+    hybrid_aligner ha;
     smoothing_distance_estimator ade;
     ambiguous_distance_estimator amb_de;
     pacbio_processor pb;

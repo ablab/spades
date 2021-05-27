@@ -339,6 +339,12 @@ int round_to_zero(T t) {
     return res;
 }
 
+template<class TL, class TM, class TR>
+inline
+bool InBounds(TL min_value, TM middle_value, TR max_value) {
+    return ls(min_value, middle_value) && ls(middle_value, max_value);
+}
+
 // updates floating point @variable only if it does not differ from the @new_value too much
 // @returns true if the @variable was updated indeed
 template<class T>

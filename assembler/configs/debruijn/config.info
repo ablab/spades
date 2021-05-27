@@ -192,3 +192,11 @@ time_tracer {
   time_tracer_enabled true
   granularity 500
 }
+
+hybrid_aligner {
+  trusted_aligner {
+        long_read_threshold       1000
+        long_read_fuzzy_coverage  0.95
+        short_read_fuzzy_coverage 0.90
+  }
+}
