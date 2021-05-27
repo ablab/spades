@@ -224,6 +224,20 @@ void load(debruijn_config::construction& con,
     load(con.early_tc, pt, "early_tip_clipper", complete);
 }
 
+void load(debruijn_config::hybrid_aligner::trusted_aligner& ta,
+          boost::property_tree::ptree const& pt, bool complete) {
+    using config_common::load;
+    load(ta.long_read_threshold, pt, "long_read_threshold", complete);
+    load(ta.long_read_fuzzy_coverage, pt, "long_read_fuzzy_coverage", complete);
+    load(ta.short_read_fuzzy_coverage, pt, "short_read_fuzzy_coverage", complete);
+}
+
+void load(debruijn_config::hybrid_aligner& ha,
+          boost::property_tree::ptree const& pt, bool complete) {
+    using config_common::load;
+    load(ha.trusted_aligner_config, pt, "trusted_aligner", complete);
+}
+
 void load(debruijn_config::simplification::bulge_remover& br,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
@@ -752,6 +766,7 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     load(cfg.amb_de, pt, "amb_de", complete);
 
     load(cfg.con, pt, "construction", complete);
+    load(cfg.ha, pt, "hybrid_aligner", complete);
     load(cfg.gc, pt, "gap_closer", complete);
     load(cfg.ss_coverage_splitter, pt, "ss_coverage_splitter", complete);
     load(cfg.simp, pt, "simp", complete);

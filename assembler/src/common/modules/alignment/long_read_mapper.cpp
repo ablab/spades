@@ -94,11 +94,6 @@ PathExtractionF ChooseProperReadPathExtractor(const Graph& g, io::LibraryType li
     };
 }
 
-template<class T>
-inline bool InBounds(T min_value, T middle_value, T max_value) {
-    return math::ls(min_value, middle_value) && math::ls(middle_value, max_value);
-}
-
 /// merges 'paths' into a single path, filling gaps with contig substrings
 std::vector<path_extend::SimpleBidirectionalPath> MergePaths (const std::vector<PathWithMappingInfo> & paths, const Graph & g_, const io::SingleRead& r) {
     std::vector<path_extend::SimpleBidirectionalPath> merged_paths;
@@ -246,7 +241,7 @@ MappingPath<EdgeId> GappedPathExtractorForTrustedContigs::FilterBadMappings(cons
     for (auto edge : corrected_path) {
         size_t mapping_size = CountMappedEdgeSize(edge, mapping_path, mapping_index, range_of_mapped_edge);
         size_t edge_len =  g_.length(edge);
-        if (InBounds(MIN_MAPPED_RATIO, (double) mapping_size / (double) edge_len, MIN_MAPPED_RATIO + 1)) {
+        if (math::InBounds(MIN_MAPPED_RATIO, (double) mapping_size / (double) edge_len, MIN_MAPPED_RATIO + 1)) {
             if (is_the_previous_edge_extension(edge)) {
                 range_of_mapped_edge.mapped_range.start_pos = new_corrected_path.back().second.mapped_range.start_pos;
                 new_corrected_path.pop_back();
@@ -261,9 +256,9 @@ MappingPath<EdgeId> GappedPathExtractorForTrustedContigs::FilterBadMappings(cons
 }
 
 inline bool IsGoodMapping(const Graph & graph, const Range & edge, EdgeId id) {
-    auto edge_len = static_cast<double>(graph.length(id));
+    auto edge_len = graph.length(id);
     auto fuzzy_coverage = (edge_len > 1000 ? 0.95 : 0.90);
-    return InBounds(fuzzy_coverage, (double)(edge.end_pos - edge.start_pos) / edge_len, 2 - fuzzy_coverage);
+    return math::InBounds(fuzzy_coverage, (double)(edge.end_pos - edge.start_pos) / (double)edge_len, 2 - fuzzy_coverage);
 }
 
 void GappedPathExtractorForTrustedContigs::RemoveMappingsWithBadTotalLength(MappingPath<EdgeId> & path) const noexcept {
