@@ -19,6 +19,7 @@ import stat
 import sys
 import tempfile
 import traceback
+from platform import uname
 from distutils.version import LooseVersion
 from os.path import abspath, expanduser, join
 
@@ -273,6 +274,17 @@ def process_spaces(str):
     return str
 
 
+def wsl_check():
+    def in_wsl() -> bool:
+        return 'microsoft' in uname().release.lower()
+
+    if in_wsl():
+        return ("1. WSL is an unsupported platform\n"
+                "2. If SPAdes crashes, then you might want to compile it from sources\n"
+                "3. If nothing works, run on real Linux")
+    return ""
+
+
 def sys_call(cmd, log=None, cwd=None):
     import shlex
     import subprocess
@@ -304,7 +316,8 @@ def sys_call(cmd, log=None, cwd=None):
                 output += line + "\n"
 
     if proc.returncode:
-        error("system call for: \"%s\" finished abnormally, OS return value: %d" % (cmd, proc.returncode), log, exit_code=proc.returncode)
+        wsl_error = wsl_check()
+        error("system call for: \"%s\" finished abnormally, OS return value: %d\n%s" % (cmd, proc.returncode, wsl_error), log, exit_code=proc.returncode)
     return output
 
 
@@ -360,7 +373,8 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
     if err_filename:
         stderr.close()
     if proc.returncode:
-        error("system call for: \"%s\" finished abnormally, OS return value: %d" % (cmd, proc.returncode), log, exit_code=proc.returncode)
+        wsl_error = wsl_check()
+        error("system call for: \"%s\" finished abnormally, OS return value: %d\n%s" % (cmd, proc.returncode, wsl_error), log, exit_code=proc.returncode)
 
 
 def save_data_to_file(data, file):
