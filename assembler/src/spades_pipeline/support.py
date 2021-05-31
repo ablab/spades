@@ -71,6 +71,28 @@ def warning(warn_str, log=None, prefix="== Warning == "):
         sys.stdout.flush()
 
 
+def wsl_check():
+    def in_wsl():
+        return 'microsoft' in uname().release.lower()
+
+    if in_wsl():
+        return ("1. WSL is an unsupported platform\n"
+                "2. If SPAdes crashes, then you might want to compile it from sources\n"
+                "3. If nothing works, run on real Linux")
+    return ""
+
+
+def get_error_hints(exit_code):
+    if exit_code == -11:
+        return wsl_check()
+
+
+def sys_error(cmd, log, exit_code):
+    hints_str = get_error_hints(exit_code)
+    err_msg = "system call for: \"%s\" finished abnormally, OS return value: %d\n%s" % (cmd, exit_code, hints_str)
+    error(err_msg, log, exit_code=exit_code)
+
+
 def check_python_version():
     def __next_version(version):
         components = version.split('.')
@@ -274,17 +296,6 @@ def process_spaces(str):
     return str
 
 
-def wsl_check():
-    def in_wsl() -> bool:
-        return 'microsoft' in uname().release.lower()
-
-    if in_wsl():
-        return ("1. WSL is an unsupported platform\n"
-                "2. If SPAdes crashes, then you might want to compile it from sources\n"
-                "3. If nothing works, run on real Linux")
-    return ""
-
-
 def sys_call(cmd, log=None, cwd=None):
     import shlex
     import subprocess
@@ -316,8 +327,7 @@ def sys_call(cmd, log=None, cwd=None):
                 output += line + "\n"
 
     if proc.returncode:
-        wsl_error = wsl_check()
-        error("system call for: \"%s\" finished abnormally, OS return value: %d\n%s" % (cmd, proc.returncode, wsl_error), log, exit_code=proc.returncode)
+        sys_error(cmd, log, proc.returncode)
     return output
 
 
@@ -373,8 +383,7 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
     if err_filename:
         stderr.close()
     if proc.returncode:
-        wsl_error = wsl_check()
-        error("system call for: \"%s\" finished abnormally, OS return value: %d\n%s" % (cmd, proc.returncode, wsl_error), log, exit_code=proc.returncode)
+        sys_error(cmd, log, proc.returncode)
 
 
 def save_data_to_file(data, file):
