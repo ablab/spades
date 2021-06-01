@@ -9,6 +9,7 @@
 
 #include "blaze/math/DynamicVector.h"
 #include "blaze/math/expressions/DMatNormExpr.h"
+#include "math/xmath.h"
 
 using namespace bin_stats;
 using namespace debruijn_graph;
@@ -75,12 +76,31 @@ SoftBinsAssignment LabelsPropagation::RefineBinning(const Binning& bin_stats) co
 
   // Calculate the regularization coefficients
   adt::id_map<double, debruijn_graph::EdgeId> ealpha(g_.max_eid());
+  bool propagation = math::eq(labeled_alpha_, 0.0);
   for (EdgeId e : g_.canonical_edges()) {
       double alpha = 0;
       const EdgeLabels& edge_labels = state.at(e);
 
-      alpha = (edge_labels.is_binned && !edge_labels.is_repetitive ?
-               labeled_alpha_ : 1.0);
+      // Formula for correction: next_probs[i] = alpha[e] * rw[e] * \sum{neighbour} (rd[neighbour] * cur_probs[neighbour]) + (1 - alpha[e]) * origin_probs[e]
+      // Therefore:
+
+      // If alpha is zero, then original binning will be used
+      // If alpha is one, then original binning will be ignored
+      // Otherwise, alpha is used as a regularization coefficient for binning propagation
+      // If the edge is binned and is not repetitive, then we use labelled alpha
+      // (zero in case of simple propagation and some pre-defined value
+      // otherwise), otherwise we do not trust input binning and set alpha to one.
+      // Also, make alpha dependent on the edge length.
+      alpha = 1.0;
+      if (edge_labels.is_binned && !edge_labels.is_repetitive) {
+          if (propagation) {
+              alpha = 0;
+          } else {
+              size_t l = g_.length(e), thr = 1000;
+              double coef = (l > thr ? 1.0 : ::log(l) / ::log(thr));
+              alpha = labeled_alpha_ * coef;
+          }
+      }
 
       ealpha.emplace(e, alpha);
       ealpha.emplace(g_.conjugate(e), alpha);
