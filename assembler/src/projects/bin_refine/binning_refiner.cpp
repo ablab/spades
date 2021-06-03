@@ -8,6 +8,7 @@
 #include "labels_propagation.hpp"
 #include "majority_length_strategy.hpp"
 #include "max_likelihood_strategy.hpp"
+#include "link_index.hpp"
 
 #include "assembly_graph/core/graph.hpp"
 #include "toolchain/utils.hpp"
@@ -77,14 +78,16 @@ std::unique_ptr<BinningAssignmentStrategy> get_strategy(const gcfg &cfg) {
     }
 }
 
-std::unique_ptr<BinningRefiner> get_refiner(const gcfg& cfg, const Graph& graph) {
+std::unique_ptr<BinningRefiner> get_refiner(const gcfg &cfg,
+                                            const binning::LinkIndex &links,
+                                            const Graph &graph) {
     switch (cfg.refiner_type) {
         default:
             FATAL_ERROR("Unknown binning refiner type");
         case RefinerType::Propagation:
-            return std::make_unique<LabelsPropagation>(graph, cfg.eps);
+            return std::make_unique<LabelsPropagation>(graph, links, cfg.eps);
         case RefinerType::Correction:
-            return std::make_unique<LabelsPropagation>(graph, cfg.eps, cfg.labeled_alpha);
+            return std::make_unique<LabelsPropagation>(graph, links, cfg.eps, cfg.labeled_alpha);
     }
 }
 
@@ -134,7 +137,9 @@ int main(int argc, char** argv) {
       binning.LoadBinning(cfg.binning_file);
 
       INFO("Initial binning:\n" << binning);
-      auto binning_refiner = get_refiner(cfg, graph);
+      INFO("Gathering edge links");
+      binning::GraphLinkIndex links(graph);
+      auto binning_refiner = get_refiner(cfg, links, graph);
       auto soft_edge_labels = binning_refiner->RefineBinning(binning);
       INFO("Assigning edges & scaffolds to bins");
       binning.AssignBins(soft_edge_labels, *assignment_strategy);

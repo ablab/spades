@@ -6,6 +6,7 @@
 
 #include "labels_propagation.hpp"
 #include "binning.hpp"
+#include "link_index.hpp"
 
 #include "blaze/math/DynamicVector.h"
 #include "blaze/math/expressions/DMatNormExpr.h"
@@ -15,8 +16,9 @@ using namespace bin_stats;
 using namespace debruijn_graph;
 
 LabelsPropagation::LabelsPropagation(const debruijn_graph::Graph& g,
+                                     const binning::LinkIndex &links,
                                      double eps, double labeled_alpha)
-        : BinningRefiner(g),
+        : BinningRefiner(g, links),
           eps_(eps),
           rdeg_(g.max_eid()),
           rweight_(g.max_eid()),
@@ -25,14 +27,9 @@ LabelsPropagation::LabelsPropagation(const debruijn_graph::Graph& g,
     double avdeg = 0;
     INFO("Calculating weights");
     for (EdgeId e : g.canonical_edges()) {
-        // FIXME: iterator with weight
         double wlink = 0;
-        for (EdgeId o : g_.OutgoingEdges(g.EdgeEnd(e))) {
-            wlink += 1;
-        }
-        for (EdgeId o : g_.IncomingEdges(g.EdgeStart(e))) {
-            wlink += 1;
-        }
+        for (const auto &link : links_.links(e))
+            wlink += link.w;
 
         avdeg += wlink;
         if (wlink > 0) {
@@ -48,14 +45,9 @@ LabelsPropagation::LabelsPropagation(const debruijn_graph::Graph& g,
     double avweight = 0;
     for (EdgeId e : g.canonical_edges()) {
         double w = 0;
-        // FIXME: iterator with weight
-        for (EdgeId o : g_.OutgoingEdges(g.EdgeEnd(e))) {
-            w += 1 * rdeg_[o];
-        }
+        for (const auto &link : links_.links(e))
+            w += link.w * rdeg_[link.e];
 
-        for (EdgeId o : g_.IncomingEdges(g.EdgeStart(e))) {
-            w += 1 * rdeg_[o];
-        }
         avweight += w;
         if (w > 0) {
             double val = 1 / w;
@@ -157,17 +149,9 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
       if (alpha < 1.0)
           next_probs += (1.0 - alpha) * origin_state.at(e).labels_probabilities;
 
-      for (EdgeId neighbour : g_.OutgoingEdges(g_.EdgeEnd(e))) {
-          double incoming_weight = self_weight * rdeg_.at(neighbour);
-          PropagateFromEdge(next_probs, neighbour, cur_state, incoming_weight);
-      }
-
-      // This is actually iterates over conjugate edges as compared to expected:
-      //  for (EdgeId neighbour : g_.IncomingEdges(g_.EdgeStart(e)))
-      // However, we're saving lots of conjugate() calls under the hood
-      for (EdgeId neighbour : g_.OutgoingEdges(g_.EdgeEnd(ce))) {
-          double incoming_weight = self_weight * rdeg_.at(neighbour);
-          PropagateFromEdge(next_probs, neighbour, cur_state, incoming_weight);
+      for (const auto &link : links_.links(e)) {
+          double incoming_weight = self_weight * rdeg_.at(link.e) * link.w;
+          PropagateFromEdge(next_probs, link.e, cur_state, incoming_weight);
       }
 
       after_prob += sum(next_probs);
