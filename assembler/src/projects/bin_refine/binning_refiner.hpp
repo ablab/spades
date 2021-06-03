@@ -8,15 +8,22 @@
 
 #include "binning.hpp"
 
+namespace binning {
+class LinkIndex;
+}
+
 namespace bin_stats {
 
 class BinningRefiner {
  public:
-    explicit BinningRefiner(const debruijn_graph::Graph& g) : g_(g) {}
+    explicit BinningRefiner(const debruijn_graph::Graph& g,
+                            const binning::LinkIndex &links)
+            : g_(g), links_(links) {}
     virtual ~BinningRefiner() = default;
 
     virtual SoftBinsAssignment RefineBinning(const Binning& binning) const = 0;
  protected:
     const debruijn_graph::Graph& g_;
+    const binning::LinkIndex &links_;
 };
 }

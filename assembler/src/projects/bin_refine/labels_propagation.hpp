@@ -17,7 +17,9 @@ class LabelsPropagation : public BinningRefiner {
  public:
     using FinalIteration = bool;
 
-    LabelsPropagation(const debruijn_graph::Graph& g, double eps, double labeled_alpha = 0.0);
+    LabelsPropagation(const debruijn_graph::Graph& g,
+                      const binning::LinkIndex &links,
+                      double eps, double labeled_alpha = 0.0);
 
     SoftBinsAssignment RefineBinning(const Binning& bin_stats) const override;
 
