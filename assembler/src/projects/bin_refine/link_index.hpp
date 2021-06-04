@@ -12,6 +12,11 @@
 #include "adt/small_pod_vector.hpp"
 #include "adt/flat_set.hpp"
 
+namespace io {
+template<class T>
+class IdMapper;
+}
+
 namespace binning {
 
 class LinkIndex {
@@ -32,10 +37,8 @@ class LinkIndex {
     };
     using EdgeLinks = adt::flat_set<EdgeWithWeight, std::less<EdgeWithWeight>, adt::SmallPODVector>;
 
-    explicit LinkIndex(uint64_t max_id)
-            : data_(max_id) {}
     LinkIndex(const debruijn_graph::Graph &g)
-            : LinkIndex(g.max_eid()) {}
+            : g_(g), data_(g.max_eid()) {}
 
     void add(EdgeId e1, EdgeId e2, double w = 1.) {
         // Link index must be symmetric and all links must be unique
@@ -47,6 +50,10 @@ class LinkIndex {
         return data_.at(e1);
     }
 
+    void dump(const std::string &output_path, const io::IdMapper<std::string> &edge_mapper);
+
+  protected:
+    const debruijn_graph::Graph &g_;
   private:
     adt::id_map<EdgeLinks, EdgeId> data_;
 };
@@ -57,7 +64,7 @@ class GraphLinkIndex : public LinkIndex {
     using LinkIndex::EdgeId;
 
     GraphLinkIndex(const debruijn_graph::Graph &g)
-            : LinkIndex(g), g_(g) {
+            : LinkIndex(g) {
         Init(g);
     }
 
@@ -69,9 +76,6 @@ class GraphLinkIndex : public LinkIndex {
         if (e1 != ce1)
             LinkIndex::add(ce1, g_.conjugate(e2));
     }
-
-  private:
-    const debruijn_graph::Graph &g_;
 };
 
 
