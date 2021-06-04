@@ -115,12 +115,17 @@ int main(int argc, char** argv) {
       gfa.to_graph(graph, id_mapper.get());
       INFO("Graph loaded. Total vertices: " << graph.size() << ", total edges: " << graph.e_size());
 
+      INFO("Gathering edge links");
+      binning::GraphLinkIndex links(graph);
+
       // TODO: For now the edges is a set, we need to decide what to do with
       // repeats (so, we may want to count multiplicity here somehow)
+      INFO("Processing scaffolds")
       Binning binning(graph);
       {
           std::vector<Binning::Scaffold> scaffolds_paths;
           std::string scaffold_name;
+          EdgeId last;
           for (const auto &path : gfa.paths()) {
               const std::string &name = path.name;
               std::string cname = name.substr(0, name.find_last_of('_'));
@@ -128,7 +133,12 @@ int main(int argc, char** argv) {
               if (cname != scaffold_name) {
                   scaffold_name = cname;
                   scaffolds_paths.emplace_back(scaffold_name, Binning::ScaffoldPath{});
+              } else if (last != EdgeId()) {
+                  // If this is a proper scaffold (multiple paths), then link
+                  // paths as there might be no graph connectivity
+                  links.add(last, path.edges.front());
               }
+              last = path.edges.back();
               scaffolds_paths.back().second.insert(path.edges.begin(), path.edges.end());
           }
           binning.InitScaffolds(scaffolds_paths);
@@ -137,8 +147,6 @@ int main(int argc, char** argv) {
       binning.LoadBinning(cfg.binning_file);
 
       INFO("Initial binning:\n" << binning);
-      INFO("Gathering edge links");
-      binning::GraphLinkIndex links(graph);
       auto binning_refiner = get_refiner(cfg, links, graph);
       auto soft_edge_labels = binning_refiner->RefineBinning(binning);
       INFO("Assigning edges & scaffolds to bins");
