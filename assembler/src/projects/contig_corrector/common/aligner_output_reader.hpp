@@ -9,76 +9,8 @@
 #include <type_traits>
 #include <tuple>
 
-enum class BColumns : size_t {
-    match       = 0,
-    mismatch    = 1,
-    rep_match   = 2,
-    Ns          = 3,
-    Q_gap_count = 4,
-    Q_gap_bases = 5,
-    T_gap_count = 6,
-    T_gap_bases = 7,
-    strand      = 8,
-    Q_name      = 9,
-    Q_size      = 10,
-    Q_start     = 11,
-    Q_end       = 12,
-    T_name      = 13,
-    T_size      = 14,
-    T_start     = 15,
-    T_end       = 16,
-    block_count = 17,
-    blockSizes  = 18,
-    qStarts     = 19,
-    tStarts     = 20,
-    TOTAL_COLUMNS_SIZE = 21
-};
-
 template<class Columns, Columns el>
 struct type_getter;
-
-template<BColumns el>
-struct type_getter<BColumns, el> {
-    using type = std::conditional_t<
-                        el == BColumns::Q_name ||
-                        el == BColumns::T_name ||
-                        el == BColumns::blockSizes ||
-                        el == BColumns::qStarts ||
-                        el == BColumns::tStarts,
-                        std::string,
-                 std::conditional_t<
-                        el == BColumns::strand,
-                        char,
-                 long long>>;
-};
-
-enum class MColumns : size_t {
-    Q_name      = 0,
-    Q_size      = 1,
-    Q_start     = 2,
-    Q_end       = 3,
-    strand      = 4,
-    T_name      = 5,
-    T_size      = 6,
-    T_start     = 7,
-    T_end       = 8,
-    match       = 9,
-    bases       = 10,
-    quality     = 11,
-    TOTAL_COLUMNS_SIZE = 12
-};
-
-template<MColumns el>
-struct type_getter<MColumns, el> {
-    using type = std::conditional_t<
-                        el == MColumns::Q_name ||
-                        el == MColumns::T_name,
-                        std::string,
-                 std::conditional_t<
-                        el == MColumns::strand,
-                        char,
-                 long long>>;
-};
 
 template<class Columns, Columns el>
 using type_getter_t = typename type_getter<Columns, el>::type;
@@ -88,7 +20,7 @@ T CastTo(std::string && t);
 
 template<>
 inline std::string CastTo<std::string>(std::string && t) {
-    return t;
+    return std::move(t);
 }
 
 template<>
@@ -253,50 +185,4 @@ inline bool GetNextNonemptyLine(std::istream & inp, std::string & result) {
         return true;
     }
     return false;
-}
-
-inline void SkipHeader(std::istream & inp) {
-    std::string line;
-    if (!GetNextNonemptyLine(inp, line))
-        throw std::string("Empty file");
-    if (line != "psLayout version 3")
-        throw std::string("Sorry, unsupported blat output version");
-    GetNextNonemptyLine(inp, line); // column's_names_upper_part
-    GetNextNonemptyLine(inp, line); // column's_names_lower_part
-    GetNextNonemptyLine(inp, line); // -------------------------
-    if (line != std::string(159, '-'))
-        throw std::string("blat output file is corrupted");
-}
-
-template<BColumns ... columns>
-Records<BColumns, columns ...> Read(std::istream & inp, FilterType<BColumns, columns ...> const & filter) {
-    Records<BColumns, columns ...> records;
-    RecordPusher<BColumns, columns ...> pusher(records, filter);
-    std::string line;
-    SkipHeader(inp);
-    size_t total_lines = 0;
-    size_t accepted_lines = 0;
-    while (GetNextNonemptyLine(inp, line)) {
-        accepted_lines += pusher.Push(line);
-        ++total_lines;
-    }
-    INFO("Total line read: " << total_lines);
-    INFO("Accepted lines: " << accepted_lines);
-    return records;
-}
-
-template<MColumns ... columns>
-Records<MColumns, columns ...> Read2(std::istream & inp, FilterType<MColumns, columns ...> const & filter) {
-    Records<MColumns, columns ...> records;
-    RecordPusher<MColumns, columns ...> pusher(records, filter);
-    std::string line;
-    size_t total_lines = 0;
-    size_t accepted_lines = 0;
-    while (GetNextNonemptyLine(inp, line)) {
-        accepted_lines += pusher.Push(line);
-        ++total_lines;
-    }
-    INFO("Total line read: " << total_lines);
-    INFO("Accepted lines: " << accepted_lines);
-    return records;
 }

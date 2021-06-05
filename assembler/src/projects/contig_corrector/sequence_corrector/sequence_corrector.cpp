@@ -6,7 +6,8 @@
 
 #include "sequence_corrector.hpp"
 #include "common/common.hpp"
-#include "common/aligner_output_reader.hpp"
+#include "common/minimap_output_reader.hpp"
+#include "common/blat_output_reader.hpp"
 #include "common/aligner_output_postprocessing.hpp"
 
 #include "common/assembly_graph/graph_support/scaff_supplementary.hpp"
@@ -264,7 +265,7 @@ int main(int argc, char * argv[]) {
     auto filter = GetFilter<WISHED_COLUMNS>(std::move(unique_edge_checker), graph);
 
     INFO("Started aligner output reading");
-    auto res = Read2(aligner_output_stream, filter);
+    auto res = ReadMinimapOutput(aligner_output_stream, filter);
     auto fragments = GetContigFragments(res, GetDropAlg<WISHED_COLUMNS>(cfg.drop_alg), graph.k());
     // DropAnother(res, fragments);
     MakeAllFilteredEdgesDump(res, fragments, graph, output_dir);
