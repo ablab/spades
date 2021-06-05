@@ -3,7 +3,7 @@
 #include "aligner_output_reader.hpp"
 #include "common.hpp"
 
-double GetCov(std::string const & edge_name) {
+inline double GetCov(std::string const & edge_name) {
     std::string cov_pattern = "_cov_";
     auto pos = edge_name.find(cov_pattern);
     if (pos == std::string::npos)
@@ -23,7 +23,7 @@ double GetCov(std::string const & edge_name) {
     return std::stod(edge_name.substr(pos, len));
 }
 
-debruijn_graph::EdgeId GetEdgeId(std::string const & edge_name, debruijn_graph::Graph const & graph) {
+inline debruijn_graph::EdgeId GetEdgeId(std::string const & edge_name, debruijn_graph::Graph const & graph) {
     std::string cov_pattern = "EDGE_";
     auto pos = edge_name.find(cov_pattern);
     if (pos == std::string::npos)

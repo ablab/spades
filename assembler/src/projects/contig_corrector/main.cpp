@@ -1,5 +1,6 @@
-#include "sequence_corrector.hpp"
-#include "contig_replacer.hpp"
+#include "sequence_corrector/sequence_corrector.hpp"
+#include "contig_replacer/contig_replacer.hpp"
+#include "sequence_clusterer/sequence_clusterer.hpp"
 
 #include "common/toolchain/utils.hpp"
 #include "utils/segfault_handler.hpp"
@@ -18,11 +19,13 @@ int main(int argc, char *argv[]) {
         enum class Action {
             replace,
             correct,
+            clustering,
         } action;
 
         auto cli = (
             (clipp::command("replace").set(action, Action::replace), contig_replacer::GetCLI()) |
-            (clipp::command("correct").set(action, Action::correct), sequence_corrector::GetCLI())
+            (clipp::command("correct").set(action, Action::correct), sequence_corrector::GetCLI()) |
+            (clipp::command("clustering").set(action, Action::clustering), sequence_clusterer::GetCLI())
         );
 
         auto result = clipp::parse(argc, argv, cli);
@@ -41,6 +44,9 @@ int main(int argc, char *argv[]) {
             return contig_replacer::main(argc, argv);
         case Action::correct: 
             return sequence_corrector::main(argc, argv);
+        case Action::clustering: 
+            return sequence_clusterer::main(argc, argv);
+        default: assert(false && "unreachable");
         }
     } catch (const std::string &s) {
         std::cerr << s << std::endl;

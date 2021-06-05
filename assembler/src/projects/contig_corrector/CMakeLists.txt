@@ -10,12 +10,13 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(contig_corrector
                main.cpp
-               sequence_corrector.cpp
-               contig_replacer.cpp
-               parser.cpp
-               launcher.cpp
-               replacer.cpp
-               filler_chooser.cpp
+               sequence_corrector/sequence_corrector.cpp
+               contig_replacer/contig_replacer.cpp
+               sequence_clusterer/sequence_clusterer.cpp
+               common/parser.cpp
+               sequence_corrector/launcher.cpp
+               common/replacer.cpp
+               sequence_corrector/filler_chooser.cpp
               )
 
 target_link_libraries(contig_corrector graphio common_modules ${COMMON_LIBRARIES})

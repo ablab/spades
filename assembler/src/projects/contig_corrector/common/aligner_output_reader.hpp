@@ -1,5 +1,7 @@
 #pragma once
 
+#include "utils/logger/logger.hpp"
+
 #include <istream>
 #include <vector>
 #include <string>
@@ -85,17 +87,17 @@ template<class T>
 T CastTo(std::string && t);
 
 template<>
-std::string CastTo<std::string>(std::string && t) {
+inline std::string CastTo<std::string>(std::string && t) {
     return t;
 }
 
 template<>
-long long CastTo<long long>(std::string && t) {
+inline long long CastTo<long long>(std::string && t) {
     return std::stoll(t);
 }
 
 template<>
-char CastTo<char>(std::string && t) {
+inline char CastTo<char>(std::string && t) {
     if (t.size() != 1)
         throw std::string("aligner output file is corrupted");
     return t.front();
@@ -244,7 +246,7 @@ private:
 
 };
 
-bool GetNextNonemptyLine(std::istream & inp, std::string & result) {
+inline bool GetNextNonemptyLine(std::istream & inp, std::string & result) {
     while (std::getline(inp, result)) {
         if (result.empty())
             continue;
@@ -253,7 +255,7 @@ bool GetNextNonemptyLine(std::istream & inp, std::string & result) {
     return false;
 }
 
-void SkipHeader(std::istream & inp) {
+inline void SkipHeader(std::istream & inp) {
     std::string line;
     if (!GetNextNonemptyLine(inp, line))
         throw std::string("Empty file");

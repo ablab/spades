@@ -4,10 +4,10 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "common.hpp"
 #include "sequence_corrector.hpp"
-#include "aligner_output_reader.hpp"
-#include "aligner_output_postprocessing.hpp"
+#include "common/common.hpp"
+#include "common/aligner_output_reader.hpp"
+#include "common/aligner_output_postprocessing.hpp"
 
 #include "common/assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "common/assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"

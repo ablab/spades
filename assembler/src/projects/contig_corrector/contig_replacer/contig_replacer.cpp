@@ -5,8 +5,8 @@
 //***************************************************************************
 
 #include "contig_replacer.hpp"
-#include "common.hpp"
-#include "replacer.hpp"
+#include "common/common.hpp"
+#include "common/replacer.hpp"
 
 #include <string>
 #include <algorithm>
