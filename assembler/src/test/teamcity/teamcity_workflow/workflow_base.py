@@ -141,7 +141,7 @@ def make_spades_cmd(args, dataset_info, test, spades_params_list, spades_dir, ou
                               "--pe", "--s", "--mp",
                               "--hqmp",
                               "--sanger", "--pacbio", "--nanopore",
-                              "--tslr", "--trusted-contigs", "--untrusted-contigs"]
+                              "--tslr", "--trusted-contigs", "--untrusted-contigs", "--dataset"]
 
     def contain_substr(str, substr_list):
         for substr in substr_list:
