@@ -236,7 +236,7 @@ def handle_one_test(test, args, dataset_info, working_dir, check_test):
                 test["phases"][i]["name"] = dataset_info["phases"][i]["name"]
 
             phase_outputdir = os.path.join(output_dir, phase_name)
-            if i == 0:
+            if i == 0 or ("independent" in test):
                 os.makedirs(phase_outputdir)
             else:
                 prev_phase_name = test["phases"][i - 1]["name"]
