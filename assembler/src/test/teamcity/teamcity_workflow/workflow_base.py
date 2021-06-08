@@ -266,7 +266,8 @@ def handle_one_test(test, args, dataset_info, working_dir, check_test):
             ecode = local_ecode
 
     if ecode == 0:
-        ecode = check_test(dataset_info, test, output_dir)
+        log.log("Start check test")
+        ecode = check_test(dataset_info, test, output_dir, log)
 
     if ecode != 0:
         log.log("TEST NOT PASS")

@@ -9,19 +9,27 @@
 # script for testing SPAdes
 # provide a path to .yaml file with test description
 
+import sys
 import workflow_base
 import teamcity_workflow
-from workflow_base import log
 
-def cmp_phases_output(dataset_info, test, output_dir):
+
+def cmp_phases_output(dataset_info, test, output_dir, log):
+    print("Cmp output")
+    sys.stdout.flush()
+    log.log("Start compare outputs")
     outputs = workflow_base.get_outdirs(dataset_info, test, output_dir)
+    log.log("Outputs to compare: " + str(outputs))
     for i in range(1, len(outputs)):
         ecode = teamcity_workflow.cmp_with_etalon(outputs[0], outputs[i],
-                                                  allowed_substr=[".yaml", ".sh", "params.txt"])
+                                                  allowed_substr=[".fasta", ".paths", ".gfa", ".fastg"], print_info=True)
         if ecode != 0:
             log.err("Comparing outputs did not pass, exit code " + str(ecode))
             return 12
     return 0
 
 
-workflow_base.main(cmp_phases_output)
+print("Stable test")
+sys.stdout.flush()
+if __name__ == "__main__":
+    workflow_base.main(check_test=cmp_phases_output)

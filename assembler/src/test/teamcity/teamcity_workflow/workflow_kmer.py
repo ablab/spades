@@ -36,7 +36,7 @@ def get_kmer_list(path):
     return kmers
 
 
-def check_kmer_set(dataset_info, test, output_dir):
+def check_kmer_set(dataset_info, test, output_dir, log):
     if 'etalon_saves' in dataset_info:
         log.log("Checking the correctness of K")
         etalon_folder = dataset_info["etalon_saves"]
