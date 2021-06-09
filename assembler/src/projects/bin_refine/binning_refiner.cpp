@@ -6,13 +6,18 @@
 
 #include "binning.hpp"
 #include "labels_propagation.hpp"
+#include "link_index.hpp"
 #include "majority_length_strategy.hpp"
 #include "max_likelihood_strategy.hpp"
-#include "link_index.hpp"
+#include "paired_end.hpp"
 
 #include "assembly_graph/core/graph.hpp"
+#include "pipeline/config_struct.hpp"
 #include "toolchain/utils.hpp"
+#include "utils/filesystem/path_helper.hpp"
+#include "utils/parallel/openmp_wrapper.h"
 #include "utils/segfault_handler.hpp"
+#include "utils/verify.hpp"
 
 #include <clipp/clipp.h>
 
@@ -35,11 +40,17 @@ struct gcfg {
     std::string graph;
     std::string binning_file;
     std::string output_file;
+    unsigned nthreads = (omp_get_max_threads() / 2 + 1);
+    std::string file = "";
+    std::string tmpdir = "tmp";
+    unsigned libindex = -1u;
     AssignStrategy assignment_strategy = AssignStrategy::MajorityLength;
     double eps = 1e-5;
     double labeled_alpha = 0.6;
     bool allow_multiple = false;
     RefinerType refiner_type = RefinerType::Propagation;
+    bool bin_load = false;
+    bool debug = false;
 };
 
 static void process_cmdline(int argc, char** argv, gcfg& cfg) {
@@ -49,6 +60,12 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       cfg.graph << value("graph (in binary or GFA)"),
       cfg.binning_file << value("file with binning from binner in .tsv format"),
       cfg.output_file << value("path to file to write binning after propagation"),
+      (option("--dataset") & value("yaml", cfg.file)) % "dataset description (in YAML)",
+      (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
+      (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
+      (option("--tmp-dir") & value("dir", cfg.tmpdir)) % "scratch directory to use",
+      (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
+      (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)",
       (option("-e") & value("eps", cfg.eps)) % "convergence relative tolerance threshold",
       (option("-m").set(cfg.allow_multiple) % "allow multiple bin assignment"),
       (with_prefix("-S",
@@ -95,16 +112,33 @@ int main(int argc, char** argv) {
   utils::segfault_handler sh;
   gcfg cfg;
 
+  srand(42);
+  srandom(42);
+
   process_cmdline(argc, argv, cfg);
 
   toolchain::create_console_logger();
 
   START_BANNER("Binning refiner & propagator");
 
+  cfg.nthreads = spades_set_omp_threads(cfg.nthreads);
+  INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg.nthreads);
+
+  fs::make_dir(cfg.tmpdir);
+
   try {
       auto assignment_strategy = get_strategy(cfg);
 
       std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
+
+      DataSet dataset;
+      if (cfg.file != "") {
+        dataset.load(cfg.file);
+
+        if (cfg.libindex == -1u)
+            cfg.libindex = 0;
+        CHECK_FATAL_ERROR(cfg.libindex < dataset.lib_count(), "invalid library index");
+      }
 
       gfa::GFAReader gfa(cfg.graph);
       INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: " << gfa.num_paths());
@@ -143,10 +177,37 @@ int main(int argc, char** argv) {
           }
           binning.InitScaffolds(scaffolds_paths);
       }
-      
-      binning.LoadBinning(cfg.binning_file);
 
+      binning::LinkIndex pe_links(graph);
+      if (cfg.libindex != -1u) {
+          INFO("Processing paired-end reads");
+          debruijn_graph::config::init_libs(dataset, cfg.nthreads, cfg.tmpdir);
+
+          auto &lib = dataset[cfg.libindex];
+          if (lib.is_paired()) {
+              binning::FillPairedEndLinks(pe_links, lib, graph,
+                                          cfg.tmpdir, cfg.nthreads, cfg.bin_load, cfg.debug);
+
+              for (auto it = pe_links.begin(), end = pe_links.end(); it != end; ++it) {
+                  EdgeId e1 = it.key();
+
+                  for (const auto &link: it.value()) {
+                      if (link.w == 1)
+                          continue;
+                      if (!(e1 <= link.e)) // do not process the same link twice
+                          continue;
+
+                      links.increment(e1, link.e, log2(link.w));
+                  }
+              }
+          } else {
+              WARN("Only paired-end libraries are supported for links");
+          }
+      }
+
+      binning.LoadBinning(cfg.binning_file);
       INFO("Initial binning:\n" << binning);
+
       auto binning_refiner = get_refiner(cfg, links, graph);
       auto soft_edge_labels = binning_refiner->RefineBinning(binning);
       INFO("Assigning edges & scaffolds to bins");
@@ -161,7 +222,7 @@ int main(int argc, char** argv) {
           for (size_t i = 0; i < nbins; ++i)
               out_dist << '\t' << binning.bin_labels().at(i);
           out_dist << std::endl;
-      
+
           for (size_t i = 0; i < nbins; ++i) {
               out_dist << binning.bin_labels().at(i);
               for (size_t j = 0; j < nbins; ++j)
@@ -172,6 +233,14 @@ int main(int argc, char** argv) {
       INFO("Writing final binning");
       binning.WriteToBinningFile(cfg.output_file, soft_edge_labels, *assignment_strategy,
                                  *id_mapper);
+      if (cfg.debug) {
+          INFO("Dumping links");
+          pe_links.dump(cfg.output_file + ".pe_links", *id_mapper);
+          links.dump(cfg.output_file + ".graph_links", *id_mapper);
+      }
+
+      if (!cfg.debug)
+          fs::remove_dir(cfg.tmpdir);
   } catch (const std::string& s) {
       std::cerr << s << std::endl;
       return EINTR;
@@ -179,7 +248,7 @@ int main(int argc, char** argv) {
       std::cerr << "ERROR: " << e.what() << std::endl;
       return EINTR;
   }
-  INFO("Binning refining & propagation finished. Thanks for useful refining!");
+  INFO("Binning refining & propagation finished. Thanks for interesting data!");
 
   return 0;
 }

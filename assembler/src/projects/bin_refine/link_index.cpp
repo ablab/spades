@@ -22,13 +22,15 @@ void GraphLinkIndex::Init(const debruijn_graph::Graph &g) {
 void LinkIndex::dump(const std::string &output_path, const io::IdMapper<std::string> &edge_mapper) {
     std::ofstream os(output_path);
 
-    os << "FirstId\tFirstLength\tFirstCov\tSecondId\tSecondLength\tSecondCov\tWeight\n";
-    for (const EdgeId &edge: g_.canonical_edges()) {
-        for (const auto &neighbour: data_.at(edge)) {
+    os << "FirstId\tSecondId\tWeight\tFirstLength\tFirstCov\tSecondLength\tSecondCov\n";
+    for (auto it = data_.cbegin(), end = data_.cend(); it != end; ++it) {
+        EdgeId edge = it.key();
+
+        for (const auto &neighbour: it.value()) {
             EdgeId neigh = neighbour.e;
-            os << edge_mapper[edge.int_id()] << "\t" << g_.length(edge) + g_.k() - 1 << "\t" << g_.coverage(edge) << "\t"
-               << edge_mapper[neigh.int_id()] << "\t" << g_.length(neigh) + g_.k() - 1 << "\t" << g_.coverage(neigh) << "\t" << neighbour.w << "\n";
+            os << edge_mapper[edge.int_id()] << "\t" << edge_mapper[neigh.int_id()] << "\t" << neighbour.w << "\t"
+               << g_.length(edge) + g_.k() - 1 << "\t" << g_.coverage(edge) << "\t"
+               << g_.length(neigh) + g_.k() - 1 << "\t" << g_.coverage(neigh)  << "\n";
         }
     }
 }
-
