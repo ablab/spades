@@ -34,6 +34,10 @@ class LinkIndex {
         bool operator<(const EdgeWithWeight &rhs) const {
             return e < rhs.e;
         }
+
+        bool operator==(const EdgeWithWeight &rhs) const {
+            return e == rhs.e;
+        }
     };
     using EdgeLinks = adt::flat_set<EdgeWithWeight, std::less<EdgeWithWeight>, adt::SmallPODVector>;
 
@@ -46,8 +50,35 @@ class LinkIndex {
         data_[e2].emplace(EdgeWithWeight{e1, w});
     }
 
+    void increment(EdgeId e1, EdgeId e2, double w = 1.) {
+        if (!data_.count(e1)) { // no e1
+            add(e1, e2, w);
+            return;
+        }
+
+        EdgeLinks &fw = data_.at(e1);
+        auto it = fw.find(EdgeWithWeight{e2, w});
+        if (it == fw.end()) { // no (e1, e2) entry
+            add(e1, e2, w);
+            return;
+        }
+
+        // there is already (e1, e2) entry => increment
+        it->w += w;
+        auto bit = data_.at(e2).find(EdgeWithWeight{e1, w});
+        bit->w += w;
+    }
+
     const EdgeLinks &links(EdgeId e1) const {
         return data_.at(e1);
+    }
+
+    auto begin() const {
+        return data_.cbegin();
+    }
+
+    auto end() const {
+        return data_.cend();
     }
 
     void dump(const std::string &output_path, const io::IdMapper<std::string> &edge_mapper);
