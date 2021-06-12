@@ -297,21 +297,88 @@ public:
 };
 
 
+template <typename Index>
+class TipClippingTask {
+    TipClippingTask() = default;
+ public:
+    TipClippingTask(size_t length_bound) : length_bound_{length_bound} {}
+    TipClippingTask(std::istream &is) { deserialize(is); }
+    std::ostream &serialize(std::ostream &os) const {
+        io::binary::BinWrite(os, length_bound_);
+        return os;
+    }
+
+    std::istream &deserialize(std::istream &is) {
+        io::binary::BinRead(is, length_bound_);
+        return is;
+    }
+
+    auto make_splitter(size_t size, Index &) {
+        return partask::make_seq_plus_n_generator(size);
+    }
+
+    void process(std::istream &is, std::ostream &os, Index &index) {
+        size_t n = 0;
+        std::vector<size_t> chunks = partask::get_seq_plus_n(is, n);
+
+        INFO("Job got, " << chunks.size() << "/" << n << "chunks");
+        auto iters = index.kmer_begin(n);
+        std::vector<typename Index::kmer_iterator> local_iters;
+        for (size_t i : chunks) {
+            if (i < iters.size()) {
+                local_iters.push_back(std::move(iters[i]));
+            }
+        }
+        size_t kpo_mers_removed = EarlyTipClipperProcessor(index, length_bound_).ClipTips(local_iters);  // TODO support empty input
+
+        INFO("K+1-mers removed: " << kpo_mers_removed);
+        partask::allreduce(index.raw_data(), index.raw_size(), MPI_BAND);
+        io::binary::BinWrite(os, kpo_mers_removed);
+    }
+
+    size_t merge(const std::vector<std::istream *> &piss, Index&) {
+        size_t kpo_mers_removed = 0;
+        for (auto &pis : piss) {
+            kpo_mers_removed += io::binary::BinRead<size_t>(*pis);
+        }
+        return kpo_mers_removed;
+    }
+
+ private:
+    size_t length_bound_;
+};
+
+
 class EarlyTipClipper : public ConstructionMPI::Phase {
 public:
     EarlyTipClipper()
-            : ConstructionMPI::Phase("Early tip clipping", "early_tip_clipper") { }
+            : ConstructionMPI::Phase("Early tip clipping (MPI)", "early_tip_clipper_mpi") { }
 
     virtual ~EarlyTipClipper() = default;
 
     bool distributed() const override { return true; }
 
     void run(graph_pack::GraphPack &gp, const char*) override {
-        if (!storage().params.early_tc.length_bound) {
-            INFO("Early tip clipper length bound set as (RL - K)");
+        partask::TaskRegistry treg;
+        auto &index = storage().ext_index;
+        using Index = std::remove_reference_t<decltype(index)>;
+        VERIFY(partask::all_equal(index.size()));
+
+        auto clip_tips = treg.add<TipClippingTask<Index>>(std::ref(index));
+        treg.listen();
+
+        if (partask::master()) {
+            if (!storage().params.early_tc.length_bound) {
+                INFO("Early tip clipper length bound set as (RL - K)");
             storage().params.early_tc.length_bound = cfg::get().ds.RL - gp.k();
+            }
+
+            size_t length_bound = *storage().params.early_tc.length_bound;
+            size_t kpo_mers_removed = clip_tips(length_bound);
+            INFO(kpo_mers_removed << " short edges ("  << (index.k() + 1) << "-mers) were removed by early tip clipper");
         }
-        EarlyTipClipperProcessor(storage().ext_index, *storage().params.early_tc.length_bound).ClipTips();
+
+        treg.stop_listening();
     }
 
     void load(graph_pack::GraphPack&,
