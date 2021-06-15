@@ -29,6 +29,11 @@ inline long long CastTo<long long>(std::string && t) {
 }
 
 template<>
+inline unsigned long long CastTo<unsigned long long>(std::string && t) {
+    return std::stoull(t);
+}
+
+template<>
 inline char CastTo<char>(std::string && t) {
     if (t.size() != 1)
         throw std::string("aligner output file is corrupted");

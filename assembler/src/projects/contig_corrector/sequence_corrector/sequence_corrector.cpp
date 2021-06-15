@@ -5,10 +5,10 @@
 //***************************************************************************
 
 #include "sequence_corrector.hpp"
-#include "common/common.hpp"
-#include "common/minimap_output_reader.hpp"
-#include "common/blat_output_reader.hpp"
-#include "common/aligner_output_postprocessing.hpp"
+#include "helpers/common.hpp"
+#include "helpers/minimap_output_reader.hpp"
+#include "helpers/blat_output_reader.hpp"
+#include "helpers/aligner_output_postprocessing.hpp"
 
 #include "common/assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "common/assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"

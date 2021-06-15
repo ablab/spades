@@ -64,6 +64,19 @@ void DumpReplaceInfo(string const & seq_name, string const & seq, list<ReplaceIn
     INFO("Corrected " << total_replaced_len << " nucls (" << 100.0*total_replaced_len / (total_replaced_len + total_origin_len) << "%) of " << seq_name);
 }
 
+std::string ToUpperStr(std::string && s) {
+    for (auto & c : s)
+        c = toupper(c);
+    return std::move(s);
+}
+
+std::string ToLowerStr(std::string && s) {
+    for (auto & c : s)
+        c = tolower(c);
+    return std::move(s);
+}
+
+
 string MakeSeq(string const & seq, list<ReplaceInfo> const & mapping_info) {
     size_t current_pos = 0;
     stringstream ss;
@@ -72,11 +85,11 @@ string MakeSeq(string const & seq, list<ReplaceInfo> const & mapping_info) {
             WARN("The new path prefix with len=" << path.drop_from_head << " of " << path.Size() << " would be dropped");
         if (path.drop_from_tail > 0)
             WARN("The new path suffix with len=" << path.drop_from_tail << " of " << path.Size() << " would be dropped");
-        ss << seq.substr(current_pos, path.contig_start_pos - current_pos);
-        ss << path.seq.substr(path.drop_from_head, path.ResultSize());
+        ss << ToLowerStr(seq.substr(current_pos, path.contig_start_pos - current_pos));
+        ss << ToUpperStr(path.seq.substr(path.drop_from_head, path.ResultSize()));
         current_pos = path.contig_end_pos;
     }
-    ss << seq.substr(current_pos);
+    ss << ToLowerStr(seq.substr(current_pos));
     return ss.str();
 }
 

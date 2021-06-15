@@ -297,20 +297,20 @@ boost::optional<std::string> AlignerFiller::operator()(std::vector<Path> const &
     auto IsGoodScore = [&](auto distance){ return math::le<double, double>(distance, ref.size() * 0.005); };
     if (scores.size() == 1 || IsDominantScore(scores[0].first, scores[1].first)) {
         if (scores.size() > 1)
-            INFO("domination! score[0] = " << scores[0].first << "; score[1] = " << scores[1].first << "; amount_of_paths = " << scores.size());
+            TRACE("domination! score[0] = " << scores[0].first << "; score[1] = " << scores[1].first << "; amount_of_paths = " << scores.size());
         if (IsGoodScore(scores.front().first))
             return {std::move(path_data[scores.front().second])};
         return {};
     }
 
-    INFO("domination failed! score[0] = " << scores[0].first << "; score[1] = " << scores[1].first << "; amount_of_paths = " << scores.size());
+    TRACE("domination failed! score[0] = " << scores[0].first << "; score[1] = " << scores[1].first << "; amount_of_paths = " << scores.size());
     if (scores.size() == 2) {
         static std::ofstream out1("best_of_two");
         static std::ofstream out2("worst_of_two");
         static std::ofstream out_ref("ref_seq");
         static std::ofstream out_cons("consensus");
         static size_t id = 0;
-        INFO("Current id = " << id);
+        TRACE("Current id = " << id);
 
         out1 << ">case" << id << '\n';
         out1 << path_data[scores[0].second] << '\n';
@@ -321,20 +321,20 @@ boost::optional<std::string> AlignerFiller::operator()(std::vector<Path> const &
         out_cons << ">case" << id << '\n';
         ++id;
 
-        INFO("Trying to make consensus");
+        TRACE("Trying to make consensus");
         // return MakeConsensusString(ref, scores[0], scores[1]);
         auto cons = MakeConsensusString(ref, path_data[scores[0].second], path_data[scores[1].second]);
         if (cons.is_initialized()) {
             AlignResultGuard res(EditDistance(*cons, ref));
-            INFO("Succsess! New score: " << res.editDistance);
+            TRACE("Succsess! New score: " << res.editDistance);
             out_cons << *cons << '\n';
             if (!IsGoodScore(res.editDistance)) {
-                INFO("But the distance is too high!");
+                TRACE("But the distance is too high!");
                 cons.reset();
                 VERIFY(!cons.is_initialized());
             }
         } else {
-            INFO("Failed!");
+            TRACE("Failed!");
             out_cons << "NOTHING" << '\n';
         }
         // return cons;

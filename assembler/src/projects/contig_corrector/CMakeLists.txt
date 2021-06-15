@@ -13,9 +13,10 @@ add_executable(contig_corrector
                sequence_corrector/sequence_corrector.cpp
                contig_replacer/contig_replacer.cpp
                sequence_clusterer/sequence_clusterer.cpp
-               common/parser.cpp
+               error_analyzer/error_analyzer.cpp
+               helpers/parser.cpp
                sequence_corrector/launcher.cpp
-               common/replacer.cpp
+               helpers/replacer.cpp
                sequence_corrector/filler_chooser.cpp
               )
 

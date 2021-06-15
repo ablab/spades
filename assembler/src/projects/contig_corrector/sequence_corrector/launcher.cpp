@@ -4,8 +4,8 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "common/common.hpp"
-#include "common/replacer.hpp"
+#include "helpers/common.hpp"
+#include "helpers/replacer.hpp"
 #include "filler_chooser.hpp"
 
 #include "utils/logger/logger.hpp"
