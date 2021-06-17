@@ -160,6 +160,7 @@ int main(int argc, char** argv) {
           std::vector<Binning::Scaffold> scaffolds_paths;
           std::string scaffold_name;
           EdgeId last;
+          size_t slinks = 0;
           for (const auto &path : gfa.paths()) {
               const std::string &name = path.name;
               std::string cname = name.substr(0, name.find_last_of('_'));
@@ -171,10 +172,12 @@ int main(int argc, char** argv) {
                   // If this is a proper scaffold (multiple paths), then link
                   // paths as there might be no graph connectivity
                   links.add(last, path.edges.front());
+                  slinks += 1;
               }
               last = path.edges.back();
               scaffolds_paths.back().second.insert(path.edges.begin(), path.edges.end());
           }
+          INFO("Added " << slinks << " additional scaffold links");
           binning.InitScaffolds(scaffolds_paths);
       }
 
