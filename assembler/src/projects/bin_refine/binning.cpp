@@ -278,6 +278,8 @@ static double PJaccard(const blaze::CompressedMatrix<double, blaze::rowMajor> &m
     // Now we're having single bin in a row
     blaze::DynamicMatrix<double> dist(nbins, nbins);
     for (size_t i = 0; i < nbins; ++i) {
+        VERBOSE_POWER_T2(i, 0, "Processed " << i << " bins");
+        #pragma omp parallel for
         for (size_t j = i; j < nbins; ++j) {
             dist(i, j) = PJaccard(bin_probs, i, j);
             dist(j, i) = dist(i, j);
