@@ -26,11 +26,11 @@ class id_map {
     class iterator : public boost::iterator_facade<iterator<IsConst>,
                                                    std::conditional_t<IsConst, const mapped_type, mapped_type>,
                                                    boost::forward_traversal_tag> {
+      public:
         typedef typename std::conditional_t<IsConst, const mapped_type, mapped_type> value_type;
         typedef typename std::conditional_t<IsConst, const mapped_type&, mapped_type&> reference_type;
         typedef typename std::conditional_t<IsConst, const container_type, container_type> data_type;
 
-      public:
         static constexpr size_t NPOS = -1ULL;
 
         iterator(size_t start,
