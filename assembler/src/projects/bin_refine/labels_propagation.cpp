@@ -5,6 +5,8 @@
 //***************************************************************************
 
 #include "labels_propagation.hpp"
+#include <omp.h>
+#include "adt/iterator_range.hpp"
 #include "binning.hpp"
 #include "link_index.hpp"
 
@@ -125,57 +127,63 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
                                                                           unsigned iteration_step) const {
   double sum_diff = 0.0, after_prob = 0;
 
-  blaze::DynamicVector<double> next_probs(cur_state.cbegin().value().labels_probabilities.size(), 0);
-  for (auto it = cur_state.cbegin(), end = cur_state.cend(); it != end; ++it) {
-      EdgeId e = it.key(), ce = g_.conjugate(e);
-      const EdgeLabels& edge_labels = it.value();
-      double alpha = ealpha[e];
+  auto ranges = adt::split_range(adt::make_range(cur_state.cbegin(), cur_state.cend()),
+                                 10 * omp_get_max_threads());  
+# pragma omp parallel for reduction(+ : sum_diff) reduction(+ : after_prob)
+  for (size_t i = 0; i < ranges.size(); ++i) {
+      blaze::DynamicVector<double> next_probs(cur_state.cbegin().value().labels_probabilities.size(), 0);
 
-      // Do only canonical edges
-      if (!(e <= ce))
-          continue;
+      for (auto it = ranges[i].begin(), end = ranges[i].end(); it != end; ++it) {
+          EdgeId e = it.key(), ce = g_.conjugate(e);
+          const EdgeLabels& edge_labels = it.value();
+          double alpha = ealpha[e];
 
-      // No need to do anything if alpha is zero => we use the original binning
-      if (math::eq(alpha, 0.0))
-          continue;
+          // Do only canonical edges
+          if (!(e <= ce))
+              continue;
 
-      if (!rweight_.count(e)) // No neighbours  => we use the original binning
-          continue;
+          // No need to do anything if alpha is zero => we use the original binning
+          if (math::eq(alpha, 0.0))
+              continue;
 
-      next_probs.reset();
+          if (!rweight_.count(e)) // No neighbours  => we use the original binning
+              continue;
 
-      // formula for correction: next_probs[i] = alpha[e] * rw[e] * \sum{neighbour} (rd[neighbour] * cur_probs[neighbour]) + (1 - alpha[e]) * origin_probs[e]
-      double self_weight = rweight_[e] * alpha;
-      if (alpha < 1.0)
-          next_probs += (1.0 - alpha) * origin_state.at(e).labels_probabilities;
+          next_probs.reset();
 
-      for (const auto &link : links_.links(e)) {
-          double incoming_weight = self_weight * rdeg_.at(link.e) * link.w;
-          PropagateFromEdge(next_probs, link.e, cur_state, incoming_weight);
-      }
+          // formula for correction: next_probs[i] = alpha[e] * rw[e] * \sum{neighbour} (rd[neighbour] * cur_probs[neighbour]) + (1 - alpha[e]) * origin_probs[e]
+          double self_weight = rweight_[e] * alpha;
+          if (alpha < 1.0)
+              next_probs += (1.0 - alpha) * origin_state.at(e).labels_probabilities;
 
-      after_prob += sum(next_probs);
-      sum_diff += blaze::l1Norm(next_probs - edge_labels.labels_probabilities); // Use L1-norm for the sake of simplicity
-
-      // Remove small values
-      if (1) {
-          size_t cnt = 0;
-          for (const auto val : next_probs)
-              cnt += (val >= 1e-6);
-
-          auto &new_probs = new_state[e].labels_probabilities;
-          new_probs.reset();
-          new_probs.reserve(cnt);
-          for (size_t i = 0; i < next_probs.size(); ++i) {
-              if (next_probs[i] < 1e-6)
-                  continue;
-
-              new_probs.append(i, next_probs[i]);
+          for (const auto &link : links_.links(e)) {
+              double incoming_weight = self_weight * rdeg_.at(link.e) * link.w;
+              PropagateFromEdge(next_probs, link.e, cur_state, incoming_weight);
           }
-          new_state[ce].labels_probabilities = new_probs;
-      } else {
-          new_state[e].labels_probabilities = next_probs;
-          new_state[ce].labels_probabilities = new_state[e].labels_probabilities;
+
+          after_prob += sum(next_probs);
+          sum_diff += blaze::l1Norm(next_probs - edge_labels.labels_probabilities); // Use L1-norm for the sake of simplicity
+
+          // Remove small values
+          if (1) {
+              size_t cnt = 0;
+              for (const auto val : next_probs)
+                  cnt += (val >= 1e-6);
+
+              auto &new_probs = new_state[e].labels_probabilities;
+              new_probs.reset();
+              new_probs.reserve(cnt);
+              for (size_t i = 0; i < next_probs.size(); ++i) {
+                  if (next_probs[i] < 1e-6)
+                      continue;
+
+                  new_probs.append(i, next_probs[i]);
+              }
+              new_state[ce].labels_probabilities = new_probs;
+          } else {
+              new_state[e].labels_probabilities = next_probs;
+              new_state[ce].labels_probabilities = new_state[e].labels_probabilities;
+          }
       }
   }
 
