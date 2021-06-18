@@ -9,6 +9,8 @@
 
 #include <utility>
 #include <iterator>
+#include <vector>
+
 namespace adt {
 
 template<typename IteratorT>
@@ -50,6 +52,25 @@ iterator_range<decltype(begin(std::declval<T>()))> drop_begin(T &&t, int n) {
     return make_range(std::next(begin(t), n), end(t));
 }
 
+template<typename IteratorT>
+std::vector<iterator_range<IteratorT>> split_range(iterator_range<IteratorT> range, size_t cnt) {
+    if (cnt <= 1)
+        return { range };
+
+    size_t sz = std::distance(range.begin(), range.end());
+    size_t chunk = (sz / cnt) + 1;
+
+    IteratorT start = range.begin();
+    std::vector<iterator_range<IteratorT>> res;
+    for (size_t offset = 0; offset < sz; offset += chunk) {
+        IteratorT end = (offset + chunk < sz ?
+                         std::next(start, chunk) : range.end());
+        res.emplace_back(start, end);
+        start = end;
+    }
+
+    return res;
+}
 
 } //adt
 #endif
