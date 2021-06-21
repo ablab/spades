@@ -215,8 +215,7 @@ class PreprocessReadsStage(stage.Stage):
                [commands_parser.Command(STAGE=self.STAGE_NAME,
                                         path="true",
                                         args=[],
-                                        short_name=self.short_name + "_finish",
-                                        del_after=[os.path.relpath(self.tmp_dir, options_storage.args.output_dir)])]
+                                        short_name=self.short_name + "_finish")]
 
 
 def add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log,
