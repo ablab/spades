@@ -47,7 +47,7 @@ def main():
     with open(args.args_filename) as f:
         lines = f.readlines()
         for gzipped, old_filename, new_filename in zip(lines[0::3], lines[1::3], lines[2::3]):
-            gzipped = (gzipped == "True")
+            gzipped = (gzipped.rstrip() == "True")
             old_filename = old_filename.rstrip()
             new_filename = new_filename.rstrip()
 
