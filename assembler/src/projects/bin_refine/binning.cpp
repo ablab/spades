@@ -6,6 +6,7 @@
 
 #include "binning.hpp"
 
+#include "blaze/math/dense/DynamicVector.h"
 #include "io/utils/id_mapper.hpp"
 
 #include "io/reads/io_helper.hpp"
@@ -50,13 +51,59 @@ void Binning::ScaffoldsToEdges() {
       }
   }
 
-  // find unbinned edges
+  // Extract unbinned edges
   for (EdgeId edge : graph_.edges()) {
     if (edges_binning_.count(edge))
       continue;
 
     unbinned_edges_.insert(edge);
     unbinned_edges_.insert(graph_.conjugate(edge));
+  }
+
+
+  // Determine bin coverage
+  size_t nbins = bins_.size();
+  blaze::DynamicVector<double> bin_covs(nbins, 0), bin_lens(nbins, 0);
+  for (EdgeId e : graph_.canonical_edges()) {
+      auto bin = edges_binning_.find(e);
+      if (bin == edges_binning_.end())
+          continue;
+
+      // Skip repeats
+      if (edges_multiplicity_.at(e) > 1)
+          continue;
+
+      VERIFY(bin->second.size() == 1);
+      BinId binid = *bin->second.begin();
+      bin_covs[binid] += double(graph_.kmer_multiplicity(e));
+      bin_lens[binid] += double(graph_.length(e));
+  }
+
+  for (size_t i = 0; i < nbins; ++i) {
+      bin_covs[i] /= bin_lens[i];
+      bin_stats_[i].mean_cov = bin_covs[i];
+  }
+
+  blaze::DynamicVector<double> sd_covs(nbins, 0);
+  for (EdgeId e : graph_.canonical_edges()) {
+      auto bin = edges_binning_.find(e);
+      if (bin == edges_binning_.end())
+          continue;
+
+      // Skip repeats
+      if (edges_multiplicity_.at(e) > 1)
+          continue;
+
+      VERIFY(bin->second.size() == 1);
+      BinId binid = *bin->second.begin();
+
+      double val = double(graph_.kmer_multiplicity(e)) * double(graph_.coverage(e));
+      sd_covs[binid] += val;
+  }
+
+  for (size_t i = 0; i < nbins; ++i) {
+      sd_covs[i] /= bin_lens[i];
+      bin_stats_[i].sd_cov = sqrt(sd_covs[i] - bin_covs[i] * bin_covs[i]);
   }
 }
 
@@ -105,6 +152,7 @@ void Binning::WriteToBinningFile(const std::string& binning_file,
                                   const SoftBinsAssignment &soft_edge_labels, const BinningAssignmentStrategy& assignment_strategy,
                                   const io::IdMapper<std::string> &edge_mapper) {
     std::ofstream out_tsv(binning_file + ".tsv");
+    std::ofstream out_bins(binning_file + ".bin_stats");
     std::ofstream out_lens(binning_file + ".bin_weights");
     std::ofstream out_edges(binning_file + ".edge_weights");
 
@@ -158,10 +206,10 @@ void Binning::WriteToBinningFile(const std::string& binning_file,
     }
 
     out_edges.precision(3);
-    out_edges << "# edge_id\tinternal_edge_id\tlength\tbinned\twas_binned\trepetitive\tedge probs\n";
+    out_edges << "# edge_id\tinternal_edge_id\tlength\tcoverage\tbinned\twas_binned\trepetitive\tedge probs\n";
     for (EdgeId e : graph_.canonical_edges()) {
         const EdgeLabels& edge_labels = soft_edge_labels.at(e);
-        out_edges << edge_mapper[graph_.int_id(e)] << '\t' << e << '\t' << graph_.length(e) + graph_.k()
+        out_edges << edge_mapper[graph_.int_id(e)] << '\t' << e << '\t' << graph_.length(e) + graph_.k() << '\t' << graph_.coverage(e) << '\t'
                   << !unbinned_edges_.count(e) << '\t' << edge_labels.is_binned << '\t' << edge_labels.is_repetitive << '\t'
                   << "nz: " << edge_labels.labels_probabilities.nonZeros();
         std::vector<std::pair<BinId, double>> weights;
@@ -171,6 +219,12 @@ void Binning::WriteToBinningFile(const std::string& binning_file,
         for (const auto &entry : weights)
             out_edges << '\t' << bin_labels_.at(entry.first) << ":" << entry.second;
         out_edges << '\n';
+    }
+
+    out_bins.precision(3);
+    out_bins << "bin\tcoverage mean\tcov sd\n";
+    for (size_t i = 0; i < bins_.size(); ++i) {
+        out_bins << bin_labels_.at(i) << '\t' << bin_stats_[i].mean_cov << '\t' << bin_stats_[i].sd_cov << '\n';
     }
 }
 
@@ -232,8 +286,8 @@ static double PJaccard(const blaze::CompressedMatrix<double, blaze::rowMajor> &m
     return res;
 }
 
- blaze::DynamicMatrix<double> Binning::BinDistance(const SoftBinsAssignment& soft_bins_assignment,
-                                                   bool edges) {
+blaze::DynamicMatrix<double> Binning::BinDistance(const SoftBinsAssignment& soft_bins_assignment,
+                                                  bool edges) {
     size_t nbins = bins_.size();
     size_t nrows = 0, nz = 0;
 
@@ -245,6 +299,8 @@ static double PJaccard(const blaze::CompressedMatrix<double, blaze::rowMajor> &m
         }
     } else {
         for (const auto &entry: scaffolds_bin_weights_) {
+            //if (entry.second.nonZeros() <= 1)
+            //    continue;
             nrows += 1;
             nz += entry.second.nonZeros();
         }
@@ -252,12 +308,16 @@ static double PJaccard(const blaze::CompressedMatrix<double, blaze::rowMajor> &m
 
     blaze::CompressedMatrix<double, blaze::rowMajor> bin_probs(nrows, nbins);
     bin_probs.reserve(nz);
+    size_t rnz = 0;
     if (edges) {
         size_t row = 0;
         for (EdgeId e : graph_.canonical_edges()) {
             const EdgeLabels& edge_labels = soft_bins_assignment.at(e);
             for (const auto &entry : edge_labels.labels_probabilities) {
+                //if (entry.value() < 1e-2)
+                //    continue;
                 bin_probs.append(row, entry.index(), entry.value());
+                rnz += 1;
             }
             bin_probs.finalize(row);
             row += 1;
@@ -265,8 +325,15 @@ static double PJaccard(const blaze::CompressedMatrix<double, blaze::rowMajor> &m
     } else {
         size_t row = 0;
         for (const auto &entry: scaffolds_bin_weights_) {
+            //if (entry.second.nonZeros() <= 1)
+            //    continue;
+
             for (const auto &prob : entry.second) {
+                //if (prob.value() < 1e-2)
+                //    continue;
+
                 bin_probs.append(row, prob.index(), prob.value());
+                rnz += 1;
             }
             bin_probs.finalize(row);
             row += 1;

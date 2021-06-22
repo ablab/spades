@@ -46,6 +46,11 @@ struct EdgeLabels {
     friend std::ostream &operator<<(std::ostream &os, const EdgeLabels &labels);
 };
 
+struct BinStats {
+    double mean_cov;
+    double sd_cov;
+};
+
 using SoftBinsAssignment = adt::id_map<EdgeLabels, debruijn_graph::EdgeId>;
 
 class Binning {
@@ -81,7 +86,7 @@ class Binning {
 
     blaze::DynamicMatrix<double> BinDistance(const SoftBinsAssignment& soft_bins_assignment,
                                              bool edges = false);
-    
+
     void WriteToBinningFile(const std::string& binning_file,
                             const SoftBinsAssignment &edge_soft_labels, const BinningAssignmentStrategy& assignment_strategy,
                             const io::IdMapper<std::string> &edge_mapper);
@@ -115,8 +120,10 @@ class Binning {
     // All about bins
     std::unordered_map<BinLabel, BinId> bins_{};
     BinLabels bin_labels_{};
+    std::unordered_map<BinId, BinStats> bin_stats_{};
 
-    // all about edges
+    // All about edges
+    // FIXME: id_map
     std::unordered_map<debruijn_graph::EdgeId, EdgeBinning> edges_binning_{};
     std::unordered_set<debruijn_graph::EdgeId> unbinned_edges_{};
     std::unordered_map<debruijn_graph::EdgeId, size_t> edges_multiplicity_{};
