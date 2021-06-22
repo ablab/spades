@@ -931,7 +931,7 @@ HMM-guided mode could be enabled via providing a set of HMMs via `--custom-hmms`
 
 Note that normal biosyntheticSPAdes mode (via `--bio` option) is a bit different from HMM-guided mode: besides using the special set of profile HMMS representing a family of NRSP/PKS domains also includes a set of assembly graph simplification and processing settings aimed for fuller recovery of biosynthetic gene clusters.
 
-Given an increased interest in coronavirus research we developed a coronavirus assembly mode for SPAdes assembler (also known as coronaSPAdes). It allows to assemble full-length coronaviridae genomes from the transcriptomic and metatranscriptomic data. Algorithmically, coronaSPAdes is an rnaviralSPAdes that uses the set of HMMs from [Pfam SARS-CoV-2 2.0](ftp://ftp.ebi.ac.uk/pub/databases/Pfam/releases/Pfam_SARS-CoV-2_2.0/) set as well as additional HMMs as outlined by [(Phan et al, 2019)](https://doi.org/10.1093/ve/vey035). coronaSPAdes could be run via a dedicated `coronaspades.py` script. See [coronaSPAdes preprint](https://www.biorxiv.org/content/10.1101/2020.07.28.224584v1) for more information about rnaviralSPAdes,  coronaSPAdes and HMM-guided mode.
+Given an increased interest in coronavirus research we developed a coronavirus assembly mode for SPAdes assembler (also known as coronaSPAdes). It allows to assemble full-length coronaviridae genomes from the transcriptomic and metatranscriptomic data. Algorithmically, coronaSPAdes is an rnaviralSPAdes that uses the set of HMMs from [Pfam SARS-CoV-2 2.0](ftp://ftp.ebi.ac.uk/pub/databases/Pfam/releases/Pfam_SARS-CoV-2_2.0/) set as well as additional HMMs as outlined by [(Phan et al, 2019)](https://doi.org/10.1093/ve/vey035). coronaSPAdes could be run via a dedicated `coronaspades.py` script. See [coronaSPAdes preprint](https://www.biorxiv.org/content/10.1101/2020.07.28.224584v1) for more information about rnaviralSPAdes,  coronaSPAdes and HMM-guided mode. Output for any HMM-related mode (--bio, --corona, or --custom-hmms flags) is the same with biosyntheticSPAdes' output.
 
 <a name="spadesoutsec"></a>
 ## SPAdes output
@@ -1031,11 +1031,11 @@ For metaviral mode we also output linear putative viruses and linear viruses wit
 <a name="bgc"></a>
 ## biosyntheticSPAdes output
 
-biosyntheticSPAdes outputs three files of interest:
-- gene_clusters.fasta &ndash; contains DNA sequences from putative biosynthetic gene clusters (BGC). Since eash sample may contain multiple BGCs and biosyntheticSPAdes can output several putative DNA sequences for eash cluster, for each contig name we append suffix `_cluster_X_candidate_Y`, where X is the id of the BGC and Y is the id of the candidate from the BGC.
-- bgc_statistics.txt &ndash; contains statistics about BGC composition in the sample. First, it outputs number of domain hits in the sample. Then, for each BGC candidate we output domain order with positions on the corresponding DNA sequence from gene_clusters.fasta. 
-- domain_graph.dot &ndash; contains domain graph structure, that can be used to assess complexity of the sample and structure of BGCs. For more information about domain graph construction, please refer to the paper.
-
+biosyntheticSPAdes outputs four files of interest:
+- scaffolds.fasta – contains DNA sequences from putative biosynthetic gene clusters (BGC). Since each sample may contain multiple BGCs and biosyntheticSPAdes can output several putative DNA sequences for eash cluster, for each contig name we append suffix <code>_cluster_X_candidate_Y</code>, where X is the id of the BGC and Y is the id of the candidate from the BGC.
+- raw_scaffolds.fasta – SPAdes scaffolds generated without domain-graph related algorithms. Very close to regular scaffolds.fasta file.
+- hmm_statistics.txt – contains statistics about BGC composition in the sample. First, it outputs number of domain hits in the sample. Then, for each BGC candidate we output domain order with positions on the corresponding DNA sequence from scaffolds.fasta.
+- domain_graph.dot – contains domain graph structure, that can be used to assess complexity of the sample and structure of BGCs. For more information about domain graph construction, please refer to the paper.
 
 <a name="eval"></a>
 ## Assembly evaluation

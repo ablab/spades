@@ -479,7 +479,7 @@ void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp,
                                       size_t component_size_part, size_t component_min_size, bool start_only_from_tips,
                                       const std::string &output_filename, const std::string &output_dir) {
     const auto &graph = gp.get<debruijn_graph::Graph>();
-    std::ofstream stat_stream(fs::append_path(output_dir, "bgc_statistics.txt"));
+    std::ofstream stat_stream(fs::append_path(output_dir, "hmm_statistics.txt"));
     FindBasicStatistic(stat_stream);
     path_extend::ContigWriter writer(graph, path_extend::MakeContigNameGenerator(cfg::get().mode, gp));
 
