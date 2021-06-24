@@ -14,7 +14,6 @@ body:
     attributes:
       label: spades.log
       description: Please drag and drop (and upload to the GitHub issue) a spades.log file from the failed run. Please don't copy and paste log contents, as important whitespace can change. If the file type is not allowed, please compress into a `.zip` file and try again.
-      render: console
     validations:
       required: true
       
@@ -23,7 +22,6 @@ body:
     attributes:
       label: params.txt
       description: Please drag and drop (and upload to the GitHub issue) a params.txt file from the failed run. Please don't copy and paste log contents, as important whitespace can change. If the file type is not allowed, please compress into a `.zip` file and try again.
-      render: console
     validations:
       required: true
       
