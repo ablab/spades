@@ -49,6 +49,8 @@ struct EdgeLabels {
 struct BinStats {
     double mean_cov;
     double sd_cov;
+    double m2_cov;
+    double len;
 };
 
 using SoftBinsAssignment = adt::id_map<EdgeLabels, debruijn_graph::EdgeId>;

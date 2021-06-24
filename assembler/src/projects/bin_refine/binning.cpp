@@ -63,7 +63,7 @@ void Binning::ScaffoldsToEdges() {
 
   // Determine bin coverage
   size_t nbins = bins_.size();
-  blaze::DynamicVector<double> bin_covs(nbins, 0), bin_lens(nbins, 0);
+  blaze::DynamicVector<double> bin_covs(nbins, 0), bin_lens(nbins, 0), m2_covs(nbins, 0);
   for (EdgeId e : graph_.canonical_edges()) {
       auto bin = edges_binning_.find(e);
       if (bin == edges_binning_.end())
@@ -77,33 +77,19 @@ void Binning::ScaffoldsToEdges() {
       BinId binid = *bin->second.begin();
       bin_covs[binid] += double(graph_.kmer_multiplicity(e));
       bin_lens[binid] += double(graph_.length(e));
+      m2_covs[binid] += double(graph_.kmer_multiplicity(e)) * double(graph_.coverage(e));
   }
 
   for (size_t i = 0; i < nbins; ++i) {
       bin_covs[i] /= bin_lens[i];
       bin_stats_[i].mean_cov = bin_covs[i];
-  }
-
-  blaze::DynamicVector<double> sd_covs(nbins, 0);
-  for (EdgeId e : graph_.canonical_edges()) {
-      auto bin = edges_binning_.find(e);
-      if (bin == edges_binning_.end())
-          continue;
-
-      // Skip repeats
-      if (edges_multiplicity_.at(e) > 1)
-          continue;
-
-      VERIFY(bin->second.size() == 1);
-      BinId binid = *bin->second.begin();
-
-      double val = double(graph_.kmer_multiplicity(e)) * double(graph_.coverage(e));
-      sd_covs[binid] += val;
+      bin_stats_[i].len = bin_lens[i];
   }
 
   for (size_t i = 0; i < nbins; ++i) {
-      sd_covs[i] /= bin_lens[i];
-      bin_stats_[i].sd_cov = sqrt(sd_covs[i] - bin_covs[i] * bin_covs[i]);
+      m2_covs[i] /= bin_lens[i];
+      bin_stats_[i].m2_cov = m2_covs[i];
+      bin_stats_[i].sd_cov = sqrt(m2_covs[i] - bin_covs[i] * bin_covs[i]);
   }
 }
 
@@ -221,10 +207,10 @@ void Binning::WriteToBinningFile(const std::string& binning_file,
         out_edges << '\n';
     }
 
-    out_bins.precision(3);
-    out_bins << "bin\tcoverage mean\tcov sd\n";
+    out_bins << "bin\tcoverage mean\tcov sd\tbin length\tcoverage m^2\n";
     for (size_t i = 0; i < bins_.size(); ++i) {
-        out_bins << bin_labels_.at(i) << '\t' << bin_stats_[i].mean_cov << '\t' << bin_stats_[i].sd_cov << '\n';
+        out_bins << bin_labels_.at(i) << '\t' << bin_stats_[i].mean_cov << '\t' << bin_stats_[i].sd_cov << '\t'
+                 << bin_stats_[i].len << '\t' << bin_stats_[i].m2_cov << '\n';
     }
 }
 
