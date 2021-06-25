@@ -58,7 +58,7 @@ body:
   - type: checkboxes
     id: log-read
     attributes:
-      label: spades.log does not contain any errors that explain my issue
+      label: No errors reported in spades.log 
       description: I have read spades.log file and there are no **ERROR** messages there that describe my problem
       options:
         - label: "Yes"
