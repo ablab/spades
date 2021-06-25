@@ -61,5 +61,5 @@ body:
       label: spades.log does not contain any errors that explain my issue
       description: I have read spades.log file and there are no **ERROR** messages there that describe my problem
       options:
-        - label: Yes
+        - label: "Yes"
           required: true
