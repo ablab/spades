@@ -5,7 +5,7 @@ body:
     id: description
     attributes:
       label: Description of bug
-      description: A clear and concise description of what the bug is.
+      description: A clear and concise description of what the bug is
     validations:
       required: true
 
@@ -30,13 +30,17 @@ body:
     attributes:
       label: SPAdes version
       placeholder: eg. SPAdes v3.15.2
-
+    validations:
+      required: true
+      
   - type: input
     id: os
     attributes:
       label: Operating System
       placeholder: eg. macOS Sierra 10.12.5
-
+    validations:
+      required: true
+      
   - type: input
     id: python
     attributes:
@@ -48,3 +52,14 @@ body:
     attributes:
       label: Method of SPAdes installation
       placeholder: eg. binaries, conda, manual
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: log-read
+    attributes:
+      label: spades.log does not contain any errors that explain my issue
+      description: I have read spades.log file and there are no **ERROR** messages there that describe my problem
+      options:
+        - label: Yes
+          required: true
