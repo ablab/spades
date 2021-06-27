@@ -46,7 +46,9 @@ class PacBioMappingIndex {
         rna_filtering_count_ = 0;
     }
     ~PacBioMappingIndex(){
-        INFO(rna_filtering_count_ << " times rna filtering worked" );
+        if (pb_config_.rna_filtering) {
+            INFO(rna_filtering_count_ << " times RNA alignmnent read filtering worked" );
+        }
     }
     std::vector<std::vector<QualityRange>> GetChainingPaths(const io::SingleRead &read) const {
         std::vector<ColoredRange> ranged_colors = GetRangedColors(read);
