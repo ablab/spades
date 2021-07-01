@@ -331,9 +331,10 @@ blaze::DynamicMatrix<double> Binning::BinDistance(const SoftBinsAssignment& soft
     // Now we're having single bin in a row
     blaze::DynamicMatrix<double> dist(nbins, nbins);
     for (size_t i = 0; i < nbins; ++i) {
+        dist(i, i) = 1.0;
         VERBOSE_POWER_T2(i, 0, "Processed " << i << " bins");
         #pragma omp parallel for
-        for (size_t j = i; j < nbins; ++j) {
+        for (size_t j = i + 1; j < nbins; ++j) {
             dist(i, j) = PJaccard(bin_probs, i, j);
             dist(j, i) = dist(i, j);
         }
