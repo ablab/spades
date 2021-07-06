@@ -119,6 +119,8 @@ def generateK_for_rnaviral(cfg, dataset_data, log):
         # FIXME: Hack-hack-hack! :)
         if min(k_values) == options_storage.RNA_MAX_LOWER_K:
             k_values = [options_storage.K_MERS_RNA[0]] + k_values
+        if min(k_values) > 21:
+            k_values = [21] + k_values
         cfg.iterative_K = k_values
         log.info("K values to be used: " + str(k_values))
 
