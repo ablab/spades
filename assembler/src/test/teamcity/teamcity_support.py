@@ -624,7 +624,7 @@ def get_contigs_list(args, dataset_info, before_rr = False):
     contigs.append(("scaffolds_paths", "scaffolds", "", "", "paths"))
 
     if dataset_info.mode == "bio":
-        contigs = [("gene_clusters", "gene_clusters", "bio", "", "fasta")]
+        contigs = [("scaffolds", "scaffolds", "bio", "", "fasta")]
 
     if dataset_info.mode == "rna":
         contigs = [("transcripts", "transcripts", "", "", "fasta")]
