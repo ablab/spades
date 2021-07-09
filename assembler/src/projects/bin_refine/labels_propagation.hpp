@@ -16,6 +16,7 @@ namespace bin_stats {
 class LabelsPropagation : public BinningRefiner {
  public:
     using FinalIteration = bool;
+    using AlphaAssignment = adt::id_map<double, debruijn_graph::EdgeId>;
 
     LabelsPropagation(const debruijn_graph::Graph& g,
                       const binning::LinkIndex &links,
@@ -31,8 +32,15 @@ class LabelsPropagation : public BinningRefiner {
     FinalIteration PropagationIteration(SoftBinsAssignment& new_state,
                                         const SoftBinsAssignment& cur_state,
                                         const SoftBinsAssignment& origin_state,
-                                        const adt::id_map<double, debruijn_graph::EdgeId> &alpha,
+                                        const AlphaAssignment &alpha,
                                         unsigned iteration_step) const;
+
+    void InitAlpha(AlphaAssignment &ealpha, const SoftBinsAssignment &origin_state, bool reset) const;
+    void AlphaPropagationIteration(adt::id_map<double, debruijn_graph::EdgeId> &new_ealpha,
+                                   const adt::id_map<double, debruijn_graph::EdgeId> &ealpha,
+                                   const SoftBinsAssignment& origin_state,
+                                   unsigned iteration_step) const;
+
     const double eps_;
 
     adt::id_map<double, debruijn_graph::EdgeId> rdeg_;
