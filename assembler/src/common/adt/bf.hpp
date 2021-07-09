@@ -136,6 +136,52 @@ protected:
     std::vector<std::atomic<uint64_t>> data_;
 };
 
+template<class T, size_t depth_>
+class cascading_bloom_filter {
+    cascading_bloom_filter(const cascading_bloom_filter &) = delete;
+    cascading_bloom_filter &operator=(const cascading_bloom_filter &) = delete;
+
+public:
+    using hasher = typename bloom_filter<T>::hasher;
+    using digets = typename bloom_filter<T>::digest;
+
+    cascading_bloom_filter(hasher h,
+                           size_t cells, size_t num_hashes = 3, double damp_factor = 0.1) {
+        for (size_t i = 0; i < depth_; ++i) {
+            filters_.emplace_back(h, cells, num_hashes);
+            cells = size_t(double(cells) * damp_factor);
+            if (cells < 1000)
+                cells = 1000;
+        }
+    }
+
+    size_t add(const T &o) {
+        for (size_t i = 0; i < depth_; ++i) {
+            if (filters_[i].lookup(o))
+                continue;
+
+            if (filters_[i].add(o))
+                return i;
+        }
+
+        return depth_;
+    }
+
+    size_t lookup(const T &o) {
+        for (size_t i = 0; i < depth_; ++i) {
+            if (filters_[i].lookup(o))
+                continue;
+
+            return i;
+        }
+
+        return depth_;
+    }
+
+private:
+    std::vector<bloom_filter<T>> filters_;
+};
+
 /// The counting Bloom filter.
 template<class T, unsigned width_ = 4>
 class counting_bloom_filter {
