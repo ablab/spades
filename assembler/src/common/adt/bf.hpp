@@ -21,6 +21,121 @@ inline constexpr uint64_t pairhash(uint64_t x, uint64_t y, uint64_t i) {
 }
 
 
+/// The ordinary Bloom filter.
+template<class T>
+class bloom_filter {
+    bloom_filter(const bloom_filter &) = delete;
+    bloom_filter &operator=(const bloom_filter &) = delete;
+
+protected:
+    static constexpr size_t cells_per_entry_ = 8 * sizeof(uint64_t);
+
+public:
+    /// The hash digest type.F
+    typedef uint64_t digest;
+
+    /// The hash function type.
+    typedef std::function<digest(const T &, uint64_t seed)> hasher;
+
+    // FIXME disable default constructor
+    bloom_filter() = default;
+
+    ~bloom_filter() = default;
+
+    /// Constructs a Bloom filter.
+    /// @param h The hasher.
+    /// @param cells The number of cells.
+    /// @param num_hashes The number of hash functions to use
+    /// The memory consumption will be cells bits
+    bloom_filter(hasher h,
+                 size_t cells, size_t num_hashes = 3)
+            : hasher_(std::move(h)),
+              num_hashes_(num_hashes),
+              cells_(cells),
+              data_((cells + cells_per_entry_ - 1) / cells_per_entry_) {}
+
+    /// Move-constructs a Bloom filter.
+    bloom_filter(bloom_filter &&) = default;
+
+    /// Adds an element to the Bloom filter.
+    /// @tparam T The type of the element to insert.
+    /// @param x An instance of type `T`.
+    bool add(const T &o) {
+        bool dup = true;
+        digest d1 = hasher_(o, 0xDEAD), d2 = hasher_(o, 0xBEEF);
+
+        for (size_t i = 0; i < num_hashes_; ++i) {
+            digest d = pairhash(d1, d2, i);
+            size_t cell_id = cell_num(d, cells_);
+            size_t pos = cell_id / cells_per_entry_;
+            size_t epos = cell_id - pos * cells_per_entry_;
+
+            uint64_t oldval = data_[pos].fetch_or(uint64_t(1) << epos);
+            dup &= (oldval >> epos) & 1;
+        }
+
+        return !dup;
+    }
+
+    /// Retrieves the count of an element.
+    /// @tparam T The type of the element to query.
+    /// @param x An instance of type `T`.
+    /// @return A frequency estimate for *x*.
+    size_t lookup(const T &o) const {
+        digest d1 = hasher_(o, 0xDEAD), d2 = hasher_(o, 0xBEEF);
+
+        for (size_t i = 0; i < num_hashes_; ++i) {
+            digest d = pairhash(d1, d2, i);
+            size_t cell_id = cell_num(d, cells_);
+            size_t pos = cell_id / cells_per_entry_;
+            size_t epos = cell_id - pos * cells_per_entry_;
+            if (((data_[pos] >> epos) & 1) == 0)
+                return 0;
+        }
+
+        return 1;
+    }
+
+    /// Removes all items from the Bloom filter.
+    void clear() {
+        std::fill(data_.begin(), data_.end(), 0);
+    }
+
+    void merge(const bloom_filter<T> &other) {
+        VERIFY(data_.size() == other.data_.size());
+        VERIFY(num_hashes_ == other.num_hashes_);
+        VERIFY(cells_ = other.cells_);
+
+        for (size_t cell_id = 0; cell_id < cells_; ++cell_id) {
+            size_t pos = cell_id / cells_per_entry_;
+            data_[pos] |= other.data_[pos];
+        }
+    }
+
+    template <typename Archive>
+    void BinArchiveSave(Archive &ar) const {
+        ar(num_hashes_, cells_, data_.size());
+        ar.raw_array(data_.data(), data_.size());
+    }
+
+    template <typename Archive>
+    void BinArchiveLoad(Archive &ar) {
+        size_t size;
+        ar(num_hashes_, cells_, size);
+        if (data_.size() != size) {
+            // data_.resize(size); // vector of atomics could not be resized
+            data_ = std::vector<std::atomic<uint64_t>>(size);
+        }
+        ar.raw_array(data_.data(), data_.size());
+    }
+
+protected:
+    hasher hasher_;
+    size_t num_hashes_;
+    size_t cells_;
+    std::vector<std::atomic<uint64_t>> data_;
+};
+
 /// The counting Bloom filter.
 template<class T, unsigned width_ = 4>
 class counting_bloom_filter {
