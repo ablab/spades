@@ -14,6 +14,10 @@ namespace {
 inline constexpr uint64_t cell_num(uint64_t x, uint64_t num) {
     return mod_reduce::multiply_high_u64(x, num);
 }
+
+inline constexpr uint64_t pairhash(uint64_t x, uint64_t y, uint64_t i) {
+    return x + i * y + i * i;
+}
 }
 
 
@@ -60,8 +64,9 @@ public:
     /// @tparam T The type of the element to insert.
     /// @param x An instance of type `T`.
     void add(const T &o) {
+        digest d1 = hasher_(o, 0xDEAD), d2 = hasher_(o, 0xBEEF);
         for (size_t i = 0; i < num_hashes_; ++i) {
-            digest d = hasher_(o, i);
+            digest d = pairhash(d1, d2, i);
             size_t cell_id = cell_num(d, cells_);
             size_t pos = cell_id / cells_per_entry_;
             size_t epos = cell_id - pos * cells_per_entry_;
@@ -92,8 +97,9 @@ public:
     /// @return A frequency estimate for *x*.
     size_t lookup(const T &o) const {
         size_t val = (1ull << width_) - 1;
+        digest d1 = hasher_(o, 0xDEAD), d2 = hasher_(o, 0xBEEF);
         for (size_t i = 0; i < num_hashes_; ++i) {
-            digest d = hasher_(o, i);
+            digest d = pairhash(d1, d2, i);
             size_t cell_id = cell_num(d, cells_);
             size_t pos = cell_id / cells_per_entry_;
             size_t epos = cell_id - pos * cells_per_entry_;
@@ -171,8 +177,9 @@ public:
     /// @tparam T The type of the element to insert.
     /// @param x An instance of type `T`.
     void add(const T &o) {
+        digest d1 = this->hasher_(o, 0xDEAD), d2 = this->hasher_(o, 0xBEEF);
         for (size_t i = 0; i < this->num_hashes_; ++i) {
-            digest d = this->hasher_(o, i);
+            digest d = pairhash(d1, d2, i);
             size_t cell_id = cell_num(d, this->cells_);
             size_t pos = cell_id / this->cells_per_entry_;
             size_t epos = cell_id - pos * this->cells_per_entry_;
@@ -204,8 +211,9 @@ public:
     /// @return A frequency estimate for *x*.
     size_t lookup(const T &o) const {
         size_t val = (1ull << width_) - 1;
+        digest d1 = this->hasher_(o, 0xDEAD), d2 = this->hasher_(o, 0xBEEF);
         for (size_t i = 0; i < this->num_hashes_; ++i) {
-            digest d = this->hasher_(o, i);
+            digest d = pairhash(d1, d2, i);
             size_t cell_id = cell_num(d, this->cells_);
             size_t pos = cell_id / this->cells_per_entry_;
             size_t epos = cell_id - pos * this->cells_per_entry_;
