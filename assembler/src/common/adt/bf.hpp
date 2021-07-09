@@ -1,5 +1,7 @@
 #pragma once
 
+#include "lemiere_mod_reduce.hpp"
+
 #include <functional>
 #include <vector>
 #include <atomic>
@@ -7,6 +9,13 @@
 #include <cassert>
 
 namespace bf {
+
+namespace {
+inline constexpr uint64_t cell_num(uint64_t x, uint64_t num) {
+    return mod_reduce::multiply_high_u64(x, num);
+}
+}
+
 
 /// The counting Bloom filter.
 template<class T, unsigned width_ = 4>
@@ -53,7 +62,7 @@ public:
     void add(const T &o) {
         for (size_t i = 0; i < num_hashes_; ++i) {
             digest d = hasher_(o, i);
-            size_t cell_id = d - cells_ * (d / cells_); // Use division here in order to test stuff like libidivide
+            size_t cell_id = cell_num(d, cells_);
             size_t pos = cell_id / cells_per_entry_;
             size_t epos = cell_id - pos * cells_per_entry_;
             auto &entry = data_[pos];
@@ -85,7 +94,7 @@ public:
         size_t val = (1ull << width_) - 1;
         for (size_t i = 0; i < num_hashes_; ++i) {
             digest d = hasher_(o, i);
-            size_t cell_id = d - cells_ * (d / cells_); // Use division here in order to test stuff like libidivide
+            size_t cell_id = cell_num(d, cells_);
             size_t pos = cell_id / cells_per_entry_;
             size_t epos = cell_id - pos * cells_per_entry_;
             size_t cval = (data_[pos] >> (width_ * epos)) & cell_mask_;
@@ -164,8 +173,7 @@ public:
     void add(const T &o) {
         for (size_t i = 0; i < this->num_hashes_; ++i) {
             digest d = this->hasher_(o, i);
-            size_t cell_id = d - this->cells_ *
-                                 (d / this->cells_); // Use division here in order to test stuff like libidivide
+            size_t cell_id = cell_num(d, this->cells_);
             size_t pos = cell_id / this->cells_per_entry_;
             size_t epos = cell_id - pos * this->cells_per_entry_;
             auto &entry = this->data_[pos];
@@ -198,8 +206,7 @@ public:
         size_t val = (1ull << width_) - 1;
         for (size_t i = 0; i < this->num_hashes_; ++i) {
             digest d = this->hasher_(o, i);
-            size_t cell_id = d - this->cells_ *
-                                 (d / this->cells_); // Use division here in order to test stuff like libidivide
+            size_t cell_id = cell_num(d, this->cells_);
             size_t pos = cell_id / this->cells_per_entry_;
             size_t epos = cell_id - pos * this->cells_per_entry_;
             uint64_t entry = (this->data_[pos] >> (width_ * epos)) & this->cell_mask_;
