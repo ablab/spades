@@ -86,7 +86,6 @@ struct PathracerConfig {
     std::string output_dir = "";
     enum Mode mode = Mode::hmm;
     enum SeedMode seed_mode = SeedMode::edges_scaffolds;
-    size_t k = 0;
     int threads = 16;
     size_t top = 10000;
     std::vector<std::string> edges;
@@ -110,6 +109,7 @@ struct PathracerConfig {
     size_t max_insertion_length = 30;
     double indel_rate = 0;
     bool quiet = false;
+    bool ignore_names = false;
 
     hmmer::hmmer_cfg hcfg;
 };
@@ -601,7 +601,11 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
 
     INFO("Total " << results.size() << " resultant paths extracted");
 
-    if (!results.empty()) {
+    if (results.empty())
+        return;
+
+#pragma omp critical(save_results)
+    {
         std::ofstream o_seqs(cfg.output_dir + std::string("/") + p7hmm->name + ".seqs.fa", std::ios::out);
         std::ofstream o_nucs;
         if (hmm_in_aas) {
@@ -667,8 +671,9 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
             [&](const auto &path){ return std::make_tuple(-path2score[path], path); });
 
     // TODO export paths along with their best score
+#pragma omp critical(export_edges)
     ExportEdges(to_rescore_ordered, graph, scaffold_paths,
-                cfg.output_dir + std::string("/") + p7hmm->name + ".edges.fa",
+                fs::append_path(cfg.output_dir, std::string(p7hmm->name) + ".edges.fa"),
                 mapping_f);
 
     std::vector<std::string> seqs_to_rescore;
@@ -682,9 +687,12 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
         INFO("Rescore edges using HMMER");
         auto matcher = ScoreSequences(seqs_to_rescore, refs_to_rescore, hmm, cfg);
         INFO("Edges rescored, output");
-        OutputMatches(hmm, matcher, fs::append_path(cfg.output_dir, std::string(p7hmm->name) + ".tblout"), "tblout");
-        OutputMatches(hmm, matcher, fs::append_path(cfg.output_dir, std::string(p7hmm->name) + ".domtblout"), "domtblout");
-        OutputMatches(hmm, matcher, fs::append_path(cfg.output_dir, std::string(p7hmm->name) + ".pfamtblout"), "pfamtblout");
+#pragma omp critical(rescore)
+        {
+            OutputMatches(hmm, matcher, fs::append_path(cfg.output_dir, std::string(p7hmm->name) + ".tblout"), "tblout");
+            OutputMatches(hmm, matcher, fs::append_path(cfg.output_dir, std::string(p7hmm->name) + ".domtblout"), "domtblout");
+            OutputMatches(hmm, matcher, fs::append_path(cfg.output_dir, std::string(p7hmm->name) + ".pfamtblout"), "pfamtblout");
+        }
     }
 }
 
@@ -1590,7 +1598,7 @@ int aling_fs(int argc, char* argv[]) {
             remove((cfg.output_dir + "/" + hmm.get()->name + ".nucs.fa").c_str());
         }
     }
-    
+
     INFO("Pathracer successfully finished! Thanks for flying us!");
     return 0;
 }
