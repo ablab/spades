@@ -24,6 +24,7 @@
 
 #include "sequence/aa.hpp"
 
+#include "utils/filesystem/path_helper.hpp"
 #include "visualization/visualization.hpp"
 #include "io/graph/gfa_reader.hpp"
 #include "io/reads/io_helper.hpp"
@@ -494,7 +495,7 @@ std::vector<hmmer::HMM> ParseFASTAFile(const std::string &filename, enum Mode mo
 
     // Open the query sequence file in FASTA format
     int status = esl_sqfile_Open(qfile, eslSQFILE_FASTA, NULL, &qfp);
-    if      (status == eslENOTFOUND) {
+    if (status == eslENOTFOUND) {
         FATAL_ERROR("No such file " << filename);
     } else if (status == eslEFORMAT) {
         FATAL_ERROR("Format of " << filename << " unrecognized.");
@@ -681,9 +682,9 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
         INFO("Rescore edges using HMMER");
         auto matcher = ScoreSequences(seqs_to_rescore, refs_to_rescore, hmm, cfg);
         INFO("Edges rescored, output");
-        OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".tblout", "tblout");
-        OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".domtblout", "domtblout");
-        OutputMatches(hmm, matcher, cfg.output_dir + "/" + p7hmm->name + ".pfamtblout", "pfamtblout");
+        OutputMatches(hmm, matcher, fs::append_path(cfg.output_dir, std::string(p7hmm->name) + ".tblout"), "tblout");
+        OutputMatches(hmm, matcher, fs::append_path(cfg.output_dir, std::string(p7hmm->name) + ".domtblout"), "domtblout");
+        OutputMatches(hmm, matcher, fs::append_path(cfg.output_dir, std::string(p7hmm->name) + ".pfamtblout"), "pfamtblout");
     }
 }
 
@@ -850,8 +851,7 @@ void TraceHMM(const hmmer::HMM &hmm,
         cursor_conn_comps.resize(1);
         auto &cursors = cursor_conn_comps[0];
 
-        for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            EdgeId edge = *it;
+        for (EdgeId edge : graph.edges()) {
             size_t len = graph.length(edge) + graph.k();
             for (size_t i = 0; i < len; ++i) {
                 auto position_cursors = GraphCursor::get_cursors(graph, edge, i);
@@ -1171,11 +1171,9 @@ int pathracer_main(int argc, char* argv[]) {
     }
 
     size_t letters = 0;
-    for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-        EdgeId edge = *it;
+    for (EdgeId edge : graph.canonical_edges())
         letters += (graph.length(edge) + graph.k()) * (graph.conjugate(edge) == edge ? 1 : 2);
-    }
-    INFO("Graph loaded. Total vertices: " << graph.size() << ", letters: " << letters);
+    INFO("Graph loaded. Total vertices: " << graph.size() << ", edges: " << graph.e_size() << ", letters: " << letters);
 
     INFO("Total paths " << scaffold_paths.size());
 
@@ -1185,8 +1183,7 @@ int pathracer_main(int argc, char* argv[]) {
         std::replace(edge.begin(), edge.end(), '^', '\'');
     }
     std::unordered_set<std::string> allowed_edges(cfg.edges.cbegin(), cfg.edges.cend());
-    for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-        EdgeId edge = *it;
+    for (EdgeId edge : graph.edges()) {
         if (allowed_edges.empty() || allowed_edges.count(id_mapper->operator[](edge.int_id()))) {
             edges.push_back(edge);
         }
@@ -1202,12 +1199,12 @@ int pathracer_main(int argc, char* argv[]) {
     if (cfg.rescore) {
         INFO("Total " << to_rescore.size() << " paths to rescore");
         ExportEdges(to_rescore, graph, scaffold_paths,
-                    cfg.output_dir + "/all.edges.fa",
+                    fs::append_path(cfg.output_dir, "all.edges.fa"),
                     mapping_f);
     }
 
     if (cfg.annotate_graph) {
-        std::string fname = cfg.output_dir + "/graph_with_hmm_paths.gfa";
+        std::string fname = fs::append_path(cfg.output_dir, "graph_with_hmm_paths.gfa");
         INFO("Saving annotated graph to " << fname)
         std::ofstream os(fname);
         path_extend::GFAPathWriter gfa_writer(graph, os,
