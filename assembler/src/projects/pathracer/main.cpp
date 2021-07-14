@@ -143,6 +143,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       (option("--memory", "-m") & integer("MEMORY", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
       (option("--max-size") & integer("SIZE", cfg.max_size)) % "maximal component size to consider [default: INF]",
       (cfg.quiet << option("--quiet", "-q")) % "be quiet, do not output anything to the console",
+      (cfg.ignore_names << option("--ignore-names")) % "ignore HMM/sequence names ((in case of dups, etc)",
       "Query type:" %
       one_of(option("--hmm").set(cfg.mode, Mode::hmm) % "match against HMM(s) [default]",
              option("--nt").set(cfg.mode, Mode::nucl) % "match against nucleotide string(s)",
@@ -483,7 +484,8 @@ std::vector<hmmer::HMM> ParseHMMFile(const std::string &filename) {
     return hmms;
 }
 
-std::vector<hmmer::HMM> ParseFASTAFile(const std::string &filename, enum Mode mode) {
+std::vector<hmmer::HMM> ParseFASTAFile(const std::string &filename, enum Mode mode,
+                                       bool ignore_name) {
     std::vector<hmmer::HMM> res;
     hmmer::HMMSequenceBuilder builder(mode == Mode::nucl ? hmmer::Alphabet::DNA : hmmer::Alphabet::AMINO,
                                       hmmer::ScoreSystem::Default);
@@ -506,8 +508,11 @@ std::vector<hmmer::HMM> ParseFASTAFile(const std::string &filename, enum Mode mo
     }
 
     // For each sequence, build a model and save it.
+    size_t id = 0;
     while ((status = esl_sqio_Read(qfp, qsq)) == eslOK) {
         INFO("Converting " << qsq->name << ", len: " << qsq->n);
+        if (ignore_name)
+            esl_sq_SetName(qsq, std::to_string(id++).c_str());
         res.push_back(builder.from_string(qsq));
         esl_sq_Reuse(qsq);
     }
@@ -1077,7 +1082,7 @@ void hmm_main(const PathracerConfig &cfg,
     if (cfg.mode == Mode::hmm)
         hmms = ParseHMMFile(cfg.hmmfile);
     else
-        hmms = ParseFASTAFile(cfg.hmmfile, cfg.mode);
+        hmms = ParseFASTAFile(cfg.hmmfile, cfg.mode, cfg.ignore_names);
 
     SuperpathIndex scaffold_path_index(scaffold_paths);
 
@@ -1316,7 +1321,7 @@ void process_cmdline_seq_fs(int argc, char **argv, PathracerSeqFsConfig &cfg) {
           (option("--expand-coef") & number("value", cfg.expand_coef)) % "overhang expansion coefficient for neighborhood search [default: 2]",
           (option("--expand-const") & integer("value", cfg.expand_const)) % "const addition to overhang values for neighborhood search [default: 20]",
           (option("--no-top-score-filter").set(cfg.state_limits_coef, size_t(100500))) % "disable top score Event Graph vertices filter [default: false]",
-          option("--no-fast-forward").set(cfg.use_experimental_i_loop_processing, 0) % "disable fast forward in I-loops processing [default: false]"//,
+          (option("--no-fast-forward").set(cfg.use_experimental_i_loop_processing, 0)) % "disable fast forward in I-loops processing [default: false]"//,
       )
   );
 
