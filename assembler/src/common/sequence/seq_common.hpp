@@ -16,7 +16,7 @@
 #define SEQ_COMMON_HPP_
 
 #include "k_range.hpp"
-#include <stdint.h>
+#include <cstdint>
 
 typedef uint64_t seq_element_type;
 
