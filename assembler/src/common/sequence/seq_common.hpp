@@ -18,7 +18,7 @@
 #include "k_range.hpp"
 #include <cstdint>
 
-typedef u_int64_t seq_element_type;
+typedef uint64_t seq_element_type;
 
 constexpr size_t t_size(void) {
     return sizeof(seq_element_type);
