@@ -15,8 +15,8 @@
 #ifndef SEQ_COMMON_HPP_
 #define SEQ_COMMON_HPP_
 
-#include <stdint.h>
 #include "k_range.hpp"
+#include <cstdint>
 
 typedef u_int64_t seq_element_type;
 
