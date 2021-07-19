@@ -1166,6 +1166,12 @@ int pathracer_main(int argc, char* argv[]) {
     INFO("Soft stack limit: " << (stacklimit == size_t(-1) ? "UNLIMITED" : std::to_string(stacklimit)));
     INFO("Process ID: " << getpid());
 
+    // Some additional defaults
+    if (cfg.local && cfg.minimal_match_length > 0.75 && cfg.minimal_match_length <= 1.0) {
+        cfg.minimal_match_length = 0.1;
+        INFO("Setting minimal match length threshold in local mode to: " << cfg.minimal_match_length);
+    }
+    
     using namespace debruijn_graph;
 
     std::vector<std::vector<EdgeId>> scaffold_paths;
