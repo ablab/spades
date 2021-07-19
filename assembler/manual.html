@@ -1,6 +1,9 @@
-<html>     <head>         <title>SPAdes 3.15.2 Manual</title>         <style type="text/css">             .highlight  pre {               background-color: #f0f2f4;               border-radius: 2px;               font-size: 100%;               line-height: 1.45;               overflow: auto;               padding: 16px;             }         </style>     </head>     <body>
-
- <meta charset="UTF-8"> <p><strong>SPAdes 3.15.2 Manual</strong></p>
+<html>     <head>         <title>SPAdes 3.15.3 Manual</title>         <style type="text/css">             .highlight  pre {               background-color: #f0f2f4;               border-radius: 2px;               font-size: 100%;               line-height: 1.45;               overflow: auto;               padding: 16px;             }         </style>     </head>     <body><p><a href="http://chihua.cab.spbu.ru:3000/buildConfiguration/SPAdesBasicTests_RunAll?mode=builds" rel="nofollow"><img src="https://camo.githubusercontent.com/21b928ad15b5735360cb555da4951c8dee2ef5633fd61c3fce22bb157f9dc1c5/687474703a2f2f6368696875612e6361622e737062752e72753a333030302f6170702f726573742f6275696c64732f6275696c64547970653a2869643a535041646573426173696354657374735f52756e416c6c292f73746174757349636f6e" alt="TeamCity Simple Build Status" data-canonical-src="http://chihua.cab.spbu.ru:3000/app/rest/builds/buildType:(id:SPAdesBasicTests_RunAll)/statusIcon" style="max-width:100%;"></a><br>
+<a href="https://www.gnu.org/licenses/old-licenses/gpl-2.0" rel="nofollow"><img src="https://camo.githubusercontent.com/c76156a44047d8a6b64fc1fa16118996c422cff2959c1ae82127260b29e990ef/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6c6963656e63652d47504c76322d626c7565" alt="License" data-canonical-src="https://img.shields.io/badge/licence-GPLv2-blue" style="max-width:100%;"></a><br>
+<a href="https://github.com/ablab/spades/releases/"><img src="https://camo.githubusercontent.com/b67a7145a28ab5560f54b811c18353c4771fa5ae62a344f4d5e53a4c0a9da5b4/68747470733a2f2f696d672e736869656c64732e696f2f6769746875622f762f72656c656173652f61626c61622f737061646573" alt="GitHub release (latest by date)" data-canonical-src="https://img.shields.io/github/v/release/ablab/spades" style="max-width:100%;"></a><br>
+<a href="https://github.com/ablab/spades/releases"><img src="https://camo.githubusercontent.com/a8ba4fbdefabcc61b7a4d41a40fb19c92e96d49717bd24414252a4f460a34f09/68747470733a2f2f696d672e736869656c64732e696f2f6769746875622f646f776e6c6f6164732f61626c61622f7370616465732f746f74616c2e7376673f7374796c653d736f6369616c266c6f676f3d676974687562266c6162656c3d446f776e6c6f6164" alt="GitHub Downloads" data-canonical-src="https://img.shields.io/github/downloads/ablab/spades/total.svg?style=social&amp;logo=github&amp;label=Download" style="max-width:100%;"></a><br>
+<a href="https://anaconda.org/bioconda/spades" rel="nofollow"><img src="https://camo.githubusercontent.com/24a3286de783bcb188f9e010b910a26db4026ecf4b05f184fb3f71f4892f6c77/68747470733a2f2f616e61636f6e64612e6f72672f62696f636f6e64612f7370616465732f6261646765732f646f776e6c6f6164732e737667" alt="BioConda Downloads" data-canonical-src="https://anaconda.org/bioconda/spades/badges/downloads.svg" style="max-width:100%;"></a></p>
+ <meta charset="UTF-8"> <p><strong>SPAdes 3.15.3 Manual</strong></p>
 <ol>
 <li><a href="#sec1">About SPAdes</a> <br>
     1.1. <a href="#sec1.1">Supported data types</a><br>
@@ -16,7 +19,7 @@
     3.2. <a href="#sec3.2">SPAdes command line options</a><br>
     3.3. <a href="#sec3.3">Assembling IonTorrent reads</a><br>
     3.4. <a href="#sec3.4">Assembling long Illumina paired reads (2x150 and 2x250)</a><br>
-    3.5. <a href="#hmm">HMM-guided mode</a><br>
+3.5. <a href="#hmm">HMM-guided mode</a><br>
     3.6. <a href="#spadesoutsec">SPAdes output</a><br>
     3.7. <a href="#plasmidout">plasmidSPAdes output</a><br>
     3.8. <a href="#metapv">metaplasmidSPAdes and metaviralSPAdes output</a><br>
@@ -35,14 +38,14 @@
 </ol>
 <p><a name="sec1"></a></p>
 <h1>About SPAdes</h1>
-<p>SPAdes – St. Petersburg genome assembler – is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.15.2 was released under GPLv2 on March 8, 2021 and can be downloaded from <a href="http://cab.spbu.ru/software/spades/" rel="nofollow">http://cab.spbu.ru/software/spades/</a>.</p>
+<p>SPAdes – St. Petersburg genome assembler – is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.15.3 was released under GPLv2 on July 22, 2021 and can be downloaded from <a href="http://cab.spbu.ru/software/spades/" rel="nofollow">http://cab.spbu.ru/software/spades/</a>.</p>
 <p>The latest SPAdes paper describing various pipelines in a protocol format is available <a href="https://currentprotocols.onlinelibrary.wiley.com/doi/abs/10.1002/cpbi.102" rel="nofollow">here</a>.</p>
 <p><a name="sec1.1"></a></p>
 <h2>Supported data types</h2>
 <p>The current version of SPAdes works with Illumina or IonTorrent reads and is capable of providing hybrid assemblies using PacBio, Oxford Nanopore and Sanger reads. You can also provide additional contigs that will be used as long reads.</p>
-<p>Version 3.15.2 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. Note, that SPAdes was initially designed for small genomes. It was tested on bacterial (both single-cell MDA and standard isolates), fungal and other small genomes. SPAdes is not intended for larger genomes (e.g. mammalian size genomes). For such purposes you can use it at your own risk.</p>
+<p>Version 3.15.3 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. Note, that SPAdes was initially designed for small genomes. It was tested on bacterial (both single-cell MDA and standard isolates), fungal and other small genomes. SPAdes is not intended for larger genomes (e.g. mammalian size genomes). For such purposes you can use it at your own risk.</p>
 <p>If you have high-coverage data for bacterial/viral isolate or multi-cell organism, we highly recommend to use <a href="#isolate"><code>--isolate</code></a> option.</p>
-<p>SPAdes 3.15.2 includes the following additional pipelines:</p>
+<p>SPAdes 3.15.3 includes the following additional pipelines:</p>
 <ul>
 <li>metaSPAdes – a pipeline for metagenomic data sets (see <a href="#meta">metaSPAdes options</a>).</li>
 <li>plasmidSPAdes – a pipeline for extracting and assembling plasmids from WGS data sets (see <a href="#plasmid">plasmid options</a>).</li>
@@ -76,15 +79,15 @@
 <table border="1" cellpadding="4" cellspacing="0" role="table">
 <tbody><tr>
 <td align="right"> Data set   </td>
-<td colspan="3" align="center"> <i>E. coli</i> isolate </td>
+<td colspan="3" align="center"> <i>E. coli</i> isolate </td> 
 <td colspan="3" align="center"> <i>E. coli</i> single-cell </td>
 </tr>
 <tr>
 <td> Stage </td>
-<td align="center" width="110">  Time  </td>
+<td align="center" width="110">  Time  </td> 
 <td align="center" width="110">  Peak RAM <br> usage (Gb)  </td>
 <td align="center" width="110">  Additional <br> disk space (Gb)  </td>
-<td align="center" width="110">  Time </td>
+<td align="center" width="110">  Time </td> 
 <td align="center" width="110">  Peak RAM <br> usage (Gb)  </td>
 <td align="center" width="110">  Additional <br> disk space (Gb) </td>
 </tr>
@@ -158,18 +161,18 @@
 </ul>
 <p><a name="sec2.1"></a></p>
 <h2>Downloading SPAdes Linux binaries</h2>
-<p>To download <a href="http://cab.spbu.ru/files/release3.15.2/SPAdes-3.15.2-Linux.tar.gz" rel="nofollow">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:</p>
-<div class="highlight highlight-source-shell"><pre>    wget http://cab.spbu.ru/files/release3.15.2/SPAdes-3.15.2-Linux.tar.gz
-    tar -xzf SPAdes-3.15.2-Linux.tar.gz
-    <span class="pl-c1">cd</span> SPAdes-3.15.2-Linux/bin/</pre></div>
+<p>To download <a href="http://cab.spbu.ru/files/release3.15.3/SPAdes-3.15.3-Linux.tar.gz" rel="nofollow">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:</p>
+<div class="highlight highlight-source-shell"><pre>    wget http://cab.spbu.ru/files/release3.15.3/SPAdes-3.15.3-Linux.tar.gz
+    tar -xzf SPAdes-3.15.3-Linux.tar.gz
+    <span class="pl-c1">cd</span> SPAdes-3.15.3-Linux/bin/</pre></div>
 <p>In this case you do not need to run any installation scripts – SPAdes is ready to use. We also suggest adding SPAdes installation directory to the <code>PATH</code> variable. <a href=""></a></p>
 <p>Note, that pre-build binaries do not work on new Linux kernels.</p>
 <p><a name="sec2.2"></a></p>
 <h2>Downloading SPAdes binaries for Mac</h2>
-<p>To obtain <a href="http://cab.spbu.ru/files/release3.15.2/SPAdes-3.15.2-Darwin.tar.gz" rel="nofollow">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:</p>
-<div class="highlight highlight-source-shell"><pre>    curl http://cab.spbu.ru/files/release3.15.2/SPAdes-3.15.2-Darwin.tar.gz -o SPAdes-3.15.2-Darwin.tar.gz
-    tar -zxf SPAdes-3.15.2-Darwin.tar.gz
-    <span class="pl-c1">cd</span> SPAdes-3.15.2-Darwin/bin/</pre></div>
+<p>To obtain <a href="http://cab.spbu.ru/files/release3.15.3/SPAdes-3.15.3-Darwin.tar.gz" rel="nofollow">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:</p>
+<div class="highlight highlight-source-shell"><pre>    curl http://cab.spbu.ru/files/release3.15.3/SPAdes-3.15.3-Darwin.tar.gz -o SPAdes-3.15.3-Darwin.tar.gz
+    tar -zxf SPAdes-3.15.3-Darwin.tar.gz
+    <span class="pl-c1">cd</span> SPAdes-3.15.3-Darwin/bin/</pre></div>
 <p>Just as in Linux, SPAdes is ready to use and no further installation steps are required. We also suggest adding SPAdes installation directory to the <code>PATH</code> variable. <a href=""></a></p>
 <p><a name="sec2.3"></a></p>
 <h2>Downloading and compiling SPAdes source code</h2>
@@ -180,10 +183,10 @@
 <li>zlib</li>
 <li>libbz2</li>
 </ul>
-<p>If you meet these requirements, you can download the <a href="http://cab.spbu.ru/files/release3.15.2/SPAdes-3.15.2.tar.gz" rel="nofollow">SPAdes source code</a>:</p>
-<div class="highlight highlight-source-shell"><pre>    wget http://cab.spbu.ru/files/release3.15.2/SPAdes-3.15.2.tar.gz
-    tar -xzf SPAdes-3.15.2.tar.gz
-    <span class="pl-c1">cd</span> SPAdes-3.15.2</pre></div>
+<p>If you meet these requirements, you can download the <a href="http://cab.spbu.ru/files/release3.15.3/SPAdes-3.15.3.tar.gz" rel="nofollow">SPAdes source code</a>:</p>
+<div class="highlight highlight-source-shell"><pre>    wget http://cab.spbu.ru/files/release3.15.3/SPAdes-3.15.3.tar.gz
+    tar -xzf SPAdes-3.15.3.tar.gz
+    <span class="pl-c1">cd</span> SPAdes-3.15.3</pre></div>
 <p>and build it with the following script:</p>
 <div class="highlight highlight-source-shell"><pre>    ./spades_compile.sh</pre></div>
 <p>SPAdes will be built in the directory <code>./bin</code>. If you wish to install SPAdes into another directory, you can specify full path of destination folder by running the following command in <code>bash</code> or <code>sh</code>:</p>
@@ -224,7 +227,7 @@ Thank you for using SPAdes!
 <p><a name="sec3.1"></a></p>
 <h2>SPAdes input</h2>
 <p>SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ. For IonTorrent data SPAdes also supports unpaired reads in unmapped BAM format (like the one produced by Torrent Server). However, in order to run read error correction, reads should be in FASTQ or BAM format. Sanger, Oxford Nanopore and PacBio CLR reads can be provided in both formats since SPAdes does not run error correction for these types of data.</p>
-<p>To run SPAdes 3.15.2 you need at least one library of the following types:</p>
+<p>To run SPAdes 3.15.3 you need at least one library of the following types:</p>
 <ul>
 <li>Illumina paired-end/high-quality mate-pairs/unpaired reads</li>
 <li>IonTorrent paired-end/high-quality mate-pairs/unpaired reads</li>
@@ -466,18 +469,18 @@ Should not be confused with FR and RF strand-specificity for RNA-Seq data (see <
         type: <span class="pl-s"><span class="pl-pds">"</span>paired-end<span class="pl-pds">"</span></span>,
         right reads: [
           <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_pe1_right_1.fastq<span class="pl-pds">"</span></span>,
-          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_pe1_right_2.fastq<span class="pl-pds">"</span></span>
+          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_pe1_right_2.fastq<span class="pl-pds">"</span></span> 
         ],
         left reads: [
           <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_pe1_left_1.fastq<span class="pl-pds">"</span></span>,
-          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_pe1_left_2.fastq<span class="pl-pds">"</span></span>
+          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_pe1_left_2.fastq<span class="pl-pds">"</span></span> 
         ]
       },
       {
         orientation: <span class="pl-s"><span class="pl-pds">"</span>rf<span class="pl-pds">"</span></span>,
         type: <span class="pl-s"><span class="pl-pds">"</span>mate-pairs<span class="pl-pds">"</span></span>,
         right reads: [
-          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_mp1_right.fastq<span class="pl-pds">"</span></span>
+          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_mp1_right.fastq<span class="pl-pds">"</span></span> 
         ],
         left reads: [
           <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/lib_mp1_left.fastq<span class="pl-pds">"</span></span>
@@ -486,13 +489,13 @@ Should not be confused with FR and RF strand-specificity for RNA-Seq data (see <
       {
         type: <span class="pl-s"><span class="pl-pds">"</span>single<span class="pl-pds">"</span></span>,
         single reads: [
-          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/pacbio_ccs.fastq<span class="pl-pds">"</span></span>
+          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/pacbio_ccs.fastq<span class="pl-pds">"</span></span> 
         ]
       },
       {
         type: <span class="pl-s"><span class="pl-pds">"</span>pacbio<span class="pl-pds">"</span></span>,
         single reads: [
-          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/pacbio_clr.fastq<span class="pl-pds">"</span></span>
+          <span class="pl-s"><span class="pl-pds">"</span>/FULL_PATH_TO_DATASET/pacbio_clr.fastq<span class="pl-pds">"</span></span> 
         ]
       }
     ]</pre></div>
@@ -608,8 +611,7 @@ Notes:</p>
 <p>The majority of SPAdes assembly modes (normal multicell, single-cell, rnaviral, meta and of course biosynthetic) also supports HMM-guided mode as implemented in biosyntheticSPAdes. The detailed description could be found in <a href="https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118" rel="nofollow">biosyntheticSPAdes paper</a>, but in short: amino acid profile HMMs are aligned to the edges of assembly graph. After this the subgraphs containing the set of matches ("domains") are extracted and all possible paths through the domains that are supported both by paired-end data (via scaffolds) and graph topology are obtained (putative biosynthetic gene clusters).</p>
 <p>HMM-guided mode could be enabled via providing a set of HMMs via <code>--custom-hmms</code> option. In HMM guided mode the set of contigs and scaffolds (see section <a href="#spadesoutsec">SPAdes output</a> for more information about SPAdes output) is kept intact, however additional <a href="#bgc">biosyntheticSPAdes output</a> represents the output of HMM-guided assembly.</p>
 <p>Note that normal biosyntheticSPAdes mode (via <code>--bio</code> option) is a bit different from HMM-guided mode: besides using the special set of profile HMMS representing a family of NRSP/PKS domains also includes a set of assembly graph simplification and processing settings aimed for fuller recovery of biosynthetic gene clusters.</p>
-<p>Given an increased interest in coronavirus research we developed a coronavirus assembly mode for SPAdes assembler (also known as coronaSPAdes). It allows to assemble full-length coronaviridae genomes from the transcriptomic and metatranscriptomic data. Algorithmically, coronaSPAdes is an rnaviralSPAdes that uses the set of HMMs from Pfam SARS-CoV-2 2.0 set as well as additional HMMs as outlined by <a href="https://doi.org/10.1093/ve/vey035" rel="nofollow">(Phan et al, 2019)</a>. coronaSPAdes could be run via a dedicated <code>coronaspades.py</code> script. See <a href="https://www.biorxiv.org/content/10.1101/2020.07.28.224584v1" rel="nofollow">coronaSPAdes preprint</a> for more information about rnaviralSPAdes,  coronaSPAdes and HMM-guided mode.</p>
-<p>Output for any HMM-related mode (--bio, --corona, or --custom-hmms flags) is the same with biosyntheticSPAdes' output.</p>
+<p>Given an increased interest in coronavirus research we developed a coronavirus assembly mode for SPAdes assembler (also known as coronaSPAdes). It allows to assemble full-length coronaviridae genomes from the transcriptomic and metatranscriptomic data. Algorithmically, coronaSPAdes is an rnaviralSPAdes that uses the set of HMMs from Pfam SARS-CoV-2 2.0 set as well as additional HMMs as outlined by <a href="https://doi.org/10.1093/ve/vey035" rel="nofollow">(Phan et al, 2019)</a>. coronaSPAdes could be run via a dedicated <code>coronaspades.py</code> script. See <a href="https://www.biorxiv.org/content/10.1101/2020.07.28.224584v1" rel="nofollow">coronaSPAdes preprint</a> for more information about rnaviralSPAdes,  coronaSPAdes and HMM-guided mode. Output for any HMM-related mode (--bio, --corona, or --custom-hmms flags) is the same with biosyntheticSPAdes' output.</p>
 <p><a name="spadesoutsec"></a></p>
 <h2>SPAdes output</h2>
 <p>SPAdes stores all output files in <code>&lt;output_dir&gt; </code>, which is set by the user.</p>
@@ -732,7 +734,7 @@ h nucleotide is coded with 2 bits: 00 - A, 01 - C, 10 - G, 11 - T.</p>
 <pre><code>    For kmer: AGCTCT
     Memory: 6 bits * 2 = 12, 64 bits (8 bytes)
     Let’s describe bytes:
-    data[0] = AGCT -&gt; 11 01 10 00 -&gt; 0xd8
+    data[0] = AGCT -&gt; 11 01 10 00 -&gt; 0xd8                                
     data[1] = CT00 -&gt; 00 00 11 01 -&gt; 0x0d
     data[2] = 0000 -&gt; 00 00 00 00 -&gt; 0x00
     data[3] = 0000 -&gt; 00 00 00 00 -&gt; 0x00
