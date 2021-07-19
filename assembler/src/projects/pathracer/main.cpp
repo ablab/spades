@@ -143,7 +143,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       (option("--memory", "-m") & integer("MEMORY", cfg.memory)) % "RAM limit for PathRacer in GB (terminates if exceeded) [default: 100]",
       (option("--max-size") & integer("SIZE", cfg.max_size)) % "maximal component size to consider [default: INF]",
       (cfg.quiet << option("--quiet", "-q")) % "be quiet, do not output anything to the console",
-      (cfg.ignore_names << option("--ignore-names")) % "ignore HMM/sequence names ((in case of dups, etc)",
+      (cfg.ignore_names << option("--ignore-names")) % "ignore HMM/sequence names (in case of dups, etc)",
       "Query type:" %
       one_of(option("--hmm").set(cfg.mode, Mode::hmm) % "match against HMM(s) [default]",
              option("--nt").set(cfg.mode, Mode::nucl) % "match against nucleotide string(s)",
@@ -360,12 +360,6 @@ PathAlnInfo MatchedPaths(const std::vector<std::vector<EdgeId>> &paths,
                          const ConjugateDeBruijnGraph &graph,
                          const hmmer::HMM &hmm, const PathracerConfig &cfg) {
     DEBUG("MatchedPaths started");
-    // std::vector<std::string> seqs;
-    // seqs.reserve(paths.size());
-    // for (const auto &path : paths) {
-    //     seqs.push_back(PathToString(path, graph));
-    // }
-    // INFO("seqs constructed");
     auto get = [&](size_t i) -> std::string {
         return PathToString(paths[i], graph);
     };
@@ -393,14 +387,12 @@ using EdgeAlnInfo = std::vector<std::pair<EdgeId, std::pair<int, int>>>;
 using graph_t = debruijn_graph::ConjugateDeBruijnGraph;
 
 size_t path_length(const graph_t &graph, const std::vector<EdgeId> &path) {
-    if (path.size() == 0) {
+    if (path.size() == 0)
         return 0;
-    }
 
     size_t sum = 0;
-    for (const auto &e : path) {
+    for (const auto &e : path)
         sum += graph.length(e);
-    }
 
     return sum + graph.k();
 }
@@ -703,7 +695,9 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
 
 using GraphCursor = DebruijnGraphCursor;
 
-auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &graph, double expand_coef, int expand_const, bool parallel_component_processing) {
+auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &graph,
+                               double expand_coef, int expand_const,
+                               bool parallel_component_processing) {
     DEBUG("ConnCompsFromEdgesMatches started");
     using GraphCursor = DebruijnGraphCursor;
     std::vector<std::pair<GraphCursor, size_t>> left_queries, right_queries;
@@ -752,7 +746,7 @@ auto ConnCompsFromEdgesMatches(const EdgeAlnInfo &matched_edges, const graph_t &
 
 void TraceHMM(const hmmer::HMM &hmm,
               const debruijn_graph::ConjugateDeBruijnGraph &graph, const std::vector<EdgeId> &edges,
-              const SuperpathIndex scaffold_paths,
+              const SuperpathIndex &scaffold_paths,
               const PathracerConfig &cfg,
               std::vector<HMMPathInfo> &results) {
     const P7_HMM *p7hmm = hmm.get();
@@ -790,12 +784,6 @@ void TraceHMM(const hmmer::HMM &hmm,
     INFO("All-matches consensus sequence score: " << fees.all_matches_score());
     INFO("Empty sequence score: " << fees.empty_sequence_score());
 
-    // INFO("Matched paths:");
-    // for (const auto &kv : matched_paths) {
-    //     const auto &path = paths[kv.first];
-    //     INFO(path);
-    // }
-
     std::vector<std::vector<GraphCursor>> cursor_conn_comps;
     std::vector<std::string> component_names;
 
@@ -809,7 +797,9 @@ void TraceHMM(const hmmer::HMM &hmm,
                 continue;
             }
             auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
-            auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.expand_const, cfg.parallel_component_processing);
+            auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph,
+                                                                     cfg.expand_coef, cfg.expand_const,
+                                                                     cfg.parallel_component_processing);
             cursor_conn_comps.insert(cursor_conn_comps.end(), cursor_conn_comps_local.cbegin(), cursor_conn_comps_local.cend());
             for (size_t cmp_idx = 0; cmp_idx < cursor_conn_comps_local.size(); ++cmp_idx) {
                 // TODO add cmp_idx? (it could not be trivial!!!)
@@ -826,7 +816,9 @@ void TraceHMM(const hmmer::HMM &hmm,
                 continue;
             }
             auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
-            auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.expand_const, cfg.parallel_component_processing);
+            auto cursor_conn_comps_local = ConnCompsFromEdgesMatches(matched_edges, graph,
+                                                                     cfg.expand_coef, cfg.expand_const,
+                                                                     cfg.parallel_component_processing);
             cursor_conn_comps.insert(cursor_conn_comps.end(), cursor_conn_comps_local.cbegin(), cursor_conn_comps_local.cend());
             for (size_t cmp_idx = 0; cmp_idx < cursor_conn_comps_local.size(); ++cmp_idx) {
                 // TODO add cmp_idx? (it could not be trivial!!!)
@@ -841,14 +833,18 @@ void TraceHMM(const hmmer::HMM &hmm,
         }
         auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
         auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
-        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.expand_const, cfg.parallel_component_processing);
+        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph,
+                                                      cfg.expand_coef, cfg.expand_const,
+                                                      cfg.parallel_component_processing);
     } else if (cfg.seed_mode == SeedMode::scaffolds) {
         std::vector<std::vector<EdgeId>> paths;
         // Fill paths by paths read from GFA
         paths.insert(paths.end(), scaffold_paths.cbegin(), scaffold_paths.cend());
         auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
         auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
-        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.expand_const, cfg.parallel_component_processing);
+        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph,
+                                                      cfg.expand_coef, cfg.expand_const,
+                                                      cfg.parallel_component_processing);
     } else if (cfg.seed_mode == SeedMode::edges_scaffolds) {
         std::vector<std::vector<EdgeId>> paths;
         // Fill paths by single edges
@@ -859,7 +855,9 @@ void TraceHMM(const hmmer::HMM &hmm,
         paths.insert(paths.end(), scaffold_paths.cbegin(), scaffold_paths.cend());
         auto matched_paths = MatchedPaths(paths, graph, hmm, cfg);
         auto matched_edges = PathAlignments2EdgeAlignments(matched_paths, paths, graph);
-        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph, cfg.expand_coef, cfg.expand_const, cfg.parallel_component_processing);
+        cursor_conn_comps = ConnCompsFromEdgesMatches(matched_edges, graph,
+                                                      cfg.expand_coef, cfg.expand_const,
+                                                      cfg.parallel_component_processing);
     } else if (cfg.seed_mode == SeedMode::exhaustive) {
         cursor_conn_comps.resize(1);
         auto &cursors = cursor_conn_comps[0];
@@ -868,7 +866,8 @@ void TraceHMM(const hmmer::HMM &hmm,
             size_t len = graph.length(edge) + graph.k();
             for (size_t i = 0; i < len; ++i) {
                 auto position_cursors = GraphCursor::get_cursors(graph, edge, i);
-                cursors.insert(cursors.end(), std::make_move_iterator(position_cursors.begin()), std::make_move_iterator(position_cursors.end()));
+                cursors.insert(cursors.end(),
+                               std::make_move_iterator(position_cursors.begin()), std::make_move_iterator(position_cursors.end()));
             }
         }
     }
@@ -994,9 +993,11 @@ void TraceHMM(const hmmer::HMM &hmm,
             return {};
         }
 
-        for (const auto &cursor : component_cursors) {
-            DEBUG_ASSERT(check_cursor_symmetry(cursor, &graph), main_assert{}, debug_assert::level<2>{});
-        }
+        DEBUG_EXPR(
+            for (const auto &cursor : component_cursors) {
+                DEBUG_ASSERT(check_cursor_symmetry(cursor, &graph), main_assert{}, debug_assert::level<2>{});
+            }
+         );
 
         std::unordered_set<EdgeId> edges;
         for (const auto& cursor : component_cursors) {
@@ -1197,7 +1198,7 @@ int pathracer_main(int argc, char* argv[]) {
     }
     std::unordered_set<std::string> allowed_edges(cfg.edges.cbegin(), cfg.edges.cend());
     for (EdgeId edge : graph.edges()) {
-        if (allowed_edges.empty() || allowed_edges.count(id_mapper->operator[](edge.int_id()))) {
+        if (allowed_edges.empty() || allowed_edges.count((*id_mapper)[edge.int_id()])) {
             edges.push_back(edge);
         }
     }
