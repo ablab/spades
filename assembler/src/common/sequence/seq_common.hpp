@@ -5,19 +5,15 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * seq_common.hpp
- *
- *  Created on: Jun 25, 2012
- *      Author: andrey
- */
-
 #ifndef SEQ_COMMON_HPP_
 #define SEQ_COMMON_HPP_
 
 #include "k_range.hpp"
 
-typedef u_int64_t seq_element_type;
+#include <cstdint>
+#include <cstdlib>
+
+typedef uint64_t seq_element_type;
 
 constexpr size_t t_size(void) {
     return sizeof(seq_element_type);
