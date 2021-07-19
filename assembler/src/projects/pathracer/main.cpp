@@ -136,7 +136,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
       required("--output", "-o") & value("output directory", cfg.output_dir)    % "output directory",
       (option("--global").set(cfg.local, false) % "perform global-local (aka glocal) HMM matching [default]") |
       (cfg.local << option("--local") % "perform local-local HMM matching"),
-      (option("--length", "-l") & integer("value", cfg.minimal_match_length)) % "minimal length of resultant matched sequence; if <=1 then to be multiplied on the length of the pHMM [default: 0.9]",
+      (option("--length", "-l") & value("value", cfg.minimal_match_length)) % "minimal length of resultant matched sequence; if <=1 then to be multiplied on the length of the pHMM [default: 0.9]",
       (option("--indel-rate", "-r") & value("value", cfg.indel_rate)) % "expected rate of nucleotides indels in graph edges [default: 0]. Used for AA pHMM alignment with frame shifts",
       (option("--top") & integer("N", cfg.top)) % "extract top N paths [default: 10000]",
       (option("--threads", "-t") & integer("NTHREADS", cfg.threads)) % "the number of parallel threads [default: 16]",
