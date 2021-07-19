@@ -171,7 +171,7 @@ class PacBioMappingIndex {
         std::vector<VertexId> second_edge = {g_.EdgeStart(b), g_.EdgeEnd(b)};
         size_t result = DISTANT_IN_GRAPH;
         for (auto v: first_edge) {
-            omnigraph::DijkstraHelper<debruijn_graph::Graph>::UnorientedBoundedDijkstra dijkstra(
+            auto dijkstra(
                     omnigraph::DijkstraHelper<debruijn_graph::Graph>::CreateUnorientedBoundedDijkstra(g_,
                                                                                             DISTANT_IN_GRAPH,
                                                                                             MAX_VERTICES_IN_DIJKSTRA_FILTERING
@@ -183,13 +183,9 @@ class PacBioMappingIndex {
                 }
             }
         }
-        if (result < DISTANT_IN_GRAPH)
-            return true;
-        else
-            return false;
-
-
+        return (result < DISTANT_IN_GRAPH);
     }
+
     typename omnigraph::MappingPath<EdgeId> FilterShortAlignments(typename omnigraph::MappingPath<EdgeId> mapped_path) const {
         omnigraph::MappingPath<EdgeId> res;
         size_t length_cutoff = pb_config_.internal_length_cutoff;
