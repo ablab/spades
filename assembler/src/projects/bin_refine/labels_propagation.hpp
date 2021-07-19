@@ -20,7 +20,8 @@ class LabelsPropagation : public BinningRefiner {
 
     LabelsPropagation(const debruijn_graph::Graph& g,
                       const binning::LinkIndex &links,
-                      double eps, double labeled_alpha = 0.0);
+                      const AlphaAssignment &labeled_alpha,
+                      double eps);
 
     SoftBinsAssignment RefineBinning(const Binning& bin_stats) const override;
 
@@ -35,16 +36,16 @@ class LabelsPropagation : public BinningRefiner {
                                         const AlphaAssignment &alpha,
                                         unsigned iteration_step) const;
 
-    void InitAlpha(AlphaAssignment &ealpha, const SoftBinsAssignment &origin_state, bool reset) const;
-    void AlphaPropagationIteration(adt::id_map<double, debruijn_graph::EdgeId> &new_ealpha,
-                                   const adt::id_map<double, debruijn_graph::EdgeId> &ealpha,
-                                   const SoftBinsAssignment& origin_state,
-                                   unsigned iteration_step) const;
+//    FullAlphaAssignment InitAlpha(const SoftBinsAssignment &origin_state) const;
+//    void AlphaPropagationIteration(adt::id_map<double, debruijn_graph::EdgeId> &new_ealpha,
+//                                   const adt::id_map<double, debruijn_graph::EdgeId> &ealpha,
+//                                   const SoftBinsAssignment& origin_state,
+//                                   unsigned iteration_step) const;
 
     const double eps_;
 
     adt::id_map<double, debruijn_graph::EdgeId> rdeg_;
     adt::id_map<double, debruijn_graph::EdgeId> rweight_;
-    double labeled_alpha_;
+    AlphaAssignment labeled_alpha_;
 };
 }
