@@ -17,7 +17,7 @@ struct pacbio_processor {
     double path_limit_pressing    = 0.7;
     size_t max_path_in_dijkstra   = 15000;
     size_t max_vertex_in_dijkstra = 2000;
-    bool rna_filtering              = false;
+    bool rna_filtering            = false;
 
     // gap closer
     size_t long_seq_limit           = 400;

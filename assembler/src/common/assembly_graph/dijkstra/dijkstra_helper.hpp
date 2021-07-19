@@ -108,16 +108,14 @@ public:
     static UnorientedBoundedDijkstra
     CreateUnorientedBoundedDijkstra(const Graph &graph,
                                   size_t bound,
-                                  size_t max_vertex_number = size_t(-1),
-                                  bool collect_traceback = false) {
+                                  size_t max_vertex_number = size_t(-1)) {
         return UnorientedBoundedDijkstra(graph,
                                        UnorientedBoundedDijkstraSettings(
                                                LengthCalculator<Graph>(graph),
                                                BoundProcessChecker<Graph>(bound),
                                                BoundPutChecker<Graph>(bound),
                                                UnorientedNeighbourIteratorFactory<Graph>(graph)),
-                                       max_vertex_number,
-                                       collect_traceback);
+                                       max_vertex_number);
     }
 
 

@@ -161,14 +161,18 @@ class PacBioMappingIndex {
         DEBUG("Ended loading bwa")
         return res;
     }
+
+//This function checks whether two edges are close in graph (constant DISTANT_IN_GRAPH), regardless of the orientation of the edges.
+//If two edges are close with such check, they are in the same complex structure and should be used for alignment filtering.
+//If not --- alignments to them are independent and can be used simultaniously.
     bool UndirectedCloseInGraph(EdgeId a, EdgeId b) const {
 
         std::vector<VertexId> first_edge = {g_.EdgeStart(a), g_.EdgeEnd(a)};
         std::vector<VertexId> second_edge = {g_.EdgeStart(b), g_.EdgeEnd(b)};
         size_t result = DISTANT_IN_GRAPH;
         for (auto v: first_edge) {
-            omnigraph::DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
-                    omnigraph::DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_,
+            omnigraph::DijkstraHelper<debruijn_graph::Graph>::UnorientedBoundedDijkstra dijkstra(
+                    omnigraph::DijkstraHelper<debruijn_graph::Graph>::CreateUnorientedBoundedDijkstra(g_,
                                                                                             DISTANT_IN_GRAPH,
                                                                                             MAX_VERTICES_IN_DIJKSTRA_FILTERING
                     ));
