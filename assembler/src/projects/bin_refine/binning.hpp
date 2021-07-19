@@ -48,6 +48,13 @@ struct EdgeLabels {
 
     EdgeLabels()
             : e(0), is_binned(false), is_repetitive(false) {}
+    EdgeLabels(const debruijn_graph::EdgeId &e,
+               bool is_binned,
+               bool is_repetitive,
+               const LabelProbabilities &labels_probabilities) : e(e),
+                                                                 is_binned(is_binned),
+                                                                 is_repetitive(is_repetitive),
+                                                                 labels_probabilities(labels_probabilities) {}
 
     EdgeLabels(debruijn_graph::EdgeId e, const Binning& binning);
     EdgeLabels(const EdgeLabels& edge_labels) = default;
