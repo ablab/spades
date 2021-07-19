@@ -1,4 +1,4 @@
-<html>     <head>         <title>SPAdes 3.15.3 Manual</title>         <style type="text/css">             .highlight  pre {               background-color: #f0f2f4;               border-radius: 2px;               font-size: 100%;               line-height: 1.45;               overflow: auto;               padding: 16px;             }         </style>     </head>     <body><p><a href="http://chihua.cab.spbu.ru:3000/buildConfiguration/SPAdesBasicTests_RunAll?mode=builds" rel="nofollow"><img src="https://camo.githubusercontent.com/21b928ad15b5735360cb555da4951c8dee2ef5633fd61c3fce22bb157f9dc1c5/687474703a2f2f6368696875612e6361622e737062752e72753a333030302f6170702f726573742f6275696c64732f6275696c64547970653a2869643a535041646573426173696354657374735f52756e416c6c292f73746174757349636f6e" alt="TeamCity Simple Build Status" data-canonical-src="http://chihua.cab.spbu.ru:3000/app/rest/builds/buildType:(id:SPAdesBasicTests_RunAll)/statusIcon" style="max-width:100%;"></a><br>
+<html>     <head>         <title>SPAdes 3.16.0-dev Manual</title>         <style type="text/css">             .highlight  pre {               background-color: #f0f2f4;               border-radius: 2px;               font-size: 100%;               line-height: 1.45;               overflow: auto;               padding: 16px;             }         </style>     </head>     <body><p><a href="http://chihua.cab.spbu.ru:3000/buildConfiguration/SPAdesBasicTests_RunAll?mode=builds" rel="nofollow"><img src="https://camo.githubusercontent.com/21b928ad15b5735360cb555da4951c8dee2ef5633fd61c3fce22bb157f9dc1c5/687474703a2f2f6368696875612e6361622e737062752e72753a333030302f6170702f726573742f6275696c64732f6275696c64547970653a2869643a535041646573426173696354657374735f52756e416c6c292f73746174757349636f6e" alt="TeamCity Simple Build Status" data-canonical-src="http://chihua.cab.spbu.ru:3000/app/rest/builds/buildType:(id:SPAdesBasicTests_RunAll)/statusIcon" style="max-width:100%;"></a><br>
 <a href="https://www.gnu.org/licenses/old-licenses/gpl-2.0" rel="nofollow"><img src="https://camo.githubusercontent.com/c76156a44047d8a6b64fc1fa16118996c422cff2959c1ae82127260b29e990ef/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6c6963656e63652d47504c76322d626c7565" alt="License" data-canonical-src="https://img.shields.io/badge/licence-GPLv2-blue" style="max-width:100%;"></a><br>
 <a href="https://github.com/ablab/spades/releases/"><img src="https://camo.githubusercontent.com/b67a7145a28ab5560f54b811c18353c4771fa5ae62a344f4d5e53a4c0a9da5b4/68747470733a2f2f696d672e736869656c64732e696f2f6769746875622f762f72656c656173652f61626c61622f737061646573" alt="GitHub release (latest by date)" data-canonical-src="https://img.shields.io/github/v/release/ablab/spades" style="max-width:100%;"></a><br>
 <a href="https://github.com/ablab/spades/releases"><img src="https://camo.githubusercontent.com/a8ba4fbdefabcc61b7a4d41a40fb19c92e96d49717bd24414252a4f460a34f09/68747470733a2f2f696d672e736869656c64732e696f2f6769746875622f646f776e6c6f6164732f61626c61622f7370616465732f746f74616c2e7376673f7374796c653d736f6369616c266c6f676f3d676974687562266c6162656c3d446f776e6c6f6164" alt="GitHub Downloads" data-canonical-src="https://img.shields.io/github/downloads/ablab/spades/total.svg?style=social&amp;logo=github&amp;label=Download" style="max-width:100%;"></a><br>
@@ -54,7 +54,6 @@
 <li>biosyntheticSPAdes – a module for biosynthetic gene cluster assembly with paired-end reads (see <a href="#biosynthetic">biosynthicSPAdes options</a>).</li>
 <li>rnaviralSPAdes – a <em>de novo</em> assembler tailored for RNA viral datasets (transcriptome, metatranscriptome and metavirome).</li>
 <li>coronaSPAdes is a special mode of rnaviralSPAdes specifically aimed for SARS-CoV-2 <em>de novo</em> assembly.</li>
-<li>truSPAdes – (DEPRECATED) a module for TruSeq barcode assembly (see <a href="truspades_manual.html">truSPAdes manual</a>).</li>
 </ul>
 <p>In addition, we provide several stand-alone binaries with relatively simple command-line interface: <a href="#sec4.1">k-mer counting</a> (<code>spades-kmercounter</code>), <a href="#sec4.2">assembly graph construction</a> (<code>spades-gbuilder</code>) and <a href="#sec4.3">long read to graph aligner</a> (<code>spades-gmapper</code>). To learn options of these tools you can either run them without any parameters or read <a href="#sec4">this section</a>.</p>
 <p><a href=""></a></p>
@@ -146,7 +145,6 @@
 <li><code>metaplasmidspades.py</code> (main executable script for <a href="#metaextrachromosomal">metaplasmidSPAdes</a>)</li>
 <li><code>metaviralspades.py</code> (main executable script for <a href="#metaextrachromosomal">metaviralSPAdes</a>)</li>
 <li><code>rnaspades.py</code> (main executable script for <a href="rnaspades_manual.html">rnaSPAdes</a>)</li>
-<li><code>truspades.py</code> (main executable script for <a href="truspades_manual.html">truSPAdes</a>, DEPRECATED)</li>
 <li><code>rnaviralspades.py</code> (main executable script for rnaviralSPAdes)</li>
 <li><code>coronaspades.py</code> (wrapper script for coronaSPAdes mode)</li>
 <li><code>spades-core</code>  (assembly module)</li>
@@ -157,7 +155,6 @@
 <li><code>spades-ionhammer</code>  (read error correcting module for IonTorrent reads)</li>
 <li><code>spades-bwa</code>  (<a href="http://bio-bwa.sourceforge.net" rel="nofollow">BWA</a> alignment module which is required for mismatch correction)</li>
 <li><code>spades-corrector-core</code>  (mismatch correction module)</li>
-<li><code>spades-truseq-scfcorrection</code>  (executable used in truSPAdes pipeline)</li>
 </ul>
 <p><a name="sec2.1"></a></p>
 <h2>Downloading SPAdes Linux binaries</h2>
