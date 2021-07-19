@@ -3,10 +3,9 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/ablab/spades)](https://github.com/ablab/spades/releases/)
 [![GitHub Downloads](https://img.shields.io/github/downloads/ablab/spades/total.svg?style=social&logo=github&label=Download)](https://github.com/ablab/spades/releases)
 [![BioConda Downloads](https://anaconda.org/bioconda/spades/badges/downloads.svg)](https://anaconda.org/bioconda/spades)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](code_of_conduct.md)
 
 
-<font size=20>__SPAdes 3.15.1 Manual__</font>
+<font size=20>__SPAdes 3.15.2 Manual__</font>
 
 1. [About SPAdes](#sec1) </br>
     1.1. [Supported data types](#sec1.1)</br>
@@ -42,7 +41,7 @@
 <a name="sec1"></a>
 # About SPAdes
 
-SPAdes &ndash; St. Petersburg genome assembler &ndash; is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.15.1 was released under GPLv2 on February 18, 2021 and can be downloaded from <http://cab.spbu.ru/software/spades/>. 
+SPAdes &ndash; St. Petersburg genome assembler &ndash; is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.15.2 was released under GPLv2 on March 8, 2021 and can be downloaded from <http://cab.spbu.ru/software/spades/>. 
 
 The latest SPAdes paper describing various pipelines in a protocol format is available [here](https://currentprotocols.onlinelibrary.wiley.com/doi/abs/10.1002/cpbi.102).
 
@@ -51,11 +50,11 @@ The latest SPAdes paper describing various pipelines in a protocol format is ava
 
 The current version of SPAdes works with Illumina or IonTorrent reads and is capable of providing hybrid assemblies using PacBio, Oxford Nanopore and Sanger reads. You can also provide additional contigs that will be used as long reads.
 
-Version 3.15.1 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. Note, that SPAdes was initially designed for small genomes. It was tested on bacterial (both single-cell MDA and standard isolates), fungal and other small genomes. SPAdes is not intended for larger genomes (e.g. mammalian size genomes). For such purposes you can use it at your own risk.
+Version 3.15.2 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. Note, that SPAdes was initially designed for small genomes. It was tested on bacterial (both single-cell MDA and standard isolates), fungal and other small genomes. SPAdes is not intended for larger genomes (e.g. mammalian size genomes). For such purposes you can use it at your own risk.
 
 If you have high-coverage data for bacterial/viral isolate or multi-cell organism, we highly recommend to use [`--isolate`](#isolate) option.
 
-SPAdes 3.15.1 includes the following additional pipelines:
+SPAdes 3.15.2 includes the following additional pipelines:
 
 -   metaSPAdes &ndash; a pipeline for metagenomic data sets (see [metaSPAdes options](#meta)).
 -   plasmidSPAdes &ndash; a pipeline for extracting and assembling plasmids from WGS data sets (see [plasmid options](#plasmid)).
@@ -64,6 +63,7 @@ SPAdes 3.15.1 includes the following additional pipelines:
 -   biosyntheticSPAdes &ndash; a module for biosynthetic gene cluster assembly with paired-end reads (see [biosynthicSPAdes options](#biosynthetic)).
 -   rnaviralSPAdes &ndash; a *de novo* assembler tailored for RNA viral datasets (transcriptome, metatranscriptome and metavirome). 
 -   coronaSPAdes is a special mode of rnaviralSPAdes specifically aimed for SARS-CoV-2 *de novo* assembly.
+-   truSPAdes &ndash; (DEPRECATED) a module for TruSeq barcode assembly (see [truSPAdes manual](assembler/truspades_manual.html)).
 
 In addition, we provide several stand-alone binaries with relatively simple command-line interface: [k-mer counting](#sec4.1) (`spades-kmercounter`), [assembly graph construction](#sec4.2) (`spades-gbuilder`) and [long read to graph aligner](#sec4.3) (`spades-gmapper`). To learn options of these tools you can either run them without any parameters or read [this section](#sec4).
 
@@ -170,6 +170,7 @@ In case of successful installation the following files will be placed in the `bi
 -   `metaplasmidspades.py` (main executable script for [metaplasmidSPAdes](#metaextrachromosomal))
 -   `metaviralspades.py` (main executable script for [metaviralSPAdes](#metaextrachromosomal))
 -   `rnaspades.py` (main executable script for [rnaSPAdes](rnaspades_manual.html))
+-   `truspades.py` (main executable script for [truSPAdes](truspades_manual.html), DEPRECATED)
 -   `rnaviralspades.py` (main executable script for rnaviralSPAdes)
 -   `coronaspades.py` (wrapper script for coronaSPAdes mode)
 -   `spades-core`  (assembly module)
@@ -180,17 +181,18 @@ In case of successful installation the following files will be placed in the `bi
 -   `spades-ionhammer`  (read error correcting module for IonTorrent reads)
 -   `spades-bwa`  ([BWA](http://bio-bwa.sourceforge.net) alignment module which is required for mismatch correction)
 -   `spades-corrector-core`  (mismatch correction module)
+-   `spades-truseq-scfcorrection`  (executable used in truSPAdes pipeline)
 
 <a name="sec2.1"></a>
 ## Downloading SPAdes Linux binaries
 
-To download [SPAdes Linux binaries](http://cab.spbu.ru/files/release3.15.1/SPAdes-3.15.1-Linux.tar.gz) and extract them, go to the directory in which you wish SPAdes to be installed and run:
+To download [SPAdes Linux binaries](http://cab.spbu.ru/files/release3.15.2/SPAdes-3.15.2-Linux.tar.gz) and extract them, go to the directory in which you wish SPAdes to be installed and run:
 
 ``` bash
 
-    wget http://cab.spbu.ru/files/release3.15.1/SPAdes-3.15.1-Linux.tar.gz
-    tar -xzf SPAdes-3.15.1-Linux.tar.gz
-    cd SPAdes-3.15.1-Linux/bin/
+    wget http://cab.spbu.ru/files/release3.15.2/SPAdes-3.15.2-Linux.tar.gz
+    tar -xzf SPAdes-3.15.2-Linux.tar.gz
+    cd SPAdes-3.15.2-Linux/bin/
 ```
 
 In this case you do not need to run any installation scripts &ndash; SPAdes is ready to use. We also suggest adding SPAdes installation directory to the `PATH` variable. []()
@@ -200,13 +202,13 @@ Note, that pre-build binaries do not work on new Linux kernels.
 <a name="sec2.2"></a>
 ## Downloading SPAdes binaries for Mac
 
-To obtain [SPAdes binaries for Mac](http://cab.spbu.ru/files/release3.15.1/SPAdes-3.15.1-Darwin.tar.gz), go to the directory in which you wish SPAdes to be installed and run:
+To obtain [SPAdes binaries for Mac](http://cab.spbu.ru/files/release3.15.2/SPAdes-3.15.2-Darwin.tar.gz), go to the directory in which you wish SPAdes to be installed and run:
 
 ``` bash
 
-    curl http://cab.spbu.ru/files/release3.15.1/SPAdes-3.15.1-Darwin.tar.gz -o SPAdes-3.15.1-Darwin.tar.gz
-    tar -zxf SPAdes-3.15.1-Darwin.tar.gz
-    cd SPAdes-3.15.1-Darwin/bin/
+    curl http://cab.spbu.ru/files/release3.15.2/SPAdes-3.15.2-Darwin.tar.gz -o SPAdes-3.15.2-Darwin.tar.gz
+    tar -zxf SPAdes-3.15.2-Darwin.tar.gz
+    cd SPAdes-3.15.2-Darwin/bin/
 ```
 
 Just as in Linux, SPAdes is ready to use and no further installation steps are required. We also suggest adding SPAdes installation directory to the `PATH` variable. []()
@@ -217,17 +219,17 @@ Just as in Linux, SPAdes is ready to use and no further installation steps are r
 If you wish to compile SPAdes by yourself you will need the following libraries to be pre-installed:
 
 -   g++ (version 5.3.1 or higher)
--   cmake (version 3.12 or higher)
+-   cmake (version 3.5 or higher)
 -   zlib
 -   libbz2
 
-If you meet these requirements, you can download the [SPAdes source code](http://cab.spbu.ru/files/release3.15.1/SPAdes-3.15.1.tar.gz):
+If you meet these requirements, you can download the [SPAdes source code](http://cab.spbu.ru/files/release3.15.2/SPAdes-3.15.2.tar.gz):
 
 ``` bash
 
-    wget http://cab.spbu.ru/files/release3.15.1/SPAdes-3.15.1.tar.gz
-    tar -xzf SPAdes-3.15.1.tar.gz
-    cd SPAdes-3.15.1
+    wget http://cab.spbu.ru/files/release3.15.2/SPAdes-3.15.2.tar.gz
+    tar -xzf SPAdes-3.15.2.tar.gz
+    cd SPAdes-3.15.2
 ```
 
 and build it with the following script:
@@ -305,7 +307,7 @@ Thank you for using SPAdes!
 
 SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ. For IonTorrent data SPAdes also supports unpaired reads in unmapped BAM format (like the one produced by Torrent Server). However, in order to run read error correction, reads should be in FASTQ or BAM format. Sanger, Oxford Nanopore and PacBio CLR reads can be provided in both formats since SPAdes does not run error correction for these types of data.
 
-To run SPAdes 3.15.1 you need at least one library of the following types:
+To run SPAdes 3.15.2 you need at least one library of the following types:
 
 -   Illumina paired-end/high-quality mate-pairs/unpaired reads
 -   IonTorrent paired-end/high-quality mate-pairs/unpaired reads
@@ -931,7 +933,7 @@ HMM-guided mode could be enabled via providing a set of HMMs via `--custom-hmms`
 
 Note that normal biosyntheticSPAdes mode (via `--bio` option) is a bit different from HMM-guided mode: besides using the special set of profile HMMS representing a family of NRSP/PKS domains also includes a set of assembly graph simplification and processing settings aimed for fuller recovery of biosynthetic gene clusters.
 
-Given an increased interest in coronavirus research we developed a coronavirus assembly mode for SPAdes assembler (also known as coronaSPAdes). It allows to assemble full-length coronaviridae genomes from the transcriptomic and metatranscriptomic data. Algorithmically, coronaSPAdes is an rnaviralSPAdes that uses the set of HMMs from [Pfam SARS-CoV-2 2.0](ftp://ftp.ebi.ac.uk/pub/databases/Pfam/releases/Pfam_SARS-CoV-2_2.0/) set as well as additional HMMs as outlined by [(Phan et al, 2019)](https://doi.org/10.1093/ve/vey035). coronaSPAdes could be run via a dedicated `coronaspades.py` script. See [coronaSPAdes preprint](https://www.biorxiv.org/content/10.1101/2020.07.28.224584v1) for more information about rnaviralSPAdes,  coronaSPAdes and HMM-guided mode. Output for any HMM-related mode (--bio, --corona, or --custom-hmms flags) is the same with biosyntheticSPAdes' output.
+Given an increased interest in coronavirus research we developed a coronavirus assembly mode for SPAdes assembler (also known as coronaSPAdes). It allows to assemble full-length coronaviridae genomes from the transcriptomic and metatranscriptomic data. Algorithmically, coronaSPAdes is an rnaviralSPAdes that uses the set of HMMs from [Pfam SARS-CoV-2 2.0](ftp://ftp.ebi.ac.uk/pub/databases/Pfam/releases/Pfam_SARS-CoV-2_2.0/) set as well as additional HMMs as outlined by [(Phan et al, 2019)](https://doi.org/10.1093/ve/vey035). coronaSPAdes could be run via a dedicated `coronaspades.py` script. See [coronaSPAdes preprint](https://www.biorxiv.org/content/10.1101/2020.07.28.224584v1) for more information about rnaviralSPAdes,  coronaSPAdes and HMM-guided mode.
 
 <a name="spadesoutsec"></a>
 ## SPAdes output
@@ -1031,11 +1033,11 @@ For metaviral mode we also output linear putative viruses and linear viruses wit
 <a name="bgc"></a>
 ## biosyntheticSPAdes output
 
-biosyntheticSPAdes outputs four files of interest:
-- scaffolds.fasta – contains DNA sequences from putative biosynthetic gene clusters (BGC). Since each sample may contain multiple BGCs and biosyntheticSPAdes can output several putative DNA sequences for eash cluster, for each contig name we append suffix <code>_cluster_X_candidate_Y</code>, where X is the id of the BGC and Y is the id of the candidate from the BGC.
-- raw_scaffolds.fasta – SPAdes scaffolds generated without domain-graph related algorithms. Very close to regular scaffolds.fasta file.
-- hmm_statistics.txt – contains statistics about BGC composition in the sample. First, it outputs number of domain hits in the sample. Then, for each BGC candidate we output domain order with positions on the corresponding DNA sequence from scaffolds.fasta.
-- domain_graph.dot – contains domain graph structure, that can be used to assess complexity of the sample and structure of BGCs. For more information about domain graph construction, please refer to the paper.
+biosyntheticSPAdes outputs three files of interest:
+- gene_clusters.fasta &ndash; contains DNA sequences from putative biosynthetic gene clusters (BGC). Since eash sample may contain multiple BGCs and biosyntheticSPAdes can output several putative DNA sequences for eash cluster, for each contig name we append suffix `_cluster_X_candidate_Y`, where X is the id of the BGC and Y is the id of the candidate from the BGC.
+- bgc_statistics.txt &ndash; contains statistics about BGC composition in the sample. First, it outputs number of domain hits in the sample. Then, for each BGC candidate we output domain order with positions on the corresponding DNA sequence from gene_clusters.fasta. 
+- domain_graph.dot &ndash; contains domain graph structure, that can be used to assess complexity of the sample and structure of BGCs. For more information about domain graph construction, please refer to the paper.
+
 
 <a name="eval"></a>
 ## Assembly evaluation
