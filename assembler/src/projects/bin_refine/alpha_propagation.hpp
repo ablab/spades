@@ -12,22 +12,29 @@
 
 namespace bin_stats {
 
-class AlphaPropagator : public AlphaAssigner {
+class AlphaPropagator {
   public:
     using EdgeId = debruijn_graph::EdgeId;
     using Graph = debruijn_graph::Graph;
+    using BinId = Binning::BinId;
+
+    static constexpr BinId UNBINNED = BinId(0);
+    static constexpr BinId BINNED = BinId(1);
 
     AlphaPropagator(const debruijn_graph::Graph &g,
                     const binning::LinkIndex &links,
-                    double metaalpha)
-        : AlphaAssigner(g), links_(links), metaalpha_(metaalpha) {}
+                    double metaalpha,
+                    double eps)
+        : g_(g), links_(links), metaalpha_(metaalpha), eps_(eps) {}
 
-    AlphaAssignment GetAlphaAssignment(const Binning &bin_stats) const override;
+    AlphaAssignment GetAlphaMask(const Binning &bin_stats) const;
   private:
     SoftBinsAssignment ConstructBinningMask(const SoftBinsAssignment &origin_state) const;
 
+    const Graph &g_;
     const binning::LinkIndex links_;
     double metaalpha_;
+    double eps_;
 };
 
 }

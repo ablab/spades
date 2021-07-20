@@ -21,12 +21,9 @@ class AlphaAssigner {
         : g_(g) {}
     virtual ~AlphaAssigner() = default;
 
-    virtual AlphaAssignment GetAlphaAssignment(const Binning &bin_stats) const = 0;
+    virtual AlphaAssignment GetAlphaAssignment(const SoftBinsAssignment &state) const = 0;
 
   protected:
-    //fixme duplication with LabelsPropagation
-    SoftBinsAssignment InitLabels(const Binning& bin_stats) const;
-
     const debruijn_graph::Graph &g_;
 };
 
@@ -35,10 +32,24 @@ class PropagationAssigner : public AlphaAssigner {
     explicit PropagationAssigner(const debruijn_graph::Graph &g)
         : AlphaAssigner(g) {}
 
-    AlphaAssignment GetAlphaAssignment(const Binning &bin_stats) const override;
+    AlphaAssignment GetAlphaAssignment(const SoftBinsAssignment &state) const override;
 
   private:
     using AlphaAssigner::g_;
+};
+
+class AlphaCorrector: public AlphaAssigner {
+  public:
+    using EdgeId = debruijn_graph::EdgeId;
+    using Graph = debruijn_graph::Graph;
+
+    AlphaCorrector(const Graph &g, double labeled_alpha);
+    AlphaCorrector(const debruijn_graph::Graph &g, const AlphaAssignment &distance_coeffs, double labeled_alpha);
+
+    AlphaAssignment GetAlphaAssignment(const SoftBinsAssignment &state) const override;
+  private:
+    AlphaAssignment distance_coeffs_;
+    double labeled_alpha_;
 };
 
 }
