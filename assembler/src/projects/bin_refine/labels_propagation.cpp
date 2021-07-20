@@ -64,19 +64,10 @@ LabelsPropagation::LabelsPropagation(const debruijn_graph::Graph& g,
     INFO("Average edge weight: " << avweight);
 }
 
-SoftBinsAssignment LabelsPropagation::RefineBinning(const Binning& bin_stats) const {
+SoftBinsAssignment LabelsPropagation::RefineBinning(const SoftBinsAssignment &origin_state) const {
   unsigned iteration_step = 0;
 
-  SoftBinsAssignment state = InitLabels(bin_stats), new_state(state), origin_state(state);
-
-//  auto ealpha = InitAlpha(origin_state);
-//  adt::id_map<double, debruijn_graph::EdgeId> new_ealpha(g_.max_eid());
-//  unsigned alpha_propagation_iterations = 5;
-//  unsigned alpha_iteration_step = 0;
-//  while (alpha_iteration_step < alpha_propagation_iterations) {
-//      AlphaPropagationIteration(new_ealpha, ealpha, origin_state, alpha_iteration_step++);
-//      std::swap(new_ealpha, ealpha);
-//  }
+  SoftBinsAssignment new_state(origin_state), state(origin_state);
 
   while (true) {
       FinalIteration converged = PropagationIteration(new_state, state,
@@ -97,137 +88,6 @@ static void PropagateFromEdge(blaze::DynamicVector<double> &labels_probabilities
     const auto& neig_probs = cur_state.at(neighbour).labels_probabilities;
     labels_probabilities += weight * neig_probs;
 }
-
-//LabelsPropagation::FullAlphaAssignment LabelsPropagation::InitAlpha(AlphaAssignment &ealpha,
-//                                                                    const bin_stats::SoftBinsAssignment &origin_state) const {
-//    // Calculate the regularization coefficients
-//    bool propagation = math::eq(labeled_alpha_, 0.0);
-//    for (EdgeId e : g_.canonical_edges()) {
-//        double alpha = 0;
-//        const EdgeLabels &edge_labels = origin_state.at(e);
-//
-//        // Formula for correction: next_probs[i] = alpha[e] * rw[e] * \sum{neighbour} (rd[neighbour] * cur_probs[neighbour]) + (1 - alpha[e]) * origin_probs[e]
-//        // Therefore:
-//
-//        // If alpha is zero, then original binning will be used
-//        // If alpha is one, then original binning will be ignored
-//        // Otherwise, alpha is used as a regularization coefficient for binning propagation
-//        // If the edge is binned and is not repetitive, then we use labelled alpha
-//        // (zero in case of simple propagation and some pre-defined value
-//        // otherwise), otherwise we do not trust input binning and set alpha to one.
-//        // Also, make alpha dependent on the edge length.
-//        alpha = 1.0;
-//        if (edge_labels.is_binned && !edge_labels.is_repetitive) {
-//            if (propagation) {
-//                alpha = 0;
-//            } else {
-//                size_t l = g_.length(e), thr = 1000;
-//                double coef = (l > thr ? 1.0 : ::log(l) / ::log(thr));
-//                alpha = labeled_alpha_ * coef;
-//            }
-//        }
-//        ealpha.emplace(e, alpha);
-//        ealpha.emplace(g_.conjugate(e), alpha);
-//    }
-//}
-
-        // If alpha is zero, then original binning will be used
-        // If alpha is one, then original binning will be ignored
-        // Otherwise, alpha is used as a regularization coefficient for binning propagation
-        // If the edge is binned and is not repetitive, then we use labelled alpha
-        // (zero in case of simple propagation and some pre-defined value
-        // otherwise), otherwise we do not trust input binning and set alpha to one.
-        // Also, make alpha dependent on the edge length.
-        // After alpha propagation, alpha is reset for binned edges
-        if (edge_labels.is_binned && !edge_labels.is_repetitive) {
-            if (propagation and reset) {
-                alpha = 0;
-            } else {
-                size_t l = g_.length(e), thr = 1000;
-                double coef = (l > thr ? 0 : 1 - ::log(l) / ::log(thr));
-                alpha = labeled_alpha_ + (1 - labeled_alpha_) * coef;
-            }
-        } else if (not edge_labels.is_binned) {
-            if (not reset) {
-                alpha = 0;
-            }
-        } else {
-            if (reset) {
-                alpha = 1;
-            }
-        }
-
-        ealpha[e] = alpha;
-        ealpha[g_.conjugate(e)] = alpha;
-    }
-}
-
-void LabelsPropagation::AlphaPropagationIteration(adt::id_map<double, debruijn_graph::EdgeId> &new_ealpha,
-                                                  const adt::id_map<double, debruijn_graph::EdgeId> &ealpha,
-                                                  const SoftBinsAssignment& origin_state,
-                                                  unsigned iteration_step) const {
-    size_t binned_edges = 0;
-    size_t curr_propagated = 0;
-    size_t total_unbinned = 0;
-    for (EdgeId e : g_.canonical_edges()) {
-        const EdgeLabels &edge_labels = origin_state.at(e);
-        bool is_fixed_alpha = edge_labels.is_binned && !edge_labels.is_repetitive;
-        if (not is_fixed_alpha) {
-            ++total_unbinned;
-            const auto &edge_links = links_.links(e);
-            if (not edge_links.empty()) {
-                double neigh_alpha = 0;
-                for (const auto &link : edge_links)
-                    neigh_alpha += ealpha.at(link.e);
-                double new_alpha = (ealpha[e] + neigh_alpha) / (double)(edge_links.size() + 1);
-                new_ealpha.emplace(e, new_alpha);
-                if (math::gr(new_alpha, .0)) {
-                    ++curr_propagated;
-                }
-            }
-        } else {
-            new_ealpha.emplace(e, ealpha[e]);
-            ++binned_edges;
-        }
-
-    }
-    INFO("Iteration " << iteration_step << ", alpha propagated to " << curr_propagated <<
-         " unbinned edges out of " << total_unbinned << " from " << binned_edges << " initially binned edges");
-
-}
-//void LabelsPropagation::AlphaPropagationIteration(adt::id_map<double, debruijn_graph::EdgeId> &new_ealpha,
-//                                                  const adt::id_map<double, debruijn_graph::EdgeId> &ealpha,
-//                                                  const SoftBinsAssignment& origin_state,
-//                                                  unsigned iteration_step) const {
-//    size_t binned_edges = 0;
-//    size_t curr_propagated = 0;
-//    size_t total_unbinned = 0;
-//    for (EdgeId e : g_.canonical_edges()) {
-//        const EdgeLabels &edge_labels = origin_state.at(e);
-//        bool is_fixed_alpha = edge_labels.is_binned && !edge_labels.is_repetitive;
-//        if (not is_fixed_alpha) {
-//            ++total_unbinned;
-//            const auto &edge_links = links_.links(e);
-//            if (not edge_links.empty()) {
-//                double neigh_alpha = 0;
-//                for (const auto &link : edge_links)
-//                    neigh_alpha += ealpha.at(link.e);
-//                double new_alpha = (ealpha[e] + neigh_alpha) / (double)(edge_links.size() + 1);
-//                new_ealpha.emplace(e, new_alpha);
-//                if (math::gr(new_alpha, .0)) {
-//                    ++curr_propagated;
-//                }
-//            }
-//        } else {
-//            new_ealpha.emplace(e, ealpha[e]);
-//            ++binned_edges;
-//        }
-//
-//    }
-//    INFO("Iteration " << iteration_step << ", alpha propagated to " << curr_propagated <<
-//         " unbinned edges out of " << total_unbinned << " from " << binned_edges << " initially binned edges");
-//
-//}
 
 LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBinsAssignment& new_state,
                                                                           const SoftBinsAssignment& cur_state,
@@ -307,17 +167,6 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
 
 
   return converged;
-}
-
-SoftBinsAssignment LabelsPropagation::InitLabels(const Binning& bin_stats) const {
-    SoftBinsAssignment state(bin_stats.graph().max_eid());
-    for (EdgeId e : g_.canonical_edges()) {
-        EdgeLabels labels(e, bin_stats);
-        state.emplace(e, labels);
-        state.emplace(g_.conjugate(e), std::move(labels));
-    }
-
-    return state;
 }
 
 void LabelsPropagation::EqualizeConjugates(SoftBinsAssignment& state) const {

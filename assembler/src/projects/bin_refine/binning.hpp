@@ -148,4 +148,15 @@ class Binning {
     std::unordered_set<debruijn_graph::EdgeId> unbinned_edges_{};
     std::unordered_map<debruijn_graph::EdgeId, size_t> edges_multiplicity_{};
 };
+
+class LabelInitializer {
+  public:
+    using Graph = debruijn_graph::Graph;
+
+    LabelInitializer(const Graph &g);
+
+    SoftBinsAssignment InitLabels(const Binning &bin_stats) const;
+  private:
+    const Graph &g_;
+};
 }

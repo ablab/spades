@@ -270,6 +270,18 @@ void Binning::AssignBins(const SoftBinsAssignment& soft_edge_labels,
     }
 }
 
+SoftBinsAssignment LabelInitializer::InitLabels(const bin_stats::Binning &bin_stats) const {
+    SoftBinsAssignment state(bin_stats.graph().max_eid());
+    for (debruijn_graph::EdgeId e : g_.canonical_edges()) {
+        EdgeLabels labels(e, bin_stats);
+        state.emplace(e, labels);
+        state.emplace(g_.conjugate(e), std::move(labels));
+    }
+
+    return state;
+}
+LabelInitializer::LabelInitializer(const Graph &g) : g_(g) {}
+
 static double WJaccard(const blaze::CompressedMatrix<double, blaze::rowMajor> &m,
                        size_t i, size_t j) {
     auto lhs = blaze::row(m, i), rhs = blaze::row(m, j);

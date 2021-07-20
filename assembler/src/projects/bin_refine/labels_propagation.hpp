@@ -23,11 +23,9 @@ class LabelsPropagation : public BinningRefiner {
                       const AlphaAssignment &labeled_alpha,
                       double eps);
 
-    SoftBinsAssignment RefineBinning(const Binning& bin_stats) const override;
+    SoftBinsAssignment RefineBinning(const SoftBinsAssignment &origin_state) const override;
 
  private:
-    SoftBinsAssignment InitLabels(const Binning& bin_stats) const;
-
     void EqualizeConjugates(SoftBinsAssignment& state) const;
 
     FinalIteration PropagationIteration(SoftBinsAssignment& new_state,
@@ -42,10 +40,10 @@ class LabelsPropagation : public BinningRefiner {
 //                                   const SoftBinsAssignment& origin_state,
 //                                   unsigned iteration_step) const;
 
+    AlphaAssignment labeled_alpha_;
     const double eps_;
 
     adt::id_map<double, debruijn_graph::EdgeId> rdeg_;
     adt::id_map<double, debruijn_graph::EdgeId> rweight_;
-    AlphaAssignment labeled_alpha_;
 };
 }

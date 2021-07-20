@@ -10,11 +10,26 @@
 
 namespace bin_stats {
 
-AlphaAssignment PropagationAssigner::GetAlphaAssignment(const Binning &bin_stats) const {
+AlphaAssignment PropagationAssigner::GetAlphaAssignment(const SoftBinsAssignment &origin_state) const {
     AlphaAssignment ealpha(g_.max_eid());
-    auto origin_state = InitLabels(bin_stats);
     // Calculate the regularization coefficients
     for (debruijn_graph::EdgeId e : g_.canonical_edges()) {
+        double alpha = 0;
+        const EdgeLabels &edge_labels = origin_state.at(e);
+        alpha = 1.0;
+        if (edge_labels.is_binned && !edge_labels.is_repetitive) {
+            alpha = 0;
+        }
+        ealpha.emplace(e, alpha);
+        ealpha.emplace(g_.conjugate(e), alpha);
+    }
+    return ealpha;
+}
+AlphaAssignment AlphaCorrector::GetAlphaAssignment(const SoftBinsAssignment &origin_state) const {
+    bool has_mask = distance_coeffs_.begin() == distance_coeffs_.end();
+    AlphaAssignment ealpha(g_.max_eid());
+    //Calculate the regularization coefficients
+    for (EdgeId e : g_.canonical_edges()) {
         double alpha = 0;
         const EdgeLabels &edge_labels = origin_state.at(e);
 
@@ -27,24 +42,25 @@ AlphaAssignment PropagationAssigner::GetAlphaAssignment(const Binning &bin_stats
         // If the edge is binned and is not repetitive, then we use labelled alpha
         // (zero in case of simple propagation and some pre-defined value
         // otherwise), otherwise we do not trust input binning and set alpha to one.
-        // Also, make alpha dependent on the edge length.
+        // Also, make alpha dependent on the edge length and distance from the binned edges.
         alpha = 1.0;
         if (edge_labels.is_binned && !edge_labels.is_repetitive) {
-            alpha = 0;
+            size_t l = g_.length(e), thr = 1000;
+            double coef = (l > thr ? 1.0 : ::log(l) / ::log(thr));
+            double mask_coef = (has_mask ? distance_coeffs_.at(e) : 1.0);
+            alpha = labeled_alpha_ * coef * mask_coef;
         }
         ealpha.emplace(e, alpha);
         ealpha.emplace(g_.conjugate(e), alpha);
     }
     return ealpha;
 }
-SoftBinsAssignment AlphaAssigner::InitLabels(const bin_stats::Binning &bin_stats) const {
-    SoftBinsAssignment state(bin_stats.graph().max_eid());
-    for (debruijn_graph::EdgeId e : g_.canonical_edges()) {
-        EdgeLabels labels(e, bin_stats);
-        state.emplace(e, labels);
-        state.emplace(g_.conjugate(e), std::move(labels));
-    }
+AlphaCorrector::AlphaCorrector(const debruijn_graph::Graph &g,
+                               const AlphaAssignment &distance_coeffs,
+                               double labeled_alpha) :
+    AlphaAssigner(g), distance_coeffs_(distance_coeffs), labeled_alpha_(labeled_alpha) {}
 
-    return state;
-}
+AlphaCorrector::AlphaCorrector(const debruijn_graph::Graph &g, double labeled_alpha) : AlphaAssigner(g),
+                                                                                       distance_coeffs_(0),
+                                                                                       labeled_alpha_(labeled_alpha) {}
 }

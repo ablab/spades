@@ -110,7 +110,8 @@ std::unique_ptr<BinningAssignmentStrategy> get_strategy(const gcfg &cfg) {
 
 std::unique_ptr<AlphaAssigner> get_alpha_assigner(const gcfg &cfg,
                                                   const binning::LinkIndex &links,
-                                                  const Graph &graph) {
+                                                  const Graph &graph,
+                                                  const bin_stats::Binning &binning) {
     switch (cfg.refiner_type) {
         default:
             FATAL_ERROR("Unknown binning refiner type");
@@ -118,22 +119,11 @@ std::unique_ptr<AlphaAssigner> get_alpha_assigner(const gcfg &cfg,
             return std::make_unique<PropagationAssigner>(graph);
         case RefinerType::Correction:
             //todo different choice for metaalpha?
-            return std::make_unique<AlphaPropagator>(graph, links, cfg.labeled_alpha);
+            AlphaPropagator alpha_propagator(graph, links, cfg.labeled_alpha, cfg.eps);
+            auto alpha_mask = alpha_propagator.GetAlphaMask(binning);
+            return std::make_unique<bin_stats::AlphaCorrector>(graph, alpha_mask, cfg.labeled_alpha);
     }
 }
-
-//std::unique_ptr<BinningRefiner> get_refiner(const gcfg &cfg,
-//                                            const binning::LinkIndex &links,
-//                                            const Graph &graph) {
-//    switch (cfg.refiner_type) {
-//        default:
-//            FATAL_ERROR("Unknown binning refiner type");
-//        case RefinerType::Propagation:
-//            return std::make_unique<LabelsPropagation>(graph, links, cfg.eps);
-//        case RefinerType::Correction:
-//            return std::make_unique<LabelsPropagation>(graph, links, cfg.eps, cfg.labeled_alpha);
-//    }
-//}
 
 int main(int argc, char** argv) {
   utils::segfault_handler sh;
@@ -294,11 +284,13 @@ int main(int argc, char** argv) {
       binning.LoadBinning(cfg.binning_file, cfg.out_options & OutputOptions::CAMI);
       INFO("Initial binning:\n" << binning);
 
-      auto alpha_assigner = get_alpha_assigner(cfg, links, graph);
-      auto alpha_assignment = alpha_assigner->GetAlphaAssignment(binning);
+      auto alpha_assigner = get_alpha_assigner(cfg, links, graph, binning);
+      LabelInitializer label_initializer(graph);
+      auto origin_state = label_initializer.InitLabels(binning);
+      auto alpha_assignment = alpha_assigner->GetAlphaAssignment(origin_state);
+
       auto binning_refiner = std::make_unique<LabelsPropagation>(graph, links, alpha_assignment, cfg.eps);
-//      auto binning_refiner = get_refiner(cfg, links, graph);
-      auto soft_edge_labels = binning_refiner->RefineBinning(binning);
+      auto soft_edge_labels = binning_refiner->RefineBinning(origin_state);
 
       INFO("Assigning edges & scaffolds to bins");
       binning.AssignBins(soft_edge_labels, *assignment_strategy);
