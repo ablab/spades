@@ -128,7 +128,7 @@ public:
         this->get_raw_value_reference(kwh).IsolateVertex();
     }
 
-    void removeSequence(const Sequence &sequence) {
+    void RemoveSequence(const Sequence &sequence) {
         RtSeq kmer = sequence.start<RtSeq>(k_size_);
         KeyWithHash kwh = ConstructKWH(kmer);
         IsolateVertex(kwh);
@@ -138,11 +138,11 @@ public:
         }
     }
 
-    void removeSequences(const std::vector<Sequence> &sequences) {
+    void RemoveSequences(const std::vector<Sequence> &sequences) {
 #       pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < sequences.size(); ++i) {
-            removeSequence(sequences[i]);
-            removeSequence(!sequences[i]);
+            RemoveSequence(sequences[i]);
+            RemoveSequence(!sequences[i]);
         }
     }
 
