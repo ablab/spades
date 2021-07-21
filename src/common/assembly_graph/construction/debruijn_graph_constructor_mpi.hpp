@@ -55,7 +55,7 @@ class DeBruijnGraphExtentionConstructorTask {
 
         UnbranchingPathExtractor extractor(index, g.k());
         auto seqs = extractor.ExtractUnbranchingPaths(local_iters);
-        index.removeSequences(seqs);
+        index.RemoveSequences(seqs);
         partask::allreduce(index.raw_data(), index.raw_size(), MPI_BAND);
         io::binary::BinWrite(os, partask::fast_local_transfer(seqs));
     }
@@ -73,6 +73,7 @@ class DeBruijnGraphExtentionConstructorTask {
         }
 
         if (collect_loops_) {
+            INFO("Collecting perfect loops");
             UnbranchingPathExtractor extractor(index, g.k());
             std::vector<Sequence> loops = extractor.CollectLoops(omp_get_max_threads());
             seqs.insert(seqs.end(),
