@@ -119,9 +119,9 @@ std::unique_ptr<AlphaAssigner> get_alpha_assigner(const gcfg &cfg,
             return std::make_unique<PropagationAssigner>(graph);
         case RefinerType::Correction:
             //todo different choice for metaalpha?
-            AlphaPropagator alpha_propagator(graph, links, cfg.labeled_alpha, cfg.eps);
+            AlphaPropagator alpha_propagator(graph, links, cfg.labeled_alpha, cfg.eps, cfg.output_file + ".alpha_stats");
             auto alpha_mask = alpha_propagator.GetAlphaMask(binning);
-            return std::make_unique<bin_stats::AlphaCorrector>(graph, alpha_mask, cfg.labeled_alpha);
+            return std::make_unique<bin_stats::CorrectionAssigner>(graph, alpha_mask, cfg.labeled_alpha);
     }
 }
 

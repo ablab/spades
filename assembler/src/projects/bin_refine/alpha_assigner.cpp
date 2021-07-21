@@ -25,7 +25,7 @@ AlphaAssignment PropagationAssigner::GetAlphaAssignment(const SoftBinsAssignment
     }
     return ealpha;
 }
-AlphaAssignment AlphaCorrector::GetAlphaAssignment(const SoftBinsAssignment &origin_state) const {
+AlphaAssignment CorrectionAssigner::GetAlphaAssignment(const SoftBinsAssignment &origin_state) const {
 //    INFO("has mask?");
 //    bool has_mask = distance_coeffs_.begin() != distance_coeffs_.end();
 //    INFO("Has mask: " << has_mask);
@@ -48,21 +48,21 @@ AlphaAssignment AlphaCorrector::GetAlphaAssignment(const SoftBinsAssignment &ori
         alpha = 1.0;
         if (edge_labels.is_binned && !edge_labels.is_repetitive) {
             size_t l = g_.length(e), thr = 1000;
-            double coef = (l > thr ? 1.0 : ::log(l) / ::log(thr));
+            double coef = (l > thr ? 1.0 : ::log(thr) / ::log(l));
             double mask_coef = (has_distance_ ? distance_coeffs_.at(e) : 1.0);
-            alpha = labeled_alpha_ * coef * mask_coef;
+            alpha = std::min(labeled_alpha_ * coef * mask_coef, 1.0);
         }
         ealpha.emplace(e, alpha);
         ealpha.emplace(g_.conjugate(e), alpha);
     }
     return ealpha;
 }
-AlphaCorrector::AlphaCorrector(const debruijn_graph::Graph &g,
+CorrectionAssigner::CorrectionAssigner(const debruijn_graph::Graph &g,
                                const AlphaAssignment &distance_coeffs,
                                double labeled_alpha) :
     AlphaAssigner(g), has_distance_(true), distance_coeffs_(distance_coeffs), labeled_alpha_(labeled_alpha) {}
 
-AlphaCorrector::AlphaCorrector(const debruijn_graph::Graph &g, double labeled_alpha) : AlphaAssigner(g),
+CorrectionAssigner::CorrectionAssigner(const debruijn_graph::Graph &g, double labeled_alpha) : AlphaAssigner(g),
                                                                                        has_distance_(false),
                                                                                        distance_coeffs_(0),
                                                                                        labeled_alpha_(labeled_alpha) {}
