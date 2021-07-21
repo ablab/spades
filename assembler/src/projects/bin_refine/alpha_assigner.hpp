@@ -48,6 +48,7 @@ class AlphaCorrector: public AlphaAssigner {
 
     AlphaAssignment GetAlphaAssignment(const SoftBinsAssignment &state) const override;
   private:
+    bool has_distance_;
     AlphaAssignment distance_coeffs_;
     double labeled_alpha_;
 };
