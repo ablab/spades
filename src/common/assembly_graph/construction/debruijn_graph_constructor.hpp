@@ -346,7 +346,7 @@ public:
         return sequences[0];
     }
 
-    const std::vector<Sequence> ExtractUnbranchingPaths(unsigned nchunks) const {
+    const std::vector<Sequence> ExtractUnbranchingPaths(unsigned nchunks = 1) const {
         auto its = origin_.kmer_begin(nchunks);
         return ExtractUnbranchingPaths(its);
     }
@@ -382,8 +382,8 @@ public:
                     else
                         result.push_back(s);
 
-                    origin_.removeSequence(s);
-                    origin_.removeSequence(s_rc);
+                    origin_.RemoveSequence(s);
+                    origin_.RemoveSequence(s_rc);
                 }
             }
         }
@@ -393,7 +393,7 @@ public:
 
     const std::vector<Sequence> ExtractUnbranchingPathsAndLoops(unsigned nchunks) {
         std::vector<Sequence> result = ExtractUnbranchingPaths(nchunks);
-        origin_.removeSequences(result);
+        origin_.RemoveSequences(result);
         std::vector<Sequence> loops = CollectLoops(nchunks);
         result.insert(result.end(),
                       std::make_move_iterator(loops.begin()), std::make_move_iterator(loops.end()));

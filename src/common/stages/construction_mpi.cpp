@@ -371,10 +371,10 @@ public:
 
         partask::TaskRegistry treg;
         using GraphT = std::decay_t<decltype(gp.get_mutable<Graph>())>;
-        auto condence = treg.add<DeBruijnGraphExtentionConstructorTask<GraphT>>(std::ref(gp.get_mutable<Graph>()), std::ref(storage().ext_index));
+        auto condense = treg.add<DeBruijnGraphExtentionConstructorTask<GraphT>>(std::ref(gp.get_mutable<Graph>()), std::ref(storage().ext_index));
         treg.listen();
         if (partask::master()) {
-            condence(storage().params.keep_perfect_loops);
+            condense(storage().params.keep_perfect_loops);
         }
         treg.stop_listening();
         INFO("Graph synced, edges " << gp.get<Graph>().e_size() << ", vertices " << gp.get<Graph>().size());
