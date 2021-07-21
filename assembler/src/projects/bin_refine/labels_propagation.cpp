@@ -91,8 +91,8 @@ SoftBinsAssignment LabelsPropagation::RefineBinning(const Binning& bin_stats) co
               alpha = 0;
           } else {
               size_t l = g_.length(e), thr = 1000;
-              double coef = (l > thr ? 1.0 : ::log(l) / ::log(thr));
-              alpha = labeled_alpha_ * coef;
+              double coef = (l > thr ? 0 : 1 - ::log(l) / ::log(thr));
+              alpha = labeled_alpha_ + (1 - labeled_alpha_) * coef;
           }
       }
 
