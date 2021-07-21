@@ -38,13 +38,13 @@ class PropagationAssigner : public AlphaAssigner {
     using AlphaAssigner::g_;
 };
 
-class AlphaCorrector: public AlphaAssigner {
+class CorrectionAssigner: public AlphaAssigner {
   public:
     using EdgeId = debruijn_graph::EdgeId;
     using Graph = debruijn_graph::Graph;
 
-    AlphaCorrector(const Graph &g, double labeled_alpha);
-    AlphaCorrector(const debruijn_graph::Graph &g, const AlphaAssignment &distance_coeffs, double labeled_alpha);
+    CorrectionAssigner(const Graph &g, double labeled_alpha);
+    CorrectionAssigner(const debruijn_graph::Graph &g, const AlphaAssignment &distance_coeffs, double labeled_alpha);
 
     AlphaAssignment GetAlphaAssignment(const SoftBinsAssignment &state) const override;
   private:

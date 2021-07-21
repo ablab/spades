@@ -17,18 +17,27 @@ AlphaAssignment AlphaPropagator::GetAlphaMask(const Binning &bin_stats) const {
     LabelInitializer label_initializer(g_);
     auto origin_state = label_initializer.InitLabels(bin_stats);
     auto distance_state = ConstructBinningMask(origin_state);
-    auto distance_assigner = std::make_unique<AlphaCorrector>(g_, metaalpha_);
-    INFO("Getting alpha");
+    auto distance_assigner = std::make_unique<CorrectionAssigner>(g_, metaalpha_);
     auto correction_alpha = distance_assigner->GetAlphaAssignment(distance_state);
-    INFO("Correction alpha");
     auto binning_refiner = std::make_unique<LabelsPropagation>(g_, links_, correction_alpha, eps_);
-    INFO("Launching refiner");
+    INFO("Launching propagation refiner");
     auto refined_distance_coeffs = binning_refiner->RefineBinning(distance_state);
     for (const auto &labels: refined_distance_coeffs) {
         const auto &probs = labels.labels_probabilities;
         VERIFY(probs.size() == 2);
         result.emplace(labels.e, probs[BINNED]);
         result.emplace(g_.conjugate(labels.e), probs[BINNED]);
+    }
+    std::ofstream alpha_outstream(debug_path_);
+    alpha_outstream << "Id\tBinned\tLength\tInitial alpha\tDistance coeff\tFinal alpha\n";
+    for (const EdgeId &edge: g_.canonical_edges()) {
+        bool binned = origin_state.at(edge).is_binned;
+        size_t length = g_.length(edge);
+        double initial_alpha = correction_alpha.at(edge);
+        double distance_coef = result.at(edge);
+        double final_alpha = initial_alpha * distance_coef;
+        alpha_outstream << edge << "\t" << binned << "\t" << length << "\t" << initial_alpha <<
+                                   "\t" << distance_coef << "\t" << final_alpha << "\n";
     }
     return result;
 }
@@ -83,7 +92,6 @@ SoftBinsAssignment AlphaPropagator::ConstructBinningMask(const bin_stats::SoftBi
         mask_state.emplace(e, labels);
         mask_state.emplace(g_.conjugate(e), std::move(labels));
     }
-    INFO("Mask state finished");
 
     return mask_state;
 }

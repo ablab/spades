@@ -24,8 +24,9 @@ class AlphaPropagator {
     AlphaPropagator(const debruijn_graph::Graph &g,
                     const binning::LinkIndex &links,
                     double metaalpha,
-                    double eps)
-        : g_(g), links_(links), metaalpha_(metaalpha), eps_(eps) {}
+                    double eps, 
+                    const std::string &debug_path)
+        : g_(g), links_(links), metaalpha_(metaalpha), eps_(eps), debug_path_(debug_path) {}
 
     AlphaAssignment GetAlphaMask(const Binning &bin_stats) const;
   private:
@@ -35,6 +36,7 @@ class AlphaPropagator {
     const binning::LinkIndex links_;
     double metaalpha_;
     double eps_;
+    std::string debug_path_;
 };
 
 }
