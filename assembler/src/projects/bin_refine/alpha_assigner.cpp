@@ -26,7 +26,9 @@ AlphaAssignment PropagationAssigner::GetAlphaAssignment(const SoftBinsAssignment
     return ealpha;
 }
 AlphaAssignment AlphaCorrector::GetAlphaAssignment(const SoftBinsAssignment &origin_state) const {
-    bool has_mask = distance_coeffs_.begin() == distance_coeffs_.end();
+//    INFO("has mask?");
+//    bool has_mask = distance_coeffs_.begin() != distance_coeffs_.end();
+//    INFO("Has mask: " << has_mask);
     AlphaAssignment ealpha(g_.max_eid());
     //Calculate the regularization coefficients
     for (EdgeId e : g_.canonical_edges()) {
@@ -47,7 +49,7 @@ AlphaAssignment AlphaCorrector::GetAlphaAssignment(const SoftBinsAssignment &ori
         if (edge_labels.is_binned && !edge_labels.is_repetitive) {
             size_t l = g_.length(e), thr = 1000;
             double coef = (l > thr ? 1.0 : ::log(l) / ::log(thr));
-            double mask_coef = (has_mask ? distance_coeffs_.at(e) : 1.0);
+            double mask_coef = (has_distance_ ? distance_coeffs_.at(e) : 1.0);
             alpha = labeled_alpha_ * coef * mask_coef;
         }
         ealpha.emplace(e, alpha);
@@ -58,9 +60,10 @@ AlphaAssignment AlphaCorrector::GetAlphaAssignment(const SoftBinsAssignment &ori
 AlphaCorrector::AlphaCorrector(const debruijn_graph::Graph &g,
                                const AlphaAssignment &distance_coeffs,
                                double labeled_alpha) :
-    AlphaAssigner(g), distance_coeffs_(distance_coeffs), labeled_alpha_(labeled_alpha) {}
+    AlphaAssigner(g), has_distance_(true), distance_coeffs_(distance_coeffs), labeled_alpha_(labeled_alpha) {}
 
 AlphaCorrector::AlphaCorrector(const debruijn_graph::Graph &g, double labeled_alpha) : AlphaAssigner(g),
+                                                                                       has_distance_(false),
                                                                                        distance_coeffs_(0),
                                                                                        labeled_alpha_(labeled_alpha) {}
 }
