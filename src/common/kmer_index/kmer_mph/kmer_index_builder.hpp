@@ -141,6 +141,14 @@ class KMerDiskStorage {
     return fsize / (Seq::GetDataSize(k_) * sizeof(typename Seq::DataType));
   }
 
+  /*
+   * Stop owning all files. After this object dies the bucket,
+   * the files will not be deleted. Files will need to be deleted manually.
+   *
+   * TmpFiles contain some counter and it is deleted when counter = 0. In this function
+   * we don't decrement counter, but don't decrement it even when this object is freed. If we owning file
+   * we will decrement counter on deletion.
+   */
   void release_all() {
       if (all_kmers_) {
           all_kmers_->release();
