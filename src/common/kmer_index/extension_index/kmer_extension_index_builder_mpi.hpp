@@ -93,6 +93,14 @@ class FillIndexTask {
     DeBruijnExtensionIndexBuilder builder_;
 };
 
+
+/*
+ * Build kmer storages from k+1-mer storage
+ *
+ * Return the vector of kmer storages one for each node. Each kmer storage contain unique sorted kmers.
+ * The segmentation policy for each returned kmer storage the same as policy for k+1-mer storage.
+ * All returned storages are unmerged.
+ */
 template<class Index>
 class SplitKPOMersTask {
     typedef typename Index::traits_t::SeqType Seq;
