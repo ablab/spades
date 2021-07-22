@@ -104,6 +104,7 @@ class KMerDiskStorage {
   }
 
   KMerDiskStorage(KMerDiskStorage &&) = default;
+  KMerDiskStorage(const KMerDiskStorage &) = default;
   KMerDiskStorage &operator=(KMerDiskStorage &&) = default;
 
   fs::DependentTmpFile create() {
@@ -140,6 +141,16 @@ class KMerDiskStorage {
     return fsize / (Seq::GetDataSize(k_) * sizeof(typename Seq::DataType));
   }
 
+  void release_all() {
+      if (all_kmers_) {
+          all_kmers_->release();
+      } else {
+          for (auto &file : buckets_) {
+              file->release();
+          }
+      }
+  }
+
   fs::TmpFile final_kmers() {
     VERIFY_MSG(all_kmers_, "k-mers were not merged yet");
     return all_kmers_;
@@ -159,6 +170,10 @@ class KMerDiskStorage {
 
   auto bucket(size_t i) const {
     return adt::make_range(bucket_begin(i), bucket_end(i));
+  }
+
+  auto bucket_file(size_t i) const {
+      return buckets_[i];
   }
 
   size_t num_buckets() const { return buckets_.size(); }

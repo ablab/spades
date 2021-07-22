@@ -22,6 +22,9 @@ namespace kmers {
 template<class Index>
 class KMerIndexBuilder;
 
+template<class Index>
+class KMerIndexBuilderMPI;
+
 template<class traits>
 class KMerIndex {
 public:
@@ -144,5 +147,6 @@ public:
   }
 
   friend class KMerIndexBuilder<__self>;
+  friend class KMerIndexBuilderMPI<__self>;
 };
 }
