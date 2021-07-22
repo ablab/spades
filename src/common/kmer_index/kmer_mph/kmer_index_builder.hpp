@@ -219,6 +219,33 @@ class KMerDiskStorage {
     io::binary::BinWrite(os, buckets_);
   }
 
+  //helper function for verification
+  //all kmers in all buckets are sorted and unique
+  bool is_unique_and_sorted() const {
+      if (all_kmers_) {
+          return true;
+      }
+      bool is_good = true;
+
+#pragma omp parallel for
+      for (size_t bid = 0; bid < this->num_buckets(); ++bid) {
+          MMappedRecordArrayReader<typename Seq::DataType> ins(*buckets_[bid], Seq::GetDataSize(k_), /* unlink */ false);
+          for (size_t i = 1; i < ins.size(); ++i) {
+              if (!adt::array_less<typename Seq::DataType>()(*(ins.begin() + i - 1), *(ins.begin() + i))) {
+#pragma omp critical
+                  is_good = false;
+              }
+          }
+      }
+
+      if (is_good) {
+          INFO("Storage contain only sorted and unique kmers");
+      } else {
+          INFO("Kmers in storage aren't sorted or aren't unique");
+      }
+      return is_good;
+  }
+
  private:
   fs::TmpDir work_dir_;
   fs::TmpFile kmer_prefix_;
