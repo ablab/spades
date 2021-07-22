@@ -225,6 +225,7 @@ class MergeKMerFilesTask {
             auto elcnt = Seq::GetDataSize(storages_[0].k());
             std::vector<MMappedRecordArrayReader<typename Seq::DataType>> ins;
             std::vector<int> strs(storages_.size(), 0);
+            std::vector<std::pair<int, int>> oids;
 
             bool notEmpty = true;
             size_t prevId = -1ULL;
@@ -248,8 +249,7 @@ class MergeKMerFilesTask {
                 }
                 if (bstpos != -1ULL) {
                     if (prevId == -1ULL || adt::array_less<typename Seq::DataType>()(*(ins[prevId].begin() + (strs[prevId] - 1)), *(ins[bstpos].begin() + (strs[bstpos])))) {
-                        os.resize(1);
-                        os.write(ins[bstpos].data() + strs[bstpos] * elcnt, 1);
+                        oids.push_back(std::make_pair(bstpos, strs[bstpos]));
                         total += 1;
                     }
                     prevId = bstpos;
@@ -258,9 +258,14 @@ class MergeKMerFilesTask {
                     notEmpty = false;
                 }
             }
+            os.resize(total);
+            for (auto oid : oids) {
+                os.write(ins[oid.first].data() + oid.second * elcnt, 1);
+            }
+
             totalsum += total;
         }
-        INFO("Total kmers writen" << totalsum);
+        DEBUG("Total kmers writen= " << totalsum);
 
     }
 
@@ -296,7 +301,7 @@ inline void DeBruijnExtensionIndexBuilderMPI::BuildExtensionIndexFromKPOMersMPI(
 
     if (partask::master()) {
         std::vector<std::string> outputfiles;
-        DEBUG("Split_kpo_mers started");
+        INFO("Split_kpo_mers started");
         auto unmerged_kmerfiles2 = split_kpo_mers(kpostorage, index.k(), nthreads, read_buffer_size, workdir->dir());
 
         //VERIFY that number of buckets in each splitted storage the same
@@ -304,19 +309,19 @@ inline void DeBruijnExtensionIndexBuilderMPI::BuildExtensionIndexFromKPOMersMPI(
             VERIFY(unmerged_kmerfiles2[i].num_buckets() == kpostorage.num_buckets());
         }
 
-        DEBUG("Split_kpo_mers finished");
+        INFO("Split_kpo_mers finished");
 
         for (unsigned i = 0; i < kmerfiles2.num_buckets(); ++i) {
             outputfiles.push_back(kmerfiles2.create(i)->file());
         }
 
         merge_kmer_files(std::move(unmerged_kmerfiles2), outputfiles);
-        DEBUG("Merge_kmer_files finished");
+        INFO("Merge_kmer_files finished");
     }
     treg.stop_listening();
 
     partask::broadcast(kmerfiles2);
-    INFO("Total kmers=" << kmerfiles2.total_kmers());
+    INFO("Total kmers= " << kmerfiles2.total_kmers());
     BuildIndexMPI(index, kmerfiles2, /* save_final */ true);
 
     auto fill_index = treg.add<FillIndexTask<Index, Seq>>(std::ref(index));
