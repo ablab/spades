@@ -38,9 +38,14 @@ class DeBruijnExtensionIndexBuilderMPI : public DeBruijnExtensionIndexBuilder {
                                        nthreads, read_buffer_size);
     }
 
+    /*
+     * Build extension index from k+1-mers.
+     *
+     * kpostorage -- storage with k+1 mers. This storage is unmerged.
+     * */
     template<class Index, class KMerStorage>
     void BuildExtensionIndexFromKPOMersMPI(fs::TmpDir workdir,
-                                           Index &index, KMerStorage &kmerstorage,
+                                           Index &index, const KMerStorage &kpostorage,
                                            unsigned nbuckets, size_t read_buffer_size = 0) const;
 
  private:
@@ -52,18 +57,18 @@ class FillIndexTask {
  public:
     FillIndexTask() = default;
 
-    FillIndexTask(kmers::KMerDiskStorage<Seq> &storage) : storage_{storage} {};
+    FillIndexTask(const kmers::KMerDiskStorage<Seq> &kpostorage) : kpostorage_{kpostorage} {};
     FillIndexTask(std::istream &is) {
-        storage_.BinRead(is);
+        kpostorage_.BinRead(is);
     }
 
     std::ostream &serialize(std::ostream &os) const {
-        io::binary::BinWrite(os, storage_);
+        io::binary::BinWrite(os, kpostorage_);
         return os;
     }
 
     auto make_splitter(size_t, Index &) {
-        return partask::make_seq_generator(storage_.num_buckets());
+        return partask::make_seq_generator(kpostorage_.num_buckets());
     }
 
     void process(std::istream &is, std::ostream & /*os*/, Index &index) {
@@ -71,7 +76,7 @@ class FillIndexTask {
 #       pragma omp parallel for
         for (size_t i = 0; i < file_ids.size(); ++i) {
             size_t idx = file_ids[i];
-            builder_.FillExtensionsFromIndex(storage_.bucket_begin(idx), storage_.bucket_end(idx), index);
+            builder_.FillExtensionsFromIndex(kpostorage_.bucket_begin(idx), kpostorage_.bucket_end(idx), index);
         }
 
         // Send nothing
@@ -84,7 +89,7 @@ class FillIndexTask {
     }
 
  private:
-    kmers::KMerDiskStorage<Seq> storage_;
+    kmers::KMerDiskStorage<Seq> kpostorage_;
     DeBruijnExtensionIndexBuilder builder_;
 };
 
@@ -93,24 +98,25 @@ class SplitKPOMersTask {
     typedef typename Index::traits_t::SeqType Seq;
     SplitKPOMersTask() = default;
  public:
-    SplitKPOMersTask(kmers::KMerDiskStorage<Seq> &storage,
+    SplitKPOMersTask(const kmers::KMerDiskStorage<Seq> &kpostorage,
                      unsigned k,
                      unsigned nthreads,
                      size_t read_buffer_size,
                      const std::string &dir)
-        : storage_{storage}, k_{k}, nthreads_{nthreads}, read_buffer_size_{read_buffer_size}, dir_{dir} {};
+        : kpostorage_{kpostorage}, k_{k}, nthreads_{nthreads}, read_buffer_size_{read_buffer_size}, dir_{dir} {};
+
     SplitKPOMersTask(std::istream &is) {
-        io::binary::BinRead(is, storage_, k_, nthreads_, read_buffer_size_, dir_);
+        io::binary::BinRead(is, kpostorage_, k_, nthreads_, read_buffer_size_, dir_);
 
     }
 
     std::ostream &serialize(std::ostream &os) const {
-        io::binary::BinWrite(os, storage_, k_, nthreads_, read_buffer_size_, dir_);
+        io::binary::BinWrite(os, kpostorage_, k_, nthreads_, read_buffer_size_, dir_);
         return os;
     }
 
     auto make_splitter(size_t) {
-        return partask::make_seq_generator(storage_.num_buckets());
+        return partask::make_seq_generator(kpostorage_.num_buckets());
     }
 
     void process(std::istream &is, std::ostream &os) {
@@ -123,11 +129,11 @@ class SplitKPOMersTask {
         policy_ = splitter.bucket_policy();
         auto file_ids = partask::get_seq(is);
         for (size_t i : file_ids) {
-            splitter.AddKMers(storage_.bucket(i));
+            splitter.AddKMers(kpostorage_.bucket(i));
         }
 
         kmers::KMerDiskCounter<RtSeq> counter2(workdir, splitter);
-        auto storage2 = counter2.CountAll(storage_.num_buckets(), nthreads_,/* merge */ false);
+        auto storage2 = counter2.CountAll(kpostorage_.num_buckets(), nthreads_,/* merge */ false);
         storage2.BinWrite(os);
         storage2.release_all();
     }
@@ -147,13 +153,14 @@ class SplitKPOMersTask {
     }
 
  private:
-    kmers::KMerDiskStorage<Seq> storage_;
+    kmers::KMerDiskStorage<Seq> kpostorage_;
     typename kmers::KMerDiskStorage<Seq>::KMerSegmentPolicy policy_;
     unsigned k_;
     unsigned nthreads_;
     size_t read_buffer_size_;
     std::string dir_;
 };
+
 
 /* Merge KMerDiskStorages from a few nodes
  *
@@ -256,16 +263,21 @@ class MergeKMerFilesTask {
     std::vector<std::string> ofiles_;
 };
 
+/*
+ * Build extension index from k+1-mers.
+ *
+ * kpostorage -- storage with k+1 mers. This storage is unmerged.
+ */
 template<class Index, class KMerStorage>
 inline void DeBruijnExtensionIndexBuilderMPI::BuildExtensionIndexFromKPOMersMPI(fs::TmpDir workdir,
                                                                                 Index &index,
-                                                                                KMerStorage &kmerstorage,
+                                                                                const KMerStorage &kpostorage,
                                                                                 unsigned nthreads,
                                                                                 size_t read_buffer_size) const {
     typedef typename Index::traits_t::SeqType Seq;
-    VERIFY(kmerstorage.k() == index.k() + 1);
+    VERIFY(kpostorage.k() == index.k() + 1);
 
-    KMerStorage kmerfiles2(workdir, index.k(), kmerstorage.segment_policy());
+    KMerStorage kmerfiles2(workdir, index.k(), kpostorage.segment_policy());
 
     INFO("DeBruijnExtensionIndexBuilder started nthreads = " << nthreads);
     partask::TaskRegistry treg;
@@ -277,11 +289,11 @@ inline void DeBruijnExtensionIndexBuilderMPI::BuildExtensionIndexFromKPOMersMPI(
     if (partask::master()) {
         std::vector<std::string> outputfiles;
         DEBUG("Split_kpo_mers started");
-        auto unmerged_kmerfiles2 = split_kpo_mers(kmerstorage, index.k(), nthreads, read_buffer_size, workdir->dir());
+        auto unmerged_kmerfiles2 = split_kpo_mers(kpostorage, index.k(), nthreads, read_buffer_size, workdir->dir());
 
         //VERIFY that number of buckets in each splitted storage the same
         for (size_t i = 0; i < unmerged_kmerfiles2.size(); ++i) {
-            VERIFY(unmerged_kmerfiles2[i].num_buckets() == kmerstorage.num_buckets());
+            VERIFY(unmerged_kmerfiles2[i].num_buckets() == kpostorage.num_buckets());
         }
 
         DEBUG("Split_kpo_mers finished");
@@ -304,7 +316,7 @@ inline void DeBruijnExtensionIndexBuilderMPI::BuildExtensionIndexFromKPOMersMPI(
     DEBUG("Listening started");
 
     if (partask::master()) {
-        fill_index(kmerstorage);
+        fill_index(kpostorage);
     }
     treg.stop_listening();
 
