@@ -516,8 +516,11 @@ class mphf {
         os.write(reinterpret_cast<char const*>(&_nb_levels), sizeof(_nb_levels));
         os.write(reinterpret_cast<char const*>(&_lastbitsetrank), sizeof(_lastbitsetrank));
         os.write(reinterpret_cast<char const*>(&_nelem), sizeof(_nelem));
-        for (int ii=0; ii<_nb_levels; ii++) {
-            _levels[ii].bitset.save(os);
+
+        if (_nelem != 0) {
+            for (int ii=0; ii<_nb_levels; ii++) {
+                _levels[ii].bitset.save(os);
+            }
         }
 
         //save final hash
@@ -538,8 +541,12 @@ class mphf {
         is.read(reinterpret_cast<char*>(&_nelem), sizeof(_nelem));
 
         _levels.resize(_nb_levels);
-        for (int ii=0; ii<_nb_levels; ii++)
-            _levels[ii].bitset.load(is);
+
+        if (_nelem != 0) {
+            for (int ii=0; ii<_nb_levels; ii++) {
+                _levels[ii].bitset.load(is);
+            }
+        }
 
         // mini setup, recompute size of each level
         _proba_collision = 1.0 -  pow(((_gamma*(double)_nelem -1 ) / (_gamma*(double)_nelem)),_nelem-1);
