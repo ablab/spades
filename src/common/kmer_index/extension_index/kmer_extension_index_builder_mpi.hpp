@@ -278,6 +278,12 @@ inline void DeBruijnExtensionIndexBuilderMPI::BuildExtensionIndexFromKPOMersMPI(
         std::vector<std::string> outputfiles;
         DEBUG("Split_kpo_mers started");
         auto unmerged_kmerfiles2 = split_kpo_mers(kmerstorage, index.k(), nthreads, read_buffer_size, workdir->dir());
+
+        //VERIFY that number of buckets in each splitted storage the same
+        for (size_t i = 0; i < unmerged_kmerfiles2.size(); ++i) {
+            VERIFY(unmerged_kmerfiles2[i].num_buckets() == kmerstorage.num_buckets());
+        }
+
         DEBUG("Split_kpo_mers finished");
 
         for (unsigned i = 0; i < kmerfiles2.num_buckets(); ++i) {
