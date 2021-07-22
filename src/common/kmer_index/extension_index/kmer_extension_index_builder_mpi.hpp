@@ -155,6 +155,107 @@ class SplitKPOMersTask {
     std::string dir_;
 };
 
+/* Merge KMerDiskStorages from a few nodes
+ *
+ * storages -- KMerDiskStorages which were received from different nodes after SplitKPOMersTask.
+ * Each storage must be valid and unmerged. It is mean that each storage contain kmers splitted on files consist with
+ * segmentation_policy, in each file all kmers are unique and sorted. However kmer can be present in different storage,
+ * but in one particular storage only one time.
+ *
+ * MergeKMerFiles merge buckets from different Storages into one storage. The policy of splitting kmers should be the
+ * same for all storages and should stay the same for final storage. In MergeKMerFilesTask all kmers from 0 buckets
+ * from all storages should be merge into 0 bucket in final storage, 1 buckets should be merge into 1 bucket etc.
+ *
+ * Instead of final storage MergeKMerFilesTask take as a input the vector of files name(ofiles) correspondent to final bucket
+ * in new storage. After the work of MergeKmerFilesTask files from ofiles should contain merged kmers. Kmers
+ * in each file should be sorted and unique. 0 file should contain all kmers from all 0 buckets from all storages,
+ * the 1 file should contain all kmers from 1 buckets from all storages and etc.
+ */
+template <typename Seq>
+class MergeKMerFilesTask {
+    MergeKMerFilesTask() = default;
+ public:
+    MergeKMerFilesTask(std::vector<kmers::KMerDiskStorage<Seq>> storages, std::vector<std::string>& ofiles) : storages_{std::move(storages)}, ofiles_{ofiles} {};
+    MergeKMerFilesTask(std::istream &is) {
+        io::binary::BinRead(is, storages_, ofiles_);
+    }
+
+    void serialize(std::ostream &os) const {
+        io::binary::BinWrite(os, storages_, ofiles_);
+    }
+
+    auto make_splitter(size_t) {
+        return partask::make_seq_generator(storages_[0].num_buckets());
+    }
+
+    void process(std::istream &is, std::ostream &) {
+        std::vector<size_t> residuals;
+        while (is.get() && is) {
+            size_t i;
+            io::binary::BinRead(is, i);
+            DEBUG("MergeKMerFilesTask: process, i = " << i);
+            residuals.push_back(i);
+        }
+
+        /*size_t num_open_files = omp_get_max_threads() * (2 * partask::world_size());
+        INFO("Setting open file limit to " << num_open_files);
+        utils::limit_file(num_open_files);*/
+
+        int totalsum = 0;
+#pragma omp parallel for
+        for (size_t idx = 0; idx < residuals.size(); ++idx) {
+            size_t i = residuals[idx];  // TODO rename var i -> residual
+
+            MMappedRecordArrayWriter<typename Seq::DataType> os(ofiles_[i], Seq::GetDataSize(storages_[0].k()));
+            auto elcnt = Seq::GetDataSize(storages_[0].k());
+            std::vector<MMappedRecordArrayReader<typename Seq::DataType>> ins;
+            std::vector<int> strs(storages_.size(), 0);
+
+            bool notEmpty = true;
+            size_t prevId = -1ULL;
+            unsigned sumsize = 0;
+            for (size_t sid = 0; sid < storages_.size(); ++sid) {
+                ins.push_back(MMappedRecordArrayReader<typename Seq::DataType>(*storages_[sid].bucket_file(i), Seq::GetDataSize(storages_[0].k()), /* unlink */ false));
+                sumsize += ins.back().size();
+            }
+
+            int total = 0;
+            while (notEmpty) {
+                size_t bstpos = -1ULL;
+                for (size_t sid = 0; sid < storages_.size(); ++sid) {
+                    if (ins[sid].size() == strs[sid]) {
+                        continue;
+                    }
+                    if (bstpos == -1ULL || adt::array_less<typename Seq::DataType>()(*(ins[sid].begin() + strs[sid]),
+                                                                                     *(ins[bstpos].begin() + strs[bstpos]))) {
+                        bstpos = sid;
+                    }
+                }
+                if (bstpos != -1ULL) {
+                    if (prevId == -1ULL || adt::array_less<typename Seq::DataType>()(*(ins[prevId].begin() + (strs[prevId] - 1)), *(ins[bstpos].begin() + (strs[bstpos])))) {
+                        os.resize(1);
+                        os.write(ins[bstpos].data() + strs[bstpos] * elcnt, 1);
+                        total += 1;
+                    }
+                    prevId = bstpos;
+                    strs[bstpos] += 1;
+                } else {
+                    notEmpty = false;
+                }
+            }
+            totalsum += total;
+        }
+        INFO("Total kmers writen" << totalsum);
+
+    }
+
+    void merge(const std::vector<std::istream *> &) {}
+
+ private:
+    std::vector<kmers::KMerDiskStorage<Seq>> storages_;
+    std::vector<std::string> ofiles_;
+};
+
 template<class Index, class KMerStorage>
 inline void DeBruijnExtensionIndexBuilderMPI::BuildExtensionIndexFromKPOMersMPI(fs::TmpDir workdir,
                                                                                 Index &index,
@@ -168,7 +269,7 @@ inline void DeBruijnExtensionIndexBuilderMPI::BuildExtensionIndexFromKPOMersMPI(
 
     INFO("DeBruijnExtensionIndexBuilder started nthreads = " << nthreads);
     partask::TaskRegistry treg;
-    auto merge_kmer_files = treg.add<kmers::MergeKMerFilesTask<Seq>>();
+    auto merge_kmer_files = treg.add<MergeKMerFilesTask<Seq>>();
     auto split_kpo_mers = treg.add<SplitKPOMersTask<Index>>();
     treg.listen();
     DEBUG("Listening started");
@@ -183,7 +284,7 @@ inline void DeBruijnExtensionIndexBuilderMPI::BuildExtensionIndexFromKPOMersMPI(
             outputfiles.push_back(kmerfiles2.create(i)->file());
         }
 
-        merge_kmer_files(std::move(unmerged_kmerfiles2), outputfiles, index.k(), workdir->dir());
+        merge_kmer_files(std::move(unmerged_kmerfiles2), outputfiles);
         DEBUG("Merge_kmer_files finished");
     }
     treg.stop_listening();
