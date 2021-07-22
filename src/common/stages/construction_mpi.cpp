@@ -16,6 +16,7 @@
 #include "io/reads/coverage_filtering_read_wrapper.hpp"
 #include "io/reads/multifile_reader.hpp"
 #include "kmer_index/ph_map/coverage_hash_map_builder.hpp"
+#include "kmer_index/extension_index/kmer_extension_index_builder_mpi.hpp"
 #include "modules/graph_construction.hpp"
 #include "pipeline/genomic_info.hpp"
 #include "pipeline/graph_pack.hpp"
@@ -276,11 +277,11 @@ public:
             storage().kmers.reset(new kmers::KMerDiskStorage<RtSeq>());
         partask::broadcast(*storage().kmers);
 
-        kmers::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromKPOMers(storage().workdir,
-                                                                              storage().ext_index,
-                                                                              *storage().kmers,
-                                                                              cfg::get().max_threads,
-                                                                              storage().params.read_buffer_size);
+        kmers::DeBruijnExtensionIndexBuilderMPI().BuildExtensionIndexFromKPOMersMPI(storage().workdir,
+                                                                                    storage().ext_index,
+                                                                                    *storage().kmers,
+                                                                                    cfg::get().max_threads,
+                                                                                    storage().params.read_buffer_size);
     }
 
     void load(graph_pack::GraphPack&,
