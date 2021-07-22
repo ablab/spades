@@ -307,6 +307,7 @@ inline void DeBruijnExtensionIndexBuilderMPI::BuildExtensionIndexFromKPOMersMPI(
         //VERIFY that number of buckets in each splitted storage the same
         for (size_t i = 0; i < unmerged_kmerfiles2.size(); ++i) {
             VERIFY(unmerged_kmerfiles2[i].num_buckets() == kpostorage.num_buckets());
+            VERIFY_DEV(unmerged_kmerfiles2[i].is_unique_and_sorted());
         }
 
         INFO("Split_kpo_mers finished");
@@ -316,6 +317,7 @@ inline void DeBruijnExtensionIndexBuilderMPI::BuildExtensionIndexFromKPOMersMPI(
         }
 
         merge_kmer_files(std::move(unmerged_kmerfiles2), outputfiles);
+        VERIFY_DEV(kmerfiles2.is_unique_and_sorted());
         INFO("Merge_kmer_files finished");
     }
     treg.stop_listening();
