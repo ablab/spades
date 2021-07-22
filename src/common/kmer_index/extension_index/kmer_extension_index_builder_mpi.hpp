@@ -141,7 +141,7 @@ class SplitKPOMersTask {
         }
 
         kmers::KMerDiskCounter<RtSeq> counter2(workdir, splitter);
-        auto storage2 = counter2.CountAll(kpostorage_.num_buckets(), nthreads_,/* merge */ false);
+        auto storage2 = counter2.CountAll(unsigned(kpostorage_.num_buckets()), nthreads_,/* merge */ false);
         storage2.BinWrite(os);
         storage2.release_all();
     }
@@ -224,15 +224,13 @@ class MergeKMerFilesTask {
             MMappedRecordArrayWriter<typename Seq::DataType> os(ofiles_[i], Seq::GetDataSize(storages_[0].k()));
             auto elcnt = Seq::GetDataSize(storages_[0].k());
             std::vector<MMappedRecordArrayReader<typename Seq::DataType>> ins;
-            std::vector<int> strs(storages_.size(), 0);
-            std::vector<std::pair<int, int>> oids;
+            std::vector<size_t> strs(storages_.size(), 0ul);
+            std::vector<std::pair<int, size_t>> oids;
 
             bool notEmpty = true;
             size_t prevId = -1ULL;
-            unsigned sumsize = 0;
             for (size_t sid = 0; sid < storages_.size(); ++sid) {
                 ins.push_back(MMappedRecordArrayReader<typename Seq::DataType>(*storages_[sid].bucket_file(i), Seq::GetDataSize(storages_[0].k()), /* unlink */ false));
-                sumsize += ins.back().size();
             }
 
             int total = 0;
@@ -312,7 +310,7 @@ inline void DeBruijnExtensionIndexBuilderMPI::BuildExtensionIndexFromKPOMersMPI(
 
         INFO("Split_kpo_mers finished");
 
-        for (unsigned i = 0; i < kmerfiles2.num_buckets(); ++i) {
+        for (size_t i = 0; i < kmerfiles2.num_buckets(); ++i) {
             outputfiles.push_back(kmerfiles2.create(i)->file());
         }
 
