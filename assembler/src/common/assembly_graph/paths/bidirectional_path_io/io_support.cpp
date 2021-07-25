@@ -92,10 +92,10 @@ void path_extend::TranscriptToGeneJoiner::Construct(const PathContainer &paths) 
 std::string path_extend::ScaffoldSequenceMaker::MakeSequence(const BidirectionalPath &path) const {
     TRACE("Forming sequence for path " << path.str());
     //TODO what is it and why is it here?
-    // if (path.Size() == 1 && EndsWithInterstrandBulge(path)) {
-    //     TRACE("Interstrand bulge edge");
-    //     return g_.EdgeNucls(path.Back()).Subseq(k_, g_.length(path.Back())).str();
-    // }
+    if (path.Size() == 1 && EndsWithInterstrandBulge(path)) {
+        TRACE("Interstrand bulge edge");
+        return g_.EdgeNucls(path.Back()).Subseq(k_, g_.length(path.Back())).str();
+    }
 
     if (path.Empty())
         return "";

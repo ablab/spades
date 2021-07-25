@@ -1,4 +1,5 @@
 #include "replacer.hpp"
+#include "string_utils.hpp"
 #include "utils/verify.hpp"
 #include "utils/logger/logger.hpp"
 
@@ -28,11 +29,15 @@ namespace {
 void DumpReplaceInfo(string const & seq_name, string const & seq, list<ReplaceInfo> const & mapping_info) {
     static ofstream out("replace_info_dump.dump");
     static bool once_flag = true;
-    auto Print = [&out](auto const & name, auto const & type, auto const & from, auto const & to, auto const & len) {
-        out << setw(15) << name << ' ' << setw(10) << type << ' ' << setw(10) << from << ' ' << setw(10) << to << ' ' << setw(10) << len << '\n';
+    auto Print = [&out](auto const & name, auto const & type, auto const & from, auto const & len) {
+        out << setw(15) << name << ' ' << setw(10) << type << ' ' << setw(10) << from << ' ' << setw(10) << len << '\n';
+    };
+    auto Skip = [](size_t & i, auto const & s, int (*pred)(int)) {
+        while (i < s.size() && pred(s[i]))
+            ++i;
     };
     if (once_flag) {
-        Print("name", "seq_type", "from", "to", "len");
+        Print("name", "seq_type", "from", "len");
         once_flag = false;
     }
     size_t current_pos = 0;
@@ -42,40 +47,36 @@ void DumpReplaceInfo(string const & seq_name, string const & seq, list<ReplaceIn
     for (auto const & path : mapping_info) {
         {
             auto len = path.contig_start_pos - current_pos;
-            if (len > 0)
-                Print(seq_name, "origin", result_pos, result_pos + len, len);
-            result_pos += len;
-            total_origin_len += len;
+            if (len > 0) {
+                Print(seq_name, "origin", result_pos, len);
+                result_pos += len;
+                total_origin_len += len;
+            }
         }
-        {
-            auto len = path.ResultSize();
-            if (len > 0)
-                Print(seq_name, "replace", result_pos, result_pos + len, len);
-            result_pos += len;
-            total_replaced_len += len;
+
+        for (size_t i = path.drop_from_head; i + path.drop_from_tail < path.seq.size();) {
+            auto start_pos = i;
+            if (islower(path.seq[i])) {
+                Skip(i, path.seq, islower);
+                Print(seq_name, "edge", start_pos + result_pos, i - start_pos);
+            } else {
+                Skip(i, path.seq, isupper);
+                Print(seq_name, "path", start_pos + result_pos, i - start_pos);
+            }
         }
+        auto len = path.ResultSize();
+        result_pos += len;
+        total_replaced_len += len;
+
         current_pos = path.contig_end_pos;
     }
     if (current_pos < seq.size()) {
         auto len = seq.size() - current_pos;
-        Print(seq_name, "origin", result_pos, result_pos + len, len);
+        Print(seq_name, "origin", result_pos, len);
        total_origin_len += len;
     }
     INFO("Corrected " << total_replaced_len << " nucls (" << 100.0*total_replaced_len / (total_replaced_len + total_origin_len) << "%) of " << seq_name);
 }
-
-std::string ToUpperStr(std::string && s) {
-    for (auto & c : s)
-        c = toupper(c);
-    return std::move(s);
-}
-
-std::string ToLowerStr(std::string && s) {
-    for (auto & c : s)
-        c = tolower(c);
-    return std::move(s);
-}
-
 
 string MakeSeq(string const & seq, list<ReplaceInfo> const & mapping_info) {
     size_t current_pos = 0;

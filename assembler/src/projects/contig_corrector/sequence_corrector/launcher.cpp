@@ -6,12 +6,12 @@
 
 #include "helpers/common.hpp"
 #include "helpers/replacer.hpp"
+#include "helpers/string_utils.hpp"
 #include "filler_chooser.hpp"
 
 #include "utils/logger/logger.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "common/assembly_graph/paths/path_processor.hpp"
-#include "common/assembly_graph/paths/bidirectional_path_io/io_support.hpp"
 #include "common/modules/path_extend/pe_utils.hpp"
 
 #include <string>
@@ -25,6 +25,37 @@ using namespace path_extend;
 using namespace std;
 
 namespace {
+
+string MakeSequence(SimpleBidirectionalPath const & path, Graph const & graph) {
+    VERIFY(!path.Empty());
+    auto k = graph.k();
+
+    string answer = ToLowerStr(graph.EdgeNucls(path[0]).Subseq(0, k).str());
+
+    for (size_t i = 0; i < path.Size(); ++i) {
+        auto const & gap = path.GapAt(i);
+
+        answer.erase((gap.trash.previous <= answer.length()) ?
+                            answer.length() - gap.trash.previous : 0);
+
+        int overlap_after_trim = gap.OverlapAfterTrim(k);
+        if (overlap_after_trim < 0) {
+            if (!gap.gap_seq) {
+                answer += string(abs(overlap_after_trim), 'N');
+            } else {
+                VERIFY(gap.gap_seq->size() == abs(overlap_after_trim));
+                answer += ToUpperStr(*gap.gap_seq);
+            }
+            overlap_after_trim = 0;
+        }
+
+        VERIFY(overlap_after_trim >= 0);
+
+        answer += ToLowerStr(graph.EdgeNucls(path[i]).Subseq(gap.trash.current + overlap_after_trim).str());
+    }
+
+    return answer;
+}
 
 struct PathWithBorderEdgesIndexies {
     SimpleBidirectionalPath path;
@@ -85,9 +116,8 @@ private:
 
 std::list<ReplaceInfo> SequenceCorrector::ConvertToReplaceInfo(vector<PathWithBorderEdgesIndexies> const & paths) const {
     list<ReplaceInfo> mapping_info;
-    ScaffoldSequenceMaker seq_maker(graph);
     for (size_t i = 0; i < paths.size(); ++i) {
-        ReplaceInfo info(seq_maker.MakeSequence(*BidirectionalPath::create(graph, paths[i].path)));
+        ReplaceInfo info(MakeSequence(paths[i].path, graph));
         auto start_pos = GetStartPos(paths[i].first_edge_index);
         auto end_pos = GetEndPos(paths[i].last_edge_index);
         if (start_pos < 0)
