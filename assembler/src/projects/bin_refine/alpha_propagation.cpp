@@ -57,17 +57,24 @@ SoftBinsAssignment AlphaPropagator::ConstructBinningMask(const bin_stats::SoftBi
     std::unordered_set<EdgeId> binned_after_dilation;
     for (const auto &edge: binned_edges) {
         binned_after_dilation.insert(edge);
+        binned_after_dilation.insert(g_.conjugate(edge));
     }
+    auto dilation_dijkstra =
+        omnigraph::DijkstraHelper<Graph>::CreateDilationDijkstra(g_,
+                                                                 binned_edges,
+                                                                 length_threshold,
+                                                                 distance_bound,
+                                                                 max_vertices);
     for (const auto &edge: binned_edges) {
-        auto bounded_dijkstra = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, length_threshold_);
-        bounded_dijkstra.Run(g_.EdgeEnd(edge));
-        for (auto entry : bounded_dijkstra.reached())
+        dilation_dijkstra.Run(g_.EdgeEnd(edge));
+        for (auto entry : dilation_dijkstra.reached()) {
             for (const auto &out_edge: g_.OutgoingEdges(entry.first)) {
-                if (g_.length(out_edge) <= length_threshold_) {
+                if (g_.length(out_edge) <= length_threshold) {
                     binned_after_dilation.insert(out_edge);
                     binned_after_dilation.insert(g_.conjugate(out_edge));
                 }
             }
+        }
     }
     binned_length = 0;
     for (const auto &edge: binned_after_dilation) {
