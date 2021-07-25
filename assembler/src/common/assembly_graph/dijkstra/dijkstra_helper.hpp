@@ -233,6 +233,36 @@ public:
                                                                        ForwardNeighbourIteratorFactory<Graph>(graph)),
                                        max_vertex_number);
     }
+
+    //------------------------------
+    // Length, distance, and component dijkstra
+    //------------------------------
+    typedef std::tuple<ForbiddenEdgesPutChecker<Graph>, LengthPutChecker<Graph>, BoundPutChecker<Graph>> DilationTuple;
+
+    typedef ComposedDijkstraSettings<Graph,
+                                     LengthCalculator<Graph>,
+                                     BoundProcessChecker<Graph>,
+                                     AndPutChecker<DilationTuple, Graph>,
+                                     ForwardNeighbourIteratorFactory<Graph> > DilationDijkstraSettings;
+
+    typedef Dijkstra<Graph, DilationDijkstraSettings> DilationDijkstra;
+
+    static DilationDijkstra CreateDilationDijkstra(const Graph &graph,
+                                                   const std::unordered_set<EdgeId> &edges,
+                                                   size_t length_threshold,
+                                                   size_t distance_bound,
+                                                   size_t max_vertex_number = -1ul) {
+        ForbiddenEdgesPutChecker<Graph> forbidden_put_checker(edges);
+        LengthPutChecker<Graph> length_put_checker(graph, length_threshold);
+        BoundPutChecker<Graph> bound_put_checker(distance_bound);
+        auto put_checkers = std::make_tuple(forbidden_put_checker, length_put_checker, bound_put_checker);
+        return DilationDijkstra(graph, DilationDijkstraSettings(
+            LengthCalculator<Graph>(graph),
+            BoundProcessChecker<Graph>(distance_bound),
+            AndPutChecker<DilationTuple, Graph>(put_checkers),
+            ForwardNeighbourIteratorFactory<Graph>(graph)),
+                                     max_vertex_number);
+    }
 };
 
 }

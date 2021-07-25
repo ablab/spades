@@ -138,7 +138,7 @@ std::unique_ptr<AlphaAssigner> get_alpha_assigner(const gcfg &cfg,
             AlphaPropagator alpha_propagator(graph, links, cfg.metaalpha, cfg.eps, cfg.length_threshold,
                                              cfg.distance_bound, cfg.output_file + ".alpha_stats");
             auto alpha_mask = alpha_propagator.GetAlphaMask(binning);
-            return std::make_unique<bin_stats::CorrectionAssigner>(graph, alpha_mask, cfg.labeled_alpha);
+            return std::make_unique<bin_stats::CorrectionAssigner>(graph, alpha_mask, cfg.labeled_alpha, alpha_threshold);
     }
 }
 
@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
       gfa::GFAReader gfa(cfg.graph);
       INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: " << gfa.num_paths());
       VERIFY_MSG(gfa.k() != -1U, "Failed to determine k-mer length");
-      VERIFY_MSG(gfa.k() % 2 == 1, "k-mer length must be odd");
+//      VERIFY_MSG(gfa.k() % 2 == 1, "k-mer length must be odd");
 
       debruijn_graph::Graph graph(gfa.k());
       gfa.to_graph(graph, id_mapper.get());
