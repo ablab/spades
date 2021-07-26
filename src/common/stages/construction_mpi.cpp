@@ -218,6 +218,87 @@ void save(const graph_pack::GraphPack&,
 };
 
 
+template <typename Seq, typename storing_type>
+class ReadKMerCountingTask {
+ private:
+    ReadKMerCountingTask() = default;
+    using ReadStreams = io::ReadStreamList<io::SingleReadSeq>;
+ public:
+    ReadKMerCountingTask(const std::string &dir, unsigned k, size_t buffer_size,
+                         unsigned num_buckets, unsigned num_threads)
+        : dir_{dir}, k_{k}, buffer_size_{buffer_size}, num_buckets_{num_buckets}, num_threads_{num_threads} {};
+    ReadKMerCountingTask(std::istream &is) { deserialize(is); }
+    std::ostream &serialize(std::ostream &os) const {
+        io::binary::BinWrite(os, dir_, k_, buffer_size_, num_buckets_, num_threads_);
+        return os;
+    }
+
+    std::istream &deserialize(std::istream &is) {
+        io::binary::BinRead(is, dir_, k_, buffer_size_, num_buckets_, num_threads_);
+        return is;
+    }
+
+    template<typename... Args>
+    auto make_splitter(size_t, ReadStreams &read_streams, Args &&...) {
+        return partask::make_seq_along_generator(read_streams);
+    }
+
+    void process(std::istream &is, std::ostream &os, ReadStreams &read_streams) {
+        auto chunks = partask::get_seq(is);
+
+        ReadStreams streams = partask::create_empty_stream_list<ReadStreams>(chunks.size());
+        partask::swap_streams(read_streams, streams, chunks);
+        streams.reset();
+
+        if (streams.size() == 0) {
+            return;
+        }
+
+        auto workdir = fs::tmp::acquire_temp_dir(dir_);
+        workdir->release();
+        kmers::DeBruijnReadKMerSplitter<io::SingleReadSeq, kmers::StoringTypeFilter<storing_type>> splitter(
+            workdir, k_, streams, buffer_size_);
+
+        kmers::KMerDiskCounter<RtSeq> counter(workdir, splitter);
+
+        auto kmerstorage = counter.CountAll(num_buckets_, num_threads_, /* merge */ false);
+        INFO("k-mers counted successfully");
+
+        if (kmerstorage.total_kmers() == 0) {
+            WARN("No kmers were extracted from reads. Check the read lengths and k-mer length settings");
+        }
+
+        kmerstorage.BinWrite(os);
+        kmerstorage.release_all();
+
+        partask::swap_streams(read_streams, streams, chunks);
+    }
+
+    auto merge(const std::vector<std::istream *> &piss, ReadStreams & /*read_streams*/) {
+        auto workdir = fs::tmp::acquire_temp_dir(dir_);
+        workdir->release();
+
+
+        std::vector<kmers::KMerDiskStorage<Seq>> storages;
+        for (size_t i = 0; i < piss.size(); ++i) {
+            auto &is = *piss[i];
+            kmers::KMerDiskStorage<Seq> kmerstorage(workdir, k_, typename kmer::KMerSegmentPolicy<Seq>(num_buckets_));
+            kmerstorage.BinRead(is);
+            storages.push_back(std::move(kmerstorage));
+        }
+
+        return storages;
+    }
+
+ private:
+    std::string dir_;
+    unsigned k_;
+    size_t buffer_size_;
+    unsigned num_buckets_;
+    unsigned num_threads_;
+};
+
+
 class KMerCounting : public ConstructionMPI::Phase {
     typedef rolling_hash::SymmetricCyclicHash<> SeqHasher;
 public:
@@ -226,7 +307,10 @@ public:
 
     virtual ~KMerCounting() = default;
 
+    bool distributed() const override { return true; }
+
     void run(graph_pack::GraphPack &, const char*) override {
+        sync();  // TODO change for syncfs (it requires opened file descriptor from the fs)
         auto &read_streams = storage().read_streams;
         auto &contigs_streams = storage().contigs_streams;
         const auto &index = storage().ext_index;
@@ -235,18 +319,49 @@ public:
 
         VERIFY_MSG(read_streams.size(), "No input streams specified");
 
-
         io::ReadStreamList<io::SingleReadSeq> merge_streams = temp_merge_read_streams(read_streams, contigs_streams);
 
+        unsigned k = index.k();
         unsigned nthreads = cfg::get().max_threads;
-        using Splitter =  kmers::DeBruijnReadKMerSplitter<io::SingleReadSeq,
-                                                          kmers::StoringTypeFilter<storing_type>>;
+        unsigned num_buckets = 10 * nthreads;
+        using Seq = RtSeq;
 
-        kmers::KMerDiskCounter<RtSeq>
-                counter(storage().workdir,
-                        Splitter(storage().workdir, index.k() + 1, merge_streams, buffer_size));
-        auto kmers = counter.Count(10 * nthreads, nthreads);
-        storage().kmers.reset(new kmers::KMerDiskStorage<RtSeq>(std::move(kmers)));
+        kmers::KMerDiskStorage<Seq> kmerfiles2(storage().workdir, k + 1, typename kmer::KMerSegmentPolicy<Seq>(num_buckets));
+
+
+        VERIFY(partask::all_equal(num_buckets));
+        VERIFY(partask::all_equal(k));
+        VERIFY(partask::all_equal(nthreads));
+
+        partask::TaskRegistry treg;
+        auto merge_kmer_files = treg.add<kmers::MergeKMerFilesTask<Seq>>();
+        auto kmercount = treg.add<ReadKMerCountingTask<Seq, storing_type>>(std::ref(merge_streams));
+        treg.listen();
+        INFO("Listening started " << (partask::master() ? "(master)" : "(worker)"));
+
+        if (partask::master()) {
+            INFO("Start KMer Counting")
+            auto unmerged_kmerfiles = kmercount(storage().workdir->dir(), k + 1, buffer_size, num_buckets, nthreads);
+
+            std::vector<std::string> outputfiles;
+            for (size_t i = 0; i < kmerfiles2.num_buckets(); ++i) {
+                outputfiles.push_back(kmerfiles2.create(i)->file());
+            }
+
+            INFO("Start Merge results from different nodes")
+            merge_kmer_files(std::move(unmerged_kmerfiles), outputfiles);
+        }
+        treg.stop_listening();
+        partask::broadcast(kmerfiles2);
+
+        size_t kmers = kmerfiles2.total_kmers();
+
+        if (!kmers) {
+            FATAL_ERROR("No kmers were extracted from reads. Check the read lengths and k-mer length settings");
+        }
+        INFO(kmers << " k+1-mers (k=" << k << ") were extracted");
+
+        storage().kmers.reset(new kmers::KMerDiskStorage<RtSeq>(std::move(kmerfiles2)));
     }
 
     void load(graph_pack::GraphPack&,
