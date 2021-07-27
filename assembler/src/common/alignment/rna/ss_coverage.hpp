@@ -77,22 +77,22 @@ public:
         SetCoverage(e, cov);
     }
 
-    void BinWrite(std::ostream &str) const {
-        using io::binary::BinWrite;
-        BinWrite(str, storage_.size());
+    template <typename Archive>
+    void BinArchiveSave(Archive &ar) const {
+        ar(storage_.size());
         for (const auto &it : storage_) {
-            BinWrite(str, it.first.int_id());
-            BinWrite(str, it.second);
+            ar(it.first.int_id());
+            ar(it.second);
         }
     }
 
-    void BinRead(std::istream &str) {
+    template <typename Archive>
+    void BinArchiveLoad(Archive &ar) {
         Clear();
-        using io::binary::BinRead;
-        auto size = BinRead<size_t>(str);
+        auto size = ar.get(int());
         while (size--) {
-            auto eid = BinRead<uint64_t>(str);
-            auto cov = BinRead<double>(str);
+            auto eid = ar.get(uint64_t());
+            auto cov = ar.get(double());
             SetCoverage(eid, cov);
         }
     }
