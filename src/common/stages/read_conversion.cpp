@@ -13,6 +13,7 @@ namespace spades {
 void ReadConversion::run(graph_pack::GraphPack &, const char *) {
     io::ConvertIfNeeded(cfg::get_writable().ds.reads,
                         cfg::get().max_threads);
+    sync();  // TODO change for syncfs (it requires opened file descriptor from the fs)
 }
 
 void ReadConversion::load(graph_pack::GraphPack &,
