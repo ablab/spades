@@ -31,8 +31,13 @@ protected:
 
 private:
     size_t offset_, count_, current_;
+    std::filesystem::path filename_;
 
     void Init() {
+        if (!is_open()) {
+            stream_.open(filename_, std::ios_base::binary | std::ios_base::in);
+        }
+
         stream_.clear();
         stream_.seekg(offset_);
         VERIFY_MSG(stream_.good(), "Stream is not good(), offset_ " << offset_ << " count_ " << count_);
@@ -49,10 +54,11 @@ public:
     BinaryFileStream(const std::string &file_name_prefix, size_t portion_count, size_t portion_num) {
         DEBUG("Preparing binary stream #" << portion_num << "/" << portion_count);
         VERIFY(portion_num < portion_count);
-        const std::filesystem::path fname = file_name_prefix + ".seq";
-        stream_.open(fname, std::ios_base::binary | std::ios_base::in);
+        filename_ = file_name_prefix + ".seq";
+        stream_.open(filename_, std::ios_base::binary | std::ios_base::in);
         ReadStreamStat stat;
         stat.read(stream_);
+        stream_.close();
 
         const std::filesystem::path offset_name = file_name_prefix + ".off";
         const size_t chunk_count = file_size(offset_name) / sizeof(size_t);
@@ -93,8 +99,6 @@ public:
             count_ = 0;
             DEBUG("Empty BinaryFileStream constructed");
         }
-
-        Init();
     }
 
     /**

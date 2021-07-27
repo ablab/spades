@@ -29,13 +29,11 @@ public:
 
     MultifileStream(ReadStreamT reader_1) :
         current_reader_index_(0) {
-        VERIFY(reader_1.is_open());
         readers_.push_back(std::move(reader_1));
     }
 
     MultifileStream(ReadStreamT reader_1, ReadStreamT reader_2) :
             current_reader_index_(0) {
-        VERIFY(reader_1.is_open() && reader_2.is_open());
         readers_.push_back(std::move(reader_1));
         readers_.push_back(std::move(reader_2));
     }
