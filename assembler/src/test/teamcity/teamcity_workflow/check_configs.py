@@ -50,7 +50,7 @@ def check_one_out_folder(dataset_info, test, line_in_config, output_dir, output_
     return 0
 
 
-def check_lines_in_cfg(dataset_info, test, output_dir):
+def check_lines_in_cfg(dataset_info, test, output_dir, log):
     if "output_file" not in test:
         test["output_file"] = []
     if "output_file" not in dataset_info:

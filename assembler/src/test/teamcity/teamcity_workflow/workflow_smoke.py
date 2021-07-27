@@ -41,7 +41,7 @@ def check_one_out_folder(output_dir, etalon_dir):
     return 0
 
 
-def check_correct_finish(dataset_info, test, output_dir):
+def check_correct_finish(dataset_info, test, output_dir, log):
     if 'etalon_saves' in dataset_info:
         log.log("Checking SPAdes finish correct.")
         etalon_dir = dataset_info["etalon_saves"]

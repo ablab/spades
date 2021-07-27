@@ -12,6 +12,7 @@
 import workflow_base
 from workflow_base import log
 
+import sys
 import os
 import filecmp
 
@@ -79,7 +80,7 @@ def cmp_folder(output_dir, etalon_dir, ignore, allowed_substring):
         return 0
 
 
-def cmp_folder_rec(output_dir, etalon_dir, ignore, allowed_substr):
+def cmp_folder_rec(output_dir, etalon_dir, ignore, allowed_substr, print_info=False):
     folder_ignore = ['tmp', 'saves', '.bin_reads', 'path_extend']
     subdirs_etalon = [x for x in os.listdir(etalon_dir)
                       if os.path.isdir(os.path.join(etalon_dir, x)) and x not in folder_ignore]
@@ -98,24 +99,28 @@ def cmp_folder_rec(output_dir, etalon_dir, ignore, allowed_substr):
     if (subdirs_etalon != subdirs_output):
         log.err("Etalon dirs(" + str(subdirs_etalon) +") != output dirs (" + str(subdirs_output) + ")")
         return 12
+    elif print_info:
+        log.log("%s == %s" % (str(subdirs_etalon), str(subdirs_output)))
 
     for subdir in subdirs_etalon:
-        errcode = cmp_folder_rec(output_dir + "/" + subdir, etalon_dir + "/" + subdir, ignore, allowed_substr)
+        errcode = cmp_folder_rec(output_dir + "/" + subdir, etalon_dir + "/" + subdir, ignore, allowed_substr, print_info)
         if (errcode != 0):
             return errcode
     return 0
 
 
-def cmp_with_etalon(output_dir, etalon_dir, ignore=None, allowed_substr=None):
+def cmp_with_etalon(output_dir, etalon_dir, ignore=None, allowed_substr=None, print_info=False):
+    if print_info:
+        log.log("Compare %s and %s" % (output_dir, etalon_dir))
     if (ignore == None):
         ignore = []
     if (allowed_substr == None):
         allowed_substr = []
 
-    return cmp_folder_rec(output_dir, etalon_dir, ignore, allowed_substr)
+    return cmp_folder_rec(output_dir, etalon_dir, ignore, allowed_substr, print_info)
 
 
-def etalon_saves(dataset_info, test, output_dir):
+def etalon_saves(dataset_info, test, output_dir, log):
     if 'etalon_saves' in dataset_info:
         log.log("Comparing etalon saves now")
         etalon_folder = dataset_info["etalon_saves"]
@@ -130,4 +135,7 @@ def etalon_saves(dataset_info, test, output_dir):
             return 12
     return 0
 
-workflow_base.main(etalon_saves)
+if __name__ == "__main__":
+    print("Workflow main")
+    sys.stdout.flush()
+    workflow_base.main(etalon_saves)
