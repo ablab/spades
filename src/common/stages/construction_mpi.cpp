@@ -271,6 +271,7 @@ class ReadKMerCountingTask {
         kmerstorage.BinWrite(os);
         kmerstorage.release_all();
 
+        streams.close();
         partask::swap_streams(read_streams, streams, chunks);
     }
 
