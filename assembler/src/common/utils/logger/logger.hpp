@@ -11,6 +11,7 @@
 #include "version.hpp"
 
 #include "utils/perf/perfcounter.hpp"
+#include "utils/stacktrace.hpp"
 
 #include "config.hpp"
 
@@ -181,6 +182,7 @@ void detach_logger();
 #define FATAL_ERROR(message)                                            \
     do {                                                                \
         ERROR(message);                                                 \
+        utils::print_stacktrace();                                      \
         if (errno != 0) {                                               \
             exit(errno);                                                \
         } else {                                                        \
