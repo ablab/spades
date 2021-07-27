@@ -189,7 +189,7 @@ public:
 
         for (auto iter = begin(); iter != end(); ++iter) {
             Kmer::BinWrite(file, iter->first);
-            Kmer::BinWrite(file, iter->second);
+            Seq::BinWrite(file, iter->second);
         }
     }
 
