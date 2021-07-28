@@ -194,34 +194,41 @@ class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
         return storage_.lock_table();
     }
 
-    void BinWrite(std::ostream &str) const {
-        using io::binary::BinWrite;
-        BinWrite<size_t>(str, storage_.size());
+    template <typename Archive>
+    void BinArchiveSave(Archive &ar) const {
+        ar(size_t(storage_.size()));  // For some unknown reason btree_container uses signed size (sic)
         for (const auto &i : storage_) {
-            BinWrite(str, i.first.int_id());
+            VERIFY_MSG(this->graph_.contains(EdgeId(i.first.int_id())), "Invalid EdgeId " << i.first.int_id());
+            ar(i.first.int_id());
             for (const auto &j : i.second) {
+                VERIFY_MSG(this->graph_.contains(EdgeId(j.first.int_id())), "Invalid EdgeId " << j.first.int_id());
                 if (j.second.owning()) {
-                    BinWrite(str, j.first.int_id());
-                    io::binary::BinWrite(str, *(j.second));
+                    ar(j.first.int_id());
+                    ar(*(j.second));
                 }
             }
-            BinWrite(str, (size_t)0); //null-term
+            ar((size_t)0); //null-term
         }
     }
 
-    void BinRead(std::istream &str) {
+    template <typename Archive>
+    void BinArchiveLoad(Archive &ar) {
         clear();
-        using io::binary::BinRead;
-        auto storage_size = BinRead<size_t>(str);
+        size_t storage_size;
+        ar(storage_size);
         while (storage_size--) {
-            auto e1 = BinRead<uint64_t>(str);
+            uint64_t e1;
+            ar(e1);
             while (true) {
-                auto e2 = BinRead<uint64_t>(str);
+                uint64_t e2;
+                ar(e2);
                 if (!e2) //null-term
                     break;
                 auto hist = new InnerHistogram();
-                io::binary::BinRead(str, *hist);
+                ar(*hist);
                 TRACE(e1 << "->" << e2 << ": " << hist->size() << "points");
+                VERIFY_MSG(this->graph_.contains(EdgeId(e1)), "Invalid EdgeId " << e1);
+                VERIFY_MSG(this->graph_.contains(EdgeId(e2)), "Invalid EdgeId " << e2);
                 storage_[e1][e2] = InnerHistPtr(hist, /* owning */ true);
                 bool selfconj = this->IsSelfConj(e1, e2);
                 size_t added = hist->size() * (selfconj ? 1 : 2);
