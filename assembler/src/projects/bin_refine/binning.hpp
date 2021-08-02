@@ -38,7 +38,7 @@ enum OutputOptions : uint64_t {
 struct EdgeLabels {
     using BinId = uint64_t;
 
-    static constexpr BinId UNBINNED = BinId(-1);
+    static constexpr BinId UNBINNED = BinId(0);
 
     // TODO: Could pack e and is_binned into single 64 bits
     debruijn_graph::EdgeId e;

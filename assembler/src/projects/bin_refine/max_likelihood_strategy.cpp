@@ -17,9 +17,13 @@ void MaxLikelihoodBinningAssignmentStrategy::AssignEdgeBins(const SoftBinsAssign
         const EdgeLabels& edge_labels = it.value();
 
         std::unordered_set<Binning::BinId> assignment;
+        bool is_unbinned = false;
         for (const auto &entry : edge_labels.labels_probabilities) {
             if (math::le(entry.value(), thr_))
                 continue;
+            if (entry.index() == Binning::UNBINNED and math::gr(entry.value(), 0.5)) {
+                is_unbinned = true;
+            }
 
             assignment.insert(entry.index());
         }
@@ -27,8 +31,10 @@ void MaxLikelihoodBinningAssignmentStrategy::AssignEdgeBins(const SoftBinsAssign
         if (assignment.empty())
             continue;
 
-        bin_stats.unbinned_edges().erase(e);
-        bin_stats.edges_binning()[e] = std::move(assignment);
+        if (not is_unbinned) {
+            bin_stats.unbinned_edges().erase(e);
+            bin_stats.edges_binning()[e] = std::move(assignment);
+        }
     }
 }
 

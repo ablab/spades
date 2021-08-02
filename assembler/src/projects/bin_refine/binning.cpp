@@ -30,9 +30,11 @@ EdgeLabels::EdgeLabels(const EdgeId e, const Binning& bin_stats)
     if (is_binned) {
         size_t sz = bins->second.size();
         //size_t sz = bin_stats.multiplicities().at(e);
-        for (bin_stats::Binning::BinId bin : bins->second)
+        for (BinId bin : bins->second)
             labels_probabilities.set(bin, 1.0 / static_cast<double>(sz));
         is_repetitive = bin_stats.multiplicities().at(e) > 1;
+    } else {
+        labels_probabilities.set(UNBINNED, 1.0);
     }
 }
 
@@ -152,12 +154,34 @@ void Binning::LoadBinning(const std::string &binning_file,
               cbin_id = entry->second;
           }
       }
+  BinId max_bin_id = 1;
+  for (std::string line; std::getline(binning_reader, line, '\n');) {
+    std::string scaffold_name;
+    BinLabel bin_label;
+
+    std::istringstream line_stream(line);
+    line_stream >> scaffold_name;
+    line_stream >> bin_label;
+    BinId cbin_id;
+    if (bin_label == UNBINNED_ID) // unbinned scaffold
+        cbin_id = UNBINNED;
+    else {
+        auto entry = bins_.find(bin_label);
+        if (entry == bins_.end()) { // new bin label
+            cbin_id = max_bin_id++;
+            bin_labels_.emplace(cbin_id, bin_label);
+            bins_.emplace(bin_label, cbin_id);
+        } else {
+            cbin_id = entry->second;
+        }
+    }
 
       auto scaffold_entry = scaffolds_.find(scaffold_name);
       if (scaffold_entry == scaffolds_.end()) {
           INFO("Unknown scaffold: " << scaffold_name);
           continue;
       }
+    bin_labels_.insert({UNBINNED, UNBINNED_ID});
 
       scaffolds_binning_[scaffold_entry->second] = cbin_id;
   }

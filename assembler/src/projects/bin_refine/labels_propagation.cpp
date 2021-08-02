@@ -20,9 +20,11 @@ using namespace debruijn_graph;
 LabelsPropagation::LabelsPropagation(const debruijn_graph::Graph& g,
                                      const binning::LinkIndex &links,
                                      const AlphaAssignment &labeled_alpha,
+                                     const std::unordered_set<debruijn_graph::EdgeId> &nonpropagating_edges,
                                      double eps)
         : BinningRefiner(g, links),
           labeled_alpha_(labeled_alpha),
+          nonpropagating_edges_(nonpropagating_edges),
           eps_(eps),
           rdeg_(g.max_eid()),
           rweight_(g.max_eid()){
@@ -126,8 +128,10 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
               next_probs += (1.0 - alpha) * origin_state.at(e).labels_probabilities;
 
           for (const auto &link : links_.links(e)) {
-              double incoming_weight = self_weight * rdeg_.at(link.e) * link.w;
-              PropagateFromEdge(next_probs, link.e, cur_state, incoming_weight);
+              if (nonpropagating_edges_.find(e) == nonpropagating_edges_.end()) {
+                  double incoming_weight = self_weight * rdeg_.at(link.e) * link.w;
+                  PropagateFromEdge(next_probs, link.e, cur_state, incoming_weight);
+              }
           }
 
           after_prob += sum(next_probs);

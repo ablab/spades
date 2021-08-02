@@ -19,7 +19,8 @@ AlphaAssignment AlphaPropagator::GetAlphaMask(const Binning &bin_stats) const {
     auto distance_state = ConstructBinningMask(origin_state);
     auto distance_assigner = std::make_unique<CorrectionAssigner>(g_, metaalpha_);
     auto correction_alpha = distance_assigner->GetAlphaAssignment(distance_state);
-    auto binning_refiner = std::make_unique<LabelsPropagation>(g_, links_, correction_alpha, eps_);
+    std::unordered_set<EdgeId> nonpropagating_edges;
+    auto binning_refiner = std::make_unique<LabelsPropagation>(g_, links_, correction_alpha, nonpropagating_edges, eps_);
     INFO("Launching propagation refiner");
     auto refined_distance_coeffs = binning_refiner->RefineBinning(distance_state);
     for (const auto &labels: refined_distance_coeffs) {
