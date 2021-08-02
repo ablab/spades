@@ -21,6 +21,7 @@ class LabelsPropagation : public BinningRefiner {
     LabelsPropagation(const debruijn_graph::Graph& g,
                       const binning::LinkIndex &links,
                       const AlphaAssignment &labeled_alpha,
+                      const std::unordered_set<debruijn_graph::EdgeId> &nonpropagating_edges,
                       double eps);
 
     SoftBinsAssignment RefineBinning(const SoftBinsAssignment &origin_state) const override;
@@ -41,6 +42,7 @@ class LabelsPropagation : public BinningRefiner {
 //                                   unsigned iteration_step) const;
 
     AlphaAssignment labeled_alpha_;
+    std::unordered_set<debruijn_graph::EdgeId> nonpropagating_edges_;
     const double eps_;
 
     adt::id_map<double, debruijn_graph::EdgeId> rdeg_;

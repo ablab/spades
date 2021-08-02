@@ -48,9 +48,12 @@ AlphaAssignment CorrectionAssigner::GetAlphaAssignment(const SoftBinsAssignment 
         alpha = 1.0;
         if (edge_labels.is_binned && !edge_labels.is_repetitive) {
             size_t l = g_.length(e), thr = 1000;
-            double coef = (l > thr ? 1.0 : ::log(thr) / ::log(l));
-            double mask_coef = (has_distance_ ? distance_coeffs_.at(e) : 1.0);
-            alpha = std::min(labeled_alpha_ * coef * mask_coef, 1.0);
+            double length_coef = (l > thr ? 0 : 1 - ::log(l) / ::log(thr));
+            double distance_coef = (has_distance_ ? distance_coeffs_.at(e) : 1.0);
+            alpha = (labeled_alpha_ + (1 - labeled_alpha_) * length_coef) * distance_coef;
+//            if (math::le(alpha, alpha_threshold_)) {
+//                alpha = 0.0;
+//            }
         }
         ealpha.emplace(e, alpha);
         ealpha.emplace(g_.conjugate(e), alpha);

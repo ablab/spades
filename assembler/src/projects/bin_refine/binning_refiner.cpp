@@ -53,6 +53,7 @@ struct gcfg {
     AssignStrategy assignment_strategy = AssignStrategy::MajorityLength;
     double eps = 1e-5;
     double labeled_alpha = 0.6;
+    double metaalpha = 0.6;
     bool allow_multiple = false;
     RefinerType refiner_type = RefinerType::Propagation;
     bool bin_load = false;
@@ -289,7 +290,15 @@ int main(int argc, char** argv) {
       auto origin_state = label_initializer.InitLabels(binning);
       auto alpha_assignment = alpha_assigner->GetAlphaAssignment(origin_state);
 
-      auto binning_refiner = std::make_unique<LabelsPropagation>(graph, links, alpha_assignment, cfg.eps);
+      //fixme configs
+      const size_t unbinned_length_threshold = 1000;
+      std::unordered_set<EdgeId> nonpropagating_edges;
+      for (const EdgeId &edge: binning.unbinned_edges()) {
+          if (graph.length(edge) >= unbinned_length_threshold) {
+              nonpropagating_edges.insert(edge);
+          }
+      }
+      auto binning_refiner = std::make_unique<LabelsPropagation>(graph, links, alpha_assignment, nonpropagating_edges, cfg.eps);
       auto soft_edge_labels = binning_refiner->RefineBinning(origin_state);
 
       INFO("Assigning edges & scaffolds to bins");
