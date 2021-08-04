@@ -21,13 +21,31 @@
 
 namespace debruijn_graph {
 
+/*
+ * Input:  raw_paired_indices  -- the map from pairs of edges to histogram of estimated distance between them.
+ * Output: clustered_indices   -- the map from pairs of edges to histogram of distance, but now clustering
+ *                                the initial histogram and pick only potential distance according to raw_paired_indices
+ *                                and information from graph
+ *         scaffolding_indices -- the map from pairs of edges to thinned out histogram of distance in which only
+ *                                picks in histogram are selected
+ *
+ * Need this histogram for edges which occur more then one time or for find out how much time we need to repeat the loop.
+ */
 void DistanceEstimation::run(graph_pack::GraphPack &gp, const char*) {
     using namespace omnigraph::de;
     using namespace distance_estimation;
 
     const config::debruijn_config& config = cfg::get();
     const auto &graph = gp.get<Graph>();
+
+    /* paired_indices -- conceptually, a map from a pair of edges to a histogram of distances between them.
+     * In fact, map from edge to a map from edge to histogram of the distance between them.
+     * For four pairs of direct and conjugate pairs(e1-e2; conj(e1)-e2; e1-conj(e2); conj(e1)-conj(e2)) store histogram
+     * only for one of them. Take paired_indices as a input, already filled at that moment.
+     */
     auto &paired_indices = gp.get_mutable<UnclusteredPairedInfoIndicesT<Graph>>();
+
+    /* Output of that stage, need to fill clustered_indices and scaffolding_indices */
     auto &clustered_indices = gp.get_mutable<PairedInfoIndicesT<Graph>>("clustered_indices");
     auto &scaffolding_indices = gp.get_mutable<PairedInfoIndicesT<Graph>>("scaffolding_indices");
     size_t max_repeat_length =
