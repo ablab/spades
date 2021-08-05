@@ -72,6 +72,48 @@ class ConcurrentPairedBuffer : public PairedBufferBase<ConcurrentPairedBuffer<G,
         return storage_.lock_table();
     }
 
+    void BinWrite(std::ostream &str) {
+        using io::binary::BinWrite;
+        BinWrite<size_t>(str, storage_.size());
+        const auto table = lock_table();
+        for (const auto &i : table) {
+            BinWrite(str, i.first.int_id());
+            for (const auto &j : i.second) {
+                if (j.second.owning()) {
+                    BinWrite(str, j.first.int_id());
+                    io::binary::BinWrite(str, *(j.second));
+                }
+            }
+            BinWrite(str, (size_t)0); //null-term
+        }
+    }
+
+    void BinRead(std::istream &str) {
+        clear();
+        auto table = lock_table();
+        using io::binary::BinRead;
+        auto storage_size = BinRead<size_t>(str);
+        while (storage_size--) {
+            auto e1 = BinRead<uint64_t>(str);
+            while (true) {
+                auto e2 = BinRead<uint64_t>(str);
+                if (!e2) //null-term
+                    break;
+                auto hist = new InnerHistogram();
+                io::binary::BinRead(str, *hist);
+                TRACE(e1 << "->" << e2 << ": " << hist->size() << "points");
+                table[e1][e2] = InnerHistPtr(hist, /* owning */ true);
+                bool selfconj = this->IsSelfConj(e1, e2);
+                size_t added = hist->size() * (selfconj ? 1 : 2);
+                this->size_ += added;
+                if (!selfconj) {
+                    auto conj = this->ConjugatePair(e1, e2);
+                    table[conj.first][conj.second] = InnerHistPtr(hist, /* owning */ false);
+                }
+            }
+        }
+    }
+
   private:
     std::pair<typename InnerHistPtr::pointer, size_t> InsertOne(EdgeId e1, EdgeId e2, InnerPoint p) {
         if (!storage_.contains(e1))
