@@ -132,7 +132,7 @@ void EstimatePairedDistances(PairedInfoIndexT<Graph> &clustered_index,
 
     INFO("Weight Filter Done");
 
-    DistanceEstimator estimator(graph, paired_index, dist_finder, linkage_distance, max_distance);
+    DistanceEstimatorMPI estimator(graph, paired_index, dist_finder, linkage_distance, max_distance);
 
     EstimateWithEstimator(clustered_index, estimator, checker);
 
