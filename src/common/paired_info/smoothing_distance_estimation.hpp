@@ -51,6 +51,10 @@ public:
 
     virtual ~SmoothingDistanceEstimator() { }
 
+    const std::string Name() const override {
+        return "SMOOTHING";
+    }
+
 protected:
     typedef std::pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId> EdgePair;
     typedef std::vector<std::pair<int, double>> EstimHist;
@@ -96,10 +100,6 @@ private:
 
     void ExtendRightDFS(const debruijn_graph::EdgeId &first, debruijn_graph::EdgeId current, TempHistogram &data,
                         int shift, size_t max_shift) const;
-
-    const std::string Name() const override {
-        return "SMOOTHING";
-    }
 
     DECL_LOGGER("SmoothingDistanceEstimator")
 };
