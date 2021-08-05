@@ -691,6 +691,26 @@ public:
 
     typename Storage::const_iterator begin() const { return data_.begin(); }
     typename Storage::const_iterator end() const { return data_.end(); }
+
+    void BinWrite(std::ostream &str) const {
+        using io::binary::BinWrite;
+        BinWrite<size_t>(str, data_.size());
+
+        for (int i = 0; i < data_.size(); ++i) {
+            data_[i].BinWrite(str);
+        }
+    }
+
+    void BinRead(std::istream &str) {
+        using io::binary::BinRead;
+        size_t size = BinRead<size_t>(str);
+
+        VERIFY(size == data_.size());
+
+        for (int i = 0; i < size; ++i) {
+            data_[i].BinRead(str);
+        }
+    }
 };
 
 template<class Graph>
