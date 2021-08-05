@@ -53,7 +53,7 @@ protected:
     typedef typename InPairedIndex::HistProxy InHistogram;
     typedef typename OutPairedIndex::Histogram OutHistogram;
 
-public:
+ public:
     AbstractDistanceEstimator(const debruijn_graph::Graph &graph,
                               const InPairedIndex &index,
                               const GraphDistanceFinder &distance_finder,
@@ -63,6 +63,10 @@ public:
 
     virtual void Estimate(PairedInfoIndexT<debruijn_graph::Graph> &result, size_t nthreads) const = 0;
 
+    virtual const std::string Name() const = 0;
+
+    const debruijn_graph::Graph &graph() const { return graph_; }
+
     virtual ~AbstractDistanceEstimator() { }
 
 protected:
@@ -70,8 +74,6 @@ protected:
     typedef std::vector<std::pair<int, double>> EstimHist;
     typedef std::vector<size_t> GraphLengths;
     typedef std::map<debruijn_graph::EdgeId, GraphLengths> LengthMap;
-
-    const debruijn_graph::Graph &graph() const { return graph_; }
 
     const InPairedIndex &index() const { return index_; }
 
@@ -86,8 +88,6 @@ private:
     const InPairedIndex &index_;
     const GraphDistanceFinder &distance_finder_;
     const size_t linkage_distance_;
-
-    virtual const std::string Name() const = 0;
 
     DECL_LOGGER("AbstractDistanceEstimator");
 };
@@ -104,7 +104,7 @@ protected:
     typedef typename base::InHistogram InHistogram;
     typedef typename base::OutHistogram OutHistogram;
 
-public:
+ public:
     DistanceEstimator(const debruijn_graph::Graph &graph,
                       const InPairedIndex &index,
                       const GraphDistanceFinder &distance_finder,
@@ -119,22 +119,21 @@ public:
 
     virtual void Estimate(OutPairedIndex &result, size_t nthreads) const;
 
+    virtual const std::string Name() const {
+        static const std::string my_name = "SIMPLE";
+        return my_name;
+    }
+
+    virtual void ProcessEdge(debruijn_graph::EdgeId e1,
+                             const InPairedIndex &pi,
+                             PairedInfoBuffer<debruijn_graph::Graph> &result) const;
+
 protected:
     const DEDistance max_distance_;
 
     virtual EstimHist EstimateEdgePairDistances(EdgePair ep,
                                                 const InHistogram &histogram,
                                                 const GraphLengths &raw_forward) const;
-
-    virtual void ProcessEdge(debruijn_graph::EdgeId e1,
-                             const InPairedIndex &pi,
-                             PairedInfoBuffer<debruijn_graph::Graph> &result) const;
-
- private:
-    virtual const std::string Name() const {
-        static const std::string my_name = "SIMPLE";
-        return my_name;
-    }
 
     DECL_LOGGER("DistanceEstimator");
 };
@@ -153,10 +152,11 @@ class DistanceEstimatorMPI : public DistanceEstimator {
 
  public:
     DistanceEstimatorMPI(const debruijn_graph::Graph &graph,
-                      const InPairedIndex &index,
-                      const GraphDistanceFinder &distance_finder,
-                      size_t linkage_distance, size_t max_distance)
-        : base(graph, index, distance_finder, linkage_distance, max_distance) { }
+                         const InPairedIndex &index,
+                         const GraphDistanceFinder &distance_finder,
+                         size_t linkage_distance, size_t max_distance,
+                         const DistanceEstimator& base_dist_estimator)
+        : base(graph, index, distance_finder, linkage_distance, max_distance), dist_estimator_(base_dist_estimator) {}
 
     virtual ~DistanceEstimatorMPI() = default;
 
@@ -176,16 +176,15 @@ class DistanceEstimatorMPI : public DistanceEstimator {
             return os;
         }
 
-        auto make_splitter(size_t, const InPairedIndex &, const DistanceEstimatorMPI &,
+        auto make_splitter(size_t, const InPairedIndex &, const DistanceEstimator&,
                            PairedInfoIndexT<debruijn_graph::Graph> & /*result*/) {
             return partask::make_seq_along_generator(edges_);
         }
 
         void process(std::istream &is, std::ostream &os, const InPairedIndex &index,
-                     const DistanceEstimatorMPI &self, PairedInfoIndexT<debruijn_graph::Graph> & /*result*/) {
+                     const DistanceEstimator& self, PairedInfoIndexT<debruijn_graph::Graph> & /*result*/) {
             DEBUG("Processing");
             auto edges_id = partask::get_seq(is);
-
             PairedInfoBuffersT<debruijn_graph::Graph> buffer(self.graph(), nthreads_);
             #   pragma omp parallel for num_threads(nthreads_) schedule(guided, 10)
             for (size_t i = 0; i < edges_id.size(); ++i) {
@@ -198,8 +197,8 @@ class DistanceEstimatorMPI : public DistanceEstimator {
         }
 
         auto merge(const std::vector<std::istream *> &piss,
-                   const InPairedIndex &index,
-                   const DistanceEstimatorMPI &self,
+                   const InPairedIndex&,
+                   const DistanceEstimator& self,
                    PairedInfoIndexT<debruijn_graph::Graph> &result) {
             for (auto pis : piss) {
                 PairedInfoBuffersT<debruijn_graph::Graph> buffer(self.graph(), nthreads_);
@@ -224,8 +223,10 @@ class DistanceEstimatorMPI : public DistanceEstimator {
 
     friend DistanceEstimatorTask;
  private:
+    const DistanceEstimator& dist_estimator_;
+
     virtual const std::string Name() const {
-        static const std::string my_name = "SIMPLE_MPI";
+        const std::string my_name = dist_estimator_.Name() + "_MPI";
         return my_name;
     }
 
