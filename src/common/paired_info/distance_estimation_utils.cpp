@@ -106,7 +106,7 @@ void EstimateScaffoldingDistances(PairedInfoIndexT<Graph> &scaffolding_index,
     PairInfoWeightChecker<Graph> checker(graph, 0.);
     DEBUG("Weight Filter Done");
 
-    SmoothingDistanceEstimator estimator(graph, paired_index, dist_finder,
+    SmoothingDistanceEstimator estimator_base(graph, paired_index, dist_finder,
                                          [&] (int i) {return wrapper.CountWeight(i);},
                                          linkage_distance, max_distance,
                                          ade.threshold, ade.range_coeff,
@@ -114,6 +114,8 @@ void EstimateScaffoldingDistances(PairedInfoIndexT<Graph> &scaffolding_index,
                                          ade.min_peak_points,
                                          ade.percentage,
                                          ade.derivative_threshold);
+    DistanceEstimatorMPI estimator(graph, paired_index, dist_finder, linkage_distance, max_distance, estimator_base);
+
     EstimateWithEstimator(scaffolding_index, estimator, checker);
 }
 
@@ -132,7 +134,8 @@ void EstimatePairedDistances(PairedInfoIndexT<Graph> &clustered_index,
 
     INFO("Weight Filter Done");
 
-    DistanceEstimatorMPI estimator(graph, paired_index, dist_finder, linkage_distance, max_distance);
+    DistanceEstimator estimator_base(graph, paired_index, dist_finder, linkage_distance, max_distance);
+    DistanceEstimatorMPI estimator(graph, paired_index, dist_finder, linkage_distance, max_distance, estimator_base);
 
     EstimateWithEstimator(clustered_index, estimator, checker);
 
