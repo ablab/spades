@@ -8,18 +8,18 @@
 
 #pragma once
 
+#include <common/pipeline/mpi_stage.hpp>
 #include "pipeline/stage.hpp"
 
 namespace debruijn_graph {
 
-class DistanceEstimation : public spades::AssemblyStage {
-  public:
+class DistanceEstimation : public spades::MPIAssemblyStage {
+ public:
     DistanceEstimation(bool preliminary = false)
-        : AssemblyStage(preliminary ? "Preliminary Distance Estimation" : "Distance Estimation",
-                        preliminary ? "distance_estimation_preliminary" : "distance_estimation") {}
+        : MPIAssemblyStage(preliminary ? "Preliminary Distance Estimation" : "Distance Estimation",
+                           preliminary ? "distance_estimation_preliminary" : "distance_estimation") {}
 
     void run(graph_pack::GraphPack &gp, const char*) override;
 };
-
 }
 
