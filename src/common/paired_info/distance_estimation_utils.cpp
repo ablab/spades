@@ -130,7 +130,7 @@ void EstimatePairedDistances(PairedInfoIndexT<Graph> &clustered_index,
 
     PairInfoWeightChecker<Graph> checker(graph, de_config.clustered_filter_threshold);
 
-    DistanceEstimator estimator(graph, paired_index, dist_finder, linkage_distance, max_distance);
+    DistanceEstimatorMPI estimator(graph, paired_index, dist_finder, linkage_distance, max_distance);
 
     EstimateWithEstimator(clustered_index, estimator, checker);
 
