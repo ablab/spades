@@ -8,6 +8,7 @@
 
 #include "distance_estimation.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
+#include "pipeline/partask_mpi.hpp"
 
 namespace omnigraph {
 namespace de {
@@ -179,6 +180,29 @@ void DistanceEstimator::ProcessEdge(EdgeId e1, const InPairedIndex &pi, PairedIn
         const EstimHist &estimated = this->EstimateEdgePairDistances(ep, hist, forward);
         OutHistogram res = this->ClusterResult(ep, estimated);
         this->AddToResult(res, ep, result);
+    }
+}
+
+void DistanceEstimatorMPI::Estimate(PairedInfoIndexT<Graph> &result, size_t nthreads) const  {
+    this->Init();
+    const auto &index = this->index();
+
+    DEBUG("Collecting edge infos");
+    std::vector<EdgeId> edges;
+    for (EdgeId e : this->graph().edges())
+        edges.push_back(e);
+
+    DEBUG("Processing");
+    PairedInfoBuffersT<Graph> buffer(this->graph(), nthreads);
+#   pragma omp parallel for num_threads(nthreads) schedule(guided, 10)
+    for (size_t i = 0; i < edges.size(); ++i) {
+        EdgeId edge = edges[i];
+        ProcessEdge(edge, index, buffer[omp_get_thread_num()]);
+    }
+
+    for (size_t i = 0; i < nthreads; ++i) {
+        result.Merge(buffer[i]);
+        buffer[i].clear();
     }
 }
 }
