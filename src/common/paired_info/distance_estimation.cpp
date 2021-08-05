@@ -27,7 +27,7 @@ std::vector<size_t> GraphDistanceFinder::GetGraphDistancesLengths(EdgeId e1, Edg
 void GraphDistanceFinder::FillGraphDistancesLengths(EdgeId e1, LengthMap &second_edges) const {
     std::vector<size_t> path_lower_bounds;
     size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(), insert_size_, delta_);
-    PathProcessor <Graph> paths_proc(graph_, graph_.EdgeEnd(e1), path_upper_bound);
+    PathProcessor<Graph> paths_proc(graph_, graph_.EdgeEnd(e1), path_upper_bound);
 
     for (auto &entry : second_edges) {
         EdgeId e2 = entry.first;
@@ -65,7 +65,7 @@ AbstractDistanceEstimator::OutHistogram AbstractDistanceEstimator::ClusterResult
         size_t left = i;
         DEWeight weight = DEWeight(estimated[i].second);
         while (i + 1 < estimated.size() &&
-               (estimated[i + 1].first - estimated[i].first) <= (int) linkage_distance_) {
+            (estimated[i + 1].first - estimated[i].first) <= (int) linkage_distance_) {
             ++i;
             weight += estimated[i].second;
         }
@@ -77,11 +77,11 @@ AbstractDistanceEstimator::OutHistogram AbstractDistanceEstimator::ClusterResult
 }
 
 void AbstractDistanceEstimator::AddToResult(const OutHistogram &clustered, EdgePair ep,
-                                            PairedInfoBuffer<Graph> &result) const  {
+                                            PairedInfoBuffer<Graph> &result) const {
     result.AddMany(ep.first, ep.second, clustered);
 }
 
-void DistanceEstimator::Estimate(PairedInfoIndexT<Graph> &result, size_t nthreads) const  {
+void DistanceEstimator::Estimate(PairedInfoIndexT<Graph> &result, size_t nthreads) const {
     this->Init();
     const auto &index = this->index();
 
@@ -139,7 +139,7 @@ DistanceEstimator::EstimHist DistanceEstimator::EstimateEdgePairDistances(EdgePa
             if (le(abs(forward[cur_dist] - point.d), max_distance_))
                 weights[cur_dist] += point.weight;
         } else if (cur_dist + 1 < forward.size() &&
-                   eq(forward[cur_dist + 1] - point.d, point.d - forward[cur_dist])) {
+            eq(forward[cur_dist + 1] - point.d, point.d - forward[cur_dist])) {
             if (le(abs(forward[cur_dist] - point.d), max_distance_))
                 weights[cur_dist] += point.weight * 0.5;
             ++cur_dist;
@@ -183,7 +183,7 @@ void DistanceEstimator::ProcessEdge(EdgeId e1, const InPairedIndex &pi, PairedIn
     }
 }
 
-void DistanceEstimatorMPI::Estimate(PairedInfoIndexT<Graph> &result, size_t nthreads) const  {
+void DistanceEstimatorMPI::Estimate(PairedInfoIndexT<Graph> &result, size_t nthreads) const {
     this->Init();
     const auto &index = this->index();
 
@@ -192,18 +192,15 @@ void DistanceEstimatorMPI::Estimate(PairedInfoIndexT<Graph> &result, size_t nthr
     for (EdgeId e : this->graph().edges())
         edges.push_back(e);
 
-    DEBUG("Processing");
-    PairedInfoBuffersT<Graph> buffer(this->graph(), nthreads);
-#   pragma omp parallel for num_threads(nthreads) schedule(guided, 10)
-    for (size_t i = 0; i < edges.size(); ++i) {
-        EdgeId edge = edges[i];
-        ProcessEdge(edge, index, buffer[omp_get_thread_num()]);
-    }
+    partask::TaskRegistry treg;
+    auto dist_estimator_mpi = treg.add<DistanceEstimatorTask>(std::cref(index), std::cref(*this), std::ref(result));
+    treg.listen();
 
-    for (size_t i = 0; i < nthreads; ++i) {
-        result.Merge(buffer[i]);
-        buffer[i].clear();
+    if (partask::master()) {
+        dist_estimator_mpi(edges, nthreads);
     }
+    treg.stop_listening();
+    partask::broadcast(result);
 }
 }
 }
