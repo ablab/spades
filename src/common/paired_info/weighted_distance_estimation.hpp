@@ -35,6 +35,10 @@ public:
 
     virtual ~WeightedDistanceEstimator() = default;
 
+    const std::string Name() const override {
+        return "WEIGHTED";
+    }
+
 protected:
 
     typedef std::vector<std::pair<int, double>> EstimHist;
@@ -46,10 +50,6 @@ protected:
     virtual EstimHist EstimateEdgePairDistances(EdgePair ep,
                                                 const InHistogram &histogram,
                                                 const GraphLengths &raw_forward) const override;
-
-    const std::string Name() const override {
-        return "WEIGHTED";
-    }
 
 private:
     DECL_LOGGER("WeightedDistanceEstimator");

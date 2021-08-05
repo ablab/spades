@@ -23,8 +23,7 @@ using omnigraph::de::PairedInfoIndexT;
 using omnigraph::de::UnclusteredPairedInfoIndexT;
 
 void EstimateWithEstimator(PairedInfoIndexT<debruijn_graph::Graph> &clustered_index,
-                           const AbstractDistanceEstimator &estimator,
-                           AbstractPairInfoChecker<debruijn_graph::Graph> &checker);
+                           const AbstractDistanceEstimator &estimator);
 
 void RefinePairedInfo(PairedInfoIndexT<debruijn_graph::Graph>& clustered_index,
                       const debruijn_graph::Graph& graph);
