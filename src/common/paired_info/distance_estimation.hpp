@@ -186,32 +186,29 @@ class DistanceEstimatorMPI : public DistanceEstimator {
         }
 
         void process(std::istream &is, std::ostream &os, const InPairedIndex &index,
-                     const DistanceEstimatorMPI &self, PairedInfoIndexT<debruijn_graph::Graph> & /*result*/) {
+                     const DistanceEstimatorMPI &self, Buffer & /*result*/) {
             DEBUG("Processing");
             auto edges_id = partask::get_seq(is);
 
-            PairedInfoBuffersT<debruijn_graph::Graph> buffer(self.graph(), nthreads_);
-            #   pragma omp parallel for num_threads(nthreads_) schedule(guided, 10)
+            Buffer buffer(self.graph());
+            #pragma omp parallel for num_threads(nthreads_) schedule(guided, 10)
             for (size_t i = 0; i < edges_id.size(); ++i) {
                 debruijn_graph::EdgeId edge = edges_[edges_id[i]];
-                self.ProcessEdge(edge, index, buffer[omp_get_thread_num()]);
+                self.ProcessEdge(edge, index, buffer);
             }
 
             buffer.BinWrite(os);
-            buffer.Clear();
+            buffer.clear();
         }
 
         auto merge(const std::vector<std::istream *> &piss,
-                   const InPairedIndex &index,
+                   const InPairedIndex & /* index */,
                    const DistanceEstimatorMPI &self,
                    PairedInfoIndexT<debruijn_graph::Graph> &result) {
             for (auto pis : piss) {
-                PairedInfoBuffersT<debruijn_graph::Graph> buffer(self.graph(), nthreads_);
+                Buffer buffer(self.graph());
                 buffer.BinRead(*pis);
-                for (size_t j = 0; j < nthreads_; ++j) {
-                    result.Merge(buffer[j]);
-                    buffer[j].clear();
-                }
+                result.Merge(buffer);
             }
         }
 
