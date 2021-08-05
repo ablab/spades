@@ -100,7 +100,7 @@ void EstimateScaffoldingDistances(PairedInfoIndexT<Graph> &scaffolding_index,
     PairInfoWeightChecker<Graph> checker(graph, 0.);
     DEBUG("Weight Filter Done");
 
-    SmoothingDistanceEstimator estimator(graph, paired_index, dist_finder, checker,
+    SmoothingDistanceEstimator estimator_base(graph, paired_index, dist_finder, checker,
                                          [&] (int i) {return wrapper.CountWeight(i);},
                                          linkage_distance, max_distance,
                                          ade.threshold, ade.range_coeff,
@@ -108,6 +108,7 @@ void EstimateScaffoldingDistances(PairedInfoIndexT<Graph> &scaffolding_index,
                                          ade.min_peak_points,
                                          ade.percentage,
                                          ade.derivative_threshold);
+    DistanceEstimatorMPI estimator(graph, paired_index, dist_finder, checker, linkage_distance, max_distance, estimator_base);
     EstimateWithEstimator(scaffolding_index, estimator);
 }
 
@@ -124,7 +125,9 @@ void EstimatePairedDistances(PairedInfoIndexT<Graph> &clustered_index,
 
     PairInfoWeightChecker<Graph> checker(graph, de_config.clustered_filter_threshold);
 
-    DistanceEstimatorMPI estimator(graph, paired_index, dist_finder, checker, linkage_distance, max_distance);
+    DistanceEstimator estimator_base(graph, paired_index, dist_finder, checker, linkage_distance, max_distance);
+    DistanceEstimatorMPI estimator(graph, paired_index, dist_finder, checker, linkage_distance, max_distance, estimator_base);
+
     EstimateWithEstimator(clustered_index, estimator);
 
     INFO("Refining clustered pair information ");                             // this procedure checks, whether index

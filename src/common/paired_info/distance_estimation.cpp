@@ -188,7 +188,7 @@ void DistanceEstimatorMPI::Estimate(PairedInfoIndexT<Graph> &result, size_t nthr
         edges.push_back(e);    
 
     partask::TaskRegistry treg;
-    auto dist_estimator_mpi = treg.add<DistanceEstimatorTask>(std::cref(index), std::cref(*this), std::ref(result));
+    auto dist_estimator_mpi = treg.add<DistanceEstimatorTask>(std::cref(index), std::cref(dist_estimator_), std::ref(result));
     treg.listen();
 
     if (partask::master()) {
