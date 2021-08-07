@@ -20,9 +20,12 @@
 #include <list>
 #include <fstream>
 
+namespace sequence_corrector {
+
 using namespace debruijn_graph;
 using namespace path_extend;
 using namespace std;
+using namespace helpers;
 
 namespace {
 
@@ -244,6 +247,12 @@ SimpleBidirectionalPath SequenceCorrector::ConnectWithScaffolds(EdgeId start, Ed
 
 } // namespase
 
+} // namespace sequence_corrector
+
+namespace helpers {
+
+using namespace sequence_corrector;
+
 path_extend::PathContainer Launch(debruijn_graph::GraphPack const & gp,
                                   PathThreadingParams params,
                                   PathWithEdgePostionsContainer const & input_paths,
@@ -295,3 +304,5 @@ path_extend::PathContainer Launch(debruijn_graph::GraphPack const & gp,
     INFO("DONE");
     return total_paths;
 }
+
+} //namespace helpers

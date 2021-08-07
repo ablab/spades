@@ -12,9 +12,10 @@
 #include <algorithm>
 #include <unordered_map>
 
-using namespace std;
-
 namespace contig_replacer {
+
+using namespace std;
+using namespace helpers;
 
 struct gcfg {
     std::string contigs_file;
@@ -90,7 +91,7 @@ list<ReplaceInfo> GenReplaceInfo(vector<SeqString> & fragments, vector<Bounds> c
 
 } //namespace
 
-int main(int argc, char * argv[]) {
+int main() {
     START_BANNER("SPAdes standalone contig replacer");
 
     auto contigs = ReadContigs(cfg.contigs_file);

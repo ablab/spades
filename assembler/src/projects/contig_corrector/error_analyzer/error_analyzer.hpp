@@ -4,7 +4,7 @@
 
 namespace error_analyzer {
 
-int main(int argc, char * argv[]);
+int main();
 
 clipp::group GetCLI();
 

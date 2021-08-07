@@ -25,10 +25,11 @@
 #include <string>
 #include <algorithm>
 
+namespace sequence_corrector {
+
 using namespace std;
 using namespace path_extend;
-
-namespace sequence_corrector {
+using namespace helpers;
 
 // #define WISHED_COLUMNS BColumns, BColumns::match, BColumns::strand, BColumns::block_count,\
 //           BColumns::Q_name, BColumns::Q_size, BColumns::Q_start, BColumns::Q_end,\
@@ -210,7 +211,7 @@ constexpr char BASE_NAME[] = "graph_pack";
 
 } //namespace
 
-int main(int argc, char * argv[]) {
+int main() {
     const size_t GB = 1 << 30;
 
     auto nthreads = cfg.nthreads;

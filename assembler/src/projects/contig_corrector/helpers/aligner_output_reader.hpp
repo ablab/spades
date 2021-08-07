@@ -4,11 +4,14 @@
 #include "template_utils.hpp"
 
 #include <istream>
-#include <vector>
-#include <string>
 #include <functional>
+#include <string>
 #include <type_traits>
 #include <tuple>
+#include <unordered_set>
+#include <vector>
+
+namespace helpers {
 
 template<class Columns, Columns el>
 struct type_getter;
@@ -108,6 +111,14 @@ private:
 template<class Columns, Columns ... columns>
 using Records = std::vector<Record<Columns, columns ...>>;
 
+template<class Columns, Columns field_name, Columns ... columns>
+std::unordered_set<type_getter_t<Columns, field_name>> CollectUniqueFieldValues(Records<Columns, columns ...> const & snps){
+    std::unordered_set<type_getter_t<Columns, field_name>> res;
+    for (auto const & snp : snps)
+        res.insert(snp.template Get<field_name>());
+    return res;
+}
+
 template<class Columns, Columns ... columns>
 using FilterType = std::function<bool(Record<Columns, columns ...> const &)>;
 
@@ -172,3 +183,5 @@ inline bool GetNextNonemptyLine(std::istream & inp, std::string & result) {
     }
     return false;
 }
+
+} // namespace helpers

@@ -1,6 +1,8 @@
 #pragma once
 #include "aligner_output_reader.hpp"
 
+namespace helpers {
+
 enum class MColumns : size_t {
     Q_name      = 0,
     Q_size      = 1,
@@ -44,3 +46,5 @@ Records<MColumns, columns ...> ReadMinimapOutput(std::istream & inp, FilterType<
     INFO("Accepted lines: " << accepted_lines);
     return records;
 }
+
+} // namespace helpers

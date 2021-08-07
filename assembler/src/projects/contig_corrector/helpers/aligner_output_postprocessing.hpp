@@ -3,6 +3,8 @@
 #include "aligner_output_reader.hpp"
 #include "common.hpp"
 
+namespace helpers {
+
 inline double GetCov(std::string const & edge_name) {
     std::string cov_pattern = "_cov_";
     auto pos = edge_name.find(cov_pattern);
@@ -195,3 +197,5 @@ PathWithEdgePostionsContainer MakePaths(Records<Columns, columns ...> const & re
     }
     return paths;
 }
+
+} // namespace helpers

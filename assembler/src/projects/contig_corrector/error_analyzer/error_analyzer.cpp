@@ -1,13 +1,14 @@
 #include "error_analyzer.hpp"
+#include "statistics.hpp"
+#include "sequence_fragments.hpp"
 #include "helpers/common.hpp"
 #include "helpers/aligner_output_reader.hpp"
-#include "helpers/template_utils.hpp"
 
-#include <fstream>
 #include <iostream>
 #include <unordered_map>
 #include <unordered_set>
-#include <numeric>
+
+namespace helpers {
 
 enum class SNPSColumns : size_t {
     ref_name           = 0,
@@ -45,7 +46,11 @@ struct type_getter<ReplaceInfoColumns, el> {
                         std::string>;
 };
 
+} // namespace helpers
+
 namespace error_analyzer {
+
+using namespace helpers;
 
 struct gcfg {
     std::string replace_info;
@@ -93,162 +98,11 @@ Records<ReplaceInfoColumns, columns ...> ReadReplaceInfoDump(std::string const &
     return records;
 }
 
-enum class RangeType {
-    origin = 0,
-    edge   = 1,
-    path   = 2
-};
-
-enum class RangeEndsType {
-    origin_head = 3,
-    origin_tail = 4
-};
-
-enum class StatType {
-    on_uncorrected = 0,
-    on_corrected   = 1,
-    on_bound       = 2
-};
-
-template<size_t amount, class ... ValidAccessors>
-struct Stat : std::array<size_t, amount> {
-    using Base = std::array<size_t, amount>;
-
-    Stat() : Base({0}) {};
-
-    template<class EnumClassType>
-    size_t & operator[](EnumClassType type) {
-        static_assert(traits::Contains<EnumClassType, ValidAccessors ...>());
-        return Base::operator[](static_cast<size_t>(type));
-    }
-    
-    template<class EnumClassType>
-    size_t const & operator[](EnumClassType type) const {
-        static_assert(traits::Contains<EnumClassType, ValidAccessors ...>());
-        return Base::operator[](static_cast<size_t>(type));
-    }
-
-    size_t Sum() const noexcept {
-        return std::accumulate(this->begin(), this->end(), size_t(0));
-    }
-};
-
-using LocalErrorStatType = Stat<3, StatType>;
-
-struct ErrorStatistics {
-    LocalErrorStatType mismatch;
-    LocalErrorStatType insertion; // to contig
-    LocalErrorStatType deletion;  // from contig
-};
-
-using CoverageStatistics = Stat<5, RangeType, RangeEndsType>;
-
 #define SNPS_WISHED_COLUMNS SNPSColumns::contig_name,\
     SNPSColumns::ref_nucls, SNPSColumns::contig_nucls, SNPSColumns::contig_start_pos
 
 #define REPLACE_INFO_WISHED_COLUMNS ReplaceInfoColumns::contig_name, ReplaceInfoColumns::seq_type, \
     ReplaceInfoColumns::from, ReplaceInfoColumns::len
-
-struct FullErrorStatistics {
-    ErrorStatistics events;
-    ErrorStatistics total_len;
-    CoverageStatistics cov_stats;
-};
-
-std::ostream & operator << (std::ostream & out, CoverageStatistics const & stat) {
-    auto total = std::max<size_t>(stat[RangeType::origin] + stat[RangeType::edge] + stat[RangeType::path], 1);
-    auto Print = [total, &out] (char const * type, size_t value) {
-        out << "     " << type <<": " << value << " (" << (static_cast<double>(value) * 100.0) / static_cast<double>(total) << "%)" << '\n';
-    };
-
-    Print("uncorrected", stat[RangeType::origin]);
-    Print("    - head ", stat[RangeEndsType::origin_head]);
-    Print("    - tail ", stat[RangeEndsType::origin_tail]);
-    Print("corrected  ", stat[RangeType::edge] + stat[RangeType::path]);
-    Print("    - edges", stat[RangeType::edge]);
-    Print("    - paths", stat[RangeType::path]);
-    return out;
-}
-
-std::ostream & operator << (std::ostream & out, LocalErrorStatType const & stat) {
-    auto total = std::max((double)stat.Sum(), 1.0);
-    auto Print = [total, &out] (char const * type, size_t value) {
-        out << "       " << type <<": " << value << " (" << (static_cast<double>(value) * 100.0) / total << "%)" << '\n';
-    };
-
-    Print("on uncorrected", stat[StatType::on_uncorrected]);
-    Print("on corrected  ", stat[StatType::on_corrected]);
-    Print("on bound      ", stat[StatType::on_bound]);
-    return out;
-}
-
-std::ostream & operator << (std::ostream & out, ErrorStatistics const & stat) {
-    out << "     mismatches:\n";
-    out << stat.mismatch;
-    out << "     insertions:\n";
-    out << stat.insertion;
-    out << "     deletions:\n";
-    out << stat.deletion;
-    return out;
-}
-
-std::ostream & operator << (std::ostream & out, FullErrorStatistics const & stat) {
-    out << "   coverage fragment length:\n";
-    out << stat.cov_stats;
-    out << "   events:\n";
-    out << stat.events;
-    out << "   total len:\n";
-    out << stat.total_len;
-    return out;
-}
-
-template<class Columns, Columns field_name, Columns ... columns>
-std::unordered_set<type_getter_t<Columns, field_name>> CollectUniqueFieldValues(Records<Columns, columns ...> const & snps){
-    std::unordered_set<type_getter_t<Columns, field_name>> res;
-    for (auto const & snp : snps)
-        res.insert(snp.template Get<field_name>());
-    return res;
-}
-
-struct SeqFragment {
-    unsigned long long start_pos;
-    RangeType type;
-
-    SeqFragment(unsigned long long from, RangeType type)
-        : start_pos(from)
-        , type(type)
-    {}
-
-    bool operator < (SeqFragment const & other) const noexcept {
-        return start_pos < other.start_pos;
-    }
-};
-
-struct SeqFragments : std::vector<SeqFragment> {
-    size_t total_len = 0;
-
-    size_t FindFragmentIndex(unsigned long long pos) const noexcept {
-        size_t l = 0, r = size();
-        while (l + 1 < r) {
-            auto mid = (l + r) / 2;
-            if (pos < (*this)[mid].start_pos)
-                r = mid;
-            else
-                l = mid;
-        }
-        return l;
-    }
-
-    std::pair<size_t, size_t> GetAllIntersectedFragments(unsigned long long start_pos, size_t len) const noexcept {
-        auto first_fragment = FindFragmentIndex(start_pos);
-        auto end_pos = start_pos + len;
-        VERIFY(end_pos <= total_len);
-        auto end_fragment = first_fragment + 1;
-        while (end_fragment < size() && (*this)[end_fragment].start_pos < end_pos)
-            ++end_fragment;
-        return {first_fragment, end_fragment - 1};
-    }
-};
 
 void addCoverageStats(SeqFragments const &fragments, FullErrorStatistics & stats) {
     for (size_t i = 0; i + 1 < fragments.size(); ++i)
@@ -350,7 +204,7 @@ std::unordered_map<std::string, SeqFragments> MakeSeqFragments(Records<ReplaceIn
 
 } // namespace
 
-int main(int argc, char * argv[]) {
+int main() {
     auto snps = ReadUsedSnps<SNPS_WISHED_COLUMNS>(cfg.snps);
     auto snps_contig_names = CollectUniqueFieldValues<SNPSColumns, SNPSColumns::contig_name>(snps);
 

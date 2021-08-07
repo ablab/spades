@@ -9,6 +9,8 @@
 
 using namespace std;
 
+namespace helpers {
+
 size_t ReplaceInfo::ResultSize() const noexcept {
     VERIFY_MSG(!ShouldBeDropped(), "LoL? LengthInNucls() = " << Size() << ", drop_from_head = " << drop_from_head << ", drop_from_tail = " << drop_from_tail);
     return Size() - drop_from_head - drop_from_tail;
@@ -141,3 +143,5 @@ std::string ReplaceAndDump(std::string const & seq, std::list<ReplaceInfo> && re
     DumpReplaceInfo(seq_name, seq, replace_info);
     return MakeSeq(seq, replace_info);
 }
+
+} // namespace helpers

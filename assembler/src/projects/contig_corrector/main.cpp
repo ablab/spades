@@ -44,13 +44,13 @@ int main(int argc, char *argv[]) {
 
         switch (action) {
         case Action::replace: 
-            return contig_replacer::main(argc, argv);
+            return contig_replacer::main();
         case Action::correct: 
-            return sequence_corrector::main(argc, argv);
+            return sequence_corrector::main();
         case Action::analyze: 
-            return error_analyzer::main(argc, argv);
+            return error_analyzer::main();
         case Action::clustering: 
-            return sequence_clusterer::main(argc, argv);
+            return sequence_clusterer::main();
         default: assert(false && "unreachable");
         }
     } catch (const std::string &s) {

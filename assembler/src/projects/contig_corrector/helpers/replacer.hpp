@@ -2,6 +2,8 @@
 #include <string>
 #include <list>
 
+namespace helpers {
+
 struct ReplaceInfo {
     std::string seq;
     size_t contig_start_pos; // inclusive
@@ -34,3 +36,5 @@ struct ReplaceInfo {
 
 std::string Replace(std::string const & seq, std::list<ReplaceInfo> && replace_info);
 std::string ReplaceAndDump(std::string const & seq, std::list<ReplaceInfo> && replace_info, std::string const & seq_name);
+
+} // namespace helpers

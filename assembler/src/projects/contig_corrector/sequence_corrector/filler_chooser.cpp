@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <sstream>
 
+namespace sequence_corrector {
+
 namespace {
 
 struct AlignResultGuard : edlib::EdlibAlignResult {
@@ -347,3 +349,5 @@ bool AlignerFiller::IsDominantScore(size_t dominator, size_t other) const noexce
     return dominator + 10 < other &&
             math::ls((double)dominator, (double)other * score_domination_coeff);
 }
+
+} // namespace sequence_corrector

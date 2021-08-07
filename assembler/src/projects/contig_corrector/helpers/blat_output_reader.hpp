@@ -1,6 +1,8 @@
 #pragma once
 #include "aligner_output_reader.hpp"
 
+namespace helpers {
+
 enum class BColumns : size_t {
     match       = 0,
     mismatch    = 1,
@@ -70,3 +72,5 @@ Records<BColumns, columns ...> ReadBlatOutput(std::istream & inp, FilterType<BCo
     INFO("Accepted lines: " << accepted_lines);
     return records;
 }
+
+} // namespace helpers

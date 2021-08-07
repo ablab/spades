@@ -8,6 +8,8 @@
 
 using namespace std;
 
+namespace helpers {
+
 namespace {
 
 bool is_next_contig(string const & s) {
@@ -55,3 +57,5 @@ std::vector<SeqString> ReadContigs(std::string const & contigs_file) {
         contigs.push_back(move(current_seq));
     return contigs;
 }
+
+} // namespace helpers

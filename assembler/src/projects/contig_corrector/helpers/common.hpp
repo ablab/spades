@@ -8,6 +8,8 @@
 #include "common/assembly_graph/paths/bidirectional_path_container.hpp"
 #include "common/pipeline/graph_pack.hpp"
 
+namespace helpers {
+
 //tig00000104
 // #define GOOD_NAME "tig00000055"
 // #define GOOD_NAME "tig00000020"
@@ -58,3 +60,5 @@ path_extend::PathContainer Launch(debruijn_graph::GraphPack const & gp,
                                   size_t nthreads);
 
 std::vector<SeqString> ReadContigs(std::string const & contigs_file);
+
+} // namespace helpers

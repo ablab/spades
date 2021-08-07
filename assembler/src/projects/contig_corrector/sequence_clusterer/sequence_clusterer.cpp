@@ -4,6 +4,8 @@
 
 namespace sequence_clusterer {
 
+using namespace helpers;
+
 struct gcfg {
     std::string alignment_file;
     std::string output_file;
@@ -52,7 +54,7 @@ bool Filter(Record<Columns, columns ...> const & element) {
             GetCov(edge_title) > 2;
 }
 
-int main(int argc, char * argv[]) {
+int main() {
     START_BANNER("SPAdes standalone sequence clusterer");
 
     // ReadMinimapOutput();

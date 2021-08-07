@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+namespace sequence_corrector {
+
 using Graph = debruijn_graph::Graph;
 using EdgeId = Graph::EdgeId;
 using Path = std::vector<EdgeId>;
@@ -27,3 +29,5 @@ public:
 
     bool IsDominantScore(size_t dominator, size_t other) const noexcept;
 };
+
+} // namespace sequence_corrector
