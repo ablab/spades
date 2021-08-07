@@ -1,6 +1,7 @@
 #include "error_analyzer.hpp"
 #include "helpers/common.hpp"
 #include "helpers/aligner_output_reader.hpp"
+#include "helpers/template_utils.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -92,10 +93,15 @@ Records<ReplaceInfoColumns, columns ...> ReadReplaceInfoDump(std::string const &
     return records;
 }
 
-enum class RangeType : char {
+enum class RangeType {
     origin = 0,
     edge   = 1,
     path   = 2
+};
+
+enum class RangeEndsType {
+    origin_head = 3,
+    origin_tail = 4
 };
 
 enum class StatType {
@@ -104,25 +110,38 @@ enum class StatType {
     on_bound       = 2
 };
 
-struct Stat : std::array<size_t, 3> {
-    using Base = std::array<size_t, 3>;
+template<size_t amount, class ... ValidAccessors>
+struct Stat : std::array<size_t, amount> {
+    using Base = std::array<size_t, amount>;
 
-    Stat() : Base({0,0,0}) {};
+    Stat() : Base({0}) {};
 
-    size_t & operator[](StatType type) {
+    template<class EnumClassType>
+    size_t & operator[](EnumClassType type) {
+        static_assert(traits::Contains<EnumClassType, ValidAccessors ...>());
         return Base::operator[](static_cast<size_t>(type));
     }
     
-    size_t operator[](StatType type) const {
+    template<class EnumClassType>
+    size_t const & operator[](EnumClassType type) const {
+        static_assert(traits::Contains<EnumClassType, ValidAccessors ...>());
         return Base::operator[](static_cast<size_t>(type));
+    }
+
+    size_t Sum() const noexcept {
+        return std::accumulate(this->begin(), this->end(), size_t(0));
     }
 };
 
+using LocalErrorStatType = Stat<3, StatType>;
+
 struct ErrorStatistics {
-    Stat mismatch;
-    Stat insertion; // to contig
-    Stat deletion;  // from contig
+    LocalErrorStatType mismatch;
+    LocalErrorStatType insertion; // to contig
+    LocalErrorStatType deletion;  // from contig
 };
+
+using CoverageStatistics = Stat<5, RangeType, RangeEndsType>;
 
 #define SNPS_WISHED_COLUMNS SNPSColumns::contig_name,\
     SNPSColumns::ref_nucls, SNPSColumns::contig_nucls, SNPSColumns::contig_start_pos
@@ -133,12 +152,28 @@ struct ErrorStatistics {
 struct FullErrorStatistics {
     ErrorStatistics events;
     ErrorStatistics total_len;
+    CoverageStatistics cov_stats;
 };
 
-std::ostream & operator << (std::ostream & out, Stat const & stat) {
-    auto total = std::max(std::accumulate(stat.begin(), stat.end(), 0.0), 1.0);
+std::ostream & operator << (std::ostream & out, CoverageStatistics const & stat) {
+    auto total = std::max<size_t>(stat[RangeType::origin] + stat[RangeType::edge] + stat[RangeType::path], 1);
     auto Print = [total, &out] (char const * type, size_t value) {
-        out << "       " << type <<": " << value << " (" << (value * 100.0) / total << "%)" << '\n';
+        out << "     " << type <<": " << value << " (" << (static_cast<double>(value) * 100.0) / static_cast<double>(total) << "%)" << '\n';
+    };
+
+    Print("uncorrected", stat[RangeType::origin]);
+    Print("    - head ", stat[RangeEndsType::origin_head]);
+    Print("    - tail ", stat[RangeEndsType::origin_tail]);
+    Print("corrected  ", stat[RangeType::edge] + stat[RangeType::path]);
+    Print("    - edges", stat[RangeType::edge]);
+    Print("    - paths", stat[RangeType::path]);
+    return out;
+}
+
+std::ostream & operator << (std::ostream & out, LocalErrorStatType const & stat) {
+    auto total = std::max((double)stat.Sum(), 1.0);
+    auto Print = [total, &out] (char const * type, size_t value) {
+        out << "       " << type <<": " << value << " (" << (static_cast<double>(value) * 100.0) / total << "%)" << '\n';
     };
 
     Print("on uncorrected", stat[StatType::on_uncorrected]);
@@ -158,6 +193,8 @@ std::ostream & operator << (std::ostream & out, ErrorStatistics const & stat) {
 }
 
 std::ostream & operator << (std::ostream & out, FullErrorStatistics const & stat) {
+    out << "   coverage fragment length:\n";
+    out << stat.cov_stats;
     out << "   events:\n";
     out << stat.events;
     out << "   total len:\n";
@@ -174,8 +211,8 @@ std::unordered_set<type_getter_t<Columns, field_name>> CollectUniqueFieldValues(
 }
 
 struct SeqFragment {
-    unsigned long long start_pos : 62;
-    RangeType type : 2;
+    unsigned long long start_pos;
+    RangeType type;
 
     SeqFragment(unsigned long long from, RangeType type)
         : start_pos(from)
@@ -187,15 +224,14 @@ struct SeqFragment {
     }
 };
 
-struct SeqFragments {
-    std::vector<SeqFragment> fragments;
+struct SeqFragments : std::vector<SeqFragment> {
     size_t total_len = 0;
 
     size_t FindFragmentIndex(unsigned long long pos) const noexcept {
-        size_t l = 0, r = fragments.size();
+        size_t l = 0, r = size();
         while (l + 1 < r) {
             auto mid = (l + r) / 2;
-            if (pos < fragments[mid].start_pos)
+            if (pos < (*this)[mid].start_pos)
                 r = mid;
             else
                 l = mid;
@@ -208,21 +244,38 @@ struct SeqFragments {
         auto end_pos = start_pos + len;
         VERIFY(end_pos <= total_len);
         auto end_fragment = first_fragment + 1;
-        while (end_fragment < fragments.size() && fragments[end_fragment].start_pos < end_pos)
+        while (end_fragment < size() && (*this)[end_fragment].start_pos < end_pos)
             ++end_fragment;
         return {first_fragment, end_fragment - 1};
     }
 };
 
+void addCoverageStats(SeqFragments const &fragments, FullErrorStatistics & stats) {
+    for (size_t i = 0; i + 1 < fragments.size(); ++i)
+        stats.cov_stats[fragments[i].type] += fragments[i+1].start_pos - fragments[i].start_pos;
+
+    if (fragments.empty())
+        return;
+
+    stats.cov_stats[fragments.back().type] += fragments.total_len - fragments.back().start_pos;
+
+    VERIFY_MSG(stats.cov_stats.Sum() == fragments.total_len, "Replace info was corrupted");
+
+    stats.cov_stats[RangeEndsType::origin_tail] += fragments.total_len - fragments.back().start_pos;
+
+    if (fragments.size() > 1)
+        stats.cov_stats[RangeEndsType::origin_head] += fragments[1].start_pos - fragments[0].start_pos;
+}
+
 StatType GetStatType(SeqFragments const &fragments, size_t start_pos, size_t end_pos) {
     if (start_pos == end_pos) {
-        if (fragments.fragments[start_pos].type == RangeType::origin)
+        if (fragments[start_pos].type == RangeType::origin)
             return StatType::on_uncorrected;
         return StatType::on_corrected;
     }
 
     for (; start_pos <= end_pos; ++start_pos) {
-        if (fragments.fragments[start_pos].type == RangeType::origin)
+        if (fragments[start_pos].type == RangeType::origin)
             return StatType::on_bound; // because origin fragment always around edges
     }
 
@@ -286,11 +339,11 @@ std::unordered_map<std::string, SeqFragments> MakeSeqFragments(Records<ReplaceIn
         seqFragments.total_len += record.template Get<ReplaceInfoColumns::len>();
         auto from = record.template Get<ReplaceInfoColumns::from>();
         auto type = RangeTypeFromStr(record.template Get<ReplaceInfoColumns::seq_type>());
-        seqFragments.fragments.emplace_back(from, type);
+        seqFragments.emplace_back(from, type);
     }
 
     for (auto & fragments : res)
-        std::sort(fragments.second.fragments.begin(), fragments.second.fragments.end());
+        std::sort(fragments.second.begin(), fragments.second.end());
 
     return res;
 }
@@ -323,6 +376,11 @@ int main(int argc, char * argv[]) {
             continue;
 
         AddStatistics(snp, seqFragments->second, statistics[contig_name]);
+    }
+
+    for (auto & stat : statistics) {
+        auto seqFragments = seqFragmentsByName.find(stat.first);
+        addCoverageStats(seqFragments->second, stat.second);
     }
 
     for (auto const & stat : statistics) {

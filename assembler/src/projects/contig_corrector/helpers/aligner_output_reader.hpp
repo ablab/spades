@@ -1,6 +1,7 @@
 #pragma once
 
 #include "utils/logger/logger.hpp"
+#include "template_utils.hpp"
 
 #include <istream>
 #include <vector>
@@ -46,12 +47,12 @@ struct Record  {
 
     template<Columns el>
     constexpr static bool Contains() {
-        return ContainsHandler<el, columns ...>();
+        return traits::Contains<Columns, el, columns ...>();
     }
 
     template<Columns el, typename = std::enable_if_t<Contains<el>()>>
     constexpr static size_t GetIndex() {
-        return GetIndexHandler<0, el, columns ...>();
+        return traits::GetIndex<Columns, el, columns ...>();
     }
 
     template<Columns el, typename = std::enable_if_t<Contains<el>()>>
@@ -64,26 +65,6 @@ struct Record  {
     type_getter_t<Columns, el> & Get() {
         constexpr auto index = GetIndex<el>();
         return std::get<index>(fields);
-    }
-private:
-    template<size_t pos, Columns el, Columns head, Columns ... tail>
-    constexpr static size_t GetIndexHandler() {
-        return (el == head ? pos : GetIndexHandler<pos+1, el, tail ...>());
-    }
-
-    template<size_t pos, Columns el>
-    constexpr static size_t GetIndexHandler() {
-        return -1ull;
-    }
-
-    template<Columns el, Columns head, Columns ... tail>
-    constexpr static bool ContainsHandler() {
-        return (el == head ? true : ContainsHandler<el, tail ...>());
-    }
-
-    template<Columns el>
-    constexpr static bool ContainsHandler() {
-        return false;
     }
 };
 
