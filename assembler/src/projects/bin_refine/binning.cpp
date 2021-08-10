@@ -30,8 +30,10 @@ EdgeLabels::EdgeLabels(const EdgeId e, const Binning& bin_stats)
     if (is_binned) {
         size_t sz = bins->second.size();
         //size_t sz = bin_stats.multiplicities().at(e);
-        for (BinId bin : bins->second)
+        for (BinId bin : bins->second) {
+            VERIFY(bin != UNBINNED);
             labels_probabilities.set(bin, 1.0 / static_cast<double>(sz));
+        }
         is_repetitive = bin_stats.multiplicities().at(e) > 1;
     } else {
         labels_probabilities.set(UNBINNED, 1.0);
@@ -181,10 +183,11 @@ void Binning::LoadBinning(const std::string &binning_file,
           INFO("Unknown scaffold: " << scaffold_name);
           continue;
       }
-    bin_labels_.insert({UNBINNED, UNBINNED_ID});
 
       scaffolds_binning_[scaffold_entry->second] = cbin_id;
   }
+  bins_.insert({UNBINNED_ID, UNBINNED});
+  bin_labels_.insert({UNBINNED, UNBINNED_ID});
 
   ScaffoldsToEdges();
 }

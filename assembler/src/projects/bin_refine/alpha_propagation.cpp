@@ -23,6 +23,7 @@ AlphaAssignment AlphaPropagator::GetAlphaMask(const Binning &bin_stats) const {
     auto binning_refiner = std::make_unique<LabelsPropagation>(g_, links_, correction_alpha, nonpropagating_edges, eps_);
     INFO("Launching propagation refiner");
     auto refined_distance_coeffs = binning_refiner->RefineBinning(distance_state);
+    INFO("Emplacing");
     for (const auto &labels: refined_distance_coeffs) {
         const auto &probs = labels.labels_probabilities;
         VERIFY(probs.size() == 2);
@@ -55,8 +56,9 @@ SoftBinsAssignment AlphaPropagator::ConstructBinningMask(const bin_stats::SoftBi
 
     INFO(binned_edges.size() << " initially binned edges, total length " << binned_length);
     //fixme configs
-    const size_t length_bound = 5000;
-    const size_t max_vertices = 10000;
+    const size_t length_threshold = 1000;
+    const size_t distance_bound = 3000;
+//    const size_t max_vertices = 10000;
 
     //todo optimize using dijkstra with predicate
     std::unordered_set<EdgeId> binned_after_dilation;
@@ -78,21 +80,24 @@ SoftBinsAssignment AlphaPropagator::ConstructBinningMask(const bin_stats::SoftBi
     }
     INFO(binned_after_dilation.size() << " binned edges after dilation, total length " << binned_length);
 
+    INFO(g_.max_eid());
     SoftBinsAssignment mask_state(g_.max_eid());
     for (debruijn_graph::EdgeId e : g_.canonical_edges()) {
-        LabelProbabilities labels_probabilities;
-        labels_probabilities.resize(2);
+        EdgeLabels labels;
+        labels.e = e;
+        labels.is_binned = true;
+        labels.is_repetitive = false;
+        labels.labels_probabilities.resize(2);
         if (binned_after_dilation.find(e) != binned_after_dilation.end()) {
-            labels_probabilities.set(BINNED, 1.0);
-            labels_probabilities.set(UNBINNED, 0.0);
+            labels.labels_probabilities.set(BINNED, 1.0);
         } else {
-            labels_probabilities.set(UNBINNED, 1.0);
-            labels_probabilities.set(BINNED, 0.0);
+            labels.labels_probabilities.set(UNBINNED, 1.0);
         }
-        EdgeLabels labels(e, true, false, labels_probabilities);
+
         mask_state.emplace(e, labels);
         mask_state.emplace(g_.conjugate(e), std::move(labels));
     }
+    INFO("Constructed mask state");
 
     return mask_state;
 }
