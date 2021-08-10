@@ -33,7 +33,7 @@ class AlphaPropagator {
     SoftBinsAssignment ConstructBinningMask(const SoftBinsAssignment &origin_state) const;
 
     const Graph &g_;
-    const binning::LinkIndex links_;
+    const binning::LinkIndex &links_;
     double metaalpha_;
     double eps_;
     std::string debug_path_;

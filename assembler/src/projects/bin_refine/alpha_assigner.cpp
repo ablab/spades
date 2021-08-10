@@ -26,9 +26,6 @@ AlphaAssignment PropagationAssigner::GetAlphaAssignment(const SoftBinsAssignment
     return ealpha;
 }
 AlphaAssignment CorrectionAssigner::GetAlphaAssignment(const SoftBinsAssignment &origin_state) const {
-//    INFO("has mask?");
-//    bool has_mask = distance_coeffs_.begin() != distance_coeffs_.end();
-//    INFO("Has mask: " << has_mask);
     AlphaAssignment ealpha(g_.max_eid());
     //Calculate the regularization coefficients
     for (EdgeId e : g_.canonical_edges()) {
