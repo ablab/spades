@@ -4,10 +4,24 @@
 
 namespace error_analyzer {
 
+template<size_t s, class ... Args>
+size_t RangeTypeSum(Stat<s, Args...> const & stat) {
+    return stat[RangeType::origin] + stat[RangeType::edge] + stat[RangeType::path];
+}
+
+void FullErrorStatistics::operator +=(FullErrorStatistics const & other) {
+    events += other.events;
+    total_len += other.total_len;
+    cov_stats += other.cov_stats;
+}
+
 std::ostream & operator << (std::ostream & out, CoverageStatistics const & stat) {
-    auto total = std::max<size_t>(stat[RangeType::origin] + stat[RangeType::edge] + stat[RangeType::path], 1);
+    size_t total = RangeTypeSum(stat);
+    if (!total)
+        return out;
     auto Print = [total, &out] (char const * type, size_t value) {
-        out << "     " << type <<": " << value << " (" << (static_cast<double>(value) * 100.0) / static_cast<double>(total) << "%)" << '\n';
+        if (value)
+            out << "     " << type <<": " << value << " (" << (static_cast<double>(value) * 100.0) / static_cast<double>(total) << "%)" << '\n';
     };
 
     Print("uncorrected", stat[RangeType::origin]);
@@ -20,23 +34,28 @@ std::ostream & operator << (std::ostream & out, CoverageStatistics const & stat)
 }
 
 std::ostream & operator << (std::ostream & out, LocalErrorStatType const & stat) {
-    auto total = std::max((double)stat.Sum(), 1.0);
+    size_t total = RangeTypeSum(stat);
+    if (!total)
+        return out;
     auto Print = [total, &out] (char const * type, size_t value) {
-        out << "       " << type <<": " << value << " (" << (static_cast<double>(value) * 100.0) / total << "%)" << '\n';
+        if (value)
+            out << "       " << type <<": " << value << " (" << (static_cast<double>(value) * 100.0) / static_cast<double>(total) << "%)" << '\n';
     };
 
-    Print("on uncorrected", stat[StatType::on_uncorrected]);
-    Print("on corrected  ", stat[StatType::on_corrected]);
-    Print("on bound      ", stat[StatType::on_bound]);
+    Print("on uncorrected", stat[RangeType::origin]);
+    Print("on corrected  ", stat[RangeType::edge] + stat[RangeType::path]);
+    Print("  - edges ", stat[RangeType::edge]);
+    Print("  - paths ", stat[RangeType::path]);
+    Print("on bounds     ", stat[BoundStatType::on_bound]);
     return out;
 }
 
 std::ostream & operator << (std::ostream & out, ErrorStatistics const & stat) {
-    out << "     mismatches: " << stat.mismatch.Sum() << " \n";
+    out << "     mismatches: " << RangeTypeSum(stat.mismatch) << " \n";
     out << stat.mismatch;
-    out << "     insertions: " << stat.insertion.Sum() << " \n";
+    out << "     insertions: " << RangeTypeSum(stat.insertion) << " \n";
     out << stat.insertion;
-    out << "     deletions: " << stat.deletion.Sum() << " \n";
+    out << "     deletions: " << RangeTypeSum(stat.deletion) << " \n";
     out << stat.deletion;
     return out;
 }

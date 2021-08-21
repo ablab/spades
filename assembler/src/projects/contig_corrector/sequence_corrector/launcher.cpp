@@ -7,6 +7,7 @@
 #include "helpers/common.hpp"
 #include "helpers/replacer.hpp"
 #include "helpers/string_utils.hpp"
+#include "helpers/replace_info_writer.hpp"
 #include "filler_chooser.hpp"
 
 #include "utils/logger/logger.hpp"
@@ -245,6 +246,23 @@ SimpleBidirectionalPath SequenceCorrector::ConnectWithScaffolds(EdgeId start, Ed
     return answer;
 }
 
+void SaveReplaceInfoDumpForUncorrected(std::vector<SeqString> & contigs) {
+    if (!ReplaceInfoWriter::stream)
+        return;
+
+    auto& stream = *ReplaceInfoWriter::stream;
+
+    for (auto const & contig : contigs) {
+        #ifdef GOOD_NAME
+        if (contig.name != GOOD_NAME)
+            continue;
+        #endif
+
+        if (!contig.corrected)
+            stream.Write(contig.name, RangeType::origin, 0, contig.seq.size());
+    }
+}
+
 } // namespase
 
 } // namespace sequence_corrector
@@ -291,6 +309,7 @@ path_extend::PathContainer Launch(debruijn_graph::GraphPack const & gp,
 
         auto data = corrector.GetBestSequence();
         contig.seq = ReplaceAndDump(contig.seq, std::move(data.first), contig.name);
+        contig.corrected = true;
         PathContainer result;
         for (auto const & path : data.second)
             result.Add(BidirectionalPath::create(graph, std::move(path.path)));
@@ -300,6 +319,8 @@ path_extend::PathContainer Launch(debruijn_graph::GraphPack const & gp,
             total_paths.AddContainer(std::move(result));
         }
     }
+
+    SaveReplaceInfoDumpForUncorrected(contigs);
 
     INFO("DONE");
     return total_paths;

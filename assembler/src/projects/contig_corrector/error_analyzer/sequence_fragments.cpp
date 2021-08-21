@@ -24,4 +24,12 @@ std::pair<size_t, size_t> SeqFragments::GetAllIntersectedFragments(unsigned long
     return {first_fragment, end_fragment - 1};
 }
 
+bool SeqFragments::isConsequent() const noexcept {
+    for (size_t i = 1; i < size(); ++i) {
+        if ((*this)[i-1].start_pos + (*this)[i-1].len != (*this)[i].start_pos)
+            return false;
+    }
+    return true;
+}
+
 } // namespace error_analyzer

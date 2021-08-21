@@ -1,10 +1,14 @@
 #pragma once
 #include <string>
 #include <list>
+#include "utils/verify.hpp"
 
 namespace helpers {
 
 struct ReplaceInfo {
+    ///@invariant \ref seq [ \ref drop_from_head ] points at \ref contig_start_pos in original sequence
+    ///@invariant \ref seq [ seq.size() - \ref drop_from_tail - 1 ] points at \ref contig_end_pos - 1 in original sequence
+
     std::string seq;
     size_t contig_start_pos; // inclusive
     size_t contig_end_pos;   // exclusive
@@ -17,14 +21,17 @@ struct ReplaceInfo {
         , contig_end_pos(contig_end_pos)
         , drop_from_head(drop_from_head)
         , drop_from_tail(drop_from_tail)
-    {}
+    {
+        VERIFY(contig_start_pos <= contig_end_pos);
+    }
 
-    size_t Size() const noexcept { return seq.size(); }
-
-    size_t StartPos() const noexcept { return contig_start_pos + drop_from_head; }
-    size_t EndPos() const noexcept { return contig_end_pos - drop_from_tail; }
+    size_t Size() const noexcept {
+        VERIFY(contig_start_pos <= contig_end_pos);
+        return seq.size();
+    }
 
     bool ShouldBeDropped() const noexcept {
+        VERIFY(contig_start_pos <= contig_end_pos);
         return Size() <= drop_from_head + drop_from_tail;
     }
 

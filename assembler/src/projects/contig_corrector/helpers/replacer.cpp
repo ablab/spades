@@ -2,6 +2,7 @@
 #include "string_utils.hpp"
 #include "utils/verify.hpp"
 #include "utils/logger/logger.hpp"
+#include "helpers/replace_info_writer.hpp"
 
 #include <sstream>
 #include <iomanip>
@@ -19,65 +20,55 @@ size_t ReplaceInfo::ResultSize() const noexcept {
 void ReplaceInfo::DropAhead(size_t size) noexcept {
     drop_from_head += size;
     contig_start_pos += size;
+    VERIFY(contig_start_pos <= contig_end_pos);
 }
 
 void ReplaceInfo::DropBehind(size_t size) noexcept {
     drop_from_tail += size;
     contig_end_pos -= size;
+    VERIFY(contig_start_pos <= contig_end_pos);
 }
 
 namespace {
 
 void DumpReplaceInfo(string const & seq_name, string const & seq, list<ReplaceInfo> const & mapping_info) {
-    static ofstream out("replace_info_dump.dump");
-    static bool once_flag = true;
-    auto Print = [&out](auto const & name, auto const & type, auto const & from, auto const & len) {
-        out << setw(15) << name << ' ' << setw(10) << type << ' ' << setw(10) << from << ' ' << setw(10) << len << '\n';
-    };
+    if (!ReplaceInfoWriter::stream)
+        return;
+
+    auto & stream = *ReplaceInfoWriter::stream;
     auto Skip = [](size_t & i, auto const & s, int (*pred)(int)) {
-        while (i < s.size() && pred(s[i]))
+        while (i + s.drop_from_tail < s.seq.size() && pred(s.seq[i]))
             ++i;
     };
-    if (once_flag) {
-        Print("name", "seq_type", "from", "len");
-        once_flag = false;
-    }
     size_t current_pos = 0;
     size_t result_pos = 0;
-    size_t total_origin_len = 0;
-    size_t total_replaced_len = 0;
     for (auto const & path : mapping_info) {
         {
             auto len = path.contig_start_pos - current_pos;
             if (len > 0) {
-                Print(seq_name, "origin", result_pos, len);
+                stream.Write(seq_name, RangeType::origin, result_pos, len);
                 result_pos += len;
-                total_origin_len += len;
             }
         }
 
         for (size_t i = path.drop_from_head; i + path.drop_from_tail < path.seq.size();) {
             auto start_pos = i;
             if (islower(path.seq[i])) {
-                Skip(i, path.seq, islower);
-                Print(seq_name, "edge", start_pos + result_pos, i - start_pos);
+                Skip(i, path, islower);
+                stream.Write(seq_name, RangeType::edge, result_pos, i - start_pos);
             } else {
-                Skip(i, path.seq, isupper);
-                Print(seq_name, "path", start_pos + result_pos, i - start_pos);
+                Skip(i, path, isupper);
+                stream.Write(seq_name, RangeType::path, result_pos, i - start_pos);
             }
+            result_pos += i - start_pos;
         }
-        auto len = path.ResultSize();
-        result_pos += len;
-        total_replaced_len += len;
 
         current_pos = path.contig_end_pos;
     }
     if (current_pos < seq.size()) {
         auto len = seq.size() - current_pos;
-        Print(seq_name, "origin", result_pos, len);
-       total_origin_len += len;
+        stream.Write(seq_name, RangeType::origin, result_pos, len);
     }
-    INFO("Corrected " << total_replaced_len << " nucls (" << 100.0*total_replaced_len / (total_replaced_len + total_origin_len) << "%) of " << seq_name);
 }
 
 string MakeSeq(string const & seq, list<ReplaceInfo> const & mapping_info) {
@@ -102,17 +93,20 @@ void DropOverlappedPrefixes(list<ReplaceInfo> & mapping_info) {
         return;
 
     auto current_path = mapping_info.begin();
+    // we use a strategy when overlapped parts will be dropped from both paths
     size_t tail_drop = 0;
     while (true) {
         auto next_path = std::next(current_path);
         if (next_path == mapping_info.end())
             break;
+        VERIFY_MSG(current_path->contig_start_pos <= next_path->contig_start_pos, "This should not have happened! :(");
         if (next_path->contig_start_pos < current_path->contig_end_pos) {
             auto overlapping = current_path->contig_end_pos - next_path->contig_start_pos;
-            tail_drop += overlapping;
+            tail_drop += overlapping; // this should be max function!
             next_path->DropAhead(overlapping);
         }
         if (next_path->ShouldBeDropped()) {
+            VERIFY_MSG(false, "Wrong behavior");
             mapping_info.erase(next_path);
             continue;
         }
@@ -120,6 +114,7 @@ void DropOverlappedPrefixes(list<ReplaceInfo> & mapping_info) {
         current_path->DropBehind(tail_drop);
         tail_drop = 0;
         if (current_path->ShouldBeDropped()) {
+            VERIFY_MSG(false, "This should not have happened! :(");
             current_path = mapping_info.erase(current_path);
             continue;
         }

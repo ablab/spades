@@ -9,6 +9,7 @@
 #include "helpers/minimap_output_reader.hpp"
 #include "helpers/blat_output_reader.hpp"
 #include "helpers/aligner_output_postprocessing.hpp"
+#include "helpers/replace_info_writer.hpp"
 
 #include "common/assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "common/assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
@@ -19,6 +20,7 @@
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/parallel/parallel_wrapper.hpp"
 #include "utils/filesystem/temporary.hpp"
+#include "utils/filesystem/file_opener.hpp"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -45,6 +47,7 @@ struct gcfg {
         : k(-1)
         , output_dir("output")
         , nthreads(omp_get_max_threads() / 2 + 1)
+        , debug_mode(false)
     {}
 
     size_t k;
@@ -55,6 +58,7 @@ struct gcfg {
     std::string output_dir;
     std::string aligner_output;
     unsigned int nthreads;
+    bool debug_mode;
 } cfg;
 
 
@@ -69,7 +73,8 @@ clipp::group GetCLI() {
       (required("-d") & integer("int", cfg.drop_alg)) % "0 = drop nothing, 1 = full drop, 2 = transitive drop by IDY",
       (option("-t") & integer("int", cfg.nthreads)) % "# of threads to use",
       (option("-o") & value("dir", cfg.output_dir)) % "output directory",
-      (option("-s") & value("file", cfg.paths_save_file)) % "save_path_to_scaffolds"
+      (option("-s") & value("file", cfg.paths_save_file)) % "save_path_to_scaffolds",
+      (option("--debug").set(cfg.debug_mode, true)) % "save debug information"
   );
 
   return cli;
@@ -78,9 +83,7 @@ clipp::group GetCLI() {
 namespace {
 
 void ReadScaffolds(PathContainer& scaffolds, Graph const & graph, std::string const & paths_save_file) {
-    std::ifstream inp(paths_save_file);
-    if (!inp.is_open())
-        throw "Cannot open " + paths_save_file;
+    auto inp = fs::open_file(paths_save_file, ios_base::in, ios_base::badbit);
     size_t amount_of_paths;
     inp >> amount_of_paths;
     for (size_t i = 0; i < amount_of_paths; ++i) {
@@ -217,6 +220,8 @@ int main() {
     auto nthreads = cfg.nthreads;
     auto k = cfg.k;
     std::string &output_dir = cfg.output_dir;
+    if (cfg.debug_mode)
+        ReplaceInfoWriter::SetStream(fs::append_path(output_dir, "replace_info_dump.dump"));
 
     START_BANNER("SPAdes standalone contig corrector");
     utils::limit_memory(30 * GB);
@@ -237,15 +242,15 @@ int main() {
     auto contigs = ReadContigs(cfg.canu_contigs_file);
     #ifdef GOOD_NAME
     {
-        ofstream contigs_output(fs::append_path(output_dir, "canu_contig.fasta"));
-        VERIFY(contigs_output.is_open());
-        for (auto & contig : contigs) {
-            if (contig.name == GOOD_NAME) {
-                contigs_output << '>' << contig.name << " len=" << contig.seq.size() << '\n';
-                const auto d_pos = 100;
-                for (size_t pos = 0; pos < contig.seq.size(); pos += d_pos)
-                    contigs_output << contig.seq.substr(pos, d_pos) << '\n';
-                break;
+        if (cfg.debug_mode) {
+            ofstream contigs_output(fs::append_path(output_dir, "canu_contig.fasta"));
+            VERIFY(contigs_output.is_open());
+            for (auto & contig : contigs) {
+                if (contig.name == GOOD_NAME) {
+                    contigs_output << '>' << contig.name << " len=" << contig.seq.size() << '\n';
+                    WriteWithWidth(contigs_output, contig.seq, 100);
+                    break;
+                }
             }
         }
     }
@@ -256,10 +261,7 @@ int main() {
     if (!cfg.paths_save_file.empty())
         ReadScaffolds(scaffolds, graph, cfg.paths_save_file);
 
-
-    ifstream aligner_output_stream(cfg.aligner_output);
-    if (!aligner_output_stream.is_open())
-        throw "Cannot open " + cfg.aligner_output;
+    auto aligner_output_stream = fs::open_file(cfg.aligner_output, ios_base::in, ios_base::badbit);
 
     auto unique_edge_storage = GetUniqueEdgeStorage(gp);
     auto unique_edge_checker = [&unique_edge_storage](EdgeId id) { return unique_edge_storage.IsUnique(id); };
@@ -269,7 +271,7 @@ int main() {
     auto res = ReadMinimapOutput(aligner_output_stream, filter);
     auto fragments = GetContigFragments(res, GetDropAlg<WISHED_COLUMNS>(cfg.drop_alg), graph.k());
     // DropAnother(res, fragments);
-    MakeAllFilteredEdgesDump(res, fragments, graph, output_dir);
+    // MakeAllFilteredEdgesDump(res, fragments, graph, output_dir);
     auto input_paths = MakePaths(res, fragments, graph);
     INFO("Scanned " << input_paths.size() << " paths");
 

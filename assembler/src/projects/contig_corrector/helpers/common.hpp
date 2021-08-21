@@ -10,9 +10,7 @@
 
 namespace helpers {
 
-//tig00000104
-// #define GOOD_NAME "tig00000055"
-// #define GOOD_NAME "tig00000020"
+// #define GOOD_NAME "contig_350"
 
 struct PathThreadingParams {
     double score_domination_coeff = 0.50;   //if there are multiple *good* paths, the best one has to have score < score_domination_coeff * second_best_score
@@ -48,6 +46,7 @@ struct SeqString {
     std::string name;
     std::string info;
     std::string seq;
+    bool corrected = false;
 };
 
 using PathWithEdgePostionsContainer = std::vector<PathWithEdgePostions>;

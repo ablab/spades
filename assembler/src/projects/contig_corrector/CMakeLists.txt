@@ -14,6 +14,7 @@ add_executable(contig_corrector
                error_analyzer/sequence_fragments.cpp
                error_analyzer/statistics.cpp
                helpers/parser.cpp
+               helpers/replace_info_writer.cpp
                helpers/replacer.cpp
                main.cpp
                sequence_clusterer/sequence_clusterer.cpp
