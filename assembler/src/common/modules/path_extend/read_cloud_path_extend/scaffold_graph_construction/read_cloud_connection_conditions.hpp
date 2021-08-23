@@ -74,38 +74,38 @@ class ReadCloudMiddleDijkstraPredicate : public ScaffoldEdgePredicate {
     DECL_LOGGER("ReadCloudMiddleDijkstraPredicate");
 };
 
-class CompositeConnectionPredicate : public ScaffoldEdgePredicate {
-  public:
-    using ScaffoldEdgePredicate::ScaffoldEdge;
-    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
-
-    CompositeConnectionPredicate(const conj_graph_pack &gp,
-                                 std::shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor,
-                                 std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor,
-                                 const ScaffoldingUniqueEdgeStorage &unique_storage,
-                                 size_t length_bound,
-                                 const ReadCloudSearchParameterPack &search_parameter_pack,
-                                 const LongEdgePairGapCloserParams &predicate_params,
-                                 bool scaffolding_mode);
-
-    bool Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &scaffold_edge) const override;
-
-  private:
-    std::shared_ptr<scaffolder::ScaffoldVertexPredicate> ConstructScaffoldVertexPredicate(
-        const ScaffoldVertex &start, const ScaffoldVertex &end,
-        std::shared_ptr<PairEntryProcessor> entry_processor) const;
-
-    const conj_graph_pack &gp_;
-    std::shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor_;
-    std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor_;
-    const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage_;
-    const size_t length_bound_;
-    const ReadCloudSearchParameterPack search_parameter_pack_;
-    const LongEdgePairGapCloserParams predicate_params_;
-    bool scaffolding_mode_;
-
-    DECL_LOGGER("CompositeConnectionPredicate");
-};
+//class CompositeConnectionPredicate : public ScaffoldEdgePredicate {
+//  public:
+//    using ScaffoldEdgePredicate::ScaffoldEdge;
+//    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
+//
+//    CompositeConnectionPredicate(const conj_graph_pack &gp,
+//                                 std::shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor,
+//                                 std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor,
+//                                 const ScaffoldingUniqueEdgeStorage &unique_storage,
+//                                 size_t length_bound,
+//                                 const ReadCloudSearchParameterPack &search_parameter_pack,
+//                                 const LongEdgePairGapCloserParams &predicate_params,
+//                                 bool scaffolding_mode);
+//
+//    bool Check(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &scaffold_edge) const override;
+//
+//  private:
+//    std::shared_ptr<scaffolder::ScaffoldVertexPredicate> ConstructScaffoldVertexPredicate(
+//        const ScaffoldVertex &start, const ScaffoldVertex &end,
+//        std::shared_ptr<PairEntryProcessor> entry_processor) const;
+//
+//    const conj_graph_pack &gp_;
+//    std::shared_ptr<barcode_index::SimpleIntersectingScaffoldVertexExtractor> short_edge_extractor_;
+//    std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor_;
+//    const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage_;
+//    const size_t length_bound_;
+//    const ReadCloudSearchParameterPack search_parameter_pack_;
+//    const LongEdgePairGapCloserParams predicate_params_;
+//    bool scaffolding_mode_;
+//
+//    DECL_LOGGER("CompositeConnectionPredicate");
+//};
 
 class EdgeSplitPredicate : public ScaffoldEdgePredicate {
   public:

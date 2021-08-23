@@ -8,10 +8,9 @@
 #pragma once
 
 #include "utils/stl_utils.hpp"
+#include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "barcode_index/barcode_index.hpp"
 #include "barcode_index/barcode_info_extractor.hpp"
-#include "utils/standard_base.hpp"
-#include "assembly_graph/handlers/edges_position_handler.hpp"
 
 namespace visualization {
 
@@ -319,7 +318,7 @@ class ReadCloudLabeler : public visualization::graph_labeler::StrGraphLabeler<Gr
     typedef barcode_index::FrameBarcodeIndexInfoExtractorTemplate<Graph> extractor_t;
     typedef std::set <EdgeId> edge_set_t;
 private:
-    shared_ptr<extractor_t> barcode_extractor_ptr_;
+    std::shared_ptr<extractor_t> barcode_extractor_ptr_;
     const size_t barcodes_on_string_;
     const size_t max_strings_;
     const size_t too_many_barcodes_;
@@ -343,7 +342,7 @@ public:
     std::string label(EdgeId e) const {
         std::string ret_label;
         size_t number_of_barcodes = barcode_extractor_ptr_->GetNumberOfBarcodes(e);
-        vector <barcode_index::BarcodeId> barcodes = barcode_extractor_ptr_->GetBarcodes(e);
+        std::vector <barcode_index::BarcodeId> barcodes = barcode_extractor_ptr_->GetBarcodes(e);
         size_t max_barcodes = barcodes_on_string_ * max_strings_;
         VERIFY(barcodes.size() == number_of_barcodes);
         ret_label += std::to_string(number_of_barcodes) + " barcodes.";

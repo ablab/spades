@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "bounded_dijkstra.hpp"
 #include "extension_chooser.hpp"
 #include "overlap_analysis.hpp"
 #include "path_filter.hpp"
@@ -16,7 +15,6 @@
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
 #include "assembly_graph/graph_support/scaff_supplementary.hpp"
-#include "assembly_graph/dijkstra/read_cloud_path_extend/read_cloud_dijkstras.hpp"
 #include "read_cloud_path_extend/extender_support/candidate_selectors.hpp"
 #include "read_cloud_path_extend/extender_support/entry_collectors.hpp"
 #include "read_cloud_path_extend/scaffold_graph_construction/read_cloud_dijkstras.hpp"
@@ -526,7 +524,7 @@ protected:
     ShortLoopResolver loop_resolver_;
     double weight_threshold_;
 
-    void FindFollowingEdges(BidirectionalPath& path, ExtensionChooser::EdgeContainer * result);
+    virtual void FindFollowingEdges(BidirectionalPath& path, ExtensionChooser::EdgeContainer * result);
 public:
     SimpleExtender(const Graph &graph, const omnigraph::FlankingCoverage<Graph> &flanking_cov,
                    const GraphCoverageMap &cov_map, UsedUniqueStorage &unique,
@@ -582,103 +580,112 @@ private:
 };
 
 //todo use custom path predicate instead of length bound
-class SearchingMultiExtender: public SimpleExtender {
- protected:
-    std::unordered_set<VertexId> visited_vertices_;
-    std::shared_ptr<QueueContainer> path_container_;
-    const size_t length_bound_;
-
- public:
-    SearchingMultiExtender(const conj_graph_pack &gp,
-                  const GraphCoverageMap &cov_map,
-                  UsedUniqueStorage &unique,
-                  std::shared_ptr<ExtensionChooser> ec,
-                  size_t is,
-                  bool investigate_short_loops,
-                  bool use_short_loop_cov_resolver,
-                  double weight_threshold,
-                  size_t length_bound,
-                  std::shared_ptr<QueueContainer> path_container) :
-        SimpleExtender(gp, cov_map, unique, ec, is, investigate_short_loops, use_short_loop_cov_resolver, weight_threshold),
-        visited_vertices_(), path_container_(path_container), length_bound_(length_bound)
-    {}
-
-    std::unordered_set<VertexId> GetReachedVertices() {
-        return visited_vertices_;
-    }
-
- protected:
-    bool SearchingAddCandidates(BidirectionalPath& path, ExtensionChooser::EdgeContainer& candidates,
-                                std::shared_ptr<QueueContainer> path_container,
-                                std::unordered_set<VertexId>& visited_vertices,
-                                size_t length_bound) {
-        if (candidates.size() == 0)
-            return false;
-
-        VERIFY(path.Size() >= 1);
-        if (path.Size() > 1 and path.LengthAt(1) > length_bound) {
-            DEBUG("Path is too long");
-            return false;
-        }
-
-        if (candidates.size() == 1) {
-            DEBUG("push");
-            EdgeId eid = candidates.back().e_;
-            path.PushBack(eid, Gap(candidates.back().d_));
-            visited_vertices.insert(g_.EdgeEnd(eid));
-            DEBUG("push done");
-            return true;
-        }
-
-        //Creating new paths for other than new candidate.
-        for (size_t i = 1; i < candidates.size(); ++i) {
-            auto candidate = candidates[i];
-            DEBUG("push other candidate " << candidate.e_.int_id());
-            BidirectionalPath* path_copy_ptr = new BidirectionalPath(path);
-            path_copy_ptr->PushBack(candidate.e_, Gap(candidate.d_));
-            path_container->push(path_copy_ptr);
-            DEBUG("Inserting vertex " << g_.EdgeEnd(candidate.e_));
-            visited_vertices.insert(g_.EdgeEnd(candidate.e_));
-        }
-
-        DEBUG("push");
-        path.PushBack(candidates.front().e_, Gap(candidates.front().d_));
-        DEBUG("push done");
-        DEBUG("Inserting vertex " << g_.EdgeEnd(candidates.front().e_));
-        visited_vertices.insert(g_.EdgeEnd(candidates.front().e_));
-
-        if (candidates.size() > 1) {
-            DEBUG("Found " << candidates.size() << " candidates");
-        }
-
-        return true;
-    }
-
-    bool AddCandidates(BidirectionalPath& path, PathContainer* /*paths_storage*/,
-                       ExtensionChooser::EdgeContainer& candidates) override {
-        ExtensionChooser::EdgeContainer loop_checked_candidates;
-        auto loop_check = [&path, this](const EdgeWithDistance ewd) {
-          return LoopCheck(path, ewd.e_);
-        };
-        std::copy_if(candidates.begin(), candidates.end(), std::back_inserter(loop_checked_candidates), loop_check);
-        return SearchingAddCandidates(path, loop_checked_candidates, path_container_, visited_vertices_, length_bound_);
-    }
-
- private:
-    bool LoopCheck(BidirectionalPath& path, const EdgeId& edge) const {
-        LoopDetector loop_detector(&path, cov_map_);
-        DEBUG("loop detector");
-        if (!investigate_short_loops_ &&
-            (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(edge))
-            && extensionChooser_->WeightCounterBased()) {
-            DEBUG("loop detected");
-            return false;
-        }
-        return true;
-    }
-
-    DECL_LOGGER("SearchingMultiExtender")
-};
+//class SearchingMultiExtender: public SimpleExtender {
+// public:
+//    typedef debruijn_graph::GraphPack GraphPack;
+//
+//    SearchingMultiExtender(const GraphPack &gp,
+//                           const GraphCoverageMap &cov_map,
+//                           UsedUniqueStorage &unique,
+//                           std::shared_ptr<ExtensionChooser> ec,
+//                           size_t is,
+//                           bool investigate_short_loops,
+//                           bool use_short_loop_cov_resolver,
+//                           double weight_threshold,
+//                           size_t length_bound,
+//                           std::shared_ptr<QueueContainer> path_container) :
+//        SimpleExtender(gp, cov_map, unique, ec, is, investigate_short_loops, use_short_loop_cov_resolver, weight_threshold),
+//        visited_vertices_(), path_container_(path_container), length_bound_(length_bound)
+//    {}
+//
+//    std::unordered_set<VertexId> GetReachedVertices() {
+//        return visited_vertices_;
+//    }
+//
+// protected:
+//    bool SearchingAddCandidates(BidirectionalPath& path, ExtensionChooser::EdgeContainer& candidates,
+//                                std::shared_ptr<QueueContainer> path_container,
+//                                std::unordered_set<VertexId>& visited_vertices,
+//                                size_t length_bound) {
+//        if (candidates.size() == 0)
+//            return false;
+//
+//        VERIFY(path.Size() >= 1);
+//        if (path.Size() > 1 and path.LengthAt(1) > length_bound) {
+//            DEBUG("Path is too long");
+//            return false;
+//        }
+//
+//        if (candidates.size() == 1) {
+//            DEBUG("push");
+//            EdgeId eid = candidates.back().e_;
+//            path.PushBack(eid, Gap(candidates.back().d_));
+//            visited_vertices.insert(g_.EdgeEnd(eid));
+//            DEBUG("push done");
+//            return true;
+//        }
+//
+//        // Creating new paths for other than new candidate.
+//        for (size_t i = 1; i < candidates.size(); ++i) {
+//            DEBUG("push other candidates " << i);
+//            auto &p = paths_storage->Create(path);
+//            p.PushBack(candidates[i].e_, Gap(candidates[i].d_));
+//        }
+//
+//        //Creating new paths for other than new candidate.
+//        for (size_t i = 1; i < candidates.size(); ++i) {
+//            auto candidate = candidates[i];
+//            DEBUG("push other candidate " << candidate.e_.int_id());
+//            BidirectionalPath* path_copy_ptr = new BidirectionalPath(path);
+//            path_copy_ptr->PushBack(candidate.e_, Gap(candidate.d_));
+//            path_container->push(path_copy_ptr);
+//            DEBUG("Inserting vertex " << g_.EdgeEnd(candidate.e_));
+//            visited_vertices.insert(g_.EdgeEnd(candidate.e_));
+//        }
+//
+//        DEBUG("push");
+//        path.PushBack(candidates.front().e_, Gap(candidates.front().d_));
+//        DEBUG("push done");
+//        DEBUG("Inserting vertex " << g_.EdgeEnd(candidates.front().e_));
+//        visited_vertices.insert(g_.EdgeEnd(candidates.front().e_));
+//
+//        if (candidates.size() > 1) {
+//            DEBUG("Found " << candidates.size() << " candidates");
+//        }
+//
+//        return true;
+//    }
+//
+//    bool AddCandidates(BidirectionalPath& path, PathContainer* /*paths_storage*/,
+//                       ExtensionChooser::EdgeContainer& candidates) override {
+//        ExtensionChooser::EdgeContainer loop_checked_candidates;
+//        auto loop_check = [&path, this](const EdgeWithDistance ewd) {
+//          return LoopCheck(path, ewd.e_);
+//        };
+//        std::copy_if(candidates.begin(), candidates.end(), std::back_inserter(loop_checked_candidates), loop_check);
+//        return SearchingAddCandidates(path, loop_checked_candidates, path_container_, visited_vertices_, length_bound_);
+//    }
+//
+//  protected:
+//    std::unordered_set<VertexId> visited_vertices_;
+//    std::shared_ptr<QueueContainer> path_container_;
+//    const size_t length_bound_;
+//
+// private:
+//    bool LoopCheck(BidirectionalPath& path, const EdgeId& edge) const {
+//        LoopDetector loop_detector(&path, cov_map_);
+//        DEBUG("loop detector");
+//        if (!investigate_short_loops_ &&
+//            (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(edge))
+//            && extensionChooser_->WeightCounterBased()) {
+//            DEBUG("loop detected");
+//            return false;
+//        }
+//        return true;
+//    }
+//
+//    DECL_LOGGER("SearchingMultiExtender")
+//};
 
 
 class ScaffoldingPathExtender: public LoopDetectingPathExtender {
@@ -797,7 +804,7 @@ class ReadCloudExtender : public SimpleExtender { //Traverse forward to find lon
     std::shared_ptr<read_cloud::CloudReachableEdgesSelectorFactory> edge_selector_factory_;
     size_t min_path_length_;
   public:
-    ReadCloudExtender(const conj_graph_pack &gp,
+    ReadCloudExtender(const debruijn_graph::GraphPack &gp,
                       const GraphCoverageMap &cov_map,
                       UsedUniqueStorage &unique,
                       std::shared_ptr<ExtensionChooser> ec,

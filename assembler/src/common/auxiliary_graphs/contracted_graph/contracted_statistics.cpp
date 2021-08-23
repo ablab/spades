@@ -38,7 +38,7 @@ void ContractedStatisticsExtractor::GetMeanWeights(std::vector<size_t> threshold
     std::map<size_t, double> threshold_to_mean_weight;
     for (const size_t threshold: thresholds) {
         INFO("Constructing graph for " << threshold);
-        auto length_predicate = [this, threshold](const EdgeId &edge) {
+        auto length_predicate = [this, threshold](const debruijn_graph::EdgeId &edge) {
           return assembly_graph_.length(edge) >= threshold;
         };
         DBGContractedGraphFactory factory(assembly_graph_, length_predicate);

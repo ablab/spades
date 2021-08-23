@@ -8,8 +8,11 @@
 #pragma once
 #include "math/xmath.h"
 
+#include <algorithm>
 #include <cstdlib>
+#include <memory>
 #include <set>
+#include <vector>
 
 namespace omnigraph {
 

@@ -18,7 +18,7 @@ namespace debruijn_graph {
         return has_read_clouds;
     }
 
-    void BarcodeMapConstructionStage::run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
+    void BarcodeMapConstructionStage::run(debruijn_graph::GraphPack &gp, const char *) {
         using path_extend::read_cloud::fragment_statistics::ClusterStatisticsExtractorHelper;
 
         INFO("Barcode index construction started...");
@@ -31,22 +31,24 @@ namespace debruijn_graph {
         for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
             auto &lib = cfg::get_writable().ds.reads[i];
             if (lib.type() == io::LibraryType::Clouds10x) {
-                graph_pack.EnsureIndex();
-                graph_pack.EnsureBasicMapping();
-                std::vector <io::SingleStreamPtr> reads;
+                gp.EnsureIndex();
+                gp.EnsureBasicMapping();
+                std::vector<io::ReadStream<io::SingleRead>> streams;
                 for (const auto &read: lib.reads()) {
-                    auto stream = io::EasyStream(read, false);
-                    reads.push_back(stream);
+                    streams.push_back(io::EasyStream(read, false));
                 }
-                FrameMapperBuilder<Graph> mapper_builder(graph_pack.barcode_mapper,
+                auto &barcode_mapper = gp.get_mutable<barcode_index::FrameBarcodeIndex<Graph>>();
+                FrameMapperBuilder<Graph> mapper_builder(barcode_mapper,
                                                          cfg::get().pe_params.read_cloud.edge_tail_len,
                                                          cfg::get().pe_params.read_cloud.frame_size);
-                mapper_builder.FillMap(reads, graph_pack.index, graph_pack.kmer_mapper);
+                mapper_builder.FillMap(streams,
+                                       gp.get<debruijn_graph::EdgeIndex<Graph>>(),
+                                       gp.get<debruijn_graph::KmerMapper<Graph>>());
                 INFO("Barcode index construction finished.");
-                FrameBarcodeIndexInfoExtractor extractor(graph_pack.barcode_mapper, graph_pack.g);
+                FrameBarcodeIndexInfoExtractor extractor(barcode_mapper, gp.get<Graph>());
                 size_t length_threshold = cfg::get().pe_params.read_cloud.long_edge_length_lower_bound;
                 INFO("Average barcode coverage: " + std::to_string(extractor.AverageBarcodeCoverage(length_threshold)));
-                ClusterStatisticsExtractorHelper cluster_extractor_helper(graph_pack.g, graph_pack.barcode_mapper,
+                ClusterStatisticsExtractorHelper cluster_extractor_helper(gp.get<Graph>(), barcode_mapper,
                                                                           cfg::get().pe_params.read_cloud, num_threads);
                 auto cluster_statistics_extractor = cluster_extractor_helper.GetStatisticsExtractor();
                 auto distribution_pack = cluster_statistics_extractor.GetDistributionPack();

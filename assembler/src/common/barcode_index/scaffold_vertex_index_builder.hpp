@@ -34,6 +34,8 @@ namespace barcode_index {
 
     class FractionTailThresholdGetter: public TailThresholdGetter {
      public:
+        typedef debruijn_graph::Graph Graph;
+
         FractionTailThresholdGetter(const Graph &g_, const double edge_length_fraction_)
             : g_(g_), edge_length_fraction_(edge_length_fraction_) {}
 
@@ -47,6 +49,8 @@ namespace barcode_index {
 
     class ScaffoldVertexSimpleEntryExtractor: public AbstractScaffoldVertexEntryExtractor<SimpleVertexEntry> {
      public:
+        typedef debruijn_graph::Graph Graph;
+        typedef debruijn_graph::EdgeId EdgeId;
         typedef typename scaffold_graph::EdgeIdVertex EdgeIdVertex;
         typedef typename scaffold_graph::PathVertex PathVertex;
 
@@ -142,6 +146,8 @@ namespace barcode_index {
     template <class EdgeEntryT>
     class ScaffoldVertexIndexBuilder {
      public:
+        typedef debruijn_graph::Graph Graph;
+        typedef debruijn_graph::EdgeId EdgeId;
         typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
         typedef std::shared_ptr<AbstractScaffoldVertexEntryExtractor<EdgeEntryT>> EntryExtractorPtr;
 
@@ -181,6 +187,7 @@ namespace barcode_index {
 
     class SimpleScaffoldVertexIndexBuilderHelper {
      public:
+        typedef debruijn_graph::Graph Graph;
         typedef std::shared_ptr<SimpleScaffoldVertexIndex> ScaffoldIndexPtr;
         typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
 

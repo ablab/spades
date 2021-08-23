@@ -147,13 +147,10 @@ public:
 };
 
 class SimpleExtenderFactory : public GapExtenderFactory {
-    const conj_graph_pack &gp_;
-    const GraphCoverageMap &cover_map_;
-    UsedUniqueStorage& unique_;
-    const std::shared_ptr<GapExtensionChooserFactory> chooser_factory_;
-    static const size_t MAGIC_LOOP_CONSTANT = 1000;
 public:
-    SimpleExtenderFactory(const conj_graph_pack &gp,
+    typedef debruijn_graph::GraphPack GraphPack;
+
+    SimpleExtenderFactory(const GraphPack &gp,
                           const GraphCoverageMap &cover_map,
                           UsedUniqueStorage& unique,
                           const std::shared_ptr<GapExtensionChooserFactory> chooser_factory):
@@ -173,13 +170,15 @@ public:
                                                     false,
                                                     false);
         DEBUG("Returning extender");
-//        return std::make_shared<SimpleExtender>(gp_, cover_map_, unique_,
-//                                           chooser_factory_->CreateChooser(original_path, position),
-//                                           MAGIC_LOOP_CONSTANT,
-//                                           false,
-//                                           false);
         return extender;
     }
+
+  private:
+    const GraphPack &gp_;
+    const GraphCoverageMap &cover_map_;
+    UsedUniqueStorage& unique_;
+    const std::shared_ptr<GapExtensionChooserFactory> chooser_factory_;
+    static const size_t MAGIC_LOOP_CONSTANT = 1000;
 
     DECL_LOGGER("SimpleExtenderFactory")
 };
@@ -204,25 +203,14 @@ public:
 class PathExtenderGapCloser: public TargetEdgeGapCloser {
     std::shared_ptr<path_extend::PathExtender> extender_;
 
-protected:
-    Gap CloseGap(const BidirectionalPath &original_path,
-                 size_t position, BidirectionalPath &path) const override;
+  protected:
+    Gap CloseGap(EdgeId target_edge, const Gap &gap, BidirectionalPath &path) const override;
 
-public:
+  public:
     PathExtenderGapCloser(const Graph& g, size_t max_path_len, std::shared_ptr<PathExtender> extender):
-            TargetEdgeGapCloser(g, max_path_len), extender_(extender) {
+        TargetEdgeGapCloser(g, max_path_len), extender_(extender) {
         DEBUG("ext added");
     }
-
-    PathExtenderGapCloser(const Graph& g, size_t max_path_len,
-                          std::shared_ptr<GapExtenderFactory> extender_factory):
-            PathGapCloser(g, max_path_len),
-            extender_factory_(extender_factory) {
-        DEBUG("ext factory added");
-    }
-
-private:
-    DECL_LOGGER("PathExtenderGapCloser")
 };
 
 class MatePairGapCloser: public TargetEdgeGapCloser {

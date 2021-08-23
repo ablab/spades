@@ -9,6 +9,9 @@
 #include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 #include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
 
+#include <memory>
+#include <vector>
+
 namespace path_extend {
 
 namespace scaffolder {

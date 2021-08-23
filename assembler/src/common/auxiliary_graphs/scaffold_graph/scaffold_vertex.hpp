@@ -19,6 +19,8 @@ enum ScaffoldVertexT { Edge = 0, Path = 1 };
 
 class InnerScaffoldVertex {
  public:
+    using EdgeId = debruijn_graph::EdgeId;
+
     virtual ~InnerScaffoldVertex() = default;
 
     virtual size_t GetId() const = 0;
@@ -38,7 +40,6 @@ class InnerScaffoldVertex {
     virtual std::unordered_set<EdgeId> GetAllEdges() const = 0;
 
     virtual path_extend::BidirectionalPath* ToPath(const debruijn_graph::Graph &g) const = 0;
-    virtual path_extend::BidirectionalPath GetPath(const debruijn_graph::Graph &g) const = 0;
     virtual std::string str(const debruijn_graph::Graph& g) const = 0;
 };
 
@@ -67,7 +68,6 @@ class EdgeIdVertex : public InnerScaffoldVertex {
 
     std::string str(const debruijn_graph::Graph &g) const override;
     path_extend::BidirectionalPath* ToPath(const debruijn_graph::Graph &g) const override;
-    path_extend::BidirectionalPath GetPath(const debruijn_graph::Graph &g) const override;
 
     EdgeId get() const;
 };
@@ -77,6 +77,9 @@ class PathVertex : public InnerScaffoldVertex {
     path_extend::BidirectionalPath *path_;
 
  public:
+    using VertexId = debruijn_graph::VertexId;
+    using InnerScaffoldVertex::EdgeId;
+
     explicit PathVertex(path_extend::BidirectionalPath *path_);
 
     size_t GetId() const override;
@@ -97,7 +100,6 @@ class PathVertex : public InnerScaffoldVertex {
 
     std::string str(const debruijn_graph::Graph &g) const override;
     path_extend::BidirectionalPath* ToPath(const debruijn_graph::Graph &g) const override;
-    path_extend::BidirectionalPath GetPath(const debruijn_graph::Graph &g) const override;
 
     path_extend::BidirectionalPath *get() const;
 };
@@ -106,6 +108,9 @@ class ScaffoldVertex {
     std::shared_ptr<InnerScaffoldVertex> vertex_ptr_;
 
  public:
+    using EdgeId = debruijn_graph::EdgeId;
+    using VertexId = debruijn_graph::VertexId;
+
     explicit ScaffoldVertex(std::shared_ptr<InnerScaffoldVertex> vertex_ptr_);
 
     ScaffoldVertex(const ScaffoldVertex& other) = default;
@@ -136,7 +141,6 @@ class ScaffoldVertex {
 
     std::string str(const debruijn_graph::Graph &g) const;
     path_extend::BidirectionalPath* ToPath(const debruijn_graph::Graph &g) const;
-    path_extend::BidirectionalPath GetPath(const debruijn_graph::Graph &g) const;
 
     std::shared_ptr<InnerScaffoldVertex> GetInnerVertex() const;
 
@@ -150,7 +154,7 @@ class ScaffoldVertex {
 
 class EdgeGetter {
  public:
-    EdgeId GetEdgeFromScaffoldVertex(const ScaffoldVertex& vertex) {
+    debruijn_graph::EdgeId GetEdgeFromScaffoldVertex(const ScaffoldVertex& vertex) {
         VERIFY_DEV(vertex.GetType() == Edge);
         auto inner_vertex = std::static_pointer_cast<EdgeIdVertex>(vertex.GetInnerVertex());
         return inner_vertex->get();

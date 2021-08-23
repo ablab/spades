@@ -5,9 +5,9 @@
 //***************************************************************************
 
 #include "scaffold_graph_constructor.hpp"
-
 #include "scaffold_graph_dijkstra.hpp"
-#include "read_cloud_path_extend/scaffold_graph_construction/read_cloud_dijkstras.hpp"
+
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_dijkstras.hpp"
 
 namespace path_extend {
 
@@ -27,7 +27,9 @@ void BaseScaffoldGraphConstructor::ConstructFromEdgeConditions(func::TypedPredic
 void BaseScaffoldGraphConstructor::ConstructFromSet(const EdgeSet &edge_set,
                                                     ConnectionConditions &connection_conditions,
                                                     bool use_terminal_vertices_only) {
-    graph_->AddVertices(edge_set);
+    for (const auto &v: edge_set) {
+        graph_->AddVertex(v);
+    }
     INFO("Added vertices")
     ConstructFromConditions(connection_conditions, use_terminal_vertices_only);
 }
