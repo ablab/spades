@@ -9,6 +9,8 @@
 #include "scaffold_graph_construction_pipeline.hpp"
 #include "extender_searcher.hpp"
 #include "scaffold_graph_storage.hpp"
+#include "modules/alignment/edge_index.hpp"
+#include "modules/alignment/kmer_mapper.hpp"
 #include "modules/path_extend/pe_config_struct.hpp"
 
 namespace path_extend {
@@ -29,7 +31,7 @@ class ScaffoldGraphStorageConstructor {
                                     const ReadCloudConfigsT &configs,
                                     const ReadCloudSearchParameterPack &search_params,
                                     const std::string &scaffold_graph_path,
-                                    const conj_graph_pack &gp);
+                                    const debruijn_graph::GraphPack &gp);
 
     ScaffoldGraphStorage ConstructStorage() const;
 
@@ -45,7 +47,7 @@ class ScaffoldGraphStorageConstructor {
     const ReadCloudConfigsT configs_;
     const ReadCloudSearchParameterPack search_params_;
     const std::string scaffold_graph_path_;
-    const conj_graph_pack &gp_;
+    const debruijn_graph::GraphPack &gp_;
 };
 
 class ScaffoldGraphPolisherHelper {
@@ -53,7 +55,7 @@ class ScaffoldGraphPolisherHelper {
     typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef pe_config::ReadCloud CloudConfigT;
     ScaffoldGraphPolisherHelper(const Graph &g,
-                                const debruijn_graph::Index &index,
+                                const debruijn_graph::EdgeIndex<Graph> &index,
                                 const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
                                 const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
                                 const CloudConfigT &cloud_configs,
@@ -71,7 +73,7 @@ class ScaffoldGraphPolisherHelper {
                                          size_t unique_length_threshold,
                                          double relative_threshold) const;
     const Graph &g_;
-    const debruijn_graph::Index &index_;
+    const debruijn_graph::EdgeIndex<Graph> &index_;
     const debruijn_graph::KmerMapper<Graph> &kmer_mapper_;
     const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper_;
     const CloudConfigT &cloud_configs_;
@@ -89,7 +91,7 @@ class CloudScaffoldGraphConstructor {
     typedef barcode_index::FrameBarcodeIndexInfoExtractor BarcodeExtractorT;
 
     CloudScaffoldGraphConstructor(size_t max_threads_,
-                                  const debruijn_graph::conj_graph_pack &gp,
+                                  const debruijn_graph::GraphPack &gp,
                                   const ScaffoldingUniqueEdgeStorage &unique_storage,
                                   const LibraryT &lib,
                                   const ReadCloudConfigsT &configs,
@@ -109,7 +111,7 @@ class CloudScaffoldGraphConstructor {
 
   private:
     const size_t max_threads_;
-    const debruijn_graph::conj_graph_pack &gp_;
+    const debruijn_graph::GraphPack &gp_;
     const ScaffoldingUniqueEdgeStorage &unique_storage_;
     const LibraryT lib_;
     const ReadCloudConfigsT &configs_;

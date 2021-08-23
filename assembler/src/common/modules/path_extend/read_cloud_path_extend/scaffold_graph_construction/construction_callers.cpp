@@ -101,51 +101,52 @@ BarcodeConnectionConstructorCaller::GraphConstructor BarcodeConnectionConstructo
                                                                                 max_threads_);
     return constructor;
 }
-CompositeConnectionConstructorCaller::GraphConstructor CompositeConnectionConstructorCaller::GetScaffoldGraphConstuctor(
-        const IterativeScaffoldGraphConstructorCaller::ScaffoldGraph &scaffold_graph) const {
-    ScaffolderParamsConstructor params_constructor;
-    auto predicate_params = params_constructor.ConstructGapCloserParams(scaff_con_configs_);
-    DEBUG("Long edge pair gap closer params:");
-    DEBUG("Count threshold: " << params_.connection_count_threshold_);
-    DEBUG("Tail threshold: " << params_.tail_threshold_);
-    DEBUG("Length threshold: " << params_.connection_length_threshold_);
+//CompositeConnectionConstructorCaller::GraphConstructor CompositeConnectionConstructorCaller::GetScaffoldGraphConstuctor(
+//        const IterativeScaffoldGraphConstructorCaller::ScaffoldGraph &scaffold_graph) const {
+//    ScaffolderParamsConstructor params_constructor;
+//    auto predicate_params = params_constructor.ConstructGapCloserParams(scaff_con_configs_);
+//    DEBUG("Long edge pair gap closer params:");
+//    DEBUG("Count threshold: " << params_.connection_count_threshold_);
+//    DEBUG("Tail threshold: " << params_.tail_threshold_);
+//    DEBUG("Length threshold: " << params_.connection_length_threshold_);
+//
+//    auto short_edge_extractor = std::make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(gp_.g, main_extractor_);
+//
+//    auto predicate = std::make_shared<CompositeConnectionPredicate>(gp_,
+//                                                                    short_edge_extractor,
+//                                                                    long_edge_extractor_,
+//                                                                    unique_storage_,
+//                                                                    params_.initial_distance_,
+//                                                                    search_parameter_pack_,
+//                                                                    predicate_params,
+//                                                                    scaffolding_mode_);
+//    auto constructor = std::make_shared<path_extend::scaffolder::PredicateScaffoldGraphFilter>(gp_.g,
+//                                                                                                   scaffold_graph,
+//                                                                                                   predicate,
+//                                                                                                   max_threads_);
+//    return constructor;
+//}
+//CompositeConnectionConstructorCaller::CompositeConnectionConstructorCaller(
+//        const debruijn_graph::GraphPack &gp,
+//        MainBarcodeIndexPtr main_extractor,
+//        ScaffoldBarcodeIndexPtr barcode_extractor,
+//        const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage,
+//        const ReadCloudSearchParameterPack &search_parameter_pack,
+//        const ScaffConConfigs &scaff_con_configs,
+//        const ScaffolderParams &params,
+//        const size_t max_threads,
+//        bool scaffolding_mode)
+//    : IterativeScaffoldGraphConstructorCaller("Barcoded path filter with paired info"),
+//      gp_(gp),
+//      main_extractor_(main_extractor),
+//      long_edge_extractor_(barcode_extractor),
+//      unique_storage_(unique_storage),
+//      search_parameter_pack_(search_parameter_pack),
+//      scaff_con_configs_(scaff_con_configs),
+//      params_(params),
+//      max_threads_(max_threads),
+//      scaffolding_mode_(scaffolding_mode) {}
 
-    auto short_edge_extractor = std::make_shared<barcode_index::BarcodeIndexInfoExtractorWrapper>(gp_.g, main_extractor_);
-
-    auto predicate = std::make_shared<CompositeConnectionPredicate>(gp_,
-                                                                    short_edge_extractor,
-                                                                    long_edge_extractor_,
-                                                                    unique_storage_,
-                                                                    params_.initial_distance_,
-                                                                    search_parameter_pack_,
-                                                                    predicate_params,
-                                                                    scaffolding_mode_);
-    auto constructor = std::make_shared<path_extend::scaffolder::PredicateScaffoldGraphFilter>(gp_.g,
-                                                                                                   scaffold_graph,
-                                                                                                   predicate,
-                                                                                                   max_threads_);
-    return constructor;
-}
-CompositeConnectionConstructorCaller::CompositeConnectionConstructorCaller(
-        const debruijn_graph::conj_graph_pack &gp,
-        MainBarcodeIndexPtr main_extractor,
-        ScaffoldBarcodeIndexPtr barcode_extractor,
-        const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage,
-        const ReadCloudSearchParameterPack &search_parameter_pack,
-        const ScaffConConfigs &scaff_con_configs,
-        const ScaffolderParams &params,
-        const size_t max_threads,
-        bool scaffolding_mode)
-    : IterativeScaffoldGraphConstructorCaller("Barcoded path filter with paired info"),
-      gp_(gp),
-      main_extractor_(main_extractor),
-      long_edge_extractor_(barcode_extractor),
-      unique_storage_(unique_storage),
-      search_parameter_pack_(search_parameter_pack),
-      scaff_con_configs_(scaff_con_configs),
-      params_(params),
-      max_threads_(max_threads),
-      scaffolding_mode_(scaffolding_mode) {}
 EdgeSplitConstructorCaller::EdgeSplitConstructorCaller(
         const Graph &g,
         std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> barcode_extractor,

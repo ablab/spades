@@ -154,7 +154,7 @@ class ExtendersGenerator {
 
     std::shared_ptr<PathExtender> MakeReadCloudExtender(size_t lib_index) const;
 
-    std::shared_ptr<SearchingMultiExtender> MakeSearchingExtender(size_t lib_index) const;
+//    std::shared_ptr<SearchingMultiExtender> MakeSearchingExtender(size_t lib_index) const;
 
     void PrintExtenders(const std::vector<std::shared_ptr<PathExtender>> &extenders) const;
 

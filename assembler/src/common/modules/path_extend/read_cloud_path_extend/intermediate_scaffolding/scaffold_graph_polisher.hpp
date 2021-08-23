@@ -10,6 +10,7 @@
 #include "path_cluster_helper.hpp"
 #include "modules/path_extend/read_cloud_path_extend/scaffold_graph_extractor.hpp"
 #include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage.hpp"
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 #include "barcode_index/barcode_info_extractor.hpp"

@@ -17,6 +17,8 @@ namespace cluster_storage {
 
 class EdgeClusterExtractor {
   public:
+    typedef debruijn_graph::Graph Graph;
+    typedef debruijn_graph::EdgeId EdgeId;
     typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> BarcodeIndexPtr;
@@ -32,6 +34,8 @@ class EdgeClusterExtractor {
 };
 
 class AccurateEdgeClusterExtractor : public EdgeClusterExtractor {
+    using EdgeClusterExtractor::Graph;
+    using EdgeClusterExtractor::EdgeId;
     using EdgeClusterExtractor::ScaffoldGraph;
     using EdgeClusterExtractor::ScaffoldVertex;
     using EdgeClusterExtractor::BarcodeIndexPtr;
@@ -105,6 +109,8 @@ class AccurateEdgeClusterExtractor : public EdgeClusterExtractor {
 
 class IndexBasedClusterExtractor : public EdgeClusterExtractor {
   public:
+    using EdgeClusterExtractor::Graph;
+    using EdgeClusterExtractor::EdgeId;
     using EdgeClusterExtractor::ScaffoldGraph;
     using EdgeClusterExtractor::ScaffoldVertex;
     using EdgeClusterExtractor::BarcodeIndexPtr;

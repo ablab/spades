@@ -44,6 +44,7 @@ class ScaffolderParamsConstructor {
 
 class ScaffoldGraphConstructionPipeline {
   public:
+    typedef debruijn_graph::GraphPack GraphPack;
     typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef std::shared_ptr<scaffolder::ScaffoldGraphConstructor> ConstructorPtr;
     typedef std::pair<std::shared_ptr<scaffold_graph::ScaffoldGraph>, string> ResultT;
@@ -68,6 +69,7 @@ class ScaffoldGraphConstructionPipeline {
 
 class ScaffoldGraphPipelineConstructor {
   public:
+    typedef debruijn_graph::GraphPack GraphPack;
     typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
     typedef std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> BarcodeIndexPtr;
@@ -92,7 +94,7 @@ class ScaffoldGraphPipelineConstructor {
 class BasicScaffoldGraphPipelineConstructor : public ScaffoldGraphPipelineConstructor {
   public:
     BasicScaffoldGraphPipelineConstructor(const ReadCloudConfigsT &configs,
-                                          const conj_graph_pack &gp,
+                                          const GraphPack &gp,
                                           const LibraryT &lib,
                                           const ScaffoldingUniqueEdgeStorage &unique_storage,
                                           std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
@@ -104,11 +106,12 @@ class BasicScaffoldGraphPipelineConstructor : public ScaffoldGraphPipelineConstr
     ScaffoldGraphConstructionPipeline ConstructPipeline(const std::set<ScaffoldVertex> &scaffold_vertices) const override;
 
   protected:
+    using ScaffoldGraphPipelineConstructor::GraphPack;
     using ScaffoldGraphPipelineConstructor::ScaffoldGraph;
     using ScaffoldGraphPipelineConstructor::ScaffoldVertex;
     using ScaffoldGraphPipelineConstructor::BarcodeIndexPtr;
 
-    const conj_graph_pack &gp_;
+    const GraphPack &gp_;
     const LibraryT lib_;
     const ScaffoldingUniqueEdgeStorage &unique_storage_;
     std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
@@ -123,12 +126,13 @@ class BasicScaffoldGraphPipelineConstructor : public ScaffoldGraphPipelineConstr
 
 class FullScaffoldGraphPipelineConstructor : public BasicScaffoldGraphPipelineConstructor {
   public:
+    using BasicScaffoldGraphPipelineConstructor::GraphPack;
     using BasicScaffoldGraphPipelineConstructor::ScaffoldGraph;
     using BasicScaffoldGraphPipelineConstructor::ScaffoldVertex;
     using ScaffoldGraphPipelineConstructor::BarcodeIndexPtr;
 
     FullScaffoldGraphPipelineConstructor(const ReadCloudConfigsT &configs,
-                                         const conj_graph_pack &gp,
+                                         const GraphPack &gp,
                                          const LibraryT &lib,
                                          const ScaffoldingUniqueEdgeStorage &unique_storage,
                                          std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
