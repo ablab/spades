@@ -11,6 +11,7 @@
 #include "auxiliary_graphs/contracted_graph/contracted_graph.hpp"
 #include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/contracted_graph_from_simple.hpp"
 
+#include <iostream>
 #include <memory>
 #include <vector>
 

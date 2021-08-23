@@ -178,7 +178,7 @@ std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> LongEdgeP
     return scaffold_index_extractor;
 }
 LongEdgePairDatasetExtractor::LongEdgePairDatasetExtractor(const Graph &g,
-                                                           const debruijn_graph::Index &index,
+                                                           const debruijn_graph::EdgeIndex<Graph> &index,
                                                            const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
                                                            const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
                                                            const ScaffoldGraphStorage &scaffold_graph_storage,

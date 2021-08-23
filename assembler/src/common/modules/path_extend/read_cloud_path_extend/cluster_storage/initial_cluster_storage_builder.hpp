@@ -17,6 +17,8 @@ namespace cluster_storage {
 
 class InitialClusterStorageBuilder {
   public:
+    typedef debruijn_graph::Graph Graph;
+    typedef debruijn_graph::EdgeId EdgeId;
     typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
 

@@ -7,7 +7,7 @@
 #pragma once
 
 #include "io_base.hpp"
-#include "common/barcode_index/barcode_index.hpp"
+#include "barcode_index/barcode_index.hpp"
 
 namespace io {
 

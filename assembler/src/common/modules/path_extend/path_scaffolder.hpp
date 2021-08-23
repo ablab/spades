@@ -15,10 +15,11 @@ namespace path_extend {
 class StartFinder {
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef std::unordered_map<ScaffoldVertex, ScaffoldVertex> TransitionMap;
+    typedef debruijn_graph::Graph Graph;
 
-    const Graph &g_;
+    const debruijn_graph::Graph &g_;
   public:
-    StartFinder(const Graph &g);
+    StartFinder(const debruijn_graph::Graph &g);
 
     std::unordered_set<ScaffoldVertex> GetStarts(const TransitionMap &transition_map) const;
 };
@@ -37,8 +38,9 @@ class SimplePathScaffolder : public PathScaffolder {
     using PathScaffolder::ScaffoldGraph;
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
+    typedef debruijn_graph::Graph Graph;
 
-    SimplePathScaffolder(const Graph &g, int default_gap);
+    SimplePathScaffolder(const debruijn_graph::Graph &g, int default_gap);
 
     void MergePaths(const ScaffoldGraph &scaffold_graph) const override;
 
@@ -49,7 +51,7 @@ class SimplePathScaffolder : public PathScaffolder {
                                     const std::unordered_map<ScaffoldVertex, ScaffoldVertex> &merge_connections,
                                     const std::unordered_map<ScaffoldVertex, size_t> &start_to_length) const;
 
-    const Graph &g_;
+    const debruijn_graph::Graph &g_;
     const int default_gap_;
 
     DECL_LOGGER("SimplePathScaffolder");

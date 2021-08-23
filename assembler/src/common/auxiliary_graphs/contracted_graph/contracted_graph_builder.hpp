@@ -16,6 +16,8 @@ namespace contracted_graph {
 
 class ContractedGraphFactory {
  public:
+    using Graph = debruijn_graph::Graph;
+
     ContractedGraphFactory(const Graph &g) :
         g_(g), graph_ptr_(std::make_shared<ContractedGraph>(g)) {}
     virtual ~ContractedGraphFactory() = default;
@@ -30,6 +32,9 @@ class ContractedGraphFactory {
 
 class PartsBasedContractedFactory : public ContractedGraphFactory {
  public:
+    using VertexId = debruijn_graph::VertexId;
+    using ContractedGraphFactory::Graph;
+
     PartsBasedContractedFactory(const Graph &g): ContractedGraphFactory(g) {}
     virtual ~PartsBasedContractedFactory() {}
 
@@ -54,7 +59,9 @@ class PartsBasedContractedFactory : public ContractedGraphFactory {
 
 class DBGContractedGraphFactory : public PartsBasedContractedFactory {
   public:
-    typedef dsu::ConcurrentDSU contracted_dsu_t;
+    using contracted_dsu_t = dsu::ConcurrentDSU;
+    using EdgeId = debruijn_graph::EdgeId;
+    using PartsBasedContractedFactory::Graph;
 
     DBGContractedGraphFactory(const Graph &g, const std::function<bool(EdgeId)> &edge_predicate) :
         PartsBasedContractedFactory(g), edge_predicate_(edge_predicate) {}
@@ -76,6 +83,8 @@ class DBGContractedGraphFactory : public PartsBasedContractedFactory {
 
 class SubgraphContractedGraphFactory: public ContractedGraphFactory {
  public:
+    using VertexId = debruijn_graph::VertexId;
+
     SubgraphContractedGraphFactory(const ContractedGraph &other, const std::unordered_set<VertexId> &vertices) :
         ContractedGraphFactory(other.GetAssemblyGraph()), other_(other), vertices_(vertices) {}
 

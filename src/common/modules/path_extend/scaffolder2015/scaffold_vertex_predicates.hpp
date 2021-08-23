@@ -23,6 +23,7 @@ class ScaffoldVertexPredicate
 class LengthChecker : public ScaffoldVertexPredicate {
   public:
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
+    typedef debruijn_graph::Graph Graph;
 
     LengthChecker(size_t length_threshold, const Graph &g);
 
