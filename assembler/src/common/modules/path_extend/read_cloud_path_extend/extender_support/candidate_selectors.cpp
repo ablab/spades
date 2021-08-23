@@ -45,7 +45,7 @@ std::vector<EdgeWithDistance> DefaultCloudReachableEdgesSelector::SelectReachabl
         if (distance < distance_bound_) {
             for (auto connected: g_.OutgoingEdges(v)) {
                 if (g_.length(connected) >= edge_length_threshold_) {
-                    EdgeWithDistance candidate(connected, distance);
+                    EdgeWithDistance candidate(connected, static_cast<int>(distance));
                     result.push_back(candidate);
                 }
             }

@@ -11,6 +11,8 @@
 namespace contracted_graph {
 class ContractedStatisticsExtractor {
  public:
+    using Graph = debruijn_graph::Graph;
+
     explicit ContractedStatisticsExtractor(const Graph &assembly_graph);
 
     size_t CountLoops(const ContractedGraph &graph) const;

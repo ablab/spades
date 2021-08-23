@@ -11,11 +11,11 @@
 
 #include "extenders_logic.hpp"
 #include "modules/path_extend/scaffolder2015/extension_chooser2015.hpp"
-#include "read_cloud_path_extend/fragment_statistics/distribution_extractor_helper.hpp"
-#include "read_cloud_path_extend/fragment_statistics/secondary_stats_estimators.hpp"
-#include "read_cloud_path_extend/scaffold_graph_construction/extender_searcher.hpp"
-#include "read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage_constructor.hpp"
-#include "read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
+#include "modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor_helper.hpp"
+#include "modules/path_extend/read_cloud_path_extend/fragment_statistics/secondary_stats_estimators.hpp"
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/extender_searcher.hpp"
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage_constructor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
 
 namespace path_extend {
 
@@ -618,14 +618,19 @@ std::shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldGraphExtender(size
                                                                     search_parameter_pack, base_stats_path,
                                                                     gp_);
     auto storage = storage_constructor.ConstructStorage();
-    read_cloud::ScaffoldGraphPolisherHelper scaffold_graph_polisher(gp_.g, gp_.index, gp_.kmer_mapper,
-                                                                    gp_.barcode_mapper, params_.pe_cfg.read_cloud,
+    const auto &barcode_mapper = gp_.get<barcode_index::FrameBarcodeIndex<Graph>>();
+    read_cloud::ScaffoldGraphPolisherHelper scaffold_graph_polisher(gp_.get<Graph>(),
+                                                                    gp_.get<EdgeIndex<Graph>>(),
+                                                                    gp_.get<KmerMapper<Graph>>(),
+                                                                    barcode_mapper,
+                                                                    params_.pe_cfg.read_cloud,
                                                                     params_.threads);
     bool path_scaffolding = false;
     auto polished_scaffold_graph = scaffold_graph_polisher.GetScaffoldGraphFromStorage(storage, path_scaffolding);
     INFO(polished_scaffold_graph.VertexCount() << " vertices and " << polished_scaffold_graph.EdgeCount()
                                      << " edges in scaffold graph");
-    shared_ptr<ScaffoldGraphExtender> extender = make_shared<ScaffoldGraphExtender>(gp_.g, polished_scaffold_graph);
+    shared_ptr<ScaffoldGraphExtender> extender = make_shared<ScaffoldGraphExtender>(gp_.get<Graph>(),
+                                                                                    polished_scaffold_graph);
     return extender;
 }
 std::shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t lib_index) const {
@@ -633,8 +638,9 @@ std::shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t l
     using read_cloud::SimpleReachableEdgesSelectorFactory;
 
     const auto &lib = dataset_info_.reads[lib_index];
-    std::shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.g, lib, gp_.clustered_indices[lib_index]);
-    std::shared_ptr<WeightCounter> weight_counter = make_shared<ReadCountWeightCounter>(gp_.g, paired_lib);
+    const auto &paired_index = gp_.get<PairedInfoIndicesT<Graph>>("clustered_indices")[lib_index];
+    std::shared_ptr<PairedInfoLibrary> paired_lib = MakeNewLib(gp_.get<Graph>(), lib, paired_index);
+    std::shared_ptr<WeightCounter> weight_counter = make_shared<ReadCountWeightCounter>(gp_.get<Graph>(), paired_lib);
     auto opts = params_.pset.extension_options;
     double weight_threshold = opts.weight_threshold;
 
@@ -650,16 +656,19 @@ std::shared_ptr<PathExtender> ExtendersGenerator::MakeReadCloudExtender(size_t l
     const size_t barcode_threshold = params_.pe_cfg.read_cloud.read_ext.barcode_threshold;
     const size_t score_function_tail_threshold = params_.pe_cfg.read_cloud.read_ext.score_function_tail_threshold;
 
-    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
-    read_cloud::RelativeUniquePredicateGetter predicate_getter(gp_.g, reliable_edge_length,
+    const auto &barcode_mapper = gp_.get<barcode_index::FrameBarcodeIndex<Graph>>();
+    auto barcode_extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(barcode_mapper,
+                                                                                             gp_.get<Graph>());
+    read_cloud::RelativeUniquePredicateGetter predicate_getter(gp_.get<Graph>(), reliable_edge_length,
                                                                seed_edge_length, relative_coverage_threshold);
-    auto entry_collector = std::make_shared<SimpleBarcodeEntryCollector>(gp_.g, barcode_extractor,
+    auto entry_collector = std::make_shared<SimpleBarcodeEntryCollector>(gp_.get<Graph>(), barcode_extractor,
                                                                          predicate_getter, tail_threshold);
-    auto edge_selector_factory = std::make_shared<SimpleReachableEdgesSelectorFactory>(gp_.g, barcode_extractor,
+    auto edge_selector_factory = std::make_shared<SimpleReachableEdgesSelectorFactory>(gp_.get<Graph>(),
+                                                                                       barcode_extractor,
                                                                                        barcode_threshold,
                                                                                        reliable_edge_length,
                                                                                        distance_bound);
-    auto read_cloud_extension_chooser = make_shared<ReadCloudExtensionChooser>(gp_.g,
+    auto read_cloud_extension_chooser = make_shared<ReadCloudExtensionChooser>(gp_.get<Graph>(),
                                                                                weight_counter,
                                                                                weight_threshold,
                                                                                barcode_extractor,

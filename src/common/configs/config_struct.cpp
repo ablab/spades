@@ -441,22 +441,6 @@ void load(debruijn_config::ambiguous_distance_estimator &amde,
     load(amde.relative_seq_threshold, pt, "relative_seq_threshold", complete);
 }
 
-void load(debruijn_config::scaffold_correction& sc_corr,
-        boost::property_tree::ptree const& pt, bool /*complete*/) {
-    using config_common::load;
-    load(sc_corr.scaffolds_file, pt, "scaffolds_file");
-    load(sc_corr.output_unfilled, pt, "output_unfilled");
-    load(sc_corr.max_insert, pt, "max_insert");
-    load(sc_corr.max_cut_length, pt, "max_cut_length");
-}
-
-void load(debruijn_config::truseq_analysis& tsa,
-      boost::property_tree::ptree const& pt, bool /*complete*/) {
-  using config_common::load;
-  load(tsa.scaffolds_file, pt, "scaffolds_file");
-  load(tsa.genome_file, pt, "genome_file");
-}
-
 void load(bwa_aligner& bwa,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
@@ -764,8 +748,6 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     if (!mode_str.empty()) {
         cfg.mode = ModeByName<pipeline_type>(mode_str, PipelineTypeNames());
     }
-
-    load(cfg.read_cloud, pt, "read_cloud", complete);
 
     load(cfg.co, pt, "contig_output", complete);
 

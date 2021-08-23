@@ -144,7 +144,7 @@ class StartPredicateProcessChecker {
                                  const func::TypedPredicate<VertexId> &predicate)
         : g_(g), start_(start), predicate_(predicate) {}
 
-    bool Check(VertexId vertex, distance_t /*distance*/) {
+    bool Check(VertexId vertex, distance_t /*distance*/) const {
         return vertex == start_ or not predicate_(vertex);
     }
 };

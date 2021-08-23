@@ -64,8 +64,8 @@ void DistanceEstimationBase::run(graph_pack::GraphPack &gp, const char *,
     auto &clustered_indices = gp.get_mutable<PairedInfoIndicesT<Graph>>("clustered_indices");
     auto &scaffolding_indices = gp.get_mutable<PairedInfoIndicesT<Graph>>("scaffolding_indices");
     size_t max_repeat_length =
-            debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(config.mode) ?
-            std::numeric_limits<size_t>::max() : config.max_repeat_length;
+        debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(config.mode) ?
+        std::numeric_limits<size_t>::max() : config.max_repeat_length;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         const auto &lib = cfg::get().ds.reads[i];
         if (lib.type() != io::LibraryType::PairedEnd && lib.type() != io::LibraryType::Clouds10x)

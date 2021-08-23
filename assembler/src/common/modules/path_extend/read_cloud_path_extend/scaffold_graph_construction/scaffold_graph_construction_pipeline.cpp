@@ -240,11 +240,11 @@ std::vector<std::shared_ptr<IterativeScaffoldGraphConstructorCaller>> FullScaffo
                                                              scaffold_index_extractor,
                                                              unique_storage_, params, max_threads_));
     bool scaffolding_mode = false;
-    iterative_constructor_callers.push_back(
-        std::make_shared<CompositeConnectionConstructorCaller>(gp_, barcode_extractor_, scaffold_index_extractor,
-                                                               unique_storage_, search_parameter_pack_,
-                                                               read_cloud_configs_.scaff_con, params, max_threads_,
-                                                               scaffolding_mode));
+//    iterative_constructor_callers.push_back(
+//        std::make_shared<CompositeConnectionConstructorCaller>(gp_, barcode_extractor_, scaffold_index_extractor,
+//                                                               unique_storage_, search_parameter_pack_,
+//                                                               read_cloud_configs_.scaff_con, params, max_threads_,
+//                                                               scaffolding_mode));
 
     const size_t min_pipeline_length = read_cloud_configs_.long_edge_length_lower_bound;
     bool launch_full_pipeline = min_length_ > min_pipeline_length;

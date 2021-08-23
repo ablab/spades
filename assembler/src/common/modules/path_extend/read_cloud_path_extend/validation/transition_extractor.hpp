@@ -12,10 +12,37 @@
 #include "modules/alignment/edge_index.hpp"
 #include "modules/alignment/kmer_mapper.hpp"
 #include "modules/alignment/long_read_mapper.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
 
 namespace path_extend {
 namespace read_cloud {
 namespace validation {
+
+//fixme duplication with long_read_mapper.cpp. Discuss
+class GappedPathExtractor {
+  public:
+    typedef debruijn_graph::Graph Graph;
+
+    GappedPathExtractor(const Graph& g) noexcept;
+    virtual ~GappedPathExtractor() = default;
+
+    std::vector<PathWithMappingInfo> operator() (const MappingPath<EdgeId>& mapping) const;
+
+  protected:
+
+    virtual MappingPath<EdgeId> FilterBadMappings(const std::vector<EdgeId> &corrected_path,
+                                                  const MappingPath<EdgeId> &mapping_path) const;
+
+    std::vector<PathWithMappingInfo> FindReadPathWithGaps(MappingPath<EdgeId> &path) const;
+
+    size_t CountMappedEdgeSize(EdgeId edge, const MappingPath<EdgeId>& mapping_path,
+                               size_t& mapping_index, MappingRange& range_of_mapped_edge) const;
+
+    const Graph& g_;
+    const debruijn_graph::MappingPathFixer<Graph> path_fixer_;
+    constexpr static double MIN_MAPPED_RATIO = 0.3;
+    constexpr static size_t MIN_MAPPED_LENGTH = 100;
+};
 
 class ContigTransitionStorage {
     //todo Replace with scaffold graph?

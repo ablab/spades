@@ -13,6 +13,7 @@
 
 #include "modules/path_extend/loop_traverser.hpp"
 #include "modules/path_extend/path_extender.hpp"
+#include "modules/path_extend/path_scaffolder.hpp"
 #include "modules/path_extend/path_visualizer.hpp"
 #include "modules/path_extend/read_cloud_path_extend/extension_chooser_checker.hpp"
 #include "modules/path_extend/read_cloud_path_extend/path_scaffolder.hpp"
@@ -21,7 +22,7 @@
 #include "modules/path_extend/scaffolder2015/path_polisher.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_visualizer.hpp"
-#include "read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_construction_pipeline.hpp"
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_construction_pipeline.hpp"
 #include "modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor.hpp"
 #include "modules/path_extend/read_cloud_path_extend/fragment_statistics/secondary_stats_estimators.hpp"
 #include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage_constructor.hpp"
@@ -101,7 +102,8 @@ std::shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructPath
     const size_t small_path_length_threshold = unique_storage.min_length();
     bool scaffolding_mode = true;
     size_t num_threads = params_.threads;
-    auto extractor = make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
+    const auto &barcode_mapper = gp_.get<barcode_index::FrameBarcodeIndex<Graph>>();
+    auto extractor = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(barcode_mapper, gp_.get<Graph>());
 
     ScaffoldingUniqueEdgeStorage empty_storage;
     read_cloud::ChooserConstructionParams empty_chooser_params(cloud_lib);
@@ -131,7 +133,7 @@ void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph 
     using namespace scaffolder;
     using namespace scaffold_graph;
 
-    set<scaffold_graph::ScaffoldVertex> scaff_vertex_set;
+    std::set<scaffold_graph::ScaffoldVertex> scaff_vertex_set;
     for (const auto& edge: main_edge_set) {
         EdgeId copy = edge;
         scaff_vertex_set.insert(copy);
@@ -141,7 +143,7 @@ void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph 
     graph_colorer::CompositeGraphColorer<ScaffoldGraph> colorer(vertex_colorer, edge_colorer);
 
     INFO("Visualizing scaffold graph");
-    map<ScaffoldVertex, string> scaff_vertex_labels;
+    std::map<ScaffoldVertex, string> scaff_vertex_labels;
     for (const auto& entry: genome_checker.EdgeLabels()) {
         scaff_vertex_labels.insert({entry.first, entry.second});
     }
@@ -545,7 +547,7 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
     }
 
     if (support_.HasReadClouds() and params_.pe_cfg.read_cloud.read_cloud_resolution_on) {
-        if (params_.pset.sm == sm_old) {
+        if (params_.pset.sm == scaffolding_mode::sm_old) {
             INFO("Will not use read cloud path extend in this mode");
         } else {
             INFO("Creating read cloud extenders");
@@ -580,7 +582,7 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
     gap_closers.push_back(std::make_shared<DijkstraGapCloser>(graph_, params_.max_polisher_gap));
 
     UniqueData unique_data;
-    UsedUniqueStorage used_unique_storage(unique_data.main_unique_storage_);
+    UsedUniqueStorage used_unique_storage(unique_data.main_unique_storage_, gp_.get<Graph>());
     ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map, unique_data_, used_unique_storage, support_);
 
     const auto &paired_indices = gp_.get<UnclusteredPairedInfoIndicesT<Graph>>();
@@ -594,10 +596,11 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
         auto read_cloud_configs = params_.pe_cfg.read_cloud;
         bool read_cloud_polishing = read_cloud_configs.read_cloud_resolution_on and
             read_cloud_configs.read_cloud_gap_closer_on;
-        if (lib.type() == io::LibraryType::Clouds10x and read_cloud_polishing and params_.pset.sm != sm_old) {
+        if (lib.type() == io::LibraryType::Clouds10x and read_cloud_polishing and params_.pset.sm != scaffolding_mode::sm_old) {
             INFO("Using read cloud path polisher");
+            const auto &barcode_index = gp_.get<barcode_index::FrameBarcodeIndex<Graph>>();
             auto barcode_extractor_ptr =
-                std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(gp_.barcode_mapper, gp_.g);
+                std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(barcode_index, gp_.get<Graph>());
             read_cloud::ScaffolderParamsConstructor params_constructor;
             DistributionPack cluster_distribution_pack(lib.data().read_cloud_info.fragment_length_distribution);
             ClusterStatisticsExtractor primary_parameters_extractor(cluster_distribution_pack);
@@ -610,18 +613,21 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
 
             const size_t scan_bound = read_cloud_configs.gap_closer_scan_bound;
             auto cloud_chooser_factory =
-                std::make_shared<ReadCloudGapExtensionChooserFactory>(gp_.g, unique_data_.main_unique_storage_,
+                std::make_shared<ReadCloudGapExtensionChooserFactory>(gp_.get<Graph>(), unique_data_.main_unique_storage_,
                                                                       barcode_extractor_ptr, tail_threshold,
                                                                       count_threshold, length_threshold,
                                                                       read_cloud_gap_closer_params,
                                                                       scan_bound);
             auto simple_chooser = generator.MakeSimpleExtensionChooser(i);
-            auto simple_chooser_factory = std::make_shared<SameChooserFactory>(gp_.g, simple_chooser);
-            auto composite_chooser_factory = std::make_shared<CompositeChooserFactory>(gp_.g, simple_chooser_factory,
+            auto simple_chooser_factory = std::make_shared<SameChooserFactory>(gp_.get<Graph>(), simple_chooser);
+            auto composite_chooser_factory = std::make_shared<CompositeChooserFactory>(gp_.get<Graph>(),
+                                                                                       simple_chooser_factory,
                                                                                        cloud_chooser_factory);
             auto cloud_extender_factory = std::make_shared<SimpleExtenderFactory>(gp_, cover_map, used_unique_storage,
                                                                                   cloud_chooser_factory);
-            gap_closers.push_back(make_shared<PathExtenderGapCloser>(gp_.g, params_.max_polisher_gap,                 cloud_extender_factory));
+            //todo restore extender factory in path polisher
+//            gap_closers.push_back(std::make_shared<PathExtenderGapCloser>(gp_.get<Graph>(), params_.max_polisher_gap,
+//                                                                          cloud_extender_factory));
         }
     }
 
@@ -760,7 +766,7 @@ void MakeConjugateEdgePairsDump(ConjugateDeBruijnGraph const & graph) {
 
 void PathExtendLauncher::ScaffoldPaths(PathContainer &paths) const {
     const int default_gap = 500;
-    SimplePathScaffolder path_scaffolder(gp_.g, default_gap);
+    SimplePathScaffolder path_scaffolder(gp_.get<Graph>(), default_gap);
     bool path_scaffolding_mode = params_.pe_cfg.read_cloud.path_scaffolding_on and
         params_.pset.sm != scaffolding_mode::sm_old;
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
@@ -828,14 +834,14 @@ void PathExtendLauncher::Launch() {
     DebugOutputPaths(polished_paths, "polished_paths");
 
     //TODO use move assignment to original map here
-    GraphCoverageMap polished_map(gp_.g, polished_paths, true);
+    GraphCoverageMap polished_map(gp_.get<Graph>(), polished_paths, true);
     RemoveOverlapsAndArtifacts(polished_paths, polished_map, resolver);
     DebugOutputPaths(polished_paths, "overlap_removed");
 
     //todo discuss
 
-    if (support_.HasReadClouds() and cfg::get().ts_res.read_cloud_resolution_on and
-            cfg::get().ts_res.path_scaffolding_on and params_.pset.sm != sm_old) {
+    if (support_.HasReadClouds() and params_.pe_cfg.read_cloud.read_cloud_resolution_on and
+            params_.pe_cfg.read_cloud.path_scaffolding_on and params_.pset.sm != scaffolding_mode::sm_old) {
         //fixme move this to separate class, make PathScaffolder analogous to Extender (construct for every lib)
         read_cloud::fragment_statistics::DistributionPack distribution_pack;
         std::vector<io::SequencingLibrary<debruijn_graph::config::LibraryData>> cloud_libs;
@@ -848,34 +854,28 @@ void PathExtendLauncher::Launch() {
         VERIFY_DEV(cloud_libs.size() == 1);
         auto cloud_lib = cloud_libs.front();
         VERIFY_DEV(not distribution_pack.length_distribution_.empty());
-        const size_t small_path_length_threshold = cfg::get().ts_res.long_edge_length_lower_bound;
-        size_t min_upper_bound = params_.read_cloud_configs.long_edge_length_min_upper_bound;
-        size_t max_upper_bound = params_.read_cloud_configs.long_edge_length_max_upper_bound;
+        const size_t small_path_length_threshold = params_.pe_cfg.read_cloud.long_edge_length_lower_bound;
+        size_t min_upper_bound = params_.pe_cfg.read_cloud.long_edge_length_min_upper_bound;
+        size_t max_upper_bound = params_.pe_cfg.read_cloud.long_edge_length_max_upper_bound;
         read_cloud::fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor(distribution_pack);
         read_cloud::fragment_statistics::UpperLengthBoundEstimator length_bound_estimator(min_upper_bound,
                                                                                           max_upper_bound);
-        const double cluster_length_percentile = cfg::get().ts_res.scaff_con.cluster_length_percentile;
+        const double cluster_length_percentile = params_.pe_cfg.read_cloud.scaff_con.cluster_length_percentile;
         size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
                                                                               cluster_length_percentile);
+        ScaffoldPaths(polished_paths);
 
-        //fixme move from read_cloud
-        read_cloud::PathScaffolder path_scaffolder(gp_, cloud_lib, params_.read_cloud_configs,
-                                                   unique_data_.main_unique_storage_,
-                                                   small_path_length_threshold,
-                                                   length_upper_bound, params_.threads);
-        path_scaffolder.MergePaths(polished_paths);
+        PolishPaths(polished_paths, contig_paths, polished_map);
+        DebugOutputPaths(contig_paths, "merged_polished_paths");
 
-        PolishPaths(polished_paths, gp_.contig_paths, polished_map);
-        DebugOutputPaths(gp_.contig_paths, "merged_polished_paths");
+        GraphCoverageMap merged_polished_map(gp_.get<Graph>(), contig_paths, true);
 
-        GraphCoverageMap merged_polished_map(gp_.g,gp_.contig_paths, true);
-
-        TraverseLoops(gp_.contig_paths, polished_map);
-        DebugOutputPaths(gp_.contig_paths, "loop_traveresed");
-        RemoveOverlapsAndArtifacts(gp_.contig_paths, merged_polished_map, resolver);
-        DebugOutputPaths(gp_.contig_paths, "overlap_removed_merged");
+        TraverseLoops(contig_paths, polished_map);
+        DebugOutputPaths(contig_paths, "loop_traveresed");
+        RemoveOverlapsAndArtifacts(contig_paths, merged_polished_map, resolver);
+        DebugOutputPaths(contig_paths, "overlap_removed_merged");
     } else {
-        gp_.contig_paths = std::move(polished_paths);
+        contig_paths = std::move(polished_paths);
     }
 
     RemoveOverlapsAndArtifacts(contig_paths, polished_map, resolver);
@@ -889,4 +889,5 @@ void PathExtendLauncher::Launch() {
     INFO("ExSPAnder repeat resolving tool finished");
 }
 
+}
 }
