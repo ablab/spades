@@ -9,7 +9,7 @@
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/index/edge_index_builders.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
-#include "io/binary.hpp"
+#include "io/binary/binary.hpp"
 #include "io/reads/paired_readers.hpp"
 #include "sequence/range.hpp"
 

@@ -31,24 +31,25 @@ void DistanceEstimation::run(graph_pack::GraphPack &gp, const char*) {
     auto &clustered_indices = gp.get_mutable<PairedInfoIndicesT<Graph>>("clustered_indices");
     auto &scaffolding_indices = gp.get_mutable<PairedInfoIndicesT<Graph>>("scaffolding_indices");
     size_t max_repeat_length =
-            debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(config.mode) ?
-            std::numeric_limits<size_t>::max() : config.max_repeat_length;
+        debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(config.mode) ?
+        std::numeric_limits<size_t>::max() : config.max_repeat_length;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        auto lib = cfg::get().ds.reads[i];
-        if (lib.type() == io::LibraryType::Clouds10x or lib.type() == io::LibraryType::PairedEnd) {
-            if (lib.data().mean_insert_size != 0.0) {
-                INFO("Processing library #" << i);
-                estimate_distance(gp, cfg::get().ds.reads[i], gp.paired_indices[i],
-                                  gp.clustered_indices[i]);
-                if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
-                    estimate_scaffolding_distance(gp, cfg::get().ds.reads[i], gp.paired_indices[i],
-                                                  gp.scaffolding_indices[i]);
-                }
-            }
-            if (!cfg::get().preserve_raw_paired_index) {
-                INFO("Clearing raw paired index");
-                gp.paired_indices[i].clear();
-            }
+        const auto &lib = cfg::get().ds.reads[i];
+        if (lib.type() != io::LibraryType::PairedEnd or lib.type() != io::LibraryType::Clouds10x)
+            continue;
+
+        if (lib.data().mean_insert_size != 0.0) {
+            INFO("Processing library #" << i);
+            EstimatePairedDistances(clustered_indices[i], graph, lib, paired_indices[i],
+                                    max_repeat_length, config.de);
+            if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info)
+                EstimateScaffoldingDistances(scaffolding_indices[i], graph, lib, paired_indices[i],
+                                             config.ade, config.de);
+        }
+
+        if (!cfg::get().preserve_raw_paired_index) {
+            INFO("Clearing raw paired index");
+            paired_indices[i].clear();
         }
     }
 }

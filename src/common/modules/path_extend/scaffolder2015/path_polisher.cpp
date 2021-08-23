@@ -8,7 +8,6 @@
 #include "path_polisher.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/paths/bidirectional_path.hpp"
-#include "read_cloud_path_extend/read_cloud_polisher_support.hpp"
 
 namespace path_extend {
 
@@ -141,33 +140,32 @@ Gap DijkstraGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, Bidirec
     }
 }
 
-Gap PathExtenderGapCloser::CloseGap(const BidirectionalPath &original_path,
-             size_t position, BidirectionalPath &path) const {
-    auto extender = extender_factory_->CreateExtender(original_path, position);
+Gap PathExtenderGapCloser::CloseGap(EdgeId target_edge, const Gap &orig_gap, BidirectionalPath &result) const {
     size_t added = 0;
-    DEBUG("Last edge: " << path.Back().int_id());
-    DEBUG("Target edge: " << original_path.At(position).int_id());
-    VertexId target_vertex = g_.EdgeStart(original_path.At(position));
-    DEBUG("Target_vertex: " << target_vertex.int_id());
-    DEBUG("Current vertex: " << g_.EdgeEnd(path.Back()).int_id());
-    while (g_.EdgeEnd(path.Back()) != target_vertex) {
-        DEBUG("Before makegrowstep")
-        bool has_grown = extender->MakeGrowStep(path);
-        DEBUG("After makegrowstep")
+    VertexId target_vertex = g_.EdgeStart(target_edge);
+    while (g_.EdgeEnd(result.Back()) != target_vertex) {
+        bool has_grown = extender_->MakeGrowStep(result);
         if (!has_grown)
             break;
-        DEBUG("no break")
-        added += g_.length(path.Back());
-        DEBUG("Added edge " << path.Back().int_id());
-        DEBUG("Overall length " << added);
+        added += g_.length(result.Back());
     }
-    DEBUG("While ended");
-    auto orig_gap = original_path.GapAt(position);
     //FIXME think of checking for 0 in advance
-    DEBUG("Original gap: " << orig_gap.gap << " , added " << (int) added);
+    return Gap(orig_gap.gap - (int) added, {0, orig_gap.trash.current}, false);
+
+//    auto extender = extender_factory_->CreateExtender(original_path, position);
+//    size_t added = 0;
+//    VertexId target_vertex = g_.EdgeStart(original_path.At(position));
+//    while (g_.EdgeEnd(path.Back()) != target_vertex) {
+//        bool has_grown = extender->MakeGrowStep(path);
+//        if (!has_grown)
+//            break;
+//        added += g_.length(path.Back());
+//    }
+//    auto orig_gap = original_path.GapAt(position);
+//    //FIXME think of checking for 0 in advance
 //    VERIFY(orig_gap.NoTrash());
-    return Gap((g_.EdgeEnd(path.Back()) == target_vertex) ? 0 :
-               std::max(orig_gap.gap - (int) added, int(g_.k() + 10)), {0, orig_gap.trash.current}, false);
+//    return Gap((g_.EdgeEnd(path.Back()) == target_vertex) ? 0 :
+//               std::max(orig_gap.gap - (int) added, int(g_.k() + 10)), {0, orig_gap.trash.current}, false);
 }
 
 Gap DijkstraGapCloser::FillWithBridge(const Gap &orig_gap,
@@ -415,7 +413,7 @@ std::shared_ptr<ExtensionChooser> ReadCloudGapExtensionChooserFactory::CreateCho
 //    EdgeId start_edge = original_path.At(position - 1);
 //    SupportedEdgesGraphExtractor supported_edges_extractor(g_, predicate);
 //    auto supported_edges = supported_edges_extractor.ExtractSupportedEdges(start_edge, target_edge);
-    auto chooser = make_shared<ReadCloudGapExtensionChooser>(g_, unique_storage_, target_edge, predicate, scan_bound_);
+    auto chooser = std::make_shared<ReadCloudGapExtensionChooser>(g_, unique_storage_, target_edge, predicate, scan_bound_);
     return chooser;
 }
 }

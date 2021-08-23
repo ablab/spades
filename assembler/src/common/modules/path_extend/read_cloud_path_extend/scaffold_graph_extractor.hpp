@@ -13,6 +13,7 @@ namespace read_cloud {
 
 class ScaffoldGraphExtractor {
   public:
+    typedef debruijn_graph::EdgeId EdgeId;
     typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef ScaffoldGraph::ScaffoldEdge ScaffoldEdge;
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;

@@ -20,7 +20,6 @@ namespace barcode_index {
         typedef debruijn_graph::KmerMapper<Graph> KmerSubs;
         typedef debruijn_graph::KmerFreeEdgeIndex<Graph, utils::DefaultStoring> InnerIndex;
         typedef typename InnerIndex::KeyWithHash KeyWithHash;
-        typedef typename debruijn_graph::EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
         typedef typename barcode_index::BarcodeIndex<Graph, BarcodeEntryT> BarcodeIndexT;
         typedef typename Graph::EdgeId EdgeId;
 
@@ -102,7 +101,7 @@ namespace barcode_index {
             }
         }
 
-        void FillMapFrom10XReads(const std::vector <io::SingleStreamPtr> &reads, const Index &index, const KmerSubs &kmer_mapper) {
+        void FillMapFrom10XReads(std::vector<io::SingleStream> &reads, const Index &index, const KmerSubs &kmer_mapper) {
             INFO("Starting barcode index construction from 10X reads")
 //            auto mapper = std::make_shared < alignment::BWAReadMapper < Graph > > (g_);
             auto mapper = std::make_shared < debruijn_graph::BasicSequenceMapper < Graph, Index> >
@@ -112,9 +111,9 @@ namespace barcode_index {
             io::SingleRead read;
             size_t counter = 0;
             const std::vector<string> barcode_prefixes = {"BC:Z:", "BX:Z:"};
-            for (auto stream: reads) {
-                while (!stream->eof()) {
-                    *stream >> read;
+            for (auto &stream: reads) {
+                while (!stream.eof()) {
+                    stream >> read;
                     string barcode_string = GetTenXBarcodeFromRead(read, barcode_prefixes);
 
                     if (barcode_string != "") {
@@ -132,7 +131,7 @@ namespace barcode_index {
             INFO("FillMap finished")
         }
 
-        void FillMap(const std::vector <io::SingleStreamPtr> &reads, const Index &index, const KmerSubs &kmer_mapper) {
+        void FillMap(std::vector<io::SingleStream> &reads, const Index &index, const KmerSubs &kmer_mapper) {
             InitialFillMap();
             FillMapFrom10XReads(reads, index, kmer_mapper);
             return;

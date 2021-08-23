@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage.hpp"
 #include "modules/path_extend/read_cloud_path_extend/validation/transition_extractor.hpp"
 #include "modules/path_extend/read_cloud_path_extend/validation/reference_path_index.hpp"
 
@@ -53,12 +54,13 @@ struct LongEdgePairDataset {
 
 class LongEdgePairDatasetExtractor {
   public:
+    typedef debruijn_graph::Graph Graph;
     typedef validation::EdgeWithMapping EdgeWithMapping;
     typedef transitions::Transition Transition;
     typedef barcode_index::SimpleScaffoldVertexIndexInfoExtractor BarcodeExtractor;
 
     LongEdgePairDatasetExtractor(const Graph &g,
-                                 const debruijn_graph::Index &index,
+                                 const debruijn_graph::EdgeIndex<Graph> &index,
                                  const debruijn_graph::KmerMapper<Graph> &kmer_mapper,
                                  const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
                                  const ScaffoldGraphStorage &scaffold_graph_storage,
@@ -82,7 +84,7 @@ class LongEdgePairDatasetExtractor {
                      const EdgeId &first, const EdgeId &second) const;
 
     const Graph &g_;
-    const debruijn_graph::Index &index_;
+    const debruijn_graph::EdgeIndex<Graph> &index_;
     const debruijn_graph::KmerMapper<Graph> &kmer_mapper_;
     const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper_;
     const ScaffoldGraphStorage &scaffold_graph_storage_;

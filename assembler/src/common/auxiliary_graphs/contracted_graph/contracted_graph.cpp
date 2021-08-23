@@ -121,7 +121,7 @@ void ContractedGraph::RemoveEdge(const VertexId &head, const VertexId &tail, con
 }
 ContractedGraph::ContractedGraph(const Graph &assembly_graph) : assembly_graph_(assembly_graph) {}
 
-const Graph &ContractedGraph::GetAssemblyGraph() const {
+const debruijn_graph::Graph &ContractedGraph::GetAssemblyGraph() const {
     return assembly_graph_;
 }
 ContractedGraph::ScaffoldVertex ContractedGraph::conjugate(ContractedGraph::ScaffoldVertex edge) const {

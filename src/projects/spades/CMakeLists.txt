@@ -19,8 +19,6 @@ add_library(spades-stages STATIC
             hybrid_aligning.cpp
             chromosome_removal.cpp
             barcode_index_construction.cpp
-            scaffold_graph_construction_stage.cpp
-            scaffolder_analysis_stage.cpp
             extract_domains.cpp
             domain_matcher.cpp
             domain_graph_construction.cpp

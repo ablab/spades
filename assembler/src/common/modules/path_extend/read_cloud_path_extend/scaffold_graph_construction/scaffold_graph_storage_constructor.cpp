@@ -197,8 +197,8 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
     std::set<ScaffoldVertex> path_set;
     for (const auto &path_pair: paths) {
         if (path_pair.first->Length() >= min_length) {
-            ScaffoldVertex first_vertex(path_pair.first);
-            ScaffoldVertex second_vertex(path_pair.second);
+            ScaffoldVertex first_vertex(path_pair.first.get());
+            ScaffoldVertex second_vertex(path_pair.second.get());
             path_set.insert(first_vertex);
             path_set.insert(second_vertex);
         }

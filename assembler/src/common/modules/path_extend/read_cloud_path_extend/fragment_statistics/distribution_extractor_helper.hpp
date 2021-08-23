@@ -16,6 +16,9 @@ namespace fragment_statistics {
 
 class MinTrainingLengthEstimator {
   public:
+    using Graph = debruijn_graph::Graph;
+    using EdgeId = debruijn_graph::EdgeId;
+
     MinTrainingLengthEstimator(const Graph &g, size_t min_total_length, size_t optimal_total_length, size_t min_edges)
         : g_(g),
           min_total_length_(min_total_length),
@@ -69,7 +72,8 @@ class MinTrainingLengthEstimator {
 
 class MinTrainingLengthEstimatorHelper {
   public:
-    typedef pe_config::ReadCloud ReadCloudConfigs;
+    using Graph = debruijn_graph::Graph;
+    using ReadCloudConfigs = pe_config::ReadCloud;
 
     MinTrainingLengthEstimatorHelper(const ReadCloudConfigs &configs) : configs_(configs) {}
 
@@ -120,6 +124,8 @@ typedef std::map<size_t, StatisticsPack> StatisticsContainer;
 
 class ClusterDistributionExtractor {
   public:
+    typedef debruijn_graph::Graph Graph;
+    typedef debruijn_graph::EdgeId EdgeId;
     typedef DistributionPack::ClusterLength ClusterLength;
     typedef DistributionPack::ClusterCoverage ClusterCoverage;
     typedef DistributionPack::ClusterLengthDistribution ClusterLengthDistribution;
@@ -344,6 +350,7 @@ class ClusterStatisticsExtractor {
 
 class ClusterStatisticsExtractorHelper {
   public:
+    typedef debruijn_graph::Graph Graph;
     typedef pe_config::ReadCloud ReadCloudConfigs;
 
     ClusterStatisticsExtractorHelper(const Graph &g,

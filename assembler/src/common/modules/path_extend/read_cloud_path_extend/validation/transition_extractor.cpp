@@ -8,10 +8,107 @@
 
 #include "io/reads/file_reader.hpp"
 #include "io/reads/rc_reader_wrapper.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
+#include "modules/alignment/long_read_mapper.hpp"
 
 namespace path_extend {
 namespace read_cloud {
 namespace validation {
+
+//fixme duplication with long_read_mapper
+
+size_t GappedPathExtractor::CountMappedEdgeSize(EdgeId edge,
+                                                const MappingPath<EdgeId> &mapping_path,
+                                                size_t &mapping_index,
+                                                MappingRange &range_of_mapped_edge) const
+{
+    while (mapping_path[mapping_index].first != edge)
+        ++mapping_index;
+    size_t start_idx = mapping_index;
+
+    while (mapping_path[mapping_index].first == edge) {
+        ++mapping_index;
+        if (mapping_index >= mapping_path.size())
+            break;
+    }
+    size_t end_idx = mapping_index;
+    size_t total_len = 0;
+    for (size_t i = start_idx; i < end_idx; ++i)
+        total_len += mapping_path[i].second.initial_range.size();
+
+    range_of_mapped_edge.initial_range.start_pos = mapping_path[start_idx].second.initial_range.start_pos;
+    range_of_mapped_edge.mapped_range.start_pos = mapping_path[start_idx].second.mapped_range.start_pos;
+    range_of_mapped_edge.initial_range.end_pos = mapping_path[end_idx-1].second.initial_range.end_pos;
+    range_of_mapped_edge.mapped_range.end_pos = mapping_path[end_idx-1].second.mapped_range.end_pos;
+
+    return total_len;
+}
+
+GappedPathExtractor::GappedPathExtractor(const Graph& g) noexcept
+    : g_(g)
+    , path_fixer_(g)
+{}
+
+std::vector<PathWithMappingInfo> GappedPathExtractor::operator() (const MappingPath<EdgeId>& mapping) const {
+    auto corrected_path = path_fixer_.DeleteSameEdges(mapping.simple_path());
+    auto filtered_path = FilterBadMappings(corrected_path, mapping);
+    return FindReadPathWithGaps(filtered_path);
+}
+
+MappingPath<EdgeId> GappedPathExtractor::FilterBadMappings(const std::vector<EdgeId> &corrected_path,
+                                                           const MappingPath<EdgeId> &mapping_path) const
+{
+    MappingPath<EdgeId> new_corrected_path;
+    size_t mapping_index = 0;
+    for (auto edge : corrected_path) {
+        MappingRange range_of_mapped_edge;
+        size_t mapping_size = CountMappedEdgeSize(edge, mapping_path, mapping_index, range_of_mapped_edge);
+        size_t edge_len =  g_.length(edge);
+        if (mapping_size > MIN_MAPPED_LENGTH || math::gr((double) mapping_size / (double) edge_len, MIN_MAPPED_RATIO))
+            new_corrected_path.push_back(edge, range_of_mapped_edge);
+    }
+    return new_corrected_path;
+}
+
+std::vector<PathWithMappingInfo> GappedPathExtractor::FindReadPathWithGaps(MappingPath<EdgeId> &path) const {
+    std::vector<PathWithMappingInfo> result;
+    if (path.empty()) {
+        TRACE("read unmapped");
+        return result;
+    }
+    PathWithMappingInfo tmp_path;
+    auto SetStartPos = [&tmp_path] (auto const & path) {
+      tmp_path.MappingRangeOntoRead_.initial_range.start_pos = path.second.initial_range.start_pos;
+      tmp_path.MappingRangeOntoRead_.mapped_range.start_pos = path.second.mapped_range.start_pos;
+    };
+    auto SetEndPos = [&tmp_path] (auto const & path) {
+      tmp_path.MappingRangeOntoRead_.initial_range.end_pos = path.second.initial_range.end_pos;
+      tmp_path.MappingRangeOntoRead_.mapped_range.end_pos = path.second.mapped_range.end_pos;
+    };
+
+    SetStartPos(path[0]);
+    tmp_path.Path_.push_back(path[0].first);
+    for (size_t i = 1; i < path.size(); ++i) {
+        auto left_vertex = g_.EdgeEnd(path[i - 1].first);
+        auto right_vertex = g_.EdgeStart(path[i].first);
+        if (left_vertex != right_vertex) {
+            auto closure = path_fixer_.TryCloseGap(left_vertex, right_vertex);
+            if (!closure.empty()) {
+                tmp_path.Path_.insert(tmp_path.Path_.end(), closure.begin(), closure.end());
+            } else {
+                SetEndPos(path[i-1]);
+                result.push_back(std::move(tmp_path));
+                SetStartPos(path[i]);
+            }
+        }
+        tmp_path.Path_.push_back(path[i].first);
+    }
+    SetEndPos(path.back());
+    result.push_back(std::move(tmp_path));
+    return result;
+}
+
+//duplication end
 
 std::vector<NamedSimplePath> ContigPathBuilder::GetContigPaths(const string &path_to_contigs) const {
     auto raw_contig_paths = GetRawPaths(path_to_contigs);
@@ -63,14 +160,14 @@ string ContigPathBuilder::RemoveSpacesFromName(const string &name) const {
 }
 std::vector<NamedSimplePath> ContigPathBuilder::FixMappingPaths(const std::vector<NamedPath> &contig_paths) const {
     std::vector<NamedSimplePath> result;
-    debruijn_graph::GappedPathExtractor gapped_path_extractor(g_);
+    GappedPathExtractor gapped_path_extractor(g_);
     for (const auto &named_path: contig_paths) {
         auto path = named_path.mapping_path;
-        std::vector<std::vector<EdgeId>> fixed_paths = gapped_path_extractor(path);
+        auto fixed_paths = gapped_path_extractor(path);
         std::vector<EdgeWithMapping> long_path;
         size_t prefix_len = 0;
         for (const auto &fixed_path: fixed_paths) {
-            for (const auto &edge: fixed_path) {
+            for (const auto &edge: fixed_path.Path_) {
                 Range mapping(prefix_len, prefix_len + g_.length(edge));
                 EdgeWithMapping ewm(edge, mapping);
                 long_path.push_back(ewm);

@@ -100,7 +100,7 @@ public:
                                                              size_t distance_bound, size_t max_vertex_number = -1ul) {
         auto length_put_checker = std::make_shared<LengthPutChecker<Graph>>(graph, length_threshold);
         auto bound_put_checker = std::make_shared<BoundPutChecker<Graph>>(distance_bound);
-        vector<shared_ptr<VertexPutChecker<Graph>>> put_checkers;
+        std::vector<std::shared_ptr<VertexPutChecker<Graph>>> put_checkers;
         put_checkers.push_back(length_put_checker);
         put_checkers.push_back(bound_put_checker);
         return LengthBoundedDijkstra(graph, LengthBoundedDijkstraSettings(

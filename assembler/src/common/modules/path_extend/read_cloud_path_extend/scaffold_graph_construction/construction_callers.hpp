@@ -9,6 +9,8 @@
 #include "extender_searcher.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
 
+#include <memory>
+
 namespace path_extend {
 namespace read_cloud {
 
@@ -127,39 +129,39 @@ class BarcodeConnectionConstructorCaller : public IterativeScaffoldGraphConstruc
 /** ConstructorCaller that ascertains existence of short-edge path between two long edges that is
  * supported by barcodes and paired info
  */
-class CompositeConnectionConstructorCaller : public IterativeScaffoldGraphConstructorCaller {
-  public:
-    using IterativeScaffoldGraphConstructorCaller::ScaffoldGraph;
-    using IterativeScaffoldGraphConstructorCaller::GraphConstructor;
-    typedef std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> MainBarcodeIndexPtr;
-    typedef std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> ScaffoldBarcodeIndexPtr;
-    typedef pe_config::ReadCloud::scaffold_graph_construction ScaffConConfigs;
-
-    CompositeConnectionConstructorCaller(const debruijn_graph::conj_graph_pack &gp,
-                                         MainBarcodeIndexPtr main_extractor,
-                                         ScaffoldBarcodeIndexPtr barcode_extractor,
-                                         const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage,
-                                         const ReadCloudSearchParameterPack &search_parameter_pack,
-                                         const ScaffConConfigs &scaff_con_configs,
-                                         const ScaffolderParams &params,
-                                         size_t max_threads,
-                                         bool scaffolding_mode);
-
-    GraphConstructor GetScaffoldGraphConstuctor(const ScaffoldGraph &scaffold_graph) const override;
-
-  private:
-    const debruijn_graph::conj_graph_pack &gp_;
-    std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> main_extractor_;
-    std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor_;
-    const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage_;
-    const ReadCloudSearchParameterPack search_parameter_pack_;
-    const ScaffConConfigs &scaff_con_configs_;
-    ScaffolderParams params_;
-    size_t max_threads_;
-    bool scaffolding_mode_;
-
-    DECL_LOGGER("CompositeConnectionConstructorCaller");
-};
+//class CompositeConnectionConstructorCaller : public IterativeScaffoldGraphConstructorCaller {
+//  public:
+//    using IterativeScaffoldGraphConstructorCaller::ScaffoldGraph;
+//    using IterativeScaffoldGraphConstructorCaller::GraphConstructor;
+//    typedef std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> MainBarcodeIndexPtr;
+//    typedef std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> ScaffoldBarcodeIndexPtr;
+//    typedef pe_config::ReadCloud::scaffold_graph_construction ScaffConConfigs;
+//
+//    CompositeConnectionConstructorCaller(const debruijn_graph::conj_graph_pack &gp,
+//                                         MainBarcodeIndexPtr main_extractor,
+//                                         ScaffoldBarcodeIndexPtr barcode_extractor,
+//                                         const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage,
+//                                         const ReadCloudSearchParameterPack &search_parameter_pack,
+//                                         const ScaffConConfigs &scaff_con_configs,
+//                                         const ScaffolderParams &params,
+//                                         size_t max_threads,
+//                                         bool scaffolding_mode);
+//
+//    GraphConstructor GetScaffoldGraphConstuctor(const ScaffoldGraph &scaffold_graph) const override;
+//
+//  private:
+//    const debruijn_graph::conj_graph_pack &gp_;
+//    std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> main_extractor_;
+//    std::shared_ptr<barcode_index::SimpleScaffoldVertexIndexInfoExtractor> long_edge_extractor_;
+//    const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage_;
+//    const ReadCloudSearchParameterPack search_parameter_pack_;
+//    const ScaffConConfigs &scaff_con_configs_;
+//    ScaffolderParams params_;
+//    size_t max_threads_;
+//    bool scaffolding_mode_;
+//
+//    DECL_LOGGER("CompositeConnectionConstructorCaller");
+//};
 /** ConstructorCaller that filters conjugate transitions by selecting the best orientation of two edges in the transition.
  */
 class EdgeSplitConstructorCaller : public IterativeScaffoldGraphConstructorCaller {

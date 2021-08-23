@@ -182,14 +182,14 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e,
 //Primitive topology check. Consider the edge non-unique if
 //there are multiple incoming and outgoing edges
 bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByTopology(EdgeId e) {
-    size_t incoming = gp_.g.IncomingEdgeCount(gp_.g.EdgeStart(e));
-    size_t outcoming = gp_.g.OutgoingEdgeCount(gp_.g.EdgeEnd(e));
+    size_t incoming = graph_.IncomingEdgeCount(graph_.EdgeStart(e));
+    size_t outcoming = graph_.OutgoingEdgeCount(graph_.EdgeEnd(e));
     return incoming < 2 and outcoming < 2;
 }
 
 
 void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgesWithTopology(ScaffoldingUniqueEdgeStorage &storage_) {
-    for (auto iter = gp_.g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
+    for (auto iter = graph_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
         EdgeId e = *iter;
         if (ConservativeByLength(e) && ConservativeByTopology(e)) {
             storage_.unique_edges_.insert(e);

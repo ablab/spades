@@ -35,6 +35,7 @@ class SimpleContractedGraphFactory : public contracted_graph::PartsBasedContract
 class ContractedGraphFromSimpleHelper {
   public:
     typedef SimpleGraph<scaffold_graph::ScaffoldVertex> ScaffoldVertexSimpleGraph;
+    typedef debruijn_graph::Graph Graph;
 
     explicit ContractedGraphFromSimpleHelper(const Graph &g) : g_(g) {}
 

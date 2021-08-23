@@ -20,7 +20,7 @@ EdgeIdVertex::EdgeIdVertex(EdgeId edge_) : edge_(edge_) {}
 std::shared_ptr<InnerScaffoldVertex> EdgeIdVertex::GetConjugateFromGraph(const debruijn_graph::Graph &g) const {
     return std::make_shared<EdgeIdVertex>(g.conjugate(get()));
 }
-EdgeId EdgeIdVertex::get() const {
+debruijn_graph::EdgeId EdgeIdVertex::get() const {
     return edge_;
 }
 ScaffoldVertexT EdgeIdVertex::GetType() const {
@@ -32,7 +32,7 @@ debruijn_graph::VertexId EdgeIdVertex::GetStartGraphVertex(const debruijn_graph:
 debruijn_graph::VertexId EdgeIdVertex::GetEndGraphVertex(const debruijn_graph::Graph &g) const {
     return g.EdgeEnd(edge_);
 }
-string EdgeIdVertex::str(const debruijn_graph::Graph &g) const {
+std::string EdgeIdVertex::str(const debruijn_graph::Graph &g) const {
     return g.str(edge_);
 }
 double EdgeIdVertex::GetCoverageFromGraph(const debruijn_graph::Graph &g) const {
@@ -40,38 +40,37 @@ double EdgeIdVertex::GetCoverageFromGraph(const debruijn_graph::Graph &g) const 
 }
 
 path_extend::BidirectionalPath* EdgeIdVertex::ToPath(const debruijn_graph::Graph &g) const {
-    path_extend::BidirectionalPath* result = new path_extend::BidirectionalPath (g);
-    path_extend::Gap gap(0);
-    result->PushBack(edge_, gap);
+    //fixme think of a better way
+    VERIFY(false);
+    path_extend::BidirectionalPath* result;
+//    path_extend::BidirectionalPath* result = new path_extend::BidirectionalPath (g);
+//    path_extend::Gap gap(0);
+//    result->PushBack(edge_, gap);
     return result;
 }
-EdgeId EdgeIdVertex::GetLastEdge() const {
+debruijn_graph::EdgeId EdgeIdVertex::GetLastEdge() const {
     return edge_;
 }
-EdgeId EdgeIdVertex::GetFirstEdge() const {
+debruijn_graph::EdgeId EdgeIdVertex::GetFirstEdge() const {
     return edge_;
 }
-optional<EdgeId> EdgeIdVertex::GetLastEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const {
+boost::optional<debruijn_graph::EdgeId> EdgeIdVertex::GetLastEdgeWithPredicate(
+        const func::TypedPredicate<EdgeId> &pred) const {
     boost::optional<EdgeId> result;
     if (pred(edge_)) {
         result = edge_;
     }
     return result;
 }
-optional<EdgeId> EdgeIdVertex::GetFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const {
+boost::optional<debruijn_graph::EdgeId> EdgeIdVertex::GetFirstEdgeWithPredicate(
+        const func::TypedPredicate<EdgeId> &pred) const {
     boost::optional<EdgeId> result;
     if (pred(edge_)) {
         result = edge_;
     }
     return result;
 }
-path_extend::BidirectionalPath EdgeIdVertex::GetPath(const debruijn_graph::Graph &g) const {
-    path_extend::BidirectionalPath result(g);
-    path_extend::Gap gap(0);
-    result.PushBack(edge_, gap);
-    return result;
-}
-std::unordered_set<EdgeId> EdgeIdVertex::GetAllEdges() const {
+std::unordered_set<debruijn_graph::EdgeId> EdgeIdVertex::GetAllEdges() const {
     std::unordered_set<EdgeId> result;
     result.insert(edge_);
     return result;
@@ -100,15 +99,15 @@ path_extend::BidirectionalPath *PathVertex::get() const {
 ScaffoldVertexT PathVertex::GetType() const {
     return Path;
 }
-VertexId PathVertex::GetEndGraphVertex(const debruijn_graph::Graph &g) const {
+debruijn_graph::VertexId PathVertex::GetEndGraphVertex(const debruijn_graph::Graph &g) const {
     VERIFY(path_->Size() > 0);
     return g.EdgeEnd(path_->Back());
 }
-VertexId PathVertex::GetStartGraphVertex(const debruijn_graph::Graph &g) const {
+debruijn_graph::VertexId PathVertex::GetStartGraphVertex(const debruijn_graph::Graph &g) const {
     VERIFY(path_->Size() > 0);
     return g.EdgeStart(path_->Front());
 }
-string PathVertex::str(const debruijn_graph::Graph &/*g*/) const {
+std::string PathVertex::str(const debruijn_graph::Graph &/*g*/) const {
     return path_->str();
 }
 double PathVertex::GetCoverageFromGraph(const debruijn_graph::Graph &/*g*/) const {
@@ -117,17 +116,18 @@ double PathVertex::GetCoverageFromGraph(const debruijn_graph::Graph &/*g*/) cons
 path_extend::BidirectionalPath* PathVertex::ToPath(const debruijn_graph::Graph &/*g*/) const {
     return path_;
 }
-EdgeId PathVertex::GetLastEdge() const {
+debruijn_graph::EdgeId PathVertex::GetLastEdge() const {
     const size_t path_size = path_->Size();
     VERIFY(path_size > 0);
     return path_->Back();
 }
-EdgeId PathVertex::GetFirstEdge() const {
+debruijn_graph::EdgeId PathVertex::GetFirstEdge() const {
     const size_t path_size = path_->Size();
     VERIFY(path_size > 0);
     return path_->Front();
 }
-optional<EdgeId> PathVertex::GetLastEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const {
+boost::optional<debruijn_graph::EdgeId> PathVertex::GetLastEdgeWithPredicate(
+        const func::TypedPredicate<EdgeId> &pred) const {
     boost::optional<EdgeId> result;
     for (int i = static_cast<int>(path_->Size()) - 1; i >= 0; --i) {
         EdgeId current = path_->At(i);
@@ -138,7 +138,8 @@ optional<EdgeId> PathVertex::GetLastEdgeWithPredicate(const func::TypedPredicate
     }
     return result;
 }
-optional<EdgeId> PathVertex::GetFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const {
+boost::optional<debruijn_graph::EdgeId> PathVertex::GetFirstEdgeWithPredicate(
+        const func::TypedPredicate<EdgeId> &pred) const {
     boost::optional<EdgeId> result;
     for (size_t i = 0; i < path_->Size(); ++i) {
         EdgeId current = path_->At(i);
@@ -149,11 +150,7 @@ optional<EdgeId> PathVertex::GetFirstEdgeWithPredicate(const func::TypedPredicat
     }
     return result;
 }
-path_extend::BidirectionalPath PathVertex::GetPath(const debruijn_graph::Graph &/*g*/) const {
-    path_extend::BidirectionalPath result(*path_);
-    return result;
-}
-std::unordered_set<EdgeId> PathVertex::GetAllEdges() const {
+std::unordered_set<debruijn_graph::EdgeId> PathVertex::GetAllEdges() const {
     std::unordered_set<EdgeId> result;
     for (const auto &edge: *path_) {
         result.insert(edge);
@@ -173,7 +170,7 @@ ScaffoldVertex::ScaffoldVertex(std::shared_ptr<InnerScaffoldVertex> vertex_ptr_)
 size_t ScaffoldVertex::int_id() const {
     return vertex_ptr_->GetId();
 }
-size_t ScaffoldVertex::GetLengthFromGraph(const Graph &g) const {
+size_t ScaffoldVertex::GetLengthFromGraph(const debruijn_graph::Graph &g) const {
     return vertex_ptr_->GetLengthFromGraph(g);
 }
 ScaffoldVertex ScaffoldVertex::GetConjugateFromGraph(const debruijn_graph::Graph &g) const {
@@ -210,7 +207,7 @@ bool ScaffoldVertex::operator<=(const ScaffoldVertex &rhs) const {
 bool ScaffoldVertex::operator>=(const ScaffoldVertex &rhs) const {
     return !(*this < rhs);
 }
-string ScaffoldVertex::str(const debruijn_graph::Graph &g) const {
+std::string ScaffoldVertex::str(const debruijn_graph::Graph &g) const {
     return vertex_ptr_->str(g);
 }
 double ScaffoldVertex::GetCoverageFromGraph(const debruijn_graph::Graph &g) const {
@@ -235,10 +232,7 @@ boost::optional<debruijn_graph::EdgeId> ScaffoldVertex::GetLastEdgeWithPredicate
 boost::optional<debruijn_graph::EdgeId> ScaffoldVertex::GetFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const {
     return vertex_ptr_->GetFirstEdgeWithPredicate(pred);
 }
-path_extend::BidirectionalPath ScaffoldVertex::GetPath(const debruijn_graph::Graph &g) const {
-    return vertex_ptr_->GetPath(g);
-}
-std::unordered_set<EdgeId> ScaffoldVertex::GetAllEdges() const {
+std::unordered_set<debruijn_graph::EdgeId> ScaffoldVertex::GetAllEdges() const {
     return vertex_ptr_->GetAllEdges();
 }
 std::string ScaffoldVertex::GetSequence(const debruijn_graph::Graph &g) const {

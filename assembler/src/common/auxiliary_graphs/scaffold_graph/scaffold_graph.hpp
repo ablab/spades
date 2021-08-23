@@ -244,9 +244,9 @@ public:
 
     void Print(std::ostream &os) const;
 
-    string str(const ScaffoldGraphVertex &vertex) const;
+    std::string str(const ScaffoldGraphVertex &vertex) const;
 
-    string str(const ScaffoldGraph::ScaffoldEdge &edge) const;
+    std::string str(const ScaffoldGraph::ScaffoldEdge &edge) const;
 
     size_t length(const ScaffoldGraphVertex &vertex) const;
     size_t length(const ScaffoldGraph::ScaffoldEdge &edge) const;

@@ -62,8 +62,8 @@ std::vector<ScaffoldGraphExtractor::ScaffoldEdge> ScaffoldGraphExtractor::Extrac
     }
     return result;
 }
-std::unordered_map<EdgeId, ScaffoldGraphExtractor::VertexSet> ScaffoldGraphExtractor::GetFirstEdgeMap(
-    const ScaffoldGraphExtractor::ScaffoldGraph &scaffold_graph, const func::TypedPredicate<EdgeId> &pred) const {
+std::unordered_map<debruijn_graph::EdgeId, ScaffoldGraphExtractor::VertexSet> ScaffoldGraphExtractor::GetFirstEdgeMap(
+        const ScaffoldGraphExtractor::ScaffoldGraph &scaffold_graph, const func::TypedPredicate<EdgeId> &pred) const {
     std::unordered_map<EdgeId, VertexSet> result;
     for (const ScaffoldVertex &vertex: scaffold_graph.vertices()) {
         auto first_edge = vertex.GetFirstEdgeWithPredicate(pred);

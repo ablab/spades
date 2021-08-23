@@ -15,9 +15,10 @@ namespace contracted_graph {
 class ContractedGraphFactoryHelper {
  public:
     typedef path_extend::ScaffoldingUniqueEdgeStorage UniqueStorage;
-    typedef path_extend::read_cloud::SimpleGraph<scaffold_graph::ScaffoldVertex> SimpleGraph;
+    typedef debruijn_graph::VertexId VertexId;
+    typedef debruijn_graph::Graph Graph;
 
-    explicit ContractedGraphFactoryHelper(const Graph &g) : g_(g) {}
+    explicit ContractedGraphFactoryHelper(const debruijn_graph::Graph &g) : g_(g) {}
 
     std::shared_ptr<ContractedGraph> ConstructFromUniqueStorage(const UniqueStorage &unique_storage) const;
 

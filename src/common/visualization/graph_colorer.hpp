@@ -12,6 +12,8 @@
 
 #include "assembly_graph/components/graph_component.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
+#include "barcode_index/barcode_info_extractor.hpp"
+#include "visualization/printing_parameter_storage.hpp"
 //#include "edges_position_handler.hpp"
 
 using namespace omnigraph;
@@ -331,17 +333,17 @@ template<class Graph>
 class BarcodeCollectionColorer: public ElementColorer<typename Graph::EdgeId> {
     typedef typename Graph::EdgeId EdgeId;
 
-    const vector<barcode_index::BarcodeId> barcode_collection_;
+    const std::vector<barcode_index::BarcodeId> barcode_collection_;
     const barcode_index::FrameBarcodeIndexInfoExtractor& extractor_;
     const size_t barcode_threshold_;
-    const string color_;
-    const string default_color_;
+    const std::string color_;
+    const std::string default_color_;
 public:
-    BarcodeCollectionColorer(const vector<barcode_index::BarcodeId>& barcode_collection,
+    BarcodeCollectionColorer(const std::vector<barcode_index::BarcodeId>& barcode_collection,
                              const barcode_index::FrameBarcodeIndexInfoExtractor& extractor,
                              const size_t barcode_threshold,
-                             const string& color,
-                             const string& default_color = "black") :
+                             const std::string& color,
+                             const std::string& default_color = "black") :
             barcode_collection_(barcode_collection), extractor_(extractor),
             barcode_threshold_(barcode_threshold), color_(color), default_color_(default_color) {}
 
@@ -351,8 +353,8 @@ public:
     }
 private:
     bool CheckBarcodes(const EdgeId& e) const {
-        vector <barcode_index::BarcodeId> edge_barcodes = extractor_.GetBarcodes(e);
-        vector <barcode_index::BarcodeId> intersection;
+        std::vector <barcode_index::BarcodeId> edge_barcodes = extractor_.GetBarcodes(e);
+        std::vector <barcode_index::BarcodeId> intersection;
         if (edge_barcodes.size() < barcode_threshold_) return false;
         std::set_intersection(edge_barcodes.begin(), edge_barcodes.end(),
                               barcode_collection_.begin(), barcode_collection_.end(), std::back_inserter(intersection));

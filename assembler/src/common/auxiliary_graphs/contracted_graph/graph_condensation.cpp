@@ -8,11 +8,11 @@
 
 namespace contracted_graph {
 
-vector<UnbranchingPathExtractor::SimplePath> UnbranchingPathExtractor::ExtractUnbranchingPaths(
+std::vector<UnbranchingPathExtractor::SimplePath> UnbranchingPathExtractor::ExtractUnbranchingPaths(
         const ContractedGraph &graph) const {
-    unordered_map<ScaffoldVertex, ScaffoldVertex> edge_to_next;
-    set<ScaffoldVertex> unbranching_vertices;
-    set<ScaffoldVertex> starts;
+    std::unordered_map<ScaffoldVertex, ScaffoldVertex> edge_to_next;
+    std::set<ScaffoldVertex> unbranching_vertices;
+    std::set<ScaffoldVertex> starts;
     for (const auto &vertex: graph) {
         if (graph.GetOutDegree(vertex) == 1 and graph.GetInDegree(vertex) == 1) {
             auto incoming_edge = *(graph.in_edge_begin(vertex));
@@ -29,8 +29,8 @@ vector<UnbranchingPathExtractor::SimplePath> UnbranchingPathExtractor::ExtractUn
         }
     }
 
-    vector<SimplePath> result;
-    set<ScaffoldVertex> visited;
+    std::vector<SimplePath> result;
+    std::set<ScaffoldVertex> visited;
     size_t inserted = 0;
     for (const auto &start: starts) {
         SimplePath path;

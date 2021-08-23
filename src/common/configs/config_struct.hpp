@@ -459,9 +459,6 @@ struct debruijn_config {
 
     contig_output co;
 
-    boost::optional<scaffold_correction> sc_cor;
-    truseq_analysis tsa;
-
     std::filesystem::path load_from;
     std::string entry_point;
 
