@@ -48,9 +48,6 @@ AlphaAssignment CorrectionAssigner::GetAlphaAssignment(const SoftBinsAssignment 
             double length_coef = (l > thr ? 0 : 1 - ::log(static_cast<double>(l)) / ::log(static_cast<double>(thr)));
             double distance_coef = (has_distance_ ? distance_coeffs_.at(e) : 1.0);
             alpha = (labeled_alpha_ + (1 - labeled_alpha_) * length_coef) * distance_coef;
-//            if (math::le(alpha, alpha_threshold_)) {
-//                alpha = 0.0;
-//            }
         }
         ealpha.emplace(e, alpha);
         ealpha.emplace(g_.conjugate(e), alpha);
@@ -62,8 +59,9 @@ CorrectionAssigner::CorrectionAssigner(const debruijn_graph::Graph &g,
                                double labeled_alpha) :
     AlphaAssigner(g), has_distance_(true), distance_coeffs_(distance_coeffs), labeled_alpha_(labeled_alpha) {}
 
-CorrectionAssigner::CorrectionAssigner(const debruijn_graph::Graph &g, double labeled_alpha) : AlphaAssigner(g),
-                                                                                       has_distance_(false),
-                                                                                       distance_coeffs_(0),
-                                                                                       labeled_alpha_(labeled_alpha) {}
+CorrectionAssigner::CorrectionAssigner(const debruijn_graph::Graph &g, double labeled_alpha) :
+    AlphaAssigner(g),
+    has_distance_(false),
+    distance_coeffs_(0),
+    labeled_alpha_(labeled_alpha) {}
 }

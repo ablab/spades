@@ -53,14 +53,16 @@ struct gcfg {
     AssignStrategy assignment_strategy = AssignStrategy::MajorityLength;
     double eps = 1e-5;
     double labeled_alpha = 0.6;
+    bool no_unbinned_bin = false;
+    bool alpha_propagation = false;
     double metaalpha = 0.6;
+    size_t length_threshold = 2000;
+    size_t distance_bound = 5000;
     bool allow_multiple = false;
     RefinerType refiner_type = RefinerType::Propagation;
     bool bin_load = false;
     bool debug = false;
     bool bin_dist = false;
-    bool no_unbinned_bin = false;
-    bool alpha_propagation = false;
     uint64_t out_options = 0;
 };
 
@@ -89,6 +91,9 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       (option("--tall-multi").call([&] { cfg.out_options |= OutputOptions::TallMulti; }) % "use tall table for multiple binning result"),
       (option("--bin-dist").set(cfg.bin_dist) % "estimate pairwise bin distance (could be slow on large graphs!)"),
       (option("-la") & value("labeled alpha", cfg.labeled_alpha)) % "labels correction alpha for labeled data",
+      (option("-ma") & value("--metaalpha", cfg.metaalpha)) % "Labels correction alpha for alpha propagation procedure",
+      (option("-lt") & value("--length-threshold", cfg.length_threshold)) % "Binning will not be propagated to edges longer than threshold",
+      (option("-db") & value("--distance-bound", cfg.distance_bound)) % "Binning will not be propagated further than bound",
       (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
       (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)",
       (option("--no-unbinned-bin").set(cfg.no_unbinned_bin)) % "Do not create a special bin for unbinned contigs",
@@ -126,7 +131,6 @@ std::unique_ptr<AlphaAssigner> get_alpha_assigner(const gcfg &cfg,
             if (not cfg.alpha_propagation) {
                 return std::make_unique<CorrectionAssigner>(graph, cfg.labeled_alpha);
             }
-
             AlphaPropagator alpha_propagator(graph, links, cfg.metaalpha, cfg.eps, cfg.length_threshold,
                                              cfg.distance_bound, cfg.output_file + ".alpha_stats");
             auto alpha_mask = alpha_propagator.GetAlphaMask(binning);
@@ -299,8 +303,7 @@ int main(int argc, char** argv) {
       auto origin_state = label_initializer.InitLabels(binning);
       auto alpha_assignment = alpha_assigner->GetAlphaAssignment(origin_state);
 
-      //fixme configs
-      const size_t unbinned_length_threshold = 1000;
+      const size_t unbinned_length_threshold = cfg.length_threshold;
       std::unordered_set<EdgeId> nonpropagating_edges;
       if (add_unbinned_bin) {
           for (const EdgeId &edge: binning.unbinned_edges()) {

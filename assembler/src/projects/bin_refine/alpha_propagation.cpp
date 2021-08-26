@@ -23,7 +23,6 @@ AlphaAssignment AlphaPropagator::GetAlphaMask(const Binning &bin_stats) const {
     auto binning_refiner = std::make_unique<LabelsPropagation>(g_, links_, correction_alpha, nonpropagating_edges, eps_);
     INFO("Launching propagation refiner");
     auto refined_distance_coeffs = binning_refiner->RefineBinning(distance_state);
-    INFO("Emplacing");
     for (const auto &labels: refined_distance_coeffs) {
         const auto &probs = labels.labels_probabilities;
         VERIFY(probs.size() == 2);
@@ -53,25 +52,21 @@ SoftBinsAssignment AlphaPropagator::ConstructBinningMask(const bin_stats::SoftBi
             binned_length += g_.length(labels.e);
         }
     }
-
     INFO(binned_edges.size() << " initially binned edges, total length " << binned_length);
-    //fixme configs
-    const size_t length_threshold = 1000;
-    const size_t distance_bound = 3000;
-//    const size_t max_vertices = 10000;
 
-    //todo optimize using dijkstra with predicate
     std::unordered_set<EdgeId> binned_after_dilation;
     for (const auto &edge: binned_edges) {
         binned_after_dilation.insert(edge);
     }
     for (const auto &edge: binned_edges) {
-        auto bounded_dijkstra = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, length_bound, max_vertices);
+        auto bounded_dijkstra = omnigraph::DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, length_threshold_);
         bounded_dijkstra.Run(g_.EdgeEnd(edge));
         for (auto entry : bounded_dijkstra.reached())
             for (const auto &out_edge: g_.OutgoingEdges(entry.first)) {
-                binned_after_dilation.insert(out_edge);
-                binned_after_dilation.insert(g_.conjugate(out_edge));
+                if (g_.length(out_edge) <= length_threshold_) {
+                    binned_after_dilation.insert(out_edge);
+                    binned_after_dilation.insert(g_.conjugate(out_edge));
+                }
             }
     }
     binned_length = 0;
@@ -79,8 +74,6 @@ SoftBinsAssignment AlphaPropagator::ConstructBinningMask(const bin_stats::SoftBi
         binned_length += g_.length(edge);
     }
     INFO(binned_after_dilation.size() << " binned edges after dilation, total length " << binned_length);
-
-    INFO(g_.max_eid());
     SoftBinsAssignment mask_state(g_.max_eid());
     for (debruijn_graph::EdgeId e : g_.canonical_edges()) {
         EdgeLabels labels;
@@ -93,12 +86,10 @@ SoftBinsAssignment AlphaPropagator::ConstructBinningMask(const bin_stats::SoftBi
         } else {
             labels.labels_probabilities.set(UNBINNED, 1.0);
         }
-
         mask_state.emplace(e, labels);
         mask_state.emplace(g_.conjugate(e), std::move(labels));
     }
     INFO("Constructed mask state");
-
     return mask_state;
 }
 }
