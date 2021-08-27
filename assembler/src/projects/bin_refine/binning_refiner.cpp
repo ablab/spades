@@ -286,7 +286,7 @@ int main(int argc, char** argv) {
       INFO("Initial binning:\n" << binning);
 
       auto alpha_assigner = get_alpha_assigner(cfg, links, graph, binning);
-      LabelInitializer label_initializer(graph);
+      LabelInitializer label_initializer(graph, cfg.length_threshold);
       auto origin_state = label_initializer.InitLabels(binning);
       auto alpha_assignment = alpha_assigner->GetAlphaAssignment(origin_state);
 
