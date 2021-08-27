@@ -56,8 +56,9 @@ BinningAssignmentStrategy::ChooseMajorBins(const blaze::CompressedVector<double>
             major_bin = entry.index();
         }
 
-        if (major_bin == Binning::UNBINNED)
-            return { };
+        if (major_bin == Binning::UNBINNED) {
+            return {};
+        }
 
         for (const auto &entry : bins_weights) {
             if (!math::eq(entry.value(), max_weight) or !res.empty())
