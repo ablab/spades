@@ -7,6 +7,7 @@
 #pragma once
 
 #include "barcode_index.hpp"
+#include "modules/alignment/bwa_sequence_mapper.hpp"
 #include "modules/alignment/edge_index.hpp"
 #include "modules/alignment/kmer_mapper.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
@@ -101,12 +102,9 @@ namespace barcode_index {
             }
         }
 
-        void FillMapFrom10XReads(std::vector<io::SingleStream> &reads, const Index &index, const KmerSubs &kmer_mapper) {
+        template <class Mapper>
+        void FillMapFrom10XReads(std::vector<io::SingleStream> &reads, std::shared_ptr<Mapper> read_mapper) {
             INFO("Starting barcode index construction from 10X reads")
-//            auto mapper = std::make_shared < alignment::BWAReadMapper < Graph > > (g_);
-            auto mapper = std::make_shared < debruijn_graph::BasicSequenceMapper < Graph, Index> >
-                    (g_, index, kmer_mapper);
-
             //Process every read from 10X dataset
             io::SingleRead read;
             size_t counter = 0;
@@ -120,7 +118,7 @@ namespace barcode_index {
                         barcode_codes_.AddBarcode(barcode_string);
                         uint64_t barcode_int = barcode_codes_.GetCode(barcode_string);
                         BarcodeId barcode(barcode_int);
-                        const auto &path = mapper->MapRead(read);
+                        const auto &path = read_mapper->MapRead(read);
                         InsertMappingPath(barcode, path);
                     }
                     counter++;
@@ -131,9 +129,17 @@ namespace barcode_index {
             INFO("FillMap finished")
         }
 
+        void FillMap(std::vector<io::SingleStream> &reads) {
+            InitialFillMap();
+            auto mapper = std::make_shared<alignment::BWAReadMapper<Graph>>(g_);
+            FillMapFrom10XReads(reads, mapper);
+            return;
+        }
+
         void FillMap(std::vector<io::SingleStream> &reads, const Index &index, const KmerSubs &kmer_mapper) {
             InitialFillMap();
-            FillMapFrom10XReads(reads, index, kmer_mapper);
+            auto mapper = std::make_shared<debruijn_graph::BasicSequenceMapper<Graph, Index>>(g_, index, kmer_mapper);
+            FillMapFrom10XReads(reads, mapper);
             return;
         }
         virtual void InitialFillMap() = 0;
