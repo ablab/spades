@@ -28,7 +28,7 @@ static void Run(size_t K, const string &graph_path, const string &contigs_file,
     omnigraph::GraphElementFinder<Graph> element_finder(graph);
     gp.get_mutable<KmerMapper<Graph>>().Attach();
     io::EdgeLabelHelper<Graph> label_helper(element_finder,
-                                            toolchain::LoadGraph(gp, graph_path));
+                                            toolchain::LoadBaseGraph(gp, graph_path));
 
     gp.EnsureBasicMapping();
 
