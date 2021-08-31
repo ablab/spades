@@ -413,6 +413,76 @@ public:
     }
 };
 
+template <typename Index>
+class ATEdgesClippingTask {
+public:
+    ATEdgesClippingTask() = default;
+    ATEdgesClippingTask(std::istream &is) { deserialize(is); }
+
+    std::ostream &serialize(std::ostream &os) const { return os; }
+
+    std::istream &deserialize(std::istream &is) { return is; }
+
+    auto make_splitter(size_t size, Index &) {
+        return partask::make_seq_plus_n_generator(size);
+    }
+
+    void process(std::istream &is, std::ostream &os, Index &index) {
+        size_t n = 0;
+        std::vector<size_t> chunks = partask::get_seq_plus_n(is, n);
+
+        INFO("Job got, " << chunks.size() << "/" << n << "chunks");
+        auto iters = index.kmer_begin(n);
+        std::vector<typename Index::kmer_iterator> local_iters;
+        for (size_t i : chunks) {
+            if (i < iters.size()) {
+                local_iters.push_back(std::move(iters[i]));
+            }
+        }
+
+        EarlyLowComplexityClipperProcessor at_processor(index, 0.8, 10, 200);
+        at_processor.RemoveATEdges(local_iters);
+        partask::allreduce(index.raw_data(), index.raw_size(), MPI_BAND);
+    }
+
+    void merge(const std::vector<std::istream *> &, Index &) {}
+};
+
+template <typename Index>
+class ATTipClippingTask {
+public:
+    ATTipClippingTask() = default;
+
+    ATTipClippingTask(std::istream &is) { deserialize(is); }
+
+    std::ostream &serialize(std::ostream &os) const { return os; }
+
+    std::istream &deserialize(std::istream &is) { return is; }
+
+    auto make_splitter(size_t size, Index &) {
+        return partask::make_seq_plus_n_generator(size);
+    }
+
+    void process(std::istream &is, std::ostream &os, Index &index) {
+        size_t n = 0;
+        std::vector<size_t> chunks = partask::get_seq_plus_n(is, n);
+
+        INFO("Job got, " << chunks.size() << "/" << n << "chunks");
+        auto iters = index.kmer_begin(n);
+        std::vector<typename Index::kmer_iterator> local_iters;
+        for (size_t i : chunks) {
+            if (i < iters.size()) {
+                local_iters.push_back(std::move(iters[i]));
+            }
+        }
+
+        EarlyLowComplexityClipperProcessor at_processor(index, 0.8, 10, 200);
+        at_processor.RemoveATTips(local_iters);
+        partask::allreduce(index.raw_data(), index.raw_size(), MPI_BAND);
+    }
+
+    void merge(const std::vector<std::istream *> &, Index &index) {}
+};
 
 template <typename Index>
 class TipClippingTask {
@@ -521,9 +591,20 @@ public:
     bool distributed() const override { return true; }
 
     void run(graph_pack::GraphPack &, const char*) override {
-        EarlyLowComplexityClipperProcessor at_processor(storage().ext_index, 0.8, 10, 200);
-        at_processor.RemoveATEdges();
-        at_processor.RemoveATTips();
+        partask::TaskRegistry treg;
+        auto &index = storage().ext_index;
+        using Index = std::remove_reference_t<decltype(index)>;
+        VERIFY(partask::all_equal(index.size()));
+
+        auto clip_edges = treg.add<ATEdgesClippingTask<Index>>(std::ref(index));
+        auto clip_tips = treg.add<ATTipClippingTask<Index>>(std::ref(index));
+        treg.listen();
+
+        if (partask::master()) {
+            clip_edges();
+            clip_tips();
+        }
+        treg.stop_listening();
     }
 
     void load(graph_pack::GraphPack&,
