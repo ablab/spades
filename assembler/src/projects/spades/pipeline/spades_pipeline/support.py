@@ -163,7 +163,7 @@ def get_read_file_type(input_filename, log=None):
 def check_file_not_empty(input_filename, message="", log=None):
     filename = abspath(expanduser(input_filename))
     file_type = get_read_file_type(input_filename, log)
-    if (file_type == 'bam'):
+    if (file_type == 'bam' or file_type == 'sra'):
         return
     
     try:
@@ -715,14 +715,17 @@ def get_reads_files(dataset_data, log, ignored_types, used_types=None):
 def get_max_reads_length(reads_file, log, num_checked):
     file_type = get_read_file_type(reads_file, log)
     max_reads_length = 0
-    try:
-        max_reads_length = max(
-            [len(rec) for rec in itertools.islice(SeqIO.parse(SeqIO.Open(reads_file, "r"), file_type), num_checked)])
-    except Exception as inst:
-        error(inst.args[0].format(FILE=reads_file) + "\n\n" +
-              traceback.format_exc().format(FILE=reads_file), log=log)
+    if file_type == 'sra':
+        max_reads_length = 100
     else:
-        log.info("%s: max reads length: %s" % (reads_file, str(max_reads_length)))
+        try:
+            max_reads_length = max(
+                [len(rec) for rec in itertools.islice(SeqIO.parse(SeqIO.Open(reads_file, "r"), file_type), num_checked)])
+        except Exception as inst:
+            error(inst.args[0].format(FILE=reads_file) + "\n\n" +
+                  traceback.format_exc().format(FILE=reads_file), log=log)
+        else:
+            log.info("%s: max reads length: %s" % (reads_file, str(max_reads_length)))
     return max_reads_length
 
 

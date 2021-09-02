@@ -180,6 +180,9 @@ def is_fastq(file_name):
 def is_bam(file_name):
     return check_extension(file_name, ['.bam'])
 
+def is_sra(file_name):
+    return check_extension(file_name, ['.sra'])
+
 
 def get_read_file_type(file_name):
     if is_fastq(file_name):
@@ -188,5 +191,7 @@ def get_read_file_type(file_name):
         return 'fasta'
     elif is_bam(file_name):
         return 'bam'
+    elif is_sra(file_name):
+        return 'sra'    
     else:
         return None
