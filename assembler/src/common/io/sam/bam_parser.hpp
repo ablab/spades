@@ -5,15 +5,11 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#ifndef COMMON_IO_BAMPARSER_HPP
-#define COMMON_IO_BAMPARSER_HPP
+#pragma once
 
 #include "io/reads/file_read_flags.hpp"
 #include "io/reads/single_read.hpp"
 #include "io/reads/parser.hpp"
-#include "sequence/quality.hpp"
-#include "sequence/nucl.hpp"
-#include "utils/verify.hpp"
 
 #include "bamtools/api/BamReader.h"
 
@@ -23,7 +19,8 @@ namespace io {
 
 class BAMParser: public Parser {
 public:
-    BAMParser(const std::filesystem::path& filename, FileReadFlags flags = FileReadFlags())
+    BAMParser(const std::string& filename,
+              FileReadFlags flags = FileReadFlags())
             : Parser(filename, flags) {
         open();
     }
@@ -32,46 +29,17 @@ public:
         close();
     }
 
-    BAMParser& operator>>(SingleRead& read) {
-        if (!is_open_ || eof_)
-            return *this;
+    BAMParser& operator>>(SingleRead& read);
+    void close();
 
-        if (flags_.use_name && flags_.use_quality)
-            read = SingleRead(seq_.Name, "", seq_.QueryBases, seq_.Qualities, flags_.offset,
-                              0, 0, flags_.validate);
-        else if (flags_.use_name)
-            read = SingleRead(seq_.Name, "", seq_.QueryBases,
-                              0, 0, flags_.validate);
-        else
-            read = SingleRead(seq_.QueryBases,
-                              0, 0, flags_.validate);
-
-        eof_ = (false == reader_.GetNextAlignment(seq_));
-
-        return *this;
-    }
-
-    void close() {
-        reader_.Close();
-        is_open_ = false;
-        eof_ = true;
-    }
+    BAMParser(const BAMParser& parser) = delete;
+    void operator=(const BAMParser& parser) = delete;
 
 private:
     BamTools::BamReader reader_;
     BamTools::BamAlignment seq_;
 
-    void open() {
-        reader_.Open(filename_);
-        is_open_ = true;
-
-        eof_ = (false == reader_.GetNextAlignment(seq_));
-    }
-
-    BAMParser(const BAMParser& parser);
-    void operator=(const BAMParser& parser);
+    void open();
 };
 
 }
-
-#endif /* COMMON_IO_FASTAFASTQGZPARSER_HPP */
