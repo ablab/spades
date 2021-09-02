@@ -46,15 +46,13 @@ class CorrectionAssigner: public AlphaAssigner {
     CorrectionAssigner(const Graph &g, double labeled_alpha);
     CorrectionAssigner(const debruijn_graph::Graph &g,
                        const AlphaAssignment &distance_coeffs,
-                       double labeled_alpha,
-                       double alpha_threshold);
+                       double labeled_alpha);
 
     AlphaAssignment GetAlphaAssignment(const SoftBinsAssignment &state) const override;
   private:
     bool has_distance_;
     AlphaAssignment distance_coeffs_;
     double labeled_alpha_;
-    double alpha_threshold_;
 };
 
 }
