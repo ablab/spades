@@ -413,15 +413,13 @@ public:
     }
 };
 
+
 template <typename Index>
-class ATEdgesClippingTask {
+class TipClippingTaskBase {
 public:
-    ATEdgesClippingTask() = default;
-    ATEdgesClippingTask(std::istream &is) { deserialize(is); }
-
-    std::ostream &serialize(std::ostream &os) const { return os; }
-
-    std::istream &deserialize(std::istream &is) { return is; }
+    TipClippingTaskBase() = default;
+    virtual std::ostream &serialize(std::ostream &os) const = 0;
+    virtual std::istream &deserialize(std::istream &is) = 0;
 
     auto make_splitter(size_t size, Index &) {
         return partask::make_seq_plus_n_generator(size);
@@ -440,90 +438,14 @@ public:
             }
         }
 
-        EarlyLowComplexityClipperProcessor at_processor(index, 0.8, 10, 200);
-        at_processor.RemoveATEdges(local_iters);
-        partask::allreduce(index.raw_data(), index.raw_size(), MPI_BAND);
-    }
-
-    void merge(const std::vector<std::istream *> &, Index &) {}
-};
-
-template <typename Index>
-class ATTipClippingTask {
-public:
-    ATTipClippingTask() = default;
-
-    ATTipClippingTask(std::istream &is) { deserialize(is); }
-
-    std::ostream &serialize(std::ostream &os) const { return os; }
-
-    std::istream &deserialize(std::istream &is) { return is; }
-
-    auto make_splitter(size_t size, Index &) {
-        return partask::make_seq_plus_n_generator(size);
-    }
-
-    void process(std::istream &is, std::ostream &os, Index &index) {
-        size_t n = 0;
-        std::vector<size_t> chunks = partask::get_seq_plus_n(is, n);
-
-        INFO("Job got, " << chunks.size() << "/" << n << "chunks");
-        auto iters = index.kmer_begin(n);
-        std::vector<typename Index::kmer_iterator> local_iters;
-        for (size_t i : chunks) {
-            if (i < iters.size()) {
-                local_iters.push_back(std::move(iters[i]));
-            }
-        }
-
-        EarlyLowComplexityClipperProcessor at_processor(index, 0.8, 10, 200);
-        at_processor.RemoveATTips(local_iters);
-        partask::allreduce(index.raw_data(), index.raw_size(), MPI_BAND);
-    }
-
-    void merge(const std::vector<std::istream *> &, Index &index) {}
-};
-
-template <typename Index>
-class TipClippingTask {
-    TipClippingTask() = default;
- public:
-    TipClippingTask(size_t length_bound) : length_bound_{length_bound} {}
-    TipClippingTask(std::istream &is) { deserialize(is); }
-    std::ostream &serialize(std::ostream &os) const {
-        io::binary::BinWrite(os, length_bound_);
-        return os;
-    }
-
-    std::istream &deserialize(std::istream &is) {
-        io::binary::BinRead(is, length_bound_);
-        return is;
-    }
-
-    auto make_splitter(size_t size, Index &) {
-        return partask::make_seq_plus_n_generator(size);
-    }
-
-    void process(std::istream &is, std::ostream &os, Index &index) {
-        size_t n = 0;
-        std::vector<size_t> chunks = partask::get_seq_plus_n(is, n);
-
-        INFO("Job got, " << chunks.size() << "/" << n << "chunks");
-        auto iters = index.kmer_begin(n);
-        std::vector<typename Index::kmer_iterator> local_iters;
-        for (size_t i : chunks) {
-            if (i < iters.size()) {
-                local_iters.push_back(std::move(iters[i]));
-            }
-        }
-        size_t kpo_mers_removed = EarlyTipClipperProcessor(index, length_bound_).ClipTips(local_iters);  // TODO support empty input
+        size_t kpo_mers_removed = process_iner(index, local_iters);
 
         INFO("K+1-mers removed: " << kpo_mers_removed);
         partask::allreduce(index.raw_data(), index.raw_size(), MPI_BAND);
         io::binary::BinWrite(os, kpo_mers_removed);
     }
 
-    size_t merge(const std::vector<std::istream *> &piss, Index&) {
+    size_t merge(const std::vector<std::istream *> &piss, Index &) {
         size_t kpo_mers_removed = 0;
         for (auto &pis : piss) {
             kpo_mers_removed += io::binary::BinRead<size_t>(*pis);
@@ -531,7 +453,64 @@ class TipClippingTask {
         return kpo_mers_removed;
     }
 
+private:
+    virtual size_t process_iner(Index &, std::vector<typename Index::kmer_iterator>& /*local_iters*/) = 0;
+};
+
+
+template <typename Index>
+class ATEdgesClippingTask : public TipClippingTaskBase<Index> {
+public:
+    ATEdgesClippingTask() = default;
+    ATEdgesClippingTask(std::istream &is) { deserialize(is); }
+    std::ostream &serialize(std::ostream &os) const override { return os; }
+    std::istream &deserialize(std::istream &is) override { return is; }
+
+private:
+    size_t process_iner(Index &index,  std::vector<typename Index::kmer_iterator>& local_iters) override {
+        EarlyLowComplexityClipperProcessor at_processor(index, 0.8, 10, 200);
+        return at_processor.RemoveATEdges(local_iters);
+    }
+};
+
+template <typename Index>
+class ATTipClippingTask : public TipClippingTaskBase<Index> {
+public:
+    ATTipClippingTask() = default;
+    ATTipClippingTask(std::istream &is) { deserialize(is); }
+    std::ostream &serialize(std::ostream &os) const override { return os; }
+    std::istream &deserialize(std::istream &is) override { return is; }
+
+private:
+    size_t process_iner(Index &index,  std::vector<typename Index::kmer_iterator>& local_iters) override {
+        EarlyLowComplexityClipperProcessor at_processor(index, 0.8, 10, 200);
+        return at_processor.RemoveATTips(local_iters);
+    }
+};
+
+
+template <typename Index>
+class TipClippingTask : public TipClippingTaskBase<Index> {
+    TipClippingTask() = default;
+ public:
+    TipClippingTask(size_t length_bound) : length_bound_{length_bound} {}
+    TipClippingTask(std::istream &is) { deserialize(is); }
+
+    std::ostream &serialize(std::ostream &os) const override {
+        io::binary::BinWrite(os, length_bound_);
+        return os;
+    }
+
+    std::istream &deserialize(std::istream &is) override {
+        io::binary::BinRead(is, length_bound_);
+        return is;
+    }
+
  private:
+    size_t process_iner(Index &index,  std::vector<typename Index::kmer_iterator>& local_iters) override {
+        return EarlyTipClipperProcessor(index, length_bound_).ClipTips(local_iters);
+    }
+
     size_t length_bound_;
 };
 
@@ -601,8 +580,10 @@ public:
         treg.listen();
 
         if (partask::master()) {
-            clip_edges();
-            clip_tips();
+            auto edges_removed = clip_edges();
+            auto tips_removed = clip_tips();
+
+            INFO(edges_removed << " A/T edges and " << tips_removed << " A/T tips were removed by early A-/T-tip clipper");
         }
         treg.stop_listening();
     }
