@@ -6,5 +6,6 @@
 #cmakedefine SPADES_USE_MIMALLOC
 #cmakedefine SPADES_DEBUG_LOGGING
 #cmakedefine SPADES_ENABLE_EXPENSIVE_CHECKS
+#cmakedefine SPADES_USE_NCBISDK
 
 #endif // __SPADES_CONFIG_HPP__

@@ -25,12 +25,16 @@
  * according to extension.
  */
 
+#include "config.hpp"
 #include "parser.hpp"
 
 #include "file_read_flags.hpp"
 #include "single_read.hpp"
 #include "fasta_fastq_gz_parser.hpp"
 #include "io/sam/bam_parser.hpp"
+#ifdef SPADES_USE_NCBISDK
+# include "io/sra/sra_parser.hpp"
+#endif
 
 namespace io {
 
@@ -47,6 +51,10 @@ Parser* SelectParser(const std::filesystem::path& filename,
                      FileReadFlags flags) {
   if (filename.extension() == ".bam")
       return new BAMParser(filename, flags);
+#ifdef SPADES_USE_NCBISDK
+  else if (filename.extension() == ".sra")
+      return new SRAParser(filename, flags);    
+#endif
 
   return new FastaFastqGzParser(filename, flags);
 }

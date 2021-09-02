@@ -1,0 +1,33 @@
+diff --git a/build/env.cmake b/build/env.cmake
+index dbf87221..a0321295 100644
+--- a/build/env.cmake
++++ b/build/env.cmake
+@@ -78,18 +78,22 @@ else()
+ endif()
+ 
+ # determine architecture
+-if ( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "armv7l")
++set(_system_processor ${CMAKE_SYSTEM_PROCESSOR})
++if (APPLE AND NOT "${CMAKE_OSX_ARCHITECTURES}" STREQUAL "")
++    set(_system_processor ${CMAKE_OSX_ARCHITECTURES})
++endif ()
++if ( ${_system_processor} STREQUAL "armv7l")
+ 	set(ARCH "armv7l")
+-elseif ( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64")
++elseif ( ${_system_processor} STREQUAL "arm64")
+     set(ARCH "arm64")
+-elseif ( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "aarch64")
++elseif ( ${_system_processor} STREQUAL "aarch64")
+     set(ARCH "arm64")
+-elseif ( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
++elseif ( ${_system_processor} STREQUAL "x86_64")
+     set(ARCH "x86_64")
+-elseif ( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "AMD64")
++elseif ( ${_system_processor} STREQUAL "AMD64")
+     set(ARCH "x86_64")
+ else()
+-    message ( FATAL_ERROR "unknown architecture " ${CMAKE_HOST_SYSTEM_PROCESSOR})
++    message ( FATAL_ERROR "unknown architecture " ${_system_processor})
+ endif ()
+ 
+ # create variables based entirely upon OS

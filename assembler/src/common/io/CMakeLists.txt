@@ -9,6 +9,11 @@ project(input CXX)
 
 add_subdirectory(binary)
 add_subdirectory(sam)
+set(IO_LIBS samio binary_io)
+if (SPADES_USE_NCBISDK)
+  add_subdirectory(sra)
+  set(IO_LIBS ${IO_LIBS} sraio)
+endif()
 
 add_library(input STATIC
             reads/parser.cpp
@@ -17,9 +22,7 @@ add_library(input STATIC
             reads/binary_streams.cpp
             reads/io_helper.cpp
             dataset_support/read_converter.cpp
-            dataset_support/dataset_readers.cpp
-            sam/read.cpp
-            sam/sam_reader.cpp)
-target_link_libraries(input samio binary_io zlibstatic)
+            dataset_support/dataset_readers.cpp)
+target_link_libraries(input ${IO_LIBS} zlibstatic)
 
 add_subdirectory(graph)

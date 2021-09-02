@@ -112,3 +112,5 @@ if (SPADES_FORCE_COLORED_OUTPUT)
        add_compile_options(-fcolor-diagnostics)
     endif()
 endif()
+
+option(SPADES_USE_NCBISDK "Integrate with NCBI SDK" OFF)
