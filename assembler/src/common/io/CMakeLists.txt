@@ -8,6 +8,7 @@
 project(input CXX)
 
 add_subdirectory(binary)
+add_subdirectory(sam)
 
 add_library(input STATIC
             reads/parser.cpp
@@ -19,7 +20,6 @@ add_library(input STATIC
             dataset_support/dataset_readers.cpp
             sam/read.cpp
             sam/sam_reader.cpp)
-
-target_link_libraries(input binary_io BamTools samtools zlibstatic)
+target_link_libraries(input samio binary_io zlibstatic)
 
 add_subdirectory(graph)
