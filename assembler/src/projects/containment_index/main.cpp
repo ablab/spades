@@ -8,6 +8,9 @@
 #include "scaffold_graph_helper.hpp"
 
 #include "io/binary/read_cloud.hpp"
+#include "modules/path_extend/read_cloud_path_extend/cluster_storage/edge_cluster_extractor.hpp"
+#include "modules/path_extend/read_cloud_path_extend/cluster_storage/initial_cluster_storage_builder.hpp"
+#include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
 #include "toolchain/utils.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "utils/parallel/openmp_wrapper.h"
@@ -18,6 +21,7 @@
 
 using namespace debruijn_graph;
 using namespace cont_index;
+using namespace path_extend::read_cloud;
 
 struct gcfg {
   size_t k = 55;
@@ -27,6 +31,7 @@ struct gcfg {
   std::string file = "";
   std::string tmpdir = "saves";
   unsigned libindex = -1u;
+  double score_threshold = 3.0;
   bool bin_load = false;
   bool debug = false;
 };
@@ -42,7 +47,8 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
             (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
             (option("--tmp-dir") & value("tmp", cfg.tmpdir)) % "scratch directory to use",
             (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
-            (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)"
+            (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)",
+            (option("--score") & value("score", cfg.score_threshold)) % "Score threshold for link index"
     );
 
     auto result = parse(argc, argv, cli);
@@ -96,8 +102,19 @@ int main(int argc, char** argv) {
             CHECK_FATAL_ERROR(cfg.libindex < dataset.lib_count(), "invalid library index");
         }
 
+        //fixme configs
+        const size_t read_linkage_distance = 2000;
+
+        const double graph_score_threshold = 2.99;
+        const size_t tail_threshold = 20000;
+        const size_t length_threshold = 5000;
+        const size_t count_threshold = 1;
+
+        const double relative_score_threshold = 10.0;
+        const size_t min_read_threshold = 2;
+
         debruijn_graph::config::init_libs(dataset, cfg.nthreads, cfg.tmpdir);
-        barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> barcode_index(graph, 2000);
+        barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> barcode_index(graph, read_linkage_distance);
 
         auto &lib = dataset[cfg.libindex];
         if (lib.type() == io::LibraryType::Clouds10x) {
@@ -109,14 +126,44 @@ int main(int argc, char** argv) {
         INFO(barcode_index.GetNumberOfBarcodes() << " barcodes in index");
         using BarcodeExtractor = barcode_index::FrameBarcodeIndexInfoExtractor;
         auto barcode_extractor_ptr = std::make_shared<BarcodeExtractor>(barcode_index, graph);
-        LinkIndexGraphConstructor link_index_constructor(graph, barcode_extractor_ptr, cfg.nthreads);
+        LinkIndexGraphConstructor link_index_constructor(graph,
+                                                         barcode_extractor_ptr,
+                                                         graph_score_threshold,
+                                                         tail_threshold,
+                                                         length_threshold,
+                                                         count_threshold,
+                                                         cfg.nthreads);
+        INFO("Constructing scaffold graph");
         auto scaffold_graph = link_index_constructor.ConstructGraph();
+        INFO(scaffold_graph.VertexCount() << " vertices and " << scaffold_graph.EdgeCount() << " edges in scaffold graph");
+
+        path_extend::read_cloud::PathExtractionParams path_extraction_params(read_linkage_distance,
+                                                                             relative_score_threshold,
+                                                                             min_read_threshold,
+                                                                             length_threshold);
+        INFO("Constructing initial cluster storage");
+        size_t cluster_storage_builder_threads = cfg.nthreads;
+        std::set<scaffold_graph::ScaffoldVertex> target_edges;
+        std::copy(scaffold_graph.vbegin(), scaffold_graph.vend(), std::inserter(target_edges, target_edges.begin()));
+        auto edge_cluster_extractor =
+            std::make_shared<cluster_storage::AccurateEdgeClusterExtractor>(graph, barcode_extractor_ptr,
+                                                                            read_linkage_distance, min_read_threshold);
+        auto storage_builder =
+            std::make_shared<cluster_storage::EdgeInitialClusterStorageBuilder>(graph, edge_cluster_extractor,
+                                                                                target_edges, read_linkage_distance,
+                                                                                min_read_threshold,
+                                                                                cluster_storage_builder_threads);
+        auto storage =
+            std::make_shared<cluster_storage::InitialClusterStorage>(storage_builder->ConstructInitialClusterStorage());
+        INFO("Storage size: " << storage->get_cluster_storage().Size());
 
         std::ofstream os(cfg.output_file);
         os << "FirstId\tSecondId\tWeight\n";
         for (const scaffold_graph::ScaffoldGraph::ScaffoldEdge &edge: scaffold_graph.edges()) {
             os << (*id_mapper)[edge.getStart().int_id()] << "\t" << (*id_mapper)[edge.getEnd().int_id()] << "\t" << edge.getWeight() << "\n";
         }
+
+
 
     }
 

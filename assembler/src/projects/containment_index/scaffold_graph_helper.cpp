@@ -21,35 +21,40 @@ scaffold_graph::ScaffoldGraph LinkIndexGraphConstructor::ConstructGraph() const 
 
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
     //fixme params
-    size_t tail_threshold = 20000;
-    size_t length_threshold = 1000;
-    size_t count_threshold = 1;
-    const double score_threshold = 2.99;
-    auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold);
+    auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold_);
     auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(g_, *barcode_extractor_, tail_threshold_getter,
-                                                                     count_threshold, length_threshold,
+                                                                     count_threshold_, length_threshold_,
                                                                      max_threads_, scaffold_vertices);
     auto scaffold_index_extractor =
         std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
 
     auto score_function =
         std::make_shared<path_extend::read_cloud::TrivialBarcodeScoreFunction>(g_, scaffold_index_extractor,
-                                                                               count_threshold, tail_threshold);
+                                                                               count_threshold_, tail_threshold_);
     std::vector<scaffold_graph::ScaffoldVertex> scaff_vertex_vector;
     std::copy(scaffold_vertices.begin(), scaffold_vertices.end(), back_inserter(scaff_vertex_vector));
-    INFO("Setting score index threshold to " << score_threshold);
+    INFO("Setting score index threshold to " << graph_score_threshold_);
 
     auto initial_constructor =
         std::make_shared<path_extend::scaffolder::ScoreFunctionScaffoldGraphConstructor>(g_,
                                                                                          scaffold_vertices,
                                                                                          score_function,
-                                                                                         score_threshold,
+                                                                                         graph_score_threshold_,
                                                                                          max_threads_);
     return *(initial_constructor->Construct());
 }
 LinkIndexGraphConstructor::LinkIndexGraphConstructor(const debruijn_graph::Graph &g,
-                                                     BarcodeExtractorPtr barcode_extractor,
+                                                     LinkIndexGraphConstructor::BarcodeExtractorPtr barcode_extractor,
+                                                     const double graph_score_threshold,
+                                                     const size_t tail_threshold,
+                                                     const size_t length_threshold,
+                                                     const size_t count_threshold,
                                                      size_t max_threads) : g_(g),
                                                                            barcode_extractor_(barcode_extractor),
+                                                                           graph_score_threshold_(
+                                                                               graph_score_threshold),
+                                                                           tail_threshold_(tail_threshold),
+                                                                           length_threshold_(length_threshold),
+                                                                           count_threshold_(count_threshold),
                                                                            max_threads_(max_threads) {}
 }
