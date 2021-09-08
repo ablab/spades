@@ -172,6 +172,7 @@ class ScaffoldGraphPathClusterHelper {
     ScaffoldGraphPathClusterHelper(const Graph &g,
                                    std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
                                    std::shared_ptr<cluster_storage::InitialClusterStorage> initial_cluster_storage,
+                                   size_t linkage_distance,
                                    size_t max_threads);
 
     std::vector<Cluster> GetPathClusters(const scaffold_graph::ScaffoldGraph &graph) const;
@@ -190,6 +191,7 @@ class ScaffoldGraphPathClusterHelper {
     const Graph &g_;
     std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_;
     std::shared_ptr<cluster_storage::InitialClusterStorage> initial_cluster_storage_;
+    size_t linkage_distance_;
     size_t max_threads_;
 };
 }

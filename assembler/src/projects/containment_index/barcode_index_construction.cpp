@@ -38,14 +38,12 @@ void ConstructBarcodeIndex(barcode_index::FrameBarcodeIndex<debruijn_graph::Grap
         INFO("Barcode index construction finished.");
 
         if (bin_save) {
-            INFO("Saving paired-end information");
+            INFO("Saving barcode index");
             io::binary::Save(fs::append_path(workdir, "barcode_index"), barcode_index);
         }
     } else {
-        INFO("Loading paired-end information");
-        INFO(barcode_index.size());
+        INFO("Loading barcode index");
         io::binary::Load(fs::append_path(workdir, "barcode_index"), barcode_index);
-        INFO(barcode_index.size());
     }
 }
 

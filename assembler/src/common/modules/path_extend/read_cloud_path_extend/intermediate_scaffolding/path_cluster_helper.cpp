@@ -440,7 +440,6 @@ CloudBasedPathExtractor::CloudBasedPathExtractor(
 
 std::vector<cluster_storage::Cluster> ScaffoldGraphPathClusterHelper::GetPathClusters(
     const scaffold_graph::ScaffoldGraph &graph) const {
-    const size_t linkage_distance = 10;
     TransitionGraph simple_graph;
     for (const auto &vertex: graph.vertices()) {
         simple_graph.AddVertex(vertex);
@@ -449,21 +448,21 @@ std::vector<cluster_storage::Cluster> ScaffoldGraphPathClusterHelper::GetPathClu
         simple_graph.AddEdge(edge.getStart(), edge.getEnd());
     }
     PathClusterExtractorHelper cluster_extractor_helper(g_, initial_cluster_storage_,
-                                                        barcode_extractor_, linkage_distance);
+                                                        barcode_extractor_, linkage_distance_);
     return cluster_extractor_helper.GetPathClusters(simple_graph);
 }
 ScaffoldGraphPathClusterHelper::ScaffoldGraphPathClusterHelper(
     const Graph &g,
     std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
     std::shared_ptr<cluster_storage::InitialClusterStorage> initial_cluster_storage,
+    size_t linkage_distance,
     size_t max_threads)
     : g_(g), barcode_extractor_(barcode_extractor),
-      initial_cluster_storage_(initial_cluster_storage), max_threads_(max_threads) {}
+      initial_cluster_storage_(initial_cluster_storage), linkage_distance_(linkage_distance), max_threads_(max_threads) {}
 
 std::vector<cluster_storage::Cluster> ScaffoldGraphPathClusterHelper::GetAllClusters(
     const scaffold_graph::ScaffoldGraph &graph) const {
-    const size_t linkage_distance = 10;
-    cluster_storage::GraphClusterStorageBuilder cluster_storage_builder(g_, barcode_extractor_, linkage_distance);
+    cluster_storage::GraphClusterStorageBuilder cluster_storage_builder(g_, barcode_extractor_, linkage_distance_);
     DEBUG("Constructing cluster storage");
     TransitionGraph simple_graph;
     for (const auto &vertex: graph.vertices()) {
@@ -514,9 +513,8 @@ ScaffoldGraphPathClusterHelper::TransitionGraph ScaffoldGraphPathClusterHelper::
 }
 std::vector<std::set<ScaffoldGraphPathClusterHelper::ScaffoldVertex>> ScaffoldGraphPathClusterHelper::GetFinalClusters(
     const ScaffoldGraphPathClusterHelper::TransitionGraph &graph) const {
-    const size_t linkage_distance = 10;
     PathClusterExtractorHelper cluster_extractor_helper(g_, initial_cluster_storage_,
-                                                        barcode_extractor_, linkage_distance);
+                                                        barcode_extractor_, linkage_distance_);
     auto path_clusters = cluster_extractor_helper.GetPathClusters(graph);
     return GetCorrectedClusters(path_clusters, graph);
 }
