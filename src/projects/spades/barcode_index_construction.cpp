@@ -1,21 +1,24 @@
 #include "barcode_index_construction.hpp"
 
-#include "common/barcode_index/barcode_info_extractor.hpp"
-#include "common/modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor_helper.hpp"
+#include "barcode_index/barcode_info_extractor.hpp"
+#include "io/dataset_support/dataset_readers.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
+#include "modules/alignment/sequence_mapper_notifier.hpp"
+#include "modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor_helper.hpp"
 
 #include <vector>
 
 namespace debruijn_graph {
     //todo remove from here!
 
-    bool HasReadClouds(config::dataset ds) {
-        bool has_read_clouds = false;
+    size_t ReadCloudLibsCount(config::dataset ds) {
+        size_t result = 0;
         for (const auto& lib: ds.reads) {
             if (lib.type() == io::LibraryType::Clouds10x) {
-                has_read_clouds = true;
+                ++result;
             }
         }
-        return has_read_clouds;
+        return result;
     }
 
     void BarcodeMapConstructionStage::run(debruijn_graph::GraphPack &gp, const char *) {
@@ -23,27 +26,35 @@ namespace debruijn_graph {
 
         INFO("Barcode index construction started...");
         const auto& dataset_info = cfg::get().ds;
-        if (not HasReadClouds(dataset_info)) {
+        size_t cloud_libs_count = ReadCloudLibsCount(dataset_info);
+        if (cloud_libs_count == 0) {
             INFO("Read cloud libraries have not been found. Skipping barcode index construction.")
+            return;
+        } else if (cloud_libs_count > 1) {
+            INFO("Multiple read cloud libraries are currently not supported. Skipping barcode index construction");
             return;
         }
         size_t num_threads = cfg::get().max_threads;
+        size_t frame_size = cfg::get().pe_params.read_cloud.frame_size;
+        const std::vector<string> barcode_prefices = {"BC:Z:", "BX:Z:"};
+
         for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
             auto &lib = cfg::get_writable().ds.reads[i];
             if (lib.type() == io::LibraryType::Clouds10x) {
-                gp.EnsureIndex();
                 gp.EnsureBasicMapping();
-                std::vector<io::ReadStream<io::SingleRead>> streams;
-                for (const auto &read: lib.reads()) {
-                    streams.push_back(io::EasyStream(read, false));
-                }
+                auto read_streams = io::paired_easy_readers(lib, false, 0);
+//                auto read_streams {io::paired_binary_readers(lib,
+//                    /*followed by rc*/false,
+//                    /*insert_size*/0,
+//                    /*include_merged*/true)}
                 auto &barcode_mapper = gp.get_mutable<barcode_index::FrameBarcodeIndex<Graph>>();
-                FrameMapperBuilder<Graph> mapper_builder(barcode_mapper,
-                                                         cfg::get().pe_params.read_cloud.edge_tail_len,
-                                                         cfg::get().pe_params.read_cloud.frame_size);
-                mapper_builder.FillMap(streams,
-                                       gp.get<debruijn_graph::EdgeIndex<Graph>>(),
-                                       gp.get<debruijn_graph::KmerMapper<Graph>>());
+                FrameMapperBuilder mapper_builder(gp.get<debruijn_graph::Graph>(),
+                                                  barcode_mapper, num_threads,
+                                                  frame_size,
+                                                  barcode_prefices);
+                debruijn_graph::SequenceMapperNotifier notifier;
+                notifier.Subscribe(&mapper_builder);
+                notifier.ProcessLibrary(read_streams, *MapperInstance(gp));
                 INFO("Barcode index construction finished.");
                 FrameBarcodeIndexInfoExtractor extractor(barcode_mapper, gp.get<Graph>());
                 size_t length_threshold = cfg::get().pe_params.read_cloud.long_edge_length_lower_bound;

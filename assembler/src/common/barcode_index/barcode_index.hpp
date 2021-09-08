@@ -23,8 +23,7 @@ using namespace omnigraph;
 namespace barcode_index {
     typedef RtSeq Kmer;
 
-    template<class Graph, class BarcodeEntryT>
-    class BarcodeIndexBuilder;
+    class FrameMapperBuilder;
 
     template <class Graph, class BarcodeEntryT>
     class BarcodeIndexInfoExtractor;
@@ -47,32 +46,6 @@ namespace barcode_index {
         string left_;
         string right_;
         string barcode_;
-    };
-
-
-    class BarcodeEncoder {
-        std::unordered_map <string, uint64_t> codes_;
-    public:
-        BarcodeEncoder():
-                codes_()
-        { }
-
-        void AddBarcode(const string &barcode) {
-            auto it = codes_.find(barcode);
-            if (it == codes_.end()) {
-                size_t encoder_size = codes_.size();
-                codes_[barcode] = encoder_size;
-            }
-        }
-
-        uint64_t GetCode (const string& barcode) const {
-            VERIFY(codes_.find(barcode) != codes_.end());
-            return codes_.at(barcode);
-        }
-
-        size_t GetSize() const {
-            return codes_.size();
-        }
     };
 
     class KmerMultiset {
@@ -135,8 +108,6 @@ namespace barcode_index {
         //Remove low abundant barcodes
         virtual void Filter(size_t abundancy_threshold, size_t gap_threshold) = 0;
 
-        //Serialize barcode abundancies. Format:
-        //abundancy: number of edges.
         virtual bool IsEmpty() = 0;
 
     };
@@ -150,7 +121,6 @@ namespace barcode_index {
      */
     template <class Graph, class EdgeEntryT>
     class BarcodeIndex : public AbstractBarcodeIndex<Graph> {
-    friend class BarcodeIndexBuilder<Graph, EdgeEntryT>;
     friend class BarcodeIndexInfoExtractor<Graph, EdgeEntryT>;
 
     public:
@@ -177,10 +147,21 @@ namespace barcode_index {
             return size() == 0;
         }
 
+        typename barcode_map_t::iterator begin() noexcept {
+            return edge_to_entry_.begin();
+        }
+        typename barcode_map_t::iterator end() noexcept {
+            return edge_to_entry_.end();
+        }
+        typename barcode_map_t::iterator begin() const noexcept {
+            return edge_to_entry_.begin();
+        }
+        typename barcode_map_t::iterator end() const noexcept {
+            return edge_to_entry_.end();
+        }
         typename barcode_map_t::const_iterator cbegin() const noexcept {
             return edge_to_entry_.cbegin();
         }
-
         typename barcode_map_t::const_iterator cend() const noexcept {
             return edge_to_entry_.cend();
         }
@@ -518,11 +499,6 @@ namespace barcode_index {
         typedef std::map <BarcodeId, EntryInfoT> barcode_distribution_t;
         typedef EntryInfoT barcode_info_t;
 
-    protected:
-        EdgeId edge_;
-        barcode_distribution_t barcode_distribution_;
-
-    public:
         EdgeEntry():
                 edge_(), barcode_distribution_() {};
         EdgeEntry(const EdgeId& edge) :
@@ -602,14 +578,24 @@ namespace barcode_index {
             }
         }
 
-        virtual void InsertInfo(const BarcodeId& code, const barcode_info_t& info) = 0;
-        virtual void InsertBarcode(const BarcodeId& code, const size_t count, const Range& range) = 0;
+        void InsertInfo(const BarcodeId &barcode, const barcode_info_t &info) {
+            auto barcode_result = barcode_distribution_.find(barcode);
+            if (barcode_result == barcode_distribution_.end()) {
+                barcode_distribution_.insert({barcode, info});
+            }
+            else {
+                barcode_result->second.Update(info);
+            }
+        }
+        virtual void InsertBarcode(const BarcodeId &code, const size_t count, const Range &range) = 0;
+
+        EdgeId edge_;
+        barcode_distribution_t barcode_distribution_;
     };
 
     template<class Graph>
     class SimpleEdgeEntry : public EdgeEntry<Graph, SimpleBarcodeInfo> {
         friend class BarcodeIndex<Graph, SimpleEdgeEntry>;
-        friend class BarcodeIndexBuilder<Graph, SimpleEdgeEntry>;
         friend class BarcodeIndexInfoExtractor<Graph, SimpleEdgeEntry>;
     protected:
         typedef typename Graph::EdgeId EdgeId;
@@ -638,15 +624,6 @@ namespace barcode_index {
         }
 
     protected:
-        void InsertInfo(const BarcodeId& barcode, const SimpleBarcodeInfo &info) {
-            if (barcode_distribution_.find(barcode) == barcode_distribution_.end()) {
-                barcode_distribution_.insert({barcode, info});
-            }
-            else {
-                barcode_distribution_.at(barcode).Update(info);
-            }
-        }
-
         void InsertBarcode(const BarcodeId& barcode, const size_t count, const Range& range) {
             if (barcode_distribution_.find(barcode) == barcode_distribution_.end()) {
                 SimpleBarcodeInfo info(count, range);
@@ -656,7 +633,6 @@ namespace barcode_index {
                 barcode_distribution_.at(barcode).Update(count, range);
             }
         }
-
 
         bool IsFarFromEdgeHead(size_t gap_threshold, const SimpleBarcodeInfo& info) {
             return info.GetRange().start_pos > gap_threshold;
@@ -670,7 +646,7 @@ namespace barcode_index {
     template<class Graph>
     class FrameEdgeEntry : public EdgeEntry<Graph, FrameBarcodeInfo> {
         friend class BarcodeIndex<Graph, FrameEdgeEntry>;
-        friend class BarcodeIndexBuilder<Graph, FrameEdgeEntry>;
+        friend class FrameMapperBuilder;
         friend class BarcodeIndexInfoExtractor<Graph, FrameEdgeEntry>;
     protected:
         typedef typename Graph::EdgeId EdgeId;
@@ -746,15 +722,6 @@ namespace barcode_index {
         }
 
     protected:
-        void InsertInfo(const BarcodeId& barcode, const FrameBarcodeInfo &info) override {
-            if (barcode_distribution_.find(barcode) == barcode_distribution_.end()) {
-                barcode_distribution_.insert({barcode, info});
-            }
-            else {
-                barcode_distribution_.at(barcode).Update(info);
-            }
-        }
-
         void InsertBarcode(const BarcodeId& barcode, const size_t count, const Range& range) override {
             DEBUG("Inserting barcode");
             if (barcode_distribution_.find(barcode) == barcode_distribution_.end()) {
@@ -794,7 +761,7 @@ namespace barcode_index {
 
     template<class Graph>
     class FrameBarcodeIndex: public BarcodeIndex<Graph, FrameEdgeEntry<Graph>> {
-        friend class BarcodeIndexBuilder<Graph, FrameEdgeEntry<Graph>>;
+        friend class FrameMapperBuilder;
         friend class BarcodeIndexInfoExtractor<Graph, FrameEdgeEntry<Graph>>;
      public:
         using BarcodeIndex<Graph, FrameEdgeEntry<Graph>>::barcode_map_t;
