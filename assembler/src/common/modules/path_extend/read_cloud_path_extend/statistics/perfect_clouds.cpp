@@ -27,8 +27,8 @@ PerfectClustersAnalyzer::SetDistribution PerfectClustersAnalyzer::ConstructPerfe
     DEBUG("Constructing initial storage");
     auto initial_storage = std::make_shared<cluster_storage::InitialClusterStorage>(
         initial_storage_builder->ConstructInitialClusterStorage());
-
-    ScaffoldGraphPathClusterHelper path_cluster_helper(g, barcode_extractor, initial_storage, max_threads_);
+    const size_t linkage_distance = 1000;
+    ScaffoldGraphPathClusterHelper path_cluster_helper(g, barcode_extractor, initial_storage, linkage_distance,max_threads_);
     std::vector<Cluster> raw_clusters = path_cluster_helper.GetAllClusters(perfect_graph);
     SetDistribution result;
     for (const auto &cluster: raw_clusters) {

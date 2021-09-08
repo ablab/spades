@@ -134,6 +134,7 @@ class ClusterMerger {
             uint64_t distance_to_end = first.GetLengthFromGraph(g_) - first_cluster_mapping.GetRight();
             uint64_t distance_to_start = second_cluster_mapping.GetLeft();
             uint64_t distance = distance_to_end + distance_to_start;
+            TRACE("First length: " << first.GetLengthFromGraph(g_));
             TRACE("Distance to end: " << distance_to_end);
             TRACE("Distance to start: " << distance_to_start);
             TRACE("Between edges: " << head_tail_distance);
