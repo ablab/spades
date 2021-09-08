@@ -6,11 +6,13 @@
 
 #include "barcode_index_construction.hpp"
 #include "scaffold_graph_helper.hpp"
+#include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 
 #include "io/binary/read_cloud.hpp"
 #include "modules/path_extend/read_cloud_path_extend/cluster_storage/edge_cluster_extractor.hpp"
 #include "modules/path_extend/read_cloud_path_extend/cluster_storage/initial_cluster_storage_builder.hpp"
 #include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
+#include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/path_cluster_helper.hpp"
 #include "toolchain/utils.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "utils/parallel/openmp_wrapper.h"
@@ -18,6 +20,7 @@
 #include "utils/verify.hpp"
 
 #include <clipp/clipp.h>
+#include "gfa1/gfa.h"
 
 using namespace debruijn_graph;
 using namespace cont_index;
@@ -96,6 +99,7 @@ int main(int argc, char** argv) {
         DataSet dataset;
         if (cfg.file != "") {
             dataset.load(cfg.file);
+            INFO("Loaded file");
 
             if (cfg.libindex == -1u)
                 cfg.libindex = 0;
@@ -103,7 +107,7 @@ int main(int argc, char** argv) {
         }
 
         //fixme configs
-        const size_t read_linkage_distance = 2000;
+        const size_t read_linkage_distance = 5000;
 
         const double graph_score_threshold = 2.99;
         const size_t tail_threshold = 20000;
@@ -133,8 +137,55 @@ int main(int argc, char** argv) {
                                                          length_threshold,
                                                          count_threshold,
                                                          cfg.nthreads);
-        INFO("Constructing scaffold graph");
-        auto scaffold_graph = link_index_constructor.ConstructGraph();
+//        INFO("Constructing scaffold graph");
+//
+//        auto scaffold_graph = link_index_constructor.ConstructGraph();
+//        INFO(scaffold_graph.VertexCount() << " vertices and " << scaffold_graph.EdgeCount() << " edges in scaffold graph");
+//        std::ofstream os(cfg.output_file);
+//        os << "FirstId\tSecondId\tWeight\n";
+//        for (const scaffold_graph::ScaffoldGraph::ScaffoldEdge &edge: scaffold_graph.edges()) {
+//            os << (*id_mapper)[edge.getStart().int_id()] << "\t" << (*id_mapper)[edge.getEnd().int_id()] << "\t" << edge.getWeight() << "\n";
+//        }
+
+        scaffold_graph::ScaffoldGraph scaffold_graph(graph);
+        for (const debruijn_graph::EdgeId &edge: graph.canonical_edges()) {
+            scaffold_graph.AddVertex(edge);
+        }
+        std::unordered_map<std::string, EdgeId> seg_to_edge;
+        for (const debruijn_graph::EdgeId &edge: graph.canonical_edges()) {
+            seg_to_edge.emplace((*id_mapper)[edge.int_id()], edge);
+        }
+        auto gfa_ptr = gfa.get();
+        for (uint32_t i = 0; i < gfa_ptr->n_seg; ++i) {
+            gfa_seg_t *seg = gfa_ptr->seg + i;
+            EdgeId e1 = seg_to_edge.at(seg->name);
+            // Process direct links
+            {
+                uint32_t vv = i << 1 | 0;
+                gfa_arc_t *av = gfa_arc_a(gfa.get(), vv);
+                for (size_t j = 0; j < gfa_arc_n(gfa.get(), vv); ++j) {
+                    EdgeId e2 = seg_to_edge.at((gfa_ptr->seg + (av[j].w >> 1))->name);
+                    if (av[j].w & 1)
+                        e2 = graph.conjugate(e2);
+                    scaffold_graph::ScaffoldGraph::ScaffoldEdge scedge(e1, e2);
+                    scaffold_graph.AddEdge(scedge);
+                }
+            }
+
+            // Process rc links
+            {
+                e1 = graph.conjugate(e1);
+                uint32_t vv = i << 1 | 1;
+                gfa_arc_t *av = gfa_arc_a(gfa.get(), vv);
+                for (size_t j = 0; j < gfa_arc_n(gfa.get(), vv); ++j) {
+                    EdgeId e2 = seg_to_edge.at((gfa_ptr->seg + (av[j].w >> 1))->name);
+                    if (av[j].w & 1)
+                        e2 = graph.conjugate(e2);
+                    scaffold_graph::ScaffoldGraph::ScaffoldEdge scedge(e1, e2);
+                    scaffold_graph.AddEdge(scedge);
+                }
+            }
+        }
         INFO(scaffold_graph.VertexCount() << " vertices and " << scaffold_graph.EdgeCount() << " edges in scaffold graph");
 
         path_extend::read_cloud::PathExtractionParams path_extraction_params(read_linkage_distance,
@@ -155,16 +206,33 @@ int main(int argc, char** argv) {
                                                                                 cluster_storage_builder_threads);
         auto storage =
             std::make_shared<cluster_storage::InitialClusterStorage>(storage_builder->ConstructInitialClusterStorage());
-        INFO("Storage size: " << storage->get_cluster_storage().Size());
+        path_extend::read_cloud::ScaffoldGraphPathClusterHelper path_extractor_helper(graph,
+                                                                                      barcode_extractor_ptr,
+                                                                                      storage,
+                                                                                      read_linkage_distance,
+                                                                                      cfg.nthreads);
 
-        std::ofstream os(cfg.output_file);
-        os << "FirstId\tSecondId\tWeight\n";
-        for (const scaffold_graph::ScaffoldGraph::ScaffoldEdge &edge: scaffold_graph.edges()) {
-            os << (*id_mapper)[edge.getStart().int_id()] << "\t" << (*id_mapper)[edge.getEnd().int_id()] << "\t" << edge.getWeight() << "\n";
+        INFO(storage->get_cluster_storage().Size() << " initial clusters");
+        auto all_clusters = path_extractor_helper.GetAllClusters(scaffold_graph);
+        INFO(all_clusters.size() << " total clusters");
+        std::map<size_t, size_t> size_hist;
+        for (const auto &cluster: all_clusters) {
+            size_hist[cluster.Size()]++;
         }
-
-
-
+        std::ofstream sizes(cfg.output_file + ".cluster_sizes");
+        for (const auto &entry: size_hist) {
+            sizes << entry.first << "\t" << entry.second << std::endl;
+        }
+        auto path_clusters = path_extractor_helper.GetPathClusters(all_clusters);
+        INFO(path_clusters.size() << " path clusters");
+        size_hist.clear();
+        for (const auto &cluster: path_clusters) {
+            size_hist[cluster.Size()]++;
+        }
+        std::ofstream path_sizes(cfg.output_file + ".path_sizes");
+        for (const auto &entry: size_hist) {
+            path_sizes << entry.first << "\t" << entry.second << std::endl;
+        }
     }
 
 }
