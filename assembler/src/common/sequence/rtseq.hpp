@@ -415,6 +415,13 @@ public:
         return true;
     }
 
+    RuntimeSeq<max_size_, T> GetMinimal() const {
+        if (this->IsMinimal())
+            return *this;
+
+        return !(*this);
+    }
+
     /**
      * Shift left
      *
