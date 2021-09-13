@@ -20,7 +20,7 @@ std::vector<std::string> glob(const std::string &pattern) {
     glob_t glob_result;
     ::memset(&glob_result, 0, sizeof(glob_result));
 
-    int return_value = ::glob(pattern.c_str(), GLOB_NOESCAPE | GLOB_NOSORT | GLOB_ERR | GLOB_MARK,
+    int return_value = ::glob(pattern.c_str(), GLOB_NOESCAPE | GLOB_NOSORT | GLOB_ERR | GLOB_MARK | GLOB_BRACE,
                               NULL, &glob_result);
     if (return_value == GLOB_NOMATCH) {
         ::globfree(&glob_result);

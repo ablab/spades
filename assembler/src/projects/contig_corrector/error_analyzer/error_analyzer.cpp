@@ -6,6 +6,8 @@
 #include "helpers/replace_info_reader.hpp"
 
 #include "utils/filesystem/file_opener.hpp"
+#include "utils/filesystem/glob.hpp"
+#include "utils/filesystem/path_helper.hpp"
 
 #include <iostream>
 #include <unordered_map>
@@ -41,30 +43,42 @@ using namespace helpers;
 struct gcfg {
     std::string replace_info;
     std::string snps;
+    std::string quast_dir;
+    std::string quast_organism_name_pattern;
+    std::string quast_scenarios_name_pattern;
+    bool details;
 } cfg;
 
 
 clipp::group GetCLI() {
-  using namespace clipp;
+    using namespace clipp;
 
-  auto cli = (
-      cfg.replace_info << value("replace info dump file"),
-      cfg.snps << value("used_snps.gz")
-  );
+    auto snps_file = (required("--snps") & value("file", cfg.snps)) % "used_snps.gz file from quast";
+    auto quast_dir = ((required("--quast") & value("dir", cfg.quast_dir)) % "quast directory",
+                     cfg.quast_organism_name_pattern << value("quast organism name pattern"),
+                     cfg.quast_scenarios_name_pattern << value("quast scenarios name pattern"));
 
-  return cli;
+    auto cli = (
+        cfg.replace_info << value("replace info dump file"),
+        snps_file | quast_dir,
+        (option("--details").set(cfg.details, true)) % "print detailed information"
+    );
+
+    return cli;
 }
 
 namespace {
 
 template<SNPSColumns ... columns>
-Records<SNPSColumns, columns ...> ReadUsedSnps(std::string const & file) {
-    auto inp = fs::open_file(file, std::ios_base::in, std::ios_base::badbit);
+Records<SNPSColumns, columns ...> ReadUsedSnps(std::vector<std::string> const & files) {
     Records<SNPSColumns, columns ...> records;
     RecordPusher<SNPSColumns, columns ...> pusher(records, [](...){ return true; });
     std::string line;
-    while (GetNextNonemptyLine(inp, line))
-        pusher.Push(line);
+    for (auto const & file : files) {
+        auto inp = fs::open_file(file, std::ios_base::in, std::ios_base::badbit);
+        while (GetNextNonemptyLine(inp, line))
+            pusher.Push(line);
+    }
     return records;
 }
 
@@ -207,10 +221,32 @@ std::unordered_map<std::string, SeqFragments> MakeSeqFragments(Records<ReplaceIn
     return res;
 }
 
+std::vector<std::string> getSnpsFilesFromQuastDir(std::string const & quast_dir, std::string const & organism_name_pattern, std::string const & file_pattern) {
+    if (!fs::check_existence(quast_dir))
+        throw "quast directory '" + quast_dir + "' does not exists";
+    auto file_pattern_with_ext = file_pattern + ".used_snps.gz";
+    auto path_pattern = fs::append_path(fs::append_path(fs::append_path(fs::append_path(fs::append_path(quast_dir, "runs_per_reference"), organism_name_pattern), "contigs_reports"), "minimap_output"), file_pattern_with_ext);
+    auto files = fs::glob(path_pattern);
+    if (files.empty())
+        throw "No snps files were found in the quast dir with pattern:\n  " + path_pattern;
+    return files;
+}
+
 } // namespace
 
 int main() {
-    auto snps = ReadUsedSnps<SNPS_WISHED_COLUMNS>(cfg.snps);
+    std::vector<std::string> snps_files;
+    VERIFY(cfg.snps.empty() && !cfg.quast_dir.empty() || !cfg.snps.empty() && cfg.quast_dir.empty());
+    if (cfg.quast_dir.empty()) {
+        snps_files.push_back(cfg.snps);
+    } else {
+        snps_files = getSnpsFilesFromQuastDir(cfg.quast_dir, cfg.quast_organism_name_pattern, cfg.quast_scenarios_name_pattern);
+        std::cout << "Found and used snps file:\n";
+        for (auto const & file : snps_files)
+            std::cout << file << "\n";
+    }
+
+    auto snps = ReadUsedSnps<SNPS_WISHED_COLUMNS>(snps_files);
     auto snps_contig_names = CollectUniqueFieldValues<SNPSColumns, SNPSColumns::contig_name>(snps);
 
     auto DropByMissedContigName = [&snps_contig_names](auto const & record) {
@@ -251,12 +287,14 @@ int main() {
         std::cout << "----< summary >----\n";
         std::cout << ref_stat.second.summary_statistics;
         std::cout << "----< end of summary >----\n";
-        std::cout << "----{ details }----\n";
-        for (auto const & stat : ref_stat.second) {
-            std::cout << '>' << stat.first << '\n';
-            std::cout << stat.second;
+        if (cfg.details) {
+            std::cout << "----{ details }----\n";
+            for (auto const & stat : ref_stat.second) {
+                std::cout << '>' << stat.first << '\n';
+                std::cout << stat.second;
+            }
+            std::cout << "----{ end of details }----\n";
         }
-        std::cout << "----{ end of details }----\n";
         std::cout << "----[ end of " << ref_stat.first << " ]----" << '\n';
     }
     return 0;

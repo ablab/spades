@@ -56,6 +56,9 @@ int main(int argc, char *argv[]) {
     } catch (const std::string &s) {
         std::cerr << s << std::endl;
         return EINTR;
+    } catch (const char *s) {
+        std::cerr << s << std::endl;
+        return EINTR;
     } catch (const std::exception &e) {
         std::cerr << "ERROR: " << e.what() << std::endl;
         return EINTR;
