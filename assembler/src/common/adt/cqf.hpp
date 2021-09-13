@@ -120,6 +120,9 @@ class cqf_with_hasher : public cqf {
     cqf_with_hasher(uint64_t num_slots, unsigned hash_bits, hasher h = nullptr)
             : hasher_(std::move(h)), cqf(num_slots, hash_bits) {}
 
+    cqf_with_hasher(cqf c, hasher h)
+            : cqf(std::move(c)), hasher_(std::move(h)) {}
+
     void replace_hasher(hasher h) {
         hasher_ = std::move(h);
         clear();
