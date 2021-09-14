@@ -27,6 +27,8 @@ void ConstructBarcodeIndex(barcode_index::FrameBarcodeIndex<debruijn_graph::Grap
                            const debruijn_graph::Graph &graph,
                            const std::string &workdir,
                            unsigned nthreads,
-                           bool bin_load, bool bin_save);
+                           size_t frame_size,
+                           bool bin_load,
+                           bool bin_save);
 
 }

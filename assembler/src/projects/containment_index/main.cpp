@@ -61,6 +61,29 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
     }
 }
 
+struct TimeTracerRAII {
+  TimeTracerRAII(llvm::StringRef program_name,
+                 unsigned granularity = 500,
+                 const std::string &prefix = "", const std::string &suffix = "") {
+      time_trace_file_ = prefix + "spades_time_trace_" + suffix + ".json";
+      llvm::timeTraceProfilerInitialize(granularity, program_name);
+  }
+  ~TimeTracerRAII() {
+      if (auto E = llvm::timeTraceProfilerWrite(time_trace_file_, "spades-core")) {
+          handleAllErrors(std::move(E),
+                          [&](const llvm::StringError &SE) {
+                            ERROR("" << SE.getMessage() << "\n");
+                          });
+          return;
+      } else {
+          INFO("Time trace is written to: " << time_trace_file_);
+      }
+      llvm::timeTraceProfilerCleanup();
+  }
+
+  std::string time_trace_file_;
+};
+
 int main(int argc, char** argv) {
     utils::segfault_handler sh;
     gcfg cfg;
@@ -99,7 +122,6 @@ int main(int argc, char** argv) {
         DataSet dataset;
         if (cfg.file != "") {
             dataset.load(cfg.file);
-            INFO("Loaded file");
 
             if (cfg.libindex == -1u)
                 cfg.libindex = 0;
@@ -107,6 +129,7 @@ int main(int argc, char** argv) {
         }
 
         //fixme configs
+        const size_t frame_size = 2000;
         const size_t read_linkage_distance = 5000;
 
         const double graph_score_threshold = 2.99;
@@ -120,9 +143,25 @@ int main(int argc, char** argv) {
         debruijn_graph::config::init_libs(dataset, cfg.nthreads, cfg.tmpdir);
         barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> barcode_index(graph, read_linkage_distance);
 
+        std::unique_ptr<TimeTracerRAII> traceraii;
+//        if (cfg::get().tt.enable || cfg::get().developer_mode) {
+            traceraii.reset(new TimeTracerRAII(argv[0],
+                                               500));
+            INFO("Time tracing is enabled");
+//        }
+
+        TIME_TRACE_SCOPE("Containment index");
+
         auto &lib = dataset[cfg.libindex];
         if (lib.type() == io::LibraryType::Clouds10x) {
-            cont_index::ConstructBarcodeIndex(barcode_index, lib, graph, cfg.tmpdir, cfg.nthreads, cfg.bin_load, cfg.debug);
+            cont_index::ConstructBarcodeIndex(barcode_index,
+                                              lib,
+                                              graph,
+                                              cfg.tmpdir,
+                                              cfg.nthreads,
+                                              frame_size,
+                                              cfg.bin_load,
+                                              cfg.debug);
         } else {
             WARN("Only read cloud libraries with barcode tags are supported for links");
         }
