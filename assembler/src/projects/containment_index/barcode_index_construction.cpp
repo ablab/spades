@@ -23,7 +23,7 @@ void ConstructBarcodeIndex(barcode_index::FrameBarcodeIndex<debruijn_graph::Grap
     //    std::unique_ptr<ThreadPool::ThreadPool> pool;
     //    if (nthreads > 1)
     //        pool = std::make_unique<ThreadPool::ThreadPool>(nthreads);
-        io::ReadConverter::ConvertToBinary(lib, pool.get());
+//        io::ReadConverter::ConvertToBinary(lib, pool.get());
 //    }
 
     if (!bin_load) {
