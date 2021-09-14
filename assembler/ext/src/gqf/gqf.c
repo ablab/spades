@@ -1512,10 +1512,11 @@ void qf_copy(QF *dest, QF *src)
  */
 void qf_destroy(QF *qf)
 {
-	assert(qf->blocks != NULL);
-    free(qf->mem);
-    free(qf->metadata);
-    free(qf->blocks);
+    if (qf->blocks) {
+        free(qf->mem);
+        free(qf->metadata);
+        free(qf->blocks);
+    }
 }
 
 void qf_close(QF *qf)

@@ -37,7 +37,16 @@ class cqf {
         // fprintf(stderr, "%llu %u %llu\n", num_slots_, num_hash_bits_, qf_.metadata->range);
     }
 
-    cqf(cqf&&) noexcept = default;
+    cqf(cqf&& other) noexcept {
+        qf_ = other.qf_;
+
+        num_hash_bits_ = other.num_hash_bits_;
+        num_slots_ = other.num_slots_;
+        insertions_ = other.insertions_;
+        range_mask_ = other.range_mask_;
+
+        memset(&other.qf_, 0, sizeof(QF));
+    }
 
     bool add(digest d, uint64_t count = 1,
              bool lock = true, bool spin = true) {
