@@ -267,6 +267,8 @@ public:
             size_t cval = (data_[pos] >> (width_ * epos)) & cell_mask_;
             if (val > cval)
                 val = cval;
+            if (val == 0)
+                break;
         }
 
         return val;
@@ -277,6 +279,20 @@ public:
         std::fill(data_.begin(), data_.end(), 0);
     }
 
+    double load_factor() const {
+      size_t loaded = 0;
+      // FIXME: inefficient
+      for (size_t cell_id = 0; cell_id < cells_; ++cell_id) {
+          size_t pos = cell_id / cells_per_entry_;
+          size_t epos = cell_id - pos * cells_per_entry_;
+          const auto &entry = data_[pos];
+          uint64_t mask = cell_mask_ << (width_ * epos);
+          uint64_t val = entry & mask;
+          loaded += val != 0;
+      }
+      return double(loaded) / double(cells_);
+    }
+    
     void merge(const counting_bloom_filter<T, width_> &other) {
         VERIFY(data_.size() == other.data_.size());
         VERIFY(num_hashes_ == other.num_hashes_);
