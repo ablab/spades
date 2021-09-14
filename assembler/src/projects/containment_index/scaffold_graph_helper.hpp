@@ -40,4 +40,8 @@ class LinkIndexGraphConstructor {
     size_t max_threads_;
 };
 
+//class GFAGraphConstructor {
+//    scaffold_graph::ScaffoldGraph ConstructGraph() const;
+//};
+
 }

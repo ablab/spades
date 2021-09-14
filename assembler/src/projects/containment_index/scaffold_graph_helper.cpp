@@ -57,4 +57,7 @@ LinkIndexGraphConstructor::LinkIndexGraphConstructor(const debruijn_graph::Graph
                                                                            length_threshold_(length_threshold),
                                                                            count_threshold_(count_threshold),
                                                                            max_threads_(max_threads) {}
+//scaffold_graph::ScaffoldGraph GFAGraphConstructor::ConstructGraph() const {
+//    return scaffold_graph::ScaffoldGraph(debruijn_graph::DeBruijnGraph());
+//}
 }
