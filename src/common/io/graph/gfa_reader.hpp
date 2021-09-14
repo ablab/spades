@@ -8,6 +8,8 @@
 #pragma once
 
 // This one is temporary, until we will be able to untangle IDs from the graph
+#pragma once
+
 #include "assembly_graph/core/graph.hpp"
 #include "io/utils/id_mapper.hpp"
 

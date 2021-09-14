@@ -20,7 +20,6 @@
 #include "utils/verify.hpp"
 
 #include <clipp/clipp.h>
-#include "gfa1/gfa.h"
 
 using namespace debruijn_graph;
 using namespace cont_index;
@@ -65,11 +64,11 @@ struct TimeTracerRAII {
   TimeTracerRAII(llvm::StringRef program_name,
                  unsigned granularity = 500,
                  const std::string &prefix = "", const std::string &suffix = "") {
-      time_trace_file_ = prefix + "spades_time_trace_" + suffix + ".json";
+      time_trace_file_ = prefix + "time_trace_" + suffix + ".json";
       llvm::timeTraceProfilerInitialize(granularity, program_name);
   }
   ~TimeTracerRAII() {
-      if (auto E = llvm::timeTraceProfilerWrite(time_trace_file_, "spades-core")) {
+      if (auto E = llvm::timeTraceProfilerWrite(time_trace_file_, "cont-index")) {
           handleAllErrors(std::move(E),
                           [&](const llvm::StringError &SE) {
                             ERROR("" << SE.getMessage() << "\n");
@@ -144,11 +143,8 @@ int main(int argc, char** argv) {
         barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> barcode_index(graph, read_linkage_distance);
 
         std::unique_ptr<TimeTracerRAII> traceraii;
-//        if (cfg::get().tt.enable || cfg::get().developer_mode) {
-            traceraii.reset(new TimeTracerRAII(argv[0],
-                                               500));
-            INFO("Time tracing is enabled");
-//        }
+        traceraii.reset(new TimeTracerRAII(argv[0],500));
+        INFO("Time tracing is enabled");
 
         TIME_TRACE_SCOPE("Containment index");
 
@@ -167,6 +163,7 @@ int main(int argc, char** argv) {
         }
 
         INFO(barcode_index.GetNumberOfBarcodes() << " barcodes in index");
+
         using BarcodeExtractor = barcode_index::FrameBarcodeIndexInfoExtractor;
         auto barcode_extractor_ptr = std::make_shared<BarcodeExtractor>(barcode_index, graph);
         LinkIndexGraphConstructor link_index_constructor(graph,
@@ -176,62 +173,21 @@ int main(int argc, char** argv) {
                                                          length_threshold,
                                                          count_threshold,
                                                          cfg.nthreads);
-//        INFO("Constructing scaffold graph");
-//
-//        auto scaffold_graph = link_index_constructor.ConstructGraph();
-//        INFO(scaffold_graph.VertexCount() << " vertices and " << scaffold_graph.EdgeCount() << " edges in scaffold graph");
-//        std::ofstream os(cfg.output_file);
-//        os << "FirstId\tSecondId\tWeight\n";
-//        for (const scaffold_graph::ScaffoldGraph::ScaffoldEdge &edge: scaffold_graph.edges()) {
-//            os << (*id_mapper)[edge.getStart().int_id()] << "\t" << (*id_mapper)[edge.getEnd().int_id()] << "\t" << edge.getWeight() << "\n";
-//        }
-
-        scaffold_graph::ScaffoldGraph scaffold_graph(graph);
-        for (const debruijn_graph::EdgeId &edge: graph.canonical_edges()) {
-            scaffold_graph.AddVertex(edge);
-        }
-        std::unordered_map<std::string, EdgeId> seg_to_edge;
-        for (const debruijn_graph::EdgeId &edge: graph.canonical_edges()) {
-            seg_to_edge.emplace((*id_mapper)[edge.int_id()], edge);
-        }
-        auto gfa_ptr = gfa.get();
-        for (uint32_t i = 0; i < gfa_ptr->n_seg; ++i) {
-            gfa_seg_t *seg = gfa_ptr->seg + i;
-            EdgeId e1 = seg_to_edge.at(seg->name);
-            // Process direct links
-            {
-                uint32_t vv = i << 1 | 0;
-                gfa_arc_t *av = gfa_arc_a(gfa.get(), vv);
-                for (size_t j = 0; j < gfa_arc_n(gfa.get(), vv); ++j) {
-                    EdgeId e2 = seg_to_edge.at((gfa_ptr->seg + (av[j].w >> 1))->name);
-                    if (av[j].w & 1)
-                        e2 = graph.conjugate(e2);
-                    scaffold_graph::ScaffoldGraph::ScaffoldEdge scedge(e1, e2);
-                    scaffold_graph.AddEdge(scedge);
-                }
-            }
-
-            // Process rc links
-            {
-                e1 = graph.conjugate(e1);
-                uint32_t vv = i << 1 | 1;
-                gfa_arc_t *av = gfa_arc_a(gfa.get(), vv);
-                for (size_t j = 0; j < gfa_arc_n(gfa.get(), vv); ++j) {
-                    EdgeId e2 = seg_to_edge.at((gfa_ptr->seg + (av[j].w >> 1))->name);
-                    if (av[j].w & 1)
-                        e2 = graph.conjugate(e2);
-                    scaffold_graph::ScaffoldGraph::ScaffoldEdge scedge(e1, e2);
-                    scaffold_graph.AddEdge(scedge);
-                }
-            }
+        INFO("Constructing scaffold graph");
+        auto scaffold_graph = link_index_constructor.ConstructGraph();
+        INFO(scaffold_graph.VertexCount() << " vertices and " << scaffold_graph.EdgeCount() << " edges in scaffold graph");
+        std::ofstream os(cfg.output_file);
+        os << "FirstId\tSecondId\tWeight\n";
+        for (const scaffold_graph::ScaffoldGraph::ScaffoldEdge &edge: scaffold_graph.edges()) {
+            os << (*id_mapper)[edge.getStart().int_id()] << "\t" << (*id_mapper)[edge.getEnd().int_id()] << "\t" << edge.getWeight() << "\n";
         }
         INFO(scaffold_graph.VertexCount() << " vertices and " << scaffold_graph.EdgeCount() << " edges in scaffold graph");
 
+        INFO("Constructing initial cluster storage");
         path_extend::read_cloud::PathExtractionParams path_extraction_params(read_linkage_distance,
                                                                              relative_score_threshold,
                                                                              min_read_threshold,
                                                                              length_threshold);
-        INFO("Constructing initial cluster storage");
         size_t cluster_storage_builder_threads = cfg.nthreads;
         std::set<scaffold_graph::ScaffoldVertex> target_edges;
         std::copy(scaffold_graph.vbegin(), scaffold_graph.vend(), std::inserter(target_edges, target_edges.begin()));
