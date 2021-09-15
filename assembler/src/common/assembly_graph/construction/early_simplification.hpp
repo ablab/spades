@@ -295,7 +295,8 @@ public:
 
                     // Now kh is a junction point (possible dead start) or still unique extension
                     // Bail out in the second case, as this tip is too long
-                    if (!index_.IsDeadEnd(kh) && !index_.IsJunction(kh))
+                    // Also bail out if point dead start: don't delete isolated edges to avoid race condition
+                    if (index_.IsDeadStart(kh) ||  !index_.IsJunction(kh))
                         continue;
 
                     // If the tip is short, calculate the complexity up to min_len bp
