@@ -10,6 +10,8 @@
 #include "delegating_reader_wrapper.hpp"
 #include "read_stream_vector.hpp"
 
+#include <functional>
+
 namespace io {
 
 template<typename ReadType>
