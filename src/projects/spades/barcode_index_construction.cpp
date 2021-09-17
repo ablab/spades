@@ -43,18 +43,14 @@ namespace debruijn_graph {
             if (lib.type() == io::LibraryType::Clouds10x) {
                 gp.EnsureBasicMapping();
                 auto read_streams = io::paired_easy_readers(lib, false, 0);
-//                auto read_streams {io::paired_binary_readers(lib,
-//                    /*followed by rc*/false,
-//                    /*insert_size*/0,
-//                    /*include_merged*/true)}
                 auto &barcode_mapper = gp.get_mutable<barcode_index::FrameBarcodeIndex<Graph>>();
-                FrameMapperBuilder mapper_builder(gp.get<debruijn_graph::Graph>(),
-                                                  barcode_mapper, num_threads,
-                                                  frame_size,
-                                                  barcode_prefices);
-                debruijn_graph::SequenceMapperNotifier notifier;
-                notifier.Subscribe(&mapper_builder);
-                notifier.ProcessLibrary(read_streams, *MapperInstance(gp));
+//                FrameMapperBuilder mapper_builder(gp.get<debruijn_graph::Graph>(),
+//                                                  barcode_mapper, num_threads,
+//                                                  frame_size,
+//                                                  barcode_prefices);
+//                debruijn_graph::SequenceMapperNotifier notifier;
+//                notifier.Subscribe(&mapper_builder);
+//                notifier.ProcessLibrary(read_streams, *MapperInstance(gp));
                 INFO("Barcode index construction finished.");
                 FrameBarcodeIndexInfoExtractor extractor(barcode_mapper, gp.get<Graph>());
                 size_t length_threshold = cfg::get().pe_params.read_cloud.long_edge_length_lower_bound;
