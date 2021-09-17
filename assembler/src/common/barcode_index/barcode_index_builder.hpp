@@ -9,6 +9,7 @@
 #include "barcode_index.hpp"
 
 #include "modules/alignment/sequence_mapper_notifier.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
 
 #include <mutex>
 #include <shared_mutex>
@@ -16,13 +17,14 @@
 namespace barcode_index {
 
 //todo templatize
-class FrameMapperBuilder: public debruijn_graph::SequenceMapperListener {
+class ConcurrentBufferFiller: public debruijn_graph::SequenceMapperListener {
   public:
     using EdgeId = debruijn_graph::EdgeId;
     using Graph = debruijn_graph::Graph;
-    using FrameBarcodeMapper = FrameBarcodeIndex<Graph>;
-    typedef omnigraph::MappingPath<EdgeId> MappingPath;
-    typedef omnigraph::MappingRange MappingRange;
+    using FrameConcurrentBuffer = FrameConcurrentBarcodeIndexBuffer<Graph>;
+    using SequenceMapper = debruijn_graph::SequenceMapper<Graph>;
+    using MappingPath = omnigraph::MappingPath<EdgeId>;
+    using MappingRange = omnigraph::MappingRange;
 
     class BarcodeEncoder {
       public:
@@ -56,46 +58,31 @@ class FrameMapperBuilder: public debruijn_graph::SequenceMapperListener {
         std::shared_timed_mutex mutex_;
     };
 
-    FrameMapperBuilder(const Graph &g,
-                       FrameBarcodeMapper &index,
-                       size_t num_threads,
-                       size_t frame_size,
-                       const std::vector<std::string> &barcode_prefices) : g_(g),
-                                                                           buf_(num_threads,
-                                                                                FrameBarcodeMapper(g, frame_size)),
-                                                                           data_(index),
-                                                                           frame_size_(frame_size),
-                                                                           barcode_prefices_(barcode_prefices),
-                                                                           encoder_() {Init();}
+    ConcurrentBufferFiller(const Graph &g,
+                           FrameConcurrentBuffer &buf,
+                           const SequenceMapper &mapper,
+                           const std::vector<std::string> &barcode_prefices) : g_(g),
+                                                                               buf_(buf),
+                                                                               mapper_(mapper),
+                                                                               barcode_prefices_(barcode_prefices),
+                                                                               encoder_() { Init(); }
 
-    void MergeBuffer(size_t i) override {
-        for (auto it = buf_[i].begin(); it != buf_[i].end(); ++it) {
-            EdgeId edge = it->first;
-            const auto &entry = it->second;
-            //todo might be faster to iterate over the main storage if a buffer is large enough
-            for (auto barcode_it = entry.begin(); barcode_it != entry.end(); ++barcode_it) {
-                data_.edge_to_entry_[edge].InsertInfo(barcode_it->first, barcode_it->second);
-            }
-        }
-        DEBUG("Merged buffer");
-    }
+    bool operator()(std::unique_ptr<io::PairedRead> r) {
+        const Sequence& read1 = r->first().sequence();
+        const Sequence& read2 = r->second().sequence();
+        MappingPath path1 = mapper_.MapSequence(read1);
+        MappingPath path2 = mapper_.MapSequence(read2);
 
-    void ProcessPairedRead(size_t idx,
-                           const io::PairedRead& r,
-                           const MappingPath& read1,
-                           const MappingPath& read2) override {
-        ProcessPairedRead(buf_[idx], r.first().name(), r.second().name(), read1, read2);
+        ProcessPairedRead(r->first().name(), r->second().name(), path1, path2);
+        return false;
     }
 
     size_t GetNumberOfBarcodes() const {
         return encoder_.size();
     }
 
-//    void ExportToIndex(HicCovPlotIndex& index);
-
   private:
-    void ProcessPairedRead(FrameBarcodeMapper &buf,
-                           const std::string &name1,
+    void ProcessPairedRead(const std::string &name1,
                            const std::string &name2,
                            const MappingPath& path1,
                            const MappingPath& path2) {
@@ -112,14 +99,11 @@ class FrameMapperBuilder: public debruijn_graph::SequenceMapperListener {
         } else {
             barcode = code_result->second;
         }
-        InsertMappingPath(buf, barcode, path1);
-        InsertMappingPath(buf, barcode, path2);
+        InsertMappingPath(barcode, path1);
+        InsertMappingPath(barcode, path2);
     }
     void Init() {
-        data_.InitialFillMap();
-        for (auto &buf: buf_) {
-            buf.InitialFillMap();
-        }
+        buf_.InitialFillMap();
     }
 
     string GetTenXBarcodeFromRead(const std::string &read_name, const std::vector<string>& barcode_prefixes) {
@@ -145,25 +129,19 @@ class FrameMapperBuilder: public debruijn_graph::SequenceMapperListener {
         return result;
     }
 
-    void InsertMappingPath(FrameBarcodeMapper &buf, BarcodeId &barcode, const MappingPath &path) {
+    void InsertMappingPath(BarcodeId &barcode, const MappingPath &path) {
         for (size_t i = 0; i < path.size(); i++) {
             //todo restore tail threshold if needed
             EdgeId edge = path[i].first;
             const auto &range = path[i].second.mapped_range;
-            InsertBarcode(buf, barcode, edge, 1, range);
-            InsertBarcode(buf, barcode, g_.conjugate(edge), 1, range.Invert(g_.length(edge)));
+            buf_.InsertBarcode(barcode, edge, 1, range);
+            buf_.InsertBarcode(barcode, g_.conjugate(edge), 1, range.Invert(g_.length(edge)));
         }
     }
 
-    void InsertBarcode(FrameBarcodeMapper &buf, const BarcodeId &barcode, const EdgeId &edge, size_t count, const Range &range) {
-        VERIFY_DEV(buf.edge_to_entry_.find(edge) != buf.edge_to_entry_.end());
-        buf.edge_to_entry_.at(edge).InsertBarcode(barcode, count, range);
-    }
-
     const Graph& g_;
-    std::vector<FrameBarcodeMapper> buf_;
-    FrameBarcodeMapper &data_;
-    size_t frame_size_;
+    FrameConcurrentBuffer &buf_;
+    const SequenceMapper &mapper_;
     const std::vector<std::string> barcode_prefices_;
     BarcodeEncoder encoder_;
 
