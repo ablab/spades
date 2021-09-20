@@ -8,6 +8,8 @@
 
 #include "barcode_index.hpp"
 
+#include "io/dataset_support/dataset_readers.hpp"
+#include "io/reads/read_processor.hpp"
 #include "modules/alignment/sequence_mapper_notifier.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 
@@ -17,7 +19,7 @@
 namespace barcode_index {
 
 //todo templatize
-class ConcurrentBufferFiller: public debruijn_graph::SequenceMapperListener {
+class ConcurrentBufferFiller {
   public:
     using EdgeId = debruijn_graph::EdgeId;
     using Graph = debruijn_graph::Graph;
@@ -79,6 +81,10 @@ class ConcurrentBufferFiller: public debruijn_graph::SequenceMapperListener {
 
     size_t GetNumberOfBarcodes() const {
         return encoder_.size();
+    }
+
+    FrameConcurrentBuffer& GetBuffer() {
+        return buf_;
     }
 
   private:
@@ -145,6 +151,29 @@ class ConcurrentBufferFiller: public debruijn_graph::SequenceMapperListener {
     const std::vector<std::string> barcode_prefices_;
     BarcodeEncoder encoder_;
 
-    DECL_LOGGER("FrameMapperBuilder");
+    DECL_LOGGER("ConcurrentBufferFiller");
 };
-}
+
+class FrameBarcodeIndexBuilder {
+  public:
+    using EdgeId = debruijn_graph::EdgeId;
+    using Graph = debruijn_graph::Graph;
+
+    FrameBarcodeIndexBuilder(ConcurrentBufferFiller &buffer_filler, size_t num_threads) : buffer_filler_(buffer_filler),
+                                                                                          num_threads_(num_threads) {}
+
+    void ConstructBarcodeIndex(FrameBarcodeIndex<Graph> &barcode_index, const io::SequencingLibraryBase &lib) {
+        auto read_streams = io::paired_easy_readers(lib, false, 0);
+        for (auto &stream: read_streams) {
+            hammer::ReadProcessor read_processor(static_cast<unsigned int>(num_threads_));
+            read_processor.Run(stream, buffer_filler_);
+            auto &buffer = buffer_filler_.GetBuffer();
+            barcode_index.SetFrameSize(buffer.GetFrameSize());
+            barcode_index.MoveAssign(buffer);
+        }
+    }
+  private:
+    ConcurrentBufferFiller &buffer_filler_;
+    size_t num_threads_;
+};
+} //namespace barcode index
