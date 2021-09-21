@@ -161,8 +161,7 @@ int main(int argc, char** argv) {
         } else {
             WARN("Only read cloud libraries with barcode tags are supported for links");
         }
-
-        INFO(barcode_index.GetNumberOfBarcodes() << " barcodes in index");
+        INFO("Barcode index size: " << barcode_index.size());
 
         using BarcodeExtractor = barcode_index::FrameBarcodeIndexInfoExtractor;
         auto barcode_extractor_ptr = std::make_shared<BarcodeExtractor>(barcode_index, graph);

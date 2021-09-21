@@ -209,7 +209,11 @@ public:
     void MoveAssign(ConcurrentBarcodeIndexBuffer<Graph, EdgeEntryT> &from) {
         this->edge_to_entry_.clear();
         auto locked_table = from.lock_table();
+        DEBUG(locked_table.size());
         for (auto& kvpair : locked_table) {
+            TRACE(kvpair.first.int_id());
+            TRACE("Length: " << g_.length(kvpair.first));
+            TRACE(kvpair.second.Size() << " barcodes");
             this->edge_to_entry_[kvpair.first] = std::move(kvpair.second);
         }
     }
@@ -754,8 +758,9 @@ class FrameConcurrentBarcodeIndexBuffer: public ConcurrentBarcodeIndexBuffer<Gra
         VERIFY_DEV(frame_size_ != 0);
         VERIFY_DEV(edge_to_entry_.empty());
         for (const debruijn_graph::EdgeId &edge: g_.canonical_edges()) {
-//            FrameEdgeEntry<Graph> entry(edge, g_.length(edge), frame_size_);
             edge_to_entry_.insert(edge, FrameEdgeEntry<Graph>(edge, g_.length(edge), frame_size_));
+            debruijn_graph::EdgeId conj = g_.conjugate(edge);
+            edge_to_entry_.insert(conj, FrameEdgeEntry<Graph>(conj, g_.length(edge), frame_size_));
         }
     }
 
