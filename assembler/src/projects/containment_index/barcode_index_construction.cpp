@@ -11,6 +11,8 @@
 
 namespace cont_index {
 
+using namespace barcode_index;
+
 void ConstructBarcodeIndex(barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> &barcode_index,
                            paired_info::SequencingLib &lib,
                            const debruijn_graph::Graph &graph,
@@ -19,31 +21,13 @@ void ConstructBarcodeIndex(barcode_index::FrameBarcodeIndex<debruijn_graph::Grap
                            size_t frame_size,
                            bool bin_load,
                            bool bin_save) {
-//    if (!bin_load || !io::ReadConverter::LoadLibIfExists(lib)) {
-    //    std::unique_ptr<ThreadPool::ThreadPool> pool;
-    //    if (nthreads > 1)
-    //        pool = std::make_unique<ThreadPool::ThreadPool>(nthreads);
-//        io::ReadConverter::ConvertToBinary(lib, pool.get());
-//    }
-
     if (!bin_load) {
-        INFO("Threads: " << nthreads);
-        std::unique_ptr<ThreadPool::ThreadPool> pool;
-        if (nthreads > 1)
-            pool = std::make_unique<ThreadPool::ThreadPool>(nthreads);
-        io::FileReadFlags empty_flags;
-        auto read_streams = io::paired_easy_readers(lib, false, 0, true, true, empty_flags, pool.get());
-        INFO("Streams: " << read_streams.size());
         const std::vector<string> barcode_prefices = {"BC:Z:", "BX:Z:"};
-        barcode_index::FrameMapperBuilder mapper_builder(graph,
-                                                         barcode_index,
-                                                         nthreads,
-                                                         frame_size,
-                                                         barcode_prefices);
-        debruijn_graph::SequenceMapperNotifier notifier;
-        notifier.Subscribe(&mapper_builder);
-        alignment::BWAReadMapper<debruijn_graph::Graph> bwa_mapper(graph);
-        notifier.ProcessLibrary(read_streams, bwa_mapper);
+                alignment::BWAReadMapper<debruijn_graph::Graph> bwa_mapper(graph);
+        FrameConcurrentBarcodeIndexBuffer<debruijn_graph::Graph> buffer(graph, frame_size);
+        ConcurrentBufferFiller buffer_filler(graph, buffer, bwa_mapper, barcode_prefices);
+        FrameBarcodeIndexBuilder barcode_index_builder(buffer_filler, nthreads);
+        barcode_index_builder.ConstructBarcodeIndex(barcode_index, lib);
         INFO("Barcode index construction finished.");
 
         if (bin_save) {

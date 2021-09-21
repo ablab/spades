@@ -101,6 +101,9 @@ public:
                     irs >> *r;
 #         pragma omp atomic
                     read_ += 1;
+                    if (read_ % 1000000 == 0) {
+                        INFO("Processed " << read_ << " reads");
+                    }
 
                     while (!in_queue.enqueue(std::move(r)))
                         sched_yield();
