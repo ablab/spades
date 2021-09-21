@@ -74,6 +74,9 @@ class ConcurrentBufferFiller {
         const Sequence& read2 = r->second().sequence();
         MappingPath path1 = mapper_.MapSequence(read1);
         MappingPath path2 = mapper_.MapSequence(read2);
+        if (path1.size() > 0 and path2.size() > 0) {
+            TRACE("non-empty pair");
+        }
 
         ProcessPairedRead(r->first().name(), r->second().name(), path1, path2);
         return false;
@@ -95,6 +98,8 @@ class ConcurrentBufferFiller {
         std::string barcode_string = GetTenXBarcodeFromRead(name1, barcode_prefices_);
         std::string second_barcode_string = GetTenXBarcodeFromRead(name2, barcode_prefices_);
         if (barcode_string.empty() or barcode_string != second_barcode_string) {
+            TRACE(barcode_string);
+            TRACE(second_barcode_string);
             return;
         }
 
@@ -127,7 +132,7 @@ class ConcurrentBufferFiller {
     string GetBarcodeFromStartPos(const size_t start_pos, const string& read_id) {
         string result = "";
         for (auto it = read_id.begin() + start_pos; it != read_id.end(); ++it) {
-            if (std::isspace(*it)) {
+            if (not is_nucl(*it)) {
                 return result;
             }
             result.push_back(*it);
