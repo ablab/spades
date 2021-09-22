@@ -28,7 +28,7 @@ using namespace path_extend::read_cloud;
 struct gcfg {
   size_t k = 55;
   std::string graph;
-  std::string output_file;
+  std::string output_dir;
   unsigned nthreads = (omp_get_max_threads() / 2 + 1);
   std::string file = "";
   std::string tmpdir = "saves";
@@ -43,7 +43,7 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
 
     auto cli = (
         cfg.graph << value("graph (in binary or GFA)"),
-            cfg.output_file << value("path to file to write binning after propagation"),
+            cfg.output_dir << value("path to output directory"),
             (option("--dataset") & value("yaml", cfg.file)) % "dataset description (in YAML)",
             (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
             (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
@@ -99,6 +99,7 @@ int main(int argc, char** argv) {
     cfg.nthreads = spades_set_omp_threads(cfg.nthreads);
     INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg.nthreads);
 
+    fs::make_dir(cfg.output_dir);
     fs::make_dir(cfg.tmpdir);
 
     INFO("Loading graph");
@@ -114,7 +115,6 @@ int main(int argc, char** argv) {
     INFO("Graph loaded. Total vertices: " << graph.size() << ", total edges: " << graph.e_size());
 
     INFO("Building barcode index");
-
     if (cfg.libindex != -1u) {
         INFO("Processing paired-end reads");
 
@@ -134,7 +134,7 @@ int main(int argc, char** argv) {
         const double graph_score_threshold = 2.99;
         const size_t tail_threshold = 20000;
         const size_t length_threshold = 5000;
-        const size_t count_threshold = 1;
+        const size_t count_threshold = 3;
 
         const double relative_score_threshold = 10.0;
         const size_t min_read_threshold = 2;
@@ -162,25 +162,14 @@ int main(int argc, char** argv) {
             WARN("Only read cloud libraries with barcode tags are supported for links");
         }
         INFO("Barcode index size: " << barcode_index.size());
-
         using BarcodeExtractor = barcode_index::FrameBarcodeIndexInfoExtractor;
         auto barcode_extractor_ptr = std::make_shared<BarcodeExtractor>(barcode_index, graph);
-        LinkIndexGraphConstructor link_index_constructor(graph,
-                                                         barcode_extractor_ptr,
-                                                         graph_score_threshold,
-                                                         tail_threshold,
-                                                         length_threshold,
-                                                         count_threshold,
-                                                         cfg.nthreads);
-        INFO("Constructing scaffold graph");
-        auto scaffold_graph = link_index_constructor.ConstructGraph();
-        INFO(scaffold_graph.VertexCount() << " vertices and " << scaffold_graph.EdgeCount() << " edges in scaffold graph");
-        std::ofstream os(cfg.output_file);
-        os << "FirstId\tSecondId\tWeight\n";
-        for (const scaffold_graph::ScaffoldGraph::ScaffoldEdge &edge: scaffold_graph.edges()) {
-            os << (*id_mapper)[edge.getStart().int_id()] << "\t" << (*id_mapper)[edge.getEnd().int_id()] << "\t" << edge.getWeight() << "\n";
-        }
-        INFO(scaffold_graph.VertexCount() << " vertices and " << scaffold_graph.EdgeCount() << " edges in scaffold graph");
+
+        auto scaffold_graph = cont_index::GetTellSeqScaffoldGraph(graph, barcode_extractor_ptr, graph_score_threshold,
+                                                                  length_threshold,
+                                                                  tail_threshold, count_threshold, cfg.nthreads,
+                                                                  cfg.bin_load,
+                                                                  cfg.debug, cfg.output_dir, id_mapper.get());
 
         INFO("Constructing initial cluster storage");
         path_extend::read_cloud::PathExtractionParams path_extraction_params(read_linkage_distance,
@@ -213,7 +202,7 @@ int main(int argc, char** argv) {
         for (const auto &cluster: all_clusters) {
             size_hist[cluster.Size()]++;
         }
-        std::ofstream sizes(cfg.output_file + ".cluster_sizes");
+        std::ofstream sizes(fs::append_path(cfg.output_dir, "cluster_sizes.tsv"));
         for (const auto &entry: size_hist) {
             sizes << entry.first << "\t" << entry.second << std::endl;
         }
@@ -223,7 +212,7 @@ int main(int argc, char** argv) {
         for (const auto &cluster: path_clusters) {
             size_hist[cluster.Size()]++;
         }
-        std::ofstream path_sizes(cfg.output_file + ".path_sizes");
+        std::ofstream path_sizes(fs::append_path(cfg.output_dir, "path_sizes.tsv"));
         for (const auto &entry: size_hist) {
             path_sizes << entry.first << "\t" << entry.second << std::endl;
         }

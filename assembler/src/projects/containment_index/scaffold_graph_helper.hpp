@@ -20,27 +20,6 @@ namespace cont_index {
 
 typedef std::unordered_map<barcode_index::BarcodeId, std::unordered_set<scaffold_graph::ScaffoldVertex>> ReverseBarcodeIndex;
 
-class ReverseBarcodeIndexConstructor {
-  public:
-    using ScaffoldVertex = scaffold_graph::ScaffoldVertex;
-    using BarcodeExtractorPtr = std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor>;
-    ReverseBarcodeIndexConstructor(const debruijn_graph::Graph &g,
-                                   BarcodeExtractorPtr barcode_extractor,
-                                   const size_t length_threshold,
-                                   const size_t tail_threshold,
-                                   const size_t count_threshold,
-                                   size_t max_threads);
-
-    ReverseBarcodeIndex ConstructReverseIndex(const std::set<ScaffoldVertex> &scaffold_vertices) const;
-  private:
-    const debruijn_graph::Graph &g_;
-    BarcodeExtractorPtr barcode_extractor_;
-    const size_t length_threshold_;
-    const size_t tail_threshold_;
-    const size_t count_threshold_;
-    size_t max_threads_;
-};
-
 class LinkIndexGraphConstructor {
   public:
     using Graph = debruijn_graph::Graph;
@@ -66,6 +45,39 @@ class LinkIndexGraphConstructor {
     size_t max_threads_;
 };
 
+class ReverseBarcodeIndexConstructor {
+  public:
+    using ScaffoldVertex = scaffold_graph::ScaffoldVertex;
+    using BarcodeExtractorPtr = std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor>;
+    ReverseBarcodeIndexConstructor(const debruijn_graph::Graph &g,
+                                   BarcodeExtractorPtr barcode_extractor,
+                                   const size_t length_threshold,
+                                   const size_t tail_threshold,
+                                   const size_t count_threshold,
+                                   size_t max_threads);
+
+    ReverseBarcodeIndex ConstructReverseIndex(const std::set<ScaffoldVertex> &scaffold_vertices) const;
+  private:
+    const debruijn_graph::Graph &g_;
+    BarcodeExtractorPtr barcode_extractor_;
+    const size_t length_threshold_;
+    const size_t tail_threshold_;
+    const size_t count_threshold_;
+    size_t max_threads_;
+};
+
+class ScaffoldGraphSerializer {
+  public:
+    ScaffoldGraphSerializer(const debruijn_graph::Graph &g, io::IdMapper<string> *id_mapper);
+
+    scaffold_graph::ScaffoldGraph ReadGraph(const std::string &path_to_graph);
+    void WriteGraph(const scaffold_graph::ScaffoldGraph &scaffold_graph, const std::string &path_to_graph) const;
+
+  private:
+    const debruijn_graph::Graph &g_;
+    io::IdMapper<std::string> *id_mapper_;
+};
+
 class GFAGraphConstructor {
   public:
     using Graph = debruijn_graph::Graph;
@@ -84,4 +96,16 @@ class GFAGraphConstructor {
     io::IdMapper<std::string> *id_mapper_;
 };
 
+using BarcodeExtractorPtr = std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor>;
+scaffold_graph::ScaffoldGraph GetTellSeqScaffoldGraph(const debruijn_graph::Graph &g,
+                                                      BarcodeExtractorPtr barcode_extractor,
+                                                      double score_threshold,
+                                                      size_t length_threshold,
+                                                      size_t tail_threshold,
+                                                      size_t count_threshold,
+                                                      size_t max_threads,
+                                                      bool bin_load,
+                                                      bool debug,
+                                                      const std::string &output_dir,
+                                                      io::IdMapper<std::string> *id_mapper);
 }
