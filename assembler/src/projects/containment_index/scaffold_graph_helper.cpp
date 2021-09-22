@@ -22,9 +22,14 @@ scaffold_graph::ScaffoldGraph LinkIndexGraphConstructor::ConstructGraph() const 
 
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
     auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold_);
-    auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(g_, *barcode_extractor_, tail_threshold_getter,
-                                                                     count_threshold_, length_threshold_,
-                                                                     max_threads_, scaffold_vertices);
+    auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(g_,
+                                                                     *barcode_extractor_,
+                                                                     tail_threshold_getter,
+                                                                     count_threshold_,
+                                                                     length_threshold_,
+                                                                     max_threads_,
+                                                                     scaffold_vertices);
+
     auto scaffold_index_extractor =
         std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
     auto score_function =
@@ -36,19 +41,43 @@ scaffold_graph::ScaffoldGraph LinkIndexGraphConstructor::ConstructGraph() const 
 
     ReverseBarcodeIndexConstructor reverse_index_constructor(g_, barcode_extractor_, length_threshold_, tail_threshold_, count_threshold_, max_threads_);
     auto reverse_index = reverse_index_constructor.ConstructReverseIndex(scaffold_vertices);
+
+    size_t total_head_size = 0;
+    size_t total_tail_size = 0;
+    for (const auto &vertex: scaffold_vertices) {
+        total_head_size += scaffold_index_extractor->GetHeadSize(vertex);
+        total_tail_size += scaffold_index_extractor->GetTailSize(vertex);
+    }
+    INFO("Total head size: " << total_head_size);
+    INFO("Total tail size: " << total_tail_size);
+
     for (const auto &vertex: scaffold_vertices) {
         result.AddVertex(vertex);
     }
+
+    size_t total_pairs = 0;
+    for (const auto &entry: reverse_index) {
+        total_pairs += entry.second.size() * entry.second.size();
+    }
+    size_t block_size = total_pairs / 25;
+    size_t initial_edge_counter = 0;
+
     for (const auto &entry: reverse_index) {
         const auto &vertices = entry.second;
         for (const auto &first: vertices) {
             for (const auto &second: vertices) {
                 if (first != second and first.GetConjugateFromGraph(g_) != second) {
-                    result.AddEdge(first, second, 0, 1.0, 0);
+                    scaffold_graph::ScaffoldGraph::ScaffoldEdge sc_edge(first, second, 0, 1.0, 0);
+                    result.AddEdgeSimple(sc_edge);
+                }
+                initial_edge_counter++;
+                if (initial_edge_counter % block_size == 0) {
+                    INFO("Processed " << initial_edge_counter << " edge pairs out of " << total_pairs);
                 }
             }
         }
     }
+    INFO(result.VertexCount() << " vertices and " << result.EdgeCount() << " edges in initial scaffold graph");
     auto score_filter = std::make_shared<path_extend::scaffolder::ScoreFunctionScaffoldGraphFilter>(g_, result,
                                                                                                     score_function,
                                                                                                     graph_score_threshold_,
@@ -159,4 +188,79 @@ ReverseBarcodeIndexConstructor::ReverseBarcodeIndexConstructor(const debruijn_gr
     tail_threshold_(tail_threshold),
     count_threshold_(count_threshold),
     max_threads_(max_threads) {}
+scaffold_graph::ScaffoldGraph ScaffoldGraphSerializer::ReadGraph(const string &path_to_graph) {
+    scaffold_graph::ScaffoldGraph result(g_);
+    std::unordered_map<std::string, scaffold_graph::ScaffoldVertex> id_to_vertex;
+    for (const debruijn_graph::EdgeId &edge: g_.canonical_edges()) {
+        auto str_id = (*id_mapper_)[edge.int_id()];
+        scaffold_graph::ScaffoldVertex vertex(edge);
+        scaffold_graph::ScaffoldVertex conj_vertex(edge);
+        id_to_vertex.emplace(str_id, vertex);
+        id_to_vertex.emplace(str_id + "\'", conj_vertex);
+        result.AddVertex(vertex);
+        result.AddVertex(conj_vertex);
+    }
+
+    size_t number_of_edges;
+    std::ifstream graph_reader(path_to_graph);
+    graph_reader >> number_of_edges;
+    size_t i = 0;
+    std::string first_id, second_id;
+    double weight;
+    while (i < number_of_edges) {
+        graph_reader >> first_id >> second_id >> weight;
+        auto first_vertex = id_to_vertex.at(first_id);
+        auto second_vertex = id_to_vertex.at(second_id);
+        scaffold_graph::ScaffoldGraph::ScaffoldEdge sc_edge(first_vertex, second_vertex, 0, weight, 0);
+        result.AddEdge(sc_edge);
+        ++i;
+    }
+    return result;
+}
+void ScaffoldGraphSerializer::WriteGraph(const scaffold_graph::ScaffoldGraph &scaffold_graph, const std::string &path_to_graph) const {
+    std::ofstream os(path_to_graph);
+    os << scaffold_graph.EdgeCount() << "\n";
+//    os << "FirstId\tSecondId\tWeight\n";
+    for (const scaffold_graph::ScaffoldGraph::ScaffoldEdge &edge: scaffold_graph.edges()) {
+        os << (*id_mapper_)[edge.getStart().int_id()] << "\t" << (*id_mapper_)[edge.getEnd().int_id()] << "\t" << edge.getWeight() << "\n";
+    }
+}
+ScaffoldGraphSerializer::ScaffoldGraphSerializer(const debruijn_graph::Graph &g, io::IdMapper<string> *id_mapper) :
+    g_(g), id_mapper_(id_mapper) {}
+scaffold_graph::ScaffoldGraph GetTellSeqScaffoldGraph(const debruijn_graph::Graph &g,
+                                                      BarcodeExtractorPtr barcode_extractor,
+                                                      double score_threshold,
+                                                      size_t length_threshold,
+                                                      size_t tail_threshold,
+                                                      size_t count_threshold,
+                                                      size_t max_threads,
+                                                      bool bin_load,
+                                                      bool debug,
+                                                      const std::string &output_dir,
+                                                      io::IdMapper<std::string> *id_mapper) {
+    std::string path_to_scaffold_graph = fs::append_path(output_dir, "tellseq_links.scg");
+    scaffold_graph::ScaffoldGraph scaffold_graph(g);
+    if (!bin_load or !fs::FileExists(path_to_scaffold_graph)) {
+        LinkIndexGraphConstructor link_index_constructor(g,
+                                                         barcode_extractor,
+                                                         score_threshold,
+                                                         tail_threshold,
+                                                         length_threshold,
+                                                         count_threshold,
+                                                         max_threads);
+        INFO("Constructing scaffold graph");
+        scaffold_graph = link_index_constructor.ConstructGraph();
+    } else {
+        INFO("Reading scaffold graph from " << path_to_scaffold_graph);
+        ScaffoldGraphSerializer graph_serializer(g, id_mapper);
+        scaffold_graph = graph_serializer.ReadGraph(path_to_scaffold_graph);
+    }
+    INFO(scaffold_graph.VertexCount() << " vertices and " << scaffold_graph.EdgeCount()
+                                      << " edges in scaffold graph");
+    if (debug) {
+        ScaffoldGraphSerializer graph_serializer(g, id_mapper);
+        graph_serializer.WriteGraph(scaffold_graph, path_to_scaffold_graph);
+    }
+    return scaffold_graph;
+}
 }

@@ -360,7 +360,7 @@ class ClusterStatisticsExtractorHelper {
         : g_(g), barcode_mapper_(barcode_mapper), configs_(configs), max_threads_(max_threads) {}
 
     ClusterStatisticsExtractor GetStatisticsExtractor() const {
-        const size_t DEFAULT_TRAINING_LENGTH = 10000;
+        const size_t DEFAULT_TRAINING_LENGTH = 100000;
         const size_t MIN_CLUSTER_OFFSET = 10000;
         const size_t LENGTH_TO_OFFSET = 5;
         const size_t MIN_READ_THRESHOLD = 5;
