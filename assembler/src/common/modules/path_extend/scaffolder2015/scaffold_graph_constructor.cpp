@@ -140,7 +140,7 @@ void ScoreFunctionScaffoldGraphFilter::ConstructFromGraphAndScore(const Scaffold
         scaffold_edges.push_back(edge);
     }
     size_t counter = 0;
-    const size_t block_size = scaffold_edges.size() / 100;
+    const size_t block_size = scaffold_edges.size() / 25;
     #pragma omp parallel for num_threads(threads)
     for (size_t i = 0; i < scaffold_edges.size(); ++i) {
         ScaffoldGraph::ScaffoldEdge edge = scaffold_edges[i];
