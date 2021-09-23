@@ -59,6 +59,7 @@ struct gcfg {
     bool bin_load = false;
     bool debug = false;
     bool bin_dist = false;
+    bool alpha_propagation = false;
     uint64_t out_options = 0;
 };
 
@@ -88,7 +89,8 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       (option("--bin-dist").set(cfg.bin_dist) % "estimate pairwise bin distance (could be slow on large graphs!)"),
       (option("-la") & value("labeled alpha", cfg.labeled_alpha)) % "labels correction alpha for labeled data",
       (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
-      (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)"
+      (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)",
+      (option("--alpha-propagation").set(cfg.alpha_propagation)) % "Gradually reduce alpha from binned to unbinned edges to avoid boundless propagation"
   );
 
   auto result = parse(argc, argv, cli);
@@ -119,8 +121,12 @@ std::unique_ptr<AlphaAssigner> get_alpha_assigner(const gcfg &cfg,
         case RefinerType::Propagation:
             return std::make_unique<PropagationAssigner>(graph);
         case RefinerType::Correction:
-            //todo different choice for metaalpha?
-            AlphaPropagator alpha_propagator(graph, links, cfg.labeled_alpha, cfg.eps, cfg.output_file + ".alpha_stats");
+            if (not cfg.alpha_propagation) {
+                return std::make_unique<CorrectionAssigner>(graph, cfg.labeled_alpha);
+            }
+
+            AlphaPropagator alpha_propagator(graph, links, cfg.metaalpha, cfg.eps, cfg.length_threshold,
+                                             cfg.distance_bound, cfg.output_file + ".alpha_stats");
             auto alpha_mask = alpha_propagator.GetAlphaMask(binning);
             return std::make_unique<bin_stats::CorrectionAssigner>(graph, alpha_mask, cfg.labeled_alpha);
     }
