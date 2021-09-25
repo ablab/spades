@@ -171,6 +171,40 @@ class PredicateScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
 
 };
 
+struct ScaffoldVertexPairChunk {
+  public:
+    using ScaffoldVertex = scaffold_graph::ScaffoldVertex;
+    //todo other containers?
+    using scaffold_vertex_iterator = std::unordered_set<ScaffoldVertex>::const_iterator;
+
+    ScaffoldVertex vertex_;
+    scaffold_vertex_iterator begin_;
+    scaffold_vertex_iterator end_;
+};
+
+class ScoreFunctionGraphConstructor: public BaseScaffoldGraphConstructor {
+  public:
+    typedef read_cloud::ScaffoldEdgeScoreFunction EdgePairScoreFunction;
+    using BaseScaffoldGraphConstructor::ScaffoldGraph;
+    using BaseScaffoldGraphConstructor::ScaffoldVertex;
+
+    ScoreFunctionGraphConstructor(const Graph &assembly_graph,
+                                  std::vector<ScaffoldVertexPairChunk>,
+                                  std::shared_ptr<EdgePairScoreFunction> score_function,
+                                  double score_threshold, size_t num_threads);
+
+    std::shared_ptr<ScaffoldGraph> Construct() override;
+  private:
+    void ConstructFromScore(std::shared_ptr<EdgePairScoreFunction> score_function,
+                            double score_threshold);
+
+    std::vector<ScaffoldVertexPairChunk> chunks_;
+    const std::shared_ptr<EdgePairScoreFunction> score_function_;
+    const double score_threshold_;
+    const size_t num_threads_;
+    DECL_LOGGER("ScoreFunctionScaffoldGraphConstructor")
+};
+
 class ScoreFunctionScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
     typedef read_cloud::ScaffoldEdgeScoreFunction EdgePairScoreFunction;
     using BaseScaffoldGraphConstructor::ScaffoldGraph;
