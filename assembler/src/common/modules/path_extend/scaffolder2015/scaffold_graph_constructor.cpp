@@ -166,6 +166,42 @@ std::shared_ptr<scaffold_graph::ScaffoldGraph> ScoreFunctionScaffoldGraphFilter:
     ConstructFromGraphAndScore(old_graph_, score_function_, score_threshold_, num_threads_);
     return graph_;
 }
+std::shared_ptr<scaffold_graph::ScaffoldGraph> ScoreFunctionGraphConstructor::Construct() {
+    ConstructFromScore(score_function_, score_threshold_);
+    return graph_;
+}
+void ScoreFunctionGraphConstructor::ConstructFromScore(std::shared_ptr<EdgePairScoreFunction> score_function,
+                                                       double score_threshold) {
+    for (const auto &chunk: chunks_) {
+        graph_->AddVertex(chunk.vertex_);
+    }
+    size_t counter = 0;
+    const size_t block_size = chunks_.size() / 10;
+#pragma omp parallel for schedule(guided)
+    for (size_t i = 0; i < chunks_.size(); ++i) {
+        for (auto it = chunks_[i].begin_; it != chunks_[i].end_; ++it) {
+            const ScaffoldVertex &first = chunks_[i].vertex_;
+            //todo move this check elsewhere
+            if (first != *it and first.GetConjugateFromGraph(graph_->AssemblyGraph()) != *it) {
+                ScaffoldGraph::ScaffoldEdge edge(first, *it, 0, .0, 0);
+                double score = score_function->GetScore(edge);
+#pragma omp critical
+                {
+                    if (math::ge(score, score_threshold)) {
+                        TRACE("Success");
+                        graph_->AddEdge(first, *it, 0, score, 0);
+                    }
+                    TRACE("Edge added");
+                    ++counter;
+                    if (counter % block_size == 0) {
+                        DEBUG("Processed " << counter << " chunks out of " << chunks_.size());
+                    }
+                }
+            }
+        }
+    }
+}
+
 std::shared_ptr<scaffold_graph::ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
     INFO("Scaffolding distance: " << distance_);
     //        auto bounded_dij = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, distance_, 10000);
