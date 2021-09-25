@@ -127,7 +127,7 @@ class ConcurrentBufferFiller {
     string GetBarcodeFromStartPos(const size_t start_pos, const string& read_id) {
         string result = "";
         for (auto it = read_id.begin() + start_pos; it != read_id.end(); ++it) {
-            if (std::isspace(*it)) {
+            if (!is_nucl(*it)) {
                 return result;
             }
             result.push_back(*it);

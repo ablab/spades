@@ -756,6 +756,8 @@ class FrameConcurrentBarcodeIndexBuffer: public ConcurrentBarcodeIndexBuffer<Gra
         for (const debruijn_graph::EdgeId &edge: g_.canonical_edges()) {
 //            FrameEdgeEntry<Graph> entry(edge, g_.length(edge), frame_size_);
             edge_to_entry_.insert(edge, FrameEdgeEntry<Graph>(edge, g_.length(edge), frame_size_));
+            debruijn_graph::EdgeId conj = g_.conjugate(edge);
+            edge_to_entry_.insert(conj, FrameEdgeEntry<Graph>(conj, g_.length(conj), frame_size_));
         }
     }
 
