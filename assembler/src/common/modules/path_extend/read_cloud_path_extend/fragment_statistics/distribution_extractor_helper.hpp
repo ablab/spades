@@ -130,6 +130,7 @@ class ClusterDistributionExtractor {
     typedef DistributionPack::ClusterCoverage ClusterCoverage;
     typedef DistributionPack::ClusterLengthDistribution ClusterLengthDistribution;
     typedef DistributionPack::ClusterCoverageDistribution ClusterCoverageDistribution;
+    typedef cluster_storage::ClusterStorage ClusterStorage;
 
     ClusterDistributionExtractor(const Graph &g,
                                  const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
@@ -144,9 +145,7 @@ class ClusterDistributionExtractor {
           min_cluster_offset_(min_cluster_offset),
           max_threads_(max_threads) {}
 
-    DistributionPack GetDistributionsForDistance(size_t distance_threshold) {
-        auto cluster_storage = GetInitialClusterStorage(distance_threshold);
-
+    DistributionPack GetDistributionsForStorage(ClusterStorage &cluster_storage) {
         auto cluster_predicate = [this](const cluster_storage::Cluster &cluster) {
           VERIFY_DEV(cluster.Size() == 1);
           auto map_info = cluster.GetMappings()[0];
@@ -200,7 +199,8 @@ class ClusterDistributionExtractor {
         StatisticsContainer statistics_container;
         for (size_t distance: distances) {
             DEBUG("Getting distributions for distance " << distance);
-            auto distributions = GetDistributionsForDistance(distance);
+            auto cluster_storage = GetInitialClusterStorage(distance);
+            auto distributions = GetDistributionsForStorage(cluster_storage);
             auto length_statistics = GetDistributionStatistics(distributions.length_distribution_);
             auto coverage_statistics = GetDistributionStatistics(distributions.coverage_distribution_);
             StatisticsPack statistics(length_statistics, coverage_statistics);
@@ -216,8 +216,9 @@ class ClusterDistributionExtractor {
         auto statistics = statistics_container.at(optimal_distance);
         INFO("Estimated mean cluster length: " << statistics.length_statistics_.mean_);
         INFO("Estimated median cluster length: " << statistics.length_statistics_.median_);
-        INFO("Estimated median cluster coverage: " << statistics.coverage_statistics_.median_)
-        return GetDistributionsForDistance(optimal_distance);
+        INFO("Estimated median cluster coverage: " << statistics.coverage_statistics_.median_);
+        auto cluster_storage = GetInitialClusterStorage(optimal_distance);
+        return GetDistributionsForStorage(cluster_storage);
     }
 
   private:
