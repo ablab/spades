@@ -131,7 +131,7 @@ int main(int argc, char** argv) {
         const size_t frame_size = 2000;
         const size_t read_linkage_distance = 5000;
 
-        const double graph_score_threshold = 2.99;
+        const double graph_score_threshold = 3.99;
         const size_t tail_threshold = 20000;
         const size_t length_threshold = 5000;
         const size_t count_threshold = 3;

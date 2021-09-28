@@ -172,6 +172,10 @@ struct ScaffoldVertexPairChunk {
     //todo other containers?
     using scaffold_vertex_iterator = std::unordered_set<ScaffoldVertex>::const_iterator;
 
+    ScaffoldVertexPairChunk(const ScaffoldVertex &vertex,
+                            scaffold_vertex_iterator begin,
+                            scaffold_vertex_iterator end) : vertex_(vertex), begin_(begin), end_(end) {}
+
     ScaffoldVertex vertex_;
     scaffold_vertex_iterator begin_;
     scaffold_vertex_iterator end_;
@@ -184,7 +188,7 @@ class ScoreFunctionGraphConstructor: public BaseScaffoldGraphConstructor {
     using BaseScaffoldGraphConstructor::ScaffoldVertex;
 
     ScoreFunctionGraphConstructor(const Graph &assembly_graph,
-                                  std::vector<ScaffoldVertexPairChunk>,
+                                  std::vector<ScaffoldVertexPairChunk> chunks,
                                   std::shared_ptr<EdgePairScoreFunction> score_function,
                                   double score_threshold, size_t num_threads);
 

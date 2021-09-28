@@ -39,7 +39,8 @@ scaffold_graph::ScaffoldGraph LinkIndexGraphConstructor::ConstructGraph() const 
     std::copy(scaffold_vertices.begin(), scaffold_vertices.end(), back_inserter(scaff_vertex_vector));
     INFO("Setting score index threshold to " << graph_score_threshold_);
 
-    ReverseBarcodeIndexConstructor reverse_index_constructor(g_, barcode_extractor_, length_threshold_, tail_threshold_, count_threshold_, max_threads_);
+    ReverseBarcodeIndexConstructor reverse_index_constructor(g_, barcode_extractor_, length_threshold_, tail_threshold_,
+                                                             count_threshold_, max_threads_);
     auto reverse_index = reverse_index_constructor.ConstructReverseIndex(scaffold_vertices);
 
     size_t total_head_size = 0;
@@ -62,26 +63,17 @@ scaffold_graph::ScaffoldGraph LinkIndexGraphConstructor::ConstructGraph() const 
     size_t block_size = total_pairs / 25;
     size_t initial_edge_counter = 0;
 
+    std::vector<path_extend::scaffolder::ScaffoldVertexPairChunk> chunks;
     for (const auto &entry: reverse_index) {
-        const auto &vertices = entry.second;
-        for (const auto &first: vertices) {
-            for (const auto &second: vertices) {
-                if (first != second and first.GetConjugateFromGraph(g_) != second) {
-                    scaffold_graph::ScaffoldGraph::ScaffoldEdge sc_edge(first, second, 0, 1.0, 0);
-                    result.AddEdgeSimple(sc_edge);
-                }
-                initial_edge_counter++;
-                if (initial_edge_counter % block_size == 0) {
-                    INFO("Processed " << initial_edge_counter << " edge pairs out of " << total_pairs);
-                }
-            }
+        for (const auto &first: entry.second) {
+            chunks.emplace_back(first, entry.second.begin(), entry.second.end());
         }
     }
-    INFO(result.VertexCount() << " vertices and " << result.EdgeCount() << " edges in initial scaffold graph");
-    auto score_filter = std::make_shared<path_extend::scaffolder::ScoreFunctionScaffoldGraphFilter>(g_, result,
-                                                                                                    score_function,
-                                                                                                    graph_score_threshold_,
-                                                                                                    max_threads_);
+    INFO(chunks.size() << " chunks");
+    auto score_filter = std::make_shared<path_extend::scaffolder::ScoreFunctionGraphConstructor>(g_, chunks,
+                                                                                                 score_function,
+                                                                                                 graph_score_threshold_,
+                                                                                                 max_threads_);
     return *(score_filter->Construct());
 }
 LinkIndexGraphConstructor::LinkIndexGraphConstructor(const debruijn_graph::Graph &g,
