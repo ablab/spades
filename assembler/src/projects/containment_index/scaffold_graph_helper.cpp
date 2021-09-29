@@ -204,7 +204,7 @@ scaffold_graph::ScaffoldGraph ScaffoldGraphSerializer::ReadGraph(const string &p
         auto first_vertex = id_to_vertex.at(first_id);
         auto second_vertex = id_to_vertex.at(second_id);
         scaffold_graph::ScaffoldGraph::ScaffoldEdge sc_edge(first_vertex, second_vertex, 0, weight, 0);
-        result.AddEdge(sc_edge);
+        result.AddEdgeSimple(sc_edge);
         ++i;
     }
     return result;
