@@ -31,23 +31,28 @@ class SimplePrecisionComp {
 struct DistributionPack {
   public:
     typedef uint64_t ClusterLength;
+    typedef uint64_t ClusterNumReads;
     typedef double ClusterCoverage;
     typedef std::map<ClusterLength, size_t> ClusterLengthDistribution;
+    typedef std::map<ClusterNumReads, size_t> ClusterNumReadsDistribution;
     typedef std::map<ClusterCoverage, size_t, SimplePrecisionComp<ClusterCoverage>> ClusterCoverageDistribution;
 
     DistributionPack() :
-        length_distribution_(), coverage_distribution_() {}
+        length_distribution_(), coverage_distribution_(), num_reads_distribution_() {}
 
     explicit DistributionPack(const ClusterLengthDistribution &length_distribution) :
-        length_distribution_(length_distribution), coverage_distribution_() {}
+        length_distribution_(length_distribution), coverage_distribution_(), num_reads_distribution_() {}
 
     DistributionPack(const ClusterLengthDistribution &length_distribution,
-                     const ClusterCoverageDistribution &coverage_distribution) :
+                     const ClusterCoverageDistribution &coverage_distribution,
+                     const ClusterNumReadsDistribution &num_reads_distribution) :
         length_distribution_(length_distribution),
-        coverage_distribution_(coverage_distribution) {}
+        coverage_distribution_(coverage_distribution),
+        num_reads_distribution_(num_reads_distribution) {}
 
     ClusterLengthDistribution length_distribution_;
     ClusterCoverageDistribution coverage_distribution_;
+    ClusterNumReadsDistribution num_reads_distribution_;
 };
 
 class SimpleDistributionExtractor {

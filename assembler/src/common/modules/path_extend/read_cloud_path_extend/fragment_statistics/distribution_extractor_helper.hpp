@@ -128,8 +128,11 @@ class ClusterDistributionExtractor {
     typedef debruijn_graph::EdgeId EdgeId;
     typedef DistributionPack::ClusterLength ClusterLength;
     typedef DistributionPack::ClusterCoverage ClusterCoverage;
+    typedef DistributionPack::ClusterNumReads ClusterNumReads;
     typedef DistributionPack::ClusterLengthDistribution ClusterLengthDistribution;
     typedef DistributionPack::ClusterCoverageDistribution ClusterCoverageDistribution;
+    typedef DistributionPack::ClusterNumReadsDistribution ClusterNumReadsDistribution;
+    typedef cluster_storage::ClusterStorage ClusterStorage;
 
     ClusterDistributionExtractor(const Graph &g,
                                  const barcode_index::FrameBarcodeIndex<Graph> &barcode_mapper,
@@ -144,9 +147,7 @@ class ClusterDistributionExtractor {
           min_cluster_offset_(min_cluster_offset),
           max_threads_(max_threads) {}
 
-    DistributionPack GetDistributionsForDistance(size_t distance_threshold) {
-        auto cluster_storage = GetInitialClusterStorage(distance_threshold);
-
+    DistributionPack GetDistributionsForStorage(const ClusterStorage &cluster_storage) {
         auto cluster_predicate = [this](const cluster_storage::Cluster &cluster) {
           VERIFY_DEV(cluster.Size() == 1);
           auto map_info = cluster.GetMappings()[0];
@@ -173,8 +174,15 @@ class ClusterDistributionExtractor {
               }
               return result;
             };
+        std::function<boost::optional<ClusterNumReads>(const cluster_storage::Cluster &)> num_reads_extractor =
+            [cluster_predicate](const cluster_storage::Cluster &cluster) {
+              boost::optional<ClusterNumReads> result;
+              if (cluster_predicate(cluster)) {
+                  result = cluster.GetReads();
+              }
+              return result;
+            };
         SimpleDistributionExtractor distribution_extractor;
-
         DEBUG("Constructed extractors");
         auto
             length_distribution = distribution_extractor.ExtractDistribution<ClusterLengthDistribution>(cluster_storage,
@@ -182,10 +190,12 @@ class ClusterDistributionExtractor {
         auto coverage_distribution =
             distribution_extractor.ExtractDistribution<ClusterCoverageDistribution>(cluster_storage,
                                                                                     coverage_extractor);
+        auto num_reads_distribution = distribution_extractor.ExtractDistribution<ClusterNumReadsDistribution>(
+            cluster_storage, num_reads_extractor);
 
         DEBUG("Extracted distributions");
-        DistributionPack result(length_distribution, coverage_distribution);
-        cluster_storage.Clear();
+        DistributionPack result(length_distribution, coverage_distribution, num_reads_distribution);
+//        cluster_storage.Clear();
         return result;
     }
     DistributionPack GetClusterDistributions() {
@@ -200,7 +210,8 @@ class ClusterDistributionExtractor {
         StatisticsContainer statistics_container;
         for (size_t distance: distances) {
             DEBUG("Getting distributions for distance " << distance);
-            auto distributions = GetDistributionsForDistance(distance);
+            auto cluster_storage = GetInitialClusterStorage(distance);
+            auto distributions = GetDistributionsForStorage(cluster_storage);
             auto length_statistics = GetDistributionStatistics(distributions.length_distribution_);
             auto coverage_statistics = GetDistributionStatistics(distributions.coverage_distribution_);
             StatisticsPack statistics(length_statistics, coverage_statistics);
@@ -217,7 +228,8 @@ class ClusterDistributionExtractor {
         INFO("Estimated mean cluster length: " << statistics.length_statistics_.mean_);
         INFO("Estimated median cluster length: " << statistics.length_statistics_.median_);
         INFO("Estimated median cluster coverage: " << statistics.coverage_statistics_.median_)
-        return GetDistributionsForDistance(optimal_distance);
+        auto cluster_storage = GetInitialClusterStorage(optimal_distance);
+        return GetDistributionsForStorage(cluster_storage);
     }
 
   private:
