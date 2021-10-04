@@ -61,12 +61,14 @@ public:
 public:
     template<class Writer>
     void BinWrite(Writer &writer) const {
+        io::binary::BinWrite(writer, k_);
         index_ptr_->serialize(writer);
     }
 
     template<class Reader>
     void BinRead(Reader &reader) {
         clear();
+        io::binary::BinRead(reader, k_);
         index_ptr_->deserialize(reader);
     }
 };
