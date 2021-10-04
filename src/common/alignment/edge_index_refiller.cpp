@@ -11,6 +11,8 @@
 
 #include <vector>
 
+#include <vector>
+
 namespace debruijn_graph {
 
 using EdgeIndex = KmerFreeEdgeIndex<ConjugateDeBruijnGraph>;
