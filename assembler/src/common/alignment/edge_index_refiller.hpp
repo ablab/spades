@@ -23,11 +23,12 @@ struct EdgeIndexRefiller {
     EdgeIndexRefiller(const std::filesystem::path &workdir);
 
     template<class EdgeIndex>
-    void Refill(EdgeIndex &index, const Graph &g);
+    void Refill(EdgeIndex &index, const Graph &g, bool count = false);
 
     template<class EdgeIndex>
     void Refill(EdgeIndex &index, const Graph &g,
-                const std::vector<typename Graph::EdgeId> &edges);
+                const std::vector<typename Graph::EdgeId> &edges,
+                bool count = false);
 };
 
 }
