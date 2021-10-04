@@ -7,12 +7,15 @@
 
 #pragma once
 
-#include <limits>
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/core/action_handlers.hpp"
 #include "assembly_graph/index/edge_info_updater.hpp"
 #include "edge_index_refiller.hpp"
 
+#include <limits>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace io { namespace binary {
 template<class Graph>
@@ -49,7 +52,7 @@ private:
             auto entry = index->get_value(kwh);
             return { entry.edge(), (size_t)entry.offset() };
         }
-        
+
         return { EdgeId(), NOT_FOUND };
     }
 
@@ -80,17 +83,31 @@ private:
     }
 
     template<class Index>
-    void Refill(Index *) {
-        auto index = new Index(this->g());
-        refiller_.Refill(*index, this->g());
+    void Refill(Index *index) {
+        Refill(index, unsigned(this->g().k() + 1));
+    }
+
+    template<class Index>
+    void Refill(Index *, unsigned k) {
+        auto index = new Index(this->g(), k);
+        refiller_.Refill(*index, this->g(),
+                         k != this->g().k() + 1);
         inner_index_ = index;
     }
 
     template<class Index>
-    void Refill(Index *, const std::vector<EdgeId> &edges) {
-        auto index = new Index(this->g());
-        refiller_.Refill(*index, this->g(), edges);
+    void Refill(Index *, unsigned k,
+                const std::vector<EdgeId> &edges) {
+        auto index = new Index(this->g(), k);
+        // Do not count k-mers if we're extracting k+1-mers directly from graph edges
+        refiller_.Refill(*index, this->g(), edges,
+                         k != this->g().k() + 1);
         inner_index_ = index;
+    }
+
+    template<class Index>
+    void Refill(Index *index, const std::vector<EdgeId> &edges) {
+        Refill(index, unsigned(this->g().k() + 1), edges);
     }
 
     template<class Writer, class Index>
@@ -100,7 +117,8 @@ private:
 
     template<class Reader, class Index>
     void BinRead(Index *, Reader &reader) {
-        auto index = new Index(this->g());
+        // kmer length is dummy value here to ensure we loaded the proper one
+        auto index = new Index(this->g(), -1);
         index->BinRead(reader);
         inner_index_ = index;
     }
@@ -159,9 +177,19 @@ public:
         INFO("Index refilled");
     }
 
+    void Refill(unsigned k) {
+        clear();
+        uint64_t max_id = this->g().max_eid();
+        large_index_ = (max_id > std::numeric_limits<uint32_t>::max());
+        INFO("Refilling using k = " << k);
+        INFO("Using " << (large_index_ ? "large" : "small") << " index (max_id = " << max_id << ")");
+        DISPATCH_TO(Refill, k);
+
+        INFO("Index refilled");
+    }
+
     void Refill(const std::vector<EdgeId> &edges) {
         clear();
-
         uint64_t max_id = this->g().max_eid();
         large_index_ = (max_id > std::numeric_limits<uint32_t>::max());
         INFO("Using " << (large_index_ ? "large" : "small") << " index (max_id = " << max_id << ")");
