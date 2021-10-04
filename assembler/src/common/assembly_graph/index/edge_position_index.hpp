@@ -115,8 +115,8 @@ public:
     typedef EdgeInfo<typename Graph::EdgeId, IdHolder> KmerPos;
 
 public:
-    KmerFreeEdgeIndex(const Graph &graph)
-            : base(unsigned(graph.k() + 1)), graph_(graph) {}
+    KmerFreeEdgeIndex(const Graph &graph, unsigned k)
+            : base(k), graph_(graph) {}
 
 
     using base::valid;
@@ -183,9 +183,8 @@ public:
   using base::valid;
   using base::ConstructKWH;
 
-
-  KmerStoringEdgeIndex(const Graph& g)
-          : base(unsigned(g.k() + 1)) {}
+  KmerStoringEdgeIndex(const Graph &, unsigned k)
+            : base(k) {}
 
   ~KmerStoringEdgeIndex() {}
 
