@@ -10,6 +10,8 @@
 #include "seq.hpp"
 #include "rtseq.hpp"
 
+#include "utils/verify.hpp"
+
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
 #include <llvm/Support/TrailingObjects.h>
 
