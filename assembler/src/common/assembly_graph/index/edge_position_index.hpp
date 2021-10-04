@@ -30,15 +30,16 @@ class EdgeInfo {
         edge_id_(IdHolder(e.int_id())) {
         offset_with_lock_.init();
         offset_with_lock_.setData(o);
-        VERIFY(edge_id_ != IdType().int_id() || clean());
+        VERIFY(edge_id_ != IdType().int_id() || clean() || removed());
     }
 
     template<class Graph>
-    EdgeInfo conjugate(const Graph &g) const {
+    EdgeInfo conjugate(const Graph &g, unsigned k) const {
         if (!valid())
-            return EdgeInfo(IdType(), CLEARED);
+            return EdgeInfo(IdType(), removed() ? TOMBSTONE : CLEARED);
 
-        return EdgeInfo(g.conjugate(edge()), unsigned(g.length(edge()) - offset() - 1));
+        return EdgeInfo(g.conjugate(edge()), unsigned(g.length(edge()) + g.k() - k
+                                                      - offset() - 1));
     }
 
     IdType edge() const {
@@ -89,13 +90,14 @@ stream &operator<<(stream &s, const EdgeInfo<IdType> &info) {
 template<class Graph>
 struct GraphInverter {
   const Graph &g_;
+  unsigned k_;
 
-  GraphInverter(const Graph &g)
-      : g_(g) {}
+  GraphInverter(const Graph &g, unsigned k)
+      : g_(g), k_(k) {}
 
   template<class K, class EI>
   EI operator()(const EI& v, const K&) const {
-    return v.conjugate(g_);
+    return v.conjugate(g_, k_);
   }
 };
 
@@ -123,11 +125,11 @@ public:
     using base::ConstructKWH;
 
     KmerPos get_value(const KeyWithHash &kwh) const {
-        return base::get_value(kwh, GraphInverter<Graph>(graph_));
+        return base::get_value(kwh, GraphInverter<Graph>(graph_, this->k()));
     }
 
     void put_value(const KeyWithHash &kwh, const KmerPos &pos) {
-        base::put_value(kwh, pos, GraphInverter<Graph>(graph_));
+        base::put_value(kwh, pos, GraphInverter<Graph>(graph_, this->k()));
     }
 
     /**
