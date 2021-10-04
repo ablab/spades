@@ -18,6 +18,7 @@ add_library(modules STATIC
             alignment/pacbio/gap_filler.cpp
             alignment/pacbio/gap_dijkstra.cpp 
             alignment/pacbio/g_aligner.cpp 
-            alignment/pacbio/g_aligner.cpp)
+            alignment/kmer_sequence_mapper.cpp
+            )
 
 target_link_libraries(modules sequence bwa assembly_graph)
