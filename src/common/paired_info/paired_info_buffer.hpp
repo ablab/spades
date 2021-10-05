@@ -236,7 +236,7 @@ class PairedBuffer : public PairedBufferBase<PairedBuffer<G, Traits, Container>,
         }
     }
 
-  private:
+private:
     std::pair<typename InnerHistPtr::pointer, size_t> InsertOne(EdgeId e1, EdgeId e2, InnerPoint p) {
         InnerMap& second = storage_[e1];
         typename InnerHistPtr::pointer inserted = nullptr;
