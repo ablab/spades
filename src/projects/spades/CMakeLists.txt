@@ -44,23 +44,6 @@ install(TARGETS spades-core
         DESTINATION bin
         COMPONENT spades)
 
-if (MPI_FOUND)
-  add_executable(spades-hpc
-                 main_mpi.cpp
-                 ${SPADES_SRC})
-
-  target_link_libraries(spades-hpc ${SPADES_LIB} ${MPI_LIBRARIES})
-  set_target_properties(spades-hpc PROPERTIES LINK_FLAGS "${MPI_LINK_FLAGS}")
-
-  if (SPADES_STATIC_BUILD)
-    set_target_properties(spades-hpc PROPERTIES LINK_SEARCH_END_STATIC 1)
-  endif()
-  install(TARGETS spades-hpc
-          DESTINATION bin
-          COMPONENT runtime)
-endif()
-
-
 # Configs
 install(DIRECTORY "configs/" # Trailing / is important
         DESTINATION share/spades/configs/debruijn
