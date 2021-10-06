@@ -191,25 +191,69 @@ void GetPathClusterStatistics(const Graph &graph,
     }
 }
 
-void CompareLinks(const scaffold_graph::ScaffoldGraph &hifi_graph, const scaffold_graph::ScaffoldGraph &tellseq_graph) {
+struct ScoreEntry {
+  ScoreEntry(const scaffold_graph::ScaffoldVertex &first,
+             const scaffold_graph::ScaffoldVertex &second,
+             double hifi_score,
+             double tellseq_score) : first_(first),
+                                     second_(second),
+                                     hifi_score_(hifi_score),
+                                     tellseq_score_(tellseq_score) {}
+
+  scaffold_graph::ScaffoldVertex first_;
+  scaffold_graph::ScaffoldVertex second_;
+  double hifi_score_;
+  double tellseq_score_;
+};
+
+void CompareLinks(const scaffold_graph::ScaffoldGraph &hifi_graph,
+                  const scaffold_graph::ScaffoldGraph &tellseq_graph,
+                  cont_index::LinkIndexGraphConstructor::BarcodeScoreFunctionPtr score_function,
+                  io::IdMapper<std::string> *id_mapper,
+                  const std::string &output_path) {
+
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     std::set<std::pair<ScaffoldVertex, ScaffoldVertex>> hifi_links;
-    double score_threshold = 10.0;
+    std::map<std::pair<ScaffoldVertex, ScaffoldVertex>, double> hifi_score_map;
+    double score_threshold = 5.0;
     INFO(hifi_graph.EdgeCount() << " edges in hifi graph");
     INFO(tellseq_graph.EdgeCount() << " edges in tellseq graph");
     for (const auto &edge: hifi_graph.edges()) {
+        std::pair<ScaffoldVertex, ScaffoldVertex> vertex_pair(edge.getStart(), edge.getEnd());
         hifi_links.emplace(edge.getStart(), edge.getEnd());
+        hifi_score_map.emplace(vertex_pair, edge.getWeight());
     }
-    size_t new_tellseq_links = 0;
-    for (const auto &edge: tellseq_graph.edges()) {
-        if (math::ge(edge.getWeight(), score_threshold)) {
-            std::pair<ScaffoldVertex, ScaffoldVertex> link(edge.getStart(), edge.getEnd());
-            if (hifi_links.find(link) != hifi_links.end()) {
-                new_tellseq_links++;
+
+    std::vector<ScoreEntry> score_entries;
+
+    if (tellseq_graph.VertexCount() != 0) {
+        size_t new_tellseq_links = 0;
+        for (const auto &edge: tellseq_graph.edges()) {
+            if (math::ge(edge.getWeight(), score_threshold)) {
+                std::pair<ScaffoldVertex, ScaffoldVertex> link(edge.getStart(), edge.getEnd());
+                if (hifi_links.find(link) == hifi_links.end()) {
+                    new_tellseq_links++;
+                } else {
+                    score_entries.emplace_back(edge.getStart(), edge.getEnd(), hifi_score_map.at(link), edge.getWeight());
+                }
+            }
+        }
+        INFO("Found " << new_tellseq_links << " new tellseq links");
+    } else {
+        for (const auto &edge: hifi_graph.edges()) {
+            double tellseq_score = score_function->GetScore(edge);
+            if (math::ge(tellseq_score, score_threshold)) {
+                score_entries.emplace_back(edge.getStart(), edge.getEnd(), edge.getWeight(), tellseq_score);
             }
         }
     }
-    INFO("Found " << new_tellseq_links << " new tellseq links");
+    INFO(score_entries.size() << " common links in hifi and tellseq graphs");
+    std::ofstream os(output_path);
+    os << "First\tSecond\tHiFi links\tTellSeq links" << "\n";
+    for (const auto &entry: score_entries) {
+        os << (*id_mapper)[entry.first_.int_id()] << "\t" << (*id_mapper)[entry.second_.int_id()]
+           << "\t" << entry.hifi_score_ << "\t" << entry.tellseq_score_ << "\n";
+    }
 }
 
 int main(int argc, char** argv) {
@@ -286,6 +330,9 @@ int main(int argc, char** argv) {
 
         TIME_TRACE_SCOPE("Containment index");
 
+        GFAGraphConstructor gfa_graph_constructor(graph, gfa, id_mapper.get());
+        auto hifi_graph = gfa_graph_constructor.ConstructGraph();
+
         auto &lib = dataset[cfg.libindex];
         if (lib.type() == io::LibraryType::Clouds10x) {
             cont_index::ConstructBarcodeIndex(barcode_index,
@@ -303,18 +350,26 @@ int main(int argc, char** argv) {
         using BarcodeExtractor = barcode_index::FrameBarcodeIndexInfoExtractor;
         auto barcode_extractor_ptr = std::make_shared<BarcodeExtractor>(barcode_index, graph);
 
-        auto scaffold_graph = cont_index::GetTellSeqScaffoldGraph(graph, barcode_extractor_ptr, graph_score_threshold,
-                                                                  length_threshold,
-                                                                  tail_threshold, count_threshold, cfg.nthreads,
-                                                                  cfg.bin_load,
-                                                                  cfg.debug, cfg.output_dir, id_mapper.get());
+        scaffold_graph::ScaffoldGraph tellseq_graph(graph);
+//        auto tellseq_graph = cont_index::GetTellSeqScaffoldGraph(graph, barcode_extractor_ptr, graph_score_threshold,
+//                                                                 length_threshold,
+//                                                                 tail_threshold, count_threshold, cfg.nthreads,
+//                                                                 cfg.bin_load,
+//                                                                 cfg.debug, cfg.output_dir, id_mapper.get());
+
+        LinkIndexGraphConstructor link_index_constructor(graph,
+                                                         barcode_extractor_ptr,
+                                                         graph_score_threshold,
+                                                         tail_threshold,
+                                                         length_threshold,
+                                                         count_threshold,
+                                                         cfg.nthreads);
+        auto score_function = link_index_constructor.ConstructScoreFunction();
 
         GetLongEdgeStatistics(graph, barcode_index, training_length_threshold, training_length_offset,
                               training_min_read_threshold, training_linkage_distance, cfg.nthreads, cfg.output_dir);
-
-        GFAGraphConstructor gfa_graph_constructor(graph, gfa, id_mapper.get());
-        auto hifi_graph = gfa_graph_constructor.ConstructGraph();
-        CompareLinks(hifi_graph, scaffold_graph);
+        auto compare_output_path = fs::append_path(cfg.output_dir, "hifi_tellseq_scores.tsv");
+        CompareLinks(hifi_graph, tellseq_graph, score_function, id_mapper.get(), compare_output_path);
 
 //        GetPathClusterStatistics(graph, barcode_extractor_ptr, scaffold_graph, read_linkage_distance,
 //                                 relative_score_threshold,
