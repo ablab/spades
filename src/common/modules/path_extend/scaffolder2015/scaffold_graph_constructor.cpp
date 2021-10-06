@@ -191,8 +191,9 @@ void ScoreFunctionGraphConstructor::ConstructFromScore(std::shared_ptr<EdgePairS
     for (const auto &chunk: chunks_) {
         graph_->AddVertex(chunk.vertex_);
     }
-    size_t counter = 0;
-    const size_t block_size = chunks_.size() / 100;
+    size_t approx_block_counter = 0;
+    const size_t NUM_BLOCKS = 100;
+    const size_t block_size = chunks_.size() / NUM_BLOCKS;
 #pragma omp parallel for schedule(guided)
     for (size_t i = 0; i < chunks_.size(); ++i) {
         for (auto it = chunks_[i].begin_; it != chunks_[i].end_; ++it) {
@@ -211,12 +212,13 @@ void ScoreFunctionGraphConstructor::ConstructFromScore(std::shared_ptr<EdgePairS
                 }
             }
         }
-        if (i % block_size == 0) {
-            INFO("Processed " << i << "th chunk");
+        if (i % block_size == 0 and i != 0) {
+#pragma omp critical
+        {
+            ++approx_block_counter;
+            INFO("Processed " << approx_block_counter << " out of " << NUM_BLOCKS << " blocks");
         }
-//        if (counter % block_size == 0) {
-//            INFO("Processed " << counter << " chunks out of " << chunks_.size());
-//        }
+        }
     }
 }
 

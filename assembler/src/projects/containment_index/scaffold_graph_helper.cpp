@@ -19,7 +19,7 @@ scaffold_graph::ScaffoldGraph LinkIndexGraphConstructor::ConstructGraph() const 
         scaffold_vertices.insert(edge);
         scaffold_vertices.insert(g_.conjugate(edge));
     }
-
+    auto score_function = ConstructScoreFunction();
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
     auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold_);
     auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(g_,
@@ -32,11 +32,6 @@ scaffold_graph::ScaffoldGraph LinkIndexGraphConstructor::ConstructGraph() const 
 
     auto scaffold_index_extractor =
         std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
-    auto score_function =
-        std::make_shared<path_extend::read_cloud::TrivialBarcodeScoreFunction>(g_, scaffold_index_extractor,
-                                                                               count_threshold_, tail_threshold_);
-    std::vector<scaffold_graph::ScaffoldVertex> scaff_vertex_vector;
-    std::copy(scaffold_vertices.begin(), scaffold_vertices.end(), back_inserter(scaff_vertex_vector));
     INFO("Setting score index threshold to " << graph_score_threshold_);
 
     ReverseBarcodeIndexConstructor reverse_index_constructor(g_, barcode_extractor_, length_threshold_, tail_threshold_,
@@ -60,8 +55,6 @@ scaffold_graph::ScaffoldGraph LinkIndexGraphConstructor::ConstructGraph() const 
     for (const auto &entry: reverse_index) {
         total_pairs += entry.second.size() * entry.second.size();
     }
-    size_t block_size = total_pairs / 25;
-    size_t initial_edge_counter = 0;
 
     std::vector<path_extend::scaffolder::ScaffoldVertexPairChunk> chunks;
     for (const auto &entry: reverse_index) {
@@ -90,6 +83,30 @@ LinkIndexGraphConstructor::LinkIndexGraphConstructor(const debruijn_graph::Graph
                                                                            length_threshold_(length_threshold),
                                                                            count_threshold_(count_threshold),
                                                                            max_threads_(max_threads) {}
+LinkIndexGraphConstructor::BarcodeScoreFunctionPtr LinkIndexGraphConstructor::ConstructScoreFunction() const {
+    std::set<scaffold_graph::ScaffoldVertex> scaffold_vertices;
+    for (const debruijn_graph::EdgeId &edge: g_.canonical_edges()) {
+        scaffold_vertices.insert(edge);
+        scaffold_vertices.insert(g_.conjugate(edge));
+    }
+
+    barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
+    auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold_);
+    auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(g_,
+                                                                     *barcode_extractor_,
+                                                                     tail_threshold_getter,
+                                                                     count_threshold_,
+                                                                     length_threshold_,
+                                                                     max_threads_,
+                                                                     scaffold_vertices);
+
+    auto scaffold_index_extractor =
+        std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
+    auto score_function =
+        std::make_shared<path_extend::read_cloud::TrivialBarcodeScoreFunction>(g_, scaffold_index_extractor,
+                                                                               count_threshold_, tail_threshold_);
+    return score_function;
+}
 scaffold_graph::ScaffoldGraph GFAGraphConstructor::ConstructGraph() const {
     scaffold_graph::ScaffoldGraph scaffold_graph(g_);
     for (const EdgeId &edge: g_.canonical_edges()) {
@@ -111,7 +128,13 @@ scaffold_graph::ScaffoldGraph GFAGraphConstructor::ConstructGraph() const {
                 EdgeId e2 = seg_to_edge.at((gfa_ptr->seg + (av[j].w >> 1))->name);
                 if (av[j].w & 1)
                     e2 = g_.conjugate(e2);
-                scaffold_graph::ScaffoldGraph::ScaffoldEdge scedge(e1, e2);
+                const gfa_aux_t *aux = &gfa_ptr->arc_aux[av[j].link_id];
+
+                uint8_t *rc = gfa_aux_get(aux->l_aux, aux->aux, "RC");
+                unsigned links = 0;
+                if (rc && rc[0] == 'i')
+                    links = *(int32_t*)(rc+1);
+                scaffold_graph::ScaffoldGraph::ScaffoldEdge scedge(e1, e2, 0, static_cast<double>(links), 0);
                 scaffold_graph.AddEdge(scedge);
             }
         }
@@ -199,12 +222,17 @@ scaffold_graph::ScaffoldGraph ScaffoldGraphSerializer::ReadGraph(const string &p
     size_t i = 0;
     std::string first_id, second_id;
     double weight;
+    //fixme optimize link deduplication in scaffold graph itself
+    std::set<std::pair<scaffold_graph::ScaffoldVertex, scaffold_graph::ScaffoldVertex>> unique_links;
     while (i < number_of_edges) {
         graph_reader >> first_id >> second_id >> weight;
         auto first_vertex = id_to_vertex.at(first_id);
         auto second_vertex = id_to_vertex.at(second_id);
-        scaffold_graph::ScaffoldGraph::ScaffoldEdge sc_edge(first_vertex, second_vertex, 0, weight, 0);
-        result.AddEdgeSimple(sc_edge);
+        auto emplace_result = unique_links.emplace(first_vertex, second_vertex);
+        if (emplace_result.second) {
+            scaffold_graph::ScaffoldGraph::ScaffoldEdge sc_edge(first_vertex, second_vertex, 0, weight, 0);
+            result.AddEdgeSimple(sc_edge);
+        }
         ++i;
     }
     return result;
