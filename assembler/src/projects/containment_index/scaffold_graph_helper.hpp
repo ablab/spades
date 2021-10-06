@@ -24,6 +24,7 @@ class LinkIndexGraphConstructor {
   public:
     using Graph = debruijn_graph::Graph;
     using BarcodeExtractorPtr = std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor>;
+    using BarcodeScoreFunctionPtr = std::shared_ptr<path_extend::read_cloud::AbstractBarcodeScoreFunction>;
 
     LinkIndexGraphConstructor(const Graph &g,
                               BarcodeExtractorPtr barcode_extractor,
@@ -34,6 +35,8 @@ class LinkIndexGraphConstructor {
                               size_t max_threads);
 
     scaffold_graph::ScaffoldGraph ConstructGraph() const;
+
+    BarcodeScoreFunctionPtr ConstructScoreFunction() const;
 
   private:
     const debruijn_graph::Graph &g_;
