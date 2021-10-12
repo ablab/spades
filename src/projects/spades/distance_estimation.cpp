@@ -31,7 +31,11 @@ namespace debruijn_graph {
  *
  * Need this histogram for edges which occur more then one time or for find out how much time we need to repeat the loop.
  */
-void DistanceEstimation::run(graph_pack::GraphPack &gp, const char*) {
+void DistanceEstimation::run(graph_pack::GraphPack &gp, const char* s) {
+    DistanceEstimationInner().run(gp, s);
+}
+
+void DistanceEstimationInner::run(graph_pack::GraphPack &gp, const char *) {
     using namespace omnigraph::de;
     using namespace distance_estimation;
 
@@ -58,10 +62,10 @@ void DistanceEstimation::run(graph_pack::GraphPack &gp, const char*) {
 
         if (lib.data().mean_insert_size != 0.0) {
             INFO("Processing library #" << i);
-            EstimatePairedDistances(clustered_indices[i], graph, lib, paired_indices[i],
+            runEstimatePairedDistances(clustered_indices[i], graph, lib, paired_indices[i],
                                     max_repeat_length, config.de);
             if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info)
-                EstimateScaffoldingDistances(scaffolding_indices[i], graph, lib, paired_indices[i],
+                runEstimateScaffoldingDistances(scaffolding_indices[i], graph, lib, paired_indices[i],
                                              config.ade, config.de);
         }
 
@@ -70,6 +74,25 @@ void DistanceEstimation::run(graph_pack::GraphPack &gp, const char*) {
             paired_indices[i].clear();
         }
     }
+}
+
+void DistanceEstimationInner::runEstimatePairedDistances(omnigraph::de::PairedInfoIndexT<Graph> &clustered_index,
+                                                         const Graph &graph,
+                                                         const io::SequencingLibrary<debruijn_graph::config::LibraryData> &lib,
+                                                         const omnigraph::de::UnclusteredPairedInfoIndexT<debruijn_graph::Graph> &paired_index,
+                                                         size_t max_repeat_length,
+                                                         const debruijn_graph::config::distance_estimator &de_config) {
+    distance_estimation::EstimatePairedDistances(clustered_index, graph, lib, paired_index, max_repeat_length, de_config);
+}
+
+
+void DistanceEstimationInner::runEstimateScaffoldingDistances(
+        omnigraph::de::PairedInfoIndexT<debruijn_graph::Graph> &scaffolding_index, const Graph &graph,
+        const io::SequencingLibrary<debruijn_graph::config::LibraryData> &lib,
+        const omnigraph::de::UnclusteredPairedInfoIndexT<Graph> &paired_index,
+        const debruijn_graph::config::smoothing_distance_estimator &ade,
+        const debruijn_graph::config::distance_estimator &de_config) {
+    distance_estimation::EstimateScaffoldingDistances(scaffolding_index, graph, lib, paired_index, ade, de_config);
 }
 
 }

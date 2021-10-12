@@ -5,26 +5,26 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "load_graph.hpp"
-#include "gap_closer.hpp"
-#include "mismatch_correction.hpp"
-#include "pair_info_count.hpp"
-#include "second_phase_setup.hpp"
-#include "repeat_resolving.hpp"
-#include "distance_estimation.hpp"
-#include "hybrid_aligning.hpp"
-#include "chromosome_removal.hpp"
-#include "series_analysis.hpp"
-#include "contig_output_stage.hpp"
-#include "extract_domains.hpp"
-#include "domain_graph_construction.hpp"
-#include "restricted_edges_filling.hpp"
+#include "projects/spades/load_graph.hpp"
+#include "projects/spades/gap_closer.hpp"
+#include "projects/spades/mismatch_correction.hpp"
+#include "projects/spades/pair_info_count.hpp"
+#include "projects/spades/second_phase_setup.hpp"
+#include "projects/spades/repeat_resolving.hpp"
+#include "distance_estimation_mpi.hpp"
+#include "projects/spades/hybrid_aligning.hpp"
+#include "projects/spades/chromosome_removal.hpp"
+#include "projects/spades/series_analysis.hpp"
+#include "projects/spades/contig_output_stage.hpp"
+#include "projects/spades/extract_domains.hpp"
+#include "projects/spades/domain_graph_construction.hpp"
+#include "projects/spades/restricted_edges_filling.hpp"
+#include "projects/spades/wastewater_disentangle.hpp"
 #include "library/library.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/stage.hpp"
 #include "pipeline/mpi_stage.hpp"
 #include "alignment/kmer_mapper.hpp"
-#include "wastewater_disentangle.hpp"
 
 #include "stages/genomic_info_filler.hpp"
 #include "stages/read_conversion.hpp"
@@ -141,7 +141,7 @@ static void AddPreliminarySimplificationStages(StageManager &SPAdes) {
 
     if (cfg::get().use_intermediate_contigs) {
         SPAdes.add<debruijn_graph::PairInfoCount>(true);
-        SPAdes.add<debruijn_graph::DistanceEstimation>(true);
+        SPAdes.add<debruijn_graph::DistanceEstimationMPI>(true);
         SPAdes.add<debruijn_graph::RepeatResolution>(true);
 
         if (cfg::get().hm)
@@ -207,7 +207,7 @@ static void AddRepeatResolutionStages(StageManager &SPAdes) {
         SPAdes.add<debruijn_graph::SeriesAnalysis>();
 
     SPAdes.add<debruijn_graph::PairInfoCount>()
-          .add<debruijn_graph::DistanceEstimation>()
+          .add<debruijn_graph::DistanceEstimationMPI>()
           .add<debruijn_graph::RepeatResolution>();
 }
 
