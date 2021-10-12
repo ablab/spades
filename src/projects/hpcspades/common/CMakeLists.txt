@@ -1,7 +1,10 @@
 ############################################################################
 # Copyright (c) 2021 Saint Petersburg State University
+# Copyright (c) 2011-2014 Saint Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
 
-add_subdirectory(spades)
+project(common_modules_mpi CXX)
+
+add_subdirectory(paired_info)

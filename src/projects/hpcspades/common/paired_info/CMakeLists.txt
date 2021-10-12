@@ -4,4 +4,10 @@
 # See file LICENSE for details.
 ############################################################################
 
-add_subdirectory(projects)
+project(paired_info_mpi CXX)
+
+add_library(paired_info_mpi STATIC
+            distance_estimation.cpp
+            distance_estimation_utils.cpp)
+
+target_link_libraries(paired_info_mpi modules)
