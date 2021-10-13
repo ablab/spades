@@ -14,7 +14,7 @@ namespace cont_index {
 
 scaffold_graph::ScaffoldGraph LinkIndexGraphConstructor::ConstructGraph() const {
     scaffold_graph::ScaffoldGraph result(g_);
-    std::set<scaffold_graph::ScaffoldVertex> scaffold_vertices;
+    std::unordered_set<scaffold_graph::ScaffoldVertex> scaffold_vertices;
     for (const debruijn_graph::EdgeId &edge: g_.canonical_edges()) {
         scaffold_vertices.insert(edge);
         scaffold_vertices.insert(g_.conjugate(edge));
@@ -34,34 +34,36 @@ scaffold_graph::ScaffoldGraph LinkIndexGraphConstructor::ConstructGraph() const 
         std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
     INFO("Setting score index threshold to " << graph_score_threshold_);
 
-    ReverseBarcodeIndexConstructor reverse_index_constructor(g_, barcode_extractor_, length_threshold_, tail_threshold_,
-                                                             count_threshold_, max_threads_);
-    auto reverse_index = reverse_index_constructor.ConstructReverseIndex(scaffold_vertices);
-
-    size_t total_head_size = 0;
-    size_t total_tail_size = 0;
-    for (const auto &vertex: scaffold_vertices) {
-        total_head_size += scaffold_index_extractor->GetHeadSize(vertex);
-        total_tail_size += scaffold_index_extractor->GetTailSize(vertex);
-    }
-    INFO("Total head size: " << total_head_size);
-    INFO("Total tail size: " << total_tail_size);
-
     for (const auto &vertex: scaffold_vertices) {
         result.AddVertex(vertex);
     }
 
-    size_t total_pairs = 0;
-    for (const auto &entry: reverse_index) {
-        total_pairs += entry.second.size() * entry.second.size();
-    }
+//    ReverseBarcodeIndexConstructor reverse_index_constructor(g_, barcode_extractor_, length_threshold_, tail_threshold_,
+//                                                             count_threshold_, max_threads_);
+//    auto reverse_index = reverse_index_constructor.ConstructReverseIndex(scaffold_vertices);
+//
+//    size_t total_head_size = 0;
+//    size_t total_tail_size = 0;
+//    for (const auto &vertex: scaffold_vertices) {
+//        total_head_size += scaffold_index_extractor->GetHeadSize(vertex);
+//        total_tail_size += scaffold_index_extractor->GetTailSize(vertex);
+//    }
+//    INFO("Total head size: " << total_head_size);
+//    INFO("Total tail size: " << total_tail_size);
+//    size_t total_pairs = 0;
+//    for (const auto &entry: reverse_index) {
+//        total_pairs += entry.second.size() * entry.second.size();
+//    }
 
     std::vector<path_extend::scaffolder::ScaffoldVertexPairChunk> chunks;
-    for (const auto &entry: reverse_index) {
-        for (const auto &first: entry.second) {
-            chunks.emplace_back(first, entry.second.begin(), entry.second.end());
-        }
+    for (const auto &first: scaffold_vertices) {
+        chunks.emplace_back(first, scaffold_vertices.begin(), scaffold_vertices.end());
     }
+//    for (const auto &entry: reverse_index) {
+//        for (const auto &first: entry.second) {
+//            chunks.emplace_back(first, entry.second.begin(), entry.second.end());
+//        }
+//    }
     INFO(chunks.size() << " chunks");
     auto score_filter = std::make_shared<path_extend::scaffolder::ScoreFunctionGraphConstructor>(g_, chunks,
                                                                                                  score_function,

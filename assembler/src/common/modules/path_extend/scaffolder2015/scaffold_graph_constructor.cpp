@@ -200,7 +200,7 @@ void ScoreFunctionGraphConstructor::ConstructFromScore(std::shared_ptr<EdgePairS
                     #pragma omp critical
                     {
                         TRACE("Success");
-			ScaffoldGraph::ScaffoldEdge new_edge(first, *it, 0, score, 0);
+			            ScaffoldGraph::ScaffoldEdge new_edge(first, *it, 0, score, 0);
                         graph_->AddEdgeSimple(new_edge);
                     }
                 }

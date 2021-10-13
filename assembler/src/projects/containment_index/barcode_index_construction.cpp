@@ -4,6 +4,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include <modules/alignment/kmer_sequence_mapper.hpp>
 #include "barcode_index_construction.hpp"
 
 #include "barcode_index/barcode_index_builder.hpp"
@@ -23,9 +24,10 @@ void ConstructBarcodeIndex(barcode_index::FrameBarcodeIndex<debruijn_graph::Grap
                            bool bin_save) {
     if (!bin_load) {
         const std::vector<string> barcode_prefices = {"BC:Z:", "BX:Z:"};
-                alignment::BWAReadMapper<debruijn_graph::Graph> bwa_mapper(graph);
+//        alignment::BWAReadMapper<debruijn_graph::Graph> mapper(graph);
+        alignment::ShortKMerReadMapper mapper(graph, workdir);
         FrameConcurrentBarcodeIndexBuffer<debruijn_graph::Graph> buffer(graph, frame_size);
-        ConcurrentBufferFiller buffer_filler(graph, buffer, bwa_mapper, barcode_prefices);
+        ConcurrentBufferFiller buffer_filler(graph, buffer, mapper, barcode_prefices);
         FrameBarcodeIndexBuilder barcode_index_builder(buffer_filler, nthreads);
         barcode_index_builder.ConstructBarcodeIndex(barcode_index, lib);
         INFO("Barcode index construction finished.");
