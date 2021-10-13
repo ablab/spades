@@ -350,12 +350,12 @@ int main(int argc, char** argv) {
         using BarcodeExtractor = barcode_index::FrameBarcodeIndexInfoExtractor;
         auto barcode_extractor_ptr = std::make_shared<BarcodeExtractor>(barcode_index, graph);
 
-        scaffold_graph::ScaffoldGraph tellseq_graph(graph);
-//        auto tellseq_graph = cont_index::GetTellSeqScaffoldGraph(graph, barcode_extractor_ptr, graph_score_threshold,
-//                                                                 length_threshold,
-//                                                                 tail_threshold, count_threshold, cfg.nthreads,
-//                                                                 cfg.bin_load,
-//                                                                 cfg.debug, cfg.output_dir, id_mapper.get());
+//        scaffold_graph::ScaffoldGraph tellseq_graph(graph);
+        auto tellseq_graph = cont_index::GetTellSeqScaffoldGraph(graph, barcode_extractor_ptr, graph_score_threshold,
+                                                                 length_threshold,
+                                                                 tail_threshold, count_threshold, cfg.nthreads,
+                                                                 cfg.bin_load,
+                                                                 cfg.debug, cfg.output_dir, id_mapper.get());
 
         LinkIndexGraphConstructor link_index_constructor(graph,
                                                          barcode_extractor_ptr,

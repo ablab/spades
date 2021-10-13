@@ -92,19 +92,16 @@ class IntersectingScaffoldVertexIndexInfoExtractor: public ScaffoldVertexIndexIn
 
  public:
     virtual SimpleVertexEntry GetIntersection(const VertexEntryT &first, const VertexEntryT &second) const = 0;
-
     virtual SimpleVertexEntry GetIntersection(const ScaffoldVertex &first, const ScaffoldVertex &second) const = 0;
     /**
      * @note second is supposed to be between first and third
      */
     virtual size_t GetIntersectionSize(const ScaffoldVertex &middle, const VertexEntryT &entry) const = 0;
-
     size_t GetIntersectionSize(const VertexEntryT &first, const VertexEntryT &second) {
         return GetIntersection(first, second).size();
     }
 
     virtual SimpleVertexEntry GetHeadEntry(const ScaffoldVertex &vertex) = 0;
-
     virtual SimpleVertexEntry GetTailEntry(const ScaffoldVertex &vertex) = 0;
 };
 
@@ -155,7 +152,6 @@ class BarcodeIndexInfoExtractorWrapper: public IntersectingScaffoldVertexIndexIn
         SimpleVertexEntry result;
         return result;
     }
-
     SimpleVertexEntry GetTailEntry(const ScaffoldVertex &vertex) override {
         return GetHeadEntry(vertex);
     }
@@ -182,7 +178,25 @@ class SimpleScaffoldVertexIndexInfoExtractor: public IntersectingScaffoldVertexI
         return result;
     }
     size_t GetIntersectionSize(const ScaffoldVertex &first, const ScaffoldVertex &second) const override {
-        return GetIntersection(first, second).size();
+        auto first_begin = index_->GetTailBegin(first);
+        auto first_end = index_->GetTailEnd(first);
+        auto second_begin = index_->GetHeadBegin(second);
+        auto second_end = index_->GetHeadEnd(second);
+        auto first_it = first_begin;
+        auto second_it = second_begin;
+        size_t current_intersection = 0;
+        while (first_it != first_end and second_it != second_end) {
+            if (*first_it == *second_it) {
+                ++current_intersection;
+                ++first_it;
+                ++second_it;
+            } else if (*first_it < *second_it) {
+                ++first_it;
+            } else {
+                ++second_it;
+            }
+        }
+        return current_intersection;
     }
     size_t GetIntersectionSize(const ScaffoldVertex &middle, const SimpleVertexEntry &entry) const override {
         auto middle_begin = index_->GetHeadBegin(middle);
