@@ -190,48 +190,6 @@ size_t ProcessSingleReads(graph_pack::GraphPack &gp, size_t ilib,
 
     return single_long_reads.size();
 }
-
-void ProcessPairedReads(graph_pack::GraphPack &gp,
-                        std::unique_ptr<paired_info::PairedInfoFilter> filter,
-                        unsigned filter_threshold,
-                        size_t ilib) {
-    SequencingLib &reads = cfg::get_writable().ds.reads[ilib];
-    const auto &data = reads.data();
-
-    unsigned round_thr = 0;
-    // Do not round if filtering is disabled
-    if (filter)
-        round_thr = unsigned(std::min(cfg::get().de.max_distance_coeff * data.insert_size_deviation * cfg::get().de.rounding_coeff,
-                                      cfg::get().de.rounding_thr));
-
-    SequenceMapperNotifierMPI notifier(cfg::get_writable().ds.reads.lib_count());
-    INFO("Left insert size quantile " << data.insert_size_left_quantile <<
-         ", right insert size quantile " << data.insert_size_right_quantile <<
-         ", filtering threshold " << filter_threshold <<
-         ", rounding threshold " << round_thr);
-
-    LatePairedIndexFiller::WeightF weight;
-    if (filter) {
-        weight = [&](const std::pair<EdgeId, EdgeId> &ep,
-                     const MappingRange&, const MappingRange&) {
-            return (filter->lookup(ep) > filter_threshold ? 1. : 0.);
-        };
-    } else {
-        weight = [&](const std::pair<EdgeId, EdgeId> &,
-                     const MappingRange&, const MappingRange&) {
-            return 1.;
-        };
-    }
-
-    using Indices = omnigraph::de::UnclusteredPairedInfoIndicesT<Graph>;
-    LatePairedIndexFiller pif(gp.get<Graph>(), weight, round_thr, gp.get_mutable<Indices>()[ilib]);
-    notifier.Subscribe(&pif, ilib);
-
-    size_t num_readers = partask::overall_num_threads();
-    auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, (size_t) data.mean_insert_size,
-                                                /*include merged*/true, num_readers);
-    notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
-}
 } // namespace
 
 void PairInfoCount::run(graph_pack::GraphPack &gp, const char *) {
