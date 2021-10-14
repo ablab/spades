@@ -9,9 +9,6 @@
 project(stages CXX)
 
 set(stages_src read_conversion.cpp construction.cpp simplification.cpp ss_edge_split.cpp genomic_info_filler.cpp)
-if (MPI_FOUND)
-  set(stages_src ${stages_src} test_mpi.cpp)
-endif()
-
 add_library(stages STATIC ${stages_src})
+
 target_link_libraries(stages coverage_model pipeline gqf input)
