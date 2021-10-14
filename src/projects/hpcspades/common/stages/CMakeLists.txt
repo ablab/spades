@@ -1,11 +1,13 @@
 ############################################################################
-# Copyright (c) 2021 Saint Petersburg State University
+# Copyright (c) 2015 Saint Petersburg State University
 # Copyright (c) 2011-2014 Saint Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
 
-project(common_modules_mpi CXX)
+project(stages-mpi CXX)
 
-add_subdirectory(paired_info)
-add_subdirectory(stages)
+set(STAGES_MPI_SRC construction_mpi.cpp)
+
+add_library(stages-mpi STATIC
+            ${STAGES_MPI_SRC})
