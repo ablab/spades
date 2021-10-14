@@ -10,7 +10,7 @@
 
 #include "alignment/edge_index.hpp"
 #include "assembly_graph/construction/early_simplification.hpp"
-#include "assembly_graph/construction/debruijn_graph_constructor_mpi.hpp"
+#include "../assembly_graph/construction/debruijn_graph_constructor_mpi.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
 #include "io/dataset_support/read_converter.hpp"
 #include "io/reads/coverage_filtering_read_wrapper.hpp"

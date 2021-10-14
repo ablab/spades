@@ -7,7 +7,7 @@
 
 #include "pipeline/partask_mpi.hpp"
 #include "io/binary/graph.hpp"
-#include "debruijn_graph_constructor.hpp"
+#include "common/assembly_graph/construction/debruijn_graph_constructor.hpp"
 
 namespace debruijn_graph {
 template<class Graph>
