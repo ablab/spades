@@ -7,7 +7,7 @@
 
 project(stages-mpi CXX)
 
-set(STAGES_MPI_SRC construction_mpi.cpp)
+set(STAGES_MPI_SRC construction_mpi.cpp test_mpi.cpp)
 
 add_library(stages-mpi STATIC
             ${STAGES_MPI_SRC})
