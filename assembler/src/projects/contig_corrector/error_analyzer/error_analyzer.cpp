@@ -53,7 +53,7 @@ struct gcfg {
 clipp::group GetCLI() {
     using namespace clipp;
 
-    auto snps_file = (required("--snps") & value("file", cfg.snps)) % "used_snps.gz file from quast";
+    auto snps_file = (required("--snps") & value("file", cfg.snps)) % "used_snps* file from quast";
     auto quast_dir = ((required("--quast") & value("dir", cfg.quast_dir)) % "quast directory",
                      cfg.quast_organism_name_pattern << value("quast organism name pattern"),
                      cfg.quast_scenarios_name_pattern << value("quast scenarios name pattern"));
@@ -95,8 +95,9 @@ void addCoverageStats(SeqFragments const &fragments, FullErrorStatistics & stats
     if (fragments.empty())
         return;
 
-    stats.cov_stats[RangeEndsType::origin_head] += fragments[0].len;
-    if (fragments.size() > 1)
+    if (fragments[0].type == RangeType::origin)
+        stats.cov_stats[RangeEndsType::origin_head] += fragments[0].len;
+    if (fragments.size() > 1 && fragments.back().type == RangeType::origin)
         stats.cov_stats[RangeEndsType::origin_tail] += fragments.back().len;
 }
 
@@ -224,7 +225,7 @@ std::unordered_map<std::string, SeqFragments> MakeSeqFragments(Records<ReplaceIn
 std::vector<std::string> getSnpsFilesFromQuastDir(std::string const & quast_dir, std::string const & organism_name_pattern, std::string const & file_pattern) {
     if (!fs::check_existence(quast_dir))
         throw "quast directory '" + quast_dir + "' does not exists";
-    auto file_pattern_with_ext = file_pattern + ".used_snps.gz";
+    auto file_pattern_with_ext = file_pattern + ".used_snps*";
     auto path_pattern = fs::append_path(fs::append_path(fs::append_path(fs::append_path(fs::append_path(quast_dir, "runs_per_reference"), organism_name_pattern), "contigs_reports"), "minimap_output"), file_pattern_with_ext);
     auto files = fs::glob(path_pattern);
     if (files.empty())

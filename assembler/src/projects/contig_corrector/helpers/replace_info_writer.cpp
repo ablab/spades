@@ -1,5 +1,3 @@
-#pragma once
-
 #include "replace_info_writer.hpp"
 #include <iomanip>
 #include <cassert>
@@ -32,7 +30,7 @@ ReplaceInfoWriter::ReplaceInfoWriter(std::string file)
     : out(file)
 {
     if (!out.is_open())
-        throw "Cannot open '" + file + "' file";
+        throw "Cannot create '" + file + "' file";
     Print(out, "name", "seq_type", "from", "len");
 }
 

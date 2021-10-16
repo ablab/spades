@@ -14,18 +14,22 @@
 #include "common/assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "common/assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
 #include "common/assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
-#include "common/toolchain/utils.hpp"
+#include "common/io/binary/graph_pack.hpp"
 #include "common/utils/memory_limit.hpp"
 
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/parallel/parallel_wrapper.hpp"
-#include "utils/filesystem/temporary.hpp"
 #include "utils/filesystem/file_opener.hpp"
+#include "utils/filesystem/path_helper.hpp"
+#include "utils/filesystem/temporary.hpp"
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string>
 #include <algorithm>
+
+/// @todo REMOVE
+#include "filler_chooser.hpp"
 
 namespace sequence_corrector {
 
@@ -217,9 +221,14 @@ constexpr char BASE_NAME[] = "graph_pack";
 int main() {
     const size_t GB = 1 << 30;
 
+    /// @todo REMOVE
+    // CompressTest();
+    // return 0;
+
     auto nthreads = cfg.nthreads;
     auto k = cfg.k;
     std::string &output_dir = cfg.output_dir;
+    fs::make_dirs(output_dir);
     if (cfg.debug_mode)
         ReplaceInfoWriter::SetStream(fs::append_path(output_dir, "replace_info_dump.dump"));
 
@@ -243,7 +252,7 @@ int main() {
     #ifdef GOOD_NAME
     {
         if (cfg.debug_mode) {
-            ofstream contigs_output(fs::append_path(output_dir, "canu_contig.fasta"));
+            ofstream contigs_output(fs::append_path(output_dir, "selected_contig.fasta"));
             VERIFY(contigs_output.is_open());
             for (auto & contig : contigs) {
                 if (contig.name == GOOD_NAME) {

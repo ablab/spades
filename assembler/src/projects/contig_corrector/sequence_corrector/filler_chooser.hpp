@@ -30,4 +30,7 @@ public:
     bool IsDominantScore(size_t dominator, size_t other) const noexcept;
 };
 
+void CompressTest();
+void ConsensusTest();
+
 } // namespace sequence_corrector

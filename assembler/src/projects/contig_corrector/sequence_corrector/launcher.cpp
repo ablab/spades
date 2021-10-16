@@ -217,7 +217,7 @@ boost::optional<string> SequenceCorrector::GetBestMachedPath(EdgeId start_edge, 
     auto error = omnigraph::ProcessPaths(graph, min_len, max_len, start_vertex, target_vertex, path_storage);
 
     if (error) {
-        WARN("WOW! omnigraph::ProcessPaths failed!, error: " << error);
+        WARN("WOW! omnigraph::ProcessPaths failed! tried to fill path with size = " << ref.size() << ", found paths: " << path_storage.paths().size() << ", error: " << error);
         return {};
     }
 

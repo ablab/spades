@@ -60,6 +60,8 @@ FilterType<Columns, columns ...> GetFilter(std::function<bool(debruijn_graph::Ed
     return [unique_edge_checker_ = std::move(unique_edge_checker), &graph](auto const & element) {
         constexpr auto EDGE_LENGTH_ERROR_COEFF = 0.01;
         constexpr auto LENGTHS_ERROR_COEFF = 0.05;
+        constexpr auto MIN_TAIL_OVERLAP_LEN = 1000;
+        const auto TAIL_GAP = static_cast<int>(graph.k());
         if (element.template Get<Columns::strand>() != '+')
             return false;
         auto contig_start = element.template Get<Columns::Q_start>();
@@ -77,10 +79,24 @@ FilterType<Columns, columns ...> GetFilter(std::function<bool(debruijn_graph::Ed
         auto lens_difference = std::abs(contig_delta - edge_delta);
 
         auto const & edge_title = element.template Get<Columns::T_name>();
+        
+        bool edge_fully_inside_contig = (double)edge_len_difference <= (double)edge_len * EDGE_LENGTH_ERROR_COEFF;
+        bool contig_fully_inside_edge = (double)contig_len_difference <= (double)contig_len * EDGE_LENGTH_ERROR_COEFF;
+
+        bool contig_is_started_with_edge =
+                MIN_TAIL_OVERLAP_LEN <= edge_delta &&
+                edge_len - edge_end < TAIL_GAP &&
+                contig_start < TAIL_GAP;
+
+        bool contig_is_ended_with_edge =
+                MIN_TAIL_OVERLAP_LEN <= edge_delta &&
+                edge_start < TAIL_GAP &&
+                contig_len - contig_end < TAIL_GAP;
+
         return unique_edge_checker_(GetEdgeId(edge_title, graph)) &&
                GetIDY(element) > 0.90 &&
-               ((double)edge_len_difference <= (double)edge_len * EDGE_LENGTH_ERROR_COEFF || (double)contig_len_difference <= (double)contig_len * EDGE_LENGTH_ERROR_COEFF) &&
                (double) lens_difference < (double) edge_delta * LENGTHS_ERROR_COEFF &&
+               (edge_fully_inside_contig || contig_fully_inside_edge || contig_is_started_with_edge || contig_is_ended_with_edge) &&
                GetCov(edge_title) > 2;
     };
 }
