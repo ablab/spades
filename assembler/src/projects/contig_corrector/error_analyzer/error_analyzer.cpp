@@ -88,6 +88,11 @@ Records<SNPSColumns, columns ...> ReadUsedSnps(std::vector<std::string> const & 
 #define REPLACE_INFO_WISHED_COLUMNS ReplaceInfoColumns::contig_name, ReplaceInfoColumns::seq_type, \
     ReplaceInfoColumns::from, ReplaceInfoColumns::len
 
+void addRangeNumberStats(SeqFragments const &fragments, FullErrorStatistics & stats) {
+    for (auto const & fragment : fragments)
+        ++stats.range_num_stat[fragment.type];
+}
+
 void addCoverageStats(SeqFragments const &fragments, FullErrorStatistics & stats) {
     for (auto const & fragment : fragments)
         stats.cov_stats[fragment.type] += fragment.len;
@@ -279,6 +284,7 @@ int main() {
         for (auto & stat : ref_stat.second) {
             auto seqFragments = seqFragmentsByName.find(stat.first);
             addCoverageStats(seqFragments->second, stat.second);
+            addRangeNumberStats(seqFragments->second, stat.second);
             ref_stat.second.summary_statistics += stat.second;
         }
     }

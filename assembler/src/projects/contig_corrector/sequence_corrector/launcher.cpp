@@ -102,6 +102,24 @@ private:
     long long GetStartPos(size_t pos) const { return path_info.start_positions[pos]; }
     long long GetEndPos(size_t pos) const { return path_info.end_positions[pos]; }
 
+    int GetEdgeRang(size_t pos) const {
+        auto len = graph.length(path_info.edges[pos]);
+        if (len >= 2000)
+            return 0;
+        if (len >= 1000)
+            return 1;
+        return 2;
+    }
+
+    size_t GetNextEdgePos(size_t start_pos, int max_rang) const {
+        while (start_pos < path_info.edges.size()) {
+            if (GetEdgeRang(start_pos) <= max_rang)
+                return start_pos;
+            ++start_pos;
+        }
+        return -1ull;
+    }
+
     size_t Size() const noexcept { return path_info.edges.size(); }
 
     /// @returns amount of nucls from the end of the 'start_pos' edge to the start of the 'end_pos' edge.

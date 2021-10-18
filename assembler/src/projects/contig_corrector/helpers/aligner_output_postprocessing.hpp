@@ -162,6 +162,22 @@ DropAlg<Columns, columns ...> GetFullDropper() {
 }
 
 template<class Columns, Columns ... columns>
+DropAlg<Columns, columns ...> GetLengthDropper() {
+    return [](std::vector<size_t> & contig, Records<Columns, columns ...> const & records, size_t k) {
+        DropMarker<Columns, columns ...> marker = [](auto const &lhs, auto const &rhs) {
+            auto lhs_len = lhs.template Get<Columns::T_size>();
+            auto rhs_len = rhs.template Get<Columns::T_size>();
+            if (lhs_len >= 2*rhs_len)
+                return std::make_pair(false, true);
+            if (rhs_len >= 2*lhs_len)
+                return std::make_pair(true, false);
+            return std::make_pair(true, true);
+        };
+        return DropperCore(contig, records, k, marker);
+    };
+}
+
+template<class Columns, Columns ... columns>
 DropAlg<Columns, columns ...> GetTransitiveDropperByIDY() {
     return [](std::vector<size_t> & contig, Records<Columns, columns ...> const & records, size_t k) {
         DropMarker<Columns, columns ...> marker = [](auto const & lhs, auto const & rhs) {
@@ -200,8 +216,6 @@ PathWithEdgePostionsContainer MakePaths(Records<Columns, columns ...> const & re
             auto const & record = records[index];
             auto start_shift = record.template Get<Columns::T_start>() - 0;
             auto end_shift = record.template Get<Columns::T_size>() - record.template Get<Columns::T_end>();
-            // std::cout << record.template Get<Columns::T_start>() << " " << record.template Get<Columns::T_end>() << ' ' << record.template Get<Columns::T_size>() << " " << start_shift << " " << end_shift << '\n';
-            // VERIFY(end_shift == 0 && start_shift == 0);
             path.start_positions.push_back(record.template Get<Columns::Q_start>() - start_shift);
             path.end_positions.push_back(record.template Get<Columns::Q_end>() + end_shift);
             path.edges.push_back(GetEdgeId(record.template Get<Columns::T_name>(), graph));

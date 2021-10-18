@@ -37,6 +37,8 @@ struct Stat : std::array<size_t, amount> {
     }
 };
 
+using RangeNumberStatType = Stat<3, RangeType>;
+
 using LocalErrorStatType = Stat<3+1, RangeType, BoundStatType>;
 
 using CoverageStatistics = Stat<3+2, RangeType, RangeEndsType>;
@@ -67,6 +69,7 @@ struct FullErrorStatistics {
     ErrorStatistics events;
     ErrorStatistics total_len;
     CoverageStatistics cov_stats;
+    RangeNumberStatType range_num_stat;
 
     void operator +=(FullErrorStatistics const & other);
 };

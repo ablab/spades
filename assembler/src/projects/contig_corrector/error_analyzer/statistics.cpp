@@ -13,6 +13,22 @@ void FullErrorStatistics::operator +=(FullErrorStatistics const & other) {
     events += other.events;
     total_len += other.total_len;
     cov_stats += other.cov_stats;
+    range_num_stat += other.range_num_stat;
+}
+
+std::ostream & operator << (std::ostream & out, RangeNumberStatType const & stat) {
+    size_t total = RangeTypeSum(stat);
+    if (!total)
+        return out;
+    auto Print = [total, &out] (char const * type, size_t value) {
+        if (value)
+            out << "     " << type <<": " << value << " (" << (static_cast<double>(value) * 100.0) / static_cast<double>(total) << "%)" << '\n';
+    };
+
+    Print("origin", stat[RangeType::origin]);
+    Print("edges ", stat[RangeType::edge]);
+    Print("paths ", stat[RangeType::path]);
+    return out;
 }
 
 std::ostream & operator << (std::ostream & out, CoverageStatistics const & stat) {
@@ -61,6 +77,8 @@ std::ostream & operator << (std::ostream & out, ErrorStatistics const & stat) {
 }
 
 std::ostream & operator << (std::ostream & out, FullErrorStatistics const & stat) {
+    out << "   fragment number:\n";
+    out << stat.range_num_stat;
     out << "   coverage fragment length:\n";
     out << stat.cov_stats;
     out << "   events:\n";

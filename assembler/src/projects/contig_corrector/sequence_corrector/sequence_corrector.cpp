@@ -127,7 +127,7 @@ void MakeAllFilteredEdgesDump(Records<Columns, columns ...> const & records, Map
 
 ScaffoldingUniqueEdgeStorage GetUniqueEdgeStorage(GraphPack const & gp) {
     auto const & graph = gp.get<Graph>();
-    constexpr auto min_unique_length = 2000;
+    constexpr auto min_unique_length = 500;
     constexpr auto uniformity_fraction_threshold = 0.8;
     constexpr auto nonuniform_coverage_variation = 50;
     auto unique_variation = 0.5;
@@ -181,8 +181,9 @@ template<class Columns, Columns ... columns>
 DropAlg<Columns, columns ...> GetDropAlg(size_t num) {
     switch (num) {
         case 0: return GetNonDropper<Columns, columns ...>(); break;
-        case 1: return GetFullDropper<Columns, columns ...>(); break;
-        case 2: return GetTransitiveDropperByIDY<Columns, columns ...>(); break;
+        case 1: return GetLengthDropper<Columns, columns ...>(); break;
+        case 2: return GetFullDropper<Columns, columns ...>(); break;
+        case 3: return GetTransitiveDropperByIDY<Columns, columns ...>(); break;
         default: throw std::string("unknown the value of -d option"); break;
     }
 }
