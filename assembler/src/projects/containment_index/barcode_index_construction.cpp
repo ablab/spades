@@ -24,8 +24,8 @@ void ConstructBarcodeIndex(barcode_index::FrameBarcodeIndex<debruijn_graph::Grap
                            bool bin_save) {
     if (!bin_load) {
         const std::vector<string> barcode_prefices = {"BC:Z:", "BX:Z:"};
-//        alignment::BWAReadMapper<debruijn_graph::Graph> mapper(graph);
-        alignment::ShortKMerReadMapper mapper(graph, workdir);
+        alignment::BWAReadMapper<debruijn_graph::Graph> mapper(graph);
+//        alignment::ShortKMerReadMapper mapper(graph, workdir);
         FrameConcurrentBarcodeIndexBuffer<debruijn_graph::Graph> buffer(graph, frame_size);
         ConcurrentBufferFiller buffer_filler(graph, buffer, mapper, barcode_prefices);
         FrameBarcodeIndexBuilder barcode_index_builder(buffer_filler, nthreads);
