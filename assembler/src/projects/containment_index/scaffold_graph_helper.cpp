@@ -211,7 +211,7 @@ scaffold_graph::ScaffoldGraph ScaffoldGraphSerializer::ReadGraph(const string &p
     for (const debruijn_graph::EdgeId &edge: g_.canonical_edges()) {
         auto str_id = (*id_mapper_)[edge.int_id()];
         scaffold_graph::ScaffoldVertex vertex(edge);
-        scaffold_graph::ScaffoldVertex conj_vertex(edge);
+        scaffold_graph::ScaffoldVertex conj_vertex(g_.conjugate(edge));
         id_to_vertex.emplace(str_id, vertex);
         id_to_vertex.emplace(str_id + "\'", conj_vertex);
         result.AddVertex(vertex);
