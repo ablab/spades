@@ -256,6 +256,59 @@ void CompareLinks(const scaffold_graph::ScaffoldGraph &hifi_graph,
     }
 }
 
+void NormalizeTellseqLinks(const scaffold_graph::ScaffoldGraph &tellseq_graph,
+                           size_t min_length,
+                           std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr,
+                           size_t count_threshold,
+                           size_t tail_threshold,
+                           io::IdMapper<std::string> *id_mapper,
+                           const std::string &output_path) {
+    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
+    const auto &assembly_graph = tellseq_graph.AssemblyGraph();
+    std::map<std::pair<ScaffoldVertex, ScaffoldVertex>, double> score_map;
+    double score_threshold = 2.0;
+    if (tellseq_graph.VertexCount() != 0) {
+        for (const auto &edge: tellseq_graph.edges()) {
+            const auto &first_vertex = edge.getStart();
+            const auto &first_conj = first_vertex.GetConjugateFromGraph(assembly_graph);
+            const auto &second_vertex = edge.getEnd();
+            const auto &second_conj = second_vertex.GetConjugateFromGraph(assembly_graph);
+            size_t first_len = first_vertex.GetLengthFromGraph(assembly_graph);
+            size_t second_len = second_vertex.GetLengthFromGraph(assembly_graph);
+            double num_barcodes = edge.getWeight();
+            if (first_len >= min_length and second_len >= min_length and math::ge(num_barcodes, score_threshold)) {
+                std::pair<ScaffoldVertex, ScaffoldVertex> link(first_vertex, second_vertex);
+                std::pair<ScaffoldVertex, ScaffoldVertex> rc_rc_link(second_conj, first_conj);
+                if (first_vertex != second_vertex and first_vertex != second_conj) {
+                    score_map[link] += num_barcodes / 2;
+                    score_map[rc_rc_link] += num_barcodes / 2;
+                }
+            }
+        }
+    }
+    INFO(score_map.size() << " filtered tellseq links");
+
+    std::unordered_map<ScaffoldVertex, size_t> vertex_to_head_barcodes;
+    for (const auto &vertex: tellseq_graph.vertices()) {
+        vertex_to_head_barcodes[vertex] = barcode_extractor_ptr->GetBarcodesFromHead(vertex.GetFirstEdge(), count_threshold, tail_threshold).size();
+    }
+
+    std::ofstream os(fs::append_path(output_path, "normalized_tellseq_links.tsv"));
+    os << "First\tSecond\tTotal links\tJaccard Index" << "\n";
+    for (const auto &entry: score_map) {
+        const auto &first_vertex = entry.first.first;
+        const auto &first_conj = first_vertex.GetConjugateFromGraph(assembly_graph);
+        const auto &second_vertex = entry.first.second;
+        double shared_barcodes = entry.second;
+        auto first_tail_barcodes = vertex_to_head_barcodes[first_conj];
+        auto second_head_barcodes = vertex_to_head_barcodes[second_vertex];
+        auto union_size = static_cast<double>(first_tail_barcodes + second_head_barcodes) - shared_barcodes;
+        double jaccard_index = shared_barcodes / union_size;
+        os << (*id_mapper)[first_vertex.int_id()] << "\t" << (*id_mapper)[second_vertex.int_id()]
+           << "\t" << shared_barcodes << "\t" << jaccard_index << "\n";
+    }
+}
+
 int main(int argc, char** argv) {
     utils::segfault_handler sh;
     gcfg cfg;
@@ -333,6 +386,8 @@ int main(int argc, char** argv) {
         GFAGraphConstructor gfa_graph_constructor(graph, gfa, id_mapper.get());
         auto hifi_graph = gfa_graph_constructor.ConstructGraph();
 
+
+
         auto &lib = dataset[cfg.libindex];
         if (lib.type() == io::LibraryType::Clouds10x) {
             cont_index::ConstructBarcodeIndex(barcode_index,
@@ -365,11 +420,18 @@ int main(int argc, char** argv) {
                                                          count_threshold,
                                                          cfg.nthreads);
         auto score_function = link_index_constructor.ConstructScoreFunction();
+        NormalizeTellseqLinks(tellseq_graph,
+                              length_threshold,
+                              barcode_extractor_ptr,
+                              count_threshold,
+                              tail_threshold,
+                              id_mapper.get(),
+                              cfg.output_dir);
 
-        GetLongEdgeStatistics(graph, barcode_index, training_length_threshold, training_length_offset,
-                              training_min_read_threshold, training_linkage_distance, cfg.nthreads, cfg.output_dir);
-        auto compare_output_path = fs::append_path(cfg.output_dir, "hifi_tellseq_scores.tsv");
-        CompareLinks(hifi_graph, tellseq_graph, score_function, id_mapper.get(), compare_output_path);
+//        GetLongEdgeStatistics(graph, barcode_index, training_length_threshold, training_length_offset,
+//                              training_min_read_threshold, training_linkage_distance, cfg.nthreads, cfg.output_dir);
+//        auto compare_output_path = fs::append_path(cfg.output_dir, "hifi_tellseq_scores.tsv");
+//        CompareLinks(hifi_graph, tellseq_graph, score_function, id_mapper.get(), compare_output_path);
 
 //        GetPathClusterStatistics(graph, barcode_extractor_ptr, scaffold_graph, read_linkage_distance,
 //                                 relative_score_threshold,
