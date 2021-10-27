@@ -9,33 +9,33 @@
 <font size=20>__SPAdes 3.15.3 Manual__</font>
 
 1. [About SPAdes](#sec1) </br>
-    1.1. [Supported data types](#sec1.1)</br>
-    1.2. [SPAdes pipeline](#sec1.2)</br>
-    1.3. [SPAdes performance](#sec1.3)</br>
+    1.1. [Supported data types](#sec1.1)</br>
+    1.2. [SPAdes pipeline](#sec1.2)</br>
+    1.3. [SPAdes performance](#sec1.3)</br>
 2. [Installation](#sec2)</br>
-    2.1. [Downloading SPAdes Linux binaries](#sec2.1)</br>
-    2.2. [Downloading SPAdes binaries for Mac](#sec2.2)</br>
-    2.3. [Downloading and compiling SPAdes source code](#sec2.3)</br>
-    2.4. [Verifying your installation](#sec2.4)</br>
+    2.1. [Downloading SPAdes Linux binaries](#sec2.1)</br>
+    2.2. [Downloading SPAdes binaries for Mac](#sec2.2)</br>
+    2.3. [Downloading and compiling SPAdes source code](#sec2.3)</br>
+    2.4. [Verifying your installation](#sec2.4)</br>
 3. [Running SPAdes](#sec3)</br>
-    3.1. [SPAdes input](#sec3.1)</br>
-    3.2. [SPAdes command line options](#sec3.2)</br>
-    3.3. [Assembling IonTorrent reads](#sec3.3)</br>
-    3.4. [Assembling long Illumina paired reads (2x150 and 2x250)](#sec3.4)</br>
+    3.1. [SPAdes input](#sec3.1)</br>
+    3.2. [SPAdes command line options](#sec3.2)</br>
+    3.3. [Assembling IonTorrent reads](#sec3.3)</br>
+    3.4. [Assembling long Illumina paired reads (2x150 and 2x250)](#sec3.4)</br>
     3.5. [HMM-guided mode](#hmm)</br>
-    3.6. [SPAdes output](#spadesoutsec)</br>
-    3.7. [plasmidSPAdes output](#plasmidout)</br>
-    3.8. [metaplasmidSPAdes and metaviralSPAdes output](#metapv)</br>
-    3.9. [biosyntheticSPAdes output](#bgc)</br>
-    3.10. [Assembly evaluation](#eval)</br>
+    3.6. [SPAdes output](#spadesoutsec)</br>
+    3.7. [plasmidSPAdes output](#plasmidout)</br>
+    3.8. [metaplasmidSPAdes and metaviralSPAdes output](#metapv)</br>
+    3.9. [biosyntheticSPAdes output](#bgc)</br>
+    3.10. [Assembly evaluation](#eval)</br>
 4. [Stand-alone binaries released within SPAdes package](#sec4)</br>
-    4.1. [k-mer counting](#sec4.1)</br>
-    4.2. [k-mer coverage read filter](#sec4.2)</br>
-    4.3. [k-mer cardinality estimating](#sec4.3)</br>
-    4.4. [Graph construction](#sec4.4)</br>
-    4.5. [Long read to graph alignment](#sec4.5)</br>
-        4.5.1. [hybridSPAdes aligner](#sec4.5.1)</br>
-        4.5.2. [SPAligner](#sec4.5.2)</br>
+    4.1. [k-mer counting](#sec4.1)</br>
+    4.2. [k-mer coverage read filter](#sec4.2)</br>
+    4.3. [k-mer cardinality estimating](#sec4.3)</br>
+    4.4. [Graph construction](#sec4.4)</br>
+    4.5. [Long read to graph alignment](#sec4.5)</br>
+        4.5.1. [hybridSPAdes aligner](#sec4.5.1)</br>
+        4.5.2. [SPAligner](#sec4.5.2)</br>
 5. [Citation](#sec5)</br>
 6. [Feedback and bug reports](#sec6)</br>
 
@@ -387,40 +387,40 @@ Note that we assume that `bin` forder from SPAdes installation directory is adde
 ### Basic options
 
 `-o <output_dir> `
-    Specify the output directory. Required option.
+    Specify the output directory. Required option.
 
 []()
 
 <a name="isolate"></a>
 `--isolate ` 
-    This flag is highly recommended for high-coverage isolate and multi-cell Illumina data; improves the assembly quality and running time. 
+    This flag is highly recommended for high-coverage isolate and multi-cell Illumina data; improves the assembly quality and running time. 
     We also recommend to trim your reads prior to the assembly. More details can be found [here](http://cab.spbu.ru/benchmarking-tools-for-de-novo-microbial-assembly/).
     This option is not compatible with `--only-error-correction` or `--careful` options. 
 
 <a name="sc"></a>
 `--sc `
-    This flag is required for MDA (single-cell) data.
+    This flag is required for MDA (single-cell) data.
 
 []()
 
 <a name="meta"></a>
-`--meta `   (same as `metaspades.py`)
-    This flag is recommended when assembling metagenomic data sets (runs metaSPAdes, see [paper](https://genome.cshlp.org/content/27/5/824.short) for more details). Currently metaSPAdes supports only a **_single_** short-read library which has to be **_paired-end_** (we hope to remove this restriction soon). In addition, you can provide long reads (e.g. using `--pacbio` or `--nanopore` options), but hybrid assembly for metagenomes remains an experimental pipeline and optimal performance is not guaranteed. It does not support [careful mode](#correctoropt) (mismatch correction is not available). In addition, you cannot specify coverage cutoff for metaSPAdes. Note that metaSPAdes might be very sensitive to presence of the technical sequences remaining in the data (most notably adapter readthroughs), please run quality control and pre-process your data accordingly.
+`--meta `   (same as `metaspades.py`)
+    This flag is recommended when assembling metagenomic data sets (runs metaSPAdes, see [paper](https://genome.cshlp.org/content/27/5/824.short) for more details). Currently metaSPAdes supports only a **_single_** short-read library which has to be **_paired-end_** (we hope to remove this restriction soon). In addition, you can provide long reads (e.g. using `--pacbio` or `--nanopore` options), but hybrid assembly for metagenomes remains an experimental pipeline and optimal performance is not guaranteed. It does not support [careful mode](#correctoropt) (mismatch correction is not available). In addition, you cannot specify coverage cutoff for metaSPAdes. Note that metaSPAdes might be very sensitive to presence of the technical sequences remaining in the data (most notably adapter readthroughs), please run quality control and pre-process your data accordingly.
 
 []()
 
 <a name="plasmid"></a>
-`--plasmid `   (same as `plasmidspades.py`)
-    This flag is required when assembling only plasmids from WGS data sets (runs plasmidSPAdes, see [paper](https://academic.oup.com/bioinformatics/article/32/22/3380/2525610) for the algorithm details). Note, that plasmidSPAdes is not compatible with [single-cell mode](#sc). Additionally, we do not recommend to run plasmidSPAdes on more than one library. 
+`--plasmid `   (same as `plasmidspades.py`)
+    This flag is required when assembling only plasmids from WGS data sets (runs plasmidSPAdes, see [paper](https://academic.oup.com/bioinformatics/article/32/22/3380/2525610) for the algorithm details). Note, that plasmidSPAdes is not compatible with [single-cell mode](#sc). Additionally, we do not recommend to run plasmidSPAdes on more than one library. 
 
 For plasmidSPAdes output details see [section 3.6](#plasmidout).
 
 []()
 
 <a name="metaextrachromosomal"></a> 
-`--metaplasmid `   (same as `metaplasmidspades.py` and `--meta` `--plasmid`) and
+`--metaplasmid `   (same as `metaplasmidspades.py` and `--meta` `--plasmid`) and
 
-`--metaviral `   (same as `metaviralspades.py`)
+`--metaviral `   (same as `metaviralspades.py`)
  
 These options works specially for extracting extrachromosomal elements from metagenomic assemblies. They run similar pipelines that slightly differ in the simplification step; another difference is that for metaviral mode we output linear putative extrachromosomal contigs and for metaplasmid mode we do not.
 See [metaplasmid paper](https://genome.cshlp.org/content/29/6/961.short) and [metaviral paper](https://academic.oup.com/bioinformatics/article-abstract/36/14/4126/5837667) for the algorithms details.
@@ -435,51 +435,51 @@ Additionally for plasmidSPAdes, metaplasmidSPAdes and metaviralSPAdes we recomme
 
 <a name="biosynthetic"></a>
 `--bio `
-    This flag is required when assembling only non-ribosomal and polyketide gene clusters from WGS data sets (runs biosyntheticSPAdes, see [paper](https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1) for the algorithm details). biosyntheticSPAdes is supposed to work on isolate or metagenomic WGS dataset. Note, that biosyntheticSPAdes is not compatible with any other modes. See [section 3.8](#bgc) for biosyntheticSPAdes output details.
+    This flag is required when assembling only non-ribosomal and polyketide gene clusters from WGS data sets (runs biosyntheticSPAdes, see [paper](https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1) for the algorithm details). biosyntheticSPAdes is supposed to work on isolate or metagenomic WGS dataset. Note, that biosyntheticSPAdes is not compatible with any other modes. See [section 3.8](#bgc) for biosyntheticSPAdes output details.
 
 []()
 
 <a name="rna"></a>
-`--rna `   (same as `rnaspades.py`)
-    This flag should be used when assembling RNA-Seq data sets (runs rnaSPAdes). To learn more, see [rnaSPAdes manual](assembler/rnaspades_manual.html).
+`--rna `   (same as `rnaspades.py`)
+    This flag should be used when assembling RNA-Seq data sets (runs rnaSPAdes). To learn more, see [rnaSPAdes manual](assembler/rnaspades_manual.html).
     Not compatible with `--only-error-correction` or `--careful` options. 
 
 []()
 
 <a name="rnaviral"></a>
-`--rnaviral`   (same as `rnaviralspades.py`)
-    This flag should be used when assembling viral RNA-Seq data sets (runs rnaviralSPAdes).
+`--rnaviral`   (same as `rnaviralspades.py`)
+    This flag should be used when assembling viral RNA-Seq data sets (runs rnaviralSPAdes).
     Not compatible with `--only-error-correction` or `--careful` options. 
 
 `--iontorrent `
-    This flag is required when assembling IonTorrent data. Allows BAM files as input. Carefully read [section 3.3](#sec3.3) before using this option.
+    This flag is required when assembling IonTorrent data. Allows BAM files as input. Carefully read [section 3.3](#sec3.3) before using this option.
 
 `--test`
-    Runs SPAdes on the toy data set; see [section 2.4](#sec2.4).
+    Runs SPAdes on the toy data set; see [section 2.4](#sec2.4).
 
 `-h` (or `--help`)
-    Prints help.
+    Prints help.
 
 `-v` (or `--version`)
-    Prints SPAdes version.
+    Prints SPAdes version.
 
 []()
 <a name="pipelineopt"></a>
 ### Pipeline options
 
 `--only-error-correction`
-    Performs read error correction only.
+    Performs read error correction only.
 
 `--only-assembler`
-    Runs assembly module only.
+    Runs assembly module only.
 
 []()
 <a name="correctoropt"></a>
 `--careful`
-    Tries to reduce the number of mismatches and short indels. Also runs MismatchCorrector &ndash; a post processing tool, which uses [BWA](http://bio-bwa.sourceforge.net) tool (comes with SPAdes). This option is recommended only for assembly of small genomes. We strongly recommend not to use it for large and medium-size eukaryotic genomes. Note, that this options is is not supported by metaSPAdes and rnaSPAdes. 
+    Tries to reduce the number of mismatches and short indels. Also runs MismatchCorrector &ndash; a post processing tool, which uses [BWA](http://bio-bwa.sourceforge.net) tool (comes with SPAdes). This option is recommended only for assembly of small genomes. We strongly recommend not to use it for large and medium-size eukaryotic genomes. Note, that this options is is not supported by metaSPAdes and rnaSPAdes. 
 
 `--continue`
-    Continues SPAdes run from the specified output folder starting from the last available check-point. Check-points are made after:
+    Continues SPAdes run from the specified output folder starting from the last available check-point. Check-points are made after:
 
 -   error correction module is finished
 -   iteration for each specified K value of assembly module is finished
@@ -488,7 +488,7 @@ Additionally for plasmidSPAdes, metaplasmidSPAdes and metaviralSPAdes we recomme
 For example, if specified K values are 21, 33 and 55 and SPAdes was stopped or crashed during assembly stage with K = 55, you can run SPAdes with the `--continue` option specifying the same output directory. SPAdes will continue the run starting from the assembly stage with K = 55. Error correction module and iterations for K equal to 21 and 33 will not be run again. If `--continue` is set, the only allowed option is `-o <output_dir> `.
 
 `--restart-from <check_point>`
-    Restart SPAdes run from the specified output folder starting from the specified check-point. Check-points are:
+    Restart SPAdes run from the specified output folder starting from the specified check-point. Check-points are:
 
 -   `ec` &ndash; start from error correction
 -   `as` &ndash; restart assembly module from the first iteration
@@ -501,7 +501,7 @@ In contrast to the `--continue` option, you can change some of the options when 
 Since all files will be overwritten, do not forget to copy your assembly from the previous run if you need it.
 
 `--disable-gzip-output`
-    Forces read error correction module not to compress the corrected reads. If this options is not set, corrected reads will be in `*.fastq.gz` format.
+    Forces read error correction module not to compress the corrected reads. If this options is not set, corrected reads will be in `*.fastq.gz` format.
 
 []()
 
@@ -511,109 +511,109 @@ Since all files will be overwritten, do not forget to copy your assembly from th
 #### Specifying single library (paired-end or single-read)
 
 `--12 <file_name> `
-    File with interlaced forward and reverse paired-end reads.
+    File with interlaced forward and reverse paired-end reads.
 
 `-1 <file_name> `
-    File with forward reads.
+    File with forward reads.
 
 `-2 <file_name> `
-    File with reverse reads.
+    File with reverse reads.
 
 `--merged <file_name> `
-    File with merged paired reads.
-    If the properties of the library permit, overlapping paired-end reads can be merged using special software.
-    Non-empty files with (remaining) unmerged left/right reads (separate or interlaced) **must** be provided for the same library for SPAdes to correctly detect the original read length.
+    File with merged paired reads.
+    If the properties of the library permit, overlapping paired-end reads can be merged using special software.
+    Non-empty files with (remaining) unmerged left/right reads (separate or interlaced) **must** be provided for the same library for SPAdes to correctly detect the original read length.
 
 `-s <file_name> `
-    File with unpaired reads.
+    File with unpaired reads.
 
 #### Specifying multiple libraries 
 
 **_Single-read libraries_**
 
 `--s<#> <file_name> `
-    File for single-read library number `<#>` (`<#>` = 1,2,..,9). For example, for the first paired-end library the option is: `--s1 <file_name> `
-    Do not use `-s` options for single-read libraries, since it specifies unpaired reads for the first paired-end library.
+    File for single-read library number `<#>` (`<#>` = 1,2,..,9). For example, for the first paired-end library the option is: `--s1 <file_name> `
+    Do not use `-s` options for single-read libraries, since it specifies unpaired reads for the first paired-end library.
 
 **_Paired-end libraries_**
 
 `--pe<#>-12 <file_name> `
-    File with interlaced reads for paired-end library number `<#>` (`<#>` = 1,2,..,9). For example, for the first single-read library the option is: `--pe1-12 <file_name> `
+    File with interlaced reads for paired-end library number `<#>` (`<#>` = 1,2,..,9). For example, for the first single-read library the option is: `--pe1-12 <file_name> `
 
 `--pe<#>-1 <file_name> `
-    File with left reads for paired-end library number `<#>` (`<#>` = 1,2,..,9).
+    File with left reads for paired-end library number `<#>` (`<#>` = 1,2,..,9).
 
 `--pe<#>-2 <file_name> `
-    File with right reads for paired-end library number `<#>` (`<#>` = 1,2,..,9).
+    File with right reads for paired-end library number `<#>` (`<#>` = 1,2,..,9).
 
 `--pe<#>-m <file_name> `
-    File with merged reads from paired-end library number `<#>` (`<#>` = 1,2,..,9)
-    If the properties of the library permit, paired reads can be merged using special software. Non-empty files with (remaining) unmerged left/right reads (separate or interlaced) **must** be provided for the same library for SPAdes to correctly detect the original read length.
+    File with merged reads from paired-end library number `<#>` (`<#>` = 1,2,..,9)
+    If the properties of the library permit, paired reads can be merged using special software. Non-empty files with (remaining) unmerged left/right reads (separate or interlaced) **must** be provided for the same library for SPAdes to correctly detect the original read length.
 
 `--pe<#>-s <file_name> `
-    File with unpaired reads from paired-end library number `<#>` (`<#>` = 1,2,..,9)
-    For example, paired reads can become unpaired during the error correction procedure.
+    File with unpaired reads from paired-end library number `<#>` (`<#>` = 1,2,..,9)
+    For example, paired reads can become unpaired during the error correction procedure.
 
 `--pe<#>-<or> `
-    Orientation of reads for paired-end library number `<#>` (`<#>` = 1,2,..,9; `<or>` = "fr","rf","ff").
-    The default orientation for paired-end libraries is forward-reverse (`--> <--`). For example, to specify reverse-forward orientation for the second paired-end library, you should use the flag: `--pe2-rf `
+    Orientation of reads for paired-end library number `<#>` (`<#>` = 1,2,..,9; `<or>` = "fr","rf","ff").
+    The default orientation for paired-end libraries is forward-reverse (`--> <--`). For example, to specify reverse-forward orientation for the second paired-end library, you should use the flag: `--pe2-rf `
     Should not be confused with FR and RF strand-specificity for RNA-Seq data (see <a href="assembler/rnaspades_manual.html#sec2.3" target="_blank">rnaSPAdes manual</a>). 
 
 **_Mate-pair libraries_**
 
 `--mp<#>-12 <file_name> `
-    File with interlaced reads for mate-pair library number `<#>` (`<#>` = 1,2,..,9).
+    File with interlaced reads for mate-pair library number `<#>` (`<#>` = 1,2,..,9).
 
 `--mp<#>-1 <file_name> `
-    File with left reads for mate-pair library number `<#>` (`<#>` = 1,2,..,9).
+    File with left reads for mate-pair library number `<#>` (`<#>` = 1,2,..,9).
 
 `--mp<#>-2 <file_name> `
-    File with right reads for mate-pair library number `<#>` (`<#>` = 1,2,..,9).
+    File with right reads for mate-pair library number `<#>` (`<#>` = 1,2,..,9).
 
 `--mp<#>-<or> `
-    Orientation of reads for mate-pair library number `<#>` (`<#>` = 1,2,..,9; `<or>` = "fr","rf","ff").
-    The default orientation for mate-pair libraries is reverse-forward (`<-- -->`). For example, to specify forward-forward orientation for the first mate-pair library, you should use the flag: `--mp1-ff `
+    Orientation of reads for mate-pair library number `<#>` (`<#>` = 1,2,..,9; `<or>` = "fr","rf","ff").
+    The default orientation for mate-pair libraries is reverse-forward (`<-- -->`). For example, to specify forward-forward orientation for the first mate-pair library, you should use the flag: `--mp1-ff `
 
 <a name="hqmp"></a>
 **_High-quality mate-pair libraries_** (can be used for mate-pair only assembly)
 
 `--hqmp<#>-12 <file_name> `
-    File with interlaced reads for high-quality mate-pair library number `<#>` (`<#>` = 1,2,..,9).
+    File with interlaced reads for high-quality mate-pair library number `<#>` (`<#>` = 1,2,..,9).
 
 `--hqmp<#>-1 <file_name> `
-    File with left reads for high-quality mate-pair library number `<#>` (`<#>` = 1,2,..,9).
+    File with left reads for high-quality mate-pair library number `<#>` (`<#>` = 1,2,..,9).
 
 `--hqmp<#>-2 <file_name> `
-    File with right reads for high-quality mate-pair library number `<#>` (`<#>` = 1,2,..,9).
+    File with right reads for high-quality mate-pair library number `<#>` (`<#>` = 1,2,..,9).
 
 `--hqmp<#>-s <file_name> `
-    File with unpaired reads from high-quality mate-pair library number `<#>` (`<#>` = 1,2,..,9)
+    File with unpaired reads from high-quality mate-pair library number `<#>` (`<#>` = 1,2,..,9)
 
 `--hqmp<#>-<or> `
-    Orientation of reads for high-quality mate-pair library number `<#>` (`<#>` = 1,2,..,9; `<or>` = "fr","rf","ff").
-    The default orientation for high-quality mate-pair libraries is forward-reverse (`--> <--`). For example, to specify reverse-forward orientation for the first high-quality mate-pair library, you should use the flag: `--hqmp1-rf `
+    Orientation of reads for high-quality mate-pair library number `<#>` (`<#>` = 1,2,..,9; `<or>` = "fr","rf","ff").
+    The default orientation for high-quality mate-pair libraries is forward-reverse (`--> <--`). For example, to specify reverse-forward orientation for the first high-quality mate-pair library, you should use the flag: `--hqmp1-rf `
 
 **_Specifying data for hybrid assembly_**
 
 `--pacbio <file_name> `
-    File with PacBio CLR reads. For PacBio CCS reads use `-s` option. More information on PacBio reads is provided in [section 3.1](#pacbio).
+    File with PacBio CLR reads. For PacBio CCS reads use `-s` option. More information on PacBio reads is provided in [section 3.1](#pacbio).
 
 `--nanopore <file_name> `
-    File with Oxford Nanopore reads.
+    File with Oxford Nanopore reads.
 
 `--sanger <file_name> `
-    File with Sanger reads
+    File with Sanger reads
 
 `--trusted-contigs <file_name> `
-    Reliable contigs of the same genome, which are likely to have no misassemblies and small rate of other errors (e.g. mismatches and indels). This option is not intended for contigs of the related species.
+    Reliable contigs of the same genome, which are likely to have no misassemblies and small rate of other errors (e.g. mismatches and indels). This option is not intended for contigs of the related species.
 
 `--untrusted-contigs <file_name> `
-    Contigs of the same genome, quality of which is average or unknown. Contigs of poor quality can be used but may introduce errors in the assembly. This option is also not intended for contigs of the related species.
+    Contigs of the same genome, quality of which is average or unknown. Contigs of poor quality can be used but may introduce errors in the assembly. This option is also not intended for contigs of the related species.
 
 **_Other input_**
 
 `--assembly-graph <file_name> `
-    File with assembly graph. Could only be used in plasmid, metaplasmid, metaviral and biosynthetic mode. The primary purpose of this option to run these pipelines on already constructed and simplified assembly graph this way skipping a large part of SPAdes pipeline. Original reads the graph was constructed from need to be specified as well. Exact k-mer length (via `-k` option) should be provided. Note that the output would be different as compared to standalone runs of these pipelines as they setup graph simplification options as well.
+    File with assembly graph. Could only be used in plasmid, metaplasmid, metaviral and biosynthetic mode. The primary purpose of this option to run these pipelines on already constructed and simplified assembly graph this way skipping a large part of SPAdes pipeline. Original reads the graph was constructed from need to be specified as well. Exact k-mer length (via `-k` option) should be provided. Note that the output would be different as compared to standalone runs of these pipelines as they setup graph simplification options as well.
 
 
 <a name="yaml"></a>
@@ -714,25 +714,25 @@ Notes:
 ### Advanced options
 
 `-t <int>` (or `--threads <int>`)
-    Number of threads. The default value is 16.
+    Number of threads. The default value is 16.
 
 `-m <int>` (or `--memory <int>`)
-    Set memory limit in Gb. SPAdes terminates if it reaches this limit. The default value is 250 Gb. Actual amount of consumed RAM will be below this limit. Make sure this value is correct for the given machine. SPAdes uses the limit value to automatically determine the sizes of various buffers, etc.
+    Set memory limit in Gb. SPAdes terminates if it reaches this limit. The default value is 250 Gb. Actual amount of consumed RAM will be below this limit. Make sure this value is correct for the given machine. SPAdes uses the limit value to automatically determine the sizes of various buffers, etc.
 
 `--tmp-dir <dir_name>`
-    Set directory for temporary files from read error correction. The default value is `<output_dir>/corrected/tmp`
+    Set directory for temporary files from read error correction. The default value is `<output_dir>/corrected/tmp`
 
 `-k <int,int,...>`
-    Comma-separated list of k-mer sizes to be used (all values must be odd, less than 128 and listed in ascending order). If `--sc` is set the default values are 21,33,55. For multicell data sets K values are automatically selected using maximum read length ([see note for assembling long Illumina paired reads for details](#sec3.4)). To properly select K values for IonTorrent data read [section 3.3](#sec3.3).
+    Comma-separated list of k-mer sizes to be used (all values must be odd, less than 128 and listed in ascending order). If `--sc` is set the default values are 21,33,55. For multicell data sets K values are automatically selected using maximum read length ([see note for assembling long Illumina paired reads for details](#sec3.4)). To properly select K values for IonTorrent data read [section 3.3](#sec3.3).
 
 `--cov-cutoff <float>`
-    Read coverage cutoff value. Must be a positive float value, or "auto", or "off". Default value is "off". When set to "auto" SPAdes automatically computes coverage threshold using conservative strategy. Note, that this option is not supported by metaSPAdes.
+    Read coverage cutoff value. Must be a positive float value, or "auto", or "off". Default value is "off". When set to "auto" SPAdes automatically computes coverage threshold using conservative strategy. Note, that this option is not supported by metaSPAdes.
 
 `--phred-offset <33 or 64>`
-    PHRED quality offset for the input reads, can be either 33 or 64. It will be auto-detected if it is not specified.
+    PHRED quality offset for the input reads, can be either 33 or 64. It will be auto-detected if it is not specified.
 
 `--custom-hmms <file or directory>`
-    File or directory with amino acid HMMs for [HMM-guided mode](#hmm).
+    File or directory with amino acid HMMs for [HMM-guided mode](#hmm).
 
 
 <a name="examples"></a>
