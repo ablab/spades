@@ -91,13 +91,15 @@ public:
     template<class T>
     void Load() {
         INFO("Trying to load " << typeid(T).name());
+        auto &component = gp.get_mutable<T>();
+        if (component.IsAttached())
+            component.Detach();
+
         if (!io::binary::BinRead<char>(infoStream)) {
             INFO("Not attached, skipping");
             return;
         }
-        auto &component = gp.get_mutable<T>();
-        if (component.IsAttached())
-            component.Detach();
+
         typename IOTraits<T>::Type io;
         bool loaded = io.Load(basename, component);
         VERIFY(loaded);
@@ -120,13 +122,14 @@ public:
     template<class T>
     void Read() {
         INFO("Trying to read " << typeid(T).name());
+        auto &component = gp.get_mutable<T>();
+        if (component.IsAttached())
+            component.Detach();
+
         if (!io::binary::BinRead<char>(is)) {
             INFO("Not attached, skipping");
             return;
         }
-        auto &component = gp.get_mutable<T>();
-        if (component.IsAttached())
-            component.Detach();
         typename IOTraits<T>::Type io;
         auto loaded = io.BinRead(is, component);
         VERIFY(loaded);
