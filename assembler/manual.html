@@ -39,7 +39,7 @@
 </ol>
 <p><a name="sec1"></a></p>
 <h1>About SPAdes</h1>
-<p>SPAdes – St. Petersburg genome assembler – is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.15.3 was released under GPLv2 on July 22, 2021 and can be downloaded from <a href="http://cab.spbu.ru/software/spades/" rel="nofollow">http://cab.spbu.ru/software/spades/</a>.</p>
+<p>SPAdes - St. Petersburg genome assembler - is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.15.3 was released under GPLv2 on July 22, 2021 and can be downloaded from <a href="http://cab.spbu.ru/software/spades/" rel="nofollow">http://cab.spbu.ru/software/spades/</a>.</p>
 <p>The latest SPAdes paper describing various pipelines in a protocol format is available <a href="https://currentprotocols.onlinelibrary.wiley.com/doi/abs/10.1002/cpbi.102" rel="nofollow">here</a>.</p>
 <p><a name="sec1.1"></a></p>
 <h2>Supported data types</h2>
@@ -48,12 +48,12 @@
 <p>If you have high-coverage data for bacterial/viral isolate or multi-cell organism, we highly recommend to use <a href="#isolate"><code>--isolate</code></a> option.</p>
 <p>SPAdes 3.15.3 includes the following additional pipelines:</p>
 <ul>
-<li>metaSPAdes – a pipeline for metagenomic data sets (see <a href="#meta">metaSPAdes options</a>).</li>
-<li>plasmidSPAdes – a pipeline for extracting and assembling plasmids from WGS data sets (see <a href="#plasmid">plasmid options</a>).</li>
-<li>metaplasmidSPAdes – a pipeline for extracting and assembling plasmids from <em>metagenomic</em> data sets (see <a href="#plasmid">plasmid options</a>).</li>
-<li>rnaSPAdes – a <em>de novo</em> transcriptome assembler from RNA-Seq data (see <a href="rnaspades_manual.html">rnaSPAdes manual</a>).</li>
-<li>biosyntheticSPAdes – a module for biosynthetic gene cluster assembly with paired-end reads (see <a href="#biosynthetic">biosynthicSPAdes options</a>).</li>
-<li>rnaviralSPAdes – a <em>de novo</em> assembler tailored for RNA viral datasets (transcriptome, metatranscriptome and metavirome).</li>
+<li>metaSPAdes - a pipeline for metagenomic data sets (see <a href="#meta">metaSPAdes options</a>).</li>
+<li>plasmidSPAdes - a pipeline for extracting and assembling plasmids from WGS data sets (see <a href="#plasmid">plasmid options</a>).</li>
+<li>metaplasmidSPAdes - a pipeline for extracting and assembling plasmids from <em>metagenomic</em> data sets (see <a href="#plasmid">plasmid options</a>).</li>
+<li>rnaSPAdes - a <em>de novo</em> transcriptome assembler from RNA-Seq data (see <a href="rnaspades_manual.html">rnaSPAdes manual</a>).</li>
+<li>biosyntheticSPAdes - a module for biosynthetic gene cluster assembly with paired-end reads (see <a href="#biosynthetic">biosynthicSPAdes options</a>).</li>
+<li>rnaviralSPAdes - a <em>de novo</em> assembler tailored for RNA viral datasets (transcriptome, metatranscriptome and metavirome).</li>
 <li>coronaSPAdes is a special mode of rnaviralSPAdes specifically aimed for SARS-CoV-2 <em>de novo</em> assembly.</li>
 </ul>
 <p>In addition, we provide several stand-alone binaries with relatively simple command-line interface: <a href="#sec4.1">k-mer counting</a> (<code>spades-kmercounter</code>), <a href="#sec4.2">assembly graph construction</a> (<code>spades-gbuilder</code>) and <a href="#sec4.3">long read to graph aligner</a> (<code>spades-gmapper</code>). To learn options of these tools you can either run them without any parameters or read <a href="#sec4">this section</a>.</p>
@@ -62,10 +62,10 @@
 <h2>SPAdes pipeline</h2>
 <p>SPAdes comes in several separate modules:</p>
 <ul>
-<li><a href="http://bioinf.spbau.ru/en/spades/bayeshammer" rel="nofollow">BayesHammer</a> – read error correction tool for Illumina reads, which works well on both single-cell and standard data sets.</li>
-<li>IonHammer – read error correction tool for IonTorrent data, which also works on both types of data.</li>
-<li>SPAdes – iterative short-read genome assembly module; values of K are selected automatically based on the read length and data set type.</li>
-<li>MismatchCorrector – a tool which improves mismatch and short indel rates in resulting contigs and scaffolds; this module uses the <a href="http://bio-bwa.sourceforge.net" rel="nofollow">BWA</a> tool [<a href="http://www.ncbi.nlm.nih.gov/pubmed/19451168" rel="nofollow">Li H. and Durbin R., 2009</a>]; MismatchCorrector is turned off by default, but we recommend to turn it on (see <a href="#correctoropt">SPAdes options section</a>).</li>
+<li><a href="http://bioinf.spbau.ru/en/spades/bayeshammer" rel="nofollow">BayesHammer</a> - read error correction tool for Illumina reads, which works well on both single-cell and standard data sets.</li>
+<li>IonHammer - read error correction tool for IonTorrent data, which also works on both types of data.</li>
+<li>SPAdes - iterative short-read genome assembly module; values of K are selected automatically based on the read length and data set type.</li>
+<li>MismatchCorrector - a tool which improves mismatch and short indel rates in resulting contigs and scaffolds; this module uses the <a href="http://bio-bwa.sourceforge.net" rel="nofollow">BWA</a> tool [<a href="http://www.ncbi.nlm.nih.gov/pubmed/19451168" rel="nofollow">Li H. and Durbin R., 2009</a>]; MismatchCorrector is turned off by default, but we recommend to turn it on (see <a href="#correctoropt">SPAdes options section</a>).</li>
 </ul>
 <p>We recommend to run SPAdes with BayesHammer/IonHammer to obtain high-quality assemblies. However, if you use your own read correction tool, it is possible to turn error correction module off. It is also possible to use only the read error correction stage, if you wish to use another assembler. See the <a href="#pipelineopt">SPAdes options section</a>. <a href=""></a></p>
 <p><a name="sec1.3"></a></p>
@@ -78,7 +78,7 @@
 <p>We ran SPAdes with default parameters using 16 threads on a server with Intel Xeon 2.27GHz processors. BayesHammer runs in approximately half an hour and takes up to 8Gb of RAM to perform read error correction on each data set. Assembly takes about 10 minutes for the <em>E. coli</em> isolate data set and 20 minutes for the <em>E. coli</em> single-cell data set. Both data sets require about 8Gb of RAM (see notes below). MismatchCorrector runs for about 15 minutes on both data sets, and requires less than 2Gb of RAM. All modules also require additional disk space for storing results (corrected reads, contigs, etc) and temporary files. See the table below for more precise values.</p>
 <table border="1" cellpadding="4" cellspacing="0" role="table">
 <tbody><tr>
-<td align="right"> Data set   </td>
+<td align="right"> Data set </td>
 <td colspan="3" align="center"> <i>E. coli</i> isolate </td> 
 <td colspan="3" align="center"> <i>E. coli</i> single-cell </td>
 </tr>
@@ -163,7 +163,7 @@
 <div class="highlight highlight-source-shell"><pre>    wget http://cab.spbu.ru/files/release3.15.3/SPAdes-3.15.3-Linux.tar.gz
     tar -xzf SPAdes-3.15.3-Linux.tar.gz
     <span class="pl-c1">cd</span> SPAdes-3.15.3-Linux/bin/</pre></div>
-<p>In this case you do not need to run any installation scripts – SPAdes is ready to use. We also suggest adding SPAdes installation directory to the <code>PATH</code> variable. <a href=""></a></p>
+<p>In this case you do not need to run any installation scripts - SPAdes is ready to use. We also suggest adding SPAdes installation directory to the <code>PATH</code> variable. <a href=""></a></p>
 <p>Note, that pre-build binaries do not work on new Linux kernels.</p>
 <p><a name="sec2.2"></a></p>
 <h2>Downloading SPAdes binaries for Mac</h2>
@@ -337,7 +337,7 @@ Runs assembly module only.</p>
 <p><a href=""></a><br>
 <a name="correctoropt"></a><br>
 <code>--careful</code><br>
-Tries to reduce the number of mismatches and short indels. Also runs MismatchCorrector – a post processing tool, which uses <a href="http://bio-bwa.sourceforge.net" rel="nofollow">BWA</a> tool (comes with SPAdes). This option is recommended only for assembly of small genomes. We strongly recommend not to use it for large and medium-size eukaryotic genomes. Note, that this options is is not supported by metaSPAdes and rnaSPAdes.</p>
+Tries to reduce the number of mismatches and short indels. Also runs MismatchCorrector - a post processing tool, which uses <a href="http://bio-bwa.sourceforge.net" rel="nofollow">BWA</a> tool (comes with SPAdes). This option is recommended only for assembly of small genomes. We strongly recommend not to use it for large and medium-size eukaryotic genomes. Note, that this options is is not supported by metaSPAdes and rnaSPAdes.</p>
 <p><code>--continue</code><br>
 Continues SPAdes run from the specified output folder starting from the last available check-point. Check-points are made after:</p>
 <ul>
@@ -349,11 +349,11 @@ Continues SPAdes run from the specified output folder starting from the last ava
 <p><code>--restart-from &lt;check_point&gt;</code><br>
 Restart SPAdes run from the specified output folder starting from the specified check-point. Check-points are:</p>
 <ul>
-<li><code>ec</code> – start from error correction</li>
-<li><code>as</code> – restart assembly module from the first iteration</li>
-<li><code>k&lt;int&gt;</code> – restart from the iteration with specified k values, e.g. k55 (not available in RNA-Seq mode)</li>
-<li><code>mc</code> – restart mismatch correction</li>
-<li><code>last</code> – restart from the last available check-point (similar to <code>--continue</code>)</li>
+<li><code>ec</code> - start from error correction</li>
+<li><code>as</code> - restart assembly module from the first iteration</li>
+<li><code>k&lt;int&gt;</code> - restart from the iteration with specified k values, e.g. k55 (not available in RNA-Seq mode)</li>
+<li><code>mc</code> - restart mismatch correction</li>
+<li><code>last</code> - restart from the last available check-point (similar to <code>--continue</code>)</li>
 </ul>
 <p>In contrast to the <code>--continue</code> option, you can change some of the options when using <code>--restart-from</code>. You can change any option except: all basic options, all options for specifying input data (including <code>--dataset</code>), <code>--only-error-correction</code> option and <code>--only-assembler</code> option. For example, if you ran assembler with k values 21,33,55 without mismatch correction, you can add one more iteration with k=77 and run mismatch correction step by running SPAdes with following options:<br>
 <code>--restart-from k55 -k 21,33,55,77 --mismatch-correction -o &lt;previous_output_dir&gt;</code>.<br>
@@ -647,45 +647,45 @@ Here <code>3</code> is the number of the contig/scaffold, <code>237403</code> is
 <p>The full list of <code>&lt;output_dir&gt;</code> content is presented below:</p>
 <ul>
 <li>
-<p>scaffolds.fasta – resulting scaffolds (recommended for use as resulting sequences)</p>
+<p>scaffolds.fasta - resulting scaffolds (recommended for use as resulting sequences)</p>
 </li>
 <li>
-<p>contigs.fasta – resulting contigs</p>
+<p>contigs.fasta - resulting contigs</p>
 </li>
 <li>
-<p>assembly_graph.fastg – assembly graph</p>
+<p>assembly_graph.fastg - assembly graph</p>
 </li>
 <li>
-<p>contigs.paths – contigs paths in the assembly graph</p>
+<p>contigs.paths - contigs paths in the assembly graph</p>
 </li>
 <li>
-<p>scaffolds.paths – scaffolds paths in the assembly graph</p>
+<p>scaffolds.paths - scaffolds paths in the assembly graph</p>
 </li>
 <li>
-<p>before_rr.fasta – contigs before repeat resolution</p>
+<p>before_rr.fasta - contigs before repeat resolution</p>
 </li>
 <li>
-<p>corrected/ – files from read error correction</p>
+<p>corrected/ - files from read error correction</p>
 <ul>
-<li>configs/ – configuration files for read error correction</li>
-<li>corrected.yaml – internal configuration file</li>
+<li>configs/ - configuration files for read error correction</li>
+<li>corrected.yaml - internal configuration file</li>
 <li>Output files with corrected reads</li>
 </ul>
 </li>
 <li>
-<p>params.txt – information about SPAdes parameters in this run</p>
+<p>params.txt - information about SPAdes parameters in this run</p>
 </li>
 <li>
-<p>spades.log – SPAdes log</p>
+<p>spades.log - SPAdes log</p>
 </li>
 <li>
-<p>dataset.info – internal configuration file</p>
+<p>dataset.info - internal configuration file</p>
 </li>
 <li>
-<p>input_dataset.yaml – internal YAML data set file</p>
+<p>input_dataset.yaml - internal YAML data set file</p>
 </li>
 <li>
-<p>K&lt;##&gt;/ – directory containing intermediate files from the run with K=&lt;##&gt;. These files should not be used as assembly results; use resulting contigs/scaffolds in files mentioned above.</p>
+<p>K&lt;##&gt;/ - directory containing intermediate files from the run with K=&lt;##&gt;. These files should not be used as assembly results; use resulting contigs/scaffolds in files mentioned above.</p>
 </li>
 </ul>
 <p>SPAdes will overwrite these files and directories if they exist in the specified <code>&lt;output_dir&gt;</code>. <a href=""></a></p>
