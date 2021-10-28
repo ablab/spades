@@ -294,6 +294,8 @@ void PairInfoCount::run(graph_pack::GraphPack &gp, const char *) {
             }
         }
     }
+
+    DetachEdgeIndex(gp);
 }
 
 } // namespace debruijn_graph
