@@ -493,6 +493,7 @@ public:
             {}
 
     bool TryToResolveTwoLoops(BidirectionalPath& path);
+    bool TryToResolveHairpin(BidirectionalPath& path);
     bool MakeGrowStep(BidirectionalPath& path, PathContainer* paths_storage) override;
 
 private:

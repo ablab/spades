@@ -117,6 +117,27 @@ bool LoopDetectingPathExtender::ResolveShortLoopByCov(BidirectionalPath& path) {
     return true;
 }
 
+bool LoopDetectingPathExtender::TryToResolveHairpin(BidirectionalPath& path) {
+    if (path.Size() < 4)
+        return false;
+    EdgeId bridge1 = path.Back();
+    EdgeId pin = path[path.Size() - 2];
+    EdgeId bridge2 = path[path.Size() - 3];
+    EdgeId entrance = path[path.Size() - 4];
+    if (bridge1 != g_.conjugate(bridge2) || g_.OutgoingEdgeCount(g_.EdgeEnd(bridge2)) != 2)
+        return false;
+    DEBUG("Hairpin is here");
+
+    for (auto e : g_.OutgoingEdges(g_.EdgeEnd(bridge1))) {
+        if (e == g_.conjugate(entrance))
+            continue;
+        path.PushBack(e);
+        return true;
+    }
+
+    return false;
+}
+
 bool LoopDetectingPathExtender::TryToResolveTwoLoops(BidirectionalPath& path) {
     EdgeId last_edge = path.Back();
     VertexId last_vertex = g_.EdgeEnd(last_edge);
@@ -159,6 +180,9 @@ bool LoopDetectingPathExtender::MakeGrowStep(BidirectionalPath& path, PathContai
         return false;
 
     if (TryToResolveTwoLoops(path))
+        return true;
+
+    if (TryToResolveHairpin(path))
         return true;
 
     if (use_short_loop_cov_resolver_) {
