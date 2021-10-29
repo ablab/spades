@@ -19,7 +19,7 @@ jobs:
       - run: isort --check-only --profile black . || true
       - run: pip install -r requirements.txt || pip install --editable . || true
       - run: mkdir --parents --verbose .mypy_cache
-      - run: mypy --ignore-missing-imports --install-types --non-interactive --exclude assembler --exclude webvis . || true
+      - run: mypy --ignore-missing-imports --install-types --non-interactive --exclude assembler/ --exclude webvis/ . || true
       - run: pytest --ignore=assembler --ignore=webvis . || true
       - run: pytest --doctest-modules --ignore=assembler --ignore=webvis . || true
       - run: shopt -s globstar && pyupgrade --py36-plus **/*.py || true
