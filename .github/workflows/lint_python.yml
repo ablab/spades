@@ -12,14 +12,15 @@ jobs:
       - run: bandit --recursive --skip B101 . || true  # B101 is assert statements
       - run: black --check . || true
       - run: codespell || true  # --ignore-words-list="" --skip="*.css,*.js,*.lock"
+      # ./assembler and ./webvis have Python2-only code which must be excluded by flake8, mypy, pytest, etc...
       - run: flake8 . --count --exclude="./.*,./assembler,./webvis" --select=E9,F63,F7,F82 --show-source --statistics
       - run: flake8 . --count --exit-zero --max-complexity=10 --max-line-length=88
                       --show-source --statistics
       - run: isort --check-only --profile black . || true
       - run: pip install -r requirements.txt || pip install --editable . || true
       - run: mkdir --parents --verbose .mypy_cache
-      - run: mypy --ignore-missing-imports --install-types --non-interactive . || true
-      - run: pytest --ignore=./assembler --ignore=./webvis . || true
-      - run: pytest --doctest-modules . || true
+      - run: mypy --ignore-missing-imports --install-types --non-interactive --exclude assembler --exclude webvis . || true
+      - run: pytest --ignore=assembler --ignore=webvis . || true
+      - run: pytest --doctest-modules --ignore=assembler --ignore=webvis . || true
       - run: shopt -s globstar && pyupgrade --py36-plus **/*.py || true
       - run: safety check
