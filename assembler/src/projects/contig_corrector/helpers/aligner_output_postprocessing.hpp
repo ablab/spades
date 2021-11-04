@@ -93,6 +93,15 @@ FilterType<Columns, columns ...> GetFilter(std::function<bool(debruijn_graph::Ed
                 edge_start < TAIL_GAP &&
                 contig_len - contig_end < TAIL_GAP;
 
+        // if (element.template Get<Columns::Q_name>() == "contig_500") {
+        //     std::cout << element.template Get<Columns::Q_name>() << " -> " << element.template Get<Columns::T_name>() << ":\n";
+        //     std::cout << "  " << unique_edge_checker_(GetEdgeId(edge_title, graph)) << '\n';
+        //     std::cout << "  " << (GetIDY(element) > 0.90) << '\n';
+        //     std::cout << "  " << ((double) lens_difference < (double) edge_delta * LENGTHS_ERROR_COEFF) << '\n';
+        //     std::cout << "  " << (edge_fully_inside_contig || contig_fully_inside_edge || contig_is_started_with_edge || contig_is_ended_with_edge) << '\n';
+        //     std::cout << "  " << (GetCov(edge_title) > 2) << '\n';
+        // }
+
         return unique_edge_checker_(GetEdgeId(edge_title, graph)) &&
                GetIDY(element) > 0.90 &&
                (double) lens_difference < (double) edge_delta * LENGTHS_ERROR_COEFF &&

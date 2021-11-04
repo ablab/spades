@@ -10,7 +10,7 @@
 
 namespace helpers {
 
-// #define GOOD_NAME "contig_653"
+// #define GOOD_NAME "contig_125"
 
 struct PathThreadingParams {
     double score_domination_coeff = 0.50;   //if there are multiple *good* paths, the best one has to have score < score_domination_coeff * second_best_score

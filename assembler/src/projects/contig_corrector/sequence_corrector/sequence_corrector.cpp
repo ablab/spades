@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <string>
 #include <algorithm>
+#include <iomanip>
 
 /// @todo REMOVE
 #include "filler_chooser.hpp"
@@ -122,6 +123,16 @@ void MakeAllFilteredEdgesDump(Records<Columns, columns ...> const & records, Map
             output << ">mapped_onto_contig_from_" << start_pos << "_to_" << end_pos << ";_real_id_" << edge_id << ";\n";
             WriteWithWidth(output, graph.EdgeNucls(edge_id).str());
         }
+    }
+}
+
+void DumpInputPaths(helpers::PathWithEdgePostionsContainer const & paths, std::string const & output_dir) {
+    std::ofstream out(fs::append_path(output_dir, "inputPathsDump.dump"));
+    for (const auto& path : paths) {
+        out << path.path_name << '\n';
+        for (size_t i = 0; i < path.edges.size(); ++i)
+            out << setw(11) << path.edges[i].id_ << " --> from " << setw(11) << path.start_positions[i] << " to " << setw(11) << path.end_positions[i] << " len " << setw(11) << path.end_positions[i] - path.start_positions[i] << '\n';
+        out << "==============================\n";
     }
 }
 
@@ -283,6 +294,7 @@ int main() {
     // DropAnother(res, fragments);
     // MakeAllFilteredEdgesDump(res, fragments, graph, output_dir);
     auto input_paths = MakePaths(res, fragments, graph);
+    DumpInputPaths(input_paths, output_dir);
     INFO("Scanned " << input_paths.size() << " paths");
 
     auto paths = Launch(gp, PathThreadingParams(), input_paths, contigs, scaffolds, nthreads);

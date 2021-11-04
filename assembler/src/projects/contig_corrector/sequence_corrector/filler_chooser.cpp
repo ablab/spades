@@ -297,10 +297,12 @@ boost::optional<std::pair<Path, Path>> Compress(std::vector<Path> const & paths,
         std::cout << "-------------------\n";
     };
 
+    std::unordered_set<Node> unused_nodes;
     TwoEdgeSet entry_points;
     for (auto const & path : paths) {
         if (!entry_points.TryInsert(0, path.front()))
             return DumpPaths("Too many roots"), boost::none;
+        unused_nodes.insert({path.front(), 0});
     }
 
     for (auto const & path : paths) {
@@ -314,6 +316,7 @@ boost::optional<std::pair<Path, Path>> Compress(std::vector<Path> const & paths,
                                  std::to_string(prev_edge.edge.id_) + '/' + std::to_string(prev_edge.id) +
                                  " -?-> " + std::to_string(edge.id_) + '/' + std::to_string(id)), (reversed ? boost::none : TryReversedCompress(paths));
             prev_edge = {edge, id};
+            unused_nodes.insert(prev_edge);
         }
     }
 
@@ -321,6 +324,7 @@ boost::optional<std::pair<Path, Path>> Compress(std::vector<Path> const & paths,
     std::unordered_map<Node, unsigned char> used;
     Node* cur_edge = &*entry_points.first_edge;
     while (true) {
+        unused_nodes.erase(*cur_edge);
         auto& cur_used_cnt = ++used[*cur_edge];
         if (cur_used_cnt > 1)
             return DumpPaths("Loop is found"), (reversed ? boost::none : TryReversedCompress(paths)); // loop is found
@@ -333,6 +337,7 @@ boost::optional<std::pair<Path, Path>> Compress(std::vector<Path> const & paths,
 
     cur_edge = (entry_points.second_edge ? &*entry_points.second_edge : &*entry_points.first_edge);
     while (true) {
+        unused_nodes.erase(*cur_edge);
         auto& cur_used_cnt = ++used[*cur_edge];
         if (cur_used_cnt > 2)
             return DumpPaths("Loop is found"), (reversed ? boost::none : TryReversedCompress(paths)); // loop is found
@@ -352,9 +357,19 @@ boost::optional<std::pair<Path, Path>> Compress(std::vector<Path> const & paths,
     if (!Find(paths, ans.first) || !Find(paths, ans.second))
         return DumpPaths("Too strange paths"), (reversed ? boost::none : TryReversedCompress(paths));
 
+    if (reversed) {
+        if (!unused_nodes.empty())
+            std::cout << "There are unused nodes!\n";
+        DumpPaths("Reversed graph!");
+    }
+
+    if (!unused_nodes.empty())
+        return boost::none;
+
     return {std::move(ans)};
 }
 
+/// TODO: should we really do that?
 boost::optional<std::pair<Path, Path>> TryReversedCompress(std::vector<Path> const & paths) {
     std::vector<Path> reversed_paths(paths.size());
     for (size_t i = 0; i < paths.size(); ++i)

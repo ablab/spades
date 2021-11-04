@@ -87,37 +87,34 @@ public:
 
     pair<std::list<ReplaceInfo>, std::vector<PathWithBorderEdgesIndexies>> GetBestSequence() const;
 private:
-    pair<SimpleBidirectionalPath, size_t> GetNextPath(size_t start_pos, size_t & adjacent_edges_connected) const;
+    size_t GetNextPath(SimpleBidirectionalPath& current_path, size_t start_pos, size_t & adjacent_edges_connected) const;
 
-    boost::optional<pair<Gap, size_t>> FindFiller(size_t start_pos, size_t & adjacent_edges_connected) const;
+    boost::optional<pair<Gap, size_t>> FindFiller(size_t start_pos, int rank, size_t & adjacent_edges_connected) const;
 
     boost::optional<string> GetBestMachedPath(EdgeId start_edge, EdgeId end_edge, string const & ref) const;
 
     SimpleBidirectionalPath ConnectWithScaffolds(EdgeId start, EdgeId end) const;
 
-    EdgeId GetEdge(size_t pos) const {
-        return path_info.edges[pos];
-    }
+    EdgeId GetEdge(size_t pos) const { return path_info.edges[pos]; }
 
     long long GetStartPos(size_t pos) const { return path_info.start_positions[pos]; }
     long long GetEndPos(size_t pos) const { return path_info.end_positions[pos]; }
 
-    int GetEdgeRang(size_t pos) const {
-        auto len = graph.length(path_info.edges[pos]);
+    int GetEdgeRank(size_t pos) const {
+        auto len = graph.length(GetEdge(pos));
         if (len >= 2000)
-            return 0;
+            return 2;
         if (len >= 1000)
             return 1;
-        return 2;
+        return 0;
     }
 
-    size_t GetNextEdgePos(size_t start_pos, int max_rang) const {
-        while (start_pos < path_info.edges.size()) {
-            if (GetEdgeRang(start_pos) <= max_rang)
-                return start_pos;
+    size_t GetNextEdgePos(size_t start_pos, int min_rank) const {
+        do {
             ++start_pos;
-        }
-        return -1ull;
+        } while (start_pos < Size() && GetEdgeRank(start_pos) < min_rank);
+
+        return start_pos;
     }
 
     size_t Size() const noexcept { return path_info.edges.size(); }
@@ -160,11 +157,13 @@ pair<std::list<ReplaceInfo>, std::vector<PathWithBorderEdgesIndexies>> SequenceC
     size_t adjacent_edges_connected = 0;
     size_t start_pos = 0;
     while (start_pos < Size()) {
-        auto path = GetNextPath(start_pos, adjacent_edges_connected);
-        if (path.first.Size() > 0) {
-            paths.push_back({std::move(path.first), start_pos, path.second});
-        }
-        start_pos = path.second + 1;
+        SimpleBidirectionalPath current_path;
+        current_path.PushBack(GetEdge(start_pos));
+
+        auto last_edge_pos = GetNextPath(current_path, start_pos, adjacent_edges_connected);
+
+        paths.push_back({std::move(current_path), start_pos, last_edge_pos});
+        start_pos = last_edge_pos + 1;
     }
     INFO("Made " << paths.size() << " path" << (paths.size() != 1 ? "s" : ""));
     INFO("Connected " << adjacent_edges_connected << " adjacent edges pair" << (adjacent_edges_connected == 1 ? "" : "s"));
@@ -172,23 +171,25 @@ pair<std::list<ReplaceInfo>, std::vector<PathWithBorderEdgesIndexies>> SequenceC
     return {ConvertToReplaceInfo(paths), std::move(paths)};
 }
 
-pair<SimpleBidirectionalPath, size_t> SequenceCorrector::GetNextPath(size_t start_pos, size_t & adjacent_edges_connected) const {
-    SimpleBidirectionalPath current_path;
-    current_path.PushBack(GetEdge(start_pos));
-    while (start_pos + 1 < Size()) {
-        auto filler = FindFiller(start_pos, adjacent_edges_connected);
-        if (!filler.is_initialized())
-            break;
+size_t SequenceCorrector::GetNextPath(SimpleBidirectionalPath& current_path, size_t start_pos, size_t & adjacent_edges_connected) const {
+    int rank = GetEdgeRank(start_pos);
+    while (start_pos + 1 < Size() && rank >= 0) {
+        auto filler = FindFiller(start_pos, rank, adjacent_edges_connected);
+        if (!filler.is_initialized()) {
+            --rank;
+            continue;
+        }
         start_pos = filler->second;
         current_path.PushBack(GetEdge(start_pos), std::move(filler->first));
+        rank = std::max(rank, GetEdgeRank(start_pos));
     }
-    return {std::move(current_path), start_pos};
+    return start_pos;
 }
 
-boost::optional<pair<Gap, size_t>> SequenceCorrector::FindFiller(size_t start_pos, size_t & adjacent_edges_connected) const {
-    size_t end_pos = start_pos + 1;
+boost::optional<pair<Gap, size_t>> SequenceCorrector::FindFiller(size_t start_pos, int rank, size_t & adjacent_edges_connected) const {
+    size_t end_pos = GetNextEdgePos(start_pos, rank);
     auto start_edge = GetEdge(start_pos);
-    for (; end_pos - start_pos <= params.max_steps_forward && end_pos < Size(); ++end_pos) {
+    for (size_t iteration = 0; iteration < params.max_steps_forward && end_pos < Size(); end_pos = GetNextEdgePos(end_pos, rank), ++iteration) {
         auto end_edge  = GetEdge(end_pos);
 
         if (graph.EdgeStart(end_edge) == graph.EdgeEnd(start_edge) && GetStartPos(end_pos) + graph.k() == GetEndPos(start_pos)) {
@@ -240,6 +241,17 @@ boost::optional<string> SequenceCorrector::GetBestMachedPath(EdgeId start_edge, 
     }
 
     const auto& detected_paths = path_storage.paths();
+
+    // if (start_edge.id_ == 654718) {
+    //     WARN("HERE! Paths found: " << detected_paths.size());
+    //     for (auto const & path : detected_paths) {
+    //         for (auto const & edge : path)
+    //             std::cout << edge.id_ << " ";
+    //         std::cout << "\n";
+    //     }
+    //     WARN("==========");
+    // }
+
     return filler_chooser(detected_paths, ref);
 }
 
