@@ -295,7 +295,7 @@ public:
 
                     // Now kh is a junction point (possible dead start) or still unique extension
                     // Bail out in the second case, as this tip is too long
-                    // Also bail out if point dead start: don't delete isolated edges to avoid race condition
+                    // Bail out for dead starts as well: short isolated edges are not tips, they will be deleted elsewhere, if necessary
                     if (index_.IsDeadStart(kh) ||  !index_.IsJunction(kh))
                         continue;
 
