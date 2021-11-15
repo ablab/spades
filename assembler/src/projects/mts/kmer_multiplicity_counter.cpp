@@ -122,7 +122,7 @@ class KmerMultiplicityCounter {
                     }
                 }
                 if (cnt_min > 1 || total_cnt > min_mult) {
-                    min_kmer.get().BinWrite(output_kmer);
+                    min_kmer->BinWrite(output_kmer);
                     for (size_t mpl : cnt_vector) {
                         mpl_file.write(reinterpret_cast<char *>(&mpl), sizeof(Mpl));
                     }
