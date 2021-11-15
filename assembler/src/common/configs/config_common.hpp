@@ -75,7 +75,7 @@ void load_items(std::vector <T> &vec, boost::property_tree::ptree const &pt,
 template<class T>
 void load(std::vector <T> &vec, boost::property_tree::ptree const &pt, std::string const &key,
           bool /*complete*/) {
-    boost::optional<T> value = pt.get_optional<T>(key);
+    std::optional<T> value = pt.get_optional<T>(key);
     if (value) {
         vec.push_back(*value);
         return;
@@ -114,7 +114,7 @@ void load(T &value, boost::property_tree::ptree const &pt) {
 
 template<class T>
 void load_param(const std::string &filename, const std::string &key,
-                boost::optional<T> &value) {
+                std::optional<T> &value) {
     boost::property_tree::ptree pt;
     boost::property_tree::read_info(filename, pt);
     value = pt.get_optional<T>(key);
@@ -122,7 +122,7 @@ void load_param(const std::string &filename, const std::string &key,
 
 template<class T>
 void write_param(const std::string &filename, const std::string &key,
-                 const boost::optional<T> &value) {
+                 const std::optional<T> &value) {
     if (value) {
         std::ofstream params_stream(filename.c_str(), std::ios_base::app);
         params_stream << key << "\t" << value << std::endl;

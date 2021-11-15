@@ -926,13 +926,13 @@ class LocalizedComponentFinder {
     }
 
     //todo optimize
-    boost::optional<VertexId> ClosestNeigbour() const {
+    std::optional<VertexId> ClosestNeigbour() const {
         size_t min_dist = inf;
-        boost::optional<VertexId> answer = boost::none;
+        std::optional<VertexId> answer;
         for (auto it = dominated_.begin(); it != dominated_.end(); ++it) {
             if (!comp_.contains(it->first) && it->second.start_pos < min_dist) {
                 min_dist = it->second.start_pos;
-                answer = boost::optional<VertexId>(it->first);
+                answer = it->first;
             }
         }
         return answer;
@@ -996,7 +996,7 @@ public:
 
         DEBUG("Choosing closest vertex");
         do {
-            boost::optional<VertexId> next_v = ClosestNeigbour();
+            std::optional<VertexId> next_v = ClosestNeigbour();
 
             if (next_v) {
                 DEBUG("Vertex " << g_.str(*next_v) << " was chosen as closest neighbour");

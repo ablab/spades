@@ -640,14 +640,14 @@ public:
         }
     }
 
-    boost::optional<Component<Graph>> operator()(EdgeId e) const {
+    std::optional<Component<Graph>> operator()(EdgeId e) const {
         TRACE("Processing edge " << g_.str(e));
 
         //here we use that the graph is conjugate!
         VertexId v = g_.EdgeStart(e);
         if (g_.IncomingEdgeCount(v) == 0 || g_.OutgoingEdgeCount(v) < 2/*==1*/) {
             TRACE("Tip");
-            return boost::none;
+            return std::nullopt;
         }
 
         double local_cov = rel_helper_.LocalCoverage(e, v);
@@ -667,7 +667,7 @@ public:
 
             if (component_searcher.FindComponent()) {
                 TRACE("Deleting component");
-                return boost::optional<Component<Graph>>(component_searcher.component());
+                return std::optional<Component<Graph>>(component_searcher.component());
             } else {
                 TRACE("Failed to find component");
                 if (!vis_dir_.empty()) {
@@ -678,7 +678,7 @@ public:
         } else {
             TRACE("No highly covered edges around");
         }
-        return boost::none;
+        return std::nullopt;
     }
 
 private:

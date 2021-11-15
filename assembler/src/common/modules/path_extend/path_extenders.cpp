@@ -180,7 +180,7 @@ bool LoopDetectingPathExtender::MakeGrowStep(BidirectionalPath& path, PathContai
     return path_is_growed;
 }
 
-boost::optional<bool> LoopDetectingPathExtender::TryToResolveShortLoop(BidirectionalPath& path) {
+std::optional<bool> LoopDetectingPathExtender::TryToResolveShortLoop(BidirectionalPath& path) {
     LoopDetector loop_detector(path, cov_map_);
     if (!path.Empty() && InvestigateShortLoop()) {
         if (loop_detector.EdgeInShortLoop(path.Back())) {

@@ -11,7 +11,6 @@
 #include "configs/config_singl.hpp"
 #include "utils/cpp_utils.hpp"
 
-#include <boost/optional.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>
 
 #include <string>
@@ -115,7 +114,7 @@ struct pe_config {
             double flank_multiplication_coefficient;
             int flank_addition_coefficient;
 
-            boost::optional<int> min_overlap_for_rna_scaffolding;
+            std::optional<int> min_overlap_for_rna_scaffolding;
         } scaffolder_options;
 
         struct PathFiltrationT {

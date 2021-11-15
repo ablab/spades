@@ -76,7 +76,8 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt) {
 
   load(cfg.input_working_dir, pt, "input_working_dir");
   load(cfg.input_trim_quality, pt, "input_trim_quality");
-  cfg.input_qvoffset_opt = pt.get_optional<int>("input_qvoffset");
+  if (auto iqv = pt.get_optional<int>("input_qvoffset"))
+    cfg.input_qvoffset_opt = *iqv;
   load(cfg.output_dir, pt, "output_dir");
 
   cfg.general_max_nthreads = spades_set_omp_threads(cfg.general_max_nthreads);

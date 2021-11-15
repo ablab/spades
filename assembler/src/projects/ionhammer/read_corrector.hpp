@@ -18,7 +18,6 @@
 
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/storage.hpp>
-#include <boost/optional.hpp>
 
 #include <bamtools/api/BamAlignment.h>
 #include <bamtools/api/SamHeader.h>

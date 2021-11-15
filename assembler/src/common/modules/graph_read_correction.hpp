@@ -26,7 +26,7 @@ class TipsProjector {
 
     const omnigraph::UniquePathFinder<Graph> unique_path_finder_;
 
-    boost::optional<EdgeId> UniqueAlternativeEdge(EdgeId tip, bool outgoing_tip) {
+    std::optional<EdgeId> UniqueAlternativeEdge(EdgeId tip, bool outgoing_tip) {
         std::vector<EdgeId> edges;
         if (outgoing_tip) {
             utils::push_back_all(edges, gp_.g.OutgoingEdges(gp_.g.EdgeStart(tip)));
@@ -36,13 +36,13 @@ class TipsProjector {
         std::set<EdgeId> edges_set(edges.begin(), edges.end());
         edges_set.erase(tip);
         if (edges_set.size() == 1)
-            return boost::optional<EdgeId>(*edges_set.begin());
+            return *edges_set.begin();
         else
-            return boost::none;
+            return std::nullopt;
     }
 
     std::vector<EdgeId> UniqueAlternativePath(EdgeId tip, bool outgoing_tip) {
-        boost::optional<EdgeId> alt_edge = UniqueAlternativeEdge(tip, outgoing_tip);
+        std::optional<EdgeId> alt_edge = UniqueAlternativeEdge(tip, outgoing_tip);
         if (alt_edge) {
             if (outgoing_tip) {
                 return unique_path_finder_.UniquePathForward(*alt_edge);

@@ -226,7 +226,8 @@ inline void WriteKmerComponent(const graph_pack::GraphPack &gp, const RtSeq &kp1
     visualization::visualization_utils::WriteComponent<Graph>(component, file, colorer, labeler);
 }
 
-inline boost::optional<RtSeq> FindCloseKP1mer(const graph_pack::GraphPack &gp, size_t genome_pos, size_t k) {
+
+inline std::optional<RtSeq> FindCloseKP1mer(const GraphPack &gp, size_t genome_pos, size_t k) {
     const auto &genome = gp.get<GenomeStorage>();
     const auto &kmer_mapper = gp.get<KmerMapper<Graph>>();
     const auto &index = gp.get<EdgeIndex<Graph>>();
@@ -238,10 +239,10 @@ inline boost::optional<RtSeq> FindCloseKP1mer(const graph_pack::GraphPack &gp, s
             size_t pos = (genome.size() - k + genome_pos + dir * diff) % (genome.size() - k);
             RtSeq kp1mer = kmer_mapper.Substitute(RtSeq (k + 1, genome.GetSequence(), pos));
             if (index.contains(kp1mer))
-                return boost::optional<RtSeq>(kp1mer);
+                return std::optional<RtSeq>(kp1mer);
         }
     }
-    return boost::none;
+    return std::nullopt;
 }
 
 inline void PrepareForDrawing(graph_pack::GraphPack &gp) {

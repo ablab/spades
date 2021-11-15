@@ -424,7 +424,7 @@ public:
     ParallelEdgeRemovingAlgorithm(Graph& g,
                                   func::TypedPredicate<EdgeId> remove_condition,
                                   size_t chunk_cnt,
-                                  std::function<void(EdgeId)> removal_handler = boost::none,
+                                  std::function<void(EdgeId)> removal_handler = nullptr,
                                   bool canonical_only = false,
                                   const Priority& priority = Priority(),
                                   bool track_changes = true)

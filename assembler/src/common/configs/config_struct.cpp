@@ -211,7 +211,8 @@ void load(debruijn_config::construction::early_tip_clipper& etc,
           boost::property_tree::ptree const& pt, bool) {
     using config_common::load;
     load(etc.enable, pt, "enable");
-    etc.length_bound = pt.get_optional<size_t>("length_bound");
+    if (pt.count("length_bound"))
+      etc.length_bound = pt.get<size_t>("length_bound");
 }
 
 void load(debruijn_config::construction& con,
@@ -492,11 +493,11 @@ void load(debruijn_config::plasmid& pd,
     load(pd.small_component_relative_coverage, pt, "small_component_relative_coverage");
     load(pd.min_component_length, pt, "min_component_length");
     load(pd.min_isolated_length, pt, "min_isolated_length");
-    pd.reference_removal = "";
-    boost::optional<std::string> reference =
-            pt.get_optional<std::string>("reference_removal");
-    if (reference && *reference != "N/A") {
-        pd.reference_removal = *reference;
+    pd.reference_removal = "";         
+    if (pt.count("reference_removal")) {
+        std::string reference = pt.get<std::string>("reference_removal");
+        if (reference != "N/A")
+          pd.reference_removal = reference;
     }
     load(pd.iterative_coverage_elimination, pt, "iterative_coverage_elimination");
     load(pd.additive_step, pt, "additive_step"); //5
@@ -585,10 +586,11 @@ void load(dataset &ds,
 
     //loading reference
     std::string reference_genome_filename;
-    boost::optional<std::string> refgen =
-            pt.get_optional<std::string>("reference_genome");
-    if (refgen && *refgen != "N/A") {
-        reference_genome_filename = *refgen;
+    std::optional<std::string> refgen;
+    if (pt.count("reference_genome")) {
+        std::string refgen = pt.get<std::string>("reference_genome");
+        if (refgen != "N/A")
+          reference_genome_filename = refgen;
     }
 
     if (reference_genome_filename == "")
@@ -810,23 +812,23 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
 
     if (pt.count("plasmid")) {
         if (!cfg.pd)
-            cfg.pd.reset(debruijn_config::plasmid());
+            cfg.pd.reset();
         load(*cfg.pd, pt, "plasmid", false);
     }
 
     if (pt.count("preliminary_simp")) {
         CHECK_FATAL_ERROR(!cfg.preliminary_simp, "Option preliminary can be loaded only once");
-        cfg.preliminary_simp.reset(cfg.simp);
+        cfg.preliminary_simp = cfg.simp;
         load(*cfg.preliminary_simp, pt, "preliminary_simp", false);
     }
     if (pt.count("prelim_pe")) {
         CHECK_FATAL_ERROR(!cfg.prelim_pe_params, "Option prelim_pe can be loaded only once");
-        cfg.prelim_pe_params.reset(cfg.pe_params);
+        cfg.prelim_pe_params = cfg.pe_params;
         load(*cfg.prelim_pe_params, pt, "prelim_pe", false);
     }
 
     if (pt.count("hmm_match")) {
-        cfg.hm.reset(debruijn_config::hmm_matching());
+        cfg.hm.reset();
         load(*cfg.hm, pt, "hmm_match");
     }
 

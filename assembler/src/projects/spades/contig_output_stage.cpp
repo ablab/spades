@@ -89,8 +89,8 @@ io::EdgeNamingF<Graph> PlasmidNamingF(io::EdgeNamingF<Graph> naming_f,
 }
 
 std::vector<path_extend::PathsWriterT> CreatePathsWriters(const std::string &fn_base,
-                                                          boost::optional<path_extend::FastgPathWriter> fastg_writer = boost::none,
-                                                          boost::optional<path_extend::GFAPathWriter> gfa_writer = boost::none) {
+                                                          std::optional<path_extend::FastgPathWriter> fastg_writer = std::nullopt,
+                                                          std::optional<path_extend::GFAPathWriter> gfa_writer = std::nullopt) {
     using namespace path_extend;
     std::vector<path_extend::PathsWriterT> res;
     res.push_back([&](const ScaffoldStorage& scaffold_storage) {
@@ -136,7 +136,7 @@ void ContigOutput::run(graph_pack::GraphPack &gp, const char*) {
     }
 
     std::unique_ptr<std::ostream> gfa_os;
-    boost::optional<GFAPathWriter> gfa_writer;
+    std::optional<GFAPathWriter> gfa_writer;
 
     const auto &components = gp.get<ConnectedComponentCounter>();
     if (outputs_.count(Kind::GFAGraph)) {
@@ -152,7 +152,7 @@ void ContigOutput::run(graph_pack::GraphPack &gp, const char*) {
         gfa_writer->WriteSegmentsAndLinks();
     }
 
-    boost::optional<FastgPathWriter> fastg_writer;
+    std::optional<FastgPathWriter> fastg_writer;
     if (outputs_.count(Kind::FASTGGraph)) {
         io::EdgeNamingF<Graph> naming_f =
                 config::PipelineHelper::IsPlasmidPipeline(cfg::get().mode) && components.IsFilled()?

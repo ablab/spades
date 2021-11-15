@@ -13,8 +13,6 @@
 #include "adt/bag.hpp"
 #include "utils/perf/timetracer.hpp"
 
-#include <boost/optional.hpp>
-
 namespace omnigraph {
 
 template<class Graph>
@@ -269,17 +267,17 @@ public:
 
     void HandleReversedPath(const Path& path) override {
         if (!best_path_ || comparator_(path, *best_path_))
-            best_path_ = boost::make_optional(path);
+            best_path_ = std::make_optional(path);
     }
 
-    boost::optional<Path> best_path() const {
+    std::optional<Path> best_path() const {
         return best_path_;
     }
 
 private:
     const Graph& g_;
     Comparator comparator_;
-    boost::optional<Path> best_path_;
+    std::optional<Path> best_path_;
 };
 
 template<class Graph>

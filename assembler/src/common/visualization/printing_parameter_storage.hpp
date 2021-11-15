@@ -8,8 +8,8 @@
 //***************************************************************************
 
 #include "assembly_graph/components/graph_component.hpp"
-#include <boost/optional.hpp>
 #include <map>
+#include <optional>
 
 using namespace omnigraph;
 
@@ -43,7 +43,7 @@ private:
 protected:
     std::map<ElementId, Value> storage_;
 private:
-    boost::optional<Value> default_value_;
+   std::optional<Value> default_value_;
 public:
     MapParameterStorage(const std::string &default_value):
             default_value_(default_value) {
@@ -63,7 +63,7 @@ public:
         auto it = storage_.find(element);
         if (it == storage_.end()) {
             VERIFY(default_value_);
-            return default_value_.get();
+            return *default_value_;
         }
         return it->second;
     }

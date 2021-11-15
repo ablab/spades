@@ -7,7 +7,7 @@
 #pragma once
 
 #include "paired_info.hpp"
-#include "boost/optional.hpp"
+#include <optional>
 
 namespace omnigraph {
 
@@ -21,7 +21,7 @@ class EdgePairIterator :
                 typename Index::HistProxy>
 {
     typedef typename Index::StorageMap::const_iterator OuterIterator;
-    typedef boost::optional<typename Index::InnerMap::const_iterator> InnerIterator;
+    typedef std::optional<typename Index::InnerMap::const_iterator> InnerIterator;
 
 protected:
     //They're not intended to be constucted explicitly, only via begin/end.

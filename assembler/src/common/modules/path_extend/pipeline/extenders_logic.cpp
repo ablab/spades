@@ -151,7 +151,7 @@ shared_ptr<PathExtender> ExtendersGenerator::MakeRNAScaffoldingExtender(size_t l
                                                                         pset.scaffolder_options.rel_cov_cutoff);
 
 
-    VERIFY(pset.scaffolder_options.min_overlap_for_rna_scaffolding.is_initialized());
+    VERIFY(pset.scaffolder_options.min_overlap_for_rna_scaffolding.has_value());
     return make_shared<RNAScaffoldingPathExtender>(gp_, cover_map_,
                                                    used_unique_storage_,
                                                    scaff_chooser,

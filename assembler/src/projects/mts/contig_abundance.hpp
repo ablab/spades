@@ -4,7 +4,7 @@
 #include "io/kmers/mmapped_reader.hpp"
 #include "sequence/rtseq.hpp"
 
-#include <boost/optional.hpp>
+#include <optional>
 
 namespace debruijn_graph {
 
@@ -81,13 +81,13 @@ public:
     KmerProfileIndex(KmerProfileIndex&& other);
 
     KeyWithHash Construct(const KeyType& seq) const;
-    boost::optional<KmerProfile> operator[](const KeyWithHash& kwh) const;
+    std::optional<KmerProfile> operator[](const KeyWithHash& kwh) const;
 
 private:
     typedef MMappedRecordArrayReader<Mpl> ProfilesT;
     InverterT inverter_;
     IndexT index_;
-    boost::optional<ProfilesT> profiles_;
+    std::optional<ProfilesT> profiles_;
 };
 
 using KmerProfile = KmerProfileIndex::KmerProfile;
@@ -122,7 +122,7 @@ std::string PrintVector(const AbVector& mpl_vector, const std::string &delim = "
 template<typename T>
 class ClusterAnalyzer {
 public:
-    typedef typename boost::optional<Profile<T>> Result;
+    typedef typename std::optional<Profile<T>> Result;
     virtual Result operator()(const KmerProfiles& kmer_mpls) const = 0;
     virtual ~ClusterAnalyzer() {};
 };

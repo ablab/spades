@@ -295,7 +295,7 @@ public:
     void run(graph_pack::GraphPack &gp, const char*) override {
         if (!storage().params.early_tc.length_bound) {
             INFO("Early tip clipper length bound set as (RL - K)");
-            storage().params.early_tc.length_bound.reset(cfg::get().ds.RL - gp.k());
+            storage().params.early_tc.length_bound = cfg::get().ds.RL - gp.k();
         }
         EarlyTipClipperProcessor(storage().ext_index, *storage().params.early_tc.length_bound).ClipTips();
     }

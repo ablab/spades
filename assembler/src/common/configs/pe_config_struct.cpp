@@ -117,7 +117,7 @@ void load(pe_config::ParamSetT::ScaffolderOptionsT& so,
 
     if (pt.count("min_overlap_for_rna_scaffolding")) {
         VERIFY_MSG(!so.min_overlap_for_rna_scaffolding, "Option can be loaded only once");
-        so.min_overlap_for_rna_scaffolding.reset(0);
+        so.min_overlap_for_rna_scaffolding.reset();
         load(*so.min_overlap_for_rna_scaffolding, pt, "min_overlap_for_rna_scaffolding");
     }
 }

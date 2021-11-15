@@ -215,11 +215,11 @@ KmerProfileIndex::KeyWithHash KmerProfileIndex::Construct(const KmerProfileIndex
     return index_.ConstructKWH(key);
 }
 
-boost::optional<KmerProfile> KmerProfileIndex::operator[](const KmerProfileIndex::KeyWithHash& kwh) const {
+std::optional<KmerProfile> KmerProfileIndex::operator[](const KmerProfileIndex::KeyWithHash& kwh) const {
     if (index_.valid(kwh)) {
         return KmerProfile(profiles_->data() + index_.get_value(kwh, inverter_));
     } else
-        return boost::none;
+        return std::nullopt;
 }
 
 template<typename T>
@@ -277,7 +277,7 @@ typename ClusterAnalyzer<T>::Result ProfileCounter<T>::operator()(
               << " ; total # " << (s.size() - k_ + 1));
     if (math::ls(earmark_share, min_earmark_share_)) {
         DEBUG("Too few earmarks");
-        return boost::none;
+        return std::nullopt;
     }
 
     return (*cluster_analyzer_)(kmer_mpls);

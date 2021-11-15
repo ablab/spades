@@ -189,8 +189,8 @@ private:
     DECL_LOGGER("AggressiveClearing");
 };
 
-boost::optional<AbundanceVector> InferAbundance(const std::string& bin_mult_fn,
-                                                const std::string& b_id) {
+std::optional<AbundanceVector> InferAbundance(const std::string& bin_mult_fn,
+                                              const std::string& b_id) {
     fs::CheckFileExistenceFATAL(bin_mult_fn);
 
     std::ifstream is(bin_mult_fn);
@@ -214,7 +214,7 @@ boost::optional<AbundanceVector> InferAbundance(const std::string& bin_mult_fn,
             break;
         }
     }
-    return boost::optional<AbundanceVector>(MeanVector(abundances));
+    return MeanVector(abundances);
 }
 
 void PrintEdgeFragmentProfiles(const Graph &graph, const ContigAbundanceCounter &abundance_counter,

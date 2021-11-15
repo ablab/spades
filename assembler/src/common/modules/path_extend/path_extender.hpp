@@ -508,7 +508,7 @@ private:
         return investigate_short_loops_ && (use_short_loop_cov_resolver_ || CanInvestigateShortLoop());
     }
 
-    boost::optional<bool> TryToResolveShortLoop(BidirectionalPath& path);
+    std::optional<bool> TryToResolveShortLoop(BidirectionalPath& path);
 protected:
     DECL_LOGGER("LoopDetectingPathExtender")
 };

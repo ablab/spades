@@ -7,7 +7,6 @@
 #include <memory>
 #include <algorithm>
 #include <libcxx/sort.hpp>
-#include <boost/optional/optional.hpp>
 #include "getopt_pp/getopt_pp.h"
 #include "kmc_api/kmc_file.h"
 //#include "omp.h"
@@ -95,7 +94,7 @@ class KmerMultiplicityCounter {
 
         RtSeq::less3 kmer_less;
         while (true) {
-            boost::optional<RtSeq> min_kmer;
+            std::optional<RtSeq> min_kmer;
             size_t cnt_min = 0, num_samples = 0;
             for (size_t i = 0; i < n; ++i) {
                 if (alive[i]) {

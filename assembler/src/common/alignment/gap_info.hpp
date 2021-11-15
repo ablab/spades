@@ -4,8 +4,6 @@
 #include "utils/logger/logger.hpp"
 #include "utils/verify.hpp"
 
-#include <boost/optional.hpp>
-
 namespace io {
 class SingleRead;
 class SingleReadSeq;
@@ -40,12 +38,12 @@ class GapDescription {
     //Optional "filling" sequence, giving "additional" nucleotides which
     // should be added while closing the gap.
     // Length guaranteed to be equal to estimated_gap (if present).
-    boost::optional<Sequence> filling_seq_;
+    std::optional<Sequence> filling_seq_;
 
     GapDescription(EdgeId left, EdgeId right,
                    int estimated_dist,
                    size_t left_trim, size_t right_trim,
-                   boost::optional <Sequence> filling_seq) :
+                   std::optional <Sequence> filling_seq) :
             left_(left),
             right_(right),
             estimated_dist_(estimated_dist),
@@ -68,7 +66,7 @@ public:
             GapDescription(left, right,
                            estimated_dist,
                            left_trim, right_trim,
-                           boost::none) {
+                           std::nullopt) {
     }
 
     GapDescription() : GapDescription(EdgeId(), EdgeId(), INVALID_GAP) {
@@ -132,7 +130,7 @@ public:
 
     void set_filling_seq(Sequence fill_seq) {
         estimated_dist_ = fill_seq.size();
-        filling_seq_ = boost::make_optional(fill_seq);
+        filling_seq_ = std::make_optional(fill_seq);
     }
 
     GapDescription<Graph> conjugate(const Graph &g) const {
@@ -141,7 +139,7 @@ public:
                                   estimated_dist_,
                                   right_trim_,
                                   left_trim_,
-                                  filling_seq_ ? boost::make_optional(!*filling_seq_) : boost::none);
+                                  filling_seq_ ? std::make_optional(!*filling_seq_) : std::nullopt);
         return res;
     }
 

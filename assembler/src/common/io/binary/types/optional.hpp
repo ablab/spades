@@ -6,17 +6,17 @@
 
 #pragma once
 
-#include <boost/optional.hpp>
-#include "io/binary/binary.hpp"
+#include "common/io/binary/binary.hpp"
+#include <optional>
 
 namespace io {
 namespace binary {
 namespace impl {
 
 template <typename T>
-class Serializer<boost::optional<T>, std::enable_if_t<io::binary::is_serializable<T>>> {
+class Serializer<std::optional<T>, std::enable_if_t<io::binary::is_serializable<T>>> {
 public:
-    static void Write(std::ostream &os, const boost::optional<T> &v) {
+    static void Write(std::ostream &os, const std::optional<T> &v) {
         if (v) {
             io::binary::BinWrite(os, true, *v);
         } else {
@@ -24,13 +24,13 @@ public:
         }
     }
 
-    static void Read(std::istream &is, boost::optional<T> &v) {
+    static void Read(std::istream &is, std::optional<T> &v) {
         auto present = io::binary::BinRead<bool>(is);
         if (present) {
             auto val = io::binary::BinRead<T>(is);
-            v = boost::make_optional(val);
+            v = std::make_optional(val);
         } else {
-            v = boost::none;
+            v = std::nullopt;
         }
     }
 };

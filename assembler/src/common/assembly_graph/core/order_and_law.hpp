@@ -12,7 +12,7 @@
 #include "utils/parallel/openmp_wrapper.h"
 #include "folly/PackedSyncPtr.h"
 
-#include <boost/utility.hpp>
+#include <boost/noncopyable.hpp>
 
 #include <ostream>
 #include <unordered_set>

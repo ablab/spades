@@ -17,8 +17,6 @@
 #include "utils/verify.hpp"
 #include "utils/logger/logger.hpp"
 
-#include <boost/optional.hpp>
-
 namespace debruijn_graph {
 namespace config {
 
@@ -299,7 +297,7 @@ struct debruijn_config {
     struct construction {
         struct early_tip_clipper {
             bool enable;
-            boost::optional<size_t> length_bound;
+            std::optional<size_t> length_bound;
             early_tip_clipper() : enable(false) {}
         };
 
@@ -314,7 +312,7 @@ struct debruijn_config {
     };
 
     simplification simp;
-    boost::optional<simplification> preliminary_simp;
+    std::optional<simplification> preliminary_simp;
 
     struct hybrid_aligner {
         struct trusted_aligner {
@@ -478,7 +476,7 @@ struct debruijn_config {
 
     resolving_mode rm;
     path_extend::pe_config::MainPEParamsT pe_params;
-    boost::optional<path_extend::pe_config::MainPEParamsT> prelim_pe_params;
+    std::optional<path_extend::pe_config::MainPEParamsT> prelim_pe_params;
     bool avoid_rc_connections;
 
     construction con;
@@ -495,8 +493,8 @@ struct debruijn_config {
     info_printers_t info_printers;
     kmer_coverage_model kcm;
     bwa_aligner bwa;
-    boost::optional<plasmid> pd;
-    boost::optional<hmm_matching> hm;
+    std::optional<plasmid> pd;
+    std::optional<hmm_matching> hm;
     size_t flanking_range;
 
     bool calculate_coverage_for_each_lib;

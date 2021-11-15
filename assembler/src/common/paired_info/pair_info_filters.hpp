@@ -81,7 +81,7 @@ class AmbiguousPairInfoChecker : public AbstractPairInfoChecker<Graph> {
   typedef typename Graph::EdgeId EdgeId;
   typedef typename Graph::VertexId VertexId;
   typedef PairInfo<EdgeId> PairInfoT;
-  typedef boost::optional<EdgeId> OptEdgeId;
+  typedef std::optional<EdgeId> OptEdgeId;
 
   AbstractPairInfoChecker<Graph> &standard_filter_;
   const PairedInfoIndexT<Graph>& index_;

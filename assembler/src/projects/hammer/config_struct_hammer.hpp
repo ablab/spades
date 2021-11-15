@@ -19,10 +19,10 @@
 
 #include "library/library.hpp"
 
-#include <boost/optional.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>
 
 #include <string>
+#include <optional>
 
 #define CONFIG_FILENAME "/home/snikolenko/algorithmic-biology/assembler/src/hammer/config.inp"
 
@@ -32,7 +32,7 @@ struct hammer_config {
 
   std::string input_working_dir;
   int input_trim_quality;
-  boost::optional<int> input_qvoffset_opt;
+  std::optional<int> input_qvoffset_opt;
   int input_qvoffset;
   std::string output_dir;
 

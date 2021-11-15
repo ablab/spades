@@ -7,12 +7,14 @@
 
 #pragma once
 
-#include <btree/btree_set.h>
+#include "index_point.hpp"
+
 #include "adt/flat_set.hpp"
 #include "adt/small_pod_vector.hpp"
-#include "index_point.hpp"
-#include "io/binary/binary.hpp"
-#include "io/binary/types/boost_optional.hpp"
+#include "common/io/binary/binary.hpp"
+#include "common/io/binary/types/optional.hpp"
+
+#include <btree/btree_set.h>
 
 namespace omnigraph {
 

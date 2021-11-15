@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include <boost/none.hpp>
-#include <atomic>
 #include "assembly_graph/core/graph_iterators.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "edge_removal.hpp"
 #include "func/pred.hpp"
 #include "utils/logger/logger.hpp"
+
+#include <atomic>
 
 namespace omnigraph {
 
@@ -134,7 +134,7 @@ class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm<Graph> {
  public:
     EdgeRemovingAlgorithm(Graph& g,
                           func::TypedPredicate<EdgeId> remove_condition,
-                          std::function<void (EdgeId)> removal_handler = boost::none,
+                          std::function<void (EdgeId)> removal_handler = nullptr,
                           bool conjugate_symmetry = false)
             : base(g, conjugate_symmetry),
               remove_condition_(remove_condition),
