@@ -132,26 +132,23 @@ void SequencingLibraryBase::validate(llvm::yaml::IO &, llvm::StringRef &res) {
   }
 }
 
-// FIXME: Lambda
-struct update_relative_filename : public std::binary_function<std::string, std::string, std::string> {
-    std::string operator() (const std::string &filename, const std::string &input_dir) const {
+void SequencingLibraryBase::update_relative_reads_filenames(const std::string &input_dir) {
+    auto update_relative_filename = [&input_dir](const std::string &filename) {
         if (filename[0] == '/')
             return filename;
         return input_dir + filename;
-    }
-};
-
-void SequencingLibraryBase::update_relative_reads_filenames(const std::string &input_dir) {
+    };
+    
     std::transform(left_paired_reads_.begin(), left_paired_reads_.end(), left_paired_reads_.begin(),
-                   std::bind2nd(update_relative_filename(), input_dir));
+                   update_relative_filename);
     std::transform(right_paired_reads_.begin(), right_paired_reads_.end(), right_paired_reads_.begin(),
-                   std::bind2nd(update_relative_filename(), input_dir));
+                   update_relative_filename);
     std::transform(interlaced_reads_.begin(), interlaced_reads_.end(), interlaced_reads_.begin(),
-                   std::bind2nd(update_relative_filename(), input_dir));
+                   update_relative_filename);
     std::transform(merged_reads_.begin(), merged_reads_.end(), merged_reads_.begin(),
-                   std::bind2nd(update_relative_filename(), input_dir));
+                   update_relative_filename);
     std::transform(single_reads_.begin(), single_reads_.end(), single_reads_.begin(),
-                   std::bind2nd(update_relative_filename(), input_dir));
+                   update_relative_filename);
 }
 
 #include "library.inl"

@@ -372,7 +372,7 @@ public:
 
 	GETOPT_INLINE bool options_remain() const;
 	
-	void end_of_options() const throw(GetOptEx)
+	void end_of_options() const
 	{
     	if (options_remain() && (_exc & std::ios_base::eofbit))
     	    throw TooManyOptionsEx();
@@ -383,13 +383,13 @@ public:
 	
 	const std::string& app_name() const					{ return _app_name; }
 	
-	GETOPT_INLINE GetOpt_pp& operator >> (const _Option& opt) throw(GetOptEx);
+	GETOPT_INLINE GetOpt_pp& operator >> (const _Option& opt);
 	
 	GETOPT_INLINE GetOpt_pp& operator >> (std::ios_base& (*iomanip)(std::ios_base&));
 
 	// Alternative to manipulators, for those who don't like them: the 'getopt' method :)	
 	// Combination 1: with long option:
-	template <class T> inline T getopt(char short_opt, const std::string& long_opt) throw(GetOptEx)
+	template <class T> inline T getopt(char short_opt, const std::string& long_opt)
 	{
 		T result;
 		operator >> (Option(short_opt, long_opt, result));
@@ -404,7 +404,7 @@ public:
 	}
 
 	// Combination 2: without long option:
-	template <class T> inline T getopt(char short_opt) throw(GetOptEx)
+	template <class T> inline T getopt(char short_opt)
 	{
 		T result;
 		operator >> (Option(short_opt, result));
