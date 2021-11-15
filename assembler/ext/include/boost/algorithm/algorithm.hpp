@@ -19,16 +19,17 @@
 
 #include <functional> // for plus and multiplies
 
+#include <boost/config.hpp>
 #include <boost/utility/enable_if.hpp> // for boost::disable_if
 #include <boost/type_traits/is_integral.hpp>
 
 namespace boost { namespace algorithm {
 
 template <typename T>
-T identity_operation ( std::multiplies<T> ) { return T(1); }
+BOOST_CXX14_CONSTEXPR T identity_operation ( std::multiplies<T> ) { return T(1); }
 
 template <typename T>
-T identity_operation ( std::plus<T> ) { return T(0); }
+BOOST_CXX14_CONSTEXPR T identity_operation ( std::plus<T> ) { return T(0); }
 
 
 /// \fn power ( T x, Integer n )
@@ -40,7 +41,7 @@ T identity_operation ( std::plus<T> ) { return T(0); }
 //  \remark Taken from Knuth, The Art of Computer Programming, Volume 2:
 //  Seminumerical Algorithms, Section 4.6.3
 template <typename T, typename Integer>
-typename boost::enable_if<boost::is_integral<Integer>, T>::type
+BOOST_CXX14_CONSTEXPR typename boost::enable_if<boost::is_integral<Integer>, T>::type
 power (T x, Integer n) {
     T y = 1; // Should be "T y{1};" 
     if (n == 0) return y;
@@ -67,7 +68,7 @@ power (T x, Integer n) {
 //  \remark Taken from Knuth, The Art of Computer Programming, Volume 2:
 //  Seminumerical Algorithms, Section 4.6.3
 template <typename T, typename Integer, typename Operation>
-typename boost::enable_if<boost::is_integral<Integer>, T>::type
+BOOST_CXX14_CONSTEXPR typename boost::enable_if<boost::is_integral<Integer>, T>::type
 power (T x, Integer n, Operation op) {
     T y = identity_operation(op);
     if (n == 0) return y;

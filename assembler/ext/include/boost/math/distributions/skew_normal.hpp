@@ -21,7 +21,7 @@
 #include <boost/math/constants/constants.hpp>
 #include <boost/math/tools/tuple.hpp>
 #include <boost/math/tools/roots.hpp> // Newton-Raphson
-#include <boost/assert.hpp>
+#include <boost/math/tools/assert.hpp>
 #include <boost/math/distributions/detail/generic_mode.hpp> // pdf max finder.
 
 #include <utility>
@@ -287,7 +287,7 @@ namespace boost{ namespace math{
   {
     using namespace boost::math::constants;
 
-    const RealType delta2 = static_cast<RealType>(1) / (static_cast<RealType>(1)+static_cast<RealType>(1)/(dist.shape()*dist.shape()));
+    const RealType delta2 = dist.shape() != 0 ? static_cast<RealType>(1) / (static_cast<RealType>(1)+static_cast<RealType>(1)/(dist.shape()*dist.shape())) : static_cast<RealType>(0);
     //const RealType inv_delta2 = static_cast<RealType>(1)+static_cast<RealType>(1)/(dist.shape()*dist.shape());
 
     RealType variance = dist.scale()*dist.scale()*(static_cast<RealType>(1)-two_div_pi<RealType>()*delta2);
@@ -392,7 +392,7 @@ namespace boost{ namespace math{
         
         const diff_type d = std::distance(shapes, result_ptr);
         
-        BOOST_ASSERT(d > static_cast<diff_type>(0));
+        BOOST_MATH_ASSERT(d > static_cast<diff_type>(0));
 
         // refine
         if(d < static_cast<diff_type>(21)) // shape smaller 100
@@ -531,7 +531,7 @@ namespace boost{ namespace math{
     
     const diff_type d = std::distance(shapes, result_ptr);
     
-    BOOST_ASSERT(d > static_cast<diff_type>(0));
+    BOOST_MATH_ASSERT(d > static_cast<diff_type>(0));
 
     // TODO: make the search bounds smarter, depending on the shape parameter
     RealType search_min = 0; // below zero was caught above
@@ -552,7 +552,7 @@ namespace boost{ namespace math{
     }
     
     const int get_digits = policies::digits<RealType, Policy>();// get digits from policy, 
-    boost::uintmax_t m = policies::get_max_root_iterations<Policy>(); // and max iterations.
+    std::uintmax_t m = policies::get_max_root_iterations<Policy>(); // and max iterations.
 
     skew_normal_distribution<RealType, Policy> helper(0, 1, shape);
 
@@ -592,7 +592,7 @@ namespace boost{ namespace math{
 
     static const RealType factor = pi_minus_three<RealType>()*static_cast<RealType>(2);
 
-    const RealType delta2 = static_cast<RealType>(1) / (static_cast<RealType>(1)+static_cast<RealType>(1)/(dist.shape()*dist.shape()));
+    const RealType delta2 = dist.shape() != 0 ? static_cast<RealType>(1) / (static_cast<RealType>(1)+static_cast<RealType>(1)/(dist.shape()*dist.shape())) : static_cast<RealType>(0);
 
     const RealType x = static_cast<RealType>(1)-two_div_pi<RealType>()*delta2;
     const RealType y = two_div_pi<RealType>() * delta2;
@@ -671,7 +671,7 @@ namespace boost{ namespace math{
     const RealType search_max = range(dist).second;
 
     const int get_digits = policies::digits<RealType, Policy>();// get digits from policy, 
-    boost::uintmax_t m = policies::get_max_root_iterations<Policy>(); // and max iterations.
+    std::uintmax_t m = policies::get_max_root_iterations<Policy>(); // and max iterations.
 
     result = tools::newton_raphson_iterate(detail::skew_normal_quantile_functor<RealType, Policy>(dist, p), result,
       search_min, search_max, get_digits, m);

@@ -1,4 +1,4 @@
-/* Copyright 2003-2015 Joaquin M Lopez Munoz.
+/* Copyright 2003-2020 Joaquin M Lopez Munoz.
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at
  * http://www.boost.org/LICENSE_1_0.txt)
@@ -14,7 +14,7 @@
 #endif
 
 #include <boost/config.hpp> /* keep it first to prevent nasty warns in MSVC */
-#include <boost/detail/no_exceptions_support.hpp>
+#include <boost/core/no_exceptions_support.hpp>
 #include <boost/multi_index/detail/seq_index_node.hpp>
 #include <boost/limits.hpp>
 #include <boost/type_traits/aligned_storage.hpp>
@@ -110,6 +110,8 @@ BOOST_STATIC_CONSTANT(
   sequenced_index_sort_max_fill=
     (std::size_t)std::numeric_limits<std::size_t>::digits+1);
 
+#include <boost/multi_index/detail/ignore_wstrict_aliasing.hpp>
+
 template<typename Node,typename Compare>
 void sequenced_index_sort(Node* header,Compare comp)
 {
@@ -189,6 +191,8 @@ void sequenced_index_sort(Node* header,Compare comp)
   }
   BOOST_CATCH_END
 }
+
+#include <boost/multi_index/detail/restore_wstrict_aliasing.hpp>
 
 } /* namespace multi_index::detail */
 

@@ -18,6 +18,8 @@
 
 #include <queue>
 #include <boost/config.hpp>
+#include <boost/mpl/eval_if.hpp>
+#include <boost/mpl/identity.hpp>
 
 // function specializations must be defined in the appropriate
 // namespace - boost::serialization
@@ -27,7 +29,7 @@
 #define STD std
 #endif
 
-namespace boost { 
+namespace boost {
 namespace serialization {
 namespace detail{
 
@@ -52,7 +54,7 @@ template<class Archive, class T, class Container, class Compare>
 inline void serialize(
     Archive & ar,
     std::priority_queue< T, Container, Compare> & t,
-    const unsigned int file_version 
+    const unsigned int file_version
 ){
     typedef typename mpl::eval_if<
         typename Archive::is_saving,

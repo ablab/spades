@@ -78,6 +78,7 @@
 #  include <unistd.h>
 #endif
 
+#ifndef __VXWORKS__ // VxWorks uses Dinkum, not GNU STL with GCC 
 #if defined(__GLIBCXX__) || (defined(__GLIBCPP__) && __GLIBCPP__>=20020514) // GCC >= 3.1.0
 #  define BOOST_STD_EXTENSION_NAMESPACE __gnu_cxx
 #  define BOOST_HAS_SLIST
@@ -91,6 +92,21 @@
 #   define BOOST_HASH_MAP_HEADER <backward/hash_map>
 # endif
 #endif
+#endif
+
+#if defined(__has_include)
+#if defined(BOOST_HAS_HASH)
+#if !__has_include(BOOST_HASH_SET_HEADER) || (__GNUC__ >= 10)
+#undef BOOST_HAS_HASH
+#undef BOOST_HAS_SET_HEADER
+#undef BOOST_HAS_MAP_HEADER
+#endif
+#if !__has_include(BOOST_SLIST_HEADER)
+#undef BOOST_HAS_SLIST
+#undef BOOST_HAS_SLIST_HEADER
+#endif
+#endif
+#endif
 
 //
 // Decide whether we have C++11 support turned on:
@@ -101,8 +117,8 @@
 
 //
 //  Decide which version of libstdc++ we have, normally
-//  stdlibc++ C++0x support is detected via __GNUC__, __GNUC_MINOR__, and possibly
-//  __GNUC_PATCHLEVEL__ at the suggestion of Jonathan Wakely, one of the stdlibc++
+//  libstdc++ C++0x support is detected via __GNUC__, __GNUC_MINOR__, and possibly
+//  __GNUC_PATCHLEVEL__ at the suggestion of Jonathan Wakely, one of the libstdc++
 //  developers. He also commented:
 //
 //       "I'm not sure how useful __GLIBCXX__ is for your purposes, for instance in
@@ -110,7 +126,7 @@
 //       Although 4.3.0 was released earlier than 4.2.4, it has better C++0x support
 //       than any release in the 4.2 series."
 //
-//  Another resource for understanding stdlibc++ features is:
+//  Another resource for understanding libstdc++ features is:
 //  http://gcc.gnu.org/onlinedocs/libstdc++/manual/status.html#manual.intro.status.standard.200x
 //
 //  However, using the GCC version number fails when the compiler is clang since this
@@ -123,7 +139,15 @@
 //
 #ifdef __clang__
 
-#if __has_include(<experimental/memory_resource>)
+#if __has_include(<compare>)
+#  define BOOST_LIBSTDCXX_VERSION 100100
+#elif __has_include(<memory_resource>)
+#  define BOOST_LIBSTDCXX_VERSION 90100
+#elif __has_include(<charconv>)
+#  define BOOST_LIBSTDCXX_VERSION 80100
+#elif __has_include(<variant>)
+#  define BOOST_LIBSTDCXX_VERSION 70100
+#elif __has_include(<experimental/memory_resource>)
 #  define BOOST_LIBSTDCXX_VERSION 60100
 #elif __has_include(<experimental/any>)
 #  define BOOST_LIBSTDCXX_VERSION 50100
@@ -141,6 +165,64 @@
 #  define BOOST_LIBSTDCXX_VERSION 40400
 #elif __has_include(<array>)
 #  define BOOST_LIBSTDCXX_VERSION 40300
+#endif
+//
+// If BOOST_HAS_FLOAT128 is set, now that we know the std lib is libstdc++3, check to see if the std lib is
+// configured to support this type.  If not disable it:
+//
+#if defined(BOOST_HAS_FLOAT128) && !defined(_GLIBCXX_USE_FLOAT128)
+#  undef BOOST_HAS_FLOAT128
+#endif
+
+#if (BOOST_LIBSTDCXX_VERSION >= 100000) && defined(BOOST_HAS_HASH)
+//
+// hash_set/hash_map deprecated and have terminal bugs:
+//
+#undef BOOST_HAS_HASH
+#undef BOOST_HAS_SET_HEADER
+#undef BOOST_HAS_MAP_HEADER
+#endif
+
+
+#if (BOOST_LIBSTDCXX_VERSION >= 100000) && defined(BOOST_HAS_HASH)
+//
+// hash_set/hash_map deprecated and have terminal bugs:
+//
+#undef BOOST_HAS_HASH
+#undef BOOST_HAS_SET_HEADER
+#undef BOOST_HAS_MAP_HEADER
+#endif
+
+
+#if (BOOST_LIBSTDCXX_VERSION < 50100)
+// libstdc++ does not define this function as it's deprecated in C++11, but clang still looks for it,
+// defining it here is a terrible cludge, but should get things working:
+extern "C" char *gets (char *__s);
+#endif
+//
+// clang is unable to parse some GCC headers, add those workarounds here:
+//
+#if BOOST_LIBSTDCXX_VERSION < 50000
+#  define BOOST_NO_CXX11_HDR_REGEX
+#endif
+//
+// GCC 4.7.x has no __cxa_thread_atexit which
+// thread_local objects require for cleanup:
+//
+#if BOOST_LIBSTDCXX_VERSION < 40800
+#  define BOOST_NO_CXX11_THREAD_LOCAL
+#endif
+//
+// Early clang versions can handle <chrono>, not exactly sure which versions
+// but certainly up to clang-3.8 and gcc-4.6:
+//
+#if (__clang_major__ < 5)
+#  if BOOST_LIBSTDCXX_VERSION < 40800
+#     define BOOST_NO_CXX11_HDR_FUTURE
+#     define BOOST_NO_CXX11_HDR_MUTEX
+#     define BOOST_NO_CXX11_HDR_CONDITION_VARIABLE
+#     define BOOST_NO_CXX11_HDR_CHRONO
+#  endif
 #endif
 
 //
@@ -175,6 +257,7 @@
 #     endif
 #  elif !_GLIBCXX_USE_DEPRECATED
 #     define BOOST_NO_AUTO_PTR
+#     define BOOST_NO_CXX98_BINDERS
 #  endif
 #endif
 
@@ -198,6 +281,7 @@
 #  define BOOST_NO_CXX11_HDR_RATIO
 #  define BOOST_NO_CXX11_HDR_SYSTEM_ERROR
 #  define BOOST_NO_CXX11_SMART_PTR
+#  define BOOST_NO_CXX11_HDR_EXCEPTION
 #else
 #  define BOOST_HAS_TR1_COMPLEX_INVERSE_TRIG 
 #  define BOOST_HAS_TR1_COMPLEX_OVERLOADS 
@@ -216,15 +300,17 @@
 #if (BOOST_LIBSTDCXX_VERSION < 40600) || !defined(BOOST_LIBSTDCXX11)
 #  define BOOST_NO_CXX11_HDR_TYPEINDEX
 #  define BOOST_NO_CXX11_ADDRESSOF
+#  define BOOST_NO_CXX17_ITERATOR_TRAITS
 #endif
 
 //  C++0x features in GCC 4.7.0 and later
 //
 #if (BOOST_LIBSTDCXX_VERSION < 40700) || !defined(BOOST_LIBSTDCXX11)
 // Note that although <chrono> existed prior to 4.7, "steady_clock" is spelled "monotonic_clock"
-// so 4.7.0 is the first truely conforming one.
+// so 4.7.0 is the first truly conforming one.
 #  define BOOST_NO_CXX11_HDR_CHRONO
 #  define BOOST_NO_CXX11_ALLOCATOR
+#  define BOOST_NO_CXX11_POINTER_TRAITS
 #endif
 //  C++0x features in GCC 4.8.0 and later
 //
@@ -244,10 +330,6 @@
 #  define BOOST_NO_CXX14_STD_EXCHANGE
 #endif
 
-#if defined(__clang_major__) && ((__clang_major__ < 3) || ((__clang_major__ == 3) && (__clang_minor__ < 7)))
-// As of clang-3.6, libstdc++ header <atomic> throws up errors with clang:
-#  define BOOST_NO_CXX11_HDR_ATOMIC
-#endif
 //
 //  C++0x features in GCC 5.1 and later
 //
@@ -259,13 +341,14 @@
 #endif
 
 //
-//  C++17 features in GCC 6.1 and later
+//  C++17 features in GCC 7.1 and later
 //
-#if (BOOST_LIBSTDCXX_VERSION < 60100) || (__cplusplus <= 201402L)
-#  define BOOST_NO_CXX17_STD_INVOKE
-#endif
 #if (BOOST_LIBSTDCXX_VERSION < 70100) || (__cplusplus <= 201402L)
+#  define BOOST_NO_CXX17_STD_INVOKE
 #  define BOOST_NO_CXX17_STD_APPLY
+#  define BOOST_NO_CXX17_HDR_OPTIONAL
+#  define BOOST_NO_CXX17_HDR_STRING_VIEW
+#  define BOOST_NO_CXX17_HDR_VARIANT
 #endif
 
 #if defined(__has_include)
@@ -274,8 +357,54 @@
 #elif __cplusplus <= 201103
 #  define BOOST_NO_CXX14_HDR_SHARED_MUTEX
 #endif
+//
+// <execution> has a dependency to Intel's thread building blocks:
+// unless these are installed seperately, including <execution> leads
+// to inscrutable errors inside libstdc++'s own headers.
+//
+#if (BOOST_LIBSTDCXX_VERSION < 100100)
+#if !__has_include(<tbb/tbb.h>)
+#define BOOST_NO_CXX17_HDR_EXECUTION
+#endif
+#endif
 #elif __cplusplus < 201402 || (BOOST_LIBSTDCXX_VERSION < 40900) || !defined(BOOST_LIBSTDCXX11)
 #  define BOOST_NO_CXX14_HDR_SHARED_MUTEX
+#endif
+
+#if BOOST_LIBSTDCXX_VERSION < 100100
+//
+// The header may be present but is incomplete:
+//
+#  define BOOST_NO_CXX17_HDR_CHARCONV
+#endif
+
+#if BOOST_LIBSTDCXX_VERSION < 110000
+//
+// Header <bit> may be present but lacks std::bit_cast:
+//
+#define BOOST_NO_CXX20_HDR_BIT
+#endif
+
+#ifndef __cpp_impl_coroutine
+#  define BOOST_NO_CXX20_HDR_COROUTINE
+#endif
+
+//
+// These next defines are mostly for older clang versions with a newer libstdc++ :
+//
+#if !defined(__cpp_lib_concepts)
+#if !defined(BOOST_NO_CXX20_HDR_COMPARE)
+#  define BOOST_NO_CXX20_HDR_COMPARE
+#endif
+#if !defined(BOOST_NO_CXX20_HDR_CONCEPTS)
+#  define BOOST_NO_CXX20_HDR_CONCEPTS
+#endif
+#if !defined(BOOST_NO_CXX20_HDR_SPAN)
+#  define BOOST_NO_CXX20_HDR_SPAN
+#endif
+#if !defined(BOOST_NO_CXX20_HDR_RANGES)
+#  define BOOST_NO_CXX20_HDR_RANGES
+#endif
 #endif
 
 //

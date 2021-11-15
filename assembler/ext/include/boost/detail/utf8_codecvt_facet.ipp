@@ -30,14 +30,17 @@ BOOST_UTF8_BEGIN_NAMESPACE
 /////////1/////////2/////////3/////////4/////////5/////////6/////////7/////////8
 // implementation for wchar_t
 
-BOOST_UTF8_DECL utf8_codecvt_facet::utf8_codecvt_facet(
+utf8_codecvt_facet::utf8_codecvt_facet(
     std::size_t no_locale_manage
 ) :
     std::codecvt<wchar_t, char, std::mbstate_t>(no_locale_manage)
 {}
 
+utf8_codecvt_facet::~utf8_codecvt_facet()
+{}
+
 // Translate incoming UTF-8 into UCS-4
-BOOST_UTF8_DECL std::codecvt_base::result utf8_codecvt_facet::do_in(
+std::codecvt_base::result utf8_codecvt_facet::do_in(
     std::mbstate_t& /*state*/, 
     const char * from,
     const char * from_end, 
@@ -114,7 +117,7 @@ BOOST_UTF8_DECL std::codecvt_base::result utf8_codecvt_facet::do_in(
     else return std::codecvt_base::partial;
 }
 
-BOOST_UTF8_DECL std::codecvt_base::result utf8_codecvt_facet::do_out(
+std::codecvt_base::result utf8_codecvt_facet::do_out(
     std::mbstate_t& /*state*/, 
     const wchar_t *   from,
     const wchar_t * from_end, 
@@ -176,8 +179,8 @@ BOOST_UTF8_DECL std::codecvt_base::result utf8_codecvt_facet::do_out(
 
 // How many char objects can I process to get <= max_limit
 // wchar_t objects?
-BOOST_UTF8_DECL int utf8_codecvt_facet::do_length(
-    const std::mbstate_t &,
+int utf8_codecvt_facet::do_length(
+    std::mbstate_t &,
     const char * from,
     const char * from_end, 
     std::size_t max_limit
@@ -185,30 +188,21 @@ BOOST_UTF8_DECL int utf8_codecvt_facet::do_length(
 #if BOOST_WORKAROUND(__IBMCPP__, BOOST_TESTED_AT(600))
         throw()
 #endif
-{ 
-    // RG - this code is confusing!  I need a better way to express it.
-    // and test cases.
-
-    // Invariants:
-    // 1) last_octet_count has the size of the last measured character
-    // 2) char_count holds the number of characters shown to fit
-    // within the bounds so far (no greater than max_limit)
-    // 3) from_next points to the octet 'last_octet_count' before the
-    // last measured character.  
-    int last_octet_count=0;
-    std::size_t char_count = 0;
-    const char* from_next = from;
-    // Use "<" because the buffer may represent incomplete characters
-    while (from_next+last_octet_count <= from_end && char_count <= max_limit) {
-        from_next += last_octet_count;
-        last_octet_count = (get_octet_count(*from_next));
-        ++char_count;
+{
+    const char * from_next = from;
+    for (std::size_t char_count = 0u; char_count < max_limit && from_next < from_end; ++char_count) {
+        unsigned int octet_count = get_octet_count(*from_next);
+        // The buffer may represent incomplete characters, so terminate early if one is found
+        if (octet_count > static_cast<std::size_t>(from_end - from_next))
+            break;
+        from_next += octet_count;
     }
-    return static_cast<int>(from_next-from);
+
+    return static_cast<int>(from_next - from);
 }
 
-BOOST_UTF8_DECL unsigned int utf8_codecvt_facet::get_octet_count(
-    unsigned char   lead_octet
+unsigned int utf8_codecvt_facet::get_octet_count(
+    unsigned char lead_octet
 ){
     // if the 0-bit (MSB) is 0, then 1 character
     if (lead_octet <= 0x7f) return 1;
@@ -279,7 +273,7 @@ int get_cont_octet_out_count_impl<4>(wchar_t word){
 
 // How many "continuing octets" will be needed for this word
 // ==   total octets - 1.
-BOOST_UTF8_DECL int utf8_codecvt_facet::get_cont_octet_out_count(
+int utf8_codecvt_facet::get_cont_octet_out_count(
     wchar_t word
 ) const {
     return detail::get_cont_octet_out_count_impl<sizeof(wchar_t)>(word);

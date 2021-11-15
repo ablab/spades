@@ -398,7 +398,7 @@ T gamma_p_inv_imp(T a, T p, const Policy& pol)
    if(a <= 0)
       return policies::raise_domain_error<T>(function, "Argument a in the incomplete gamma function inverse must be >= 0 (got a=%1%).", a, pol);
    if((p < 0) || (p > 1))
-      return policies::raise_domain_error<T>(function, "Probabilty must be in the range [0,1] in the incomplete gamma function inverse (got p=%1%).", p, pol);
+      return policies::raise_domain_error<T>(function, "Probability must be in the range [0,1] in the incomplete gamma function inverse (got p=%1%).", p, pol);
    if(p == 1)
       return policies::raise_overflow_error<T>(function, 0, Policy());
    if(p == 0)
@@ -433,7 +433,7 @@ T gamma_p_inv_imp(T a, T p, const Policy& pol)
    //
    // Go ahead and iterate:
    //
-   boost::uintmax_t max_iter = policies::get_max_root_iterations<Policy>();
+   std::uintmax_t max_iter = policies::get_max_root_iterations<Policy>();
    guess = tools::halley_iterate(
       detail::gamma_p_inverse_func<T, Policy>(a, p, false),
       guess,
@@ -458,7 +458,7 @@ T gamma_q_inv_imp(T a, T q, const Policy& pol)
    if(a <= 0)
       return policies::raise_domain_error<T>(function, "Argument a in the incomplete gamma function inverse must be >= 0 (got a=%1%).", a, pol);
    if((q < 0) || (q > 1))
-      return policies::raise_domain_error<T>(function, "Probabilty must be in the range [0,1] in the incomplete gamma function inverse (got q=%1%).", q, pol);
+      return policies::raise_domain_error<T>(function, "Probability must be in the range [0,1] in the incomplete gamma function inverse (got q=%1%).", q, pol);
    if(q == 0)
       return policies::raise_overflow_error<T>(function, 0, Policy());
    if(q == 1)
@@ -492,7 +492,7 @@ T gamma_q_inv_imp(T a, T q, const Policy& pol)
    //
    // Go ahead and iterate:
    //
-   boost::uintmax_t max_iter = policies::get_max_root_iterations<Policy>();
+   std::uintmax_t max_iter = policies::get_max_root_iterations<Policy>();
    guess = tools::halley_iterate(
       detail::gamma_p_inverse_func<T, Policy>(a, q, true),
       guess,

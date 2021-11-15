@@ -18,6 +18,7 @@
 #include <boost/shared_array.hpp>
 #endif
 
+#include <boost/core/allocator_access.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/collection_size_type.hpp>
 #include <boost/serialization/nvp.hpp>
@@ -45,8 +46,8 @@ namespace boost { namespace numeric { namespace ublas {
         typedef unbounded_array<T, ALLOC> self_type;
     public:
         typedef ALLOC allocator_type;
-        typedef typename ALLOC::size_type size_type;
-        typedef typename ALLOC::difference_type difference_type;
+        typedef typename boost::allocator_size_type<ALLOC>::type size_type;
+        typedef typename boost::allocator_difference_type<ALLOC>::type difference_type;
         typedef T value_type;
         typedef const T &const_reference;
         typedef T &reference;
@@ -66,9 +67,17 @@ namespace boost { namespace numeric { namespace ublas {
             alloc_(a), size_ (size) {
           if (size_) {
               data_ = alloc_.allocate (size_);
+//Disabled warning C4127 because the conditional expression is constant
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4127)
+#endif
               if (! detail::has_trivial_constructor<T>::value) {
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
                   for (pointer d = data_; d != data_ + size_; ++d)
-                      alloc_.construct(d, value_type());
+                      boost::allocator_construct(alloc_, d);
               }
           }
           else
@@ -96,10 +105,28 @@ namespace boost { namespace numeric { namespace ublas {
             else
                 data_ = 0;
         }
+#ifdef BOOST_UBLAS_CPP_GE_2011
+		BOOST_UBLAS_INLINE
+		unbounded_array (unbounded_array &&c) :
+			storage_array<unbounded_array<T, ALLOC> >(),
+			alloc_ (std::move(c.alloc_)), size_ (c.size_), data_(c.data_)
+		{
+			c.size_ = 0;
+			c.data_ = nullptr;
+		}
+#endif
         BOOST_UBLAS_INLINE
         ~unbounded_array () {
             if (size_) {
+//Disabled warning C4127 because the conditional expression is constant
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4127)
+#endif
                 if (! detail::has_trivial_destructor<T>::value) {
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
                     // std::_Destroy (begin(), end(), alloc_);
                     const iterator i_end = end();
                     for (iterator i = begin (); i != i_end; ++i) {
@@ -123,32 +150,48 @@ namespace boost { namespace numeric { namespace ublas {
                         pointer di = data_;
                         if (size < size_) {
                             for (; di != data_ + size; ++di) {
-                                alloc_.construct (di, *si);
+                                boost::allocator_construct(alloc_, di, *si);
                                 ++si;
                             }
                         }
                         else {
                             for (; si != p_data + size_; ++si) {
-                                alloc_.construct (di, *si);
+                                boost::allocator_construct(alloc_, di, *si);
                                 ++di;
                             }
                             for (; di != data_ + size; ++di) {
-                                alloc_.construct (di, init);
+                                boost::allocator_construct(alloc_, di, init);
                             }
                         }
                     }
                     else {
+//Disabled warning C4127 because the conditional expression is constant
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4127)
+#endif
                         if (! detail::has_trivial_constructor<T>::value) {
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
                             for (pointer di = data_; di != data_ + size; ++di)
-                                alloc_.construct (di, value_type());
+                                boost::allocator_construct(alloc_, di);
                         }
                     }
                 }
 
                 if (size_) {
+//Disabled warning C4127 because the conditional expression is constant
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4127)
+#endif
                     if (! detail::has_trivial_destructor<T>::value) {
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
                         for (pointer si = p_data; si != p_data + size_; ++si)
-                            alloc_.destroy (si);
+                            boost::allocator_destroy(alloc_, si);
                     }
                     alloc_.deallocate (p_data, size_);
                 }
@@ -171,7 +214,7 @@ namespace boost { namespace numeric { namespace ublas {
         // Random Access Container
         BOOST_UBLAS_INLINE
         size_type max_size () const {
-            return ALLOC ().max_size();
+            return boost::allocator_max_size(alloc_);
         }
         
         BOOST_UBLAS_INLINE
@@ -303,6 +346,7 @@ namespace boost { namespace numeric { namespace ublas {
         // Handle explict destroy on a (possibly indexed) iterator
         BOOST_UBLAS_INLINE
         static void iterator_destroy (iterator &i) {
+            (void)(i);
             (&(*i)) -> ~value_type ();
         }
         ALLOC alloc_;
@@ -318,8 +362,8 @@ namespace boost { namespace numeric { namespace ublas {
         typedef bounded_array<T, N, ALLOC> self_type;
     public:
         // No allocator_type as ALLOC is not used for allocation
-        typedef typename ALLOC::size_type size_type;
-        typedef typename ALLOC::difference_type difference_type;
+        typedef typename boost::allocator_size_type<ALLOC>::type size_type;
+        typedef typename boost::allocator_difference_type<ALLOC>::type difference_type;
         typedef T value_type;
         typedef const T &const_reference;
         typedef T &reference;

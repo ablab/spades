@@ -15,6 +15,9 @@
 #include <locale>
 #include <functional>
 
+#include <boost/iterator/transform_iterator.hpp>
+#include <boost/range/begin.hpp>
+#include <boost/range/end.hpp>
 #include <boost/type_traits/make_unsigned.hpp>
 
 namespace boost {
@@ -30,15 +33,17 @@ namespace boost {
 
             // a tolower functor
             template<typename CharT>
-            struct to_lowerF : public std::unary_function<CharT, CharT>
+            struct to_lowerF
             {
+                typedef CharT argument_type;
+                typedef CharT result_type;
                 // Constructor
                 to_lowerF( const std::locale& Loc ) : m_Loc( &Loc ) {}
 
                 // Operation
                 CharT operator ()( CharT Ch ) const
                 {
-                    #if defined(__BORLANDC__) && (__BORLANDC__ >= 0x560) && (__BORLANDC__ <= 0x564) && !defined(_USE_OLD_RW_STL)
+                    #if defined(BOOST_BORLANDC) && (BOOST_BORLANDC >= 0x560) && (BOOST_BORLANDC <= 0x564) && !defined(_USE_OLD_RW_STL)
                         return std::tolower( static_cast<typename boost::make_unsigned <CharT>::type> ( Ch ));
                     #else
                         return std::tolower<CharT>( Ch, *m_Loc );
@@ -50,15 +55,17 @@ namespace boost {
 
             // a toupper functor
             template<typename CharT>
-            struct to_upperF : public std::unary_function<CharT, CharT>
+            struct to_upperF
             {
+                typedef CharT argument_type;
+                typedef CharT result_type;
                 // Constructor
                 to_upperF( const std::locale& Loc ) : m_Loc( &Loc ) {}
 
                 // Operation
                 CharT operator ()( CharT Ch ) const
                 {
-                    #if defined(__BORLANDC__) && (__BORLANDC__ >= 0x560) && (__BORLANDC__ <= 0x564) && !defined(_USE_OLD_RW_STL)
+                    #if defined(BOOST_BORLANDC) && (BOOST_BORLANDC >= 0x560) && (BOOST_BORLANDC <= 0x564) && !defined(_USE_OLD_RW_STL)
                         return std::toupper( static_cast<typename boost::make_unsigned <CharT>::type> ( Ch ));
                     #else
                         return std::toupper<CharT>( Ch, *m_Loc );

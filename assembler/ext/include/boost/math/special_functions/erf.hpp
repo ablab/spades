@@ -17,6 +17,16 @@
 #include <boost/math/policies/error_handling.hpp>
 #include <boost/math/tools/big_constant.hpp>
 
+#if defined(__GNUC__) && defined(BOOST_MATH_USE_FLOAT128)
+//
+// This is the only way we can avoid
+// warning: non-standard suffix on floating constant [-Wpedantic]
+// when building with -Wall -pedantic.  Neither __extension__
+// nor #pragma diagnostic ignored work :(
+//
+#pragma GCC system_header
+#endif
+
 namespace boost{ namespace math{
 
 namespace detail
@@ -60,23 +70,23 @@ inline float erf_asymptotic_limit_N(const T&)
 {
    return (std::numeric_limits<float>::max)();
 }
-inline float erf_asymptotic_limit_N(const mpl::int_<24>&)
+inline float erf_asymptotic_limit_N(const std::integral_constant<int, 24>&)
 {
    return 2.8F;
 }
-inline float erf_asymptotic_limit_N(const mpl::int_<53>&)
+inline float erf_asymptotic_limit_N(const std::integral_constant<int, 53>&)
 {
    return 4.3F;
 }
-inline float erf_asymptotic_limit_N(const mpl::int_<64>&)
+inline float erf_asymptotic_limit_N(const std::integral_constant<int, 64>&)
 {
    return 4.8F;
 }
-inline float erf_asymptotic_limit_N(const mpl::int_<106>&)
+inline float erf_asymptotic_limit_N(const std::integral_constant<int, 106>&)
 {
    return 6.5F;
 }
-inline float erf_asymptotic_limit_N(const mpl::int_<113>&)
+inline float erf_asymptotic_limit_N(const std::integral_constant<int, 113>&)
 {
    return 6.8F;
 }
@@ -85,32 +95,45 @@ template <class T, class Policy>
 inline T erf_asymptotic_limit()
 {
    typedef typename policies::precision<T, Policy>::type precision_type;
-   typedef typename mpl::if_<
-      mpl::less_equal<precision_type, mpl::int_<24> >,
-      typename mpl::if_<
-         mpl::less_equal<precision_type, mpl::int_<0> >,
-         mpl::int_<0>,
-         mpl::int_<24>
-      >::type,
-      typename mpl::if_<
-         mpl::less_equal<precision_type, mpl::int_<53> >,
-         mpl::int_<53>,
-         typename mpl::if_<
-            mpl::less_equal<precision_type, mpl::int_<64> >,
-            mpl::int_<64>,
-            typename mpl::if_<
-               mpl::less_equal<precision_type, mpl::int_<106> >,
-               mpl::int_<106>,
-               typename mpl::if_<
-                  mpl::less_equal<precision_type, mpl::int_<113> >,
-                  mpl::int_<113>,
-                  mpl::int_<0>
-               >::type
-            >::type
-         >::type
-      >::type
-   >::type tag_type;
+   typedef std::integral_constant<int,
+      precision_type::value <= 0 ? 0 :
+      precision_type::value <= 24 ? 24 :
+      precision_type::value <= 53 ? 53 :
+      precision_type::value <= 64 ? 64 :
+      precision_type::value <= 113 ? 113 : 0
+   > tag_type;
    return erf_asymptotic_limit_N(tag_type());
+}
+
+template <class T>
+struct erf_series_near_zero
+{
+   typedef T result_type;
+   T         term;
+   T         zz;
+   int       k;
+   erf_series_near_zero(const T& z) : term(z), zz(-z * z), k(0) {}
+
+   T operator()()
+   {
+      T result = term / (2 * k + 1);
+      term *= zz / ++k;
+      return result;
+   }
+};
+
+template <class T, class Policy>
+T erf_series_near_zero_sum(const T& x, const Policy& pol)
+{
+   //
+   // We need Kahan summation here, otherwise the errors grow fairly quickly.
+   // This method is *much* faster than the alternatives even so.
+   //
+   erf_series_near_zero<T> sum(x);
+   std::uintmax_t max_iter = policies::get_max_series_iterations<Policy>();
+   T result = constants::two_div_root_pi<T>() * tools::kahan_sum_series(sum, tools::digits<T>(), max_iter);
+   policies::check_series_iterations<T>("boost::math::erf<%1%>(%1%, %1%)", max_iter, pol);
+   return result;
 }
 
 template <class T, class Policy, class Tag>
@@ -133,34 +156,32 @@ T erf_imp(T z, bool invert, const Policy& pol, const Tag& t)
    if(!invert && (z > detail::erf_asymptotic_limit<T, Policy>()))
    {
       detail::erf_asympt_series_t<T> s(z);
-      boost::uintmax_t max_iter = policies::get_max_series_iterations<Policy>();
+      std::uintmax_t max_iter = policies::get_max_series_iterations<Policy>();
       result = boost::math::tools::sum_series(s, policies::get_epsilon<T, Policy>(), max_iter, 1);
       policies::check_series_iterations<T>("boost::math::erf<%1%>(%1%, %1%)", max_iter, pol);
    }
    else
    {
       T x = z * z;
-      if(x < 0.6)
+      if(z < 1.3f)
       {
          // Compute P:
-         result = z * exp(-x);
-         result /= sqrt(boost::math::constants::pi<T>());
-         if(result != 0)
-            result *= 2 * detail::lower_gamma_series(T(0.5f), x, pol);
+         // This is actually good for z p to 2 or so, but the cutoff given seems
+         // to be the best compromise.  Performance wise, this is way quicker than anything else...
+         result = erf_series_near_zero_sum(z, pol);
       }
-      else if(x < 1.1f)
+      else if(x > 1 / tools::epsilon<T>())
       {
-         // Compute Q:
+         // http://functions.wolfram.com/06.27.06.0006.02
          invert = !invert;
-         result = tgamma_small_upper_part(T(0.5f), x, pol);
-         result /= sqrt(boost::math::constants::pi<T>());
+         result = exp(-x) / (constants::root_pi<T>() * z);
       }
       else
       {
          // Compute Q:
          invert = !invert;
          result = z * exp(-x);
-         result /= sqrt(boost::math::constants::pi<T>());
+         result /= boost::math::constants::root_pi<T>();
          result *= upper_gamma_fraction(T(0.5f), x, policies::get_epsilon<T, Policy>());
       }
    }
@@ -170,11 +191,14 @@ T erf_imp(T z, bool invert, const Policy& pol, const Tag& t)
 }
 
 template <class T, class Policy>
-T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<53>& t)
+T erf_imp(T z, bool invert, const Policy& pol, const std::integral_constant<int, 53>& t)
 {
    BOOST_MATH_STD_USING
 
    BOOST_MATH_INSTRUMENT_CODE("53-bit precision erf_imp called");
+
+   if ((boost::math::isnan)(z))
+      return policies::raise_denorm_error("boost::math::erf<%1%>(%1%)", "Expected a finite argument but got %1%", z, pol);
 
    if(z < 0)
    {
@@ -299,7 +323,14 @@ T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<53>& t)
             BOOST_MATH_BIG_CONSTANT(T, 53, 0.00410369723978904575884),
          };
          result = Y + tools::evaluate_polynomial(P, T(z - 1.5)) / tools::evaluate_polynomial(Q, T(z - 1.5));
-         result *= exp(-z * z) / z;
+         T hi, lo;
+         int expon;
+         hi = floor(ldexp(frexp(z, &expon), 26));
+         hi = ldexp(hi, expon - 26);
+         lo = z - hi;
+         T sq = z * z;
+         T err_sqr = ((hi * hi - sq) + 2 * hi * lo) + lo * lo;
+         result *= exp(-sq) * exp(-err_sqr) / z;
       }
       else if(z < 4.5f)
       {
@@ -325,7 +356,14 @@ T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<53>& t)
             BOOST_MATH_BIG_CONSTANT(T, 53, 0.000479411269521714493907),
          };
          result = Y + tools::evaluate_polynomial(P, T(z - 3.5)) / tools::evaluate_polynomial(Q, T(z - 3.5));
-         result *= exp(-z * z) / z;
+         T hi, lo;
+         int expon;
+         hi = floor(ldexp(frexp(z, &expon), 26));
+         hi = ldexp(hi, expon - 26);
+         lo = z - hi;
+         T sq = z * z;
+         T err_sqr = ((hi * hi - sq) + 2 * hi * lo) + lo * lo;
+         result *= exp(-sq) * exp(-err_sqr) / z;
       }
       else
       {
@@ -353,7 +391,14 @@ T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<53>& t)
             BOOST_MATH_BIG_CONSTANT(T, 53, 5.48409182238641741584),
          };
          result = Y + tools::evaluate_polynomial(P, T(1 / z)) / tools::evaluate_polynomial(Q, T(1 / z));
-         result *= exp(-z * z) / z;
+         T hi, lo;
+         int expon;
+         hi = floor(ldexp(frexp(z, &expon), 26));
+         hi = ldexp(hi, expon - 26);
+         lo = z - hi;
+         T sq = z * z;
+         T err_sqr = ((hi * hi - sq) + 2 * hi * lo) + lo * lo;
+         result *= exp(-sq) * exp(-err_sqr) / z;
       }
    }
    else
@@ -371,11 +416,11 @@ T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<53>& t)
    }
 
    return result;
-} // template <class T, class Lanczos>T erf_imp(T z, bool invert, const Lanczos& l, const mpl::int_<53>& t)
+} // template <class T, class Lanczos>T erf_imp(T z, bool invert, const Lanczos& l, const std::integral_constant<int, 53>& t)
 
 
 template <class T, class Policy>
-T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<64>& t)
+T erf_imp(T z, bool invert, const Policy& pol, const std::integral_constant<int, 64>& t)
 {
    BOOST_MATH_STD_USING
 
@@ -471,7 +516,14 @@ T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<64>& t)
             BOOST_MATH_BIG_CONSTANT(T, 64, 0.00279220237309449026796),
          };
          result = Y + tools::evaluate_polynomial(P, T(z - 0.5f)) / tools::evaluate_polynomial(Q, T(z - 0.5f));
-         result *= exp(-z * z) / z;
+         T hi, lo;
+         int expon;
+         hi = floor(ldexp(frexp(z, &expon), 32));
+         hi = ldexp(hi, expon - 32);
+         lo = z - hi;
+         T sq = z * z;
+         T err_sqr = ((hi * hi - sq) + 2 * hi * lo) + lo * lo;
+         result *= exp(-sq) * exp(-err_sqr) / z;
       }
       else if(z < 2.5)
       {
@@ -499,7 +551,14 @@ T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<64>& t)
             BOOST_MATH_BIG_CONSTANT(T, 64, 0.000897871370778031611439),
          };
          result = Y + tools::evaluate_polynomial(P, T(z - 1.5f)) / tools::evaluate_polynomial(Q, T(z - 1.5f));
-         result *= exp(-z * z) / z;
+         T hi, lo;
+         int expon;
+         hi = floor(ldexp(frexp(z, &expon), 32));
+         hi = ldexp(hi, expon - 32);
+         lo = z - hi;
+         T sq = z * z;
+         T err_sqr = ((hi * hi - sq) + 2 * hi * lo) + lo * lo;
+         result *= exp(-sq) * exp(-err_sqr) / z;
       }
       else if(z < 4.5)
       {
@@ -527,7 +586,14 @@ T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<64>& t)
             BOOST_MATH_BIG_CONSTANT(T, 64, 0.804149464190309799804e-4),
          };
          result = Y + tools::evaluate_polynomial(P, T(z - 3.5f)) / tools::evaluate_polynomial(Q, T(z - 3.5f));
-         result *= exp(-z * z) / z;
+         T hi, lo;
+         int expon;
+         hi = floor(ldexp(frexp(z, &expon), 32));
+         hi = ldexp(hi, expon - 32);
+         lo = z - hi;
+         T sq = z * z;
+         T err_sqr = ((hi * hi - sq) + 2 * hi * lo) + lo * lo;
+         result *= exp(-sq) * exp(-err_sqr) / z;
       }
       else
       {
@@ -559,7 +625,14 @@ T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<64>& t)
             BOOST_MATH_BIG_CONSTANT(T, 64, 30.8365511891224291717),
          };
          result = Y + tools::evaluate_polynomial(P, T(1 / z)) / tools::evaluate_polynomial(Q, T(1 / z));
-         result *= exp(-z * z) / z;
+         T hi, lo;
+         int expon;
+         hi = floor(ldexp(frexp(z, &expon), 32));
+         hi = ldexp(hi, expon - 32);
+         lo = z - hi;
+         T sq = z * z;
+         T err_sqr = ((hi * hi - sq) + 2 * hi * lo) + lo * lo;
+         result *= exp(-sq) * exp(-err_sqr) / z;
       }
    }
    else
@@ -577,11 +650,11 @@ T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<64>& t)
    }
 
    return result;
-} // template <class T, class Lanczos>T erf_imp(T z, bool invert, const Lanczos& l, const mpl::int_<64>& t)
+} // template <class T, class Lanczos>T erf_imp(T z, bool invert, const Lanczos& l, const std::integral_constant<int, 64>& t)
 
 
 template <class T, class Policy>
-T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<113>& t)
+T erf_imp(T z, bool invert, const Policy& pol, const std::integral_constant<int, 113>& t)
 {
    BOOST_MATH_STD_USING
 
@@ -687,7 +760,14 @@ T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<113>& t)
             BOOST_MATH_BIG_CONSTANT(T, 113, 0.270666232259029102353426738909226413e-10),
          };
          result = Y + tools::evaluate_polynomial(P, T(z - 0.5f)) / tools::evaluate_polynomial(Q, T(z - 0.5f));
-         result *= exp(-z * z) / z;
+         T hi, lo;
+         int expon;
+         hi = floor(ldexp(frexp(z, &expon), 56));
+         hi = ldexp(hi, expon - 56);
+         lo = z - hi;
+         T sq = z * z;
+         T err_sqr = ((hi * hi - sq) + 2 * hi * lo) + lo * lo;
+         result *= exp(-sq) * exp(-err_sqr) / z;
       }
       else if(z < 1.5)
       {
@@ -721,7 +801,14 @@ T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<113>& t)
             BOOST_MATH_BIG_CONSTANT(T, 113, 0.123749319840299552925421880481085392e-4),
          };
          result = Y + tools::evaluate_polynomial(P, T(z - 1.0f)) / tools::evaluate_polynomial(Q, T(z - 1.0f));
-         result *= exp(-z * z) / z;
+         T hi, lo;
+         int expon;
+         hi = floor(ldexp(frexp(z, &expon), 56));
+         hi = ldexp(hi, expon - 56);
+         lo = z - hi;
+         T sq = z * z;
+         T err_sqr = ((hi * hi - sq) + 2 * hi * lo) + lo * lo;
+         result *= exp(-sq) * exp(-err_sqr) / z;
       }
       else if(z < 2.25)
       {
@@ -756,7 +843,14 @@ T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<113>& t)
             BOOST_MATH_BIG_CONSTANT(T, 113, 0.18647774409821470950544212696270639e-12),
          };
          result = Y + tools::evaluate_polynomial(P, T(z - 1.5f)) / tools::evaluate_polynomial(Q, T(z - 1.5f));
-         result *= exp(-z * z) / z;
+         T hi, lo;
+         int expon;
+         hi = floor(ldexp(frexp(z, &expon), 56));
+         hi = ldexp(hi, expon - 56);
+         lo = z - hi;
+         T sq = z * z;
+         T err_sqr = ((hi * hi - sq) + 2 * hi * lo) + lo * lo;
+         result *= exp(-sq) * exp(-err_sqr) / z;
       }
       else if (z < 3)
       {
@@ -790,7 +884,14 @@ T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<113>& t)
             BOOST_MATH_BIG_CONSTANT(T, 113, 0.192093541425429248675532015101904262e-5),
          };
          result = Y + tools::evaluate_polynomial(P, T(z - 2.25f)) / tools::evaluate_polynomial(Q, T(z - 2.25f));
-         result *= exp(-z * z) / z;
+         T hi, lo;
+         int expon;
+         hi = floor(ldexp(frexp(z, &expon), 56));
+         hi = ldexp(hi, expon - 56);
+         lo = z - hi;
+         T sq = z * z;
+         T err_sqr = ((hi * hi - sq) + 2 * hi * lo) + lo * lo;
+         result *= exp(-sq) * exp(-err_sqr) / z;
       }
       else if(z < 3.5)
       {
@@ -822,7 +923,14 @@ T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<113>& t)
             BOOST_MATH_BIG_CONSTANT(T, 113, 0.407763415954267700941230249989140046e-5),
          };
          result = Y + tools::evaluate_polynomial(P, T(z - 3.0f)) / tools::evaluate_polynomial(Q, T(z - 3.0f));
-         result *= exp(-z * z) / z;
+         T hi, lo;
+         int expon;
+         hi = floor(ldexp(frexp(z, &expon), 56));
+         hi = ldexp(hi, expon - 56);
+         lo = z - hi;
+         T sq = z * z;
+         T err_sqr = ((hi * hi - sq) + 2 * hi * lo) + lo * lo;
+         result *= exp(-sq) * exp(-err_sqr) / z;
       }
       else if(z < 5.5)
       {
@@ -858,7 +966,14 @@ T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<113>& t)
             BOOST_MATH_BIG_CONSTANT(T, 113, 0.11005507545746069573608988651927452e-7),
          };
          result = Y + tools::evaluate_polynomial(P, T(z - 4.5f)) / tools::evaluate_polynomial(Q, T(z - 4.5f));
-         result *= exp(-z * z) / z;
+         T hi, lo;
+         int expon;
+         hi = floor(ldexp(frexp(z, &expon), 56));
+         hi = ldexp(hi, expon - 56);
+         lo = z - hi;
+         T sq = z * z;
+         T err_sqr = ((hi * hi - sq) + 2 * hi * lo) + lo * lo;
+         result *= exp(-sq) * exp(-err_sqr) / z;
       }
       else if(z < 7.5)
       {
@@ -892,7 +1007,14 @@ T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<113>& t)
             BOOST_MATH_BIG_CONSTANT(T, 113, 0.997637501418963696542159244436245077e-8),
          };
          result = Y + tools::evaluate_polynomial(P, T(z - 6.5f)) / tools::evaluate_polynomial(Q, T(z - 6.5f));
-         result *= exp(-z * z) / z;
+         T hi, lo;
+         int expon;
+         hi = floor(ldexp(frexp(z, &expon), 56));
+         hi = ldexp(hi, expon - 56);
+         lo = z - hi;
+         T sq = z * z;
+         T err_sqr = ((hi * hi - sq) + 2 * hi * lo) + lo * lo;
+         result *= exp(-sq) * exp(-err_sqr) / z;
       }
       else if(z < 11.5)
       {
@@ -926,7 +1048,14 @@ T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<113>& t)
             BOOST_MATH_BIG_CONSTANT(T, 113, 0.356615210500531410114914617294694857e-6),
          };
          result = Y + tools::evaluate_polynomial(P, T(z / 2 - 4.75f)) / tools::evaluate_polynomial(Q, T(z / 2 - 4.75f));
-         result *= exp(-z * z) / z;
+         T hi, lo;
+         int expon;
+         hi = floor(ldexp(frexp(z, &expon), 56));
+         hi = ldexp(hi, expon - 56);
+         lo = z - hi;
+         T sq = z * z;
+         T err_sqr = ((hi * hi - sq) + 2 * hi * lo) + lo * lo;
+         result *= exp(-sq) * exp(-err_sqr) / z;
       }
       else
       {
@@ -964,7 +1093,14 @@ T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<113>& t)
             BOOST_MATH_BIG_CONSTANT(T, 113, 72.7415265778588087243442792401576737),
          };
          result = Y + tools::evaluate_polynomial(P, T(1 / z)) / tools::evaluate_polynomial(Q, T(1 / z));
-         result *= exp(-z * z) / z;
+         T hi, lo;
+         int expon;
+         hi = floor(ldexp(frexp(z, &expon), 56));
+         hi = ldexp(hi, expon - 56);
+         lo = z - hi;
+         T sq = z * z;
+         T err_sqr = ((hi * hi - sq) + 2 * hi * lo) + lo * lo;
+         result *= exp(-sq) * exp(-err_sqr) / z;
       }
    }
    else
@@ -982,7 +1118,7 @@ T erf_imp(T z, bool invert, const Policy& pol, const mpl::int_<113>& t)
    }
 
    return result;
-} // template <class T, class Lanczos>T erf_imp(T z, bool invert, const Lanczos& l, const mpl::int_<113>& t)
+} // template <class T, class Lanczos>T erf_imp(T z, bool invert, const Lanczos& l, const std::integral_constant<int, 113>& t)
 
 template <class T, class Policy, class tag>
 struct erf_initializer
@@ -993,8 +1129,8 @@ struct erf_initializer
       {
          do_init(tag());
       }
-      static void do_init(const mpl::int_<0>&){}
-      static void do_init(const mpl::int_<53>&)
+      static void do_init(const std::integral_constant<int, 0>&){}
+      static void do_init(const std::integral_constant<int, 53>&)
       {
          boost::math::erf(static_cast<T>(1e-12), Policy());
          boost::math::erf(static_cast<T>(0.25), Policy());
@@ -1003,7 +1139,7 @@ struct erf_initializer
          boost::math::erf(static_cast<T>(4.25), Policy());
          boost::math::erf(static_cast<T>(5.25), Policy());
       }
-      static void do_init(const mpl::int_<64>&)
+      static void do_init(const std::integral_constant<int, 64>&)
       {
          boost::math::erf(static_cast<T>(1e-12), Policy());
          boost::math::erf(static_cast<T>(0.25), Policy());
@@ -1012,7 +1148,7 @@ struct erf_initializer
          boost::math::erf(static_cast<T>(4.25), Policy());
          boost::math::erf(static_cast<T>(5.25), Policy());
       }
-      static void do_init(const mpl::int_<113>&)
+      static void do_init(const std::integral_constant<int, 113>&)
       {
          boost::math::erf(static_cast<T>(1e-22), Policy());
          boost::math::erf(static_cast<T>(0.25), Policy());
@@ -1056,23 +1192,12 @@ inline typename tools::promote_args<T>::type erf(T z, const Policy& /* pol */)
    BOOST_MATH_INSTRUMENT_CODE("value_type = " << typeid(value_type).name());
    BOOST_MATH_INSTRUMENT_CODE("precision_type = " << typeid(precision_type).name());
 
-   typedef typename mpl::if_<
-      mpl::less_equal<precision_type, mpl::int_<0> >,
-      mpl::int_<0>,
-      typename mpl::if_<
-         mpl::less_equal<precision_type, mpl::int_<53> >,
-         mpl::int_<53>,  // double
-         typename mpl::if_<
-            mpl::less_equal<precision_type, mpl::int_<64> >,
-            mpl::int_<64>, // 80-bit long double
-            typename mpl::if_<
-               mpl::less_equal<precision_type, mpl::int_<113> >,
-               mpl::int_<113>, // 128-bit long double
-               mpl::int_<0> // too many bits, use generic version.
-            >::type
-         >::type
-      >::type
-   >::type tag_type;
+   typedef std::integral_constant<int,
+      precision_type::value <= 0 ? 0 :
+      precision_type::value <= 53 ? 53 :
+      precision_type::value <= 64 ? 64 :
+      precision_type::value <= 113 ? 113 : 0
+   > tag_type;
 
    BOOST_MATH_INSTRUMENT_CODE("tag_type = " << typeid(tag_type).name());
 
@@ -1102,23 +1227,12 @@ inline typename tools::promote_args<T>::type erfc(T z, const Policy& /* pol */)
    BOOST_MATH_INSTRUMENT_CODE("value_type = " << typeid(value_type).name());
    BOOST_MATH_INSTRUMENT_CODE("precision_type = " << typeid(precision_type).name());
 
-   typedef typename mpl::if_<
-      mpl::less_equal<precision_type, mpl::int_<0> >,
-      mpl::int_<0>,
-      typename mpl::if_<
-         mpl::less_equal<precision_type, mpl::int_<53> >,
-         mpl::int_<53>,  // double
-         typename mpl::if_<
-            mpl::less_equal<precision_type, mpl::int_<64> >,
-            mpl::int_<64>, // 80-bit long double
-            typename mpl::if_<
-               mpl::less_equal<precision_type, mpl::int_<113> >,
-               mpl::int_<113>, // 128-bit long double
-               mpl::int_<0> // too many bits, use generic version.
-            >::type
-         >::type
-      >::type
-   >::type tag_type;
+   typedef std::integral_constant<int,
+      precision_type::value <= 0 ? 0 :
+      precision_type::value <= 53 ? 53 :
+      precision_type::value <= 64 ? 64 :
+      precision_type::value <= 113 ? 113 : 0
+   > tag_type;
 
    BOOST_MATH_INSTRUMENT_CODE("tag_type = " << typeid(tag_type).name());
 

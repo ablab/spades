@@ -13,6 +13,8 @@
 #pragma warning(disable:4702) // Unreachable code: optimization warning
 #endif
 
+#include <type_traits>
+
 namespace boost{ namespace math{ 
 
 namespace detail{
@@ -21,7 +23,7 @@ namespace detail{
 // this version is for 80-bit long double's and smaller:
 //
 template <class T, class Policy>
-T erf_inv_imp(const T& p, const T& q, const Policy&, const boost::mpl::int_<64>*)
+T erf_inv_imp(const T& p, const T& q, const Policy&, const std::integral_constant<int, 64>*)
 {
    BOOST_MATH_STD_USING // for ADL of std names.
 
@@ -294,12 +296,12 @@ private:
 };
 
 template <class T, class Policy>
-T erf_inv_imp(const T& p, const T& q, const Policy& pol, const boost::mpl::int_<0>*)
+T erf_inv_imp(const T& p, const T& q, const Policy& pol, const std::integral_constant<int, 0>*)
 {
    //
    // Generic version, get a guess that's accurate to 64-bits (10^-19)
    //
-   T guess = erf_inv_imp(p, q, pol, static_cast<mpl::int_<64> const*>(0));
+   T guess = erf_inv_imp(p, q, pol, static_cast<std::integral_constant<int, 64> const*>(0));
    T result;
    //
    // If T has more bit's than 64 in it's mantissa then we need to iterate,
@@ -307,14 +309,14 @@ T erf_inv_imp(const T& p, const T& q, const Policy& pol, const boost::mpl::int_<
    //
    if(policies::digits<T, Policy>() > 64)
    {
-      boost::uintmax_t max_iter = policies::get_max_root_iterations<Policy>();
+      std::uintmax_t max_iter = policies::get_max_root_iterations<Policy>();
       if(p <= 0.5)
       {
-         result = tools::halley_iterate(detail::erf_roots<typename remove_cv<T>::type, Policy>(p, 1), guess, static_cast<T>(0), tools::max_value<T>(), (policies::digits<T, Policy>() * 2) / 3, max_iter);
+         result = tools::halley_iterate(detail::erf_roots<typename std::remove_cv<T>::type, Policy>(p, 1), guess, static_cast<T>(0), tools::max_value<T>(), (policies::digits<T, Policy>() * 2) / 3, max_iter);
       }
       else
       {
-         result = tools::halley_iterate(detail::erf_roots<typename remove_cv<T>::type, Policy>(q, -1), guess, static_cast<T>(0), tools::max_value<T>(), (policies::digits<T, Policy>() * 2) / 3, max_iter);
+         result = tools::halley_iterate(detail::erf_roots<typename std::remove_cv<T>::type, Policy>(q, -1), guess, static_cast<T>(0), tools::max_value<T>(), (policies::digits<T, Policy>() * 2) / 3, max_iter);
       }
       policies::check_root_iterations<T>("boost::math::erf_inv<%1%>", max_iter, pol);
    }
@@ -338,7 +340,7 @@ struct erf_inv_initializer
       static void do_init()
       {
          // If std::numeric_limits<T>::digits is zero, we must not call
-         // our inituialization code here as the precision presumably
+         // our initialization code here as the precision presumably
          // varies at runtime, and will not have been set yet.
          if(std::numeric_limits<T>::digits)
          {
@@ -430,11 +432,10 @@ typename tools::promote_args<T>::type erfc_inv(T z, const Policy& pol)
    // to use, based on the number of bits in the mantissa of T:
    //
    typedef typename policies::precision<result_type, Policy>::type precision_type;
-   typedef typename mpl::if_<
-      mpl::or_<mpl::less_equal<precision_type, mpl::int_<0> >, mpl::greater<precision_type, mpl::int_<64> > >,
-      mpl::int_<0>,
-      mpl::int_<64>
-   >::type tag_type;
+   typedef std::integral_constant<int,
+      precision_type::value <= 0 ? 0 :
+      precision_type::value <= 64 ? 64 : 0
+   > tag_type;
    //
    // Likewise use internal promotion, so we evaluate at a higher
    // precision internally if it's appropriate:
@@ -496,11 +497,10 @@ typename tools::promote_args<T>::type erf_inv(T z, const Policy& pol)
    // to use, based on the number of bits in the mantissa of T:
    //
    typedef typename policies::precision<result_type, Policy>::type precision_type;
-   typedef typename mpl::if_<
-      mpl::or_<mpl::less_equal<precision_type, mpl::int_<0> >, mpl::greater<precision_type, mpl::int_<64> > >,
-      mpl::int_<0>,
-      mpl::int_<64>
-   >::type tag_type;
+   typedef std::integral_constant<int,
+      precision_type::value <= 0 ? 0 :
+      precision_type::value <= 64 ? 64 : 0
+   > tag_type;
    //
    // Likewise use internal promotion, so we evaluate at a higher
    // precision internally if it's appropriate:

@@ -1,5 +1,6 @@
 /*
    Copyright (c) Marshall Clow 2012-2015.
+   Copyright (c) Glen Joseph Fernandes 2019 (glenjofe@gmail.com)
 
    Distributed under the Boost Software License, Version 1.0. (See accompanying
    file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -17,6 +18,7 @@
 
 #include <boost/config.hpp>
 #include <boost/detail/workaround.hpp>
+#include <boost/io/ostream_put.hpp>
 #include <boost/utility/string_ref_fwd.hpp>
 #include <boost/throw_exception.hpp>
 
@@ -92,6 +94,13 @@ namespace boost {
         basic_string_ref(const std::basic_string<charT, traits, Allocator>& str)
             : ptr_(str.data()), len_(str.length()) {}
 
+// #if !defined(BOOST_NO_CXX11_RVALUE_REFERENCES) && !defined(BOOST_NO_CXX11_DELETED_FUNCTIONS)
+//         // Constructing a string_ref from a temporary string is a bad idea
+//         template<typename Allocator>
+//         basic_string_ref(      std::basic_string<charT, traits, Allocator>&&)
+//             = delete;
+// #endif
+
         BOOST_CONSTEXPR basic_string_ref(const charT* str, size_type len) BOOST_NOEXCEPT
             : ptr_(str), len_(len) {}
 
@@ -155,9 +164,7 @@ namespace boost {
         basic_string_ref substr(size_type pos, size_type n=npos) const {
             if ( pos > size())
                 BOOST_THROW_EXCEPTION( std::out_of_range ( "string_ref::substr" ) );
-            if ( n == npos || pos + n > size())
-                n = size () - pos;
-            return basic_string_ref ( data() + pos, n );
+            return basic_string_ref(data() + pos, (std::min)(size() - pos, n));
             }
 
         int compare(basic_string_ref x) const {
@@ -176,6 +183,7 @@ namespace boost {
             }
 
         size_type find(basic_string_ref s) const {
+            if (s.empty()) return 0;
             const_iterator iter = std::search ( this->cbegin (), this->cend (),
                                                 s.cbegin (), s.cend (), traits::eq );
             return iter == this->cend () ? npos : std::distance ( this->cbegin (), iter );
@@ -188,6 +196,7 @@ namespace boost {
             }
 
         size_type rfind(basic_string_ref s) const {
+            if (s.empty()) return 0;
             const_reverse_iterator iter = std::search ( this->crbegin (), this->crend (),
                                                 s.crbegin (), s.crend (), traits::eq );
             return iter == this->crend () ? npos : (std::distance(iter, this->crend()) - s.size());
@@ -414,52 +423,11 @@ namespace boost {
         return basic_string_ref<charT, traits>(x) >= y;
         }
 
-    namespace detail {
-
-        template<class charT, class traits>
-        inline void sr_insert_fill_chars(std::basic_ostream<charT, traits>& os, std::size_t n) {
-            enum { chunk_size = 8 };
-            charT fill_chars[chunk_size];
-            std::fill_n(fill_chars, static_cast< std::size_t >(chunk_size), os.fill());
-            for (; n >= chunk_size && os.good(); n -= chunk_size)
-                os.write(fill_chars, static_cast< std::size_t >(chunk_size));
-            if (n > 0 && os.good())
-                os.write(fill_chars, n);
-            }
-
-        template<class charT, class traits>
-        void sr_insert_aligned(std::basic_ostream<charT, traits>& os, const basic_string_ref<charT,traits>& str) {
-            const std::size_t size = str.size();
-            const std::size_t alignment_size = static_cast< std::size_t >(os.width()) - size;
-            const bool align_left = (os.flags() & std::basic_ostream<charT, traits>::adjustfield) == std::basic_ostream<charT, traits>::left;
-            if (!align_left) {
-                detail::sr_insert_fill_chars(os, alignment_size);
-                if (os.good())
-                    os.write(str.data(), size);
-                }
-            else {
-                os.write(str.data(), size);
-                if (os.good())
-                    detail::sr_insert_fill_chars(os, alignment_size);
-                }
-            }
-
-        } // namespace detail
-
     // Inserter
     template<class charT, class traits>
     inline std::basic_ostream<charT, traits>&
     operator<<(std::basic_ostream<charT, traits>& os, const basic_string_ref<charT,traits>& str) {
-        if (os.good()) {
-            const std::size_t size = str.size();
-            const std::size_t w = static_cast< std::size_t >(os.width());
-            if (w <= size)
-                os.write(str.data(), size);
-            else
-                detail::sr_insert_aligned(os, str);
-            os.width(0);
-            }
-        return os;
+        return boost::io::ostream_put(os, str.data(), str.size());
         }
 
 #if 0

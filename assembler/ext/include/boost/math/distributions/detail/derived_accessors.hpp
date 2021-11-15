@@ -24,13 +24,13 @@
 // of the distribution header, AFTER the distribution and its core
 // property accessors have been defined: this is so that compilers
 // that implement 2-phase lookup and early-type-checking of templates
-// can find the definitions refered to herein.
+// can find the definitions referred to herein.
 //
 
-#include <boost/type_traits/is_same.hpp>
-#include <boost/static_assert.hpp>
+#include <cmath>
+#include <boost/math/tools/assert.hpp>
 
-#ifdef BOOST_MSVC
+#ifdef _MSC_VER
 # pragma warning(push)
 # pragma warning(disable: 4723) // potential divide by 0
 // Suppressing spurious warning in coefficient_of_variation
@@ -156,7 +156,7 @@ inline typename Dist::value_type median(const Dist& d)
 } // namespace boost
 
 
-#ifdef BOOST_MSVC
+#ifdef _MSC_VER
 # pragma warning(pop)
 #endif
 
