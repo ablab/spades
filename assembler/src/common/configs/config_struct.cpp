@@ -702,7 +702,7 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
 
     load(cfg.log_filename, pt, "log_filename");
 
-    cfg.checkpoints = ModeByName<Checkpoints>(pt.get("checkpoints", "none"), {"none", "last", "all"});
+    cfg.checkpoints = ModeByNameOrName<Checkpoints>(pt.get("checkpoints", "none"), {"none", "last", "all"});
 
     load(cfg.developer_mode, pt, "developer_mode");
     if (cfg.developer_mode) {

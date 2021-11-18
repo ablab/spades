@@ -326,7 +326,7 @@ bool ShouldAlignWithPacbioAligner(io::LibraryType lib_type) {
 void HybridLibrariesAligning::run(graph_pack::GraphPack& gp, const char*) {
     using namespace omnigraph;
 
-    bool make_additional_saves = (bool)parent_->saves_policy().EnabledCheckpoints();
+    bool make_additional_saves = parent_->saves_policy().EnabledCheckpoints(id_);
 
     const auto &graph = gp.get<Graph>();
     auto &single_long_reads = gp.get_mutable<LongReadContainer<Graph>>();

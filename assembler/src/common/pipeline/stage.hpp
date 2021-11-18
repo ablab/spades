@@ -15,6 +15,7 @@
 
 #include <vector>
 #include <memory>
+#include <variant>
 
 namespace spades {
 
@@ -41,9 +42,9 @@ public:
 
 private:
     const char *name_;
-    const char *id_;
 
 protected:
+    const char *id_;
     const StageManager *parent_;
 
     friend class StageManager;
@@ -160,13 +161,26 @@ public:
             : checkpoints_(Checkpoints::None), saves_path_("") {
     }
 
-    SavesPolicy(Checkpoints checkpoints,
+    SavesPolicy(const std::variant<Checkpoints, std::string>& checkpoints,
                 const std::string &saves_path, const std::string &load_path = "")
             : checkpoints_(checkpoints), saves_path_(saves_path) {
         load_path_ = (load_path == "" ? saves_path_ : load_path);
     }
 
-    Checkpoints EnabledCheckpoints() const { return checkpoints_; }
+    bool EnabledAnyCheckpoint() const {
+        return std::holds_alternative<std::string>(checkpoints_) or std::get<Checkpoints>(checkpoints_) != SavesPolicy::Checkpoints::None;
+    }
+
+    bool EnabledCheckpoints(const std::string& stage_id) const {
+        if (std::holds_alternative<std::string>(checkpoints_))
+            return stage_id.compare(std::get<std::string>(checkpoints_)) == 0;
+        return std::get<Checkpoints>(checkpoints_) != SavesPolicy::Checkpoints::None;
+    }
+
+    bool RemovePreviousCheckpoint() const {
+        return std::holds_alternative<Checkpoints>(checkpoints_) and std::get<Checkpoints>(checkpoints_) == SavesPolicy::Checkpoints::Last;
+    }
+
     const std::string & SavesPath() const { return saves_path_; }
     const std::string & LoadPath() const { return load_path_; }
 
@@ -185,7 +199,7 @@ public:
 private:
     static constexpr const char *CHECKPOINT_FILE = "checkpoint.dat";
 
-    Checkpoints checkpoints_;
+    std::variant<Checkpoints, std::string> checkpoints_;
     std::string saves_path_;
     std::string load_path_;
 };

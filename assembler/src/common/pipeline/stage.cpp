@@ -121,7 +121,7 @@ void CompositeStageBase::run(graph_pack::GraphPack& gp,
             phase->run(gp, started_from);
         }
 
-        if (parent_->saves_policy().EnabledCheckpoints() != SavesPolicy::Checkpoints::None) {
+        if (parent_->saves_policy().EnabledCheckpoints(id())) {
             std::string composite_id(id());
             composite_id += ":";
             composite_id += phase->id();
@@ -190,14 +190,14 @@ void StageManager::run(graph_pack::GraphPack& g,
             stage->run(g, start_from);
         }
 
-        if (saves_policy_.EnabledCheckpoints() != SavesPolicy::Checkpoints::None) {
+        if (saves_policy_.EnabledCheckpoints(stage->id())) {
             auto prev_saves = saves_policy_.GetLastCheckpoint();
             {
                 TIME_TRACE_SCOPE("save", saves_policy_.SavesPath());
                 stage->save(g, saves_policy_.SavesPath());
             }
             saves_policy_.UpdateCheckpoint(stage->id());
-            if (!prev_saves.empty() && saves_policy_.EnabledCheckpoints() == SavesPolicy::Checkpoints::Last) {
+            if (!prev_saves.empty() && saves_policy_.RemovePreviousCheckpoint()) {
                 fs::remove_if_exists(fs::append_path(saves_policy_.SavesPath(), prev_saves));
             }
         }

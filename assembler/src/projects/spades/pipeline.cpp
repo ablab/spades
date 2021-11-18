@@ -223,6 +223,9 @@ void assemble_genome() {
     StageManager SPAdes(SavesPolicy(cfg::get().checkpoints,
                                     cfg::get().output_saves, cfg::get().load_from));
 
+    if (SPAdes.saves_policy().EnabledAnyCheckpoint())
+        fs::make_dir(cfg::get().output_saves);
+
     bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable;
     INFO("Two-step repeat resolution " << (two_step_rr ? "enabled" : "disabled"));
 

@@ -6,6 +6,8 @@
 //***************************************************************************
 #pragma once
 
+#include <variant>
+
 #include "config_singl.hpp"
 
 #include "library/library.hpp"
@@ -104,6 +106,14 @@ std::string ModeName(const mode_t& mode, const std::vector<std::string>& names) 
     auto mode_id = static_cast<size_t>(mode);
     CHECK_FATAL_ERROR(mode_id < names.size(), "Unrecognized mode id: " << mode_id);
     return names[mode_id];
+}
+
+template<typename mode_t>
+std::variant<mode_t, std::string> ModeByNameOrName(const std::string& name, const std::vector<std::string>& names) {
+    auto it = std::find(names.begin(), names.end(), name);
+    if (it == names.end())
+        return name;
+    return mode_t(it - names.begin());
 }
 
 struct dataset {
@@ -413,7 +423,7 @@ struct debruijn_config {
     std::string output_base;
     std::string output_dir;
     std::string tmp_dir;
-    Checkpoints checkpoints;
+    std::variant<Checkpoints, std::string> checkpoints;
     std::string output_saves;
     std::string log_filename;
     std::string series_analysis;
