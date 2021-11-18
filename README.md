@@ -504,6 +504,13 @@ In contrast to the `--continue` option, you can change some of the options when 
 `--restart-from k55 -k 21,33,55,77 --mismatch-correction -o <previous_output_dir>`.
 Since all files will be overwritten, do not forget to copy your assembly from the previous run if you need it.
 
+`--checkpoints <mode>`
+    Make intermediate checkpoints that will allow restarting SPAdes from an internal stage. Available modes are `none` (default), `all` (makes all possible checkpoints) and `last` (makes a checkpoint only if SPAdes crashes).
+
+Note:
+- this option is NOT mandatory for using `--restart-from` and `--continue` options, but may speed them up;
+- making checkpoints may take more time and significant amount of disc space.
+
 `--disable-gzip-output`
     Forces read error correction module not to compress the corrected reads. If this options is not set, corrected reads will be in `*.fastq.gz` format.
 
