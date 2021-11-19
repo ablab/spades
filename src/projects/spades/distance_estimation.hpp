@@ -13,27 +13,28 @@
 #include "pipeline/stage.hpp"
 
 namespace debruijn_graph {
+    using namespace omnigraph::de;
+    using namespace io;
+    using namespace debruijn_graph::config;
 
-class DistanceEstimationInner {
-protected:
-    virtual void runEstimatePairedDistances(omnigraph::de::PairedInfoIndexT<Graph> &clustered_index,
-                                    const Graph &graph,
-                                    const io::SequencingLibrary<debruijn_graph::config::LibraryData> &lib,
-                                    const omnigraph::de::UnclusteredPairedInfoIndexT<debruijn_graph::Graph> &paired_index,
-                                    size_t max_repeat_length,
-                                    const debruijn_graph::config::distance_estimator &de_config);
-
-    virtual void runEstimateScaffoldingDistances(omnigraph::de::PairedInfoIndexT<debruijn_graph::Graph> &scaffolding_index,
-                                         const Graph &graph,
-                                         const io::SequencingLibrary<debruijn_graph::config::LibraryData> &lib,
-                                         const omnigraph::de::UnclusteredPairedInfoIndexT<Graph> &paired_index,
-                                         const debruijn_graph::config::smoothing_distance_estimator &ade,
-                                         const debruijn_graph::config::distance_estimator &de_config);
+class DistanceEstimationBase {
 public:
-    void run(graph_pack::GraphPack &gp, const char *);
+    void run(graph_pack::GraphPack &gp, const char *,
+             const std::function<void(PairedInfoIndexT<Graph> &clustered_index,
+                                      const Graph &graph,
+                                      const SequencingLibrary<LibraryData> &lib,
+                                      const UnclusteredPairedInfoIndexT<Graph> &paired_index,
+                                      size_t max_repeat_length,
+                                      const distance_estimator &de_config)> &runEstimatePairedDistances,
+             const std::function<void(PairedInfoIndexT<Graph> &scaffolding_index,
+                                      const Graph &graph,
+                                      const SequencingLibrary<LibraryData> &lib,
+                                      const UnclusteredPairedInfoIndexT<Graph> &paired_index,
+                                      const smoothing_distance_estimator &ade,
+                                      const distance_estimator &de_config)> &runEstimateScaffoldingDistances);
 };
 
-class DistanceEstimation : public spades::AssemblyStage {
+class DistanceEstimation : public DistanceEstimationBase, public spades::AssemblyStage {
  public:
     DistanceEstimation(bool preliminary = false)
         : AssemblyStage(preliminary ? "Preliminary Distance Estimation" : "Distance Estimation",
