@@ -30,6 +30,7 @@ struct gcfg {
   size_t k = 55;
   std::string graph;
   std::string output_dir;
+  std::string refpath;
   unsigned nthreads = (omp_get_max_threads() / 2 + 1);
   std::string file = "";
   std::string tmpdir = "saves";
@@ -51,7 +52,8 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
             (option("--tmp-dir") & value("tmp", cfg.tmpdir)) % "scratch directory to use",
             (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
             (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)",
-            (option("--score") & value("score", cfg.score_threshold)) % "Score threshold for link index"
+            (option("--score") & value("score", cfg.score_threshold)) % "Score threshold for link index",
+            (option("--ref") & value("reference", cfg.refpath)) % "Reference path"
     );
 
     auto result = parse(argc, argv, cli);
@@ -361,7 +363,7 @@ int main(int argc, char** argv) {
         //graph construction
         const double graph_score_threshold = 3.99;
         const size_t tail_threshold = 20000;
-        const size_t length_threshold = 5000;
+        const size_t length_threshold = 0;
         const size_t count_threshold = 3;
 
         //path cluster extraction
@@ -386,8 +388,6 @@ int main(int argc, char** argv) {
         GFAGraphConstructor gfa_graph_constructor(graph, gfa, id_mapper.get());
         auto hifi_graph = gfa_graph_constructor.ConstructGraph();
 
-
-
         auto &lib = dataset[cfg.libindex];
         if (lib.type() == io::LibraryType::Clouds10x) {
             cont_index::ConstructBarcodeIndex(barcode_index,
@@ -406,20 +406,69 @@ int main(int argc, char** argv) {
         auto barcode_extractor_ptr = std::make_shared<BarcodeExtractor>(barcode_index, graph);
 
 //        scaffold_graph::ScaffoldGraph tellseq_graph(graph);
+
+        //fixme move to separate function
+//        std::unordered_map<std::string, EdgeId> seg_to_edge;
+//        for (const EdgeId &edge: graph.canonical_edges()) {
+//            seg_to_edge.emplace((*id_mapper)[edge.int_id()], edge);
+//            seg_to_edge.emplace((*id_mapper)[edge.int_id()] + "'", graph.conjugate(edge));
+//        }
+//        std::unordered_set<std::pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId>> correct_transitions;
+//        std::vector<std::vector<debruijn_graph::EdgeId>> reference_paths;
+//        std::ifstream ref_stream(cfg.refpath);
+//        std::string path_string;
+//        std::string ref_name;
+//        size_t path_length;
+//        std::string edge_name;
+//        while (ref_stream >> path_string) {
+//            std::vector<debruijn_graph::EdgeId> reference_path;
+//            ref_name = path_string.substr(0, path_string.find(":"));
+//            INFO(ref_name);
+//            ref_stream >> path_length;
+//            INFO(path_length);
+//            for (size_t i = 0; i < path_length; ++i) {
+//                ref_stream >> edge_name;
+////                INFO(edge_name);
+//                EdgeId edge = seg_to_edge.at(edge_name);
+////                INFO(edge.int_id());
+//                reference_path.push_back(edge);
+//            }
+//            INFO("Read reference path");
+//            reference_paths.push_back(reference_path);
+//        }
+//        INFO("Getting gap paths");
+//        size_t total_pairs = 0;
+//        size_t connected_pairs = 0;
+//        for (const auto &path: reference_paths) {
+//            if (path.size() < 2)
+//                continue;
+//            for (auto first = path.begin(), second = std::next(path.begin()); second != path.end(); ++first, ++second) {
+//                ++total_pairs;
+//                EdgeId first_edge = *first;
+//                EdgeId second_edge = *second;
+////                INFO(first_edge.int_id() << ", " << second_edge.int_id());
+//                if (graph.EdgeEnd(first_edge) == graph.EdgeEnd(second_edge)) {
+//                    ++connected_pairs;
+//                }
+//            }
+//        }
+//        INFO(connected_pairs << " connected pairs out of " << total_pairs);
+//move to separate function
+
         auto tellseq_graph = cont_index::GetTellSeqScaffoldGraph(graph, barcode_extractor_ptr, graph_score_threshold,
                                                                  length_threshold,
                                                                  tail_threshold, count_threshold, cfg.nthreads,
                                                                  cfg.bin_load,
                                                                  cfg.debug, cfg.output_dir, id_mapper.get());
 
-        LinkIndexGraphConstructor link_index_constructor(graph,
-                                                         barcode_extractor_ptr,
-                                                         graph_score_threshold,
-                                                         tail_threshold,
-                                                         length_threshold,
-                                                         count_threshold,
-                                                         cfg.nthreads);
-        auto score_function = link_index_constructor.ConstructScoreFunction();
+//        LinkIndexGraphConstructor link_index_constructor(graph,
+//                                                         barcode_extractor_ptr,
+//                                                         graph_score_threshold,
+//                                                         tail_threshold,
+//                                                         length_threshold,
+//                                                         count_threshold,
+//                                                         cfg.nthreads);
+//        auto score_function = link_index_constructor.ConstructScoreFunction();
         NormalizeTellseqLinks(tellseq_graph,
                               length_threshold,
                               barcode_extractor_ptr,
@@ -433,10 +482,15 @@ int main(int argc, char** argv) {
 //        auto compare_output_path = fs::append_path(cfg.output_dir, "hifi_tellseq_scores.tsv");
 //        CompareLinks(hifi_graph, tellseq_graph, score_function, id_mapper.get(), compare_output_path);
 
-//        GetPathClusterStatistics(graph, barcode_extractor_ptr, scaffold_graph, read_linkage_distance,
+//        GetPathClusterStatistics(graph,
+//                                 barcode_extractor_ptr,
+//                                 hifi_graph,
+//                                 read_linkage_distance,
 //                                 relative_score_threshold,
 //                                 min_read_threshold,
 //                                 length_threshold,
 //                                 cfg.nthreads, cfg.output_dir);
+
+
     }
 }
