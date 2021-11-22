@@ -5,10 +5,12 @@
 //***************************************************************************
 
 #include "barcode_index_construction.hpp"
+#include "multiplex_gfa_reader.hpp"
 #include "scaffold_graph_helper.hpp"
 #include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 
 #include "io/binary/read_cloud.hpp"
+#include "io/graph/gfa_writer.hpp"
 #include "modules/path_extend/read_cloud_path_extend/cluster_storage/edge_cluster_extractor.hpp"
 #include "modules/path_extend/read_cloud_path_extend/cluster_storage/initial_cluster_storage_builder.hpp"
 #include "modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor_helper.hpp"
@@ -333,14 +335,21 @@ int main(int argc, char** argv) {
     INFO("Loading graph");
     std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
 
-    gfa::GFAReader gfa(cfg.graph);
+    //fixme optional multiplex reading
+    cont_index::MultiplexGFAReader gfa(cfg.graph);
+//    gfa::GFAReader gfa(cfg.graph);
     INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: " << gfa.num_paths());
     VERIFY_MSG(gfa.k() != -1U, "Failed to determine k-mer length");
+    INFO(gfa.k());
 //    VERIFY_MSG(gfa.k() % 2 == 1, "k-mer length must be odd");
 
     debruijn_graph::Graph graph(gfa.k());
     gfa.to_graph(graph, id_mapper.get());
     INFO("Graph loaded. Total vertices: " << graph.size() << ", total edges: " << graph.e_size());
+
+    std::ofstream graph_out(fs::append_path(cfg.output_dir, "internal_assembly_graph.gfa"));
+    gfa::GFAWriter gfa_writer(graph, graph_out);
+    gfa_writer.WriteSegmentsAndLinks();
 
     INFO("Building barcode index");
     if (cfg.libindex != -1u) {
@@ -385,8 +394,8 @@ int main(int argc, char** argv) {
 
         TIME_TRACE_SCOPE("Containment index");
 
-        GFAGraphConstructor gfa_graph_constructor(graph, gfa, id_mapper.get());
-        auto hifi_graph = gfa_graph_constructor.ConstructGraph();
+//        GFAGraphConstructor gfa_graph_constructor(graph, gfa, id_mapper.get());
+//        auto hifi_graph = gfa_graph_constructor.ConstructGraph();
 
         auto &lib = dataset[cfg.libindex];
         if (lib.type() == io::LibraryType::Clouds10x) {
