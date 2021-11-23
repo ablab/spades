@@ -494,18 +494,17 @@ void GapClosing::run(graph_pack::GraphPack &gp, const char *) {
         return;
     }
 
-    SequenceMapperNotifierMPI notifier(cfg::get().ds.reads.lib_count());
-    size_t num_readers = partask::overall_num_threads();
-
     auto& dataset = cfg::get_writable().ds;
     for (size_t i = 0; i < dataset.reads.lib_count(); ++i) {
         if (dataset.reads[i].type() != io::LibraryType::PairedEnd)
             continue;
 
-        notifier.Subscribe(&gcpif, i);
+        SequenceMapperNotifierMPI notifier;
+        size_t num_readers = partask::overall_num_threads();
+        notifier.Subscribe(&gcpif);
         io::BinaryPairedStreams paired_streams = paired_binary_readers(dataset.reads[i], false,
             0, false, num_readers);
-        notifier.ProcessLibrary(paired_streams, i, *gcpif.GetMapper());
+        notifier.ProcessLibrary(paired_streams, *gcpif.GetMapper());
 
         INFO("Initializing gap closer");
         g.clear_state();  // FIXME Hack-hack-hack required for uniform id distribution on master and slaves
