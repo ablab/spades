@@ -414,6 +414,16 @@ int main(int argc, char** argv) {
         using BarcodeExtractor = barcode_index::FrameBarcodeIndexInfoExtractor;
         auto barcode_extractor_ptr = std::make_shared<BarcodeExtractor>(barcode_index, graph);
 
+        size_t total_reads = 0;
+        for (const auto &edge: graph.edges()) {
+            auto begin = barcode_extractor_ptr->barcode_iterator_begin(edge);
+            auto end = barcode_extractor_ptr->barcode_iterator_end(edge);
+            for (auto it = begin; it != end; ++it) {
+                total_reads += it->second.GetCount();
+            }
+        }
+        INFO(total_reads << " total reads in barcode index");
+
 //        scaffold_graph::ScaffoldGraph tellseq_graph(graph);
 
         //fixme move to separate function

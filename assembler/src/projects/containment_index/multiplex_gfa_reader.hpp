@@ -18,6 +18,8 @@ class MultiplexGFAReader {
       std::vector<EdgeId> edges;
     };
     typedef std::vector<GFAPath>::const_iterator path_iterator;
+    typedef std::unordered_map<std::string, Sequence> OverlapStorage;
+    typedef std::pair<OverlapStorage, OverlapStorage> OverlapStorages;
 
     MultiplexGFAReader();
     MultiplexGFAReader(const std::string &filename);
@@ -37,8 +39,11 @@ class MultiplexGFAReader {
 
     unsigned k() const;
     void to_graph(debruijn_graph::DeBruijnGraph &g, io::IdMapper<std::string> *id_mapper = nullptr);
+    OverlapStorages ConstructOverlapStorages() const;
 
   private:
+    static void SafeInsert(OverlapStorage &storage, const std::string &name, const Sequence &seq);
+
     std::unique_ptr<gfa_t, void(*)(gfa_t*)> gfa_;
     std::vector<GFAPath> paths_;
 };
