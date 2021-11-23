@@ -324,11 +324,14 @@ class MismatchShallNotPass {
 private:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
+    typedef std::function<void(SequenceMapperListener*, const SequenceMapper<Graph>&, io::ReadStreamList<io::SingleReadSeq>& streams)> ProccessLibFuncT;
 
     graph_pack::GraphPack &gp_;
     Graph &graph_;
     const size_t k_;
     const double relative_threshold_;
+    const ProccessLibFuncT& proccess_lib_func_;
+    const size_t num_readers_;
 
     EdgeId CorrectNucl(EdgeId edge, size_t position, char nucl) {
         VERIFY(position >= k_);
@@ -437,7 +440,7 @@ private:
 
             SequenceMapperNotifier notifier;
             notifier.Subscribe(&statistics);
-            auto &reads = cfg::get_writable().ds.reads[i];
+            auto &reads = dataset.reads[i];
             auto single_streams = single_binary_readers(reads, /*followed by rc */true, /*binary*/true);
             notifier.ProcessLibrary(single_streams, *mapper);
         }
@@ -445,36 +448,14 @@ private:
         return CorrectAllEdges(statistics);
     }
 
-    size_t ParallelStopMismatchIterationMPI() {
-        INFO("Collect potential mismatches");
-        MismatchStatistics statistics(gp_);
-        INFO("Potential mismatches collected");
-
-        SequenceMapperNotifierMPI notifier(cfg::get_writable().ds.reads.lib_count());
-
-        auto& dataset = cfg::get_writable().ds;
-
-        auto mapper = MapperInstance(gp_);
-        for (size_t i = 0; i < dataset.reads.lib_count(); ++i) {
-            if (!dataset.reads[i].is_mismatch_correctable())
-                continue;
-
-            notifier.Subscribe(&statistics, i);
-            auto &reads = dataset.reads[i];
-            size_t num_readers = partask::overall_num_threads();
-            auto single_streams = single_binary_readers(reads, /*followed by rc */true, /*binary*/true, num_readers);
-            notifier.ProcessLibrary(single_streams, i, *mapper);
-        }
-
-        return CorrectAllEdges(statistics);
-    }
-
 public:
-    MismatchShallNotPass(graph_pack::GraphPack &gp, double relative_threshold = 1.5) :
+    MismatchShallNotPass(const ProccessLibFuncT& processLib, graph_pack::GraphPack &gp, double relative_threshold = 1.5, size_t num_readers = 0) :
             gp_(gp),
             graph_(gp.get_mutable<Graph>()),
             k_(gp.k()),
-            relative_threshold_(relative_threshold) {
+            relative_threshold_(relative_threshold),
+            proccess_lib_func_(processLib),
+            num_readers_(num_readers) {
         VERIFY(relative_threshold >= 1);
     }
 
@@ -490,26 +471,14 @@ public:
         }
         return res;
     }
-
-    size_t ParallelStopAllMismatchesMPI(size_t max_iterations = 1) {
-        size_t res = 0;
-        while (max_iterations > 0) {
-            size_t last = ParallelStopMismatchIterationMPI();
-            res += last;
-            if (last == 0)
-                break;
-            max_iterations--;
-        }
-        return res;
-    }
 };
 
 } // namespace mismatches
 
 void MismatchCorrection::run(graph_pack::GraphPack &gp, const char*) {
     EnsureBasicMapping(gp);
-    size_t corrected = mismatches::MismatchShallNotPass(gp, 2).
-                       ParallelStopAllMismatchesMPI(1);
+    size_t corrected = mismatches::MismatchShallNotPass(ProcessLibraryMPI<io::SingleReadSeq>, gp, 2, partask::overall_num_threads()).
+            ParallelStopAllMismatches(1);
     INFO("Corrected " << corrected << " nucleotides");
 }
 
