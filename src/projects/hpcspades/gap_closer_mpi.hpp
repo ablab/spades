@@ -8,33 +8,30 @@
 
 #pragma once
 
+#include "projects/spades/gap_closer.hpp"
 #include "alignment/sequence_mapper_notifier.hpp"
-#include "pipeline/stage.hpp"
+#include "pipeline/mpi_stage.hpp"
 #include "io/reads/io_helper.hpp"
 
 namespace debruijn_graph {
 
-class GapClosingBase {
-  protected:
-    size_t num_readers = 0;
-    virtual void processLibrary(SequenceMapperListener* listener, const SequenceMapper<Graph>& mapper, io::BinaryPairedStreams& paired_streams) = 0;
-  public:
-    void execute(graph_pack::GraphPack &gp, const char *);
-};
-
-class GapClosing : public GapClosingBase, public spades::AssemblyStage {
+class GapClosingMPI : public GapClosingBase, public spades::MPIAssemblyStage {
   protected:
     void processLibrary(SequenceMapperListener* listener, const SequenceMapper<Graph>& mapper, io::BinaryPairedStreams& paired_streams) override {
-        SequenceMapperNotifier notifier;
+        SequenceMapperNotifierMPI notifier;
         notifier.Subscribe(listener);
         notifier.ProcessLibrary(paired_streams, mapper);
     }
 
   public:
-    GapClosing(const char* id)
-            : AssemblyStage("Gap Closer", id) {}
+    GapClosingMPI(const char* id)
+            : MPIAssemblyStage("Gap Closer (parmap)", id) {
+        num_readers = partask::overall_num_threads();
+    }
 
-    void run(graph_pack::GraphPack &gp, const char*) override;
+    void run(graph_pack::GraphPack &gp, const char* s) override {
+        execute(gp, s);
+    }
 };
 
 }

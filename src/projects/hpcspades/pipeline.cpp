@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #include "projects/spades/load_graph.hpp"
-#include "projects/spades/gap_closer.hpp"
+#include "gap_closer_mpi.hpp"
 #include "projects/spades/mismatch_correction.hpp"
 #include "projects/spades/pair_info_count.hpp"
 #include "projects/spades/second_phase_setup.hpp"
@@ -136,7 +136,7 @@ static void AddPreliminarySimplificationStages(StageManager &SPAdes) {
 
     SPAdes.add<debruijn_graph::Simplification>(true);
     if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
-        SPAdes.add<debruijn_graph::GapClosing>("prelim_gapcloser");
+        SPAdes.add<debruijn_graph::GapClosingMPI>("prelim_gapcloser");
 
     if (cfg::get().use_intermediate_contigs) {
         SPAdes.add<debruijn_graph::PairInfoCount>(true);
@@ -159,14 +159,14 @@ static void AddSimplificationStages(StageManager &SPAdes) {
 
     if (cfg::get().gap_closer_enable &&
         cfg::get().gc.before_raw_simplify)
-        SPAdes.add<debruijn_graph::GapClosing>("early_gapcloser");
+        SPAdes.add<debruijn_graph::GapClosingMPI>("early_gapcloser");
 
     // Using two_step_rr is hacky here. Fix soon!
     SPAdes.add<debruijn_graph::RawSimplification>(two_step_rr);
 
     if (cfg::get().gap_closer_enable &&
         cfg::get().gc.before_simplify)
-        SPAdes.add<debruijn_graph::GapClosing>("early_gapcloser");
+        SPAdes.add<debruijn_graph::GapClosingMPI>("early_gapcloser");
 
     if (two_step_rr)
         AddPreliminarySimplificationStages(SPAdes);
@@ -174,7 +174,7 @@ static void AddSimplificationStages(StageManager &SPAdes) {
     SPAdes.add<debruijn_graph::Simplification>();
 
     if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
-        SPAdes.add<debruijn_graph::GapClosing>("late_gapcloser");
+        SPAdes.add<debruijn_graph::GapClosingMPI>("late_gapcloser");
     if (cfg::get().sewage)
         SPAdes.add<debruijn_graph::WastewaterDisentangle>();
 
