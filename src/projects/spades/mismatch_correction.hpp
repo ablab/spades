@@ -9,7 +9,6 @@
 #pragma once
 
 #include "pipeline/stage.hpp"
-#include "pipeline/mpi_stage.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include "alignment/sequence_mapper_notifier.hpp"
 
@@ -55,10 +54,10 @@ namespace debruijn_graph {
     }
 
 
-    class MismatchCorrection : public spades::MPIAssemblyStage {
+    class MismatchCorrection : public spades::AssemblyStage {
     public:
         MismatchCorrection()
-                : MPIAssemblyStage("Mismatch Correction", "mismatch_correction") {}
+                : AssemblyStage("Mismatch Correction", "mismatch_correction") {}
 
         void run(graph_pack::GraphPack &gp, const char *) override;
     };
