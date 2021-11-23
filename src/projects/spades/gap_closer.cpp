@@ -14,7 +14,6 @@
 #include "modules/simplification/compressor.hpp"
 #include "paired_info/concurrent_pair_info_buffer.hpp"
 #include "pipeline/sequence_mapper_gp_api.hpp"
-#include "pipeline/partask_mpi.hpp"
 #include "io/binary/edge_index.hpp"
 
 #include <parallel_hashmap/phmap.h>
@@ -469,13 +468,13 @@ private:
     DECL_LOGGER("GapCloser");
 };
 
-void GapClosing::run(graph_pack::GraphPack &gp, const char *) {
+void GapClosingBase::execute(graph_pack::GraphPack &gp, const char *) {
     visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.get<Graph>(), gp.get<EdgesPositionHandler<Graph>>());
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
     printer(config::info_printer_pos::before_first_gap_closer);
 
     size_t cnt_pe = 0;
-    for (const auto& lib : cfg::get().ds.reads.libraries()) {
+    for (const auto &lib: cfg::get().ds.reads.libraries()) {
         if (lib.type() != io::LibraryType::PairedEnd)
             continue;
 
@@ -494,17 +493,14 @@ void GapClosing::run(graph_pack::GraphPack &gp, const char *) {
         return;
     }
 
-    auto& dataset = cfg::get_writable().ds;
+    auto &dataset = cfg::get_writable().ds;
     for (size_t i = 0; i < dataset.reads.lib_count(); ++i) {
         if (dataset.reads[i].type() != io::LibraryType::PairedEnd)
             continue;
 
-        SequenceMapperNotifierMPI notifier;
-        size_t num_readers = partask::overall_num_threads();
-        notifier.Subscribe(&gcpif);
         io::BinaryPairedStreams paired_streams = paired_binary_readers(dataset.reads[i], false,
-            0, false, num_readers);
-        notifier.ProcessLibrary(paired_streams, *gcpif.GetMapper());
+                                                                       0, false, num_readers);
+        processLibrary(&gcpif, *gcpif.GetMapper(), paired_streams);
 
         INFO("Initializing gap closer");
         g.clear_state();  // FIXME Hack-hack-hack required for uniform id distribution on master and slaves
@@ -513,6 +509,10 @@ void GapClosing::run(graph_pack::GraphPack &gp, const char *) {
         gap_closer.CloseShortGaps();
         INFO("Gap closer done");
     }
+}
+
+void GapClosing::run(graph_pack::GraphPack &gp, const char *s) {
+    execute(gp, s);
 }
 
 }
