@@ -189,6 +189,12 @@ public:
             INFO("Listeners synced");
         }
     }
+
+    template<class ReadType>
+    void ProcessLibrary(io::ReadStreamList<ReadType>& streams,
+                        const SequenceMapperT& mapper, size_t threads_count = 0) {
+        return ProcessLibrary(streams, 0, mapper, threads_count);
+    }
 };
 
 } // namespace debruijn_graph
