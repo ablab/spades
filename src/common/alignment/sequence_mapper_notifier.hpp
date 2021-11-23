@@ -197,6 +197,21 @@ public:
     }
 };
 
+template<class ReadType>
+void ProcessLibrary(SequenceMapperListener* listener, const SequenceMapper<Graph>& mapper, io::ReadStreamList<ReadType>& streams) {
+    SequenceMapperNotifier notifier;
+    notifier.Subscribe(listener);
+    notifier.ProcessLibrary(streams, mapper);
+}
+
+
+template<class ReadType>
+void ProcessLibraryMPI(SequenceMapperListener* listener, const SequenceMapper<Graph>& mapper, io::ReadStreamList<ReadType>& streams) {
+    SequenceMapperNotifierMPI notifier;
+    notifier.Subscribe(listener);
+    notifier.ProcessLibrary(streams, mapper);
+}
+
 } // namespace debruijn_graph
 
 
