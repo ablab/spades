@@ -7,7 +7,7 @@
 
 #include "projects/spades/load_graph.hpp"
 #include "gap_closer_mpi.hpp"
-#include "projects/spades/mismatch_correction.hpp"
+#include "mismatch_correction_mpi.hpp"
 #include "projects/spades/pair_info_count.hpp"
 #include "projects/spades/second_phase_setup.hpp"
 #include "projects/spades/repeat_resolving.hpp"
@@ -181,7 +181,7 @@ static void AddSimplificationStages(StageManager &SPAdes) {
     SPAdes.add<debruijn_graph::SimplificationCleanup>();
 
     if (cfg::get().correct_mismatches)
-        SPAdes.add<debruijn_graph::MismatchCorrection>();
+        SPAdes.add<debruijn_graph::MismatchCorrectionMPI>();
 
     if (cfg::get().ss_coverage_splitter.enabled)
         SPAdes.add<debruijn_graph::SSEdgeSplit>();
