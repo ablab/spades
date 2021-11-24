@@ -10,8 +10,10 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <limits.h>
 
 #include "utils/verify.hpp"
+#include "utils/logger/logger.hpp"
 
 namespace utils {
 
@@ -26,11 +28,18 @@ inline rlim_t limit_file(size_t limit) {
   // increase the hard limit
   limit = std::max<size_t>(limit, rl.rlim_cur);
   rl.rlim_cur = std::min<size_t>(limit, rl.rlim_max);
+  // If OPEN_MAX is defined, then limit by it as well
+#ifdef OPEN_MAX
+  rl.rlim_cur = std::min<size_t>(limit, OPEN_MAX);
+#endif
   res = setrlimit(RLIMIT_NOFILE, &rl);
-  CHECK_FATAL_ERROR(res == 0,
-             "setrlimit(2) call failed, errno = " << errno);
-  INFO("Open file limit set to " << rl.rlim_cur);
-
+  if (res != 0) {
+      WARN("Failed to set file limit to " << rl.rlim_cur << ", setrlimit(2) call failed, errno = "
+           << errno << " (" << strerror(errno) << ")");
+  } else {
+      INFO("Open file limit set to " << rl.rlim_cur);
+  }
+  
   return rl.rlim_cur;
 }
 

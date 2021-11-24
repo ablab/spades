@@ -42,10 +42,15 @@ void limit_memory(size_t limit) {
     // We cannot go beyond hard limit and we might not have enough privileges to
     // increase the hard limit
     rl.rlim_cur = std::min<size_t>(limit, rl.rlim_max);
+    double GB = double(rl.rlim_cur) / 1024 / 1024 / 1024;
+    // Apparently setrlimit might fail on MacOS X Monterey...
     res = setrlimit(RLIMIT_AS, &rl);
-    if (res != 0)
-        FATAL_ERROR("setrlimit(2) call failed, errno = " << errno);
-    INFO("Memory limit set to " << (1.0 * (double) rl.rlim_cur / 1024 / 1024 / 1024) << " Gb");
+    if (res != 0) {
+        WARN("Failed to limit memory to " << GB << " Gb, setrlimit(2) call failed, errno = "
+             << errno << " (" << strerror(errno) << "). Watch your memory consumption!");
+    } else {
+        INFO("Memory limit set to " << GB << " Gb");
+    }
 }
 
 size_t get_memory_limit() {
