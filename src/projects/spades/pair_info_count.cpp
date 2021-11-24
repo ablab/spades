@@ -201,7 +201,7 @@ void PairInfoCount::run(graph_pack::GraphPack &gp, const char *) {
                 // Only filter paired-end libraries
                 if (filter_threshold && lib.type() == io::LibraryType::PairedEnd) {
                     INFO("Filtering data for library #" << i);
-                    filter = paired_info::FillEdgePairFilterMPI(graph, *ChooseProperMapper(gp, lib), lib, edgepairs);
+                    filter = paired_info::FillEdgePairFilter(graph, *ChooseProperMapper(gp, lib), lib, edgepairs, ProcessLibraryMPI<io::PairedReadSeq>, partask::overall_num_threads());
                 }
 
                 INFO("Mapping library #" << i);
