@@ -220,7 +220,9 @@ private:
 std::unique_ptr<PairedInfoFilter> FillEdgePairFilter(const Graph &graph,
                                                      const SequenceMapperNotifier::SequenceMapperT &mapper,
                                                      SequencingLib &reads,
-                                                     size_t edgepairs) {
+                                                     size_t edgepairs,
+                                                     const MapLibFuncT& map_lib_fun,
+                                                     size_t num_readers) {
     auto filter = std::make_unique<paired_info::PairedInfoFilter>(
         [](const std::pair<EdgeId, EdgeId> &e, uint64_t seed) {
             // Note that EdgeId::hash is essentially an identity function, so we'd need to
@@ -230,39 +232,12 @@ std::unique_ptr<PairedInfoFilter> FillEdgePairFilter(const Graph &graph,
         },
         12 * edgepairs);
 
-    SequenceMapperNotifier notifier;
     DEFilter filter_counter(*filter, graph);
-    notifier.Subscribe(&filter_counter);
-
     VERIFY(reads.data().unmerged_read_length != 0);
-    auto stream = paired_binary_readers(reads, /*followed by rc*/false, 0, /*include merged*/true);
-    notifier.ProcessLibrary(stream, mapper);
-
-    return filter;
-}
-
-std::unique_ptr<PairedInfoFilter> FillEdgePairFilterMPI(const Graph &graph,
-                                                         const SequenceMapperNotifier::SequenceMapperT &mapper,
-                                                         SequencingLib &reads,
-                                                         size_t edgepairs) {
-    auto filter = std::make_unique<paired_info::PairedInfoFilter>(
-            [](const std::pair<EdgeId, EdgeId> &e, uint64_t seed) {
-                uint64_t h1 = e.first.hash();
-                return XXH3_64bits_withSeed(&h1, sizeof(h1), (e.second.hash() * seed) ^ seed);
-            },
-            12 * edgepairs);
-
-    SequenceMapperNotifierMPI notifier;
-    DEFilter filter_counter(*filter, graph);
-    notifier.Subscribe(&filter_counter);
-
-    VERIFY(reads.data().unmerged_read_length != 0);
-    size_t num_readers = partask::overall_num_threads();
     auto stream = paired_binary_readers(reads, /*followed by rc*/false, 0, /*include merged*/true, num_readers);
-    notifier.ProcessLibrary(stream, mapper);
 
+    map_lib_fun(&filter_counter, mapper, stream);
     return filter;
 }
-
 }
 
