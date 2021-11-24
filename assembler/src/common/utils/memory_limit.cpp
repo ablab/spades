@@ -10,6 +10,8 @@
 #include "utils/logger/logger.hpp"
 #include "utils/verify.hpp"
 
+#include <cstring>
+
 #if __DARWIN || __DARWIN_UNIX03
 # include <mach/task.h>
 # include <mach/mach.h>
