@@ -42,55 +42,6 @@ std::shared_ptr<SequenceMapper<Graph>> ChooseProperMapper(const graph_pack::Grap
     return MapperInstance(gp);
 }
 
-class DEFilter : public SequenceMapperListener {
-  public:
-    DEFilter(paired_info::PairedInfoFilter &filter, const Graph &g)
-            : bf_(filter), g_(g) {}
-
-    void ProcessPairedRead(size_t,
-                           const io::PairedRead&,
-                           const MappingPath<EdgeId>& read1,
-                           const MappingPath<EdgeId>& read2) override {
-        ProcessPairedRead(read1, read2);
-    }
-    void ProcessPairedRead(size_t,
-                           const io::PairedReadSeq&,
-                           const MappingPath<EdgeId>& read1,
-                           const MappingPath<EdgeId>& read2) override {
-        ProcessPairedRead(read1, read2);
-    }
-
-    void Serialize(std::ostream &os) const override {
-        io::binary::BinWrite(os, bf_);
-    }
-
-    void Deserialize(std::istream &is) override {
-        io::binary::BinRead(is, bf_);
-    }
-
-    void MergeFromStream(std::istream &is) override {
-        paired_info::PairedInfoFilter remote;
-        io::binary::BinRead(is, remote);
-        bf_.merge(remote);
-    }
-
-  private:
-    void ProcessPairedRead(const MappingPath<EdgeId>& path1,
-                           const MappingPath<EdgeId>& path2) {
-        for (size_t i = 0; i < path1.size(); ++i) {
-            EdgeId edge1 = path1.edge_at(i);
-            for (size_t j = 0; j < path2.size(); ++j) {
-                EdgeId edge2 = path2.edge_at(j);
-                bf_.add({edge1, edge2});
-                bf_.add({g_.conjugate(edge2), g_.conjugate(edge1)});
-            }
-        }
-    }
-
-    paired_info::PairedInfoFilter &bf_;
-    const Graph &g_;
-};
-
 bool HasGoodRRLibs() {
     for (const auto &lib : cfg::get().ds.reads) {
         if (lib.is_contig_lib())
@@ -249,24 +200,8 @@ void PairInfoCount::run(graph_pack::GraphPack &gp, const char *) {
 
                 // Only filter paired-end libraries
                 if (filter_threshold && lib.type() == io::LibraryType::PairedEnd) {
-                    filter.reset(new paired_info::PairedInfoFilter([](const std::pair<EdgeId, EdgeId> &e, uint64_t seed) {
-                                uint64_t h1 = e.first.hash();
-                                return XXH3_64bits_withSeed(&h1, sizeof(h1), (e.second.hash() * seed) ^ seed);
-                            },
-                            12 * edgepairs));
-
                     INFO("Filtering data for library #" << i);
-                    {
-                        SequenceMapperNotifierMPI notifier(cfg::get_writable().ds.reads.lib_count());
-                        DEFilter filter_counter(*filter, graph);
-                        notifier.Subscribe(&filter_counter, i);
-
-                        VERIFY(lib.data().unmerged_read_length != 0);
-                        size_t num_readers = partask::overall_num_threads();
-                        auto reads = paired_binary_readers(lib, /*followed by rc*/false,
-                            0, /*include merged*/true, num_readers);
-                        notifier.ProcessLibrary(reads, i, *ChooseProperMapper(gp, lib));
-                    }
+                    filter = paired_info::FillEdgePairFilterMPI(graph, *ChooseProperMapper(gp, lib), lib, edgepairs);
                 }
 
                 INFO("Mapping library #" << i);
