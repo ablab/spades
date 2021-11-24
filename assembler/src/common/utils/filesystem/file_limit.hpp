@@ -7,13 +7,15 @@
 
 #pragma once
 
+#include "utils/verify.hpp"
+#include "utils/logger/logger.hpp"
+
+#include <cstring>
+
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <limits.h>
-
-#include "utils/verify.hpp"
-#include "utils/logger/logger.hpp"
 
 namespace utils {
 
