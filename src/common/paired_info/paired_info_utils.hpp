@@ -38,5 +38,10 @@ std::unique_ptr<PairedInfoFilter> FillEdgePairFilter(const debruijn_graph::Graph
                                                      const debruijn_graph::SequenceMapper<debruijn_graph::Graph> &mapper,
                                                      SequencingLib &reads,
                                                      size_t edgepairs);
+
+std::unique_ptr<PairedInfoFilter> FillEdgePairFilterMPI(const debruijn_graph::Graph &gp,
+                                                        const debruijn_graph::SequenceMapper<debruijn_graph::Graph> &mapper,
+                                                        SequencingLib &reads,
+                                                        size_t edgepairs);
 }
 
