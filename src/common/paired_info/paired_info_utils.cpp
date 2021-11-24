@@ -168,25 +168,41 @@ void FillPairedIndex(const Graph &graph,
 }
 
 class DEFilter : public SequenceMapperListener {
-  public:
+public:
     DEFilter(paired_info::PairedInfoFilter &filter, const Graph &g)
             : bf_(filter), g_(g) {}
 
     void ProcessPairedRead(size_t,
-                           const io::PairedRead&,
-                           const MappingPath<EdgeId>& read1,
-                           const MappingPath<EdgeId>& read2) override {
+                           const io::PairedRead &,
+                           const MappingPath<EdgeId> &read1,
+                           const MappingPath<EdgeId> &read2) override {
         ProcessPairedRead(read1, read2);
     }
+
     void ProcessPairedRead(size_t,
-                           const io::PairedReadSeq&,
-                           const MappingPath<EdgeId>& read1,
-                           const MappingPath<EdgeId>& read2) override {
+                           const io::PairedReadSeq &,
+                           const MappingPath<EdgeId> &read1,
+                           const MappingPath<EdgeId> &read2) override {
         ProcessPairedRead(read1, read2);
     }
-  private:
-    void ProcessPairedRead(const MappingPath<EdgeId>& path1,
-                           const MappingPath<EdgeId>& path2) {
+
+    void Serialize(std::ostream &os) const override {
+        io::binary::BinWrite(os, bf_);
+    }
+
+    void Deserialize(std::istream &is) override {
+        io::binary::BinRead(is, bf_);
+    }
+
+    void MergeFromStream(std::istream &is) override {
+        paired_info::PairedInfoFilter remote;
+        io::binary::BinRead(is, remote);
+        bf_.merge(remote);
+    }
+
+private:
+    void ProcessPairedRead(const MappingPath<EdgeId> &path1,
+                           const MappingPath<EdgeId> &path2) {
         for (size_t i = 0; i < path1.size(); ++i) {
             EdgeId edge1 = path1.edge_at(i);
             for (size_t j = 0; j < path2.size(); ++j) {
@@ -220,6 +236,29 @@ std::unique_ptr<PairedInfoFilter> FillEdgePairFilter(const Graph &graph,
 
     VERIFY(reads.data().unmerged_read_length != 0);
     auto stream = paired_binary_readers(reads, /*followed by rc*/false, 0, /*include merged*/true);
+    notifier.ProcessLibrary(stream, mapper);
+
+    return filter;
+}
+
+std::unique_ptr<PairedInfoFilter> FillEdgePairFilterMPI(const Graph &graph,
+                                                         const SequenceMapperNotifier::SequenceMapperT &mapper,
+                                                         SequencingLib &reads,
+                                                         size_t edgepairs) {
+    auto filter = std::make_unique<paired_info::PairedInfoFilter>(
+            [](const std::pair<EdgeId, EdgeId> &e, uint64_t seed) {
+                uint64_t h1 = e.first.hash();
+                return XXH3_64bits_withSeed(&h1, sizeof(h1), (e.second.hash() * seed) ^ seed);
+            },
+            12 * edgepairs);
+
+    SequenceMapperNotifierMPI notifier;
+    DEFilter filter_counter(*filter, graph);
+    notifier.Subscribe(&filter_counter);
+
+    VERIFY(reads.data().unmerged_read_length != 0);
+    size_t num_readers = partask::overall_num_threads();
+    auto stream = paired_binary_readers(reads, /*followed by rc*/false, 0, /*include merged*/true, num_readers);
     notifier.ProcessLibrary(stream, mapper);
 
     return filter;
