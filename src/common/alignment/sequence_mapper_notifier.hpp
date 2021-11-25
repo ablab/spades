@@ -197,19 +197,33 @@ public:
     }
 };
 
+
 template<class ReadType>
-void ProcessLibrary(SequenceMapperListener* listener, const SequenceMapper<Graph>& mapper, io::ReadStreamList<ReadType>& streams) {
+void ProcessLibraryFewListeners(const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<ReadType>& streams) {
     SequenceMapperNotifier notifier;
-    notifier.Subscribe(listener);
+    for (auto listener : listeners) {
+        notifier.Subscribe(listener);
+    }
     notifier.ProcessLibrary(streams, mapper);
 }
 
+template<class ReadType>
+void ProcessLibraryMPIFewListeners(const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<ReadType>& streams) {
+    SequenceMapperNotifierMPI notifier;
+    for (auto listener : listeners) {
+        notifier.Subscribe(listener);
+    }
+    notifier.ProcessLibrary(streams, mapper);
+}
+
+template<class ReadType>
+void ProcessLibrary(SequenceMapperListener* listener, const SequenceMapper<Graph>& mapper, io::ReadStreamList<ReadType>& streams) {
+    ProcessLibraryFewListeners({listener}, mapper, streams);
+}
 
 template<class ReadType>
 void ProcessLibraryMPI(SequenceMapperListener* listener, const SequenceMapper<Graph>& mapper, io::ReadStreamList<ReadType>& streams) {
-    SequenceMapperNotifierMPI notifier;
-    notifier.Subscribe(listener);
-    notifier.ProcessLibrary(streams, mapper);
+    ProcessLibraryMPIFewListeners({listener}, mapper, streams);
 }
 
 } // namespace debruijn_graph

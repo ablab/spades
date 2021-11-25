@@ -8,7 +8,7 @@
 #include "projects/spades/load_graph.hpp"
 #include "gap_closer_mpi.hpp"
 #include "mismatch_correction_mpi.hpp"
-#include "projects/spades/pair_info_count.hpp"
+#include "pair_info_count_mpi.hpp"
 #include "projects/spades/second_phase_setup.hpp"
 #include "projects/spades/repeat_resolving.hpp"
 #include "distance_estimation_mpi.hpp"
@@ -139,7 +139,7 @@ static void AddPreliminarySimplificationStages(StageManager &SPAdes) {
         SPAdes.add<debruijn_graph::GapClosingMPI>("prelim_gapcloser");
 
     if (cfg::get().use_intermediate_contigs) {
-        SPAdes.add<debruijn_graph::PairInfoCount>(true);
+        SPAdes.add<debruijn_graph::PairInfoCountMPI>(true);
         SPAdes.add<debruijn_graph::DistanceEstimationMPI>(true);
         SPAdes.add<debruijn_graph::RepeatResolution>(true);
 
@@ -202,7 +202,7 @@ static void AddRepeatResolutionStages(StageManager &SPAdes) {
     if (!cfg::get().series_analysis.empty())
         SPAdes.add<debruijn_graph::SeriesAnalysis>();
 
-    SPAdes.add<debruijn_graph::PairInfoCount>()
+    SPAdes.add<debruijn_graph::PairInfoCountMPI>()
           .add<debruijn_graph::DistanceEstimationMPI>()
           .add<debruijn_graph::RepeatResolution>();
 }
