@@ -44,7 +44,7 @@ std::unique_ptr<PairedInfoFilter> FillEdgePairFilter(const debruijn_graph::Graph
                                                      const debruijn_graph::SequenceMapper<debruijn_graph::Graph> &mapper,
                                                      SequencingLib &reads,
                                                      size_t edgepairs,
-                                                     const MapLibFuncT& map_lib_fun,
+                                                     const debruijn_graph::MapLibBase& map_lib_fun,
                                                      size_t num_readers = 0);
 }
 

@@ -221,7 +221,7 @@ std::unique_ptr<PairedInfoFilter> FillEdgePairFilter(const Graph &graph,
                                                      const SequenceMapperNotifier::SequenceMapperT &mapper,
                                                      SequencingLib &reads,
                                                      size_t edgepairs,
-                                                     const MapLibFuncT& map_lib_fun,
+                                                     const MapLibBase& map_lib_fun,
                                                      size_t num_readers) {
     auto filter = std::make_unique<paired_info::PairedInfoFilter>(
         [](const std::pair<EdgeId, EdgeId> &e, uint64_t seed) {
@@ -237,7 +237,7 @@ std::unique_ptr<PairedInfoFilter> FillEdgePairFilter(const Graph &graph,
     auto stream = paired_binary_readers(reads, /*followed by rc*/false, 0, /*include merged*/true, num_readers);
 
     map_lib_fun(&filter_counter, mapper, stream);
+
     return filter;
 }
 }
-

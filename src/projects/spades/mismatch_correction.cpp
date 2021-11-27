@@ -440,7 +440,7 @@ namespace mismatches {
         return CorrectAllEdges(statistics);
     }
 
-    MismatchShallNotPass::MismatchShallNotPass(const ProccessLibFuncT &processLib, graph_pack::GraphPack &gp,
+    MismatchShallNotPass::MismatchShallNotPass(const MapLibBase &processLib, graph_pack::GraphPack &gp,
                                                double relative_threshold, size_t num_readers) :
             gp_(gp),
             graph_(gp.get_mutable<Graph>()),
@@ -467,8 +467,9 @@ namespace mismatches {
 
 void MismatchCorrection::run(graph_pack::GraphPack &gp, const char*) {
     EnsureBasicMapping(gp);
-    size_t corrected = mismatches::MismatchShallNotPass(ProcessLibrary<io::SingleReadSeq>, gp, 2, partask::overall_num_threads()).
-            ParallelStopAllMismatches(1);
+    size_t corrected =
+            mismatches::MismatchShallNotPass(MapLibFunc(), gp, 2, partask::overall_num_threads())
+            .ParallelStopAllMismatches(1);
     INFO("Corrected " << corrected << " nucleotides");
 }
 
