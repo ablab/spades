@@ -197,34 +197,71 @@ public:
     }
 };
 
+class MapLibBase {
+public:
+    virtual void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::PairedRead>& streams) const = 0;
+    virtual void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::SingleRead>& streams) const = 0;
+    virtual void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::SingleReadSeq>& streams) const = 0;
+    virtual void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::PairedReadSeq>& streams) const = 0;
 
-template<class ReadType>
-void ProcessLibraryFewListeners(const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<ReadType>& streams) {
-    SequenceMapperNotifier notifier;
-    for (auto listener : listeners) {
-        notifier.Subscribe(listener);
+    template<class Streams>
+    void operator() (SequenceMapperListener* listener, const SequenceMapper<Graph>& mapper, Streams& streams) const {
+        this->operator() (std::vector<SequenceMapperListener*>(1, listener), mapper, streams);
     }
-    notifier.ProcessLibrary(streams, mapper);
-}
+};
 
-template<class ReadType>
-void ProcessLibraryMPIFewListeners(const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<ReadType>& streams) {
-    SequenceMapperNotifierMPI notifier;
-    for (auto listener : listeners) {
-        notifier.Subscribe(listener);
+class MapLibFunc : public MapLibBase {
+public:
+    void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::PairedRead>& streams) const override {
+        MapLib(listeners, mapper, streams);
     }
-    notifier.ProcessLibrary(streams, mapper);
-}
+    void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::SingleRead>& streams) const override {
+        MapLib(listeners, mapper, streams);
+    }
+    void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::SingleReadSeq>& streams) const override {
+        MapLib(listeners, mapper, streams);
+    }
+    void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::PairedReadSeq>& streams) const override {
+        MapLib(listeners, mapper, streams);
+    }
 
-template<class ReadType>
-void ProcessLibrary(SequenceMapperListener* listener, const SequenceMapper<Graph>& mapper, io::ReadStreamList<ReadType>& streams) {
-    ProcessLibraryFewListeners({listener}, mapper, streams);
-}
+private:
+    template<class ReadType>
+    void MapLib(const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<ReadType>& streams) const {
+        SequenceMapperNotifier notifier;
+        for (auto listener: listeners) {
+            notifier.Subscribe(listener);
+        }
+        notifier.ProcessLibrary(streams, mapper);
+    }
+};
 
-template<class ReadType>
-void ProcessLibraryMPI(SequenceMapperListener* listener, const SequenceMapper<Graph>& mapper, io::ReadStreamList<ReadType>& streams) {
-    ProcessLibraryMPIFewListeners({listener}, mapper, streams);
-}
+
+class MapLibFuncMPI : public MapLibBase {
+public:
+    void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::PairedRead>& streams) const override {
+        MapLibMPI(listeners, mapper, streams);
+    }
+    void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::SingleRead>& streams) const override {
+        MapLibMPI(listeners, mapper, streams);
+    }
+    void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::SingleReadSeq>& streams) const override {
+        MapLibMPI(listeners, mapper, streams);
+    }
+    void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::PairedReadSeq>& streams) const override {
+        MapLibMPI(listeners, mapper, streams);
+    }
+
+private:
+    template<class ReadType>
+    void MapLibMPI(const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<ReadType>& streams) const {
+        SequenceMapperNotifierMPI notifier;
+        for (auto listener: listeners) {
+            notifier.Subscribe(listener);
+        }
+        notifier.ProcessLibrary(streams, mapper);
+    }
+};
 
 } // namespace debruijn_graph
 

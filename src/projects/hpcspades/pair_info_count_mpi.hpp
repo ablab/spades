@@ -19,10 +19,7 @@ namespace debruijn_graph {
                                    preliminary ? "late_pair_info_count_preliminary" : "late_pair_info_count") {}
 
         void run(graph_pack::GraphPack &gp, const char* s) override {
-            execute(gp, s, ProcessLibraryMPI<io::PairedReadSeq>,
-                    ProcessLibraryMPIFewListeners<io::SingleReadSeq>,
-                    ProcessLibraryMPIFewListeners<io::SingleRead>,
-                    partask::overall_num_threads());
+            execute(gp, s, MapLibFuncMPI(), partask::overall_num_threads());
         }
     };
 

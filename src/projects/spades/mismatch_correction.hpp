@@ -21,14 +21,12 @@ namespace debruijn_graph {
         private:
             typedef typename Graph::EdgeId EdgeId;
             typedef typename Graph::VertexId VertexId;
-            typedef std::function<void(SequenceMapperListener *, const SequenceMapper<Graph> &,
-                                       io::ReadStreamList<io::SingleReadSeq> &streams)> ProccessLibFuncT;
 
             graph_pack::GraphPack &gp_;
             Graph &graph_;
             const size_t k_;
             const double relative_threshold_;
-            const ProccessLibFuncT &proccess_lib_func_;
+            const MapLibBase &proccess_lib_func_;
             const size_t num_readers_;
 
             EdgeId CorrectNucl(EdgeId edge, size_t position, char nucl);
@@ -44,7 +42,7 @@ namespace debruijn_graph {
             size_t ParallelStopMismatchIteration();
 
         public:
-            MismatchShallNotPass(const ProccessLibFuncT &processLib, graph_pack::GraphPack &gp,
+            MismatchShallNotPass(const MapLibBase &processLib, graph_pack::GraphPack &gp,
                                  double relative_threshold = 1.5,
                                  size_t num_readers = 0);
 
