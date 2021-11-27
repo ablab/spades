@@ -18,7 +18,7 @@ namespace debruijn_graph {
 
         void run(graph_pack::GraphPack &gp, const char *) override {
             EnsureBasicMapping(gp);
-            size_t corrected = mismatches::MismatchShallNotPass(ProcessLibraryMPI<io::SingleReadSeq>, gp, 2, partask::overall_num_threads()).
+            size_t corrected = mismatches::MismatchShallNotPass(MapLibFuncMPI(), gp, 2, partask::overall_num_threads()).
                     ParallelStopAllMismatches(1);
             INFO("Corrected " << corrected << " nucleotides");
         }
