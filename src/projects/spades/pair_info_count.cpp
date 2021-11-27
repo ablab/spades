@@ -103,9 +103,10 @@ bool ShouldObtainSingleReadsPaths(size_t ilib) {
 }
 
 size_t ProcessSingleReads(graph_pack::GraphPack &gp, size_t ilib,
-                          const PairInfoCountBase::MapSingleSeqLibFuncT & map_single_seq_lib_func,
-                          const PairInfoCountBase::MapSingleLibFuncT & map_single_lib_func,
-                          size_t num_readers = 0, bool use_binary = true, bool map_paired = false) {
+                          const MapLibBase & map_lib_func,
+                          size_t num_readers = 0,
+                          bool use_binary = true,
+                          bool map_paired = false) {
     //FIXME make const
     auto& reads = cfg::get_writable().ds.reads[ilib];
     const auto &graph = gp.get<Graph>();
@@ -133,11 +134,11 @@ size_t ProcessSingleReads(graph_pack::GraphPack &gp, size_t ilib,
     auto mapper_ptr = ChooseProperMapper(gp, reads);
     if (use_binary) {
         auto single_streams = single_binary_readers(reads, false, map_paired, num_readers);
-        map_single_seq_lib_func(listeners, *mapper_ptr, single_streams);
+        map_lib_func(listeners, *mapper_ptr, single_streams);
     } else {
         auto single_streams = single_easy_readers(reads, false,
                                                   map_paired, /*handle Ns*/false);
-        map_single_lib_func(listeners, *mapper_ptr, single_streams);
+        map_lib_func(listeners, *mapper_ptr, single_streams);
     }
 
     return single_long_reads.size();
@@ -145,16 +146,11 @@ size_t ProcessSingleReads(graph_pack::GraphPack &gp, size_t ilib,
 } // namespace
 
 void PairInfoCount::run(graph_pack::GraphPack &gp, const char *s) {
-    execute(gp, s, ProcessLibrary<io::PairedReadSeq>,
-            ProcessLibraryFewListeners<io::SingleReadSeq>,
-            ProcessLibraryFewListeners<io::SingleRead>,
-                    partask::overall_num_threads());
+    execute(gp, s, MapLibFunc(), partask::overall_num_threads());
 }
 
 void PairInfoCountBase::execute(graph_pack::GraphPack &gp, const char *,
-                                const PairInfoCountBase::MapPairLibFuncT & map_pair_lib_func,
-                                const PairInfoCountBase::MapSingleSeqLibFuncT & map_single_seq_lib_func,
-                                const PairInfoCountBase::MapSingleLibFuncT & map_single_lib_func,
+                                const MapLibBase &map_lib_func,
                                 size_t num_readers) {
     InitRRIndices(gp);
     EnsureBasicMapping(gp);
@@ -174,7 +170,7 @@ void PairInfoCountBase::execute(graph_pack::GraphPack &gp, const char *,
             continue;
         } else if (lib.is_contig_lib()) {
             INFO("Mapping contigs library #" << i);
-            ProcessSingleReads(gp, i, map_single_seq_lib_func, map_single_lib_func, num_readers, false);
+            ProcessSingleReads(gp, i, map_lib_func, num_readers, false);
         } else {
             if (lib.is_paired()) {
                 INFO("Estimating insert size for library #" << i);
@@ -214,7 +210,7 @@ void PairInfoCountBase::execute(graph_pack::GraphPack &gp, const char *,
                 if (filter_threshold && lib.type() == io::LibraryType::PairedEnd) {
                     INFO("Filtering data for library #" << i);
                     filter = paired_info::FillEdgePairFilter(graph, *ChooseProperMapper(gp, lib), lib, edgepairs,
-                                                             map_pair_lib_func, num_readers);
+                                                             map_lib_func, num_readers);
                 }
 
                 INFO("Mapping library #" << i);
@@ -237,7 +233,7 @@ void PairInfoCountBase::execute(graph_pack::GraphPack &gp, const char *,
             if (ShouldObtainSingleReadsPaths(i) || ShouldObtainLibCoverage()) {
                 cfg::get_writable().use_single_reads |= ShouldObtainSingleReadsPaths(i);
                 INFO("Mapping single reads of library #" << i);
-                size_t n = ProcessSingleReads(gp, i, map_single_seq_lib_func, map_single_lib_func, num_readers, /*use_binary*/true, /*map_paired*/true);
+                size_t n = ProcessSingleReads(gp, i, map_lib_func, num_readers, /*use_binary*/true, /*map_paired*/true);
                 INFO("Total paths obtained from single reads: " << n);
             }
         }
