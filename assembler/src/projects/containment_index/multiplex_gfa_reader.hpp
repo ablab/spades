@@ -1,3 +1,4 @@
+#include <unordered_set>
 #include "assembly_graph/core/graph.hpp"
 #include "io/graph/gfa_reader.hpp"
 
@@ -19,6 +20,15 @@ class MultiplexGFAReader {
     };
     typedef std::vector<GFAPath>::const_iterator path_iterator;
     typedef std::unordered_map<std::string, Sequence> OverlapStorage;
+    struct OverlapInfo {
+      OverlapInfo(const OverlapStorage &start_to_seq,
+                  const OverlapStorage &end_to_seq,
+                  const std::unordered_set<std::string> &multi_edges);
+
+      OverlapStorage start_to_seq_;
+      OverlapStorage end_to_seq_;
+      std::unordered_set<std::string> multi_edges_;
+    };
     typedef std::pair<OverlapStorage, OverlapStorage> OverlapStorages;
 
     MultiplexGFAReader();
@@ -38,8 +48,12 @@ class MultiplexGFAReader {
     }
 
     unsigned k() const;
-    void to_graph(debruijn_graph::DeBruijnGraph &g, io::IdMapper<std::string> *id_mapper = nullptr);
-    OverlapStorages ConstructOverlapStorages() const;
+    void to_graph(const ConjugateDeBruijnGraph &struct_graph,
+                  io::IdMapper<std::string> *struct_id_mapper,
+                  debruijn_graph::DeBruijnGraph &g,
+                  io::IdMapper<std::string> *id_mapper = nullptr);
+    OverlapInfo ConstructOverlapInfo(const ConjugateDeBruijnGraph &struct_graph,
+                                     io::IdMapper<std::string> *struct_id_mapper) const;
 
   private:
     static void SafeInsert(OverlapStorage &storage, const std::string &name, const Sequence &seq);
