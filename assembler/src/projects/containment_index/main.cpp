@@ -333,18 +333,19 @@ int main(int argc, char** argv) {
     fs::make_dir(cfg.tmpdir);
 
     INFO("Loading graph");
+    std::unique_ptr<io::IdMapper<std::string>> struct_id_mapper(new io::IdMapper<std::string>());
     std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
-
     //fixme optional multiplex reading
-    cont_index::MultiplexGFAReader gfa(cfg.graph);
-//    gfa::GFAReader gfa(cfg.graph);
+    cont_index::MultiplexGFAReader demulti_gfa(cfg.graph);
+    gfa::GFAReader gfa(cfg.graph);
     INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: " << gfa.num_paths());
-    VERIFY_MSG(gfa.k() != -1U, "Failed to determine k-mer length");
-    INFO(gfa.k());
+    VERIFY_MSG(demulti_gfa.k() != -1U, "Failed to determine k-mer length");
+    INFO(demulti_gfa.k());
 //    VERIFY_MSG(gfa.k() % 2 == 1, "k-mer length must be odd");
-
-    debruijn_graph::Graph graph(gfa.k());
-    gfa.to_graph(graph, id_mapper.get());
+    debruijn_graph::Graph struct_graph(demulti_gfa.k());
+    gfa.to_graph(struct_graph, struct_id_mapper.get());
+    debruijn_graph::Graph graph(demulti_gfa.k());
+    demulti_gfa.to_graph(struct_graph, struct_id_mapper.get(), graph, id_mapper.get());
     INFO("Graph loaded. Total vertices: " << graph.size() << ", total edges: " << graph.e_size());
 
     std::ofstream graph_out(fs::append_path(cfg.output_dir, "internal_assembly_graph.gfa"));

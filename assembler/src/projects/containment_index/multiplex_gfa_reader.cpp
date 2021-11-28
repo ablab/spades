@@ -44,7 +44,8 @@ void MultiplexGFAReader::SafeInsert(OverlapStorage &storage, const std::string &
     }
 }
 
-MultiplexGFAReader::OverlapStorages MultiplexGFAReader::ConstructOverlapStorages() const {
+MultiplexGFAReader::OverlapInfo MultiplexGFAReader::ConstructOverlapInfo(const ConjugateDeBruijnGraph &struct_graph,
+                                                                         io::IdMapper<std::string> *struct_id_mapper) const {
     OverlapStorage start_to_seq;
     OverlapStorage end_to_seq;
 
@@ -87,17 +88,32 @@ MultiplexGFAReader::OverlapStorages MultiplexGFAReader::ConstructOverlapStorages
             }
         }
     }
-    OverlapStorages result(start_to_seq, end_to_seq);
+
+    std::unordered_set<std::string> multi_edges;
+    for (const EdgeId &edge: struct_graph.canonical_edges()) {
+        for (const auto &start_out_edge: struct_graph.OutgoingEdges(struct_graph.EdgeStart(edge))) {
+            if (start_out_edge != edge and struct_graph.EdgeEnd(start_out_edge) == struct_graph.EdgeEnd(edge)) {
+                multi_edges.insert((*struct_id_mapper)[edge.int_id()]);
+            }
+        }
+    }
+    INFO(multi_edges.size() << " multisegments");
+
+    OverlapInfo result(start_to_seq, end_to_seq, multi_edges);
     return result;
 }
 
-void MultiplexGFAReader::to_graph(ConjugateDeBruijnGraph &g,
+void MultiplexGFAReader::to_graph(const ConjugateDeBruijnGraph &struct_graph,
+                                  io::IdMapper<std::string> *struct_id_mapper,
+                                  ConjugateDeBruijnGraph &g,
                                   io::IdMapper<std::string> *id_mapper) {
     auto helper = g.GetConstructionHelper();
 
-    auto overlap_storages = ConstructOverlapStorages();
-    const auto &start_overlap_storage = overlap_storages.first;
-    const auto &end_overlap_storage = overlap_storages.second;
+    auto overlap_info = ConstructOverlapInfo(struct_graph, struct_id_mapper);
+    const auto &start_overlap_storage = overlap_info.start_to_seq_;
+    const auto &end_overlap_storage = overlap_info.end_to_seq_;
+    const auto &multi_segments = overlap_info.multi_edges_;
+    std::unordered_set<EdgeId> multi_edges;
     INFO("Loading segments");
     std::vector<EdgeId> edges;
     edges.reserve(gfa_->n_seg);
@@ -130,19 +146,26 @@ void MultiplexGFAReader::to_graph(ConjugateDeBruijnGraph &g,
         } else {
             end_overlap = g.k();
         }
-        INFO(seg->name);
-        INFO("Overlaps: " << start_overlap << ", " << end_overlap);
         auto init_seq = Sequence(seg->seq);
         size_t init_size = init_seq.size();
         size_t from = start_overlap - g.k();
         size_t to = init_size - end_overlap + g.k() - 1;
-        INFO(init_size << ", " << from << ", " << to);
+        if (not multi_segments.count(seg->name)) {
+            from = 0;
+            to = init_size - 1;
+        }
+//        INFO(seg->name);
+//        INFO("Overlaps: " << start_overlap << ", " << end_overlap);
+//        INFO(init_size << ", " << from << ", " << to);
         DeBruijnEdgeData edata(Sequence(seg->seq).Subseq(from, to));
 
         EdgeId e = helper.AddEdge(edata);
+        if (multi_segments.count(seg->name)) {
+            multi_edges.insert(e);
+            multi_edges.insert(g.conjugate(e));
+        }
         g.coverage_index().SetRawCoverage(e, cov);
         g.coverage_index().SetRawCoverage(g.conjugate(e), cov);
-        INFO("Constructed edge");
 
         if (id_mapper) {
             DEBUG("Map ids: " << e.int_id() << ":" << seg->name);
@@ -200,13 +223,21 @@ void MultiplexGFAReader::to_graph(ConjugateDeBruijnGraph &g,
         }
     }
 
+    std::unordered_set<VertexId> unsplitted_vertices;
+    for (const auto &edge: g.edges()) {
+        if (not multi_edges.count(edge)) {
+            unsplitted_vertices.insert(g.EdgeStart(edge));
+            unsplitted_vertices.insert(g.EdgeEnd(edge));
+        }
+    }
+    INFO(unsplitted_vertices.size() << " unsplitted vertices out of " << g.size());
+
     std::vector<VertexId> vertices_copy;
     std::copy(g.vertices().begin(), g.vertices().end(), std::back_inserter(vertices_copy));
     for (const auto &vertex: vertices_copy) {
-        if (g.OutgoingEdgeCount(vertex) > 0 and g.IncomingEdgeCount(vertex) > 0) {
+        if (g.OutgoingEdgeCount(vertex) > 0 and g.IncomingEdgeCount(vertex) > 0 and not unsplitted_vertices.count(vertex)) {
             auto first_incoming = *(g.IncomingEdges(vertex).begin());
-            bool is_canonical = first_incoming <= g.conjugate(first_incoming);
-            auto first_name = is_canonical ? (*id_mapper)[first_incoming.int_id()] : (*id_mapper)[first_incoming.int_id()] + "\'";
+            auto first_name = (*id_mapper)[first_incoming.int_id()];
             Sequence overlap_sequence = end_overlap_storage.at(first_name);
             DeBruijnEdgeData edata(overlap_sequence);
             EdgeId overlap_edge = helper.AddEdge(edata);
@@ -219,6 +250,12 @@ void MultiplexGFAReader::to_graph(ConjugateDeBruijnGraph &g,
             VertexId overlap_end = helper.CreateVertex(DeBruijnVertexData());
             helper.LinkOutgoingEdge(vertex, overlap_edge);
             helper.LinkIncomingEdge(overlap_end, overlap_edge);
+            for (const auto &edge: g.OutgoingEdges(vertex)) {
+                if (edge != overlap_edge) {
+                    helper.DeleteLink(vertex, edge);
+                    helper.LinkOutgoingEdge(overlap_end, edge);
+                }
+            }
 
             double cov = (incoming_cov + outgoing_cov) / 2;
 
@@ -250,4 +287,8 @@ void MultiplexGFAReader::to_graph(ConjugateDeBruijnGraph &g,
     }
 }
 
+MultiplexGFAReader::OverlapInfo::OverlapInfo(const MultiplexGFAReader::OverlapStorage &start_to_seq,
+                                             const MultiplexGFAReader::OverlapStorage &end_to_seq,
+                                             const std::unordered_set<std::string> &multi_edges) :
+    start_to_seq_(start_to_seq), end_to_seq_(end_to_seq), multi_edges_(multi_edges) {}
 }
