@@ -2,6 +2,7 @@
 #include "contig_replacer/contig_replacer.hpp"
 #include "error_analyzer/error_analyzer.hpp"
 #include "sequence_clusterer/sequence_clusterer.hpp"
+#include "alignment_mixer/alignment_mixer.hpp"
 
 #include "common/toolchain/utils.hpp"
 #include "utils/segfault_handler.hpp"
@@ -22,13 +23,15 @@ int main(int argc, char *argv[]) {
             correct,
             analyze,
             clustering,
+            mix,
         } action;
 
         auto cli = (
             (clipp::command("replace").set(action, Action::replace), contig_replacer::GetCLI()) |
             (clipp::command("correct").set(action, Action::correct), sequence_corrector::GetCLI()) |
             (clipp::command("analyze").set(action, Action::analyze), error_analyzer::GetCLI()) |
-            (clipp::command("clustering").set(action, Action::clustering), sequence_clusterer::GetCLI())
+            (clipp::command("clustering").set(action, Action::clustering), sequence_clusterer::GetCLI()) |
+            (clipp::command("mix").set(action, Action::mix), alignment_mixer::GetCLI())
         );
 
         auto result = clipp::parse(argc, argv, cli);
@@ -51,6 +54,8 @@ int main(int argc, char *argv[]) {
             return error_analyzer::main();
         case Action::clustering: 
             return sequence_clusterer::main();
+        case Action::mix: 
+            return alignment_mixer::main();
         default: assert(false && "unreachable");
         }
     } catch (const std::string &s) {

@@ -126,11 +126,11 @@ template<class Columns, Columns ... columns>
 class RecordPusher {
 private:
     Records<Columns, columns ...> & records;
-    FilterType<Columns, columns ...> const & filter;
+    FilterType<Columns, columns ...> filter;
 public:
-    RecordPusher(Records<Columns, columns ...> & records, FilterType<Columns, columns ...> const & filter) 
+    RecordPusher(Records<Columns, columns ...> & records, FilterType<Columns, columns ...> filter) 
         : records(records)
-        , filter(filter)
+        , filter(std::move(filter))
     {}
 
     bool Push(std::string const & line) {

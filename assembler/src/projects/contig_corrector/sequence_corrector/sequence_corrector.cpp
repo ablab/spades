@@ -289,7 +289,7 @@ int main() {
     auto filter = GetFilter<WISHED_COLUMNS>(std::move(unique_edge_checker), graph);
 
     INFO("Started aligner output reading");
-    auto res = ReadMinimapOutput(aligner_output_stream, filter);
+    auto res = ReadMinimapOutput(aligner_output_stream, std::move(filter));
     auto fragments = GetContigFragments(res, GetDropAlg<WISHED_COLUMNS>(cfg.drop_alg), graph.k());
     // DropAnother(res, fragments);
     // MakeAllFilteredEdgesDump(res, fragments, graph, output_dir);

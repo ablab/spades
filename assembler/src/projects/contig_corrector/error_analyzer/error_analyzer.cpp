@@ -141,6 +141,9 @@ void AddBoundStatistics(Record<SNPSColumns, SNPS_WISHED_COLUMNS> const & record,
     if (start_pos + len < seqFragments.total_len)
         ++len;
 
+    if (seqFragments.total_len < start_pos + len)
+        return;
+
     auto first_and_last_fragments = seqFragments.GetAllIntersectedFragments(start_pos, len);
 
     if (!IsOnBound(seqFragments, first_and_last_fragments.first, first_and_last_fragments.second))
@@ -173,6 +176,12 @@ void AddStatistics(Record<SNPSColumns, SNPS_WISHED_COLUMNS> const & record, SeqF
     VERIFY(ref_nucls == "." || contig_nucls == "." || ref_nucls.size() == contig_nucls.size());
 
     auto len = (contig_nucls != "." ? contig_nucls.size() : 0);
+
+    if (seqFragments.total_len < start_pos + len) {
+        // WARN("FUCKING QUAST!!!");
+        std::cout << record.Get<SNPSColumns::ref_name>() << " -> " << record.Get<SNPSColumns::contig_name>() << " at " << record.Get<SNPSColumns::contig_start_pos>() << ", but the whole contig len is " << seqFragments.total_len << '\n';
+        return;
+    }
 
     auto first_and_last_fragments = seqFragments.GetAllIntersectedFragments(start_pos, len);
 

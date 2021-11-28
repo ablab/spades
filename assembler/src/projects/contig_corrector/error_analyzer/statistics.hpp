@@ -11,20 +11,20 @@
 #include <cassert>
 
 namespace error_analyzer {
-template<size_t amount, class ... ValidAccessors>
-struct Stat : std::array<size_t, amount> {
-    using Base = std::array<size_t, amount>;
+template<size_t amount, class Element, class ... ValidAccessors>
+struct Stat : std::array<Element, amount> {
+    using Base = std::array<Element, amount>;
 
-    Stat() : Base({0}) {};
+    Stat() : Base({}) {};
 
     template<class EnumClassType>
-    size_t & operator[](EnumClassType type) {
+    Element & operator[](EnumClassType type) {
         static_assert(traits::Contains<EnumClassType, ValidAccessors ...>());
         return Base::operator[](static_cast<size_t>(type));
     }
     
     template<class EnumClassType>
-    size_t const & operator[](EnumClassType type) const {
+    Element const & operator[](EnumClassType type) const {
         static_assert(traits::Contains<EnumClassType, ValidAccessors ...>());
         return Base::operator[](static_cast<size_t>(type));
     }
@@ -37,33 +37,13 @@ struct Stat : std::array<size_t, amount> {
     }
 };
 
-using RangeNumberStatType = Stat<3, RangeType>;
+using RangeNumberStatType = Stat<3, std::size_t, RangeType>;
 
-using LocalErrorStatType = Stat<3+1, RangeType, BoundStatType>;
+using LocalErrorStatType = Stat<3+1, std::size_t, RangeType, BoundStatType>;
 
-using CoverageStatistics = Stat<3+2, RangeType, RangeEndsType>;
+using CoverageStatistics = Stat<3+2, std::size_t, RangeType, RangeEndsType>;
 
-
-struct ErrorStatistics {
-    LocalErrorStatType mismatch;
-    LocalErrorStatType insertion; // to contig
-    LocalErrorStatType deletion;  // from contig
-
-    LocalErrorStatType& operator[] (ErrorType type) {
-        switch (type) {
-            case ErrorType::mismatch : return mismatch; break;
-            case ErrorType::insertion: return insertion; break;
-            case ErrorType::deletion : return deletion; break;
-            default: assert(false && "unreachable");
-        }
-    }
-
-    void operator +=(ErrorStatistics const & other) {
-        mismatch += other.mismatch;
-        insertion += other.insertion;
-        deletion += other.deletion;
-    }
-};
+using ErrorStatistics = Stat<3, LocalErrorStatType, ErrorType>;
 
 struct FullErrorStatistics {
     ErrorStatistics events;

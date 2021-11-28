@@ -58,7 +58,7 @@ double GetIDY(Record<Columns, columns ...> const & record) {
 template<class Columns, Columns ... columns>
 FilterType<Columns, columns ...> GetFilter(std::function<bool(debruijn_graph::EdgeId)> unique_edge_checker, debruijn_graph::Graph const & graph) {
     return [unique_edge_checker_ = std::move(unique_edge_checker), &graph](auto const & element) {
-        constexpr auto EDGE_LENGTH_ERROR_COEFF = 0.01;
+        constexpr auto EDGE_LENGTH_ERROR_COEFF = 0.05;
         constexpr auto LENGTHS_ERROR_COEFF = 0.05;
         constexpr auto MIN_TAIL_OVERLAP_LEN = 1000;
         const auto TAIL_GAP = static_cast<int>(graph.k());
@@ -93,14 +93,19 @@ FilterType<Columns, columns ...> GetFilter(std::function<bool(debruijn_graph::Ed
                 edge_start < TAIL_GAP &&
                 contig_len - contig_end < TAIL_GAP;
 
-        // if (element.template Get<Columns::Q_name>() == "contig_500") {
+        // if ((edge_title == "EDGE_557860_length_2034_cov_136.129864:EDGE_45218246_length_161_cov_375.679245;" || 
+        //      edge_title == "EDGE_390252_length_1914_cov_124.899946':EDGE_503264_length_70_cov_461.800000;") &&
+        //      element.template Get<Columns::Q_name>() == "contig_4")
+        // {
         //     std::cout << element.template Get<Columns::Q_name>() << " -> " << element.template Get<Columns::T_name>() << ":\n";
         //     std::cout << "  " << unique_edge_checker_(GetEdgeId(edge_title, graph)) << '\n';
         //     std::cout << "  " << (GetIDY(element) > 0.90) << '\n';
         //     std::cout << "  " << ((double) lens_difference < (double) edge_delta * LENGTHS_ERROR_COEFF) << '\n';
         //     std::cout << "  " << (edge_fully_inside_contig || contig_fully_inside_edge || contig_is_started_with_edge || contig_is_ended_with_edge) << '\n';
         //     std::cout << "  " << (GetCov(edge_title) > 2) << '\n';
+        //     return true;
         // }
+
 
         return unique_edge_checker_(GetEdgeId(edge_title, graph)) &&
                GetIDY(element) > 0.90 &&

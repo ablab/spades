@@ -15,9 +15,9 @@ enum class BoundStatType {
 };
 
 enum class ErrorType {
-    mismatch,
-    insertion,
-    deletion
+    mismatch  = 0,
+    insertion = 1, // to contig
+    deletion  = 2  // from contig
 };
 
 } // namespace error_analyzer

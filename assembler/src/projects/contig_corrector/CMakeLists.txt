@@ -9,6 +9,7 @@ project(contig_corrector CXX)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(contig_corrector
+               alignment_mixer/alignment_mixer.cpp
                contig_replacer/contig_replacer.cpp
                error_analyzer/error_analyzer.cpp
                error_analyzer/sequence_fragments.cpp

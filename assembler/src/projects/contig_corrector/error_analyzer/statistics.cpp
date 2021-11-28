@@ -67,12 +67,12 @@ std::ostream & operator << (std::ostream & out, LocalErrorStatType const & stat)
 }
 
 std::ostream & operator << (std::ostream & out, ErrorStatistics const & stat) {
-    out << "     mismatches: " << RangeTypeSum(stat.mismatch) << " \n";
-    out << stat.mismatch;
-    out << "     insertions: " << RangeTypeSum(stat.insertion) << " \n";
-    out << stat.insertion;
-    out << "     deletions: " << RangeTypeSum(stat.deletion) << " \n";
-    out << stat.deletion;
+    out << "     mismatches: " << RangeTypeSum(stat[ErrorType::mismatch]) << " \n";
+    out << stat[ErrorType::mismatch];
+    out << "     insertions: " << RangeTypeSum(stat[ErrorType::insertion]) << " \n";
+    out << stat[ErrorType::insertion];
+    out << "     deletions: " << RangeTypeSum(stat[ErrorType::deletion]) << " \n";
+    out << stat[ErrorType::deletion];
     return out;
 }
 
