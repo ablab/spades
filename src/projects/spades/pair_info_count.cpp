@@ -146,7 +146,7 @@ size_t ProcessSingleReads(graph_pack::GraphPack &gp, size_t ilib,
 } // namespace
 
 void PairInfoCount::run(graph_pack::GraphPack &gp, const char *s) {
-    execute(gp, s, MapLibFunc(), partask::overall_num_threads());
+    execute(gp, s, MapLibFunc());
 }
 
 void PairInfoCountBase::execute(graph_pack::GraphPack &gp, const char *,

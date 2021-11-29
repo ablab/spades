@@ -8,7 +8,7 @@
 #pragma once
 
 #include "projects/spades/pair_info_count.hpp"
-#include "alignment/sequence_mapper_notifier.hpp"
+#include "common/alignment/sequence_mapper_notifier_mpi.hpp"
 #include "pipeline/mpi_stage.hpp"
 
 namespace debruijn_graph {
