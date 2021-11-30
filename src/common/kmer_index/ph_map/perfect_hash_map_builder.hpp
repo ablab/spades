@@ -20,13 +20,13 @@ struct PerfectHashMapBuilder {
     template<class K, class V, class traits, class StoringType, class Counter>
     kmers::KMerDiskStorage<typename Counter::Seq>
     BuildIndex(PerfectHashMap<K, V, traits, StoringType> &index,
-               Counter& counter, size_t bucket_num,
+               Counter &counter, size_t bucket_num,
                size_t thread_num, bool save_final = false) const {
         TIME_TRACE_SCOPE("PerfectHashMapBuilder::BuildIndex<Counter>");
 
         using KMerIndex = typename PerfectHashMap<K, V, traits, StoringType>::KMerIndexT;
 
-        kmers::KMerIndexBuilder<KMerIndex> builder((unsigned)bucket_num, (unsigned)thread_num);
+        kmers::KMerIndexBuilder<KMerIndex> builder((unsigned) bucket_num, (unsigned) thread_num);
         auto res = builder.BuildIndex(*index.index_ptr_, counter, save_final);
         index.resize(res.total_kmers());
 
@@ -35,19 +35,21 @@ struct PerfectHashMapBuilder {
 
     template<class K, class V, class traits, class StoringType, class KMerStorage>
     void BuildIndex(PerfectHashMap<K, V, traits, StoringType> &index,
-                    const KMerStorage& storage, size_t thread_num) const {
+                    const KMerStorage &storage, size_t thread_num) const {
         TIME_TRACE_SCOPE("PerfectHashMapBuilder::BuildIndex<Storage>");
 
         using KMerIndex = typename PerfectHashMap<K, V, traits, StoringType>::KMerIndexT;
 
-        kmers::KMerIndexBuilder<KMerIndex> builder(0, (unsigned)thread_num);
+        kmers::KMerIndexBuilder<KMerIndex> builder(0, (unsigned) thread_num);
         builder.BuildIndex(*index.index_ptr_, storage);
         index.resize(storage.total_kmers());
     }
+};
 
+struct PerfectHashMapBuilderMPI {
     template<class K, class V, class traits, class StoringType, class KMerStorage>
     void BuildIndexMPI(PerfectHashMap<K, V, traits, StoringType> &index,
-                       KMerStorage& storage, bool save_final = true) const {
+                       KMerStorage &storage, bool save_final = true) const {
         using KMerIndex = typename PerfectHashMap<K, V, traits, StoringType>::KMerIndexT;
 
         kmers::KMerIndexBuilderMPI<KMerIndex> builder;
@@ -104,7 +106,7 @@ struct CQFHashMapBuilder {
 struct KeyStoringIndexBuilder {
     template<class K, class V, class traits, class StoringType, class Counter>
     void BuildIndex(KeyStoringMap<K, V, traits, StoringType> &index,
-                    Counter& counter, size_t bucket_num,
+                    Counter &counter, size_t bucket_num,
                     size_t thread_num) const {
         auto res = phm_builder_.BuildIndex(index, counter, bucket_num, thread_num, true);
         VERIFY(!index.kmers_.get());
@@ -112,9 +114,14 @@ struct KeyStoringIndexBuilder {
         index.SortUniqueKMers();
     }
 
+private:
+    PerfectHashMapBuilder phm_builder_;
+};
+
+struct KeyStoringIndexBuilderMPI {
     template<class K, class V, class traits, class StoringType, class KMerStorage>
     void BuildIndexMPI(KeyStoringMap<K, V, traits, StoringType> &index,
-                       KMerStorage& kmerstorage, bool save_final = true) const {
+                       KMerStorage &kmerstorage, bool save_final = true) const {
         phm_builder_.BuildIndexMPI(index, kmerstorage, save_final);
         if (partask::master()) {
             VERIFY(!index.kmers_.get());
@@ -123,39 +130,44 @@ struct KeyStoringIndexBuilder {
         }
     }
 
-  private:
-    PerfectHashMapBuilder phm_builder_;
+private:
+    PerfectHashMapBuilderMPI phm_builder_;
 };
 
 struct KeyIteratingIndexBuilder {
     template<class K, class V, class traits, class StoringType, class Counter>
     void BuildIndex(KeyIteratingMap<K, V, traits, StoringType> &index,
-                    Counter& counter, size_t bucket_num,
+                    Counter &counter, size_t bucket_num,
                     size_t thread_num) const {
         auto res = phm_builder_.BuildIndex(index, counter, bucket_num, thread_num, true);
         index.kmers_ = res.final_kmers();
     }
 
-    template<class K, class V, class traits, class StoringType, class KMerStorage>
-    void BuildIndexMPI(KeyIteratingMap<K, V, traits, StoringType> &index,
-                       KMerStorage& kmerstorage, bool save_final = true) const {
-        phm_builder_.BuildIndexMPI(index, kmerstorage, save_final);
-        std::string final_kmers_file;
-        if (partask::master()) {
-            index.kmers_ = kmerstorage.final_kmers();
-            final_kmers_file = index.kmers_->file();
-        }
-        // MPI code leaked so far( TODO do smth with this
-        partask::broadcast(final_kmers_file);
-        if (partask::worker()) {
-            index.kmers_ = fs::tmp::acquire_temp_file(final_kmers_file);
-            index.kmers_->release();
-        }
-        INFO("Final K-mers file: " << final_kmers_file);
-    }
-
-  private:
+private:
     PerfectHashMapBuilder phm_builder_;
+};
+
+struct KeyIteratingIndexBuilderMPI {
+       template<class K, class V, class traits, class StoringType, class KMerStorage>
+        void BuildIndexMPI(KeyIteratingMap<K, V, traits, StoringType> &index,
+                           KMerStorage& kmerstorage, bool save_final = true) const {
+            phm_builder_.BuildIndexMPI(index, kmerstorage, save_final);
+            std::string final_kmers_file;
+            if (partask::master()) {
+                index.kmers_ = kmerstorage.final_kmers();
+                final_kmers_file = index.kmers_->file();
+            }
+            // MPI code leaked so far( TODO do smth with this
+            partask::broadcast(final_kmers_file);
+            if (partask::worker()) {
+                index.kmers_ = fs::tmp::acquire_temp_file(final_kmers_file);
+                index.kmers_->release();
+            }
+            INFO("Final K-mers file: " << final_kmers_file);
+        }
+
+    private:
+        PerfectHashMapBuilderMPI phm_builder_;
 };
 
 template<class K, class V, class traits, class StoringType, class Counter>
@@ -188,19 +200,18 @@ void BuildIndex(PerfectHashMap<K, V, traits, StoringType> &index,
 template<class K, class V, class traits, class StoringType, class KMerStorage>
 void BuildIndexMPI(PerfectHashMap<K, V, traits, StoringType> &index,
                    KMerStorage &storage, bool save_final = true) {
-    PerfectHashMapBuilder().BuildIndexMPI(index, storage, save_final);
+    PerfectHashMapBuilderMPI().BuildIndexMPI(index, storage, save_final);
 }
 
 template<class K, class V, class traits, class StoringType, class KMerStorage>
 void BuildIndexMPI(KeyStoringMap<K, V, traits, StoringType> &index,
                    KMerStorage &storage, bool save_final = true) {
-    KeyStoringIndexBuilder().BuildIndexMPI(index, storage, save_final);
+    KeyStoringIndexBuilderMPI().BuildIndexMPI(index, storage, save_final);
 }
 
 template<class K, class V, class traits, class StoringType, class KMerStorage>
 void BuildIndexMPI(KeyIteratingMap<K, V, traits, StoringType> &index,
                    KMerStorage &storage, bool save_final = true) {
-    KeyIteratingIndexBuilder().BuildIndexMPI(index, storage, save_final);
+    KeyIteratingIndexBuilderMPI().BuildIndexMPI(index, storage, save_final);
 }
-
 }

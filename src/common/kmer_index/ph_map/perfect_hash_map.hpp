@@ -160,6 +160,7 @@ public:
     const auto& values() const { return data_; }
 
     friend struct PerfectHashMapBuilder;
+    friend struct PerfectHashMapBuilderMPI;
 
  protected:
     void resize(size_t sz) {
