@@ -159,6 +159,7 @@ public:
     }
 
     friend struct KeyStoringIndexBuilder;
+    friend struct KeyStoringIndexBuilderMPI;
 };
 
 template<class K, class V, class traits = kmers::kmer_index_traits<K>, class StoringType = SimpleStoring>
@@ -194,6 +195,7 @@ public:
     }
 
     friend struct KeyIteratingIndexBuilder;
+    friend struct KeyIteratingIndexBuilderMPI;
 };
 
 }
