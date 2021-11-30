@@ -73,7 +73,8 @@ def warning(warn_str, log=None, prefix="== Warning == "):
 
 def wsl_check():
     def in_wsl():
-        return 'microsoft' in uname().release.lower()
+        #[2] -> .release in python3, but doesn't work in python2
+        return 'microsoft' in uname()[2].lower()
 
     if in_wsl():
         return ("1. WSL is an unsupported platform\n"
