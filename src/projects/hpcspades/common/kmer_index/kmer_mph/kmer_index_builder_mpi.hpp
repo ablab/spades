@@ -5,8 +5,8 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "kmer_index_builder.hpp"
-#include "kmer_buckets.hpp"
+#include "kmer_index/kmer_mph/kmer_index_builder.hpp"
+#include "kmer_index/kmer_mph/kmer_buckets.hpp"
 
 #include "pipeline/partask_mpi.hpp"
 
