@@ -6,14 +6,14 @@
 
 #pragma once
 
-#include "kmer_extension_index.hpp"
-#include "kmer_extension_index_builder.hpp"
+#include "kmer_index/extension_index/kmer_extension_index.hpp"
+#include "kmer_index/extension_index/kmer_extension_index_builder.hpp"
 
 #include "kmer_index/kmer_mph/kmer_index_builder.hpp"
-#include "projects/hpcspades/common/kmer_index/kmer_mph/kmer_index_builder_mpi.hpp"
+#include "../kmer_mph/kmer_index_builder_mpi.hpp"
 #include "kmer_index/kmer_mph/kmer_splitters.hpp"
 #include "kmer_index/kmer_counting.hpp"
-#include "projects/hpcspades/common/kmer_index/ph_map/perfect_hash_map_builder_mpi.hpp"
+#include "../ph_map/perfect_hash_map_builder_mpi.hpp"
 #include "io/reads/multifile_reader.hpp"
 
 #include "pipeline/partask_mpi.hpp"
