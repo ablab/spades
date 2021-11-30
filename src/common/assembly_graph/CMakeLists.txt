@@ -18,7 +18,3 @@ add_library(assembly_graph STATIC
             ../alignment/edge_index_refiller.cpp)
 
 target_link_libraries(assembly_graph utils llvm-support)
-
-if (MPI_FOUND)
-    target_link_libraries(assembly_graph ${MPI_LIBRARIES})
-endif()

@@ -11,7 +11,6 @@
 #include "kmer_maps.hpp"
 #include "cqf_hash_map.hpp"
 #include "kmer_index/kmer_mph/kmer_index_builder.hpp"
-#include "projects/hpcspades/common/kmer_index/kmer_mph/kmer_index_builder_mpi.hpp"
 #include "utils/perf/timetracer.hpp"
 
 namespace kmers {
