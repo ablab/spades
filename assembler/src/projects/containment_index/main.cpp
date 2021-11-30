@@ -6,6 +6,7 @@
 
 #include "barcode_index_construction.hpp"
 #include "multiplex_gfa_reader.hpp"
+#include "reference_path_checker.hpp"
 #include "scaffold_graph_helper.hpp"
 #include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 
@@ -104,40 +105,121 @@ void GetLongEdgeStatistics(const Graph &graph,
         }
     }
     INFO("Found " << long_edges.size() << " edges longer than " << training_edge_length << " in the graph");
-    auto edge_cluster_extractor =
-        std::make_shared<cluster_storage::AccurateEdgeClusterExtractor>(graph, barcode_extractor,
-                                                                        read_linkage_distance, read_count_threshold);
-    cluster_storage::EdgeInitialClusterStorageBuilder initial_builder(graph, edge_cluster_extractor, long_edges,
-                                                                      read_linkage_distance, read_count_threshold,
-                                                                      max_threads);
-    auto initial_cluster_storage = initial_builder.ConstructInitialClusterStorage();
-    path_extend::read_cloud::fragment_statistics::ClusterDistributionExtractor distribution_extractor(graph, barcode_index,
-                                                                                                      read_count_threshold,
-                                                                                                      training_edge_length,
-                                                                                                      training_edge_offset,
-                                                                                                      max_threads);
-    auto distribution_pack = distribution_extractor.GetDistributionsForStorage(initial_cluster_storage.get_cluster_storage());
-    std::string length_output_path = fs::append_path(base_output_path, "long_edge_fragment_lengths.tsv");
-    std::ofstream length_stream(length_output_path);
-    length_stream << "Length\tNumber\n";
-    size_t total_long_edge_clusters = 0;
-    for (const auto &entry: distribution_pack.length_distribution_) {
-        length_stream << entry.first << "\t" << entry.second << std::endl;
-        total_long_edge_clusters += entry.second;
+    //fixme double coverage counter, move to a separate class
+    //key: gap length, value: distribution of number of fragments for all pairs with given gap
+    std::unordered_map<size_t, std::map<size_t, size_t>> double_cov_distribution;
+    size_t lower_dc_bound = 10000;
+    size_t upper_dc_bound = 50000;
+    size_t dc_step = 10000;
+    std::unordered_set<size_t> double_cov_gaps;
+    for (size_t thr = lower_dc_bound; thr <= upper_dc_bound; thr+=dc_step) {
+        double_cov_gaps.insert(thr);
     }
-    INFO("Total long edge clusters: " << total_long_edge_clusters);
-    std::string coverage_output_path = fs::append_path(base_output_path, "long_edge_fragment_coverages.tsv");
-    std::ofstream coverage_stream(coverage_output_path);
-    coverage_stream << "Coverage\tNumber\n";
-    for (const auto &entry: distribution_pack.coverage_distribution_) {
-        coverage_stream << entry.first << "\t" << entry.second << std::endl;
+    INFO("Traversing");
+    for (const EdgeId &edge: graph.canonical_edges()) {
+        if (graph.length(edge) >= training_edge_length) {
+            typedef std::unordered_map<size_t, size_t> PerPosDistribution;
+            std::unordered_map<size_t, PerPosDistribution> single_edge_double_cov;
+            size_t frame_size = barcode_extractor->GetBinLength(edge);
+            size_t num_of_frames = barcode_extractor->GetNumberOfBins(edge);
+            for (const auto &gap: double_cov_gaps) {
+                for (size_t i = 0; i < num_of_frames * frame_size - gap + frame_size; i += frame_size) {
+                    single_edge_double_cov[gap][i] = 0;
+                }
+            }
+            auto bar_begin = barcode_extractor->barcode_iterator_begin(edge);
+            auto bar_end = barcode_extractor->barcode_iterator_end(edge);
+            for (auto it = bar_begin; it != bar_end; ++it) {
+                const auto &barcode = it->first;
+                const auto &bit_positions = it->second.GetBitSet();
+                std::vector<size_t> positions;
+                size_t current_set_pos = bit_positions.find_first();
+//                INFO("Frame positions");
+                while (current_set_pos != barcode_index::FrameBarcodeInfo::IsOnFrameT::npos) {
+                    positions.push_back(current_set_pos * frame_size);
+//                    INFO(current_set_pos);
+//                    INFO(current_set_pos * frame_size);
+                    current_set_pos = bit_positions.find_next(current_set_pos);
+                }
+//                INFO("Getting positions");
+                if (positions.size() == 1) {
+                    continue;
+                }
+                for (auto it1 = positions.begin(); it1 != positions.end(); ++it1) {
+                    for (auto it2 = std::next(it1); it2 != positions.end(); ++it2) {
+                        const size_t first_pos = *it1;
+                        const size_t second_pos = *it2;
+                        size_t diff = second_pos - first_pos;
+                        if (diff > upper_dc_bound) {
+                            break;
+                        }
+                        if (double_cov_gaps.count(diff) and first_pos < frame_size * num_of_frames - diff) {
+                            single_edge_double_cov.at(diff).at(first_pos)++;
+                        }
+                    }
+                }
+            }
+            for (const auto &entry: single_edge_double_cov) {
+                const auto &diff = entry.first;
+                const auto &pos_fragments = entry.second;
+                for (const auto &entry: pos_fragments) {
+                    size_t num_fragments = entry.second;
+                    ++double_cov_distribution[diff][num_fragments];
+                }
+            }
+            INFO("Processed edge " << edge.int_id() << " , length " << graph.length(edge));
+        }
     }
-    std::string number_of_reads_output_path = fs::append_path(base_output_path, "long_edge_fragment_reads.tsv");
-    std::ofstream read_stream(number_of_reads_output_path);
-    read_stream << "Number of reads\tNumber\n";
-    for (const auto &entry: distribution_pack.num_reads_distribution_) {
-        read_stream << entry.first << "\t" << entry.second << std::endl;
+    std::string dc_output_path = fs::append_path(base_output_path, "double_coverage_distribution.tsv");
+    std::ofstream dc_stream(dc_output_path);
+    dc_stream << "Gap\tFragments\tValue\n";
+    for (const auto &gap_and_distr: double_cov_distribution) {
+        const size_t &gap = gap_and_distr.first;
+        const auto &distr = gap_and_distr.second;
+        size_t total_fragments = 0;
+        size_t total_pairs = 0;
+        for (const auto &cov_and_number: distr) {
+            dc_stream << gap << "\t" << cov_and_number.first << "\t" << cov_and_number.second << "\n";
+            total_pairs += cov_and_number.first;
+            total_fragments += cov_and_number.second;
+        }
+        double mean_double_cov = static_cast<double>(total_fragments) / static_cast<double>(total_pairs);
+        INFO("Gap: " << gap << ", mean double coverage: " << mean_double_cov);
     }
+
+//    auto edge_cluster_extractor =
+//        std::make_shared<cluster_storage::AccurateEdgeClusterExtractor>(graph, barcode_extractor,
+//                                                                        read_linkage_distance, read_count_threshold);
+//    cluster_storage::EdgeInitialClusterStorageBuilder initial_builder(graph, edge_cluster_extractor, long_edges,
+//                                                                      read_linkage_distance, read_count_threshold,
+//                                                                      max_threads);
+//    path_extend::read_cloud::fragment_statistics::ClusterDistributionExtractor distribution_extractor(graph, barcode_index,
+//                                                                                                      read_count_threshold,
+//                                                                                                      training_edge_length,
+//                                                                                                      training_edge_offset,
+//                                                                                                      max_threads);
+//    auto distribution_pack = distribution_extractor.GetDistributionsForStorage(initial_cluster_storage.get_cluster_storage());
+//    std::string length_output_path = fs::append_path(base_output_path, "long_edge_fragment_lengths.tsv");
+//    std::ofstream length_stream(length_output_path);
+//    length_stream << "Length\tNumber\n";
+//    size_t total_long_edge_clusters = 0;
+//    for (const auto &entry: distribution_pack.length_distribution_) {
+//        length_stream << entry.first << "\t" << entry.second << std::endl;
+//        total_long_edge_clusters += entry.second;
+//    }
+//    INFO("Total long edge clusters: " << total_long_edge_clusters);
+//    std::string coverage_output_path = fs::append_path(base_output_path, "long_edge_fragment_coverages.tsv");
+//    std::ofstream coverage_stream(coverage_output_path);
+//    coverage_stream << "Coverage\tNumber\n";
+//    for (const auto &entry: distribution_pack.coverage_distribution_) {
+//        coverage_stream << entry.first << "\t" << entry.second << std::endl;
+//    }
+//    std::string number_of_reads_output_path = fs::append_path(base_output_path, "long_edge_fragment_reads.tsv");
+//    std::ofstream read_stream(number_of_reads_output_path);
+//    read_stream << "Number of reads\tNumber\n";
+//    for (const auto &entry: distribution_pack.num_reads_distribution_) {
+//        read_stream << entry.first << "\t" << entry.second << std::endl;
+//    }
 }
 
 void GetPathClusterStatistics(const Graph &graph,
@@ -424,62 +506,28 @@ int main(int argc, char** argv) {
             }
         }
         INFO(total_reads << " total reads in barcode index");
+//        cont_index::ReferencePathChecker ref_path_checker(graph, id_mapper.get());
+//        ref_path_checker.CheckAssemblyGraph(cfg.refpath);
+
+        GetLongEdgeStatistics(graph, barcode_index, training_length_threshold, training_length_offset,
+                              training_min_read_threshold, training_linkage_distance, cfg.nthreads, cfg.output_dir);
+
+//        GetPathClusterStatistics(graph,
+//                                 barcode_extractor_ptr,
+//                                 hifi_graph,
+//                                 read_linkage_distance,
+//                                 relative_score_threshold,
+//                                 min_read_threshold,
+//                                 length_threshold,
+//                                 cfg.nthreads,
+//                                 cfg.output_dir);
 
 //        scaffold_graph::ScaffoldGraph tellseq_graph(graph);
-
-        //fixme move to separate function
-//        std::unordered_map<std::string, EdgeId> seg_to_edge;
-//        for (const EdgeId &edge: graph.canonical_edges()) {
-//            seg_to_edge.emplace((*id_mapper)[edge.int_id()], edge);
-//            seg_to_edge.emplace((*id_mapper)[edge.int_id()] + "'", graph.conjugate(edge));
-//        }
-//        std::unordered_set<std::pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId>> correct_transitions;
-//        std::vector<std::vector<debruijn_graph::EdgeId>> reference_paths;
-//        std::ifstream ref_stream(cfg.refpath);
-//        std::string path_string;
-//        std::string ref_name;
-//        size_t path_length;
-//        std::string edge_name;
-//        while (ref_stream >> path_string) {
-//            std::vector<debruijn_graph::EdgeId> reference_path;
-//            ref_name = path_string.substr(0, path_string.find(":"));
-//            INFO(ref_name);
-//            ref_stream >> path_length;
-//            INFO(path_length);
-//            for (size_t i = 0; i < path_length; ++i) {
-//                ref_stream >> edge_name;
-////                INFO(edge_name);
-//                EdgeId edge = seg_to_edge.at(edge_name);
-////                INFO(edge.int_id());
-//                reference_path.push_back(edge);
-//            }
-//            INFO("Read reference path");
-//            reference_paths.push_back(reference_path);
-//        }
-//        INFO("Getting gap paths");
-//        size_t total_pairs = 0;
-//        size_t connected_pairs = 0;
-//        for (const auto &path: reference_paths) {
-//            if (path.size() < 2)
-//                continue;
-//            for (auto first = path.begin(), second = std::next(path.begin()); second != path.end(); ++first, ++second) {
-//                ++total_pairs;
-//                EdgeId first_edge = *first;
-//                EdgeId second_edge = *second;
-////                INFO(first_edge.int_id() << ", " << second_edge.int_id());
-//                if (graph.EdgeEnd(first_edge) == graph.EdgeEnd(second_edge)) {
-//                    ++connected_pairs;
-//                }
-//            }
-//        }
-//        INFO(connected_pairs << " connected pairs out of " << total_pairs);
-//move to separate function
-
-        auto tellseq_graph = cont_index::GetTellSeqScaffoldGraph(graph, barcode_extractor_ptr, graph_score_threshold,
-                                                                 length_threshold,
-                                                                 tail_threshold, count_threshold, cfg.nthreads,
-                                                                 cfg.bin_load,
-                                                                 cfg.debug, cfg.output_dir, id_mapper.get());
+//        auto tellseq_graph = cont_index::GetTellSeqScaffoldGraph(graph, barcode_extractor_ptr, graph_score_threshold,
+//                                                                 length_threshold,
+//                                                                 tail_threshold, count_threshold, cfg.nthreads,
+//                                                                 cfg.bin_load,
+//                                                                 cfg.debug, cfg.output_dir, id_mapper.get());
 
 //        LinkIndexGraphConstructor link_index_constructor(graph,
 //                                                         barcode_extractor_ptr,
@@ -489,28 +537,14 @@ int main(int argc, char** argv) {
 //                                                         count_threshold,
 //                                                         cfg.nthreads);
 //        auto score_function = link_index_constructor.ConstructScoreFunction();
-        NormalizeTellseqLinks(tellseq_graph,
-                              length_threshold,
-                              barcode_extractor_ptr,
-                              count_threshold,
-                              tail_threshold,
-                              id_mapper.get(),
-                              cfg.output_dir);
-
-//        GetLongEdgeStatistics(graph, barcode_index, training_length_threshold, training_length_offset,
-//                              training_min_read_threshold, training_linkage_distance, cfg.nthreads, cfg.output_dir);
+//        NormalizeTellseqLinks(tellseq_graph,
+//                              length_threshold,
+//                              barcode_extractor_ptr,
+//                              count_threshold,
+//                              tail_threshold,
+//                              id_mapper.get(),
+//                              cfg.output_dir);
 //        auto compare_output_path = fs::append_path(cfg.output_dir, "hifi_tellseq_scores.tsv");
 //        CompareLinks(hifi_graph, tellseq_graph, score_function, id_mapper.get(), compare_output_path);
-
-//        GetPathClusterStatistics(graph,
-//                                 barcode_extractor_ptr,
-//                                 hifi_graph,
-//                                 read_linkage_distance,
-//                                 relative_score_threshold,
-//                                 min_read_threshold,
-//                                 length_threshold,
-//                                 cfg.nthreads, cfg.output_dir);
-
-
     }
 }
