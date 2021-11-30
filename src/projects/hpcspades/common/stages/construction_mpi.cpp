@@ -16,7 +16,7 @@
 #include "io/reads/coverage_filtering_read_wrapper.hpp"
 #include "io/reads/multifile_reader.hpp"
 #include "kmer_index/ph_map/coverage_hash_map_builder.hpp"
-#include "kmer_index/extension_index/kmer_extension_index_builder_mpi.hpp"
+#include "../kmer_index/extension_index/kmer_extension_index_builder_mpi.hpp"
 #include "modules/graph_construction.hpp"
 #include "pipeline/genomic_info.hpp"
 #include "pipeline/graph_pack.hpp"
