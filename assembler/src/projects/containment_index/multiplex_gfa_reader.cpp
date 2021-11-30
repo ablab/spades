@@ -88,6 +88,7 @@ MultiplexGFAReader::OverlapInfo MultiplexGFAReader::ConstructOverlapInfo(const C
             }
         }
     }
+    INFO("Constructed overlaps");
 
     std::unordered_set<std::string> multi_edges;
     for (const EdgeId &edge: struct_graph.canonical_edges()) {
@@ -108,6 +109,8 @@ void MultiplexGFAReader::to_graph(const ConjugateDeBruijnGraph &struct_graph,
                                   ConjugateDeBruijnGraph &g,
                                   io::IdMapper<std::string> *id_mapper) {
     auto helper = g.GetConstructionHelper();
+    //edges that likely have wrong overlaps with tail-incident edges
+    std::unordered_set<std::string> inconsistent_edges;
 
     auto overlap_info = ConstructOverlapInfo(struct_graph, struct_id_mapper);
     const auto &start_overlap_storage = overlap_info.start_to_seq_;
@@ -154,9 +157,13 @@ void MultiplexGFAReader::to_graph(const ConjugateDeBruijnGraph &struct_graph,
             from = 0;
             to = init_size - 1;
         }
-//        INFO(seg->name);
-//        INFO("Overlaps: " << start_overlap << ", " << end_overlap);
-//        INFO(init_size << ", " << from << ", " << to);
+        DEBUG(seg->name);
+        DEBUG("Overlaps: " << start_overlap << ", " << end_overlap);
+        DEBUG(init_size << ", " << from << ", " << to);
+        if (from > to) {
+            inconsistent_edges.insert(seg->name);
+            to = init_size - 1;
+        }
         DeBruijnEdgeData edata(Sequence(seg->seq).Subseq(from, to));
 
         EdgeId e = helper.AddEdge(edata);
@@ -222,6 +229,7 @@ void MultiplexGFAReader::to_graph(const ConjugateDeBruijnGraph &struct_graph,
             }
         }
     }
+    WARN(inconsistent_edges.size() << " inconsistent segments!");
 
     std::unordered_set<VertexId> unsplitted_vertices;
     for (const auto &edge: g.edges()) {
