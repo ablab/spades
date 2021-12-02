@@ -34,8 +34,6 @@ void AssemblyStage::load(graph_pack::GraphPack& gp,
     auto p = dir / BASE_NAME;
     io::binary::FullPackIO().Load(p, gp);
     debruijn_graph::config::load_lib_data(p);
-
-    io::ConvertIfNeeded(cfg::get_writable().ds.reads, cfg::get().max_threads);
 }
 
 void AssemblyStage::save(const graph_pack::GraphPack& gp,
@@ -192,6 +190,18 @@ StageManager::prepare_run(graph_pack::GraphPack& g,
 void StageManager::run(graph_pack::GraphPack& g,
                        const char* start_from) {
     auto start_stage = prepare_run(g, start_from);
+
+    for (auto cur_stage = stages_.begin(); cur_stage != start_stage; ++cur_stage) {
+        AssemblyStage *stage = cur_stage->get();
+        if (stage->run_on_load()) {
+            INFO("STAGE == " << stage->name() << " (id: " << stage->id() << ")");
+            stage->prepare(g, start_from);
+            {
+                TIME_TRACE_SCOPE(stage->name());
+                stage->run(g);
+            }
+        }
+    }
 
     for (; start_stage != stages_.end(); ++start_stage) {
         AssemblyStage *stage = start_stage->get();
