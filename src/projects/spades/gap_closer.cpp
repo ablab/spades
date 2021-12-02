@@ -500,7 +500,7 @@ void GapClosingBase::execute(graph_pack::GraphPack &gp, const char *) {
 
         io::BinaryPairedStreams paired_streams = paired_binary_readers(dataset.reads[i], false,
                                                                        0, false, num_readers);
-        processLibrary(&gcpif, *gcpif.GetMapper(), paired_streams);
+        ProcessLibrary(&gcpif, *gcpif.GetMapper(), paired_streams);
 
         INFO("Initializing gap closer");
         g.clear_state();  // FIXME Hack-hack-hack required for uniform id distribution on master and slaves

@@ -16,8 +16,9 @@
 namespace debruijn_graph {
 
 class GapClosingMPI : public GapClosingBase, public spades::MPIAssemblyStage {
-  protected:
-    void processLibrary(SequenceMapperListener* listener, const SequenceMapper<Graph>& mapper, io::BinaryPairedStreams& paired_streams) override {
+protected:
+    void ProcessLibrary(SequenceMapperListener *listener, const SequenceMapper<Graph> &mapper,
+                        io::BinaryPairedStreams &paired_streams) override {
         SequenceMapperNotifierMPI notifier;
         notifier.Subscribe(listener);
         notifier.ProcessLibrary(paired_streams, mapper);
