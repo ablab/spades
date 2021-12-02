@@ -9,17 +9,15 @@
 
 #include "common/pipeline/mpi_stage.hpp"
 #include "projects/spades/distance_estimation.hpp"
-#include "common/alignment/sequence_mapper_notifier_mpi.hpp"
-
 
 namespace debruijn_graph {
-    class DistanceEstimationMPI : public DistanceEstimationBase, public spades::MPIAssemblyStage {
-    public:
-        DistanceEstimationMPI(bool preliminary = false)
-                : MPIAssemblyStage(preliminary ? "Preliminary Distance Estimation" : "Distance Estimation",
-                                   preliminary ? "distance_estimation_preliminary" : "distance_estimation") {}
+class DistanceEstimationMPI : public DistanceEstimationBase, public spades::MPIAssemblyStage {
+public:
+    DistanceEstimationMPI(bool preliminary = false)
+            : MPIAssemblyStage(preliminary ? "Preliminary Distance Estimation" : "Distance Estimation",
+                               preliminary ? "distance_estimation_preliminary" : "distance_estimation") {}
 
-        void run(graph_pack::GraphPack &gp, const char *) override;
-    };
+    void run(graph_pack::GraphPack &gp, const char *) override;
+};
 }
 

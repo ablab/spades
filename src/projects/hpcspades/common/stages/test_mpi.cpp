@@ -14,7 +14,6 @@
 #include <vector>
 
 namespace debruijn_graph {
-
 class ArraySum {
 public:
     ArraySum(const std::string &message = "") : message_{message} {};
@@ -101,5 +100,4 @@ public:
         treg.stop_listening();
     }
 };
-
 }  // namespace debruijn_graph

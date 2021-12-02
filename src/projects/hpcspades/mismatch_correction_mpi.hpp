@@ -12,17 +12,17 @@
 #include "pipeline/graph_pack_helpers.h"
 
 namespace debruijn_graph {
-    class MismatchCorrectionMPI : public spades::MPIAssemblyStage {
-    public:
-        MismatchCorrectionMPI()
-                : MPIAssemblyStage("Mismatch Correction", "mismatch_correction") {}
+class MismatchCorrectionMPI : public spades::MPIAssemblyStage {
+public:
+    MismatchCorrectionMPI()
+            : MPIAssemblyStage("Mismatch Correction", "mismatch_correction") {}
 
-        void run(graph_pack::GraphPack &gp, const char *) override {
-            EnsureBasicMapping(gp);
-            size_t corrected = mismatches::MismatchShallNotPass(MapLibFuncMPI(), gp, 2, partask::overall_num_threads()).
-                    ParallelStopAllMismatches(1);
-            INFO("Corrected " << corrected << " nucleotides");
-        }
-    };
+    void run(graph_pack::GraphPack &gp, const char *) override {
+        EnsureBasicMapping(gp);
+        size_t corrected = mismatches::MismatchShallNotPass(MapLibFuncMPI(), gp, 2, partask::overall_num_threads()).
+                           ParallelStopAllMismatches(1);
+        INFO("Corrected " << corrected << " nucleotides");
+    }
+};
 }
 
