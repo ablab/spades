@@ -12,16 +12,15 @@
 #include "common/pipeline/mpi_stage.hpp"
 
 namespace debruijn_graph {
-    class PairInfoCountMPI : public PairInfoCountBase, public spades::MPIAssemblyStage {
-    public:
-        PairInfoCountMPI(bool preliminary = false)
-                : MPIAssemblyStage(preliminary ? "Preliminary Paired Information Counting" : "Paired Information Counting",
-                                   preliminary ? "late_pair_info_count_preliminary" : "late_pair_info_count") {}
+class PairInfoCountMPI : public PairInfoCountBase, public spades::MPIAssemblyStage {
+  public:
+    PairInfoCountMPI(bool preliminary = false)
+            : MPIAssemblyStage(preliminary ? "Preliminary Paired Information Counting" : "Paired Information Counting",
+                               preliminary ? "late_pair_info_count_preliminary" : "late_pair_info_count") {}
 
-        void run(graph_pack::GraphPack &gp, const char* s) override {
-            execute(gp, s, MapLibFuncMPI(), partask::overall_num_threads());
-        }
-    };
+    void run(graph_pack::GraphPack &gp, const char* s) override {
+        execute(gp, s, MapLibFuncMPI(), partask::overall_num_threads());
+    }
+};
 
 }
-

@@ -9,7 +9,6 @@
 #include "projects/hpcspades/common/pipeline/mpi_stage.hpp"
 
 namespace debruijn_graph {
-
 struct ConstructionStorage;
 
 class ConstructionMPI : public spades::MPICompositeStageDeferred<ConstructionStorage> {
@@ -20,6 +19,5 @@ public:
     void init(graph_pack::GraphPack &gp, const char *) override;
     void fini(graph_pack::GraphPack &gp) override;
 };
-
 }
 
