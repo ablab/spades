@@ -17,14 +17,14 @@ namespace debruijn_graph {
 class GapClosingBase {
   protected:
     size_t num_readers = 0;
-    virtual void processLibrary(SequenceMapperListener* listener, const SequenceMapper<Graph>& mapper, io::BinaryPairedStreams& paired_streams) = 0;
+    virtual void ProcessLibrary(SequenceMapperListener* listener, const SequenceMapper<Graph>& mapper, io::BinaryPairedStreams& paired_streams) = 0;
   public:
     void execute(graph_pack::GraphPack &gp, const char *);
 };
 
 class GapClosing : public GapClosingBase, public spades::AssemblyStage {
   protected:
-    void processLibrary(SequenceMapperListener* listener, const SequenceMapper<Graph>& mapper, io::BinaryPairedStreams& paired_streams) override {
+    void ProcessLibrary(SequenceMapperListener* listener, const SequenceMapper<Graph>& mapper, io::BinaryPairedStreams& paired_streams) override {
         SequenceMapperNotifier notifier;
         notifier.Subscribe(listener);
         notifier.ProcessLibrary(paired_streams, mapper);
