@@ -10,6 +10,7 @@
 
 namespace debruijn_graph {
 void DistanceEstimationMPI::run(graph_pack::GraphPack &gp, const char* s) {
-    DistanceEstimationBase::run(gp, s, distance_estimation::EstimatePairedDistancesMPI, distance_estimation::EstimateScaffoldingDistancesMPI);
+    DistanceEstimationBase::run(gp, s, distance_estimation::EstimatePairedDistancesMPI,
+                                distance_estimation::EstimateScaffoldingDistancesMPI);
 }
 }
