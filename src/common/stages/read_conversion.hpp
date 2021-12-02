@@ -19,6 +19,7 @@ public:
     void run(graph_pack::GraphPack &, const char *) override;
     void load(graph_pack::GraphPack &, const std::filesystem::path &load_from, const char *prefix = nullptr) override;
     void save(const graph_pack::GraphPack &, const std::filesystem::path &save_to, const char *prefix = nullptr) const override;
+    bool run_on_load() const override { return true; }
 };
 
 }

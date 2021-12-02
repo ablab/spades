@@ -44,6 +44,7 @@ public:
     virtual void run(graph_pack::GraphPack &, const char *started_from = nullptr) = 0;
     virtual bool distributed() const { return false; }
     virtual bool constant() const { return false; }
+    virtual bool run_on_load() const {return false; }
 
 private:
     const char *name_;
