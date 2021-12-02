@@ -169,8 +169,13 @@ void MPIStageManager::run(graph_pack::GraphPack& g,
     // assume that the previous was parallel for the sake of simplicity of the
     // implementation.
     bool pparallel = true;
-    for (; start_stage != stages().end(); ++start_stage) {
-        AssemblyStage *stage = start_stage->get();
+
+    for (auto current_stage = stages().begin(); current_stage != stages().end(); ++current_stage) {
+        AssemblyStage *stage = current_stage->get();
+        if (current_stage < start_stage && !stage->run_on_load()) {
+            continue;
+        }
+
         bool cparallel = stage->distributed();
 
         if (cparallel) {
