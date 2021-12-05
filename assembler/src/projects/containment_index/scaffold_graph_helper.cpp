@@ -109,7 +109,7 @@ LinkIndexGraphConstructor::BarcodeScoreFunctionPtr LinkIndexGraphConstructor::Co
                                                                                count_threshold_, tail_threshold_);
     return score_function;
 }
-scaffold_graph::ScaffoldGraph GFAGraphConstructor::ConstructGraph() const {
+scaffold_graph::ScaffoldGraph GFAGraphConstructor::ConstructGraphFromLinks() const {
     scaffold_graph::ScaffoldGraph scaffold_graph(g_);
     for (const EdgeId &edge: g_.canonical_edges()) {
         scaffold_graph.AddVertex(edge);
@@ -161,6 +161,20 @@ GFAGraphConstructor::GFAGraphConstructor(const debruijn_graph::Graph &g,
                                          const gfa::GFAReader &gfa,
                                          io::IdMapper<std::string> *id_mapper) :
     g_(g), gfa_(gfa), id_mapper_(id_mapper) {}
+scaffold_graph::ScaffoldGraph GFAGraphConstructor::ConstructGraphFromDBG() const {
+    scaffold_graph::ScaffoldGraph scaffold_graph(g_);
+    for (const EdgeId &edge: g_.canonical_edges()) {
+        scaffold_graph.AddVertex(edge);
+    }
+    for (const auto &vertex: g_.vertices()) {
+        for (const auto &outgoing: g_.OutgoingEdges(vertex)) {
+            for (const auto &incoming: g_.IncomingEdges(vertex)) {
+                scaffold_graph.AddEdge(incoming, outgoing, 0, 1.0, 0);
+            }
+        }
+    }
+    return scaffold_graph;
+}
 
 ReverseBarcodeIndex ReverseBarcodeIndexConstructor::ConstructReverseIndex(const std::set<ScaffoldVertex> &scaffold_vertices) const {
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
