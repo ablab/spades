@@ -107,7 +107,7 @@ void GetLongEdgeStatistics(const Graph &graph,
     INFO("Found " << long_edges.size() << " edges longer than " << training_edge_length << " in the graph");
     //fixme double coverage counter, move to a separate class
     //key: gap length, value: distribution of number of fragments for all pairs with given gap
-    std::unordered_map<size_t, std::map<size_t, size_t>> double_cov_distribution;
+    std::map<size_t, std::map<size_t, size_t>> double_cov_distribution;
     size_t lower_dc_bound = 10000;
     size_t upper_dc_bound = 50000;
     size_t dc_step = 10000;
@@ -222,15 +222,17 @@ void GetLongEdgeStatistics(const Graph &graph,
 //    }
 }
 
-void GetPathClusterStatistics(const Graph &graph,
-                              std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr,
-                              const scaffold_graph::ScaffoldGraph &scaffold_graph,
-                              size_t read_linkage_distance,
-                              double relative_score_threshold,
-                              size_t min_read_threshold,
-                              size_t length_threshold,
-                              size_t max_threads,
-                              const std::string &output_dir) {
+void GetPathClusters(const Graph &graph,
+                     std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr,
+                     const scaffold_graph::ScaffoldGraph &scaffold_graph,
+                     size_t read_linkage_distance,
+                     double relative_score_threshold,
+                     size_t min_read_threshold,
+                     size_t length_threshold,
+                     size_t max_threads,
+                     io::IdMapper<std::string> *id_mapper,
+                     bool lja,
+                     const std::string &output_dir) {
     INFO("Constructing initial cluster storage");
     path_extend::read_cloud::PathExtractionParams path_extraction_params(read_linkage_distance,
                                                                          relative_score_threshold,
@@ -244,8 +246,7 @@ void GetPathClusterStatistics(const Graph &graph,
     auto storage_builder =
         std::make_shared<cluster_storage::EdgeInitialClusterStorageBuilder>(graph, edge_cluster_extractor,
                                                                             target_edges, read_linkage_distance,
-                                                                            min_read_threshold,
-                                                                            max_threads);
+                                                                            min_read_threshold, max_threads);
     auto storage =
         std::make_shared<cluster_storage::InitialClusterStorage>(storage_builder->ConstructInitialClusterStorage());
     path_extend::read_cloud::ScaffoldGraphPathClusterHelper path_extractor_helper(graph,
@@ -253,6 +254,7 @@ void GetPathClusterStatistics(const Graph &graph,
                                                                                   storage,
                                                                                   read_linkage_distance,
                                                                                   max_threads);
+    INFO(scaffold_graph.VertexCount() << " vertices and " << scaffold_graph.EdgeCount() << " edges in scaffold graph");
 
     INFO(storage->get_cluster_storage().Size() << " initial clusters");
     auto all_clusters = path_extractor_helper.GetAllClusters(scaffold_graph);
@@ -275,6 +277,55 @@ void GetPathClusterStatistics(const Graph &graph,
     for (const auto &entry: size_hist) {
         path_sizes << entry.first << "\t" << entry.second << std::endl;
     }
+
+    //extract paths traversing complex vertices
+    if (lja) {
+        std::unordered_set<scaffold_graph::ScaffoldVertex> uncompressed_vertices;
+        for (const auto &vertex: scaffold_graph.vertices()) {
+            if (not id_mapper->count(vertex.int_id())) {
+                uncompressed_vertices.insert(vertex);
+            }
+        }
+
+        std::map<std::pair<std::string, std::string>, size_t> link_to_weight;
+        for (const auto &cluster: path_clusters) {
+            //fixme replace with ClusterFilter
+            //fixme very ineffective
+            if (cluster.Size() == 3) {
+                const auto &internal_graph = cluster.GetInternalGraph();
+                for (const auto &vertex: internal_graph.vertices()) {
+                    if (uncompressed_vertices.count(vertex)) {
+                        std::vector<scaffold_graph::ScaffoldVertex> other_two;
+                        for (const auto &other: internal_graph.vertices()) {
+                            if (not uncompressed_vertices.count(other)) {
+                                other_two.push_back(other);
+                            }
+                        }
+                        if (other_two.size() != 2) {
+                            break;
+                        }
+                        auto first = other_two[0];
+                        auto second = other_two[1];
+                        std::string first_id = (*id_mapper)[first.int_id()];
+                        std::string second_id = (*id_mapper)[second.int_id()];
+                        if (internal_graph.ContainsEdge(first, vertex) and internal_graph.ContainsEdge(vertex, second)) {
+                            std::pair<std::string, std::string> link(first_id, second_id);
+                            link_to_weight[link]++;
+                        }
+                        if (internal_graph.ContainsEdge(second, vertex) and internal_graph.ContainsEdge(vertex, first)) {
+                            std::pair<std::string, std::string> link(second_id, first_id);
+                            link_to_weight[link]++;
+                        }
+                    }
+                }
+            }
+        }
+        std::ofstream link_stream(fs::append_path(output_dir, "lja_links.tsv"));
+        for (const auto &entry: link_to_weight) {
+            link_stream << entry.first.first << "\t" << entry.first.second << "\t" << entry.second << std::endl;
+        }
+    }
+
 }
 
 struct ScoreEntry {
@@ -395,6 +446,30 @@ void NormalizeTellseqLinks(const scaffold_graph::ScaffoldGraph &tellseq_graph,
     }
 }
 
+void ConstructCloudOnlyLinks(const Graph &graph,
+                             std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr,
+                             double graph_score_threshold,
+                             size_t length_threshold,
+                             size_t tail_threshold,
+                             size_t count_threshold,
+                             size_t threads,
+                             bool bin_load,
+                             bool debug,
+                             const std::string &output_dir,
+                             io::IdMapper<std::string> *id_mapper) {
+    auto tellseq_graph = cont_index::GetTellSeqScaffoldGraph(graph, barcode_extractor_ptr, graph_score_threshold,
+                                                             length_threshold, tail_threshold, count_threshold,
+                                                             threads, bin_load, debug, output_dir, id_mapper);
+
+//    LinkIndexGraphConstructor link_index_constructor(graph, barcode_extractor_ptr, graph_score_threshold,
+//                                                     tail_threshold, length_threshold, count_threshold, threads);
+    auto score_function = link_index_constructor.ConstructScoreFunction();
+//    NormalizeTellseqLinks(tellseq_graph, length_threshold, barcode_extractor_ptr, count_threshold,
+//                          tail_threshold, id_mapper, output_dir);
+//    auto compare_output_path = fs::append_path(output_dir, "hifi_tellseq_scores.tsv");
+//    CompareLinks(hifi_graph, tellseq_graph, score_function, id_mapper.get(), compare_output_path);
+}
+
 int main(int argc, char** argv) {
     utils::segfault_handler sh;
     gcfg cfg;
@@ -450,7 +525,7 @@ int main(int argc, char** argv) {
         //fixme configs
         //index construction
         const size_t frame_size = 2000;
-        const size_t read_linkage_distance = 5000;
+        const size_t read_linkage_distance = 40000;
 
         //graph construction
         const double graph_score_threshold = 3.99;
@@ -477,8 +552,8 @@ int main(int argc, char** argv) {
 
         TIME_TRACE_SCOPE("Containment index");
 
-//        GFAGraphConstructor gfa_graph_constructor(graph, gfa, id_mapper.get());
-//        auto hifi_graph = gfa_graph_constructor.ConstructGraph();
+        GFAGraphConstructor gfa_graph_constructor(graph, gfa, id_mapper.get());
+        auto hifi_graph = gfa_graph_constructor.ConstructGraphFromDBG();
 
         auto &lib = dataset[cfg.libindex];
         if (lib.type() == io::LibraryType::Clouds10x) {
@@ -506,45 +581,17 @@ int main(int argc, char** argv) {
             }
         }
         INFO(total_reads << " total reads in barcode index");
-//        cont_index::ReferencePathChecker ref_path_checker(graph, id_mapper.get());
-//        ref_path_checker.CheckAssemblyGraph(cfg.refpath);
-
         GetLongEdgeStatistics(graph, barcode_index, training_length_threshold, training_length_offset,
                               training_min_read_threshold, training_linkage_distance, cfg.nthreads, cfg.output_dir);
 
-//        GetPathClusterStatistics(graph,
-//                                 barcode_extractor_ptr,
-//                                 hifi_graph,
-//                                 read_linkage_distance,
-//                                 relative_score_threshold,
-//                                 min_read_threshold,
-//                                 length_threshold,
-//                                 cfg.nthreads,
-//                                 cfg.output_dir);
-
-//        scaffold_graph::ScaffoldGraph tellseq_graph(graph);
-//        auto tellseq_graph = cont_index::GetTellSeqScaffoldGraph(graph, barcode_extractor_ptr, graph_score_threshold,
-//                                                                 length_threshold,
-//                                                                 tail_threshold, count_threshold, cfg.nthreads,
-//                                                                 cfg.bin_load,
-//                                                                 cfg.debug, cfg.output_dir, id_mapper.get());
-
-//        LinkIndexGraphConstructor link_index_constructor(graph,
-//                                                         barcode_extractor_ptr,
-//                                                         graph_score_threshold,
-//                                                         tail_threshold,
-//                                                         length_threshold,
-//                                                         count_threshold,
-//                                                         cfg.nthreads);
-//        auto score_function = link_index_constructor.ConstructScoreFunction();
-//        NormalizeTellseqLinks(tellseq_graph,
-//                              length_threshold,
-//                              barcode_extractor_ptr,
-//                              count_threshold,
-//                              tail_threshold,
-//                              id_mapper.get(),
-//                              cfg.output_dir);
-//        auto compare_output_path = fs::append_path(cfg.output_dir, "hifi_tellseq_scores.tsv");
-//        CompareLinks(hifi_graph, tellseq_graph, score_function, id_mapper.get(), compare_output_path);
+        if (not cfg.refpath.empty()) {
+            cont_index::ReferencePathChecker ref_path_checker(graph, id_mapper.get());
+            ref_path_checker.CheckAssemblyGraph(cfg.refpath);
+        }
+        bool lja = true;
+//        GetPathClusters(graph, barcode_extractor_ptr, hifi_graph, read_linkage_distance, relative_score_threshold,
+//                        min_read_threshold, length_threshold, cfg.nthreads, id_mapper.get(), lja, cfg.output_dir);
+        ConstructCloudOnlyLinks(graph, barcode_extractor_ptr, graph_score_threshold, length_threshold, tail_threshold,
+                                count_threshold, cfg.nthreads, cfg.bin_load, cfg.debug, cfg.output_dir, id_mapper.get());
     }
 }
