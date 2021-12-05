@@ -91,7 +91,8 @@ class GFAGraphConstructor {
                         const gfa::GFAReader &gfa,
                         io::IdMapper<std::string> *id_mapper);
 
-    scaffold_graph::ScaffoldGraph ConstructGraph() const;
+    scaffold_graph::ScaffoldGraph ConstructGraphFromLinks() const;
+    scaffold_graph::ScaffoldGraph ConstructGraphFromDBG() const;
 
   private:
     const debruijn_graph::Graph &g_;
