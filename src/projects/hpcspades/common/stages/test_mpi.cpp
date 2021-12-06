@@ -77,7 +77,7 @@ public:
     };
 };
 
-class TestMPI : public spades::MPIAssemblyStage {
+class TestMPI : public spades_mpi::MPIAssemblyStage {
 public:
     TestMPI() : MPIAssemblyStage("Test MPI", "test_mpi") {}
 

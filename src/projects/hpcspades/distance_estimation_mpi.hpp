@@ -11,7 +11,7 @@
 #include "projects/spades/distance_estimation.hpp"
 
 namespace debruijn_graph {
-class DistanceEstimationMPI : public DistanceEstimationBase, public spades::MPIAssemblyStage {
+class DistanceEstimationMPI : public DistanceEstimationBase, public spades_mpi::MPIAssemblyStage {
 public:
     DistanceEstimationMPI(bool preliminary = false)
             : MPIAssemblyStage(preliminary ? "Preliminary Distance Estimation" : "Distance Estimation",

@@ -12,13 +12,13 @@
 #include <memory>
 #include <type_traits>
 
-namespace spades {
+namespace spades_mpi {
 
 class MPIAssemblyStage;
 
-class MPIAssemblyStage : public AssemblyStage {
+class MPIAssemblyStage : public spades::AssemblyStage {
 public:
-    using AssemblyStage::AssemblyStage;
+    using spades::AssemblyStage::AssemblyStage;
 
     bool master() const;
     bool worker() const;
@@ -135,9 +135,9 @@ private:
     std::unique_ptr<Storage> storage_;
 };
 
-class MPIStageManager : public StageManager {
+class MPIStageManager : public spades::StageManager {
 public:
-    MPIStageManager(SavesPolicy policy = SavesPolicy());
+    MPIStageManager(spades::SavesPolicy policy = spades::SavesPolicy());
     ~MPIStageManager();
 
     void run(graph_pack::GraphPack &g,

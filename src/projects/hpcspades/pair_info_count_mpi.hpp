@@ -12,8 +12,8 @@
 #include "common/pipeline/mpi_stage.hpp"
 
 namespace debruijn_graph {
-class PairInfoCountMPI : public PairInfoCountBase, public spades::MPIAssemblyStage {
-  public:
+class PairInfoCountMPI : public PairInfoCountBase, public spades_mpi::MPIAssemblyStage {
+public:
     PairInfoCountMPI(bool preliminary = false)
             : MPIAssemblyStage(preliminary ? "Preliminary Paired Information Counting" : "Paired Information Counting",
                                preliminary ? "late_pair_info_count_preliminary" : "late_pair_info_count") {}
