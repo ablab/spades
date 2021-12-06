@@ -28,7 +28,7 @@ class PhaseIdComparator {
         id_ = pos + 1;
     }
 
-    bool operator()(const std::unique_ptr<spades::MPICompositeStageBase::PhaseBase> &phase) const {
+    bool operator()(const std::unique_ptr<spades_mpi::MPICompositeStageBase::PhaseBase> &phase) const {
         return 0 == strcmp(id_, phase->id());
     }
 
@@ -37,7 +37,7 @@ class PhaseIdComparator {
 };
 }
 
-namespace spades {
+namespace spades_mpi {
 
 void MPICompositeStageBase::run(graph_pack::GraphPack& gp,
                                 const char* started_from) {
@@ -134,7 +134,7 @@ void MPICompositeStageBase::run(graph_pack::GraphPack& gp,
     fini(gp);
 }
 
-MPIStageManager::MPIStageManager(SavesPolicy policy)
+MPIStageManager::MPIStageManager(spades::SavesPolicy policy)
         : StageManager(policy), world_size_(1), rank_(0), first_(false) {
     int initialized = 0;
     MPI_Initialized(&initialized);
@@ -171,7 +171,7 @@ void MPIStageManager::run(graph_pack::GraphPack& g,
     bool pparallel = true;
 
     for (auto current_stage = stages().begin(); current_stage != stages().end(); ++current_stage) {
-        AssemblyStage *stage = current_stage->get();
+        spades::AssemblyStage *stage = current_stage->get();
         if (current_stage < start_stage && !stage->run_on_load()) {
             continue;
         }
