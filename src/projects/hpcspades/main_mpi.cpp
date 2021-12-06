@@ -9,7 +9,7 @@
 #include "configs/config_struct.hpp"
 #include "common/pipeline/partask_mpi.hpp"
 
-#include "utils/logger/mpi_log_writers.hpp"
+#include "common/utils/logger/mpi_log_writers.hpp"
 #include "utils/memory_limit.hpp"
 #include "utils/segfault_handler.hpp"
 #include "utils/perf/timetracer.hpp"
@@ -17,7 +17,7 @@
 #include "k_range.hpp"
 #include "version.hpp"
 
-namespace spades {
+namespace spades_mpi {
 void assemble_genome(bool mpi);
 }
 
@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
         }
 
         TIME_TRACE_SCOPE("spades");
-        spades::assemble_genome(true);
+        spades_mpi::assemble_genome(true);
     } catch (std::bad_alloc const &e) {
         std::cerr << "Not enough memory to run SPAdes. " << e.what() << std::endl;
         MPI_Abort(MPI_COMM_WORLD, EINTR);

@@ -14,8 +14,7 @@
 #include "io/reads/io_helper.hpp"
 
 namespace debruijn_graph {
-
-class GapClosingMPI : public GapClosingBase, public spades::MPIAssemblyStage {
+class GapClosingMPI : public GapClosingBase, public spades_mpi::MPIAssemblyStage {
 protected:
     void ProcessLibrary(SequenceMapperListener *listener, const SequenceMapper<Graph> &mapper,
                         io::BinaryPairedStreams &paired_streams) override {
