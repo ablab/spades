@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "logger.hpp"
+#include "common/utils/logger/logger.hpp"
 
 namespace logging {
 

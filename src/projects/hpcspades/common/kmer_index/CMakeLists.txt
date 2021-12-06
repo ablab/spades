@@ -1,14 +1,13 @@
 ############################################################################
-# Copyright (c) 2021 Saint Petersburg State University
+# Copyright (c) 2015 Saint Petersburg State University
 # Copyright (c) 2011-2014 Saint Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
 
-project(common_modules_mpi CXX)
+project(utils_mpi CXX)
 
-add_subdirectory(paired_info)
-add_subdirectory(alignment)
-add_subdirectory(stages)
-add_subdirectory(pipeline)
-add_subdirectory(utils)
+set(utils_mpi_src logger/mpi_log_writers.cpp)
+
+add_library(utils_mpi STATIC ${utils_mpi_src})
+target_link_libraries(utils_mpi ${COMMON_LIBRARIES})

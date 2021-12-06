@@ -33,7 +33,7 @@
 #include "stages/ss_edge_split.hpp"
 #include "configs/config_struct.hpp"
 
-namespace spades {
+namespace spades_mpi {
 
 static bool MetaCompatibleLibraries() {
     const auto& libs = cfg::get().ds.reads;
@@ -82,7 +82,7 @@ static debruijn_graph::ContigOutput::OutputList GetMetaplasmidOutput(size_t cov)
              GetContigName(cfg::get().co.contigs_name, cov) }};
 }
 
-static void AddMetaplasmidStages(StageManager &SPAdes) {
+static void AddMetaplasmidStages(spades::StageManager &SPAdes) {
     size_t cov = cfg::get().pd->additive_step;
     size_t add = cfg::get().pd->additive_step;
     double multiplier = cfg::get().pd->relative_step;
@@ -130,7 +130,7 @@ static debruijn_graph::ContigOutput::OutputList GetFinalStageOutput() {
     };
 }
 
-static void AddPreliminarySimplificationStages(StageManager &SPAdes) {
+static void AddPreliminarySimplificationStages(spades::StageManager &SPAdes) {
     using namespace debruijn_graph::config;
     pipeline_type mode = cfg::get().mode;
 
@@ -153,7 +153,7 @@ static void AddPreliminarySimplificationStages(StageManager &SPAdes) {
     }
 }
 
-static void AddSimplificationStages(StageManager &SPAdes) {
+static void AddSimplificationStages(spades::StageManager &SPAdes) {
     VERIFY(!cfg::get().gc.before_raw_simplify || !cfg::get().gc.before_simplify);
     bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable;
 
@@ -187,7 +187,7 @@ static void AddSimplificationStages(StageManager &SPAdes) {
         SPAdes.add<debruijn_graph::SSEdgeSplit>();
 }
 
-static void AddConstructionStages(StageManager &SPAdes) {
+static void AddConstructionStages(spades::StageManager &SPAdes) {
     using namespace debruijn_graph::config;
     pipeline_type mode = cfg::get().mode;
 
@@ -196,7 +196,7 @@ static void AddConstructionStages(StageManager &SPAdes) {
         SPAdes.add<debruijn_graph::GenomicInfoFiller>();
 }
 
-static void AddRepeatResolutionStages(StageManager &SPAdes) {
+static void AddRepeatResolutionStages(spades::StageManager &SPAdes) {
     using namespace debruijn_graph::config;
 
     if (!cfg::get().series_analysis.empty())
@@ -210,7 +210,7 @@ static void AddRepeatResolutionStages(StageManager &SPAdes) {
 class FakeStageOnlyforDataSyncDoesNothingElse : public spades::AssemblyStage {
 public:
     FakeStageOnlyforDataSyncDoesNothingElse()
-            : AssemblyStage("Fake Stage Only for Data Sync", "fake_stage_sync_data") { }
+            : spades::AssemblyStage("Fake Stage Only for Data Sync", "fake_stage_sync_data") { }
 
     void run(graph_pack::GraphPack&, const char *) {}
 };
@@ -234,13 +234,13 @@ void assemble_genome(bool mpi = false) {
 
     INFO("Starting from stage: " << cfg::get().entry_point);
 
-    std::unique_ptr<StageManager> SPAdes;
-    SavesPolicy saves_policy(cfg::get().checkpoints,
-                             cfg::get().output_saves, cfg::get().load_from);
+    std::unique_ptr<spades::StageManager> SPAdes;
+    spades::SavesPolicy saves_policy(cfg::get().checkpoints,
+                                     cfg::get().output_saves, cfg::get().load_from);
     if (mpi) {
         SPAdes.reset(new MPIStageManager(saves_policy));
     } else {
-        SPAdes.reset(new StageManager(saves_policy));
+        SPAdes.reset(new spades::StageManager(saves_policy));
     }
 
     if (SPAdes->saves_policy().EnabledAnyCheckpoint())
@@ -250,20 +250,20 @@ void assemble_genome(bool mpi = false) {
     INFO("Two-step repeat resolution " << (two_step_rr ? "enabled" : "disabled"));
 
     graph_pack::GraphPack conj_gp(cfg::get().K,
-                                            cfg::get().tmp_dir,
-                                            two_step_rr ? cfg::get().ds.reads.lib_count() + 1
-                                                        : cfg::get().ds.reads.lib_count(),
-                                            cfg::get().ds.reference_genome,
-                                            cfg::get().flanking_range,
-                                            cfg::get().pos.max_mapping_gap,
-                                            cfg::get().pos.max_gap_diff);
+                                  cfg::get().tmp_dir,
+                                  two_step_rr ? cfg::get().ds.reads.lib_count() + 1
+                                  : cfg::get().ds.reads.lib_count(),
+                                  cfg::get().ds.reference_genome,
+                                  cfg::get().flanking_range,
+                                  cfg::get().pos.max_mapping_gap,
+                                  cfg::get().pos.max_gap_diff);
     if (cfg::get().need_mapping) {
         INFO("Will need read mapping, kmer mapper will be attached");
         conj_gp.get_mutable<debruijn_graph::KmerMapper<debruijn_graph::Graph>>().Attach();
     }
 
     // Build the pipeline
-    SPAdes->add<ReadConversion>();
+    SPAdes->add<spades::ReadConversion>();
 
     if (!AssemblyGraphPresent()) {
         AddConstructionStages(*SPAdes);

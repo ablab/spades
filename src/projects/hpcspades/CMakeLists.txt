@@ -11,7 +11,7 @@ add_subdirectory(common)
 add_library(spades-stages-hpc STATIC distance_estimation_mpi.cpp)
 
 set(HPCSPADES_SRC pipeline.cpp ../../projects/spades/series_analysis.cpp ../../projects/mts/contig_abundance.cpp)
-set(HPCSPADES_LIB spades-stages-hpc spades-stages graphio common_modules paired_info_mpi stages-mpi alignment_mpi pipeline_mpi ${COMMON_LIBRARIES})
+set(HPCSPADES_LIB spades-stages-hpc spades-stages graphio common_modules paired_info_mpi stages-mpi alignment_mpi pipeline_mpi utils_mpi ${COMMON_LIBRARIES})
 
 add_executable(spades-hpc main_mpi.cpp ${HPCSPADES_SRC})
 
