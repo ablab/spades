@@ -747,7 +747,7 @@ public:
 } // namespace
 
 ConstructionMPI::ConstructionMPI()
-        : spades::MPICompositeStageDeferred<ConstructionStorage>("de Bruijn graph construction", "construction") {
+        : spades_mpi::MPICompositeStageDeferred<ConstructionStorage>("de Bruijn graph construction", "construction") {
     if (cfg::get().con.read_cov_threshold)
         add<CoverageFilter>();
 

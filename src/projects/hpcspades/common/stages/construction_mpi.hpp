@@ -11,7 +11,7 @@
 namespace debruijn_graph {
 struct ConstructionStorage;
 
-class ConstructionMPI : public spades::MPICompositeStageDeferred<ConstructionStorage> {
+class ConstructionMPI : public spades_mpi::MPICompositeStageDeferred<ConstructionStorage> {
 public:
     ConstructionMPI();
     ~ConstructionMPI();
