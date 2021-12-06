@@ -18,10 +18,6 @@ set(utils_src
     logger/log_writers_thread.cpp
     )
 
-if (MPI_FOUND)
-  set(utils_src ${utils_src} logger/mpi_log_writers.cpp)
-endif()
-
 if (READLINE_FOUND)
   set(utils_src ${utils_src} autocompletion.cpp)
 endif()

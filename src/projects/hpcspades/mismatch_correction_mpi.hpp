@@ -12,7 +12,7 @@
 #include "pipeline/graph_pack_helpers.h"
 
 namespace debruijn_graph {
-class MismatchCorrectionMPI : public spades::MPIAssemblyStage {
+class MismatchCorrectionMPI : public spades_mpi::MPIAssemblyStage {
 public:
     MismatchCorrectionMPI()
             : MPIAssemblyStage("Mismatch Correction", "mismatch_correction") {}

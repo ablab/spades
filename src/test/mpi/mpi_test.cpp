@@ -13,7 +13,7 @@
 
 #include "pipeline/partask_mpi.hpp"
 
-#include "utils/logger/mpi_log_writers.hpp"
+#include "mpi/common/utils/logger/mpi_log_writers.hpp"
 
 void create_console_logger() {
     using namespace logging;
