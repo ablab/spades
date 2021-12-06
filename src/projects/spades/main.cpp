@@ -17,7 +17,7 @@
 #include "version.hpp"
 
 namespace spades {
-void assemble_genome(bool mpi = false);
+void assemble_genome();
 }
 
 struct TimeTracerRAII {
