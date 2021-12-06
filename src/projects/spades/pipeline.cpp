@@ -214,7 +214,7 @@ public:
     void run(graph_pack::GraphPack&, const char *) {}
 };
 
-void assemble_genome(bool mpi = false) {
+void assemble_genome() {
     using namespace debruijn_graph::config;
     pipeline_type mode = cfg::get().mode;
 
