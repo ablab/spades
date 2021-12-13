@@ -56,7 +56,7 @@ struct EdgeLabels {
                                                                  is_repetitive(is_repetitive),
                                                                  labels_probabilities(labels_probabilities) {}
 
-    EdgeLabels(debruijn_graph::EdgeId e, const Binning& binning, bool is_long);
+    EdgeLabels(debruijn_graph::EdgeId e, const Binning& binning, bool is_long, bool unbinned_bin);
     EdgeLabels(const EdgeLabels& edge_labels) = default;
     EdgeLabels& operator=(const EdgeLabels& edge_labels) = default;
 
@@ -152,11 +152,12 @@ class LabelInitializer {
   public:
     using Graph = debruijn_graph::Graph;
 
-    LabelInitializer(const Graph &g, size_t length_threshold);
+    LabelInitializer(const Graph &g, size_t length_threshold, bool unbinned_bin);
 
     SoftBinsAssignment InitLabels(const Binning &bin_stats) const;
   private:
     const Graph &g_;
     size_t length_threshold_;
+    bool unbinned_bin_;
 };
 }

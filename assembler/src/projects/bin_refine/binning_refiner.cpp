@@ -59,6 +59,7 @@ struct gcfg {
     bool bin_load = false;
     bool debug = false;
     bool bin_dist = false;
+    bool no_unbinned_bin = false;
     bool alpha_propagation = false;
     uint64_t out_options = 0;
 };
@@ -90,6 +91,7 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       (option("-la") & value("labeled alpha", cfg.labeled_alpha)) % "labels correction alpha for labeled data",
       (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
       (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)",
+      (option("--no-unbinned-bin").set(cfg.no_unbinned_bin)) % "Do not create a special bin for unbinned (alpha propagation option)",
       (option("--alpha-propagation").set(cfg.alpha_propagation)) % "Gradually reduce alpha from binned to unbinned edges to avoid boundless propagation"
   );
 
@@ -292,7 +294,7 @@ int main(int argc, char** argv) {
       INFO("Initial binning:\n" << binning);
 
       auto alpha_assigner = get_alpha_assigner(cfg, links, graph, binning);
-      LabelInitializer label_initializer(graph, cfg.length_threshold);
+      LabelInitializer label_initializer(graph, cfg.length_threshold, !cfg.no_unbinned_bin && cfg.alpha_propagation);
       auto origin_state = label_initializer.InitLabels(binning);
       auto alpha_assignment = alpha_assigner->GetAlphaAssignment(origin_state);
 

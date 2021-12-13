@@ -14,7 +14,7 @@ namespace bin_stats {
 
 AlphaAssignment AlphaPropagator::GetAlphaMask(const Binning &bin_stats) const {
     AlphaAssignment result(g_.max_eid());
-    LabelInitializer label_initializer(g_, length_threshold_);
+    LabelInitializer label_initializer(g_, length_threshold_, false);
     auto origin_state = label_initializer.InitLabels(bin_stats);
     auto distance_state = ConstructBinningMask(origin_state);
     auto distance_assigner = std::make_unique<CorrectionAssigner>(g_, metaalpha_);

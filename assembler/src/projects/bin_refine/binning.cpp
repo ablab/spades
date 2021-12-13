@@ -20,7 +20,7 @@ using namespace bin_stats;
 
 const std::string Binning::UNBINNED_ID = "0";
 
-EdgeLabels::EdgeLabels(const EdgeId e, const Binning& bin_stats, bool is_long)
+EdgeLabels::EdgeLabels(const EdgeId e, const Binning& bin_stats, bool is_long, bool unbinned_bin)
         : e(e) {
     auto bins = bin_stats.edges_binning().find(e);
     is_binned = bins != bin_stats.edges_binning().end();
@@ -35,7 +35,7 @@ EdgeLabels::EdgeLabels(const EdgeId e, const Binning& bin_stats, bool is_long)
             labels_probabilities.set(bin, 1.0 / static_cast<double>(sz));
         }
         is_repetitive = bin_stats.multiplicities().at(e) > 1;
-    } else if (is_long) {
+    } else if (unbinned_bin and is_long) {
         labels_probabilities.set(UNBINNED, 1.0);
     }
 }
@@ -301,14 +301,15 @@ SoftBinsAssignment LabelInitializer::InitLabels(const bin_stats::Binning &bin_st
     SoftBinsAssignment state(bin_stats.graph().max_eid());
     for (debruijn_graph::EdgeId e : g_.canonical_edges()) {
         bool is_long = g_.length(e) >= length_threshold_;
-        EdgeLabels labels(e, bin_stats, is_long);
+        EdgeLabels labels(e, bin_stats, is_long, unbinned_bin_);
         state.emplace(e, labels);
         state.emplace(g_.conjugate(e), std::move(labels));
     }
 
     return state;
 }
-LabelInitializer::LabelInitializer(const Graph &g, size_t length_threshold) : g_(g), length_threshold_(length_threshold) {}
+LabelInitializer::LabelInitializer(const Graph &g, size_t length_threshold, bool unbinned_bin) :
+    g_(g), length_threshold_(length_threshold), unbinned_bin_(unbinned_bin) {}
 
 static double WJaccard(const blaze::CompressedMatrix<double, blaze::rowMajor> &m,
                        size_t i, size_t j) {
