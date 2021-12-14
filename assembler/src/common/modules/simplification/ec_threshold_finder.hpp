@@ -8,13 +8,12 @@
 #ifndef OMNI_TOOLS_HPP_
 #define OMNI_TOOLS_HPP_
 
-#include "utils/stl_utils.hpp"
-
-#include "utils/filesystem/path_helper.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
-#include "assembly_graph/graph_support/parallel_processing.hpp"
 #include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
+
+#include "utils/stl_utils.hpp"
+
 
 #ifdef USE_GLIBCXX_PARALLEL
 #include "parallel/algorithm"
@@ -43,23 +42,25 @@ private:
         utils::push_back_all(v1, graph_.OutgoingEdges(graph_.EdgeStart(e)));
         std::vector<EdgeId> v2;
         utils::push_back_all(v2, graph_.IncomingEdges(graph_.EdgeEnd(e)));
-        bool eq = (v1.size() == 2 && v2.size() == 2) && ((v1[0] == v2[0] && v1[1] == v2[1])    || (v1[0] == v2[1] && v1[0] == v2[1]));
+        bool eq = (v1.size() == 2 && v2.size() == 2) &&
+                  ((v1[0] == v2[0] && v1[1] == v2[1]) || (v1[0] == v2[1] && v1[0] == v2[1]));
         return !eq;
     }
 
-    double weight(size_t value, const Histogram &histogram, size_t backet_width) const {
+    double weight(size_t val, const Histogram &histogram, size_t backet_width) const {
         double result = 0;
-        for (size_t i = 0; i < backet_width && value + i < histogram.size(); i++) {
-            result += (double) (getValue(value + i, histogram) * std::min(i + 1, backet_width - i));
+        for (size_t i = 0; i < backet_width && val + i < histogram.size(); i++) {
+            result += (double) (value(val + i, histogram) * std::min(i + 1, backet_width - i));
         }
         return result;
     }
 
     double Median(double thr = 500.0) const {
         std::vector<double> coverages;
-        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            if (graph_.length(*it) > thr)
-                coverages.push_back(graph_.coverage(*it));
+        for (EdgeId e : graph_.edges()) {
+            if (graph_.length(e) <= thr)
+                continue;
+            coverages.push_back(graph_.coverage(e));
         }
 
         auto middle_it = coverages.begin() + coverages.size() / 2;
@@ -71,7 +72,7 @@ private:
         return coverages[coverages.size() / 2];
     }
 
-    size_t getValue(size_t arg, const Histogram &ssmap) const {
+    size_t value(size_t arg, const Histogram &ssmap) const {
         auto it = ssmap.find(arg);
         if (it == ssmap.end())
             return 0;
@@ -108,9 +109,10 @@ public:
 
     double FindThreshold(const Histogram &histogram) const {
         size_t backet_width = backet_width_;
-        if (backet_width == 0) {
-            backet_width = (size_t)(0.3 * AvgCovereageCounter<Graph>(graph_).Count() + 5);
-        }
+        double avg_cov = AvgCoverageCounter<Graph>(graph_).Count();
+        if (backet_width == 0)
+            backet_width = (size_t)(0.3 * avg_cov+ 5);
+
         size_t size = 0;
         if (histogram.size() != 0)
             size = histogram.rbegin()->first + 1;
@@ -130,7 +132,7 @@ public:
 
         }
         INFO("Proper threshold was not found. Threshold set to 0.1 of average coverage");
-        return 0.1 * AvgCovereageCounter<Graph>(graph_).Count();
+        return 0.1 * avg_cov;
     }
 
     double FindThreshold() const {

@@ -1,4 +1,3 @@
-//****************************************************************************
 //***************************************************************************
 //* Copyright (c) 2015-2019 Saint-Petersburg State University
 //* All Rights Reserved
@@ -22,10 +21,14 @@ void ChromosomeRemoval::run(GraphPack &gp, const char*) {
     } else {
         remover.RunIsolatedPipeline();
     }
-    INFO("Counting average coverage after genomic edge removal");
-    omnigraph::AvgCovereageCounter<Graph> cov_counter(graph);
+    omnigraph::AvgCoverageCounter<Graph> cov_counter(graph);
     cfg::get_writable().ds.average_coverage = cov_counter.Count();
-    INFO("Average coverage = " << cfg::get().ds.average_coverage);
+    INFO("After chromosome removal:");
+    INFO("  Average coverage = " << cfg::get().ds.average_coverage);
+    INFO("  Total length = " << omnigraph::CumulativeLengthCounter<Graph>(graph).Count());
+    INFO("  N50: " << Nx(graph, 50));
+    INFO("  Edges: " << graph.e_size());
+    INFO("  Vertices: " << graph.size());
 }
 
 
