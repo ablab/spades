@@ -13,23 +13,23 @@
 namespace omnigraph {
 
 template<class Graph>
-class AvgCovereageCounter {
+class AvgCoverageCounter {
 private:
-    const Graph &graph_;
+    const Graph& graph_;
     const size_t min_length_;
 public:
-    AvgCovereageCounter(const Graph &graph, size_t min_length = 0) :
-            graph_(graph), min_length_(min_length) {
-    }
+    AvgCoverageCounter(const Graph &graph, size_t min_length = 0)
+            : graph_(graph), min_length_(min_length) {}
 
     double Count() const {
         double cov = 0;
         size_t length = 0;
-        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            if (graph_.length(*it) >= min_length_) {
-                cov += graph_.coverage(*it) * (double) graph_.length(*it);
-                length += graph_.length(*it);
-            }
+        for (typename Graph::EdgeId e : graph_.edges()) {
+            if (graph_.length(e) < min_length_)
+                continue;
+
+            cov += graph_.coverage(e) * (double) graph_.length(e);
+            length += graph_.length(e);
         }
         if (length == 0)
             return 0.;
@@ -38,11 +38,44 @@ public:
 };
 
 template<class Graph>
+class CumulativeLengthCounter {
+private:
+    const Graph& graph_;
+    const size_t min_length_;
+public:
+    CumulativeLengthCounter(const Graph &graph,
+                            size_t min_length = 0)
+            : graph_(graph), min_length_(min_length) {}
+
+    size_t Count(bool canonical_only = true) const {
+        size_t length = 0;
+        if (canonical_only) {
+            // FIXME: provide helper
+            for (typename Graph::EdgeId e : graph_.canonical_edges()) {
+                if (graph_.length(e) < min_length_)
+                    continue;
+
+                length += graph_.length(e);
+            }
+        } else {
+            for (typename Graph::EdgeId e : graph_.edges()) {
+                if (graph_.length(e) < min_length_)
+                    continue;
+
+                length += graph_.length(e);
+            }
+        }
+
+        return length;
+    }
+};
+
+template<class Graph>
 size_t CumulativeLength(const Graph& g,
                         const std::vector<typename Graph::EdgeId>& path) {
     size_t s = 0;
-    for (auto it = path.begin(); it != path.end(); ++it)
-        s += g.length(*it);
+    for (auto e : path)
+        s += g.length(e);
 
     return s;
 }

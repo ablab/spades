@@ -488,13 +488,17 @@ void SimplificationCleanup::run(GraphPack &gp, const char*) {
 
     DEBUG("Graph simplification finished");
 
-    INFO("Counting average coverage");
-    AvgCovereageCounter<Graph> cov_counter(graph);
-
+    AvgCoverageCounter<Graph> cov_counter(graph);
     VERIFY(cfg::get().ds.average_coverage == 0.);
     cfg::get_writable().ds.average_coverage = cov_counter.Count();
 
-    INFO("Average coverage = " << cfg::get().ds.average_coverage);
+    INFO("After simplification:");
+    INFO("  Average coverage = " << cfg::get().ds.average_coverage);
+    INFO("  Total length = " << CumulativeLengthCounter<Graph>(graph).Count());
+    INFO("  N50: " << Nx(graph, 50));
+    INFO("  Edges: " << graph.e_size());
+    INFO("  Vertices: " << graph.size());
+
     if (!cfg::get().uneven_depth) {
         if (math::ls(cfg::get().ds.average_coverage, gp.get<GenomicInfo>().ec_bound()))
             WARN("The determined erroneous connection coverage threshold may be determined improperly\n");
