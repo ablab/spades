@@ -495,7 +495,7 @@ void SimplificationCleanup::run(GraphPack &gp, const char*) {
     INFO("After simplification:");
     INFO("  Average coverage = " << cfg::get().ds.average_coverage);
     INFO("  Total length = " << CumulativeLengthCounter<Graph>(graph).Count());
-    INFO("  N50: " << Nx(graph, 50));
+    INFO("  Median edge length: " << Nx(graph, 50));
     INFO("  Edges: " << graph.e_size());
     INFO("  Vertices: " << graph.size());
 
