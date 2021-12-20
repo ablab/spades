@@ -9,7 +9,8 @@ project(containment_index CXX)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(cont-index
-               main.cpp barcode_index_construction.cpp reference_path_checker.cpp scaffold_graph_helper.cpp multiplex_gfa_reader.cpp)
+               main.cpp barcode_index_construction.cpp long_edge_statistics.cpp reference_path_checker.cpp
+               scaffold_graph_helper.cpp multiplex_gfa_reader.cpp vertex_info_getter.cpp)
 
 target_link_libraries(cont-index spades-stages graphio common_modules ${COMMON_LIBRARIES})
 
