@@ -417,19 +417,28 @@ def get_command_and_stage_id_before_restart_from(draft_commands, cfg, log):
 
 
 def print_info_about_output_files(cfg, log, output_files):
-    def check_and_report_output_file(output_file_key, message_prefix_text):
+    def check_and_report_output_file(output_file_key, message_prefix_text, error_message = ""):
         if os.path.isfile(output_files[output_file_key]):
             message = message_prefix_text + support.process_spaces(output_files[output_file_key])
             log.info(message)
-
+        else:
+            if error_message != "":
+                log.info (error_message)
+            
+            
     if "error_correction" in cfg and os.path.isdir(
             os.path.dirname(output_files["corrected_dataset_yaml_filename"])):
         log.info(" * Corrected reads are in " + support.process_spaces(
             os.path.dirname(output_files["corrected_dataset_yaml_filename"]) + "/"))
 
     if "assembly" in cfg:
-        check_and_report_output_file("result_contigs_filename", " * Assembled contigs are in ")
-
+        error_message = ""
+        if options_storage.args.plasmid:
+            error_message = "No plasmid contigs assembled!!"
+            if options_storage.args.meta:
+                error_message = "No complete extrachromosomal contigs assembled!!"
+        check_and_report_output_file("result_contigs_filename", " * Assembled contigs are in ", error_message)
+        
         if options_storage.args.bio or options_storage.args.custom_hmms or options_storage.args.corona:
             check_and_report_output_file("result_domain_graph_filename", " * Domain graph is in ")
             check_and_report_output_file("result_gene_clusters_filename", " * Gene cluster sequences are in ")
@@ -449,12 +458,13 @@ def print_info_about_output_files(cfg, log, output_files):
                               support.process_spaces(result_filtered_transcripts_filename)
                     log.info(message)
         else:
+            
             check_and_report_output_file("result_scaffolds_filename", " * Assembled scaffolds are in ")
             check_and_report_output_file("result_contigs_paths_filename",
                                          " * Paths in the assembly graph corresponding to the contigs are in ")
             check_and_report_output_file("result_scaffolds_paths_filename",
                                          " * Paths in the assembly graph corresponding to the scaffolds are in ")
-
+        
         check_and_report_output_file("result_assembly_graph_filename", " * Assembly graph is in ")
         check_and_report_output_file("result_assembly_graph_filename_gfa", " * Assembly graph in GFA format is in ")
 

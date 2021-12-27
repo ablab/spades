@@ -31,11 +31,12 @@ def main(args):
                 line += "_cutoff_" + cov+ "_type_" + type
             res_f.write(line+ "\n")
     res_f.close()
-    scaff = outdir + "/scaffolds.fasta"   
-    from shutil import copyfile
-    copyfile(res, scaff)
-#    log.info("====metaplasmid circular contigs can be found here: " + final_res)
-
+    if os.path.getsize(res) != 0:        
+        scaff = outdir + "/scaffolds.fasta"   
+        from shutil import copyfile
+        copyfile(res, scaff)
+    else:
+        os.remove(res)
 if __name__ == "__main__":
     main(sys.argv)
 
