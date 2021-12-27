@@ -9,6 +9,7 @@
 #include "multiplex_gfa_reader.hpp"
 #include "reference_path_checker.hpp"
 #include "scaffold_graph_helper.hpp"
+#include "vertex_info_getter.hpp"
 #include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 
 #include "io/binary/read_cloud.hpp"
@@ -415,7 +416,7 @@ int main(int argc, char** argv) {
 
         //graph construction
         const double graph_score_threshold = 1.99;
-        const size_t tail_threshold = 6000;
+        const size_t tail_threshold = 10000;
         const size_t length_threshold = 0;
         const size_t count_threshold = 1;
 
@@ -468,7 +469,43 @@ int main(int argc, char** argv) {
         bool lja = true;
 //        GetPathClusters(graph, barcode_extractor_ptr, hifi_graph, read_linkage_distance, relative_score_threshold,
 //                        min_read_threshold, length_threshold, cfg.nthreads, id_mapper.get(), lja, cfg.output_dir);
-        ConstructCloudOnlyLinks(graph, barcode_extractor_ptr, graph_score_threshold, length_threshold, tail_threshold,
-                                count_threshold, cfg.nthreads, cfg.bin_load, cfg.debug, cfg.output_dir, id_mapper.get());
+//        ConstructCloudOnlyLinks(graph, barcode_extractor_ptr, graph_score_threshold, length_threshold, tail_threshold,
+//                                count_threshold, cfg.nthreads, cfg.bin_load, cfg.debug, cfg.output_dir, id_mapper.get());
+
+        std::unordered_set<EdgeId> uncompressed_vertices;
+        for (const auto &edge: graph.canonical_edges()) {
+            if (not (*id_mapper).count(edge)) {
+                uncompressed_vertices.insert(edge);
+            }
+        }
+        cont_index::VertexInfoGetter vertex_info_getter(graph, tail_threshold, barcode_extractor_ptr, id_mapper.get());
+        std::string vertex_path = fs::append_path(cfg.output_dir, "vertex_info.tsv");
+        std::ofstream vertex_stream(vertex_path);
+        vertex_stream << "FirstId\tFirstLength\tFirstTotalBarcodes\tFirstTailBarcodes\tFirstTotalReads\tFirstTailReads\t";
+        vertex_stream << "SecondId\tSecondLength\tSecondTotalBarcodes\tSecondTailBarcodes\tSecondTotalReads\tSecondTailReads\t";
+        vertex_stream << "TailIntersection\tTotalIntersection" << std::endl;
+        for (const auto &repeat: uncompressed_vertices) {
+            VertexId start = graph.EdgeStart(repeat);
+            for (const auto &first: graph.IncomingEdges(start)) {
+                VertexId end = graph.EdgeEnd(repeat);
+                for (const auto &second: graph.OutgoingEdges(end)) {
+                    auto link_info = vertex_info_getter.GetLinkInfo(first, second);
+                    auto first_info = link_info.first_info;
+                    auto second_info = link_info.second_info;
+                    vertex_stream << first_info.edge_id << "\t" << std::to_string(first_info.length) << "\t"
+                                  << std::to_string(first_info.total_barcodes) << "\t"
+                                  << std::to_string(first_info.tail_barcodes) << "\t"
+                                  << std::to_string(first_info.total_reads) << "\t"
+                                  << std::to_string(first_info.tail_reads) << "\t"
+                                << second_info.edge_id << "\t" << std::to_string(second_info.length) << "\t"
+                                << std::to_string(second_info.total_barcodes) << "\t"
+                                << std::to_string(second_info.tail_barcodes) << "\t"
+                                << std::to_string(second_info.total_reads) << "\t"
+                                << std::to_string(second_info.tail_reads) << "\t"
+                                << std::to_string(link_info.tail_intersection) << "\t"
+                                << std::to_string(link_info.total_intersection) << std::endl;
+                }
+            }
+        }
     }
 }
