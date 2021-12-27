@@ -420,7 +420,7 @@ public:
     std::vector<BarcodeId> GetSharedBarcodesWithFilter(const EdgeId& first, const EdgeId& second,
                                                   size_t count_threshold, size_t gap_threshold) const {
         std::vector<BarcodeId> intersection;
-        for (auto it = intersection_iterator_begin(first, second); it != intersection_iterator_end(first, second); ++it) {
+        for (auto it = this->intersection_iterator_begin(first, second); it != this->intersection_iterator_end(first, second); ++it) {
             auto barcode = (*it).key_;
             bool is_in_the_end_of_first = g_.length(first) <= gap_threshold or
                 GetMaxPos(first, barcode) + gap_threshold > g_.length(first);
@@ -493,7 +493,7 @@ public:
      * @return Estimated first position of the cloud defined by the barcode and the edge (not the first bin, but the first nucleotide)
      */
     size_t GetMinPos(const EdgeId &edge, const BarcodeId& barcode) const {
-        const FrameEdgeEntry<Graph> &entry = GetEntry(edge);
+        const FrameEdgeEntry<Graph> &entry = this->GetEntry(edge);
         const FrameBarcodeInfo& info = this->GetInfo(edge, barcode);
         size_t frame_size = entry.GetFrameSize();
         return info.GetLeftMost() * frame_size;
@@ -506,7 +506,7 @@ public:
      * @return Estimated last position of the cloud defined by the barcode and the edge (not the last bin, but the last nucleotide)
      */
     size_t GetMaxPos(const EdgeId &edge, const BarcodeId& barcode) const {
-        const FrameEdgeEntry<Graph> &entry = GetEntry(edge);
+        const FrameEdgeEntry<Graph> &entry = this->GetEntry(edge);
         const FrameBarcodeInfo& info = this->GetInfo(edge, barcode);
         size_t frame_size = entry.GetFrameSize();
         return info.GetRightMost() * frame_size;
