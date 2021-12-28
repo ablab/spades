@@ -96,11 +96,24 @@ std::string join(const Container &c,
     return ss.str();
 }
 
+static inline bool starts_with(const std::string &s, const std::string &p) {
+    if (s.size() < p.size())
+        return false;
+
+    return (s.compare(0, p.size(), p) == 0);
+}
+
 static inline bool ends_with(const std::string &s, const std::string &p) {
     if (s.size() < p.size())
         return false;
 
     return (s.compare(s.size() - p.size(), p.size(), p) == 0);
+}
+
+static inline std::string str_tolower(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(), 
+                   [](unsigned char c){ return std::tolower(c); });
+    return s;
 }
 
 }

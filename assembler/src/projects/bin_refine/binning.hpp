@@ -29,6 +29,11 @@ class Binning;
 
 using LabelProbabilities = blaze::CompressedVector<double>;
 
+enum OutputOptions : uint64_t {
+    CAMI        = 1 << 0,
+    EmitZeroBin = 1 << 1
+};
+
 struct EdgeLabels {
     // TODO: Could pack e and is_binned into single 64 bits
     debruijn_graph::EdgeId e;
@@ -83,13 +88,13 @@ class Binning {
     }
 
     /// binning file in .tsv format (NODE_{scaffold_id}_* -> bin_id); scaffolds_file in .fasta format
-    void LoadBinning(const std::string& binning_file);
+    void LoadBinning(const std::string& binning_file, bool cami);
     void AssignBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy);
 
     blaze::DynamicMatrix<double> BinDistance(const SoftBinsAssignment& soft_bins_assignment,
                                              bool edges = false);
 
-    void WriteToBinningFile(const std::string& binning_file,
+    void WriteToBinningFile(const std::string& binning_file, uint64_t output_options,
                             const SoftBinsAssignment &edge_soft_labels, const BinningAssignmentStrategy& assignment_strategy,
                             const io::IdMapper<std::string> &edge_mapper);
 
@@ -111,6 +116,7 @@ class Binning {
     void ScaffoldsToEdges();
 
     const debruijn_graph::Graph& graph_;
+    std::string sample_id_ = "";
 
     // All about scaffolds
     std::unordered_map<ScaffoldId, BinId> scaffolds_binning_{};

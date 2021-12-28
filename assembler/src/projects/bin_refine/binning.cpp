@@ -12,6 +12,9 @@
 #include "io/reads/io_helper.hpp"
 #include "utils/filesystem/path_helper.hpp"
 
+#include "csv/csv.h"
+#include "utils/stl_utils.hpp"
+
 using namespace debruijn_graph;
 using namespace bin_stats;
 
@@ -93,54 +96,82 @@ void Binning::ScaffoldsToEdges() {
   }
 }
 
-void Binning::LoadBinning(const std::string &binning_file) {
+void Binning::LoadBinning(const std::string &binning_file,
+                          bool cami) {
   fs::CheckFileExistenceFATAL(binning_file);
 
   scaffolds_binning_.clear();
   bins_.clear();
   std::ifstream binning_reader(binning_file);
 
+  io::CSVReader<2,
+                io::trim_chars<' '>, io::no_quote_escape<'\t'>,
+                io::throw_on_overflow, io::single_and_empty_line_comment<'#'>>
+          reader(binning_file);
+
+  // Read the input in CAMI bioboxes format
+  // Parse the header
+  if (cami) {
+      while (char *cline = reader.next_line()) {
+          std::string line(cline);
+          if (utils::starts_with(line, "#"))
+              continue;
+
+          if (utils::starts_with(utils::str_tolower(line), "@sampleid:")) // SampleID
+              sample_id_ = line.substr(strlen("@SAMPLEID:"));
+          else if (utils::starts_with(line, "@@")) { // Actual header
+              reader.set_header("@@SEQUENCEID", "BINID");
+              reader.parse_header_line(io::ignore_extra_column, cline);
+              break;
+          } else if (!utils::starts_with(line, "@")) {
+              FATAL_ERROR("Invalid CAMI bioboxies input format!");
+          }
+      }
+      if (sample_id_.empty())
+          FATAL_ERROR("Invalid sample ID!");
+
+      INFO("Sample ID: " << sample_id_);
+  } else {
+      reader.set_header("@@SEQUENCEID", "BINID");
+  }
+
+  std::string scaffold_name;
+  BinLabel bin_label;
   BinId max_bin_id = 0;
-  for (std::string line; std::getline(binning_reader, line, '\n');) {
-    std::string scaffold_name;
-    BinLabel bin_label;
+  while (reader.read_row(scaffold_name, bin_label)) {
+      BinId cbin_id;
+      if (bin_label == UNBINNED_ID) // unbinned scaffold
+          cbin_id = UNBINNED;
+      else {
+          auto entry = bins_.find(bin_label);
+          if (entry == bins_.end()) { // new bin label
+              cbin_id = max_bin_id++;
+              bin_labels_.emplace(cbin_id, bin_label);
+              bins_.emplace(bin_label, cbin_id);
+          } else {
+              cbin_id = entry->second;
+          }
+      }
 
-    std::istringstream line_stream(line);
-    line_stream >> scaffold_name;
-    line_stream >> bin_label;
-    BinId cbin_id;
-    if (bin_label == UNBINNED_ID) // unbinned scaffold
-        cbin_id = UNBINNED;
-    else {
-        auto entry = bins_.find(bin_label);
-        if (entry == bins_.end()) { // new bin label
-            cbin_id = max_bin_id++;
-            bin_labels_.emplace(cbin_id, bin_label);
-            bins_.emplace(bin_label, cbin_id);
-        } else {
-            cbin_id = entry->second;
-        }
-    }
+      auto scaffold_entry = scaffolds_.find(scaffold_name);
+      if (scaffold_entry == scaffolds_.end()) {
+          INFO("Unknown scaffold: " << scaffold_name);
+          continue;
+      }
 
-    auto scaffold_entry = scaffolds_.find(scaffold_name);
-    if (scaffold_entry == scaffolds_.end()) {
-        INFO("Unknown scaffold: " << scaffold_name);
-        continue;
-    }
-
-    scaffolds_binning_[scaffold_entry->second] = cbin_id;
+      scaffolds_binning_[scaffold_entry->second] = cbin_id;
   }
 
   ScaffoldsToEdges();
 }
 
-void Binning::WriteToBinningFile(const std::string& binning_file,
-                                  const SoftBinsAssignment &soft_edge_labels, const BinningAssignmentStrategy& assignment_strategy,
-                                  const io::IdMapper<std::string> &edge_mapper) {
-    std::ofstream out_tsv(binning_file + ".tsv");
-    std::ofstream out_bins(binning_file + ".bin_stats");
-    std::ofstream out_lens(binning_file + ".bin_weights");
-    std::ofstream out_edges(binning_file + ".edge_weights");
+void Binning::WriteToBinningFile(const std::string& prefix, uint64_t output_options,
+                                 const SoftBinsAssignment &soft_edge_labels, const BinningAssignmentStrategy& assignment_strategy,
+                                 const io::IdMapper<std::string> &edge_mapper) {
+    std::ofstream out_tsv(prefix + ".tsv");
+    std::ofstream out_bins(prefix + ".bin_stats");
+    std::ofstream out_weights(prefix + ".bin_weights");
+    std::ofstream out_edges(prefix + ".edge_weights");
 
     auto weight_sorter = [] (const auto &lhs, const auto &rhs) {
         if (math::eq(rhs.second, lhs.second))
@@ -166,29 +197,38 @@ void Binning::WriteToBinningFile(const std::string& binning_file,
                   return lhs.second > rhs.second;
               });
 
+    // Add CAMI bioboxes format header, if necessary
+    if (output_options & OutputOptions::CAMI)
+        out_tsv << "@Version:0.9.0\n"
+                << "@SAMPLEID:" << sample_id_ << '\n'
+                << "@@SEQUENCEID\tBINID\n";
+
     for (const auto &entry : scaffolds_by_length) {
         const std::string &scaffold_name = scaffolds_labels_.at(entry.first);
         const auto &bins_weights = scaffolds_bin_weights_.at(entry.first);
         std::vector<BinId> new_bin_id =
                 assignment_strategy.ChooseMajorBins(bins_weights,
                                                     soft_edge_labels, *this);
-        out_tsv << scaffold_name;
-        if (new_bin_id.empty())
-            out_tsv << '\t' << UNBINNED_ID;
-        else
+        if (new_bin_id.empty()) {
+            if (output_options & OutputOptions::EmitZeroBin)
+                out_tsv << scaffold_name << '\t' << UNBINNED_ID << '\n';
+        } else {
+            out_tsv << scaffold_name;
             for (BinId bin : new_bin_id)
                 out_tsv << '\t' << bin_labels_.at(bin);
-        out_tsv << '\n';
-        out_lens << scaffold_name << '\t';
-        out_lens << "nz: " << bins_weights.nonZeros();
+            out_tsv << '\n';
+        }
+
+        out_weights << scaffold_name << '\t';
+        out_weights << "nz: " << bins_weights.nonZeros();
         std::vector<std::pair<BinId, double>> weights;
         for (const auto &entry : bins_weights)
             weights.emplace_back(entry.index(), entry.value());
         std::sort(weights.begin(), weights.end(), weight_sorter);
         for (const auto &entry : weights)
-            out_lens << '\t' << bin_labels_.at(entry.first) << ":" << entry.second;
+            out_weights << '\t' << bin_labels_.at(entry.first) << ":" << entry.second;
 
-        out_lens << '\n';
+        out_weights << '\n';
     }
 
     out_edges.precision(3);
