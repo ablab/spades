@@ -14,12 +14,14 @@
 #include "assembly_graph/core/graph.hpp"
 #include "pipeline/config_struct.hpp"
 #include "toolchain/utils.hpp"
+#include "io/graph/gfa_reader.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/segfault_handler.hpp"
 #include "utils/verify.hpp"
 
 #include <clipp/clipp.h>
+#include <cstdint>
 
 using namespace debruijn_graph;
 using namespace bin_stats;
@@ -51,6 +53,7 @@ struct gcfg {
     RefinerType refiner_type = RefinerType::Propagation;
     bool bin_load = false;
     bool debug = false;
+    uint64_t out_options = 0;
 };
 
 static void process_cmdline(int argc, char** argv, gcfg& cfg) {
@@ -74,6 +77,8 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       (with_prefix("-R",
                    option("corr").set(cfg.refiner_type, RefinerType::Correction) |
                    option("prop").set(cfg.refiner_type, RefinerType::Propagation)) % "binning refiner type"),
+      (option("--cami").call([&]{ cfg.out_options |= OutputOptions::CAMI; }) % "use CAMI bioboxes binning format"),
+      (option("--zero-bit").call([&] { cfg.out_options |= OutputOptions::EmitZeroBin; }) % "emit zero bin for unbinned sequences"),
       (option("-la") & value("labeled alpha", cfg.labeled_alpha)) % "labels correction alpha for labeled data"
   );
 
@@ -208,7 +213,7 @@ int main(int argc, char** argv) {
           }
       }
 
-      binning.LoadBinning(cfg.binning_file);
+      binning.LoadBinning(cfg.binning_file, cfg.out_options & OutputOptions::CAMI);
       INFO("Initial binning:\n" << binning);
 
       auto binning_refiner = get_refiner(cfg, links, graph);
@@ -235,7 +240,8 @@ int main(int argc, char** argv) {
           }
       }
       INFO("Writing final binning");
-      binning.WriteToBinningFile(cfg.output_file, soft_edge_labels, *assignment_strategy,
+      binning.WriteToBinningFile(cfg.output_file, cfg.out_options,
+                                 soft_edge_labels, *assignment_strategy,
                                  *id_mapper);
       if (cfg.debug) {
           INFO("Dumping links");
