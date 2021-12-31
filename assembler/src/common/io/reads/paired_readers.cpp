@@ -115,6 +115,7 @@ InterleavingPairedReadStream::InterleavingPairedReadStream(const std::filesystem
                                                            FileReadFlags flags,
                                                            ThreadPool::ThreadPool *pool)
         : filename_(filename), insert_size_(insert_size) {
+    flags.paired = true;
     if (pool) {
         single_ = make_async_stream<FileReadStream>(*pool, filename_, flags);
     } else {

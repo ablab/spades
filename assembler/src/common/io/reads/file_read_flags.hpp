@@ -27,6 +27,7 @@ struct FileReadFlags {
     bool use_comment  : 1; // can override use_comment = false in case when use_name = false
     bool use_quality  : 1;
     bool validate     : 1;
+    bool paired       : 1;
 
     static FileReadFlags empty() {
         return { PhredOffset,
@@ -55,15 +56,14 @@ struct FileReadFlags {
     
     FileReadFlags()
             : offset(PhredOffset),
-              use_name(true), use_comment(true), use_quality(true), validate(true) {}
+              use_name(true), use_comment(true), use_quality(true), validate(true), paired(false) {}
     FileReadFlags(OffsetType o)
             : offset(o),
-              use_name(true), use_comment(true), use_quality(true) {}
+              use_name(true), use_comment(true), use_quality(true), paired(false) {}
     FileReadFlags(OffsetType o, bool n, bool q)
-            : offset(o), use_name(n), use_comment(n), use_quality(q) {}
+            : offset(o), use_name(n), use_comment(n), use_quality(q), paired(false) {}
     FileReadFlags(OffsetType o, bool n, bool c, bool q, bool v)
-            : offset(o), use_name(n), use_comment(c), use_quality(q), validate(v) {}
-
+            : offset(o), use_name(n), use_comment(c), use_quality(q), validate(v), paired(false) {}
 };
 
 }

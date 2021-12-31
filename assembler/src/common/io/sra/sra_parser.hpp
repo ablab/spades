@@ -39,6 +39,7 @@ public:
 
 private:
     void open();
+    void next();
 
     ngs::ReadCollection* run_;
     ngs::ReadIterator* it_;

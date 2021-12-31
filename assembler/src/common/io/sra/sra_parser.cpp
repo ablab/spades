@@ -19,7 +19,14 @@ void SRAParser::open() {
     it_ = new ngs::ReadIterator(run_->getReads(ngs::Read::all));
     is_open_ = true;
     eof_ = (false == it_->nextRead());
-    while (!eof_ && !it_->nextFragment()) {
+    next();
+}
+
+void SRAParser::next() {
+    while (!eof_ &&
+           (!it_->nextFragment() ||
+            // In case of interlaced streams skip unpaired reads
+            (flags_.paired && it_->getNumFragments() != 2))) {
         eof_ = (false == it_->nextRead());
     }
 }
@@ -40,10 +47,8 @@ SRAParser& SRAParser::operator>>(SingleRead& read) {
         read = SingleRead(it_->getFragmentBases().toString(),
                           0, 0, flags_.validate);
 
-    while (!eof_ && !it_->nextFragment()) {
-        eof_ = (false == it_->nextRead());
-    }
-    
+    next();
+
     return *this;
 }
 
