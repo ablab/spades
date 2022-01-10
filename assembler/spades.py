@@ -423,7 +423,7 @@ def print_info_about_output_files(cfg, log, output_files):
             log.info(message)
         else:
             if error_message != "":
-                log.info (error_message)
+                log.info(error_message)
 
     if "error_correction" in cfg and os.path.isdir(
             os.path.dirname(output_files["corrected_dataset_yaml_filename"])):
