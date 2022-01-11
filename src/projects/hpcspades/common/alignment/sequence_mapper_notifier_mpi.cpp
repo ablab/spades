@@ -6,8 +6,6 @@
 
 #include "sequence_mapper_notifier_mpi.hpp"
 
-#include "io/reads/read_stream_vector.hpp"
-
 namespace debruijn_graph {
 void SequenceMapperNotifierMPI::PyramidMergeMPI(SequenceMapperListener &listener) {
     size_t mpi_size = partask::world_size();
@@ -31,4 +29,35 @@ void SequenceMapperNotifierMPI::PyramidMergeMPI(SequenceMapperListener &listener
         }
     }
 }
+
+
+void SequenceMapperNotifierMPI::SyncListeners(ListenersContainer &listeners) {
+    if (partask::world_size() == 1)
+        return;
+
+    const size_t deadbeef = 0xDEADBEEF;
+    INFO("Syncing listeners...");
+    if (partask::master()) {
+        TIME_TRACE_SCOPE("sync listeners", "master");
+        partask::OutputMPIStreamBcast os(0);
+        for (const auto &listener: listeners) {
+            io::binary::BinWrite(os, deadbeef);
+            listener->Serialize(os);
+            io::binary::BinWrite(os, deadbeef);
+        }
+    } else {
+        TIME_TRACE_SCOPE("sync listeners", "worker");
+        partask::InputMPIStreamBcast is(0);
+        for (const auto &listener: listeners) {
+            size_t sz;
+            io::binary::BinRead(is, sz);
+            VERIFY(sz == deadbeef);
+            listener->Deserialize(is);
+            io::binary::BinRead(is, sz);
+            VERIFY(sz == deadbeef);
+        }
+    }
+    INFO("Listeners synced");
+}
+
 } // namespace debruijn_graph
