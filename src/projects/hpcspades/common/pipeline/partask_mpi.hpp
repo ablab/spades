@@ -975,7 +975,7 @@ public:
 
 template <typename T, typename Serialize, typename Deserialize>
 void broadcast(T &data, Serialize &&serialize, Deserialize &&deserialize, int root = 0) {
-    TIME_TRACE_SCOPE("partask::broadcast");
+    TIME_TRACE_SCOPE("partask::broadcast", utils::type_name<T>());
 
     ASSERT_MAIN_THREAD;
     DEBUG("Broadcasting of type " << typeid(T).name());
@@ -1001,7 +1001,7 @@ template <typename T1, typename Serialize1, typename Deserialize1, typename T2, 
 void broadcast2(T1 &data1, Serialize1 &&serialize1, Deserialize1 &&deserialize1,
                 T2 &data2, Serialize2 &&serialize2, Deserialize2 &&deserialize2,
                 int root = 0) {
-    TIME_TRACE_SCOPE("partask::broadcast2");
+    TIME_TRACE_SCOPE("partask::broadcast2", utils::type_name<T1>() + "+" + utils::type_name<T2>());
 
     ASSERT_MAIN_THREAD;
     DEBUG("Broadcasting of types " << typeid(T1).name() << " " << typeid(T2).name());
@@ -1028,7 +1028,7 @@ void broadcast2(T1 &data1, Serialize1 &&serialize1, Deserialize1 &&deserialize1,
 template <typename T, typename Serialize, typename Deserialize>
 void broadcast_full_dump(T &data, Serialize &&serialize, Deserialize &&deserialize, int root = 0) {
     ASSERT_MAIN_THREAD;
-    TIME_TRACE_SCOPE("partask::broadcast_full_dump");
+    TIME_TRACE_SCOPE("partask::broadcast_full_dump", utils::type_name<T>());
 
     DEBUG("Broadcasting of type " << typeid(T).name());
 
@@ -1064,7 +1064,7 @@ auto broadcast(T &data, int root = 0) -> decltype(std::declval<std::enable_if_t<
 template <typename T, typename Serialize>
 auto send(const T &data, Serialize &&serialize, int destination, int tag = 0) -> decltype(std::forward<Serialize>(serialize)(declref<std::ostream>(), data), void()) {
     ASSERT_MAIN_THREAD;
-    TIME_TRACE_SCOPE("partask::send");
+    TIME_TRACE_SCOPE("partask::send", utils::type_name<T>());
 
     OutputMPIStream os(destination, tag);
     DEBUG("Serialization...");
@@ -1074,7 +1074,7 @@ auto send(const T &data, Serialize &&serialize, int destination, int tag = 0) ->
 template <typename T, typename Deserialize>
 auto recv(T &data, Deserialize &&deserialize, int source, int tag = MPI_ANY_TAG) -> decltype(std::forward<Deserialize>(deserialize)(declref<std::istream>(), data), void()) {
     ASSERT_MAIN_THREAD;
-    TIME_TRACE_SCOPE("partask::recv");
+    TIME_TRACE_SCOPE("partask::recv", utils::type_name<T>());
 
     InputMPIStream is(source, tag);
     DEBUG("Serialization...");
