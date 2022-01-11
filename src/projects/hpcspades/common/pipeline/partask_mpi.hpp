@@ -13,6 +13,7 @@
 #include "utils/verify.hpp"
 #include "utils/logger/logger.hpp"
 #include "utils/stl_utils.hpp"
+#include "utils/perf/timetracer.hpp"
 
 #include <algorithm>
 #include <functional>
@@ -108,6 +109,7 @@ inline bool initialized() {
 
 inline void barrier() {
     ASSERT_MAIN_THREAD;
+    TIME_TRACE_SCOPE("partask::barrier");
     static size_t count = 0;
     DEBUG("barrier() called " << count << " times");
     ++count;
@@ -119,6 +121,7 @@ const size_t MPI_MAX_COUNT = 1 << 30; // Should be <= MAX_INT
 
 inline void membroadcast(void *p, size_t count, int root = 0) {
     ASSERT_MAIN_THREAD;
+    TIME_TRACE_SCOPE("partask::membroadcast");
     static size_t call_count = 0;
     DEBUG("membroadcast() called " << call_count << " times");
     ++call_count;
@@ -135,6 +138,7 @@ inline void membroadcast(void *p, size_t count, int root = 0) {
 
 inline void memsend(const void *p, size_t count, int rank, int tag = 0) {
     ASSERT_MAIN_THREAD;
+    TIME_TRACE_SCOPE("partask::memsend");
     char *cp = reinterpret_cast<char*>(const_cast<void*>(p));
     while (count) {
         size_t block_size = std::min(count, MPI_MAX_COUNT);
@@ -147,6 +151,7 @@ inline void memsend(const void *p, size_t count, int rank, int tag = 0) {
 
 inline void memrecv(void *p, size_t count, int rank, int tag = MPI_ANY_TAG) {
     ASSERT_MAIN_THREAD;
+    TIME_TRACE_SCOPE("partask::memrecv");
     char *cp = reinterpret_cast<char*>(p);
     while (count) {
         size_t block_size = std::min(count, MPI_MAX_COUNT);
@@ -272,6 +277,7 @@ inline MPI_Datatype mpi_datatype<unsigned long long>() {
 template <typename T>
 void allreduce(T *recvbuf, size_t count, MPI_Op op) {
     ASSERT_MAIN_THREAD;
+    TIME_TRACE_SCOPE("partask::allreduce");
     DEBUG("allreduce started for " << count << " objects of type " << typeid(T).name());
     using NoneVoidT = std::conditional_t<std::is_void<T>::value, char, T>;
     NoneVoidT *crecvbuf = reinterpret_cast<NoneVoidT*>(recvbuf);
@@ -362,6 +368,7 @@ struct MsgInfo {
 // buffers should have sizeof(MsgInfo) free bytes before the beginning!
 inline void mpi_send_buffer(char *buffer, size_t count, int destination, int tag, bool flag) {
     ASSERT_MAIN_THREAD;
+    TIME_TRACE_SCOPE("partask::mpi_send_buffer");
     DEBUG("mpi_send_buffer() called");
     MsgInfo info{count, flag};
     memcpy(buffer - sizeof(info), &info, sizeof(info));
@@ -373,6 +380,7 @@ inline void mpi_send_buffer(char *buffer, size_t count, int destination, int tag
 
 inline MsgInfo mpi_recv_buffer(char *buffer, size_t buffer_size, int source, int tag) {
     DEBUG("mpi_recv_buffer() called");
+    TIME_TRACE_SCOPE("partask::mpi_recv_buffer");
     size_t all_count = buffer_size + sizeof(MsgInfo);
     VERIFY(all_count <= std::numeric_limits<int>::max());
     MPI_Status status;
@@ -389,6 +397,7 @@ inline MsgInfo mpi_recv_buffer(char *buffer, size_t buffer_size, int source, int
 
 inline void mpi_send_buffer_bcast(char *buffer, size_t count, size_t buffer_size, int root, bool flag) {
     ASSERT_MAIN_THREAD;
+    TIME_TRACE_SCOPE("partask::mpi_send_buffer_bcast");
     DEBUG("mpi_send_buffer_bcast() called");
     MsgInfo info{count, flag};
     VERIFY(info.count || info.flag);
@@ -401,6 +410,7 @@ inline void mpi_send_buffer_bcast(char *buffer, size_t count, size_t buffer_size
 
 inline MsgInfo mpi_recv_buffer_bcast(char *buffer, size_t buffer_size, int root) {
     ASSERT_MAIN_THREAD;
+    TIME_TRACE_SCOPE("partask::mpi_recv_buffer_bcast");
     DEBUG("mpi_recv_buffer_bcast() called");
     size_t all_count = buffer_size + sizeof(MsgInfo);
     int rc = MPI_Bcast(buffer - sizeof(MsgInfo), static_cast<int>(all_count), MPI_BYTE, root, MPI_COMM_WORLD);  // count should be the same!
@@ -568,6 +578,7 @@ private:
 
 inline void mpi_send_buffer_async(char *buffer, size_t count, int destination, int tag, bool flag, MPI_Request &req) {
     ASSERT_MAIN_THREAD;
+    TIME_TRACE_SCOPE("partask::mpi_send_buffer_async");
     DEBUG("mpi_send_buffer() called");
     MsgInfo info{count, flag};
     memcpy(buffer - sizeof(info), &info, sizeof(info));
@@ -579,6 +590,7 @@ inline void mpi_send_buffer_async(char *buffer, size_t count, int destination, i
 
 inline void mpi_recv_buffer_async(char *buffer, size_t buffer_size, int source, int tag, MPI_Request &req) {
     DEBUG("mpi_recv_buffer() called");
+    TIME_TRACE_SCOPE("partask::mpi_recv_buffer_async");
     size_t all_count = buffer_size + sizeof(MsgInfo);
     VERIFY(all_count <= std::numeric_limits<int>::max());
     int rc = MPI_Irecv(buffer - sizeof(MsgInfo), static_cast<int>(all_count), MPI_BYTE, source, tag, MPI_COMM_WORLD, &req);
@@ -586,6 +598,7 @@ inline void mpi_recv_buffer_async(char *buffer, size_t buffer_size, int source, 
 }
 
 inline MsgInfo mpi_recv_buffer_wait(char *buffer, MPI_Request &req) {
+    TIME_TRACE_SCOPE("partask::mpi_recv_buffer_wait");
     MPI_Status status;
     MPI_Wait(&req, &status);
     int actual_count;
@@ -599,6 +612,7 @@ inline MsgInfo mpi_recv_buffer_wait(char *buffer, MPI_Request &req) {
 
 inline void mpi_send_buffer_bcast_async(char *buffer, size_t count, size_t buffer_size, int root, bool flag, MPI_Request &req) {
     ASSERT_MAIN_THREAD;
+    TIME_TRACE_SCOPE("partask::mpi_send_buffer_bcast_async");
     DEBUG("mpi_send_buffer_bcast_async() called. count = " << count << " flag " << flag);
     MsgInfo info{count, flag};
     VERIFY(info.count || info.flag);
@@ -611,6 +625,7 @@ inline void mpi_send_buffer_bcast_async(char *buffer, size_t count, size_t buffe
 
 inline void mpi_recv_buffer_bcast_async(char *buffer, size_t buffer_size, int root, MPI_Request &req) {
     ASSERT_MAIN_THREAD;
+    TIME_TRACE_SCOPE("partask::mpi_recv_buffer_bcast_async");
     DEBUG("mpi_recv_buffer_bcast() called");
     size_t all_count = buffer_size + sizeof(MsgInfo);
     int rc = MPI_Ibcast(buffer - sizeof(MsgInfo), static_cast<int>(all_count), MPI_BYTE, root, MPI_COMM_WORLD, &req);  // count should be the same!
@@ -618,6 +633,7 @@ inline void mpi_recv_buffer_bcast_async(char *buffer, size_t buffer_size, int ro
 }
 
 inline MsgInfo mpi_recv_buffer_bcast_wait(char *buffer, MPI_Request &req) {
+    TIME_TRACE_SCOPE("partask::mpi_recv_buffer_bcast_wait");
     MPI_Wait(&req, MPI_STATUS_IGNORE);
     MsgInfo info;
     memcpy(&info, buffer - sizeof(MsgInfo), sizeof(info));
@@ -959,6 +975,8 @@ public:
 
 template <typename T, typename Serialize, typename Deserialize>
 void broadcast(T &data, Serialize &&serialize, Deserialize &&deserialize, int root = 0) {
+    TIME_TRACE_SCOPE("partask::broadcast");
+
     ASSERT_MAIN_THREAD;
     DEBUG("Broadcasting of type " << typeid(T).name());
 
@@ -983,6 +1001,8 @@ template <typename T1, typename Serialize1, typename Deserialize1, typename T2, 
 void broadcast2(T1 &data1, Serialize1 &&serialize1, Deserialize1 &&deserialize1,
                 T2 &data2, Serialize2 &&serialize2, Deserialize2 &&deserialize2,
                 int root = 0) {
+    TIME_TRACE_SCOPE("partask::broadcast2");
+
     ASSERT_MAIN_THREAD;
     DEBUG("Broadcasting of types " << typeid(T1).name() << " " << typeid(T2).name());
 
@@ -1008,6 +1028,8 @@ void broadcast2(T1 &data1, Serialize1 &&serialize1, Deserialize1 &&deserialize1,
 template <typename T, typename Serialize, typename Deserialize>
 void broadcast_full_dump(T &data, Serialize &&serialize, Deserialize &&deserialize, int root = 0) {
     ASSERT_MAIN_THREAD;
+    TIME_TRACE_SCOPE("partask::broadcast_full_dump");
+
     DEBUG("Broadcasting of type " << typeid(T).name());
 
     static size_t call_count = 0;
@@ -1042,6 +1064,8 @@ auto broadcast(T &data, int root = 0) -> decltype(std::declval<std::enable_if_t<
 template <typename T, typename Serialize>
 auto send(const T &data, Serialize &&serialize, int destination, int tag = 0) -> decltype(std::forward<Serialize>(serialize)(declref<std::ostream>(), data), void()) {
     ASSERT_MAIN_THREAD;
+    TIME_TRACE_SCOPE("partask::send");
+
     OutputMPIStream os(destination, tag);
     DEBUG("Serialization...");
     std::forward<Serialize>(serialize)(os, data);
@@ -1050,6 +1074,8 @@ auto send(const T &data, Serialize &&serialize, int destination, int tag = 0) ->
 template <typename T, typename Deserialize>
 auto recv(T &data, Deserialize &&deserialize, int source, int tag = MPI_ANY_TAG) -> decltype(std::forward<Deserialize>(deserialize)(declref<std::istream>(), data), void()) {
     ASSERT_MAIN_THREAD;
+    TIME_TRACE_SCOPE("partask::recv");
+
     InputMPIStream is(source, tag);
     DEBUG("Serialization...");
     std::forward<Deserialize>(deserialize)(is, data);
@@ -1171,15 +1197,18 @@ class TaskRegistry {
             }
 
             void process(std::istream &is, std::ostream &os) override {
+                TIME_TRACE_SCOPE("partask::task:process");
                 process_impl(is, os);
             }
 
             void sync(void) override {
+                TIME_TRACE_SCOPE("partask::task:sync");
                 sync_impl();
             }
 
             template <typename T = const std::vector<std::istream*>>
             decltype(auto) merge(std::enable_if_t<has_merge, T> &piss) {
+                TIME_TRACE_SCOPE("partask::task:merge");
                 auto merge_args = std::tuple_cat(std::make_tuple(piss), locals_);
                 auto merge_call = [&](auto &&... ts) { return task_.merge(std::forward<decltype(ts)>(ts)...); };
                 return std::apply(merge_call, merge_args);
@@ -1258,6 +1287,7 @@ public:
 
         template <typename... Args>
         decltype(auto) operator()(Args &&... args) const {
+            TIME_TRACE_SCOPE("partask::job");
             VERIFY(task_registry_.world_rank_ == 0);
             Task task(std::forward<Args>(args)...);
 
@@ -1522,6 +1552,7 @@ auto make_vector_splitter(size_t n, const std::vector<T>& data) {
 
 template <typename T>
 auto all_equal(const T &v) -> decltype(broadcast(*new T(v)), T(v) == T(v), bool()) {
+    TIME_TRACE_SCOPE("partask::all_equal");
     T cv(v);
     broadcast(cv);
     return v == cv;
@@ -1529,6 +1560,8 @@ auto all_equal(const T &v) -> decltype(broadcast(*new T(v)), T(v) == T(v), bool(
 
 template <typename F>
 auto critical_ordered(F &&f) -> decltype(std::forward<F>(f)()) {
+    TIME_TRACE_SCOPE("partask::critically_ordered");
+
     using wrap_type = decltype(std::forward<F>(f)(), detail::wrap_void());
     std::unique_ptr<wrap_type> pwrap;
 
