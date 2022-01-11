@@ -8,6 +8,9 @@
 #pragma once
 
 #include "bidirectional_path.hpp"
+
+#include "utils/perf/timetracer.hpp"
+
 #include <memory>
 #include <vector>
 #include <set>
@@ -116,7 +119,7 @@ public:
 
         return ppair;
     }
-    
+
     // This guy acquires the ownership of paths
     std::pair<BidirectionalPath&, BidirectionalPath&>
     AddPair(std::unique_ptr<BidirectionalPath> p, std::unique_ptr<BidirectionalPath> cp) {
@@ -146,6 +149,8 @@ public:
     }
 
     void SortByLength(bool desc = true) {
+        TIME_TRACE_SCOPE("PathContainer::SortByLength");
+
         std::stable_sort(data_.begin(), data_.end(), [=](const PathPair& p1, const PathPair& p2) {
             if (p1.first->Empty() || p2.first->Empty() || p1.first->Length() != p2.first->Length()) {
                 return desc ? p1.first->Length() > p2.first->Length()
@@ -173,6 +178,8 @@ public:
     }
 
     void FilterPaths(func::TypedPredicate<const BidirectionalPath&> pred) {
+        TIME_TRACE_SCOPE("PathContainer::FilterPaths");
+
         DEBUG("Filtering paths based on predicate");
         for (auto &pp : data_) {
             if (pred(*pp.first)) {
