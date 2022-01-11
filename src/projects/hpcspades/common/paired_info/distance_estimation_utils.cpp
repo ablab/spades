@@ -14,6 +14,8 @@ void EstimateScaffoldingDistancesMPI(PairedInfoIndexT<debruijn_graph::Graph> &sc
                                      const UnclusteredPairedInfoIndexT<debruijn_graph::Graph> &paired_index,
                                      const debruijn_graph::config::smoothing_distance_estimator &ade,
                                      const debruijn_graph::config::distance_estimator &de_config) {
+    TIME_TRACE_SCOPE("EstimateScaffoldingDistancesMPI");
+
     EstimateScaffoldingDistancesInner(scaffolding_index, graph, lib,
                                       paired_index, ade, de_config, MPIScaffoldDistanceEstimatorFabric());
 }
@@ -24,6 +26,8 @@ void EstimatePairedDistancesMPI(PairedInfoIndexT<debruijn_graph::Graph> &cluster
                                 const UnclusteredPairedInfoIndexT<debruijn_graph::Graph> &paired_index,
                                 size_t max_repeat_length,
                                 const debruijn_graph::config::distance_estimator &de_config) {
+    TIME_TRACE_SCOPE("EstimatePairedDistancesMPI");
+
     EstimatePairedDistancesInner(clustered_index, graph, lib, paired_index,
                                  max_repeat_length, de_config, MPIDistanceEstimatorFabric());
 }
