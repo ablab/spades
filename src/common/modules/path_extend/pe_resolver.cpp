@@ -10,6 +10,8 @@
 #include "path_deduplicator.hpp"
 #include "path_extender.hpp"
 
+#include "utils/perf/timetracer.hpp"
+
 namespace path_extend {
 
 using namespace debruijn_graph;
@@ -17,6 +19,8 @@ using namespace debruijn_graph;
 void Deduplicate(const Graph &g, PathContainer &paths, GraphCoverageMap &coverage_map,
                  size_t min_edge_len, size_t max_path_diff,
                  bool equal_only) {
+    TIME_TRACE_SCOPE("DeduplicatePaths");
+
     //add sorting to guarantee survival of longest paths if max_path_diff used
     //paths.SortByLength(false);
     PathDeduplicator deduplicator(g, paths, coverage_map, min_edge_len, max_path_diff, equal_only);
@@ -38,6 +42,8 @@ static bool InTwoEdgeCycle(EdgeId e, const Graph &g) {
 }
 
 PathContainer PathExtendResolver::MakeSimpleSeeds() const {
+    TIME_TRACE_SCOPE("PEResolver::MakeSimpleSeeds");
+
     PathContainer edges;
     for (EdgeId e : g_.canonical_edges()) {
         if (g_.int_id(e) <= 0 || InTwoEdgeCycle(e, g_))
@@ -48,6 +54,8 @@ PathContainer PathExtendResolver::MakeSimpleSeeds() const {
 }
 
 PathContainer PathExtendResolver::ExtendSeeds(PathContainer &seeds, CompositeExtender &composite_extender) const {
+    TIME_TRACE_SCOPE("PEResolver::ExtendSeeds");
+
     PathContainer paths;
     composite_extender.GrowAll(seeds, paths);
     return paths;
@@ -57,6 +65,8 @@ PathContainer PathExtendResolver::ExtendSeeds(PathContainer &seeds, CompositeExt
 void PathExtendResolver::RemoveOverlaps(PathContainer &paths, GraphCoverageMap &coverage_map,
                                         size_t min_edge_len, size_t max_path_diff,
                                         bool end_start_only, bool cut_all) const {
+    TIME_TRACE_SCOPE("PEResolver::RemoveOverlaps");
+
     INFO("Removing overlaps");
     //VERIFY(min_edge_len == 0 && max_path_diff == 0);
     if (!cut_all) {
@@ -81,6 +91,8 @@ void PathExtendResolver::RemoveOverlaps(PathContainer &paths, GraphCoverageMap &
 }
 
 void PathExtendResolver::AddUncoveredEdges(PathContainer &paths, GraphCoverageMap &coverageMap) const {
+    TIME_TRACE_SCOPE("PEResolver::AddUncoveredEdges");
+
     for (EdgeId e : g_.canonical_edges()) {
         if (coverageMap.IsCovered(e))
             continue;
