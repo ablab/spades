@@ -210,6 +210,7 @@ class StageManager {
 public:
     StageManager(SavesPolicy policy = SavesPolicy())
             : saves_policy_(std::move(policy)) { }
+    virtual ~StageManager() = default;
 
     StageManager &add(AssemblyStage *stage) {
         stages_.push_back(std::unique_ptr<AssemblyStage>(stage));
