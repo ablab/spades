@@ -11,6 +11,7 @@
 
 #include "io/binary/graph_pack.hpp"
 #include "io/dataset_support/read_converter.hpp"
+#include "utils/perf/timetracer.hpp"
 #include "utils/logger/log_writers.hpp"
 
 #include <algorithm>
@@ -39,6 +40,31 @@ class PhaseIdComparator {
 
 namespace spades_mpi {
 
+static void SyncWorld(graph_pack::GraphPack& gp,
+                      bool master) {
+    INFO("Syncing world for MPI parallel section");
+    const size_t deadbeef = 0xDEADBEEF;
+    if (master) {
+        TIME_TRACE_SCOPE("sync world", "master");
+        partask::OutputMPIStreamBcast s(0);
+        io::binary::FullPackIO().BinWrite(s, gp);
+        io::binary::BinWrite(s, deadbeef);
+        debruijn_graph::config::write_lib_data(s);
+        io::binary::BinWrite(s, deadbeef);
+    } else {
+        TIME_TRACE_SCOPE("sync world", "worker");
+        partask::InputMPIStreamBcast s(0);
+        io::binary::FullPackIO().BinRead(s, gp);
+        size_t db;
+        io::binary::BinRead(s, db);
+        VERIFY_MSG(db == deadbeef, "Values " << db << " " << deadbeef);
+        debruijn_graph::config::load_lib_data(s);
+        io::binary::BinRead(s, db);
+        VERIFY(db == deadbeef);
+    }
+    INFO("World synced");
+}
+
 void MPICompositeStageBase::run(graph_pack::GraphPack& gp,
                                 const char* started_from) {
     // The logic here is as follows. By this time StageManager already called
@@ -61,6 +87,7 @@ void MPICompositeStageBase::run(graph_pack::GraphPack& gp,
             std::string composite_id(id());
             composite_id += ":";
             composite_id += prev_phase->id();
+            TIME_TRACE_SCOPE("load phase", composite_id);
             prev_phase->load(gp, parent_->saves_policy().SavesPath(), composite_id.c_str());
         }
     }
@@ -74,35 +101,23 @@ void MPICompositeStageBase::run(graph_pack::GraphPack& gp,
         PhaseBase *phase = start_phase->get();
         bool cparallel = phase->distributed();
 
+        // Execute distributed task both on master and worker
         if (cparallel) {
+            // If previous phase was not parallel, we need to sync the world
             if (!pparallel) {
                 partask::critical_ordered([this] {
                     if (worker()) {
                         io::ConvertIfNeeded(cfg::get_writable().ds.reads, cfg::get().max_threads);
                     }
                 });
-                INFO("Syncing world for MPI parallel section");
-                const size_t deadbeef = 0xDEADBEEF;
-                if (master()) {
-                    partask::OutputMPIStreamBcast s(0);
-                    io::binary::FullPackIO().BinWrite(s, gp);
-                    io::binary::BinWrite(s, deadbeef);
-                    debruijn_graph::config::write_lib_data(s);
-                    io::binary::BinWrite(s, deadbeef);
-                } else {
-                    partask::InputMPIStreamBcast s(0);
-                    io::binary::FullPackIO().BinRead(s, gp);
-                    size_t db;
-                    io::binary::BinRead(s, db);
-                    VERIFY(db == deadbeef);
-                    debruijn_graph::config::load_lib_data(s);
-                    io::binary::BinRead(s, db);
-                    VERIFY(db == deadbeef);
-                }
-                INFO("World synced");
+                SyncWorld(gp, master());
             }
+
             INFO("MPI PROCEDURE == " << phase->name() << (master() ? " (master)" : " (worker)"));
-            phase->run(gp, started_from);
+            {
+                TIME_TRACE_SCOPE(phase->name(), master() ? " (master)" : " (worker)");
+                phase->run(gp, started_from);
+            }
 
             // Do saves only on master node
             if (parent_->saves_policy().EnabledCheckpoints(id()) && master()) {
@@ -110,17 +125,23 @@ void MPICompositeStageBase::run(graph_pack::GraphPack& gp,
                 composite_id += ":";
                 composite_id += phase->id();
 
+                TIME_TRACE_SCOPE("save phase", composite_id);
                 phase->save(gp, parent_->saves_policy().SavesPath(), composite_id.c_str());
             }
         } else {
             if (master()) {
                 INFO("PROCEDURE == " << phase->name());
-                phase->run(gp, started_from);
+                {
+                    TIME_TRACE_SCOPE(phase->name(), "(non-distributed)");
+                    phase->run(gp, started_from);
+                }
+
                 if (parent_->saves_policy().EnabledCheckpoints(id())) {
                     std::string composite_id(id());
                     composite_id += ":";
                     composite_id += phase->id();
 
+                    TIME_TRACE_SCOPE("save phase", composite_id);
                     phase->save(gp, parent_->saves_policy().SavesPath(), composite_id.c_str());
                 }
             } else {
@@ -176,38 +197,29 @@ void MPIStageManager::run(graph_pack::GraphPack& g,
             continue;
         }
 
+        // Execute distributed task both on master and worker
         bool cparallel = stage->distributed();
 
         if (cparallel) {
+            // If the previous stage was not parallel, we need to sync the wolrd
             if (!pparallel) {
                 partask::critical_ordered([this] {
                     if (worker()) {
                         io::ConvertIfNeeded(cfg::get_writable().ds.reads, cfg::get().max_threads);
                     }
                 });
-                INFO("Syncing world for MPI parallel section");
-                const size_t deadbeef = 0xDEADBEEF;
-                if (master()) {
-                    partask::OutputMPIStreamBcast s(0);
-                    io::binary::FullPackIO().BinWrite(s, g);
-                    io::binary::BinWrite(s, deadbeef);
-                    debruijn_graph::config::write_lib_data(s);
-                    io::binary::BinWrite(s, deadbeef);
-                } else {
-                    partask::InputMPIStreamBcast s(0);
-                    io::binary::FullPackIO().BinRead(s, g);
-                    size_t db;
-                    io::binary::BinRead(s, db);
-                    VERIFY_MSG(db == deadbeef, "Values " << db << " " << deadbeef);
-                    debruijn_graph::config::load_lib_data(s);
-                    io::binary::BinRead(s, db);
-                    VERIFY(db == deadbeef);
-                }
-                INFO("World synced");
+                SyncWorld(g, master());
             }
             INFO("MPI STAGE == " << stage->name() << (master() ? " (master)" : " (worker)"));
-            stage->prepare(g, start_from);
-            stage->run(g, start_from);
+            {
+                TIME_TRACE_SCOPE("prepare", stage->name());
+                stage->prepare(g, start_from);
+            }
+
+            {
+                TIME_TRACE_SCOPE(stage->name(), master() ? " (master)" : " (worker)");
+                stage->run(g, start_from);
+            }
 
             // Do saves only on master node
             if (saves_policy.EnabledCheckpoints(stage->id()) && master())
@@ -215,10 +227,17 @@ void MPIStageManager::run(graph_pack::GraphPack& g,
         } else {
             if (master()) {
                 INFO("STAGE == " << stage->name());
-                stage->prepare(g, start_from);
-                stage->run(g, start_from);
+                {
+                    TIME_TRACE_SCOPE("prepare", stage->name());
+                    stage->prepare(g, start_from);
+                }
+                {
+                    TIME_TRACE_SCOPE(stage->name(), "(non-distributed)");
+                    stage->run(g, start_from);
+                }
                 if (saves_policy.EnabledCheckpoints(stage->id())) {
                     auto prev_saves = saves_policy.GetLastCheckpoint();
+                    TIME_TRACE_SCOPE("save", saves_policy.SavesPath().c_str());
                     stage->save(g, saves_policy.SavesPath());
                     saves_policy.UpdateCheckpoint(stage->id());
                     if (!prev_saves.empty() && saves_policy.RemovePreviousCheckpoint()) {
