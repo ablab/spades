@@ -16,6 +16,7 @@
 #include "io/reads/paired_read.hpp"
 #include "io/reads/read_stream_vector.hpp"
 #include "utils/perf/timetracer.hpp"
+#include "utils/stl_utils.hpp"
 
 #include <string>
 #include <vector>
@@ -49,8 +50,8 @@ public:
         VERIFY_MSG(false, "MergeFromStream() is not implemented");
     }
 
-    virtual const char* name() const {
-        return typeid(*this).name();
+    virtual const std::string name() const {
+        return utils::type_name(typeid(*this).name());
     }
 
     virtual ~SequenceMapperListener() {}
