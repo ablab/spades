@@ -76,7 +76,6 @@ class DeBruijnGraphExtentionConstructorTask {
         }
 
         if (collect_loops_) {
-            INFO("Collecting perfect loops");
             UnbranchingPathExtractor extractor(index, g.k());
             std::vector<Sequence> loops = extractor.CollectLoops(omp_get_max_threads());
             seqs.insert(seqs.end(),
