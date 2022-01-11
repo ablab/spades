@@ -131,7 +131,7 @@ private:
     void NotifyMergeBuffer(size_t ilib, size_t ithread) const;
 
 protected:
-    std::vector<std::vector<SequenceMapperListener*> > listeners_;  //first vector's size = count libs
+    std::vector<ListenersContainer> listeners_;  //first vector's size = count libs
 };
 
 class MapLibBase {

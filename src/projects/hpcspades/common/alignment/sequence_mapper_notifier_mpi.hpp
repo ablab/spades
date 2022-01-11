@@ -12,9 +12,7 @@
 
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/core/graph.hpp"
-#include "io/reads/paired_read.hpp"
 #include "io/reads/read_stream_vector.hpp"
-
 #include "utils/perf/timetracer.hpp"
 #include "projects/hpcspades/common/pipeline/partask_mpi.hpp"
 
@@ -24,6 +22,7 @@
 namespace debruijn_graph {
 class SequenceMapperNotifierMPI : public SequenceMapperNotifier {
     void PyramidMergeMPI(SequenceMapperListener &listener);
+    void SyncListeners(ListenersContainer &listeners);
 
 public:
     using SequenceMapperNotifier::SequenceMapperNotifier;
@@ -46,35 +45,16 @@ public:
                                    });
 
         INFO("Merging results...");
-        for (const auto &listener: listeners_[lib_index]) {
-            INFO("Merging listener " << listener->name());
-            PyramidMergeMPI(*listener);
+        {
+            TIME_TRACE_SCOPE("merge listeners");
+            for (const auto &listener: listeners_[lib_index]) {
+                INFO("Merging listener " << listener->name());
+                PyramidMergeMPI(*listener);
+            }
         }
         INFO("Listeners merged");
 
-        if (partask::world_size() > 1) {
-            const size_t deadbeef = 0xDEADBEEF;
-            INFO("Syncing listeners...");
-            if (partask::master()) {
-                partask::OutputMPIStreamBcast os(0);
-                for (const auto &listener: listeners_[lib_index]) {
-                    io::binary::BinWrite(os, deadbeef);
-                    listener->Serialize(os);
-                    io::binary::BinWrite(os, deadbeef);
-                }
-            } else {
-                partask::InputMPIStreamBcast is(0);
-                for (const auto &listener: listeners_[lib_index]) {
-                    size_t sz;
-                    io::binary::BinRead(is, sz);
-                    VERIFY(sz == deadbeef);
-                    listener->Deserialize(is);
-                    io::binary::BinRead(is, sz);
-                    VERIFY(sz == deadbeef);
-                }
-            }
-            INFO("Listeners synced");
-        }
+        SyncListeners(listeners_[lib_index]);
     }
 
     template<class ReadType>
