@@ -10,6 +10,7 @@
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/paths/bidirectional_path.hpp"
 #include "sequence/range.hpp"
+#include "utils/perf/timetracer.hpp"
 
 namespace path_extend {
 
@@ -113,6 +114,8 @@ public:
 
     //Note that during start/end removal all repeat instance have to be cut
     void MarkOverlaps(bool end_start_only, bool retain_one_copy) {
+        TIME_TRACE_SCOPE("OverlapRemover::MarkOverlaps");
+        
         VERIFY(!end_start_only || !retain_one_copy);
         INFO("Marking start/end overlaps");
         InnerMarkOverlaps(/*end/start overlaps only*/ true, /*retain one copy*/ false);
