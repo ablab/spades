@@ -195,7 +195,10 @@ void StageManager::run(graph_pack::GraphPack& g,
         AssemblyStage *stage = cur_stage->get();
         if (stage->run_on_load()) {
             INFO("STAGE == " << stage->name() << " (id: " << stage->id() << ")");
-            stage->prepare(g, start_from);
+            {
+                TIME_TRACE_SCOPE("prepare", stage->name());
+                stage->prepare(g, start_from);
+            }
             {
                 TIME_TRACE_SCOPE(stage->name());
                 stage->run(g);
@@ -207,7 +210,10 @@ void StageManager::run(graph_pack::GraphPack& g,
         AssemblyStage *stage = start_stage->get();
 
         INFO("STAGE == " << stage->name() << " (id: " << stage->id() << ")");
-        stage->prepare(g, start_from);        
+        {
+            TIME_TRACE_SCOPE("prepare", stage->name());
+            stage->prepare(g, start_from);
+        }
         {
             TIME_TRACE_SCOPE(stage->name());
             stage->run(g, start_from);
