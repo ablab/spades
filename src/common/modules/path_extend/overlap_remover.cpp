@@ -267,6 +267,8 @@ void PathSplitter::SplitPath(BidirectionalPath * const p, const std::set<size_t>
 }
 
 void PathSplitter::Split() {
+    TIME_TRACE_SCOPE("PathSplitter::Split");
+
     std::vector<std::pair<BidirectionalPath*, BidirectionalPath*>> tmp_paths;
     for (const auto &entry : paths_)
         tmp_paths.emplace_back(entry.first.get(), entry.second.get());
