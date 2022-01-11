@@ -17,6 +17,8 @@
 #include "k_range.hpp"
 #include "version.hpp"
 
+#include <string>
+
 namespace spades_mpi {
 void assemble_genome(bool mpi);
 }
@@ -25,7 +27,7 @@ struct TimeTracerRAII {
     TimeTracerRAII(llvm::StringRef program_name,
                    unsigned granularity = 500,
                    const std::string &prefix = "", const std::string &suffix = "") {
-        time_trace_file_ = prefix + "spades_time_trace_" + suffix + ".json";
+        time_trace_file_ = prefix + "spades_time_trace_" + suffix + "_" + std::to_string(partask::world_rank()) + ".json";
         llvm::timeTraceProfilerInitialize(granularity, program_name);
     }
     ~TimeTracerRAII() {
