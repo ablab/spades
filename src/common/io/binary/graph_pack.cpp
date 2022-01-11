@@ -17,6 +17,7 @@
 #include "paired_index.hpp"
 #include "positions.hpp"
 #include "trusted_paths.hpp"
+#include "utils/stl_utils.hpp"
 
 namespace io {
 
@@ -90,7 +91,7 @@ public:
      */
     template<class T>
     void Load() {
-        INFO("Trying to load " << typeid(T).name());
+        INFO("Trying to load " << utils::type_name<T>());
         auto &component = gp.get_mutable<T>();
         if (component.IsAttached())
             component.Detach();
@@ -121,7 +122,7 @@ public:
      */
     template<class T>
     void Read() {
-        INFO("Trying to read " << typeid(T).name());
+        INFO("Trying to read " << utils::type_name<T>());
         auto &component = gp.get_mutable<T>();
         if (component.IsAttached())
             component.Detach();
