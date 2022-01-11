@@ -20,6 +20,8 @@ namespace distance_estimation {
     void EstimateWithEstimator(PairedInfoIndexT<Graph> &clustered_index,
                                const AbstractDistanceEstimator &estimator,
                                AbstractPairInfoChecker<Graph> &checker) {
+        TIME_TRACE_SCOPE("EstimateWithEstimator");
+
         DEBUG("Estimating distances");
 
         estimator.Estimate(clustered_index, omp_get_max_threads());
@@ -106,7 +108,7 @@ namespace distance_estimation {
         PairInfoWeightChecker<Graph> checker(graph, 0.);
         DEBUG("Weight Filter Done");
 
-        auto estimator = distance_estimator_fabric.getDistanceEstimator(graph, paired_index, dist_finder,
+        auto estimator = distance_estimator_fabric.GetDistanceEstimator(graph, paired_index, dist_finder,
                                                                         [&](int i) {
                                                                             return wrapper.CountWeight(i);
                                                                         },
@@ -136,7 +138,7 @@ namespace distance_estimation {
 
         INFO("Weight Filter Done");
 
-        auto estimator = distance_estimator_fabric.getDistanceEstimator(graph, paired_index, dist_finder,
+        auto estimator = distance_estimator_fabric.GetDistanceEstimator(graph, paired_index, dist_finder,
                                                                         linkage_distance, max_distance);
         EstimateWithEstimator(clustered_index, *estimator, checker);
 
@@ -146,8 +148,8 @@ namespace distance_estimation {
         INFO("The refining of clustered pair information has been finished ");    // if so, it resolves such conflicts.
 
         INFO("Improving paired information");
-        PairInfoImprover<Graph>(graph, clustered_index, lib, max_repeat_length).ImprovePairedInfo(
-                omp_get_max_threads());
+        PairInfoImprover<Graph>(graph, clustered_index, lib, max_repeat_length)
+                .ImprovePairedInfo(omp_get_max_threads());
     }
 
     void EstimateScaffoldingDistances(PairedInfoIndexT<debruijn_graph::Graph> &scaffolding_index,
@@ -156,6 +158,8 @@ namespace distance_estimation {
                                       const UnclusteredPairedInfoIndexT<debruijn_graph::Graph> &paired_index,
                                       const debruijn_graph::config::smoothing_distance_estimator &ade,
                                       const debruijn_graph::config::distance_estimator &de_config) {
+        TIME_TRACE_SCOPE("EstimateScaffoldingDistances");
+
         EstimateScaffoldingDistancesInner(scaffolding_index, graph, lib,
                                           paired_index, ade, de_config, ScaffoldDistanceEstimatorFabric());
     }
@@ -166,6 +170,8 @@ namespace distance_estimation {
                                  const UnclusteredPairedInfoIndexT<debruijn_graph::Graph> &paired_index,
                                  size_t max_repeat_length,
                                  const debruijn_graph::config::distance_estimator &de_config) {
+        TIME_TRACE_SCOPE("EstimatePairedDistances");
+
         EstimatePairedDistancesInner(clustered_index, graph, lib, paired_index,
                                      max_repeat_length, de_config, DistanceEstimatorFabric());
     }
