@@ -14,8 +14,8 @@ using omnigraph::de::DistanceEstimator;
 using omnigraph::de::DistanceEstimatorMPI;
 
 class MPIDistanceEstimatorFabric : public AbstractDistanceEstimatorFabric {
-  public:
-    std::unique_ptr<DistanceEstimator> getDistanceEstimator(const debruijn_graph::Graph &graph,
+public:
+    std::unique_ptr<DistanceEstimator> GetDistanceEstimator(const debruijn_graph::Graph &graph,
                                                             const distance_estimation::UnclusteredPairedInfoIndexT<debruijn_graph::Graph> &index,
                                                             const omnigraph::de::GraphDistanceFinder &distance_finder,
                                                             const PairInfoChecker &checker,
@@ -33,8 +33,8 @@ class MPIDistanceEstimatorFabric : public AbstractDistanceEstimatorFabric {
 };
 
 class MPIScaffoldDistanceEstimatorFabric : public AbstractScaffoldDistanceEstimatorFabric {
-  public:
-    std::unique_ptr<omnigraph::de::DistanceEstimator> getDistanceEstimator(const debruijn_graph::Graph &graph,
+public:
+    std::unique_ptr<omnigraph::de::DistanceEstimator> GetDistanceEstimator(const debruijn_graph::Graph &graph,
                                                                            const distance_estimation::UnclusteredPairedInfoIndexT<debruijn_graph::Graph> &histogram,
                                                                            const omnigraph::de::GraphDistanceFinder &dist_finder,
                                                                            const PairInfoChecker &checker,

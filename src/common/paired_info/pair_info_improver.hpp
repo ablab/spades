@@ -64,6 +64,8 @@ class PairInfoImprover {
             : graph_(g), index_(clustered_index), lib_(lib), max_repeat_length_(max_repeat_length) { }
 
     void ImprovePairedInfo(unsigned num_threads = 1) {
+        TIME_TRACE_SCOPE("PairInfoImprover");
+
         CorrectPairedInfo(num_threads);
         CorrectPairedInfo(num_threads);
     }

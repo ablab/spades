@@ -59,7 +59,7 @@ path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer
 
         res.Create(entry.first);
     }
-    
+
     INFO("Got " << res.size() << " circular scaffolds");
     return res;
 }
@@ -73,9 +73,9 @@ path_extend::PathContainer GetTipScaffolds(const path_extend::PathContainer &sc_
             !forbidden_vertices.count(path.g().EdgeStart(path.Front())) ||
             !forbidden_vertices.count(path.g().EdgeEnd(path.Back())))
             continue;
-        
+
         res.Create(entry.first);
-        
+
     }
 
     INFO("Got " << res.size() << " linear scaffolds");
@@ -129,12 +129,14 @@ void ContigOutput::run(graph_pack::GraphPack &gp, const char*) {
     const auto &graph = gp.get<Graph>();
 
     if (outputs_.count(Kind::BinaryContigs)) {
+        TIME_TRACE_SCOPE("ContigOutput::BinaryContigs");
         std::filesystem::path contigs_output_dir = output_dir / outputs_[Kind::BinaryContigs];
         create_directory(contigs_output_dir);
         io::ReadConverter::ConvertEdgeSequencesToBinary(graph, contigs_output_dir, cfg::get().max_threads);
     }
 
     if (outputs_.count(Kind::EdgeSequences)) {
+        TIME_TRACE_SCOPE("ContigOutput::EdgeSequences");        
         OutputEdgeSequences(graph, output_dir / outputs_[Kind::EdgeSequences]);
     }
 
@@ -143,6 +145,8 @@ void ContigOutput::run(graph_pack::GraphPack &gp, const char*) {
 
     const auto &components = gp.get<ConnectedComponentCounter>();
     if (outputs_.count(Kind::GFAGraph)) {
+        TIME_TRACE_SCOPE("ContigOutput::GFAGraph");
+
         io::EdgeNamingF<Graph> naming_f =
                 config::PipelineHelper::IsPlasmidPipeline(cfg::get().mode) && components.IsFilled()?
                 PlasmidNamingF<Graph>(io::IdNamingF<Graph>(), components) :
@@ -158,6 +162,8 @@ void ContigOutput::run(graph_pack::GraphPack &gp, const char*) {
 
     std::optional<FastgPathWriter> fastg_writer;
     if (outputs_.count(Kind::FASTGGraph)) {
+        TIME_TRACE_SCOPE("ContigOutput::FASTGGraph");
+
         io::EdgeNamingF<Graph> naming_f =
                 config::PipelineHelper::IsPlasmidPipeline(cfg::get().mode) && components.IsFilled()?
                 PlasmidNamingF<Graph>(io::BasicNamingF<Graph>(), components) :
@@ -176,6 +182,8 @@ void ContigOutput::run(graph_pack::GraphPack &gp, const char*) {
             contig_paths.size();
 
     if (output_contig_paths) {
+        TIME_TRACE_SCOPE("ContigOutput::ContigPaths");
+
         ContigWriter writer(graph, MakeContigNameGenerator(cfg::get().mode, gp));
 
         bool output_broken_scaffolds = cfg::get().pe_params.param_set.scaffolder_options.enabled &&
@@ -184,6 +192,8 @@ void ContigOutput::run(graph_pack::GraphPack &gp, const char*) {
                                        (outputs_.count(Kind::FinalContigs) || outputs_.count(Kind::PlasmidContigs));
 
         if (output_broken_scaffolds) {
+            TIME_TRACE_SCOPE("ContigOutput::BrokenScaffolds");
+
             int min_overlap = int(gp.k());
             switch (cfg::get().co.obs_mode) {
             default:
@@ -209,12 +219,16 @@ void ContigOutput::run(graph_pack::GraphPack &gp, const char*) {
             broken_scaffolds.FilterEmptyPaths();
             broken_scaffolds.SortByLength();
 
-            if (outputs_.count(Kind::FinalContigs))
+            if (outputs_.count(Kind::FinalContigs)) {
+                TIME_TRACE_SCOPE("ContigOutput::FinalContigs");
+
                 writer.OutputPaths(broken_scaffolds,
                                    CreatePathsWriters(output_dir / (outputs_[Kind::FinalContigs]),
                                                       fastg_writer));
+            }
 
             if (outputs_.count(Kind::PlasmidContigs)) {
+                TIME_TRACE_SCOPE("ContigOutput::PlasmidContigs");
                 if (!gp.count<UsedEdges>("used_edges"))
                     gp.add("used_edges", UsedEdges(graph));
                 PathContainer circulars = GetCircularScaffolds(broken_scaffolds, gp.get_mutable<UsedEdges>("used_edges"), cfg::get().pd->min_circular_length);
@@ -243,11 +257,15 @@ void ContigOutput::run(graph_pack::GraphPack &gp, const char*) {
             }
         }
 
-        if (outputs_.count(Kind::Scaffolds))
+        if (outputs_.count(Kind::Scaffolds)) {
+            TIME_TRACE_SCOPE("ContigOutput::Scaffolds");
+
             writer.OutputPaths(contig_paths,
                                CreatePathsWriters(output_dir / outputs_[Kind::Scaffolds],
                                                   fastg_writer, gfa_writer));
+        }
     } else if (outputs_.count(Kind::FinalContigs)) {
+        TIME_TRACE_SCOPE("ContigOutput::FinalContigs");
         OutputEdgeSequences(graph, output_dir / outputs_[Kind::FinalContigs]);
     }
 }
