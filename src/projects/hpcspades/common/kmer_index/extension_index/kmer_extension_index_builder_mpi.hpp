@@ -204,6 +204,7 @@ class MergeKMerFilesTask {
     }
 
     void process(std::istream &is, std::ostream &) {
+        TIME_TRACE_SCOPE("MergeKMerFiles");
         std::vector<size_t> residuals;
         while (is.get() && is) {
             size_t i;

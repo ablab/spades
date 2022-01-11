@@ -12,6 +12,7 @@
 #include "kmer_index/extension_index/kmer_extension_index.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/parallel/parallel_wrapper.hpp"
+#include "utils/perf/timetracer.hpp"
 #include <numeric>
 
 namespace debruijn_graph {
@@ -318,6 +319,8 @@ public:
 
     //TODO very large vector is returned. But I hate to make all those artificial changes that can fix it.
     const std::vector<Sequence> ExtractUnbranchingPaths(std::vector<kmer_iterator> &its) const {
+        TIME_TRACE_SCOPE("UnbranchingPathExtractor::ExtractUnbranchingPaths");
+
         INFO("Extracting unbranching paths");
         if (its.size() == 0) {
             INFO("No input iterators, returning empty vector");
@@ -354,6 +357,8 @@ public:
     // This methods collects all loops that were not extracted by finding
     // unbranching paths because there are no junctions on loops.
     const std::vector<Sequence> CollectLoops(unsigned nchunks) {
+        TIME_TRACE_SCOPE("UnbranchingPathExtractor::CollectLoops");
+
         INFO("Collecting perfect loops");
         auto its = origin_.kmer_begin(nchunks);
         std::vector<std::vector<KeyWithHash> > starts(its.size());
@@ -507,10 +512,16 @@ public:
         graph.ereserve(2*seq_size + seq_size / 100);
 
         INFO("Collecting link records")
-        CollectLinkRecords(helper, graph, records, sequences);
+        {
+            TIME_TRACE_SCOPE("ConstructGraph::CollectLinkRecords");
+            CollectLinkRecords(helper, graph, records, sequences);
+        }
         INFO("Ordering link records")
         // We sort by Vertex and then by EdgeID and RC/Start mask in order to combine together records accociated with the same vertex with a special order in each group
-        parallel::sort(records.begin(), records.end(), LinkRecord::CompareByVertexKMerEdgeIdAndMask);
+        {
+            TIME_TRACE_SCOPE("ConstructGraph::OrderLinkRecords");
+            parallel::sort(records.begin(), records.end(), LinkRecord::CompareByVertexKMerEdgeIdAndMask);
+        }
         INFO("Sorting done");
 
         // Now we extract starting positions of each vertex group
@@ -525,22 +536,28 @@ public:
         // Now we sort vertices by their lowest edge and mask (they are unique since each edge has only one start and one stop).
         // It is a deterministic order while ordering by vertex kmer perfect hash is not (hashes are dependent on nthreads/nnodes)
         INFO("Sorting LinkRecords...");
-        parallel::sort(unique_record_indices.begin(), unique_record_indices.end(),
-                       [&records](size_t i, size_t j) { return records[i].EdgeAndMask() < records[j].EdgeAndMask(); });
+        {
+            TIME_TRACE_SCOPE("ConstructGraph::SortLinkRecords");
+            parallel::sort(unique_record_indices.begin(), unique_record_indices.end(),
+                           [&records](size_t i, size_t j) { return records[i].EdgeAndMask() < records[j].EdgeAndMask(); });
+        }        
         INFO("LinkRecords sorted");
         size_t size = unique_record_indices.size();
         INFO("Total " << size << " vertices to create");
         graph.vreserve(2 * size + size / 100);
 
         INFO("Connecting the graph");
-        uint64_t min_id = graph.min_id();
-#       pragma omp parallel for schedule(guided)
-        for (size_t vertex_num = 0; vertex_num < size; ++vertex_num) {
-            size_t i = unique_record_indices[vertex_num];
+        {
+            TIME_TRACE_SCOPE("ConstructGraph::ConnectGraph");
+            uint64_t min_id = graph.min_id();
+#           pragma omp parallel for schedule(guided)
+            for (size_t vertex_num = 0; vertex_num < size; ++vertex_num) {
+                size_t i = unique_record_indices[vertex_num];
 
-            VertexId v = helper.CreateVertex(DeBruijnVertexData(graph.k()), min_id + (vertex_num << 1));
-            for (size_t j = i; j < records.size() && records[j].GetHash() == records[i].GetHash(); j++) {
-                LinkEdge(helper, graph, v, records[j].GetEdge(), records[j].IsStart(), records[j].IsRC());
+                VertexId v = helper.CreateVertex(DeBruijnVertexData(graph.k()), min_id + (vertex_num << 1));
+                for (size_t j = i; j < records.size() && records[j].GetHash() == records[i].GetHash(); j++) {
+                    LinkEdge(helper, graph, v, records[j].GetEdge(), records[j].IsStart(), records[j].IsRC());
+                }
             }
         }
     }
@@ -574,7 +591,10 @@ public:
         else
             edge_sequences = UnbranchingPathExtractor(origin_, kmer_size_).ExtractUnbranchingPaths(nchunks);
         INFO("Sorting edges...");
-        parallel::sort(edge_sequences.begin(), edge_sequences.end(), Sequence::RawCompare);
+        {
+            TIME_TRACE_SCOPE("Sorting edges");
+            parallel::sort(edge_sequences.begin(), edge_sequences.end(), Sequence::RawCompare);
+        }
         INFO("Edges sorted");
         FastGraphFromSequencesConstructor<Graph>(kmer_size_, origin_).ConstructGraph(graph_, edge_sequences);
     }
