@@ -18,6 +18,8 @@
 #include <vector>
 #include <ostream>
 
+#include <cxxabi.h>
+
 namespace utils {
 
 template<class Container>
@@ -197,7 +199,32 @@ static inline void trim(std::string &s) {
     ltrim(s);
 }
 
+template <typename T>
+std::string type_name() {
+    using TR = typename std::remove_reference<T>::type;
+    std::unique_ptr<char, void(*)(void*)>
+            own(abi::__cxa_demangle(typeid(TR).name(), nullptr, nullptr, nullptr),
+                std::free);
+    std::string r = own != nullptr ? own.get() : typeid(TR).name();
+    if (std::is_const<TR>::value)
+        r += " const";
+    if (std::is_volatile<TR>::value)
+        r += " volatile";
+    if (std::is_lvalue_reference<T>::value)
+        r += "&";
+    else if (std::is_rvalue_reference<T>::value)
+        r += "&&";
+    return r;
 }
+
+static inline std::string type_name(const char *name) {
+    std::unique_ptr<char, void(*)(void*)>
+            own(abi::__cxa_demangle(name, nullptr, nullptr, nullptr),
+                std::free);
+    return own != nullptr ? own.get() : name;
+}
+
+} // namespace utils
 
 namespace std {
 template<class T1, class T2>
@@ -244,4 +271,4 @@ std::ostream &operator<<(std::ostream &os, const std::map<K, V> &map) {
     return os;
 }
 
-}
+} // namespace std

@@ -708,8 +708,11 @@ public:
         }
 
         INFO("Filling coverage and flanking coverage from PHM");
-        FillCoverageAndFlankingFromPHM(coverage_map,
-                                       gp.get_mutable<Graph>(), gp.get_mutable<omnigraph::FlankingCoverage<Graph>>());
+        {
+            TIME_TRACE_SCOPE("FillCoverageAndFlankingFromPHM");
+            FillCoverageAndFlankingFromPHM(coverage_map,
+                                           gp.get_mutable<Graph>(), gp.get_mutable<omnigraph::FlankingCoverage<Graph>>());
+        }
 
         std::vector<size_t> hist;
         size_t maxcov = 0;

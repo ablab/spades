@@ -1198,17 +1198,20 @@ class TaskRegistry {
 
             void process(std::istream &is, std::ostream &os) override {
                 TIME_TRACE_SCOPE("partask::task:process");
+                TIME_TRACE_SCOPE(utils::type_name<Task>());
                 process_impl(is, os);
             }
 
             void sync(void) override {
                 TIME_TRACE_SCOPE("partask::task:sync");
+                TIME_TRACE_SCOPE(utils::type_name<Task>());
                 sync_impl();
             }
 
             template <typename T = const std::vector<std::istream*>>
             decltype(auto) merge(std::enable_if_t<has_merge, T> &piss) {
                 TIME_TRACE_SCOPE("partask::task:merge");
+                TIME_TRACE_SCOPE(utils::type_name<Task>());
                 auto merge_args = std::tuple_cat(std::make_tuple(piss), locals_);
                 auto merge_call = [&](auto &&... ts) { return task_.merge(std::forward<decltype(ts)>(ts)...); };
                 return std::apply(merge_call, merge_args);
@@ -1243,6 +1246,7 @@ class TaskRegistry {
 
             template <typename VOID = void>
             std::enable_if_t<has_sync, VOID> sync_impl() {
+                TIME_TRACE_SCOPE(utils::type_name<Task>());
                 auto sync_call = [this](auto &&... ts) { return task_.sync(std::forward<decltype(ts)>(ts)...); };
                 std::apply(sync_call, locals_);
             }

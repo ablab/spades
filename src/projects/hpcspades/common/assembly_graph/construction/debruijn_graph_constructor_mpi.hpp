@@ -55,7 +55,10 @@ class DeBruijnGraphExtentionConstructorTask {
 
         UnbranchingPathExtractor extractor(index, g.k());
         auto seqs = extractor.ExtractUnbranchingPaths(local_iters);
-        index.RemoveSequences(seqs);
+        {
+            TIME_TRACE_SCOPE("RemoveSequences");
+            index.RemoveSequences(seqs);
+        }
         partask::allreduce(index.raw_data(), index.raw_size(), MPI_BAND);
         io::binary::BinWrite(os, partask::fast_local_transfer(seqs));
     }
@@ -81,7 +84,10 @@ class DeBruijnGraphExtentionConstructorTask {
         }
 
         INFO("Sorting edges...");
-        parallel::sort(seqs.begin(), seqs.end(), Sequence::RawCompare);
+        {
+            TIME_TRACE_SCOPE("Sorting edges");
+            parallel::sort(seqs.begin(), seqs.end(), Sequence::RawCompare);
+        }
         INFO("Sorting edges finished");
 
         FastGraphFromSequencesConstructor<Graph>(g.k(), index).ConstructGraph(g, seqs);
