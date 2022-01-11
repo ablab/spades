@@ -161,6 +161,8 @@ void path_extend::ScaffoldBreaker::SplitPath(const BidirectionalPath &path, Path
 }
 
 void path_extend::ScaffoldBreaker::Break(const PathContainer &paths, PathContainer &result) const {
+    TIME_TRACE_SCOPE("ScaffoldBreaker::Break");
+
     for (auto it = paths.begin(); it != paths.end(); ++it) {
         SplitPath(it.get(), result);
     }
