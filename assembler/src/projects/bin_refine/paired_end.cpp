@@ -11,7 +11,7 @@
 #include "assembly_graph/core/graph.hpp"
 
 #include "paired_info/paired_info_utils.hpp"
-#include "modules/alignment/bwa_sequence_mapper.hpp"
+#include "modules/alignment/kmer_sequence_mapper.hpp"
 
 #include "io/binary/paired_index.hpp"
 #include "io/dataset_support/read_converter.hpp"
@@ -37,7 +37,7 @@ void FillPairedEndLinks(LinkIndex &pe_links,
 
     paired_info::PairedIndex index(graph);
     if (!bin_load) {
-        alignment::BWAReadMapper<Graph> mapper(graph);
+        alignment::ShortKMerReadMapper mapper(graph, workdir);
 
         paired_info::FillPairedIndex(graph,
                                      mapper,
