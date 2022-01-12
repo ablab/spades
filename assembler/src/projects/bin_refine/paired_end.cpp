@@ -52,7 +52,7 @@ void FillPairedEndLinks(LinkIndex &pe_links,
         io::binary::Load(fs::append_path(workdir, "paired_index"), index);
     }
               
-    for (EdgeId e1 : graph.canonical_edges()) {
+    for (EdgeId e1 : graph.edges()) {
         for (auto entry : index.GetHalf(e1)) {
             EdgeId e2 = entry.first, ce2 = graph.conjugate(e2);
             VERIFY(entry.second.size() == 1);
