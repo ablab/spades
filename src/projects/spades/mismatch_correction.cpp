@@ -429,11 +429,10 @@ namespace mismatches {
             if (!dataset.reads[i].is_mismatch_correctable())
                 continue;
 
-            SequenceMapperNotifier notifier;
-            notifier.Subscribe(&statistics);
             auto &reads = dataset.reads[i];
             auto single_streams = single_binary_readers(reads, /*followed by rc */true, /*binary*/true);
-            notifier.ProcessLibrary(single_streams, *mapper);
+
+            proccess_lib_func_(&statistics, *mapper, single_streams);
         }
 
         return CorrectAllEdges(statistics);
