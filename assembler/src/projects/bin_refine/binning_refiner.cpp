@@ -91,8 +91,8 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       (option("-la") & value("labeled alpha", cfg.labeled_alpha)) % "labels correction alpha for labeled data",
       (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
       (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)",
-      (option("--no-unbinned-bin").set(cfg.no_unbinned_bin)) % "Do not create a special bin for unbinned (alpha propagation option)",
-      (option("--alpha-propagation").set(cfg.alpha_propagation)) % "Gradually reduce alpha from binned to unbinned edges to avoid boundless propagation"
+      (option("--no-unbinned-bin").set(cfg.no_unbinned_bin)) % "Do not create a special bin for unbinned contigs",
+      (option("--alpha-propagation").set(cfg.alpha_propagation)) % "Gradually reduce alpha from binned to unbinned edges"
   );
 
   auto result = parse(argc, argv, cli);
