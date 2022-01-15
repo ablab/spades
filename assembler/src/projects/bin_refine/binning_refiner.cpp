@@ -290,20 +290,23 @@ int main(int argc, char** argv) {
           }
       }
 
-      binning.LoadBinning(cfg.binning_file, cfg.out_options & OutputOptions::CAMI);
+      bool add_unbinned_bin = !cfg.no_unbinned_bin && cfg.alpha_propagation;
+      binning.LoadBinning(cfg.binning_file, cfg.out_options & OutputOptions::CAMI, add_unbinned_bin);
       INFO("Initial binning:\n" << binning);
 
       auto alpha_assigner = get_alpha_assigner(cfg, links, graph, binning);
-      LabelInitializer label_initializer(graph, cfg.length_threshold, !cfg.no_unbinned_bin && cfg.alpha_propagation);
+      LabelInitializer label_initializer(graph, cfg.length_threshold, add_unbinned_bin);
       auto origin_state = label_initializer.InitLabels(binning);
       auto alpha_assignment = alpha_assigner->GetAlphaAssignment(origin_state);
 
       //fixme configs
       const size_t unbinned_length_threshold = 1000;
       std::unordered_set<EdgeId> nonpropagating_edges;
-      for (const EdgeId &edge: binning.unbinned_edges()) {
-          if (graph.length(edge) >= unbinned_length_threshold) {
-              nonpropagating_edges.insert(edge);
+      if (add_unbinned_bin) {
+          for (const EdgeId &edge: binning.unbinned_edges()) {
+              if (graph.length(edge) >= unbinned_length_threshold) {
+                  nonpropagating_edges.insert(edge);
+              }
           }
       }
       auto binning_refiner = std::make_unique<LabelsPropagation>(graph, links, alpha_assignment, nonpropagating_edges, cfg.eps);
@@ -321,7 +324,6 @@ int main(int argc, char** argv) {
           for (size_t i = 0; i < nbins; ++i)
               out_dist << '\t' << binning.bin_labels().at(i);
           out_dist << std::endl;
-
           for (size_t i = 0; i < nbins; ++i) {
               out_dist << binning.bin_labels().at(i);
               for (size_t j = 0; j < nbins; ++j)

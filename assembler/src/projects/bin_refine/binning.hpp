@@ -38,7 +38,7 @@ enum OutputOptions : uint64_t {
 struct EdgeLabels {
     using BinId = uint64_t;
 
-    static constexpr BinId UNBINNED = BinId(0);
+    static constexpr BinId UNBINNED = BinId(-1);
 
     // TODO: Could pack e and is_binned into single 64 bits
     debruijn_graph::EdgeId e;
@@ -99,7 +99,7 @@ class Binning {
     }
 
     /// binning file in .tsv format (NODE_{scaffold_id}_* -> bin_id); scaffolds_file in .fasta format
-    void LoadBinning(const std::string& binning_file, bool cami);
+    void LoadBinning(const std::string& binning_file, bool cami, bool add_unbinned_bin);
     void AssignBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy);
 
     blaze::DynamicMatrix<double> BinDistance(const SoftBinsAssignment& soft_bins_assignment,

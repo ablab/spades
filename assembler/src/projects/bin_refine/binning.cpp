@@ -101,7 +101,8 @@ void Binning::ScaffoldsToEdges() {
 }
 
 void Binning::LoadBinning(const std::string &binning_file,
-                          bool cami) {
+                          bool cami,
+                          bool add_unbinned_bin) {
   fs::CheckFileExistenceFATAL(binning_file);
 
   scaffolds_binning_.clear();
@@ -120,7 +121,6 @@ void Binning::LoadBinning(const std::string &binning_file,
           std::string line(cline);
           if (utils::starts_with(line, "#"))
               continue;
-
           if (utils::starts_with(utils::str_tolower(line), "@sampleid:")) // SampleID
               sample_id_ = line.substr(strlen("@SAMPLEID:"));
           else if (utils::starts_with(line, "@@")) { // Actual header
@@ -142,10 +142,15 @@ void Binning::LoadBinning(const std::string &binning_file,
   std::string scaffold_name;
   BinLabel bin_label;
   BinId max_bin_id = 0;
+  BinId unbinned = UNBINNED;
+  if (add_unbinned_bin) {
+      unbinned = BinId(0);
+      max_bin_id = 1;
+  }
   while (reader.read_row(scaffold_name, bin_label)) {
       BinId cbin_id;
       if (bin_label == UNBINNED_ID) // unbinned scaffold
-          cbin_id = UNBINNED;
+          cbin_id = unbinned;
       else {
           auto entry = bins_.find(bin_label);
           if (entry == bins_.end()) { // new bin label
@@ -156,27 +161,6 @@ void Binning::LoadBinning(const std::string &binning_file,
               cbin_id = entry->second;
           }
       }
-  BinId max_bin_id = 1;
-  for (std::string line; std::getline(binning_reader, line, '\n');) {
-    std::string scaffold_name;
-    BinLabel bin_label;
-
-    std::istringstream line_stream(line);
-    line_stream >> scaffold_name;
-    line_stream >> bin_label;
-    BinId cbin_id;
-    if (bin_label == UNBINNED_ID) // unbinned scaffold
-        cbin_id = UNBINNED;
-    else {
-        auto entry = bins_.find(bin_label);
-        if (entry == bins_.end()) { // new bin label
-            cbin_id = max_bin_id++;
-            bin_labels_.emplace(cbin_id, bin_label);
-            bins_.emplace(bin_label, cbin_id);
-        } else {
-            cbin_id = entry->second;
-        }
-    }
 
       auto scaffold_entry = scaffolds_.find(scaffold_name);
       if (scaffold_entry == scaffolds_.end()) {
@@ -186,9 +170,10 @@ void Binning::LoadBinning(const std::string &binning_file,
 
       scaffolds_binning_[scaffold_entry->second] = cbin_id;
   }
-  bins_.insert({UNBINNED_ID, UNBINNED});
-  bin_labels_.insert({UNBINNED, UNBINNED_ID});
-
+  if (add_unbinned_bin) {
+      bins_.insert({UNBINNED_ID, unbinned});
+      bin_labels_.insert({unbinned, UNBINNED_ID});
+  }
   ScaffoldsToEdges();
 }
 
@@ -236,7 +221,7 @@ void Binning::WriteToBinningFile(const std::string& prefix, uint64_t output_opti
         std::vector<BinId> new_bin_id =
                 assignment_strategy.ChooseMajorBins(bins_weights,
                                                     soft_edge_labels, *this);
-        if (new_bin_id.empty()) {
+        if (new_bin_id.empty() or bin_labels_.at(new_bin_id[0]) == UNBINNED_ID) {
             if (output_options & OutputOptions::EmitZeroBin)
                 out_tsv << scaffold_name << '\t' << UNBINNED_ID << '\n';
         } else {
