@@ -53,6 +53,7 @@ struct gcfg {
     RefinerType refiner_type = RefinerType::Propagation;
     bool bin_load = false;
     bool debug = false;
+    bool bin_dist = false;
     uint64_t out_options = 0;
 };
 
@@ -67,8 +68,6 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
       (option("--tmp-dir") & value("dir", cfg.tmpdir)) % "scratch directory to use",
-      (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
-      (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)",
       (option("-e") & value("eps", cfg.eps)) % "convergence relative tolerance threshold",
       (option("-m").set(cfg.allow_multiple) % "allow multiple bin assignment"),
       (with_prefix("-S",
@@ -78,8 +77,11 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
                    option("corr").set(cfg.refiner_type, RefinerType::Correction) |
                    option("prop").set(cfg.refiner_type, RefinerType::Propagation)) % "binning refiner type"),
       (option("--cami").call([&]{ cfg.out_options |= OutputOptions::CAMI; }) % "use CAMI bioboxes binning format"),
-      (option("--zero-bit").call([&] { cfg.out_options |= OutputOptions::EmitZeroBin; }) % "emit zero bin for unbinned sequences"),
-      (option("-la") & value("labeled alpha", cfg.labeled_alpha)) % "labels correction alpha for labeled data"
+      (option("--zero-bin").call([&] { cfg.out_options |= OutputOptions::EmitZeroBin; }) % "emit zero bin for unbinned sequences"),
+      (option("--bin-dist").set(cfg.bin_dist) % "estimate pairwise bin distance (could be slow on large graphs!)"),
+      (option("-la") & value("labeled alpha", cfg.labeled_alpha)) % "labels correction alpha for labeled data",
+      (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
+      (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)"
   );
 
   auto result = parse(argc, argv, cli);
