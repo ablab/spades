@@ -8,5 +8,4 @@ Blaze_Import(
    THREADING C++11
    CACHE_SIZE auto
    VECTORIZATION on
-   DEBUG
 )

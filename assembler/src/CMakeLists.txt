@@ -83,6 +83,7 @@ configure_file("${SPADES_MAIN_INCLUDE_DIR}/version-gen.hpp.in"
                "${SPADES_BUILT_INCLUDE_DIR}/version-gen.hpp")
 
 # Build external dependencies (if any)
+add_subdirectory("${EXT_DIR}/include" "${Project_BINARY_DIR}/ext-include-only")
 add_subdirectory("${EXT_DIR}/src" "${Project_BINARY_DIR}/ext")
 
 # Setup warnings

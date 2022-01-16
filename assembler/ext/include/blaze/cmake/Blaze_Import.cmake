@@ -172,7 +172,7 @@ function(Blaze_Import)
    #   Blaze Version
    #==================================================================================================
 
-      file(READ ${CMAKE_CURRENT_LIST_DIR}/../blaze/system/Version.h BLAZE_VERSION_FILE)
+      file(READ ${Blaze_Import_DIR_PATH}/../blaze/system/Version.h BLAZE_VERSION_FILE)
 
       string(REGEX MATCH "#define BLAZE_MAJOR_VERSION ([0-9]*)" _BLAZE_MAJOR_VERSION ${BLAZE_VERSION_FILE})
       set(BLAZE_MAJOR_VERSION ${CMAKE_MATCH_1})
@@ -204,10 +204,9 @@ function(Blaze_Import)
    #==================================================================================================
 
       add_library(Blaze INTERFACE)
-      target_include_directories(Blaze INTERFACE
+      target_include_directories(Blaze SYSTEM INTERFACE
          $<BUILD_INTERFACE:${Blaze_Import_DIR_PATH}/../>
          $<INSTALL_INTERFACE:include>
-         GLOBAL
          )
 
       if(${CMAKE_VERSION} VERSION_LESS "3.8.0")
@@ -401,18 +400,18 @@ function(Blaze_Import)
                        OUTPUT_VARIABLE tmp
                        RESULT_VARIABLE flag
                        ERROR_QUIET)
-           if (flag)
+           if (flag OR NOT tmp)
              execute_process(COMMAND sysctl -n hw.l2cachesize
                          OUTPUT_VARIABLE tmp
                          RESULT_VARIABLE flag
                          ERROR_QUIET)
-           endif (flag)
-           if (flag)
+           endif ()
+           if (flag OR NOT tmp)
              execute_process(COMMAND sysctl -n hw.l1icachesize
                          OUTPUT_VARIABLE tmp
                          RESULT_VARIABLE flag
                          ERROR_QUIET)
-           endif (flag)
+           endif ()
 
            if (flag EQUAL 0)
              math(EXPR tmp ${tmp}/1024)  # If successful convert to kibibytes to comply with rest
@@ -1066,7 +1065,7 @@ function(Blaze_Import)
    #
    #==================================================================================================
 
-      set(blaze_FOUND TRUE CACHE BOOL "Indicates whether the blaze library was found successfully.")
+      #set(blaze_FOUND TRUE CACHE BOOL "Indicates whether the blaze library was found successfully.")
 
       msg("Blaze has been configured successfully")
 
