@@ -213,10 +213,15 @@ void Binning::WriteToBinningFile(const std::string& prefix, uint64_t output_opti
             if (output_options & OutputOptions::EmitZeroBin)
                 out_tsv << scaffold_name << '\t' << UNBINNED_ID << '\n';
         } else {
-            out_tsv << scaffold_name;
-            for (BinId bin : new_bin_id)
-                out_tsv << '\t' << bin_labels_.at(bin);
-            out_tsv << '\n';
+            if (output_options & OutputOptions::TallMulti) {
+                for (BinId bin : new_bin_id)
+                    out_tsv << scaffold_name << '\t' << bin_labels_.at(bin) << '\n';
+            } else {
+                out_tsv << scaffold_name;
+                for (BinId bin : new_bin_id)
+                    out_tsv << '\t' << bin_labels_.at(bin);
+                out_tsv << '\n';
+            }
         }
 
         out_weights << scaffold_name << '\t';

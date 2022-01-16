@@ -31,7 +31,8 @@ using LabelProbabilities = blaze::CompressedVector<double>;
 
 enum OutputOptions : uint64_t {
     CAMI        = 1 << 0,
-    EmitZeroBin = 1 << 1
+    EmitZeroBin = 1 << 1,
+    TallMulti   = 1 << 2,
 };
 
 struct EdgeLabels {
