@@ -147,7 +147,7 @@ void CloseGaps(GraphPack& gp, bool rtype,
 
     HybridGapCloser::ConsensusF consensus_f;
     if (rtype) {
-        consensus_f = &PoaConsensus;
+        consensus_f = &SPOAConsensus;
     } else {
         consensus_f = [=](const std::vector<string>& gap_seqs) {
             return TrivialConsenus(gap_seqs, cfg::get().pb.max_contigs_gap_length);
@@ -157,6 +157,7 @@ void CloseGaps(GraphPack& gp, bool rtype,
     HybridGapCloser gap_closer(gp.get_mutable<Graph>(), gap_storage,
                                min_weight, consensus_f,
                                cfg::get().pb.long_seq_limit);
+
     auto replacement = gap_closer();
 
     auto &single_long_reads = gp.get_mutable<LongReadContainer<Graph>>();

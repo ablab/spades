@@ -11,6 +11,7 @@
 #include "modules/alignment/sequence_mapper.hpp"
 #include "ConsensusCore/Poa/PoaConfig.hpp"
 #include "ConsensusCore/Poa/PoaConsensus.hpp"
+#include "../src/spoa/include/spoa/spoa.hpp"
 #include "gap_closing.hpp"
 
 #include <algorithm>
@@ -309,7 +310,36 @@ inline std::string PoaConsensus(const std::vector<std::string> &gap_seqs) {
     return pc->Sequence();
 }
 
-inline std::string TrivialConsenus(const std::vector<std::string> &gap_seqs, size_t max_length) {
+inline std::string SPOAConsensus(const std::vector<std::string> &gap_seqs) {
+    auto alignment_engine = spoa::AlignmentEngine::Create(
+            spoa::AlignmentType::kNW, 5, -4, -8, -6, -10, -4);
+    spoa::Graph graph{};
+
+    for (const auto& it : gap_seqs) {
+        std::int32_t score = 0;
+        auto alignment = alignment_engine->Align(it, graph, &score);
+        graph.AddAlignment(alignment, it);
+    }
+
+    std::vector<uint32_t > coverages;
+    std::string consensus = graph.GenerateConsensus(&coverages);
+    size_t cov = gap_seqs.size();
+    int pref_remove = 0;
+    int suf_remove = int(coverages.size()) - 1;
+    while (pref_remove < coverages.size() && coverages[pref_remove] < cov / 2 )
+        pref_remove ++;
+    while (suf_remove >= 0 && coverages[suf_remove] < cov / 2 )
+        suf_remove --;
+    if (pref_remove > suf_remove) {
+        return "";
+    }
+    return consensus.substr(pref_remove, suf_remove - pref_remove + 1);
+
+}
+
+
+
+    inline std::string TrivialConsenus(const std::vector<std::string> &gap_seqs, size_t max_length) {
     VERIFY(!gap_seqs.empty());
     return gap_seqs.front().length() < max_length ? gap_seqs.front() : "";
 }
