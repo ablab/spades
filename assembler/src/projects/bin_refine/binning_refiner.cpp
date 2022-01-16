@@ -78,6 +78,7 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
                    option("prop").set(cfg.refiner_type, RefinerType::Propagation)) % "binning refiner type"),
       (option("--cami").call([&]{ cfg.out_options |= OutputOptions::CAMI; }) % "use CAMI bioboxes binning format"),
       (option("--zero-bin").call([&] { cfg.out_options |= OutputOptions::EmitZeroBin; }) % "emit zero bin for unbinned sequences"),
+      (option("--tall-multi").call([&] { cfg.out_options |= OutputOptions::TallMulti; }) % "use tall table for multiple binning result"),
       (option("--bin-dist").set(cfg.bin_dist) % "estimate pairwise bin distance (could be slow on large graphs!)"),
       (option("-la") & value("labeled alpha", cfg.labeled_alpha)) % "labels correction alpha for labeled data",
       (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
