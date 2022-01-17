@@ -74,10 +74,9 @@ void GFAReader::to_graph(ConjugateDeBruijnGraph &g,
         if (id_mapper) {
             DEBUG("Map ids: " << e.int_id() << ":" << seg->name);
             DEBUG("Map ids: " << g.conjugate(e).int_id() << ":" << seg->name << "'");
-            (*id_mapper)[e.int_id()] = seg->name;
-            if (e != g.conjugate(e)) {
-                (*id_mapper)[g.conjugate(e).int_id()] = std::string(seg->name) + '\'';
-            }
+            id_mapper->map(seg->name, e.int_id());
+            if (e != g.conjugate(e))
+                id_mapper->map(std::string(seg->name) + '\'', g.conjugate(e).int_id());
         }
         edges.push_back(e);
     }
