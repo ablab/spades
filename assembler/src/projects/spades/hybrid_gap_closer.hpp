@@ -11,8 +11,9 @@
 #include "modules/alignment/sequence_mapper.hpp"
 #include "ConsensusCore/Poa/PoaConfig.hpp"
 #include "ConsensusCore/Poa/PoaConsensus.hpp"
-#include "../src/spoa/include/spoa/spoa.hpp"
 #include "gap_closing.hpp"
+
+#include <spoa/spoa.hpp>
 
 #include <algorithm>
 #include <fstream>
