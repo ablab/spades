@@ -18,10 +18,12 @@
 #include "utils/filesystem/path_helper.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/segfault_handler.hpp"
+#include "utils/stl_utils.hpp"
 #include "utils/verify.hpp"
 
 #include <clipp/clipp.h>
 #include <cstdint>
+#include <string>
 
 using namespace debruijn_graph;
 using namespace bin_stats;
@@ -42,6 +44,7 @@ struct gcfg {
     std::string graph;
     std::string binning_file;
     std::string output_file;
+    std::string path_file;
     unsigned nthreads = (omp_get_max_threads() / 2 + 1);
     std::string file = "";
     std::string tmpdir = "tmp";
@@ -64,6 +67,7 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       cfg.graph << value("graph (in binary or GFA)"),
       cfg.binning_file << value("file with binning from binner in .tsv format"),
       cfg.output_file << value("path to file to write binning after propagation"),
+      (option("--paths") & value("contig.paths", cfg.path_file)) % "use contig paths from file",
       (option("--dataset") & value("yaml", cfg.file)) % "dataset description (in YAML)",
       (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
@@ -132,6 +136,9 @@ int main(int argc, char** argv) {
   cfg.nthreads = spades_set_omp_threads(cfg.nthreads);
   INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg.nthreads);
 
+  fs::CheckFileExistenceFATAL(cfg.graph);
+  fs::CheckFileExistenceFATAL(cfg.binning_file);
+
   fs::make_dir(cfg.tmpdir);
 
   try {
@@ -166,27 +173,80 @@ int main(int argc, char** argv) {
       Binning binning(graph);
       {
           std::vector<Binning::Scaffold> scaffolds_paths;
-          std::string scaffold_name;
-          EdgeId last;
           size_t slinks = 0;
-          for (const auto &path : gfa.paths()) {
-              const std::string &name = path.name;
-              std::string cname = name.substr(0, name.find_last_of('_'));
-              // SPAdes outputs paths of scaffolds in the file, so we need to strip the path segment id from the end
-              if (cname != scaffold_name) {
-                  scaffold_name = cname;
-                  scaffolds_paths.emplace_back(scaffold_name, Binning::ScaffoldPath{});
-              } else if (last != EdgeId()) {
-                  // If this is a proper scaffold (multiple paths), then link
-                  // paths as there might be no graph connectivity
-                  links.add(last, path.edges.front());
-                  slinks += 1;
+
+          if (fs::FileExists(cfg.path_file)) {
+              INFO("Using contig paths from " << cfg.path_file);
+              std::ifstream pathfile_reader(cfg.path_file);
+              const std::string numeric = "0123456789";
+              for (std::string scaffold_name; std::getline(pathfile_reader, scaffold_name, '\n'); ) {
+                  std::string segment;
+                  DEBUG("Processing " << scaffold_name);
+                  if (!utils::ends_with(scaffold_name, "'")) {
+                      EdgeId last;
+                      scaffolds_paths.emplace_back(scaffold_name, Binning::ScaffoldPath{});
+                      do {
+                          std::getline(pathfile_reader, segment, '\n');
+                          DEBUG("Processing segment: " << segment);
+                          std::vector<EdgeId> edges;
+                          utils::split(segment, ',', std::back_inserter(edges),
+                                       [&graph, &numeric, &id_mapper](const std::string &edgestr) {
+                                           std::size_t idx = edgestr.find_first_not_of(numeric);
+                                           VERIFY(idx != std::string::npos);
+
+                                           EdgeId e = (*id_mapper)[edgestr.substr(0, idx)];
+                                           if (edgestr[idx] == '-')
+                                               e = graph.conjugate(e);
+                                           else {
+                                               VERIFY(edgestr[idx] == '+');
+                                           }
+
+                                           return e;
+                                       });
+
+                          if (last != EdgeId()) {
+                              // If this is a proper scaffold (multiple paths), then link
+                              // paths as there might be no graph connectivity
+                              links.add(last, edges.front());
+                              slinks += 1;
+                          }
+                          last = edges.back();
+                          scaffolds_paths.back().second.insert(edges.begin(), edges.end());
+                      } while (utils::ends_with(segment, ";"));
+                  }  else {
+                      // Skip conjugate path
+                      DEBUG("Skipping entries");
+                      do {
+                          std::getline(pathfile_reader, segment, '\n');
+                      } while (utils::ends_with(segment, ";"));
+                  }
               }
-              last = path.edges.back();
-              scaffolds_paths.back().second.insert(path.edges.begin(), path.edges.end());
+          } else {
+              INFO("Using scaffold paths from GFA");
+
+              std::string scaffold_name;
+              EdgeId last;
+              for (const auto &path : gfa.paths()) {
+                  const std::string &name = path.name;
+                  std::string cname = name.substr(0, name.find_last_of('_'));
+                  // SPAdes outputs paths of scaffolds in the file, so we need to strip the path segment id from the end
+                  if (cname != scaffold_name) {
+                      scaffold_name = cname;
+                      scaffolds_paths.emplace_back(scaffold_name, Binning::ScaffoldPath{});
+                  } else if (last != EdgeId()) {
+                      // If this is a proper scaffold (multiple paths), then link
+                      // paths as there might be no graph connectivity
+                      links.add(last, path.edges.front());
+                      slinks += 1;
+                  }
+                  last = path.edges.back();
+                  scaffolds_paths.back().second.insert(path.edges.begin(), path.edges.end());
+              }
           }
+
           INFO("Added " << slinks << " additional scaffold links");
           binning.InitScaffolds(scaffolds_paths);
+          INFO("Processed total " << scaffolds_paths.size() << " scaffold paths");
       }
 
       binning::LinkIndex pe_links(graph);
