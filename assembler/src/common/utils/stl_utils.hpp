@@ -86,7 +86,7 @@ const std::vector<typename MMapT::mapped_type> get_all(const MMapT &from, const 
 template<class Container, class F>
 std::string join(const Container &c,
                  const std::string &delim = ", ",
-                 F str_f = [] (typename Container::value_type t) { return std::to_string(t); }) {
+                 F str_f = [](typename Container::value_type t) { return std::to_string(t); }) {
     std::stringstream ss;
     std::string d = "";
     for (const auto &item : c) {
@@ -94,6 +94,31 @@ std::string join(const Container &c,
         d = delim;
     }
     return ss.str();
+}
+
+template<typename Out>
+void split(const std::string &s, char delim, Out result) {
+    std::istringstream iss(s);
+    std::string item;
+    while (std::getline(iss, item, delim)) {
+        *result++ = item;
+    }
+}
+
+template<typename Out, class F>
+void split(const std::string &s, char delim,
+           Out result, F f) {
+    std::istringstream iss(s);
+    std::string item;
+    while (std::getline(iss, item, delim)) {
+        *result++ = f(item);
+    }
+}
+
+static inline std::vector<std::string> split(const std::string &s, char delim) {
+    std::vector<std::string> elems;
+    split(s, delim, std::back_inserter(elems));
+    return elems;
 }
 
 static inline bool starts_with(const std::string &s, const std::string &p) {
