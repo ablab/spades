@@ -60,7 +60,7 @@ BinningAssignmentStrategy::ChooseMajorBins(const blaze::CompressedVector<double>
             return { };
 
         for (const auto &entry : bins_weights) {
-            if (!math::eq(entry.value(), max_weight))
+            if (!math::eq(entry.value(), max_weight) or !res.empty())
                 continue;
 
             res.push_back(entry.index());

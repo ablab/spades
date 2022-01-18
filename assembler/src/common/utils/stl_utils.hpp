@@ -9,6 +9,7 @@
 
 #include "utils/verify.hpp"
 
+#include <algorithm>
 #include <memory>
 #include <map>
 #include <string>
