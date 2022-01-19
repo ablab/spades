@@ -77,7 +77,6 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       (option("--dataset") & value("yaml", cfg.file)) % "dataset description (in YAML)",
       (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
-      (option("--tmp-dir") & value("dir", cfg.tmpdir)) % "scratch directory to use",
       (option("-e") & value("eps", cfg.eps)) % "convergence relative tolerance threshold",
       (option("-m").set(cfg.allow_multiple) % "allow multiple bin assignment"),
       (with_prefix("-S",
@@ -91,13 +90,18 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       (option("--tall-multi").call([&] { cfg.out_options |= OutputOptions::TallMulti; }) % "use tall table for multiple binning result"),
       (option("--bin-dist").set(cfg.bin_dist) % "estimate pairwise bin distance (could be slow on large graphs!)"),
       (option("-la") & value("labeled alpha", cfg.labeled_alpha)) % "labels correction alpha for labeled data",
-      (option("-ma") & value("--metaalpha", cfg.metaalpha)) % "Labels correction alpha for alpha propagation procedure",
-      (option("-lt") & value("--length-threshold", cfg.length_threshold)) % "Binning will not be propagated to edges longer than threshold",
-      (option("-db") & value("--distance-bound", cfg.distance_bound)) % "Binning will not be propagated further than bound",
-      (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
-      (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)",
-      (option("--no-unbinned-bin").set(cfg.no_unbinned_bin)) % "Do not create a special bin for unbinned contigs",
-      (option("--alpha-propagation").set(cfg.alpha_propagation)) % "Gradually reduce alpha from binned to unbinned edges"
+      "Alpha propagation options:" % (
+          (option("--alpha-propagation").set(cfg.alpha_propagation)) % "Gradually reduce alpha from binned to unbinned edges",
+          (option("--no-unbinned-bin").set(cfg.no_unbinned_bin)) % "Do not create a special bin for unbinned contigs",
+          (option("-ma") & value("--metaalpha", cfg.metaalpha)) % "Labels correction alpha for alpha propagation procedure",
+          (option("-lt") & value("--length-threshold", cfg.length_threshold)) % "Binning will not be propagated to edges longer than threshold",
+          (option("-db") & value("--distance-bound", cfg.distance_bound)) % "Binning will not be propagated further than bound"
+      ),
+      "Developer options:" % (
+          (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir",
+          (option("--debug").set(cfg.debug)) % "produce lots of debug data",
+          (option("--tmp-dir") & value("dir", cfg.tmpdir)) % "scratch directory to use"
+      )
   );
 
   auto result = parse(argc, argv, cli);
