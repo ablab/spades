@@ -17,12 +17,12 @@ AlphaAssignment AlphaPropagator::GetAlphaMask(const Binning &bin_stats) const {
     LabelInitializer label_initializer(g_, length_threshold_, false);
     auto origin_state = label_initializer.InitLabels(bin_stats);
     auto distance_state = ConstructBinningMask(origin_state);
-    auto distance_assigner = std::make_unique<CorrectionAssigner>(g_, metaalpha_);
-    auto correction_alpha = distance_assigner->GetAlphaAssignment(distance_state);
+    CorrectionAssigner distance_assigner(g_, metaalpha_);
+    auto correction_alpha = distance_assigner.GetAlphaAssignment(distance_state);
     std::unordered_set<EdgeId> nonpropagating_edges;
-    auto binning_refiner = std::make_unique<LabelsPropagation>(g_, links_, correction_alpha, nonpropagating_edges, eps_);
+    LabelsPropagation binning_refiner(g_, links_, correction_alpha, nonpropagating_edges, eps_);
     INFO("Launching propagation refiner");
-    auto refined_distance_coeffs = binning_refiner->RefineBinning(distance_state);
+    auto refined_distance_coeffs = binning_refiner.RefineBinning(distance_state);
     for (const auto &labels: refined_distance_coeffs) {
         const auto &probs = labels.labels_probabilities;
         VERIFY(probs.size() == 2);
