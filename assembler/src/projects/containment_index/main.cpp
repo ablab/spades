@@ -31,6 +31,11 @@ using namespace debruijn_graph;
 using namespace cont_index;
 using namespace path_extend::read_cloud;
 
+enum class GraphType {
+    Blunted,
+    Multiplexed
+};
+
 struct gcfg {
   size_t k = 55;
   unsigned mapping_k = 31;
@@ -44,6 +49,7 @@ struct gcfg {
   double score_threshold = 3.0;
   bool bin_load = false;
   bool debug = false;
+  GraphType graph_type = GraphType::Blunted;
 };
 
 static void process_cmdline(int argc, char** argv, gcfg& cfg) {
@@ -60,7 +66,10 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
             (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
             (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)",
             (option("--score") & value("score", cfg.score_threshold)) % "Score threshold for link index",
-            (option("--ref") & value("reference", cfg.refpath)) % "Reference path"
+            (option("--ref") & value("reference", cfg.refpath)) % "Reference path",
+            (with_prefix("-G",
+                         option("lja").set(cfg.graph_type, GraphType::Multiplexed) |
+                         option("blunt").set(cfg.graph_type, GraphType::Blunted)) % "assembly graph type")
     );
 
     auto result = parse(argc, argv, cli);
@@ -174,43 +183,10 @@ void GetPathClusters(const Graph &graph,
             }
         }
 
-        std::map<std::pair<std::string, std::string>, size_t> link_to_weight;
-        for (const auto &cluster: path_clusters) {
-            //fixme replace with ClusterFilter
-            //fixme very ineffective
-            if (cluster.Size() == 3) {
-                const auto &internal_graph = cluster.GetInternalGraph();
-                for (const auto &vertex: internal_graph.vertices()) {
-                    if (uncompressed_vertices.count(vertex)) {
-                        std::vector<scaffold_graph::ScaffoldVertex> other_two;
-                        for (const auto &other: internal_graph.vertices()) {
-                            if (not uncompressed_vertices.count(other)) {
-                                other_two.push_back(other);
-                            }
-                        }
-                        if (other_two.size() != 2) {
-                            break;
-                        }
-                        auto first = other_two[0];
-                        auto second = other_two[1];
-                        std::string first_id = (*id_mapper)[first.int_id()];
-                        std::string second_id = (*id_mapper)[second.int_id()];
-                        if (internal_graph.ContainsEdge(first, vertex) and internal_graph.ContainsEdge(vertex, second)) {
-                            std::pair<std::string, std::string> link(first_id, second_id);
-                            link_to_weight[link]++;
-                        }
-                        if (internal_graph.ContainsEdge(second, vertex) and internal_graph.ContainsEdge(vertex, first)) {
-                            std::pair<std::string, std::string> link(second_id, first_id);
-                            link_to_weight[link]++;
-                        }
-                    }
-                }
-            }
-        }
-        std::ofstream link_stream(fs::append_path(output_dir, "lja_links.tsv"));
-        for (const auto &entry: link_to_weight) {
-            link_stream << entry.first.first << "\t" << entry.first.second << "\t" << entry.second << std::endl;
-        }
+//        std::ofstream link_stream(fs::append_path(output_dir, "lja_links.tsv"));
+//        for (const auto &entry: link_to_weight) {
+//            link_stream << entry.first.first << "\t" << entry.first.second << "\t" << entry.second << std::endl;
+//        }
     }
 
 }
@@ -355,7 +331,78 @@ void ConstructCloudOnlyLinks(const Graph &graph,
 //                          tail_threshold, id_mapper, output_dir);
 //    auto compare_output_path = fs::append_path(output_dir, "hifi_tellseq_scores.tsv");
 //    CompareLinks(hifi_graph, tellseq_graph, score_function, id_mapper.get(), compare_output_path);
+
 }
+
+
+void ReadGraph(const gcfg &cfg,
+               debruijn_graph::Graph &graph,
+               io::IdMapper<std::string> *id_mapper) {
+    switch (cfg.graph_type) {
+        default:
+            FATAL_ERROR("Unknown graph representation type");
+        case GraphType::Blunted: {
+            gfa::GFAReader gfa(cfg.graph);
+            INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: "
+                                  << gfa.num_paths());
+            gfa.to_graph(graph, id_mapper);
+            return;
+        }
+        case GraphType::Multiplexed: {
+//            cont_index::MultiplexGFAReader demulti_gfa(cfg.graph);
+//            gfa::GFAReader gfa(cfg.graph);
+//            INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: " << gfa.num_paths());
+//            VERIFY_MSG(demulti_gfa.k() != -1U, "Failed to determine k-mer length");
+//            INFO(demulti_gfa.k());
+//            debruijn_graph::Graph struct_graph(demulti_gfa.k());
+//            gfa.to_graph(struct_graph, struct_id_mapper.get());
+//            debruijn_graph::Graph graph(demulti_gfa.k());
+//            demulti_gfa.to_graph(struct_graph, struct_id_mapper.get(), graph, id_mapper.get());
+            FATAL_ERROR("Multiplexed graphs are currently not supported");
+        }
+    }
+}
+
+void AnalyzeVertices(debruijn_graph::Graph &graph,
+                     std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr,
+                     size_t count_threshold,
+                     size_t tail_threshold,
+                     size_t length_threshold,
+                     size_t threads,
+                     double score_threshold,
+                     io::IdMapper<std::string> *id_mapper,
+                     const std::string &output_path) {
+    std::unordered_set<debruijn_graph::VertexId> interesting_vertices;
+    for (const auto &vertex: graph.vertices()) {
+        //todo use predicate iterator
+        if (graph.OutgoingEdgeCount(vertex) >= 2 and graph.IncomingEdgeCount(vertex) >= 2) {
+            interesting_vertices.insert(vertex);
+        }
+    }
+    INFO(interesting_vertices.size() << " complex vertices");
+    LinkIndexGraphConstructor link_index_constructor(graph, barcode_extractor_ptr, score_threshold,
+                                                     tail_threshold, length_threshold, count_threshold, threads);
+    auto score_function = link_index_constructor.ConstructScoreFunction();
+
+    std::ofstream os(fs::append_path(output_path, "complex_tellseq_links.tsv"));
+    os << "First id\tSecond id\tFirst barcodes\tSecond barcodes\tShared links\n";
+    for (const auto &vertex: interesting_vertices) {
+        for (const EdgeId &in_edge: graph.IncomingEdges(vertex)) {
+            for (const EdgeId &out_edge: graph.OutgoingEdges(vertex)) {
+                scaffold_graph::ScaffoldGraph::ScaffoldEdge sc_edge(in_edge, out_edge);
+                auto score = score_function->GetScore(sc_edge);
+                if (math::ge(score, score_threshold)) {
+                    //fixme head\tail
+                    size_t in_barcodes = barcode_extractor_ptr->GetNumberOfBarcodes(in_edge);
+                    size_t out_barcodes = barcode_extractor_ptr->GetNumberOfBarcodes(out_edge);
+                    os << (*id_mapper)[in_edge.int_id()] << "\t" << (*id_mapper)[out_edge.int_id()] << "\t"
+                       << in_barcodes << "\t" << out_barcodes << "\t" << score << std::endl;
+                }
+            }
+        }
+    }
+}
+
 
 int main(int argc, char** argv) {
     utils::segfault_handler sh;
@@ -367,7 +414,6 @@ int main(int argc, char** argv) {
     process_cmdline(argc, argv, cfg);
 
     toolchain::create_console_logger();
-
     START_BANNER("Containment index builder");
 
     cfg.nthreads = spades_set_omp_threads(cfg.nthreads);
@@ -377,22 +423,13 @@ int main(int argc, char** argv) {
     fs::make_dir(cfg.tmpdir);
 
     INFO("Loading graph");
-    std::unique_ptr<io::IdMapper<std::string>> struct_id_mapper(new io::IdMapper<std::string>());
     std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
-    //fixme optional multiplex reading
-    cont_index::MultiplexGFAReader demulti_gfa(cfg.graph);
-    gfa::GFAReader gfa(cfg.graph);
-    INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: " << gfa.num_paths());
-    VERIFY_MSG(demulti_gfa.k() != -1U, "Failed to determine k-mer length");
-    INFO(demulti_gfa.k());
-//    VERIFY_MSG(gfa.k() % 2 == 1, "k-mer length must be odd");
-    debruijn_graph::Graph struct_graph(demulti_gfa.k());
-    gfa.to_graph(struct_graph, struct_id_mapper.get());
-    debruijn_graph::Graph graph(demulti_gfa.k());
-    demulti_gfa.to_graph(struct_graph, struct_id_mapper.get(), graph, id_mapper.get());
+
+    debruijn_graph::Graph graph(cfg.k);
+    ReadGraph(cfg, graph, id_mapper.get());
     INFO("Graph loaded. Total vertices: " << graph.size() << ", total edges: " << graph.e_size());
 
-    std::ofstream graph_out(fs::append_path(cfg.output_dir, "internal_assembly_graph.gfa"));
+    std::ofstream graph_out(fs::append_path(cfg.output_dir, "assembly_graph.gfa"));
     gfa::GFAWriter gfa_writer(graph, graph_out);
     gfa_writer.WriteSegmentsAndLinks();
 
@@ -416,7 +453,7 @@ int main(int argc, char** argv) {
 
         //graph construction
         const double graph_score_threshold = 1.99;
-        const size_t tail_threshold = 10000;
+        const size_t tail_threshold = 70000;
         const size_t length_threshold = 0;
         const size_t count_threshold = 1;
 
@@ -441,8 +478,8 @@ int main(int argc, char** argv) {
 
         TIME_TRACE_SCOPE("Containment index");
 
-        GFAGraphConstructor gfa_graph_constructor(graph, gfa, id_mapper.get());
-        auto hifi_graph = gfa_graph_constructor.ConstructGraphFromDBG();
+//        GFAGraphConstructor gfa_graph_constructor(graph, gfa, id_mapper.get());
+//        auto hifi_graph = gfa_graph_constructor.ConstructGraphFromDBG();
 
         auto &lib = dataset[cfg.libindex];
         if (lib.type() == io::LibraryType::Clouds10x) {
@@ -459,6 +496,9 @@ int main(int argc, char** argv) {
             WARN("Only read cloud libraries with barcode tags are supported for links");
         }
 
+        AnalyzeVertices(graph, barcode_extractor_ptr, count_threshold, tail_threshold, length_threshold, cfg.nthreads,
+                        4.0, id_mapper.get(), cfg.output_dir);
+
 //        GetLongEdgeStatistics(graph, barcode_index, training_length_threshold, training_length_offset,
 //                              training_min_read_threshold, training_linkage_distance, cfg.nthreads, cfg.output_dir);
 
@@ -472,40 +512,36 @@ int main(int argc, char** argv) {
 //        ConstructCloudOnlyLinks(graph, barcode_extractor_ptr, graph_score_threshold, length_threshold, tail_threshold,
 //                                count_threshold, cfg.nthreads, cfg.bin_load, cfg.debug, cfg.output_dir, id_mapper.get());
 
-        std::unordered_set<EdgeId> uncompressed_vertices;
-        for (const auto &edge: graph.canonical_edges()) {
-            if (not (*id_mapper).count(edge)) {
-                uncompressed_vertices.insert(edge);
-            }
-        }
-        cont_index::VertexInfoGetter vertex_info_getter(graph, tail_threshold, barcode_extractor_ptr, id_mapper.get());
-        std::string vertex_path = fs::append_path(cfg.output_dir, "vertex_info.tsv");
-        std::ofstream vertex_stream(vertex_path);
-        vertex_stream << "FirstId\tFirstLength\tFirstTotalBarcodes\tFirstTailBarcodes\tFirstTotalReads\tFirstTailReads\t";
-        vertex_stream << "SecondId\tSecondLength\tSecondTotalBarcodes\tSecondTailBarcodes\tSecondTotalReads\tSecondTailReads\t";
-        vertex_stream << "TailIntersection\tTotalIntersection" << std::endl;
-        for (const auto &repeat: uncompressed_vertices) {
-            VertexId start = graph.EdgeStart(repeat);
-            for (const auto &first: graph.IncomingEdges(start)) {
-                VertexId end = graph.EdgeEnd(repeat);
-                for (const auto &second: graph.OutgoingEdges(end)) {
-                    auto link_info = vertex_info_getter.GetLinkInfo(first, second);
-                    auto first_info = link_info.first_info;
-                    auto second_info = link_info.second_info;
-                    vertex_stream << first_info.edge_id << "\t" << std::to_string(first_info.length) << "\t"
-                                  << std::to_string(first_info.total_barcodes) << "\t"
-                                  << std::to_string(first_info.tail_barcodes) << "\t"
-                                  << std::to_string(first_info.total_reads) << "\t"
-                                  << std::to_string(first_info.tail_reads) << "\t"
-                                << second_info.edge_id << "\t" << std::to_string(second_info.length) << "\t"
-                                << std::to_string(second_info.total_barcodes) << "\t"
-                                << std::to_string(second_info.tail_barcodes) << "\t"
-                                << std::to_string(second_info.total_reads) << "\t"
-                                << std::to_string(second_info.tail_reads) << "\t"
-                                << std::to_string(link_info.tail_intersection) << "\t"
-                                << std::to_string(link_info.total_intersection) << std::endl;
-                }
-            }
-        }
+
+
+//        cont_index::VertexInfoGetter vertex_info_getter(graph, tail_threshold, barcode_extractor_ptr, id_mapper.get());
+//        std::string vertex_path = fs::append_path(cfg.output_dir, "vertex_info.tsv");
+//        std::ofstream vertex_stream(vertex_path);
+//        vertex_stream << "FirstId\tFirstLength\tFirstTotalBarcodes\tFirstTailBarcodes\tFirstTotalReads\tFirstTailReads\t";
+//        vertex_stream << "SecondId\tSecondLength\tSecondTotalBarcodes\tSecondTailBarcodes\tSecondTotalReads\tSecondTailReads\t";
+//        vertex_stream << "TailIntersection\tTotalIntersection" << std::endl;
+//        for (const auto &repeat: uncompressed_vertices) {
+//            VertexId start = graph.EdgeStart(repeat);
+//            for (const auto &first: graph.IncomingEdges(start)) {
+//                VertexId end = graph.EdgeEnd(repeat);
+//                for (const auto &second: graph.OutgoingEdges(end)) {
+//                    auto link_info = vertex_info_getter.GetLinkInfo(first, second);
+//                    auto first_info = link_info.first_info;
+//                    auto second_info = link_info.second_info;
+//                    vertex_stream << first_info.edge_id << "\t" << std::to_string(first_info.length) << "\t"
+//                                  << std::to_string(first_info.total_barcodes) << "\t"
+//                                  << std::to_string(first_info.tail_barcodes) << "\t"
+//                                  << std::to_string(first_info.total_reads) << "\t"
+//                                  << std::to_string(first_info.tail_reads) << "\t"
+//                                << second_info.edge_id << "\t" << std::to_string(second_info.length) << "\t"
+//                                << std::to_string(second_info.total_barcodes) << "\t"
+//                                << std::to_string(second_info.tail_barcodes) << "\t"
+//                                << std::to_string(second_info.total_reads) << "\t"
+//                                << std::to_string(second_info.tail_reads) << "\t"
+//                                << std::to_string(link_info.tail_intersection) << "\t"
+//                                << std::to_string(link_info.total_intersection) << std::endl;
+//                }
+//            }
+//        }
     }
 }
