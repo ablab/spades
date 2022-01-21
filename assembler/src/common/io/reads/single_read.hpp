@@ -281,6 +281,11 @@ private:
                               SequenceOffsetT(from + (size_t) left_offset_),
                               SequenceOffsetT(size() - to + (size_t) right_offset_),
                               validate);
+        else if (comment_.length())
+            return SingleRead("", comment_, seq_.substr(from, len),
+                              SequenceOffsetT(from + (size_t) left_offset_),
+                              SequenceOffsetT(size() - to + (size_t) right_offset_),
+                              validate);
         else
             return SingleRead(seq_.substr(from, len),
                               SequenceOffsetT(from + (size_t) left_offset_),
