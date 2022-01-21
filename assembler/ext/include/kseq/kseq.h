@@ -179,7 +179,7 @@ typedef struct __kstring_t {
 			seq->last_char = c; \
 		} /* else: the first header char has been read in the previous call */ \
 		seq->comment.l = seq->seq.l = seq->qual.l = 0; /* reset all members */ \
-		if (ks_getuntil(ks, KS_SEP_LINE, &seq->name, &c) < 0) return -1; /* normal exit: EOF */ \
+		if (ks_getuntil(ks, KS_SEP_SPACE, &seq->name, &c) < 0) return -1; /* normal exit: EOF */ \
 		if (c != '\n') ks_getuntil(ks, KS_SEP_LINE, &seq->comment, 0); /* read FASTA/Q comment */ \
 		if (seq->seq.s == 0) { /* we can do this in the loop below, but that is slower */ \
 			seq->seq.m = 256; \
