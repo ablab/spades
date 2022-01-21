@@ -349,13 +349,13 @@ private:
 
 template<class Graph>
 class LongReadContainer {
-    Graph& g_;
+    const Graph& g_;
     std::vector<PathStorage<Graph>> data_;
 
 public:
     typedef PathStorage<Graph> value_type;
 
-    LongReadContainer(Graph& g, size_t count = 0): g_(g) {
+    LongReadContainer(const Graph& g, size_t count = 0): g_(g) {
         for (size_t i = 0; i < count; ++i) {
             data_.emplace_back(g_);
         }
