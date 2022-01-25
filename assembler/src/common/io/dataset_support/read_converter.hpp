@@ -28,7 +28,7 @@ typedef debruijn_graph::config::LibraryData LibraryData;
 typedef SequencingLibrary<LibraryData> SequencingLibraryT;
 
 class ReadConverter {
-    static constexpr size_t BINARY_FORMAT_VERSION = 13;
+    static constexpr size_t BINARY_FORMAT_VERSION = 14;
 
     static bool CheckBinaryReadsExist(SequencingLibraryT& lib);
     static void WriteBinaryInfo(const std::filesystem::path& filename, LibraryData& data);
