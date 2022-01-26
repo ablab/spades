@@ -26,6 +26,14 @@ struct pacbio_processor {
     size_t pacbio_min_gap_quantity  = 2;
     size_t contigs_min_gap_quantity = 1;
     size_t max_contigs_gap_length   = 10000;
+
+    // spoa settings
+    int8_t match                    = 5;
+    int8_t mismatch                 = -4;
+    int8_t gap_open                 = -8;
+    int8_t gap_extend               = -6;
+    int8_t gap_open_second          = -10;
+    int8_t gap_extend_second        = -4;
 };
 
 struct bwa_aligner {

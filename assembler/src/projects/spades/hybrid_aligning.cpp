@@ -149,7 +149,7 @@ void CloseGaps(GraphPack& gp, bool rtype,
     if (rtype) {
         consensus_f = &SPOAConsensus;
     } else {
-        consensus_f = [=](const std::vector<string>& gap_seqs) {
+        consensus_f = [=](const std::vector<string>& gap_seqs, const debruijn_graph::config::pacbio_processor &pb_) {
             return TrivialConsenus(gap_seqs, cfg::get().pb.max_contigs_gap_length);
         };
     }

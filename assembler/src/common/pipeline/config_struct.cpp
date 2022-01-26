@@ -460,6 +460,15 @@ void load(pacbio_processor& pb,
   load(pb.pacbio_min_gap_quantity, pt, "pacbio_min_gap_quantity");
   load(pb.contigs_min_gap_quantity, pt, "contigs_min_gap_quantity");
   load(pb.max_contigs_gap_length, pt, "max_contigs_gap_length");
+
+  load(pb.match, pt, "match");
+  load(pb.mismatch, pt, "mismatch");
+  load(pb.gap_open, pt, "gap_open");
+  load(pb.gap_extend, pt, "gap_extend");
+  load(pb.gap_open_second, pt, "gap_open_second");
+  load(pb.gap_extend_second, pt, "gap_extend_second");
+
+
 }
 
 void load(debruijn_config::position_handler& pos,

@@ -11,10 +11,10 @@
 #include "modules/alignment/sequence_mapper.hpp"
 #include "ConsensusCore/Poa/PoaConfig.hpp"
 #include "ConsensusCore/Poa/PoaConsensus.hpp"
+
 #include "gap_closing.hpp"
-
+#include "pipeline/config_struct.hpp"
 #include <spoa/spoa.hpp>
-
 #include <algorithm>
 #include <fstream>
 
@@ -304,16 +304,17 @@ public:
     }
 };
 
-inline std::string PoaConsensus(const std::vector<std::string> &gap_seqs) {
+inline std::string PoaConsensus(const std::vector<std::string> &gap_seqs, const debruijn_graph::config::pacbio_processor &pb_) {
     const ConsensusCore::PoaConsensus* pc = ConsensusCore::PoaConsensus::FindConsensus(
             gap_seqs,
             ConsensusCore::PoaConfig::GLOBAL_ALIGNMENT);
     return pc->Sequence();
 }
 
-inline std::string SPOAConsensus(const std::vector<std::string> &gap_seqs) {
-    auto alignment_engine = spoa::AlignmentEngine::Create(
-            spoa::AlignmentType::kNW, 5, -4, -8, -6, -10, -4);
+inline std::string SPOAConsensus(const std::vector<std::string> &gap_seqs, const debruijn_graph::config::pacbio_processor &pb_) {
+//Default values from SPOA man
+    auto alignment_engine = spoa::AlignmentEngine::Create(spoa::AlignmentType::kNW,
+            pb_.match, pb_.mismatch, pb_.gap_open, pb_.gap_extend, pb_.gap_open_second, pb_.gap_extend_second);
     spoa::Graph graph{};
 
     for (const auto& it : gap_seqs) {
@@ -567,7 +568,7 @@ private:
 
 class HybridGapCloser {
 public:
-    typedef std::function<std::string (const std::vector<std::string> &)> ConsensusF;
+    typedef std::function<std::string (const std::vector<std::string> &, const debruijn_graph::config::pacbio_processor &)> ConsensusF;
 private:
     typedef RtSeq Kmer;
     typedef typename GapStorage::gap_info_it gap_info_it;
@@ -596,7 +597,7 @@ private:
         DEBUG("var size original " << gap_variants.size());
         auto new_gap_variants(gap_variants);
         new_gap_variants.resize(std::min(max_consensus_reads_, gap_variants.size()));
-        auto s = consensus_(new_gap_variants);
+        auto s = consensus_(new_gap_variants, cfg::get().pb);
         DEBUG("consenus for " << g_.int_id(left)
                               << " and " << g_.int_id(right)
                               << " found: '" << s << "'");
