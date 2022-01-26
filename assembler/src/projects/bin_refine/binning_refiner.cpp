@@ -285,9 +285,14 @@ int main(int argc, char** argv) {
       INFO("Assigning edges & scaffolds to bins");
       binning.AssignBins(soft_edge_labels, *assignment_strategy);
       INFO("Final binning:\n" << binning);
-      INFO("Estimating pairwise bin distances");
-      auto dist = binning.BinDistance(soft_edge_labels);
-      {
+      INFO("Writing final binning");
+      binning.WriteToBinningFile(cfg.output_file, cfg.out_options,
+                                 soft_edge_labels, *assignment_strategy,
+                                 *id_mapper);
+
+      if (cfg.bin_dist) {
+          INFO("Estimating pairwise bin distances");
+          auto dist = binning.BinDistance(soft_edge_labels);
           size_t nbins = binning.bins().size();
 
           std::ofstream out_dist(cfg.output_file + ".bin_dist");
@@ -302,10 +307,7 @@ int main(int argc, char** argv) {
               out_dist << std::endl;
           }
       }
-      INFO("Writing final binning");
-      binning.WriteToBinningFile(cfg.output_file, cfg.out_options,
-                                 soft_edge_labels, *assignment_strategy,
-                                 *id_mapper);
+      
       if (cfg.debug) {
           INFO("Dumping links");
           pe_links.dump(cfg.output_file + ".pe_links", *id_mapper);
