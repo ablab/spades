@@ -9,8 +9,7 @@
 
 #include "assembly_graph/core/graph.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
-#include "ConsensusCore/Poa/PoaConfig.hpp"
-#include "ConsensusCore/Poa/PoaConsensus.hpp"
+
 
 #include "gap_closing.hpp"
 #include "pipeline/config_struct.hpp"
@@ -303,13 +302,6 @@ public:
         FillIndex();
     }
 };
-
-inline std::string PoaConsensus(const std::vector<std::string> &gap_seqs, const debruijn_graph::config::pacbio_processor &pb_) {
-    const ConsensusCore::PoaConsensus* pc = ConsensusCore::PoaConsensus::FindConsensus(
-            gap_seqs,
-            ConsensusCore::PoaConfig::GLOBAL_ALIGNMENT);
-    return pc->Sequence();
-}
 
 inline std::string SPOAConsensus(const std::vector<std::string> &gap_seqs, const debruijn_graph::config::pacbio_processor &pb_) {
 //Default values from SPOA man
