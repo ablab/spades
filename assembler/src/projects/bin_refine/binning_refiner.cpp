@@ -43,7 +43,7 @@ struct gcfg {
     size_t k = 55;
     std::string graph;
     std::string binning_file;
-    std::string output_file;
+    std::string prefix;
     std::string path_file;
     unsigned nthreads = (omp_get_max_threads() / 2 + 1);
     std::string file = "";
@@ -66,7 +66,7 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
   auto cli = (
       cfg.graph << value("graph (in binary or GFA)"),
       cfg.binning_file << value("file with binning from binner in .tsv format"),
-      cfg.output_file << value("path to file to write binning after propagation"),
+      cfg.prefix << value("output path to write binning results after propagation"),
       (option("--paths") & value("contig.paths", cfg.path_file)) % "use contig paths from file",
       (option("--dataset") & value("yaml", cfg.file)) % "dataset description (in YAML)",
       (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
@@ -285,8 +285,11 @@ int main(int argc, char** argv) {
       INFO("Assigning edges & scaffolds to bins");
       binning.AssignBins(soft_edge_labels, *assignment_strategy);
       INFO("Final binning:\n" << binning);
+
+      fs::make_dir(cfg.prefix);
+
       INFO("Writing final binning");
-      binning.WriteToBinningFile(cfg.output_file, cfg.out_options,
+      binning.WriteToBinningFile(cfg.prefix, cfg.out_options,
                                  soft_edge_labels, *assignment_strategy,
                                  *id_mapper);
 
@@ -295,7 +298,7 @@ int main(int argc, char** argv) {
           auto dist = binning.BinDistance(soft_edge_labels);
           size_t nbins = binning.bins().size();
 
-          std::ofstream out_dist(cfg.output_file + ".bin_dist");
+          std::ofstream out_dist(fs::append_path(cfg.prefix, "bin_dist.tsv"));
           for (size_t i = 0; i < nbins; ++i)
               out_dist << '\t' << binning.bin_labels().at(i);
           out_dist << std::endl;
@@ -307,11 +310,11 @@ int main(int argc, char** argv) {
               out_dist << std::endl;
           }
       }
-      
+
       if (cfg.debug) {
           INFO("Dumping links");
-          pe_links.dump(cfg.output_file + ".pe_links", *id_mapper);
-          links.dump(cfg.output_file + ".graph_links", *id_mapper);
+          pe_links.dump(fs::append_path(cfg.prefix, "pe_links.tsv"), *id_mapper);
+          links.dump(fs::append_path(cfg.prefix, "graph_links.tsv"), *id_mapper);
       }
 
       if (!cfg.debug)
@@ -323,7 +326,7 @@ int main(int argc, char** argv) {
       std::cerr << "ERROR: " << e.what() << std::endl;
       return EINTR;
   }
-  INFO("Binning refining & propagation finished. Thanks for interesting data!");
+  INFO("Binning refining & propagation finished. Let's analyze these MAGs!");
 
   return 0;
 }

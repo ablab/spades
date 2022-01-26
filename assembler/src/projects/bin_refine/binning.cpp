@@ -168,10 +168,10 @@ void Binning::LoadBinning(const std::string &binning_file,
 void Binning::WriteToBinningFile(const std::string& prefix, uint64_t output_options,
                                  const SoftBinsAssignment &soft_edge_labels, const BinningAssignmentStrategy& assignment_strategy,
                                  const io::IdMapper<std::string> &edge_mapper) {
-    std::ofstream out_tsv(prefix + ".tsv");
-    std::ofstream out_bins(prefix + ".bin_stats");
-    std::ofstream out_weights(prefix + ".bin_weights");
-    std::ofstream out_edges(prefix + ".edge_weights");
+    std::ofstream out_tsv(fs::append_path(prefix, "binning.tsv"));
+    std::ofstream out_bins(fs::append_path(prefix, "bin_stats.tsv"));
+    std::ofstream out_weights(fs::append_path(prefix, "bin_weights.tsv"));
+    std::ofstream out_edges(fs::append_path(prefix, "edge_weights.tsv"));
 
     auto weight_sorter = [] (const auto &lhs, const auto &rhs) {
         if (math::eq(rhs.second, lhs.second))
