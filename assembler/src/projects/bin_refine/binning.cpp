@@ -20,7 +20,7 @@ using namespace bin_stats;
 
 const std::string Binning::UNBINNED_ID = "0";
 
-EdgeLabels::EdgeLabels(const EdgeId e, const Binning& bin_stats)
+EdgeLabels::EdgeLabels(const EdgeId e, const Binning& bin_stats, bool is_long, bool unbinned_bin)
         : e(e) {
     auto bins = bin_stats.edges_binning().find(e);
     is_binned = bins != bin_stats.edges_binning().end();
@@ -30,9 +30,13 @@ EdgeLabels::EdgeLabels(const EdgeId e, const Binning& bin_stats)
     if (is_binned) {
         size_t sz = bins->second.size();
         //size_t sz = bin_stats.multiplicities().at(e);
-        for (bin_stats::Binning::BinId bin : bins->second)
+        for (BinId bin : bins->second) {
+            VERIFY(bin != UNBINNED);
             labels_probabilities.set(bin, 1.0 / static_cast<double>(sz));
+        }
         is_repetitive = bin_stats.multiplicities().at(e) > 1;
+    } else if (unbinned_bin and is_long) {
+        labels_probabilities.set(UNBINNED, 1.0);
     }
 }
 
@@ -97,7 +101,8 @@ void Binning::ScaffoldsToEdges() {
 }
 
 void Binning::LoadBinning(const std::string &binning_file,
-                          bool cami) {
+                          bool cami,
+                          bool add_unbinned_bin) {
   fs::CheckFileExistenceFATAL(binning_file);
 
   scaffolds_binning_.clear();
@@ -116,7 +121,6 @@ void Binning::LoadBinning(const std::string &binning_file,
           std::string line(cline);
           if (utils::starts_with(line, "#"))
               continue;
-
           if (utils::starts_with(utils::str_tolower(line), "@sampleid:")) // SampleID
               sample_id_ = line.substr(strlen("@SAMPLEID:"));
           else if (utils::starts_with(line, "@@")) { // Actual header
@@ -138,10 +142,15 @@ void Binning::LoadBinning(const std::string &binning_file,
   std::string scaffold_name;
   BinLabel bin_label;
   BinId max_bin_id = 0;
+  BinId unbinned = UNBINNED;
+  if (add_unbinned_bin) {
+      unbinned = BinId(0);
+      max_bin_id = 1;
+  }
   while (reader.read_row(scaffold_name, bin_label)) {
       BinId cbin_id;
       if (bin_label == UNBINNED_ID) // unbinned scaffold
-          cbin_id = UNBINNED;
+          cbin_id = unbinned;
       else {
           auto entry = bins_.find(bin_label);
           if (entry == bins_.end()) { // new bin label
@@ -161,7 +170,10 @@ void Binning::LoadBinning(const std::string &binning_file,
 
       scaffolds_binning_[scaffold_entry->second] = cbin_id;
   }
-
+  if (add_unbinned_bin) {
+      bins_.insert({UNBINNED_ID, unbinned});
+      bin_labels_.insert({unbinned, UNBINNED_ID});
+  }
   ScaffoldsToEdges();
 }
 
@@ -209,7 +221,7 @@ void Binning::WriteToBinningFile(const std::string& prefix, uint64_t output_opti
         std::vector<BinId> new_bin_id =
                 assignment_strategy.ChooseMajorBins(bins_weights,
                                                     soft_edge_labels, *this);
-        if (new_bin_id.empty()) {
+        if (new_bin_id.empty() or bin_labels_.at(new_bin_id[0]) == UNBINNED_ID) {
             if (output_options & OutputOptions::EmitZeroBin)
                 out_tsv << scaffold_name << '\t' << UNBINNED_ID << '\n';
         } else {
@@ -269,6 +281,20 @@ void Binning::AssignBins(const SoftBinsAssignment& soft_edge_labels,
                                                        soft_edge_labels, *this);
     }
 }
+
+SoftBinsAssignment LabelInitializer::InitLabels(const bin_stats::Binning &bin_stats) const {
+    SoftBinsAssignment state(bin_stats.graph().max_eid());
+    for (debruijn_graph::EdgeId e : g_.canonical_edges()) {
+        bool is_long = g_.length(e) >= length_threshold_;
+        EdgeLabels labels(e, bin_stats, is_long, unbinned_bin_);
+        state.emplace(e, labels);
+        state.emplace(g_.conjugate(e), std::move(labels));
+    }
+
+    return state;
+}
+LabelInitializer::LabelInitializer(const Graph &g, size_t length_threshold, bool unbinned_bin) :
+    g_(g), length_threshold_(length_threshold), unbinned_bin_(unbinned_bin) {}
 
 static double WJaccard(const blaze::CompressedMatrix<double, blaze::rowMajor> &m,
                        size_t i, size_t j) {

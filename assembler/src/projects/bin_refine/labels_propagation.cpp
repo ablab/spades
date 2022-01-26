@@ -19,12 +19,15 @@ using namespace debruijn_graph;
 
 LabelsPropagation::LabelsPropagation(const debruijn_graph::Graph& g,
                                      const binning::LinkIndex &links,
-                                     double eps, double labeled_alpha)
+                                     const AlphaAssignment &labeled_alpha,
+                                     const std::unordered_set<debruijn_graph::EdgeId> &nonpropagating_edges,
+                                     double eps)
         : BinningRefiner(g, links),
+          labeled_alpha_(labeled_alpha),
+          nonpropagating_edges_(nonpropagating_edges),
           eps_(eps),
           rdeg_(g.max_eid()),
-          rweight_(g.max_eid()),
-          labeled_alpha_(labeled_alpha) {
+          rweight_(g.max_eid()){
     // Calculate the reverse root degree
     double avdeg = 0;
     INFO("Calculating weights");
@@ -63,47 +66,15 @@ LabelsPropagation::LabelsPropagation(const debruijn_graph::Graph& g,
     INFO("Average edge weight: " << avweight);
 }
 
-SoftBinsAssignment LabelsPropagation::RefineBinning(const Binning& bin_stats) const {
+SoftBinsAssignment LabelsPropagation::RefineBinning(const SoftBinsAssignment &origin_state) const {
   unsigned iteration_step = 0;
 
-  SoftBinsAssignment state = InitLabels(bin_stats), new_state(state), origin_state(state);
-
-  // Calculate the regularization coefficients
-  adt::id_map<double, debruijn_graph::EdgeId> ealpha(g_.max_eid());
-  bool propagation = math::eq(labeled_alpha_, 0.0);
-  for (EdgeId e : g_.canonical_edges()) {
-      double alpha = 0;
-      const EdgeLabels& edge_labels = state.at(e);
-
-      // Formula for correction: next_probs[i] = alpha[e] * rw[e] * \sum{neighbour} (rd[neighbour] * cur_probs[neighbour]) + (1 - alpha[e]) * origin_probs[e]
-      // Therefore:
-
-      // If alpha is zero, then original binning will be used
-      // If alpha is one, then original binning will be ignored
-      // Otherwise, alpha is used as a regularization coefficient for binning propagation
-      // If the edge is binned and is not repetitive, then we use labelled alpha
-      // (zero in case of simple propagation and some pre-defined value
-      // otherwise), otherwise we do not trust input binning and set alpha to one.
-      // Also, make alpha dependent on the edge length.
-      alpha = 1.0;
-      if (edge_labels.is_binned && !edge_labels.is_repetitive) {
-          if (propagation) {
-              alpha = 0;
-          } else {
-              size_t l = g_.length(e), thr = 1000;
-              double coef = (l > thr ? 0 : 1 - ::log(l) / ::log(thr));
-              alpha = labeled_alpha_ + (1 - labeled_alpha_) * coef;
-          }
-      }
-
-      ealpha.emplace(e, alpha);
-      ealpha.emplace(g_.conjugate(e), alpha);
-  }
+  SoftBinsAssignment new_state(origin_state), state(origin_state);
 
   while (true) {
       FinalIteration converged = PropagationIteration(new_state, state,
                                                       origin_state,
-                                                      ealpha,
+                                                      labeled_alpha_,
                                                       iteration_step++);
       if (converged)
           return new_state;
@@ -123,12 +94,12 @@ static void PropagateFromEdge(blaze::DynamicVector<double> &labels_probabilities
 LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBinsAssignment& new_state,
                                                                           const SoftBinsAssignment& cur_state,
                                                                           const SoftBinsAssignment& origin_state,
-                                                                          const adt::id_map<double, debruijn_graph::EdgeId> &ealpha,
+                                                                          const AlphaAssignment &ealpha,
                                                                           unsigned iteration_step) const {
   double sum_diff = 0.0, after_prob = 0;
 
   auto ranges = adt::split_range(adt::make_range(cur_state.cbegin(), cur_state.cend()),
-                                 10 * omp_get_max_threads());  
+                                 10 * omp_get_max_threads());
 # pragma omp parallel for reduction(+ : sum_diff) reduction(+ : after_prob)
   for (size_t i = 0; i < ranges.size(); ++i) {
       blaze::DynamicVector<double> next_probs(cur_state.cbegin().value().labels_probabilities.size(), 0);
@@ -157,8 +128,10 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
               next_probs += (1.0 - alpha) * origin_state.at(e).labels_probabilities;
 
           for (const auto &link : links_.links(e)) {
-              double incoming_weight = self_weight * rdeg_.at(link.e) * link.w;
-              PropagateFromEdge(next_probs, link.e, cur_state, incoming_weight);
+              if (nonpropagating_edges_.find(e) == nonpropagating_edges_.end()) {
+                  double incoming_weight = self_weight * rdeg_.at(link.e) * link.w;
+                  PropagateFromEdge(next_probs, link.e, cur_state, incoming_weight);
+              }
           }
 
           after_prob += sum(next_probs);
@@ -198,17 +171,6 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
 
 
   return converged;
-}
-
-SoftBinsAssignment LabelsPropagation::InitLabels(const Binning& bin_stats) const {
-    SoftBinsAssignment state(bin_stats.graph().max_eid());
-    for (EdgeId e : g_.canonical_edges()) {
-        EdgeLabels labels(e, bin_stats);
-        state.emplace(e, labels);
-        state.emplace(g_.conjugate(e), std::move(labels));
-    }
-
-    return state;
 }
 
 void LabelsPropagation::EqualizeConjugates(SoftBinsAssignment& state) const {

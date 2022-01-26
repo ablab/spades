@@ -196,10 +196,13 @@ public:
         return it->second;
     }
 
-    void Run(VertexId start) {
+    void Run(VertexId start, std::unordered_set<VertexId> other_vertices = std::unordered_set<VertexId>()) {
         TRACE("Starting dijkstra run from vertex " << graph_.str(start));
         Queue queue;
         Init(start, queue);
+        for (const auto &vertex: other_vertices) {
+            queue.push(0, vertex);
+        }
         TRACE("Priority queue initialized. Starting search");
 
         while (!queue.empty() && !finished()) {

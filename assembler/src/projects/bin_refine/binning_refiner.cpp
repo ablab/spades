@@ -4,6 +4,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "alpha_propagation.hpp"
 #include "binning.hpp"
 #include "labels_propagation.hpp"
 #include "link_index.hpp"
@@ -52,6 +53,11 @@ struct gcfg {
     AssignStrategy assignment_strategy = AssignStrategy::MajorityLength;
     double eps = 1e-5;
     double labeled_alpha = 0.6;
+    bool no_unbinned_bin = false;
+    bool alpha_propagation = false;
+    double metaalpha = 0.6;
+    size_t length_threshold = 5000;
+    size_t distance_bound = 10000;
     bool allow_multiple = false;
     RefinerType refiner_type = RefinerType::Propagation;
     bool bin_load = false;
@@ -71,7 +77,6 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       (option("--dataset") & value("yaml", cfg.file)) % "dataset description (in YAML)",
       (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
-      (option("--tmp-dir") & value("dir", cfg.tmpdir)) % "scratch directory to use",
       (option("-e") & value("eps", cfg.eps)) % "convergence relative tolerance threshold",
       (option("-m").set(cfg.allow_multiple) % "allow multiple bin assignment"),
       (with_prefix("-S",
@@ -85,8 +90,18 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       (option("--tall-multi").call([&] { cfg.out_options |= OutputOptions::TallMulti; }) % "use tall table for multiple binning result"),
       (option("--bin-dist").set(cfg.bin_dist) % "estimate pairwise bin distance (could be slow on large graphs!)"),
       (option("-la") & value("labeled alpha", cfg.labeled_alpha)) % "labels correction alpha for labeled data",
-      (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
-      (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)"
+      "Alpha propagation options:" % (
+          (option("--alpha-propagation").set(cfg.alpha_propagation)) % "Gradually reduce alpha from binned to unbinned edges",
+          (option("--no-unbinned-bin").set(cfg.no_unbinned_bin)) % "Do not create a special bin for unbinned contigs",
+          (option("-ma") & value("--metaalpha", cfg.metaalpha)) % "Labels correction alpha for alpha propagation procedure",
+          (option("-lt") & value("--length-threshold", cfg.length_threshold)) % "Binning will not be propagated to edges longer than threshold",
+          (option("-db") & value("--distance-bound", cfg.distance_bound)) % "Binning will not be propagated further than bound"
+      ),
+      "Developer options:" % (
+          (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir",
+          (option("--debug").set(cfg.debug)) % "produce lots of debug data",
+          (option("--tmp-dir") & value("dir", cfg.tmpdir)) % "scratch directory to use"
+      )
   );
 
   auto result = parse(argc, argv, cli);
@@ -107,16 +122,23 @@ std::unique_ptr<BinningAssignmentStrategy> get_strategy(const gcfg &cfg) {
     }
 }
 
-std::unique_ptr<BinningRefiner> get_refiner(const gcfg &cfg,
-                                            const binning::LinkIndex &links,
-                                            const Graph &graph) {
+std::unique_ptr<AlphaAssigner> get_alpha_assigner(const gcfg &cfg,
+                                                  const binning::LinkIndex &links,
+                                                  const Graph &graph,
+                                                  const bin_stats::Binning &binning) {
     switch (cfg.refiner_type) {
         default:
             FATAL_ERROR("Unknown binning refiner type");
         case RefinerType::Propagation:
-            return std::make_unique<LabelsPropagation>(graph, links, cfg.eps);
+            return std::make_unique<PropagationAssigner>(graph);
         case RefinerType::Correction:
-            return std::make_unique<LabelsPropagation>(graph, links, cfg.eps, cfg.labeled_alpha);
+            if (not cfg.alpha_propagation) {
+                return std::make_unique<CorrectionAssigner>(graph, cfg.labeled_alpha);
+            }
+            AlphaPropagator alpha_propagator(graph, links, cfg.metaalpha, cfg.eps, cfg.length_threshold,
+                                             cfg.distance_bound, cfg.output_file + ".alpha_stats");
+            auto alpha_mask = alpha_propagator.GetAlphaMask(binning);
+            return std::make_unique<bin_stats::CorrectionAssigner>(graph, alpha_mask, cfg.labeled_alpha);
     }
 }
 
@@ -158,7 +180,7 @@ int main(int argc, char** argv) {
       gfa::GFAReader gfa(cfg.graph);
       INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: " << gfa.num_paths());
       VERIFY_MSG(gfa.k() != -1U, "Failed to determine k-mer length");
-      VERIFY_MSG(gfa.k() % 2 == 1, "k-mer length must be odd");
+//      VERIFY_MSG(gfa.k() % 2 == 1, "k-mer length must be odd");
 
       debruijn_graph::Graph graph(gfa.k());
       gfa.to_graph(graph, id_mapper.get());
@@ -276,11 +298,26 @@ int main(int argc, char** argv) {
           }
       }
 
-      binning.LoadBinning(cfg.binning_file, cfg.out_options & OutputOptions::CAMI);
+      bool add_unbinned_bin = !cfg.no_unbinned_bin && cfg.alpha_propagation;
+      binning.LoadBinning(cfg.binning_file, cfg.out_options & OutputOptions::CAMI, add_unbinned_bin);
       INFO("Initial binning:\n" << binning);
 
-      auto binning_refiner = get_refiner(cfg, links, graph);
-      auto soft_edge_labels = binning_refiner->RefineBinning(binning);
+      auto alpha_assigner = get_alpha_assigner(cfg, links, graph, binning);
+      LabelInitializer label_initializer(graph, cfg.length_threshold, add_unbinned_bin);
+      auto origin_state = label_initializer.InitLabels(binning);
+      auto alpha_assignment = alpha_assigner->GetAlphaAssignment(origin_state);
+
+      const size_t unbinned_length_threshold = cfg.length_threshold;
+      std::unordered_set<EdgeId> nonpropagating_edges;
+      if (add_unbinned_bin) {
+          for (const EdgeId &edge: binning.unbinned_edges()) {
+              if (graph.length(edge) >= unbinned_length_threshold) {
+                  nonpropagating_edges.insert(edge);
+              }
+          }
+      }
+      auto binning_refiner = std::make_unique<LabelsPropagation>(graph, links, alpha_assignment, nonpropagating_edges, cfg.eps);
+      auto soft_edge_labels = binning_refiner->RefineBinning(origin_state);
 
       INFO("Assigning edges & scaffolds to bins");
       binning.AssignBins(soft_edge_labels, *assignment_strategy);
@@ -302,7 +339,6 @@ int main(int argc, char** argv) {
           for (size_t i = 0; i < nbins; ++i)
               out_dist << '\t' << binning.bin_labels().at(i);
           out_dist << std::endl;
-
           for (size_t i = 0; i < nbins; ++i) {
               out_dist << binning.bin_labels().at(i);
               for (size_t j = 0; j < nbins; ++j)

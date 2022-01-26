@@ -21,7 +21,7 @@ class BinningRefiner {
             : g_(g), links_(links) {}
     virtual ~BinningRefiner() = default;
 
-    virtual SoftBinsAssignment RefineBinning(const Binning& binning) const = 0;
+    virtual SoftBinsAssignment RefineBinning(const SoftBinsAssignment &state) const = 0;
  protected:
     const debruijn_graph::Graph& g_;
     const binning::LinkIndex &links_;

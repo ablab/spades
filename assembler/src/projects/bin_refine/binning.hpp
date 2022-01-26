@@ -36,6 +36,10 @@ enum OutputOptions : uint64_t {
 };
 
 struct EdgeLabels {
+    using BinId = uint64_t;
+
+    static constexpr BinId UNBINNED = BinId(-1);
+
     // TODO: Could pack e and is_binned into single 64 bits
     debruijn_graph::EdgeId e;
     bool is_binned : 1;
@@ -44,8 +48,15 @@ struct EdgeLabels {
 
     EdgeLabels()
             : e(0), is_binned(false), is_repetitive(false) {}
+    EdgeLabels(const debruijn_graph::EdgeId &e,
+               bool is_binned,
+               bool is_repetitive,
+               const LabelProbabilities &labels_probabilities) : e(e),
+                                                                 is_binned(is_binned),
+                                                                 is_repetitive(is_repetitive),
+                                                                 labels_probabilities(labels_probabilities) {}
 
-    EdgeLabels(debruijn_graph::EdgeId e, const Binning& binning);
+    EdgeLabels(debruijn_graph::EdgeId e, const Binning& binning, bool is_long, bool unbinned_bin);
     EdgeLabels(const EdgeLabels& edge_labels) = default;
     EdgeLabels& operator=(const EdgeLabels& edge_labels) = default;
 
@@ -65,7 +76,7 @@ class Binning {
     static const std::string UNBINNED_ID;
  public:
     using BinLabel = std::string;
-    using BinId = uint64_t;
+    using BinId = EdgeLabels::BinId;
     using ScaffoldName = std::string;
     using ScaffoldId = uint64_t;
     using ScaffoldPath = std::unordered_set<debruijn_graph::EdgeId>;
@@ -75,10 +86,9 @@ class Binning {
     using BinLabels = std::unordered_map<BinId, BinLabel>;
     using ScaffoldLabels = std::unordered_map<ScaffoldId, ScaffoldName>;
 
-    static constexpr BinId UNBINNED = BinId(-1);
+    static constexpr BinId UNBINNED = EdgeLabels::UNBINNED;
 
-    explicit Binning(const debruijn_graph::Graph& g)
-            : graph_(g) {}
+    explicit Binning(const debruijn_graph::Graph& g) : graph_(g) {}
 
     void InitScaffolds(const std::vector<Scaffold> &scaffold_paths) {
         for (ScaffoldId id = 0; id < scaffold_paths.size(); ++id) {
@@ -89,7 +99,7 @@ class Binning {
     }
 
     /// binning file in .tsv format (NODE_{scaffold_id}_* -> bin_id); scaffolds_file in .fasta format
-    void LoadBinning(const std::string& binning_file, bool cami);
+    void LoadBinning(const std::string& binning_file, bool cami, bool add_unbinned_bin);
     void AssignBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy);
 
     blaze::DynamicMatrix<double> BinDistance(const SoftBinsAssignment& soft_bins_assignment,
@@ -136,5 +146,18 @@ class Binning {
     std::unordered_map<debruijn_graph::EdgeId, EdgeBinning> edges_binning_{};
     std::unordered_set<debruijn_graph::EdgeId> unbinned_edges_{};
     std::unordered_map<debruijn_graph::EdgeId, size_t> edges_multiplicity_{};
+};
+
+class LabelInitializer {
+  public:
+    using Graph = debruijn_graph::Graph;
+
+    LabelInitializer(const Graph &g, size_t length_threshold, bool unbinned_bin);
+
+    SoftBinsAssignment InitLabels(const Binning &bin_stats) const;
+  private:
+    const Graph &g_;
+    size_t length_threshold_;
+    bool unbinned_bin_;
 };
 }
