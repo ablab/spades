@@ -132,12 +132,11 @@ std::unique_ptr<AlphaAssigner> get_alpha_assigner(const gcfg &cfg,
         case RefinerType::Propagation:
             return std::make_unique<PropagationAssigner>(graph);
         case RefinerType::Correction:
-            if (not cfg.alpha_propagation) {
+            if (not cfg.alpha_propagation)
                 return std::make_unique<CorrectionAssigner>(graph, cfg.labeled_alpha);
-            }
-            AlphaPropagator alpha_propagator(graph, links, cfg.metaalpha, cfg.eps, cfg.length_threshold,
-                                             cfg.distance_bound, cfg.output_file + ".alpha_stats");
-            auto alpha_mask = alpha_propagator.GetAlphaMask(binning);
+
+            auto alpha_mask = AlphaPropagator(graph, links, cfg.metaalpha, cfg.eps, cfg.length_threshold,
+                                              cfg.distance_bound, fs::append_path(cfg.prefix, "alpha_stats.tsv")).GetAlphaMask(binning);
             return std::make_unique<bin_stats::CorrectionAssigner>(graph, alpha_mask, cfg.labeled_alpha);
     }
 }
