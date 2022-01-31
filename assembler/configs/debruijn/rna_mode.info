@@ -36,6 +36,13 @@ pacbio_processor
     pacbio_min_gap_quantity 2
     contigs_min_gap_quantity 1
     max_contigs_gap_length 10000
+;spoa
+    match 5
+    mismatch -4
+    gap_open -8
+    gap_extend -6
+    gap_open_second -10
+    gap_extend_second -4
 }
 
 contig_output {
