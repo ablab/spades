@@ -36,7 +36,7 @@ EdgeLabels::EdgeLabels(const EdgeId e, const Binning& bin_stats, bool is_long, b
         }
         is_repetitive = bin_stats.multiplicities().at(e) > 1;
     } else if (unbinned_bin and is_long) {
-        labels_probabilities.set(UNBINNED, 1.0);
+        labels_probabilities.set(SPECIAL_UNBINNED, 1.0);
     }
 }
 
@@ -144,7 +144,7 @@ void Binning::LoadBinning(const std::string &binning_file,
   BinId max_bin_id = 0;
   BinId unbinned = UNBINNED;
   if (add_unbinned_bin) {
-      unbinned = BinId(0);
+      unbinned = SPECIAL_UNBINNED;
       max_bin_id = 1;
   }
   while (reader.read_row(scaffold_name, bin_label)) {

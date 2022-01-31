@@ -39,6 +39,7 @@ struct EdgeLabels {
     using BinId = uint64_t;
 
     static constexpr BinId UNBINNED = BinId(-1);
+    static constexpr BinId SPECIAL_UNBINNED = BinId(0);
 
     // TODO: Could pack e and is_binned into single 64 bits
     debruijn_graph::EdgeId e;
@@ -87,6 +88,7 @@ class Binning {
     using ScaffoldLabels = std::unordered_map<ScaffoldId, ScaffoldName>;
 
     static constexpr BinId UNBINNED = EdgeLabels::UNBINNED;
+    static constexpr BinId SPECIAL_UNBINNED = EdgeLabels::SPECIAL_UNBINNED;
 
     explicit Binning(const debruijn_graph::Graph& g) : graph_(g) {}
 
