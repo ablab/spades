@@ -33,7 +33,6 @@ const CoverageInfo AddComplement(const CoverageInfo& coverage_info);
 const EdgePairInfo AddBackward(const EdgePairInfo& pair_info);
 const EdgePairInfo AddComplement(const EdgePairInfo& pair_info);
 void EdgesEqual(const Edges& s1, const Edges& s2);
-const io::SingleRead MakeRead(const MyRead& read);
 const std::vector<io::SingleRead> MakeReads(const std::vector<MyRead>& reads);
 const std::vector<io::PairedRead> MakePairedReads(const std::vector<MyPairedRead>& paired_reads, size_t insert_size);
 void AssertEdges(debruijn_graph::Graph& g, const Edges& etalon_edges);

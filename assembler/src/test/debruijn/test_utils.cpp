@@ -97,17 +97,10 @@ void EdgesEqual(const Edges& s1, const Edges& s2) {
     }
 }
 
-const io::SingleRead MakeRead(const MyRead& read) {
-    //todo fill with good quality
-    std::string qual;
-    qual.resize(read.size());
-    return io::SingleRead("", read, qual);
-}
-
 const std::vector<io::SingleRead> MakeReads(const std::vector<MyRead>& reads) {
     std::vector<io::SingleRead> ans;
     for (size_t i = 0; i < reads.size(); ++i) {
-        ans.push_back(MakeRead(reads[i]));
+        ans.push_back(reads[i]);
     }
     return ans;
 }
@@ -116,7 +109,7 @@ const std::vector<PairedRead> MakePairedReads(const std::vector<MyPairedRead>& p
     DEBUG("Making paired reads");
     std::vector<PairedRead> ans;
     for (size_t i = 0; i < paired_reads.size(); ++i) {
-        ans.push_back(PairedRead(MakeRead(paired_reads[i].first), MakeRead(paired_reads[i].second), insert_size));
+        ans.push_back(PairedRead(paired_reads[i].first, paired_reads[i].second, insert_size));
     }
     DEBUG("Made paired reads");
     return ans;
