@@ -63,5 +63,9 @@ MaxLikelihoodBinningAssignmentStrategy::AssignScaffoldBins(const std::vector<deb
         res *= inv_length;
     }
 
+    res.erase([=](double value) {
+        return math::le(value, thr_);
+    });
+
     return res;
 }
