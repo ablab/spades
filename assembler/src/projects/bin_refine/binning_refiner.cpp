@@ -249,7 +249,8 @@ int main(int argc, char** argv) {
               EdgeId last;
               for (const auto &path : gfa.paths()) {
                   const std::string &name = path.name;
-                  std::string cname = name.substr(0, name.find_last_of('_'));
+                  std::string cname = (utils::starts_with(name, "NODE_") ?
+                                       name.substr(0, name.find_last_of('_')) : name);
                   // SPAdes outputs paths of scaffolds in the file, so we need to strip the path segment id from the end
                   if (cname != scaffold_name) {
                       scaffold_name = cname;
