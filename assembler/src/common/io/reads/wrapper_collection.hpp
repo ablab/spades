@@ -52,7 +52,8 @@ class FixingWrapper: public DelegatingWrapper<SingleRead> {
             if (!is_nucl(str[i]))
                 str[i] = nucl(char(i % 4));
         }
-        return io::SingleRead(read.name(), str);
+        return io::SingleRead(read.name(), read.comment(),
+                              str);
     }
 
 public:
@@ -83,7 +84,8 @@ class NonNuclCollapsingWrapper: public DelegatingWrapper<SingleRead> {
             if (is_nucl(str[i]))
                 ss << str[i];
         }
-        return io::SingleRead(read.name(), ss.str());
+        return io::SingleRead(read.name(), read.comment(),
+                              ss.str());
     }
 
 public:

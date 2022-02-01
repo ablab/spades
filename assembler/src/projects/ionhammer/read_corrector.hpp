@@ -1112,7 +1112,8 @@ class SingleReadCorrector {
     auto seq = read.GetSequenceString();
     if (seq.empty()) return nullptr;
 
-    return std::unique_ptr<io::SingleRead>(new io::SingleRead(r.name(), seq));
+    return std::unique_ptr<io::SingleRead>(new io::SingleRead(r.name(), r.comment(),
+                                                              seq));
   }
 
   std::unique_ptr<io::BamRead> operator()(

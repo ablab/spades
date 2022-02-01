@@ -145,7 +145,8 @@ class SingleReadCorrector {
       return nullptr;
     }
 
-    auto result = std::unique_ptr<io::SingleRead>(new io::SingleRead(read.name(), corected_seq));
+    auto result = std::unique_ptr<io::SingleRead>(new io::SingleRead(read.name(), read.comment(),
+                                                                     corected_seq));
     return result;
   }
 
