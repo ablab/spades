@@ -38,6 +38,7 @@
         4.5.2. [SPAligner](#sec4.5.2)</br>
 5. [Citation](#sec5)</br>
 6. [Feedback and bug reports](#sec6)</br>
+7. [Includes analyzer](#sec6)<\br>
 
 <a name="sec1"></a>
 # About SPAdes
@@ -1267,3 +1268,25 @@ Your comments, bug reports, and suggestions are very welcomed. They will help us
 You can leave your comments and bug reports at [our GitHub repository tracker](https://github.com/ablab/spades/issues) or sent it via e-mail: [spades.support@cab.spbu.ru](mailto:spades.support@cab.spbu.ru)
 
 
+<a name="sec7"></a>
+# Includes analyzer
+To analyze includes in SPAdes source files, you can use an Include analyzer tool. Follow next steps:</br>
+1. Generate build.ninja file via command cmake ../src -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -G Ninja -DCMAKE_C_FLAGS="-H" -DCMAKE_CXX_FLAGS="-H".</br>
+2. Create file build_log.txt.</br>
+3. Run ninja | tee ninja_log.txt.</br>
+4. Run python3 [analyze_includes.py](assembler/src/tools/includes_analysis/analyze_includes.py) --target=spades-core --revision=$(git rev-parse --short HEAD)  --json-out=include-analysis.js build_log.txt. You also can add argument --roo_filter to define which files will count in statistics. For example, to look only at files from /src directory, use --root-filter="[./]*/src/.*".</br>
+5. As a result of a previous step you will get include-analysis.js file that accompanies [include-analysis.html](assembler/src/tools/includes_analysis/include-analysis.html). Open html page to see the results.</br></br>
+
+html file contains per-file and per-edge analysis.</br>
+Information about each file:</br>
+1. Individual size - the size of a file itself in bytes.</br>
+2. Expanded size - the size of the file and all the files it includes, directly and indirectly.</br>
+3. Added size - the size added by this file being part of the build. In other words, if this file were empty and had no includes, how much smaller would the build be.</br>
+4. Accurance - number of translation units that this file is part of.</br>
+5. Directly Included In - number of files that containe considered file as a direct include.</br>
+6. Direct Includes - number of includes in this file (only files that match --root_filter count).</br></br>
+
+Information about each edge:</br>
+1. File-includer.</br>
+2. Included file.</br>
+3. Added Size - the size added to includer file by this include.</br>
