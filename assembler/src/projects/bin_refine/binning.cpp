@@ -20,11 +20,11 @@ using namespace bin_stats;
 
 const std::string Binning::UNBINNED_ID = "0";
 
-EdgeLabels::EdgeLabels(const EdgeId e, const Binning& bin_stats, bool is_long, bool unbinned_bin)
+EdgeLabels::EdgeLabels(const EdgeId e, const Binning& b, bool is_long, bool unbinned_bin)
         : e(e) {
-    auto bins = bin_stats.edges_binning().find(e);
-    is_binned = bins != bin_stats.edges_binning().end();
-    labels_probabilities.resize(bin_stats.bins().size());
+    auto bins = b.edges_binning().find(e);
+    is_binned = bins != b.edges_binning().end();
+    labels_probabilities.resize(b.bins().size());
 
     is_repetitive = false;
     if (is_binned) {
@@ -34,7 +34,7 @@ EdgeLabels::EdgeLabels(const EdgeId e, const Binning& bin_stats, bool is_long, b
             VERIFY(bin != UNBINNED);
             labels_probabilities.set(bin, 1.0 / static_cast<double>(sz));
         }
-        is_repetitive = bin_stats.multiplicities().at(e) > 1;
+        is_repetitive = b.multiplicities().at(e) > 1;
     } else if (unbinned_bin and is_long) {
         labels_probabilities.set(SPECIAL_UNBINNED, 1.0);
     }
@@ -89,14 +89,14 @@ void Binning::ScaffoldsToEdges() {
 
   for (size_t i = 0; i < nbins; ++i) {
       bin_covs[i] /= bin_lens[i];
-      bin_stats_[i].mean_cov = bin_covs[i];
-      bin_stats_[i].len = bin_lens[i];
+      bin_cov_stats_[i].mean_cov = bin_covs[i];
+      bin_cov_stats_[i].len = bin_lens[i];
   }
 
   for (size_t i = 0; i < nbins; ++i) {
       m2_covs[i] /= bin_lens[i];
-      bin_stats_[i].m2_cov = m2_covs[i];
-      bin_stats_[i].sd_cov = sqrt(m2_covs[i] - bin_covs[i] * bin_covs[i]);
+      bin_cov_stats_[i].m2_cov = m2_covs[i];
+      bin_cov_stats_[i].sd_cov = sqrt(m2_covs[i] - bin_covs[i] * bin_covs[i]);
   }
 }
 
@@ -266,8 +266,8 @@ void Binning::WriteToBinningFile(const std::string& prefix, uint64_t output_opti
 
     out_bins << "bin\tcoverage mean\tcov sd\tbin length\tcoverage m^2\n";
     for (size_t i = 0; i < bins_.size(); ++i) {
-        out_bins << bin_labels_.at(i) << '\t' << bin_stats_[i].mean_cov << '\t' << bin_stats_[i].sd_cov << '\t'
-                 << bin_stats_[i].len << '\t' << bin_stats_[i].m2_cov << '\n';
+        out_bins << bin_labels_.at(i) << '\t' << bin_cov_stats_[i].mean_cov << '\t' << bin_cov_stats_[i].sd_cov << '\t'
+                 << bin_cov_stats_[i].len << '\t' << bin_cov_stats_[i].m2_cov << '\n';
     }
 }
 

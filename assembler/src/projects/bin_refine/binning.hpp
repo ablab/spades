@@ -64,7 +64,7 @@ struct EdgeLabels {
     friend std::ostream &operator<<(std::ostream &os, const EdgeLabels &labels);
 };
 
-struct BinStats {
+struct BinCovStats {
     double mean_cov;
     double sd_cov;
     double m2_cov;
@@ -141,7 +141,7 @@ class Binning {
     // All about bins
     std::unordered_map<BinLabel, BinId> bins_{};
     BinLabels bin_labels_{};
-    std::unordered_map<BinId, BinStats> bin_stats_{};
+    std::unordered_map<BinId, BinCovStats> bin_cov_stats_{};
 
     // All about edges
     // FIXME: id_map
