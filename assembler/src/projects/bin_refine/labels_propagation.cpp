@@ -32,13 +32,13 @@ LabelsPropagation::LabelsPropagation(const debruijn_graph::Graph& g,
     double avdeg = 0, avwlink = 0;
     INFO("Calculating weights");
     for (EdgeId e : g.canonical_edges()) {
-        double wlink = 0;
-        for (const auto &link : links_.links(e))
+        double wlink = 0;        for (const auto &link : links_.links(e)) {
             wlink += link.w;
+            avdeg += 1;
+        }
 
         avwlink += wlink;
         if (wlink > 0) {
-            avdeg += 1;
             double val = 1 / sqrt(wlink);
             rdeg_.emplace(e, val);
             rdeg_.emplace(g.conjugate(e), val);
@@ -48,7 +48,10 @@ LabelsPropagation::LabelsPropagation(const debruijn_graph::Graph& g,
     avdeg /= (double(g.e_size()) / 2.0);
     avwlink /= (double(g.e_size()) / 2.0);
     INFO("Average edge degree: " << avdeg);
-    INFO("Average link weights: " << avwlink);
+    INFO("Average edge link weight: " << avwlink);
+
+    if (avdeg < 0.75)
+        WARN("Graph seems to be very fragmented, the results might be suboptimal");
 
     double avweight = 0;
     for (EdgeId e : g.canonical_edges()) {
