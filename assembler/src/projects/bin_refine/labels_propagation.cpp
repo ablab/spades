@@ -29,15 +29,16 @@ LabelsPropagation::LabelsPropagation(const debruijn_graph::Graph& g,
           rdeg_(g.max_eid()),
           rweight_(g.max_eid()){
     // Calculate the reverse root degree
-    double avdeg = 0;
+    double avdeg = 0, avwlink = 0;
     INFO("Calculating weights");
     for (EdgeId e : g.canonical_edges()) {
         double wlink = 0;
         for (const auto &link : links_.links(e))
             wlink += link.w;
 
-        avdeg += wlink;
+        avwlink += wlink;
         if (wlink > 0) {
+            avdeg += 1;
             double val = 1 / sqrt(wlink);
             rdeg_.emplace(e, val);
             rdeg_.emplace(g.conjugate(e), val);
@@ -45,7 +46,9 @@ LabelsPropagation::LabelsPropagation(const debruijn_graph::Graph& g,
     }
     // For simplifty count self-complement edges twice
     avdeg /= (double(g.e_size()) / 2.0);
+    avwlink /= (double(g.e_size()) / 2.0);
     INFO("Average edge degree: " << avdeg);
+    INFO("Average link weights: " << avwlink);
 
     double avweight = 0;
     for (EdgeId e : g.canonical_edges()) {
