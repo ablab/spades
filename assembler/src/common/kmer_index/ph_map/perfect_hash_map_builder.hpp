@@ -8,11 +8,11 @@
 #include "perfect_hash_map.hpp"
 #include "kmer_maps.hpp"
 #include "cqf_hash_map.hpp"
+#include "kmer_index/kmer_mph/kmer_index_builder.hpp"
 
-#include "utils/kmer_mph/kmer_index_builder.hpp"
 #include "utils/perf/timetracer.hpp"
 
-namespace utils {
+namespace kmers {
 
 struct PerfectHashMapBuilder {
     template<class K, class V, class traits, class StoringType, class Counter>

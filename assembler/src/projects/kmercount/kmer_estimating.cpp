@@ -13,7 +13,7 @@
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
-#include "utils/kmer_counting.hpp"
+#include "common/kmer_index/kmer_counting.hpp"
 
 #include <sys/types.h>
 #include <string>
@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
         typedef rolling_hash::SymmetricCyclicHash<> SeqHasher;
         SeqHasher hasher(args.k);
 
-        size_t kmers_cnt_est = utils::EstimateCardinalityForOneStream(args.k, single_readers, hasher);
+        size_t kmers_cnt_est = kmers::EstimateCardinalityForOneStream(args.k, single_readers, hasher);
         INFO("Kmer number estimation: " << kmers_cnt_est)
     } catch (std::string const &s) {
         std::cerr << s;

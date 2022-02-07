@@ -20,18 +20,18 @@
 #include "io/reads/multifile_reader.hpp"
 
 #include "utils/filesystem/temporary.hpp"
-#include "utils/ph_map/coverage_hash_map_builder.hpp"
+#include "kmer_index/ph_map/coverage_hash_map_builder.hpp"
 
 
 namespace debruijn_graph {
 
 struct ConstructionStorage {
-    using CoverageMap = utils::PerfectHashMap<RtSeq, uint32_t, utils::slim_kmer_index_traits<RtSeq>, utils::DefaultStoring>;
+    using CoverageMap = kmers::PerfectHashMap<RtSeq, uint32_t, kmers::slim_kmer_index_traits<RtSeq>, kmers::DefaultStoring>;
 
     ConstructionStorage(unsigned k)
             : ext_index(k) {}
 
-    utils::DeBruijnExtensionIndex<> ext_index;
+    kmers::DeBruijnExtensionIndex<> ext_index;
 
     std::unique_ptr<qf::cqf> cqf;
     std::unique_ptr<kmers::KMerDiskStorage<RtSeq>> kmers;
@@ -182,7 +182,7 @@ class CoverageFilter: public Construction::Phase {
 
         unsigned rthr = storage().params.read_cov_threshold;
 
-        using KmerFilter = utils::StoringTypeFilter<storing_type>;
+        using KmerFilter = kmers::StoringTypeFilter<storing_type>;
 
         unsigned kplusone = index.k() + 1;
         rolling_hash::SymmetricCyclicHash<rolling_hash::NDNASeqHash> hasher(kplusone);
@@ -236,8 +236,8 @@ public:
         io::ReadStreamList<io::SingleReadSeq> merge_streams = temp_merge_read_streams(read_streams, contigs_streams);
 
         unsigned nthreads = (unsigned)merge_streams.size();
-        using Splitter =  utils::DeBruijnReadKMerSplitter<io::SingleReadSeq,
-                                                          utils::StoringTypeFilter<storing_type>>;
+        using Splitter =  kmers::DeBruijnReadKMerSplitter<io::SingleReadSeq,
+                                                          kmers::StoringTypeFilter<storing_type>>;
 
         kmers::KMerDiskCounter<RtSeq>
                 counter(storage().workdir,
@@ -268,7 +268,7 @@ public:
 
     void run(debruijn_graph::GraphPack &, const char*) override {
         // FIXME: We just need files here, not the full counter. Implement refererence counting scheme!
-        utils::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromKPOMers(storage().workdir,
+        kmers::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromKPOMers(storage().workdir,
                                                                               storage().ext_index,
                                                                               *storage().kmers,
                                                                               unsigned(storage().read_streams.size()),
@@ -408,7 +408,7 @@ public:
         storage().coverage_map.reset(new ConstructionStorage::CoverageMap(storage().kmers->k()));
         auto &coverage_map = *storage().coverage_map;
 
-        utils::CoverageHashMapBuilder().BuildIndex(coverage_map,
+        kmers::CoverageHashMapBuilder().BuildIndex(coverage_map,
                                                    *storage().kmers,
                                                    storage().read_streams);
         /*

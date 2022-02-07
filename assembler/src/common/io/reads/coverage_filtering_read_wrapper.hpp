@@ -12,7 +12,7 @@
 
 #include "adt/cqf.hpp"
 #include "adt/cyclichash.hpp"
-#include "utils/kmer_counting.hpp"
+#include "kmer_index/kmer_counting.hpp"
 
 #include <memory>
 
@@ -20,11 +20,11 @@ namespace io {
 
 class KmerMultiplicityFiller {
     std::vector<unsigned> &mlts_;
-    const utils::CQFKmerFilter &kmer_mlt_index_;
+    const kmers::CQFKmerFilter &kmer_mlt_index_;
 
 public:
     KmerMultiplicityFiller(std::vector<unsigned> &mlts,
-                           const utils::CQFKmerFilter &kmer_mlt_index) :
+                           const kmers::CQFKmerFilter &kmer_mlt_index) :
             mlts_(mlts), kmer_mlt_index_(kmer_mlt_index) {}
 
     void ProcessKmer(const RtSeq &/*kmer*/, uint64_t hash) {
@@ -34,13 +34,13 @@ public:
 
 template<class Hasher>
 unsigned CountMedianMlt(const Sequence &s, unsigned k, const Hasher &hasher,
-                        const utils::CQFKmerFilter &kmer_mlt_index) {
+                        const kmers::CQFKmerFilter &kmer_mlt_index) {
     if (s.size() < k)
         return 0;
 
     std::vector<unsigned> mlts;
     KmerMultiplicityFiller mlt_filler(mlts, kmer_mlt_index);
-    utils::KmerSequenceProcessor<Hasher, KmerMultiplicityFiller> processor(hasher, mlt_filler);
+    kmers::KmerSequenceProcessor<Hasher, KmerMultiplicityFiller> processor(hasher, mlt_filler);
     processor.ProcessSequence(s, k);
 
     size_t n = mlts.size() / 2;
@@ -52,11 +52,11 @@ template<class Hasher>
 class CoverageFilterBase {
     const unsigned k_;
     const Hasher hasher_;
-    const utils::CQFKmerFilter &kmer_mlt_index_;
+    const kmers::CQFKmerFilter &kmer_mlt_index_;
     const unsigned thr_;
 public:
     CoverageFilterBase(unsigned k, const Hasher &hasher,
-                       const utils::CQFKmerFilter &kmer_mlt_index,
+                       const kmers::CQFKmerFilter &kmer_mlt_index,
                        unsigned threshold) :
             k_(k), hasher_(hasher),
             kmer_mlt_index_(kmer_mlt_index), thr_(threshold) {
@@ -72,7 +72,7 @@ class CoverageFilter : public CoverageFilterBase<Hasher> {
     typedef CoverageFilterBase<Hasher> base;
 public:
     CoverageFilter(unsigned k, const Hasher &hasher,
-                   const utils::CQFKmerFilter &kmer_mlt_index,
+                   const kmers::CQFKmerFilter &kmer_mlt_index,
                    unsigned thr) :
             base(k, hasher, kmer_mlt_index, thr) {}
 
@@ -87,7 +87,7 @@ class CoverageFilter<UniversalPairedRead<SingleReadType>, Hasher> : public Cover
     typedef UniversalPairedRead<SingleReadType> PairedReadType;
 public:
     CoverageFilter(unsigned k, const Hasher &hasher,
-                   const utils::CQFKmerFilter &kmer_mlt_index,
+                   const kmers::CQFKmerFilter &kmer_mlt_index,
                    unsigned thr) :
             base(k, hasher, kmer_mlt_index, thr) {}
 
@@ -100,7 +100,7 @@ public:
 template<class ReadType, class Hasher>
 inline ReadStream<ReadType> CovFilteringWrap(ReadStream<ReadType> reader,
                                              unsigned k, const Hasher &hasher,
-                                             const utils::CQFKmerFilter &cqf, unsigned thr) {
+                                             const kmers::CQFKmerFilter &cqf, unsigned thr) {
     CoverageFilter<ReadType, Hasher> filter(k, hasher, cqf, thr);
     return io::FilteringWrap<ReadType>(std::move(reader),
                                        [=](const ReadType &r) { return filter(r); });
@@ -109,7 +109,7 @@ inline ReadStream<ReadType> CovFilteringWrap(ReadStream<ReadType> reader,
 template<class ReadType, class Hasher>
 inline ReadStreamList<ReadType> CovFilteringWrap(ReadStreamList<ReadType> readers,
                                                  unsigned k, const Hasher &hasher,
-                                                 const utils::CQFKmerFilter &filter, unsigned thr) {
+                                                 const kmers::CQFKmerFilter &filter, unsigned thr) {
     ReadStreamList<ReadType> answer;
     for (auto &reader : readers) {
         answer.push_back(CovFilteringWrap(std::move(reader),

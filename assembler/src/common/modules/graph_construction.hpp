@@ -18,8 +18,8 @@
 
 // FIXME: layering violation
 #include "pipeline/config_struct.hpp"
-#include "utils/extension_index/kmer_extension_index_builder.hpp"
-#include "utils/ph_map/coverage_hash_map_builder.hpp"
+#include "kmer_index/extension_index/kmer_extension_index_builder.hpp"
+#include "kmer_index/ph_map/coverage_hash_map_builder.hpp"
 #include "utils/perf/perfcounter.hpp"
 
 #include "io/reads/io_helper.hpp"
@@ -48,9 +48,9 @@ KMerFiles ConstructGraphUsingExtensionIndex(const config::debruijn_config::const
     VERIFY_MSG(streams.size(), "No input streams specified");
 
     TRACE("... in parallel");
-    utils::DeBruijnExtensionIndex<> ext(k);
+    kmers::DeBruijnExtensionIndex<> ext(k);
 
-    KMerFiles kmers = utils::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromStream(workdir, ext, streams, params.read_buffer_size);
+    KMerFiles kmers = kmers::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromStream(workdir, ext, streams, params.read_buffer_size);
 
     EarlyClipTips(params, ext);
 
@@ -91,10 +91,10 @@ void ConstructGraphWithCoverage(const config::debruijn_config::construction &par
     KMerFiles kmers = ConstructGraphWithIndex(params, workdir, streams, g, index);
 
     INFO("Filling coverage index");
-    using CoverageMap = utils::PerfectHashMap<RtSeq, uint32_t, utils::slim_kmer_index_traits<RtSeq>, utils::DefaultStoring>;
+    using CoverageMap = kmers::PerfectHashMap<RtSeq, uint32_t, kmers::slim_kmer_index_traits<RtSeq>, kmers::DefaultStoring>;
     CoverageMap coverage_map(unsigned(g.k() + 1));
 
-    utils::CoverageHashMapBuilder().BuildIndex(coverage_map, kmers, streams);
+    kmers::CoverageHashMapBuilder().BuildIndex(coverage_map, kmers, streams);
 
     INFO("Filling coverage and flanking coverage from PHM");
     FillCoverageAndFlankingFromPHM(coverage_map, g, flanking_cov);

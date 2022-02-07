@@ -8,13 +8,13 @@
 
 #include "kmer_extension_index.hpp"
 
-#include "utils/kmer_mph/kmer_index_builder.hpp"
-#include "utils/kmer_mph/kmer_splitters.hpp"
-#include "utils/kmer_counting.hpp"
-#include "utils/ph_map/perfect_hash_map_builder.hpp"
+#include "kmer_index/kmer_mph/kmer_index_builder.hpp"
+#include "kmer_index/kmer_mph/kmer_splitters.hpp"
+#include "kmer_index/ph_map/perfect_hash_map_builder.hpp"
+#include "kmer_index/kmer_counting.hpp"
 #include "io/reads/multifile_reader.hpp"
 
-namespace utils {
+namespace kmers {
 
 class DeBruijnExtensionIndexBuilder {
 public:

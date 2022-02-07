@@ -11,7 +11,7 @@
 #include "io/reads/io_helper.hpp"
 #include "adt/iterator_range.hpp"
 
-namespace utils {
+namespace kmers {
 
 using RtSeqKMerSplitter = kmers::KMerSortingSplitter<RtSeq>;
 

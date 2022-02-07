@@ -7,14 +7,14 @@
 
 #pragma once
 
+#include "kmer_index/ph_map/perfect_hash_map.hpp"
+#include "kmer_index/ph_map/kmer_maps.hpp"
+#include "kmer_index/ph_map/storing_traits.hpp"
 #include "sequence/rtseq.hpp"
-#include "utils/ph_map/perfect_hash_map.hpp"
-#include "utils/ph_map/kmer_maps.hpp"
 #include "utils/stl_utils.hpp"
-#include "utils/ph_map/storing_traits.hpp"
 #include <bitset>
 
-namespace utils {
+namespace kmers {
 
 inline uint8_t invert_byte_slow(uint8_t a) {
     size_t res = 0;

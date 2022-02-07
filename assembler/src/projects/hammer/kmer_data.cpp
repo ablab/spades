@@ -16,7 +16,7 @@
 #include "io/reads/ireadstream.hpp"
 #include "io/kmers/kmer_iterator.hpp"
 
-#include "utils/kmer_mph/kmer_index_builder.hpp"
+#include "kmer_index/kmer_mph/kmer_index_builder.hpp"
 #include "utils/logger/logger.hpp"
 
 using namespace hammer;

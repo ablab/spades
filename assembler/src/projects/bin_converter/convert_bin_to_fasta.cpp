@@ -11,8 +11,8 @@
 
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
-#include "utils/ph_map/perfect_hash_map.hpp"
-#include "utils/kmer_mph/kmer_index_builder.hpp"
+#include "kmer_index/ph_map/perfect_hash_map.hpp"
+#include "kmer_index/kmer_mph/kmer_index_builder.hpp"
 #include "pipeline/library.hpp"
 
 #include <clipp/clipp.h>

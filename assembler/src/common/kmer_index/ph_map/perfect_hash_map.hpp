@@ -6,21 +6,17 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "utils/parallel/openmp_wrapper.h"
-
 #include "key_with_hash.hpp"
 #include "storing_traits.hpp"
-
+#include "kmer_index/kmer_mph/kmer_index.hpp"
 #include "io/binary/binary.hpp"
-
-#include "utils/kmer_mph/kmer_index.hpp"
 #include "utils/verify.hpp"
-
+#include "utils/parallel/openmp_wrapper.h"
 #include <vector>
 #include <cstdlib>
 #include <cstdint>
 
-namespace utils {
+namespace kmers {
 
 template<class K, class traits>
 class IndexWrapper {

@@ -9,7 +9,7 @@
 
 #include "utils/verify.hpp"
 
-namespace utils {
+namespace kmers {
 
 struct SimpleStoring {
     template<class K, class Container>

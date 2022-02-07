@@ -10,9 +10,9 @@
 #include "utils/filesystem/path_helper.hpp"
 #include "utils/logger/logger.hpp"
 
-namespace utils {
+namespace kmers {
 
-template<class K, class V, class traits = kmers::kmer_index_traits<K>, class StoringType = SimpleStoring>
+template<class K, class V, class traits = kmer_index_traits<K>, class StoringType = SimpleStoring>
 class KeyStoringMap : public PerfectHashMap<K, V, traits, StoringType> {
 private:
     typedef PerfectHashMap<K, V, traits, StoringType> base;

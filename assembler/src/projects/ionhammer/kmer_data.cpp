@@ -13,8 +13,8 @@
 #include "io/reads/file_reader.hpp"
 #include "io/reads/read_processor.hpp"
 
-#include "utils/kmer_mph/kmer_splitter.hpp"
-#include "utils/kmer_mph/kmer_index_builder.hpp"
+#include "kmer_index/kmer_mph/kmer_splitter.hpp"
+#include "kmer_index/kmer_mph/kmer_index_builder.hpp"
 
 #include <mutex>
 #include <random>

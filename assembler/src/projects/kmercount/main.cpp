@@ -12,8 +12,8 @@
 #include "io/reads/read_processor.hpp"
 #include "io/reads/io_helper.hpp"
 
-#include "utils/ph_map/kmer_maps.hpp"
-#include "utils/kmer_mph/kmer_index_builder.hpp"
+#include "kmer_index/ph_map/kmer_maps.hpp"
+#include "kmer_index/kmer_mph/kmer_index_builder.hpp"
 
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
@@ -37,8 +37,8 @@ void create_console_logger() {
     attach_logger(lg);
 }
 
-class SimplePerfectHashMap : public utils::KeyIteratingMap<RtSeq, uint32_t> {
-    using base = utils::KeyIteratingMap<RtSeq, uint32_t>;
+class SimplePerfectHashMap : public kmers::KeyIteratingMap<RtSeq, uint32_t> {
+    using base = kmers::KeyIteratingMap<RtSeq, uint32_t>;
   public:
     SimplePerfectHashMap(unsigned k)
             : base(k) {}

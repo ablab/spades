@@ -8,7 +8,7 @@
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/core/construction_helper.hpp"
-#include "utils/extension_index/kmer_extension_index.hpp"
+#include "kmer_index/extension_index/kmer_extension_index.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/parallel/parallel_wrapper.hpp"
 #include <numeric>
@@ -181,7 +181,7 @@ private:
 
 class UnbranchingPathExtractor {
 private:
-    typedef utils::DeBruijnExtensionIndex<> Index;
+    typedef kmers::DeBruijnExtensionIndex<> Index;
     typedef RtSeq Kmer;
     typedef Index::kmer_iterator kmer_iterator;
     typedef Index::DeEdge DeEdge;
@@ -194,11 +194,11 @@ private:
         return IsJunction(origin_.get_value(kwh));
     }
 
-    bool IsJunction(utils::InOutMask mask) const {
+    bool IsJunction(kmers::InOutMask mask) const {
         return !mask.CheckUniqueOutgoing() || !mask.CheckUniqueIncoming();
     }
 
-    void AddStartDeEdgesForVertex(KeyWithHash kh, utils::InOutMask mask,
+    void AddStartDeEdgesForVertex(KeyWithHash kh, kmers::InOutMask mask,
                                   std::vector<DeEdge>& start_edges) const {
         for (char next = 0; next < 4; next++) {
             if (!mask.CheckOutgoing(next))
@@ -224,7 +224,7 @@ private:
     }
 
     bool StepRightIfPossible(KeyWithHash &kwh) const {
-        utils::InOutMask mask = origin_.get_value(kwh);
+        kmers::InOutMask mask = origin_.get_value(kwh);
         if (mask.CheckUniqueOutgoing() && mask.CheckUniqueIncoming()) {
             kwh = origin_.GetOutgoing(kwh, mask.GetUniqueOutgoing());
             return true;
@@ -233,7 +233,7 @@ private:
     }
 
     bool StepRightIfPossible(DeEdge &edge) const {
-        utils::InOutMask mask = origin_.get_value(edge.end);
+        kmers::InOutMask mask = origin_.get_value(edge.end);
         if (mask.CheckUniqueOutgoing() && mask.CheckUniqueIncoming()) {
             edge = DeEdge(edge.end,
                           origin_.GetOutgoing(edge.end, mask.GetUniqueOutgoing()));
@@ -419,7 +419,7 @@ private:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef RtSeq Kmer;
-    typedef utils::DeBruijnExtensionIndex<> Index;
+    typedef kmers::DeBruijnExtensionIndex<> Index;
     size_t kmer_size_;
     Index &origin_;
 
@@ -561,7 +561,7 @@ template<class Graph>
 class DeBruijnGraphExtentionConstructor {
 private:
     typedef typename Graph::EdgeId EdgeId;
-    typedef utils::DeBruijnExtensionIndex<> DeBruijn;
+    typedef kmers::DeBruijnExtensionIndex<> DeBruijn;
     typedef typename Graph::VertexId VertexId;
     typedef RtSeq Kmer;
 

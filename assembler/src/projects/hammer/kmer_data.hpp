@@ -11,7 +11,7 @@
 #include "kmer_stat.hpp"
 #include "adt/array_vector.hpp"
 
-#include "utils/kmer_mph/kmer_index.hpp"
+#include "kmer_index/kmer_mph/kmer_index.hpp"
 #include "utils/logger/logger.hpp"
 
 #include <vector>

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "utils/ph_map/perfect_hash_map.hpp"
+#include "kmer_index/ph_map/perfect_hash_map.hpp"
 #include "edge_info_updater.hpp"
 #include "edge_position_index.hpp"
 
@@ -91,9 +91,9 @@ public:
 
 //todo it is not handling graph events!!!
 template<class IdType, class Seq = RtSeq,
-    class traits = kmers::kmer_index_traits<Seq>,  class StoringType = utils::SimpleStoring >
-class DeBruijnEdgeMultiIndex : public utils::KeyStoringMap<Seq, EdgeInfoStorage<IdType>, traits, StoringType > {
-  typedef utils::KeyStoringMap<Seq, EdgeInfoStorage<IdType>, traits, StoringType > base;
+    class traits = kmers::kmer_index_traits<Seq>,  class StoringType = kmers::SimpleStoring >
+class DeBruijnEdgeMultiIndex : public kmers::KeyStoringMap<Seq, EdgeInfoStorage<IdType>, traits, StoringType > {
+  typedef kmers::KeyStoringMap<Seq, EdgeInfoStorage<IdType>, traits, StoringType > base;
  public:
   typedef StoringType storing_type;
   typedef typename base::traits_t traits_t;

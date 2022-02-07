@@ -7,11 +7,12 @@
 
 #include "perfect_hash_map_builder.hpp"
 #include "utils/parallel/openmp_wrapper.h"
+#include "sequence/sequence.hpp"
 #include <cstdlib>
 
-namespace utils {
+namespace kmers {
 
-struct CoverageHashMapBuilder : public utils::PerfectHashMapBuilder {
+struct CoverageHashMapBuilder : public PerfectHashMapBuilder {
     template<class ReadStream, class Index>
     void FillCoverageFromStream(ReadStream &stream, Index &index) const {
         typedef typename Index::KeyType Kmer;
@@ -43,7 +44,7 @@ struct CoverageHashMapBuilder : public utils::PerfectHashMapBuilder {
                     Streams &streams) const {
         unsigned nthreads = (unsigned)streams.size();
 
-        utils::PerfectHashMapBuilder::BuildIndex(index, storage, nthreads);
+        PerfectHashMapBuilder::BuildIndex(index, storage, nthreads);
         INFO("Collecting k-mer coverage information from reads, this takes a while.");
 
         streams.reset();

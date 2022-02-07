@@ -8,17 +8,17 @@
 
 #pragma once
 
-#include "utils/extension_index/kmer_extension_index.hpp"
-#include "utils/ph_map/perfect_hash_map.hpp"
-#include "utils/kmer_mph/kmer_index.hpp"
+#include "kmer_index/extension_index/kmer_extension_index.hpp"
+#include "kmer_index/ph_map/perfect_hash_map.hpp"
+#include "kmer_index/kmer_mph/kmer_index.hpp"
 #include "math/xmath.h"
 #include <array>
 #include <numeric>
 
 namespace debruijn_graph {
 
-static size_t RemoveInconsistentForwardLinks(utils::DeBruijnExtensionIndex<> &index,
-                                             const utils::DeBruijnExtensionIndex<>::KeyWithHash &kh) {
+static size_t RemoveInconsistentForwardLinks(kmers::DeBruijnExtensionIndex<> &index,
+                                             const kmers::DeBruijnExtensionIndex<>::KeyWithHash &kh) {
     size_t count = 0;
     auto mask = index.get_value(kh);
     for (char c = 0; c < 4; ++c) {
@@ -36,7 +36,7 @@ static size_t RemoveInconsistentForwardLinks(utils::DeBruijnExtensionIndex<> &in
 
 class EarlyTipClipperProcessor {
 public:
-    typedef utils::DeBruijnExtensionIndex<> Index;
+    typedef kmers::DeBruijnExtensionIndex<> Index;
     typedef Index::KMer Kmer;
     typedef Index::KeyWithHash KeyWithHash;
 
@@ -162,7 +162,7 @@ protected:
 
 class EarlyLowComplexityClipperProcessor {
 public:
-    typedef utils::DeBruijnExtensionIndex<> Index;
+    typedef kmers::DeBruijnExtensionIndex<> Index;
     typedef Index::KMer Kmer;
     typedef Index::KeyWithHash KeyWithHash;
 

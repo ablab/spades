@@ -10,8 +10,8 @@
 
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
-#include "utils/extension_index/kmer_extension_index_builder.hpp"
-#include "utils/ph_map/coverage_hash_map_builder.hpp"
+#include "kmer_index/extension_index/kmer_extension_index_builder.hpp"
+#include "kmer_index/ph_map/coverage_hash_map_builder.hpp"
 
 #include "io/reads/read_processor.hpp"
 #include "io/reads/io_helper.hpp"
@@ -166,9 +166,9 @@ int main(int argc, char* argv[]) {
 
         // Step 1: build extension index
         VERIFY_MSG(read_streams.size(), "No input streams specified");
-        utils::DeBruijnExtensionIndex<> ext_index(k);
+        kmers::DeBruijnExtensionIndex<> ext_index(k);
 
-        auto kmers = utils::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromStream(workdir, ext_index,
+        auto kmers = kmers::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromStream(workdir, ext_index,
                                                                                           read_streams, buff_size);
 
         // Step 2: extract unbranching paths
@@ -199,11 +199,11 @@ int main(int argc, char* argv[]) {
             // Step 4: infer coverage
             if (cfg.coverage) {
                 INFO("Filling coverage index");
-                using CoverageMap = utils::PerfectHashMap<RtSeq, uint32_t, utils::slim_kmer_index_traits<RtSeq>, utils::DefaultStoring>;
+                using CoverageMap = kmers::PerfectHashMap<RtSeq, uint32_t, kmers::slim_kmer_index_traits<RtSeq>, kmers::DefaultStoring>;
                 CoverageMap coverage_map(k + 1);
                 omnigraph::FlankingCoverage<debruijn_graph::DeBruijnGraph> flanking_cov(g, 50);
 
-                utils::CoverageHashMapBuilder().BuildIndex(coverage_map,
+                kmers::CoverageHashMapBuilder().BuildIndex(coverage_map,
                                                            kmers, read_streams);
 
                 INFO("Filling coverage and flanking coverage from PHM");
