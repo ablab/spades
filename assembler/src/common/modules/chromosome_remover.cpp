@@ -16,7 +16,7 @@
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "paired_info/paired_info.hpp"
-#include "pipeline/config_struct.hpp"
+#include "configs/config_struct.hpp"
 #include "sequence/genome_storage.hpp"
 #include "visualization/position_filler.hpp"
 #include "utils/filesystem/path_helper.hpp"

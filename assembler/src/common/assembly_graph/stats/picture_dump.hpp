@@ -15,7 +15,7 @@
 #include "io/binary/graph_pack.hpp"
 #include "io/binary/paired_index.hpp"
 //FIXME awful dependency to get write_lib_data
-#include "pipeline/config_struct.hpp"
+#include "configs/config_struct.hpp"
 #include "visualization/position_filler.hpp"
 #include "visualization/visualization.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"

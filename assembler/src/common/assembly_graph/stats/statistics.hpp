@@ -9,7 +9,7 @@
 
 #include "utils/stl_utils.hpp"
 #include "math/xmath.h"
-#include "pipeline/config_struct.hpp"
+#include "configs/config_struct.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "utils/logger/logger.hpp"
 

@@ -8,7 +8,7 @@
 #ifndef __HAMMER_IT_CONFIG_HPP__
 #define __HAMMER_IT_CONFIG_HPP__
 
-#include "pipeline/config_singl.hpp"
+#include "configs/config_singl.hpp"
 #include "library/library.hpp"
 
 namespace hammer_config {

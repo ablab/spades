@@ -25,7 +25,7 @@
 
 #include "modules/graph_read_correction.hpp"
 
-#include "pipeline/config_struct.hpp"
+#include "configs/config_struct.hpp"
 
 #include "utils/perf/timetracer.hpp"
 

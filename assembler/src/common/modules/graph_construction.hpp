@@ -17,7 +17,7 @@
 #include "modules/alignment/edge_index.hpp"
 
 // FIXME: layering violation
-#include "pipeline/config_struct.hpp"
+#include "configs/config_struct.hpp"
 #include "kmer_index/extension_index/kmer_extension_index_builder.hpp"
 #include "kmer_index/ph_map/coverage_hash_map_builder.hpp"
 #include "utils/perf/perfcounter.hpp"

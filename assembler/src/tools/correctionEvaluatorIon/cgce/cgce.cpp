@@ -13,7 +13,7 @@
 #include "utils/logger/log_writers.hpp"
 
 #include "coordinates_handler.hpp" // These lines are needed for
-#include "pipeline/config_struct.hpp"       // colored_graph_construction.hpp
+#include "common/configs/config_struct.hpp"       // colored_graph_construction.hpp
 using namespace debruijn_graph;    // Textual inclusion is awesome!
 
 #include "colored_graph_construction.hpp"

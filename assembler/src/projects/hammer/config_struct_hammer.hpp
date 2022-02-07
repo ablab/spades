@@ -15,7 +15,7 @@
 #ifndef CONFIG_STRUCT_HAMMER_HPP_
 #define CONFIG_STRUCT_HAMMER_HPP_
 
-#include "pipeline/config_singl.hpp"
+#include "configs/config_singl.hpp"
 
 #include "library/library.hpp"
 

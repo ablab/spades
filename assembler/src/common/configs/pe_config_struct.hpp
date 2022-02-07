@@ -8,7 +8,7 @@
 #ifndef LC_CONFIG_STRUCT_HPP_
 #define LC_CONFIG_STRUCT_HPP_
 
-#include "pipeline/config_singl.hpp"
+#include "common/configs/config_singl.hpp"
 #include "utils/cpp_utils.hpp"
 
 #include <boost/optional.hpp>

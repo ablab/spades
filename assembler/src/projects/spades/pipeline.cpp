@@ -28,7 +28,7 @@
 #include "stages/simplification.hpp"
 #include "stages/ss_edge_split.hpp"
 
-#include "pipeline/config_struct.hpp"
+#include "configs/config_struct.hpp"
 #include "pipeline/graph_pack.hpp"
 
 #include "load_graph.hpp"

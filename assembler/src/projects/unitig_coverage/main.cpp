@@ -16,7 +16,7 @@
 
 #include "library/library_data.hpp"
 #include "library/library.hpp"
-#include "pipeline/config_struct.hpp"
+#include "configs/config_struct.hpp"
 
 #include "utils/segfault_handler.hpp"
 

@@ -5,7 +5,7 @@
 #include "utils/logger/log_writers.hpp"
 
 #include "pipeline/graph_pack.hpp"
-#include "pipeline/config_struct.hpp"
+#include "common/configs/config_struct.hpp"
 
 #include "modules/alignment/sequence_mapper.hpp"
 #include "modules/alignment/pacbio/g_aligner.hpp"

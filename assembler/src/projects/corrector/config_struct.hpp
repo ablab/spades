@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "pipeline/config_singl.hpp"
+#include "configs/config_singl.hpp"
 
 #include "library/library.hpp"
 

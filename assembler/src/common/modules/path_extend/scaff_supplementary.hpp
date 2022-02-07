@@ -2,8 +2,8 @@
 
 #include "assembly_graph/core/graph.hpp"
 #include "modules/path_extend/pe_utils.hpp"
-#include "modules/path_extend/pe_config_struct.hpp"
 #include "modules/path_extend/paired_library.hpp"
+#include "configs/pe_config_struct.hpp"
 
 //FIXME: layering violation
 #include "pipeline/graph_pack.hpp"

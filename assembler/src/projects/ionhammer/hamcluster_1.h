@@ -6,7 +6,7 @@
 #define PROJECT_HAMCLUSTER_1_H
 
 #include <common/adt/concurrent_dsu.hpp>
-#include <common/pipeline/config_singl.hpp>
+#include "configs/config_singl.hpp"
 #include "HSeq.hpp"
 #include "kmer_data.hpp"
 #include "utils/logger/logger.hpp"

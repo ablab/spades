@@ -5,7 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "pipeline/config_struct.hpp"
+#include "configs/config_struct.hpp"
 
 #include "utils/logger/log_writers.hpp"
 #include "utils/memory_limit.hpp"

@@ -13,7 +13,7 @@
 #include "io/binary/graph_pack.hpp"
 #include "modules/alignment/kmer_mapper.hpp"
 #include "sequence/genome_storage.hpp"
-#include "pipeline/config_struct.hpp"
+#include "configs/config_struct.hpp"
 
 namespace online_visualization {
 

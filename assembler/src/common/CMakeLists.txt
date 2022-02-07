@@ -7,6 +7,7 @@
 
 project(common_modules CXX)
 
+add_subdirectory(configs)
 add_subdirectory(library)
 add_subdirectory(pipeline)
 add_subdirectory(sequence)
@@ -28,4 +29,4 @@ add_library(common_modules
 target_link_libraries(common_modules library
                       assembly_graph input pipeline sequence
                       coverage_model paired_info path_extend
-                      stages mph_index modules utils)
+                      stages mph_index modules utils configs)

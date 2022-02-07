@@ -1,6 +1,6 @@
 #pragma once
 
-#include "pipeline/config_struct.hpp"
+#include "configs/config_struct.hpp"
 #include "assembly_graph/graph_support/comparators.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"

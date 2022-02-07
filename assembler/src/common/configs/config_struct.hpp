@@ -11,9 +11,9 @@
 #include "library/library_data.hpp"
 #include "utils/verify.hpp"
 
-#include "modules/path_extend/pe_config_struct.hpp"
-#include "configs/aligner_config.hpp"
-#include "configs/distance_estimation.hpp"
+#include "pe_config_struct.hpp"
+#include "aligner_config.hpp"
+#include "distance_estimation.hpp"
 #include "common/utils/logger/logger.hpp"
 
 #include <boost/optional.hpp>

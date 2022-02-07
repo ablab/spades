@@ -11,7 +11,7 @@
 #include "standard_vis.hpp"
 #include "utils/segfault_handler.hpp"
 #include "utils/stacktrace.hpp"
-#include "pipeline/config_struct.hpp"
+#include "configs/config_struct.hpp"
 #include "io/reads/io_helper.hpp"
 #include "utils/stl_utils.hpp"
 #include <sys/types.h>

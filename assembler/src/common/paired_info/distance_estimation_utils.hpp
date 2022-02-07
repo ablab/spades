@@ -13,7 +13,7 @@
 #include "library/library.hpp"
 #include "library/library_data.hpp"
 
-#include "pipeline/configs/distance_estimation.hpp"
+#include "configs/distance_estimation.hpp"
 
 namespace distance_estimation {
 using omnigraph::de::AbstractDistanceEstimator;

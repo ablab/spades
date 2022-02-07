@@ -11,7 +11,7 @@
 #include "assembly_graph/components/connected_component.hpp"
 
 // FIXME: layering violation!
-#include "pipeline/config_struct.hpp"
+#include "configs/config_struct.hpp"
 #include "pipeline/graph_pack.hpp"
 
 namespace path_extend {

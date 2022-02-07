@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #pragma once
-#include "pipeline/config_struct.hpp"
+#include "configs/config_struct.hpp"
 
 namespace debruijn {
 

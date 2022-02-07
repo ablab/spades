@@ -5,8 +5,8 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "pe_config_struct.hpp"
-#include "pipeline/config_common.hpp"
+#include "common/configs/pe_config_struct.hpp"
+#include "common/configs/config_common.hpp"
 #include "common/utils/logger/logger.hpp"
 
 #include <llvm/ADT/StringSwitch.h>

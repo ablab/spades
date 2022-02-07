@@ -8,7 +8,6 @@
 project(path_extend CXX)
 
 add_library(path_extend STATIC
-            pe_config_struct.cpp
             loop_detector.cpp
             loop_traverser.cpp
             gap_analyzer.cpp
@@ -25,6 +24,6 @@ add_library(path_extend STATIC
             scaffolder2015/connection_condition2015.cpp 
             scaffolder2015/path_polisher.cpp)
 
-target_link_libraries(path_extend assembly_graph ssw)
+target_link_libraries(path_extend assembly_graph ssw configs)
 
 

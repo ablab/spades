@@ -9,8 +9,8 @@
 
 #include "paired_info/distance_estimation_utils.hpp"
 
-#include "pipeline/configs/distance_estimation.hpp"
-#include "pipeline/config_struct.hpp"
+#include "configs/distance_estimation.hpp"
+#include "configs/config_struct.hpp"
 #include "library/library.hpp"
 
 #include "utils/parallel/openmp_wrapper.h"

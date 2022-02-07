@@ -13,7 +13,7 @@
  */
 
 #include "config_struct_hammer.hpp"
-#include "pipeline/config_common.hpp"
+#include "configs/config_common.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 
 #include <boost/property_tree/ptree.hpp>

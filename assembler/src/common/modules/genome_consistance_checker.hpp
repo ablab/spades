@@ -17,7 +17,7 @@
 #include "assembly_graph/paths/bidirectional_path.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "modules/path_extend/pe_utils.hpp"
-#include "pipeline/config_struct.hpp"
+#include "configs/config_struct.hpp"
 
 namespace debruijn_graph {
 

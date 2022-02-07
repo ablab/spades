@@ -6,7 +6,7 @@
 #pragma once
 
 #include "stages/simplification_pipeline/graph_simplification.hpp"
-#include "pipeline/config_struct.hpp"
+#include "configs/config_struct.hpp"
 
 namespace debruijn {
 namespace simplification {

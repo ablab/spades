@@ -5,11 +5,8 @@
 # See file LICENSE for details.
 ############################################################################
 
-project(pipeline CXX)
+project(configs CXX)
 
-add_library(pipeline STATIC
-            graph_pack.cpp
-            stage.cpp)
+add_library(configs STATIC config_struct.cpp pe_config_struct.cpp)
 
-target_link_libraries(pipeline binary_io path_extend input llvm-support library configs)
-
+target_link_libraries(configs input llvm-support library)

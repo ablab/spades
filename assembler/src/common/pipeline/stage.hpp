@@ -9,7 +9,7 @@
 #define __STAGE_HPP__
 
 #include "pipeline/graph_pack.hpp"
-#include "pipeline/config_struct.hpp"
+#include "configs/config_struct.hpp"
 
 #include "utils/filesystem/path_helper.hpp"
 #include "utils/logger/logger.hpp"
