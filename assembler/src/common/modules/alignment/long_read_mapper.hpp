@@ -12,7 +12,7 @@
 #include "sequence_mapper_notifier.hpp"
 
 #include "assembly_graph/paths/bidirectional_path.hpp"
-#include "pipeline/library_fwd.hpp"
+#include "library/library_fwd.hpp"
 
 namespace debruijn_graph {
 // FIXME: get rid of this

@@ -10,8 +10,8 @@
 #include "paired_info.hpp"
 #include "pair_info_filters.hpp"
 
-#include "pipeline/library.hpp"
-#include "pipeline/library_data.hpp"
+#include "library/library.hpp"
+#include "library/library_data.hpp"
 
 #include "pipeline/configs/distance_estimation.hpp"
 

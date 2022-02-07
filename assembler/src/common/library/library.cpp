@@ -5,7 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "pipeline/library.hpp"
+#include "library.hpp"
 #include "utils/filesystem/path_helper.hpp"
 
 #include "llvm/Support/YAMLTraits.h"
@@ -153,7 +153,7 @@ void SequencingLibraryBase::update_relative_reads_filenames(const std::string &i
                    std::bind2nd(update_relative_filename(), input_dir));
 }
 
-#include "pipeline/library.inl"
+#include "library.inl"
 
 // Provide default implementation here (e.g. in case of Data == io::NoData)
 template class io::DataSet<>;

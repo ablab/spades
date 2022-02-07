@@ -7,7 +7,7 @@
 
 #include "version.hpp"
 
-#include "pipeline/library.hpp"
+#include "library/library.hpp"
 
 #include "io/reads/read_processor.hpp"
 #include "io/reads/io_helper.hpp"

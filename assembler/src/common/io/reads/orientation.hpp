@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "pipeline/library_fwd.hpp"
+#include "library/library_fwd.hpp"
 #include <functional>
 
 namespace io {

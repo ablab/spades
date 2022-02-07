@@ -11,7 +11,7 @@
 #include "single_read.hpp"
 #include "paired_read.hpp"
 
-#include "pipeline/library_fwd.hpp"
+#include "library/library_fwd.hpp"
 
 #include <string>
 

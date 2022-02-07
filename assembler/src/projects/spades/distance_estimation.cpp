@@ -11,7 +11,7 @@
 
 #include "pipeline/configs/distance_estimation.hpp"
 #include "pipeline/config_struct.hpp"
-#include "pipeline/library.hpp"
+#include "library/library.hpp"
 
 #include "utils/parallel/openmp_wrapper.h"
 

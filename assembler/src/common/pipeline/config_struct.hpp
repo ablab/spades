@@ -7,8 +7,8 @@
 #pragma once
 
 #include "config_singl.hpp"
-#include "library.hpp"
-#include "library_data.hpp"
+#include "library/library.hpp"
+#include "library/library_data.hpp"
 #include "utils/verify.hpp"
 
 #include "modules/path_extend/pe_config_struct.hpp"

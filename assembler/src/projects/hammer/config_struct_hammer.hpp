@@ -17,7 +17,7 @@
 
 #include "pipeline/config_singl.hpp"
 
-#include "pipeline/library.hpp"
+#include "library/library.hpp"
 
 #include <boost/optional.hpp>
 #include <boost/property_tree/ptree_fwd.hpp>

@@ -12,7 +12,7 @@
 #include "paired_read.hpp"
 #include "orientation.hpp"
 
-#include "pipeline/library_fwd.hpp"
+#include "library/library_fwd.hpp"
 
 #include <fstream>
 

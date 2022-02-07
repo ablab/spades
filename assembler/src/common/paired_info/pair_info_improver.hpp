@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "pipeline/library_data.hpp"
+#include "library/library_data.hpp"
 #include "split_path_constructor.hpp"
 #include "paired_info/paired_info_helpers.hpp"
 #include "assembly_graph/paths/path_utils.hpp"

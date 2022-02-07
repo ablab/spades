@@ -9,7 +9,7 @@
 #define __HAMMER_IT_CONFIG_HPP__
 
 #include "pipeline/config_singl.hpp"
-#include "pipeline/library.hpp"
+#include "library/library.hpp"
 
 namespace hammer_config {
 enum class HammerStage {

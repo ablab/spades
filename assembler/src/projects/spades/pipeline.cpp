@@ -7,7 +7,7 @@
 #include "gap_closer.hpp"
 #include "mismatch_correction.hpp"
 #include "pair_info_count.hpp"
-#include "pipeline/library.hpp"
+#include "library/library.hpp"
 #include "second_phase_setup.hpp"
 #include "repeat_resolving.hpp"
 #include "distance_estimation.hpp"

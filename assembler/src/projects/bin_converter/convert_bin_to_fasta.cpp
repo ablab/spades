@@ -13,7 +13,7 @@
 #include "utils/segfault_handler.hpp"
 #include "kmer_index/ph_map/perfect_hash_map.hpp"
 #include "kmer_index/kmer_mph/kmer_index_builder.hpp"
-#include "pipeline/library.hpp"
+#include "library/library.hpp"
 
 #include <clipp/clipp.h>
 #include <string>

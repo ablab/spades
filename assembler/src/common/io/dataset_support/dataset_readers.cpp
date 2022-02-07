@@ -11,7 +11,7 @@
 #include "io/reads/io_helper.hpp"
 #include "io/reads/multifile_reader.hpp"
 
-#include "pipeline/library.hpp"
+#include "library/library.hpp"
 
 namespace io {
 

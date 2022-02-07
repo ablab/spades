@@ -23,7 +23,7 @@
 
 using namespace llvm;
 
-#include "library.inl"
+#include "library/library.inl"
 
 namespace llvm { namespace yaml {
 

@@ -12,7 +12,7 @@
 
 #include <io/sam/sam_reader.hpp>
 #include <io/sam/read.hpp>
-#include "pipeline/library_fwd.hpp"
+#include "library/library_fwd.hpp"
 
 #include <string>
 #include <vector>

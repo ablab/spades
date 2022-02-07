@@ -11,7 +11,7 @@
 #include "paired_read.hpp"
 #include "orientation.hpp"
 
-#include "pipeline/library.hpp"
+#include "library/library.hpp"
 #include "utils/logger/logger.hpp"
 #include "utils/verify.hpp"
 

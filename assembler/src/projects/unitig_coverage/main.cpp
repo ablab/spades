@@ -14,8 +14,8 @@
 #include "toolchain/edge_label_helper.hpp"
 #include "toolchain/utils.hpp"
 
-#include "pipeline/library_data.hpp"
-#include "pipeline/library.hpp"
+#include "library/library_data.hpp"
+#include "library/library.hpp"
 #include "pipeline/config_struct.hpp"
 
 #include "utils/segfault_handler.hpp"
