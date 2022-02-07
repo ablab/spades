@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "pipeline/graph_pack.hpp"
 #include "pipeline/library_data.hpp"
 #include "split_path_constructor.hpp"
 #include "paired_info/paired_info_helpers.hpp"
