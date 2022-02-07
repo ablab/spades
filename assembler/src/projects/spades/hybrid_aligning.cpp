@@ -150,14 +150,13 @@ void CloseGaps(GraphPack& gp, bool rtype,
         consensus_f = &SPOAConsensus;
     } else {
         consensus_f = [=](const std::vector<string>& gap_seqs, const debruijn_graph::config::pacbio_processor &pb_) {
-            return TrivialConsenus(gap_seqs, cfg::get().pb.max_contigs_gap_length);
+            return TrivialConsenus(gap_seqs, pb_.max_contigs_gap_length);
         };
     }
 
     HybridGapCloser gap_closer(gp.get_mutable<Graph>(), gap_storage,
                                min_weight, consensus_f,
-                               cfg::get().pb.long_seq_limit);
-
+                               cfg::get().pb);
     auto replacement = gap_closer();
 
     auto &single_long_reads = gp.get_mutable<LongReadContainer<Graph>>();

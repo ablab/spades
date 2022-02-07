@@ -10,7 +10,6 @@
 #include "assembly_graph/core/graph.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 
-
 #include "gap_closing.hpp"
 #include "pipeline/config_struct.hpp"
 #include <spoa/spoa.hpp>
@@ -332,8 +331,7 @@ inline std::string SPOAConsensus(const std::vector<std::string> &gap_seqs, const
 }
 
 
-
-    inline std::string TrivialConsenus(const std::vector<std::string> &gap_seqs, size_t max_length) {
+inline std::string TrivialConsenus(const std::vector<std::string> &gap_seqs, size_t max_length) {
     VERIFY(!gap_seqs.empty());
     return gap_seqs.front().length() < max_length ? gap_seqs.front() : "";
 }
@@ -571,6 +569,7 @@ private:
     const GapStorage& storage_;
     const size_t min_weight_;
     ConsensusF consensus_;
+    const debruijn_graph::config::pacbio_processor pb_config_;
     const size_t long_seq_limit_;
     const size_t max_consensus_reads_;
 
@@ -589,7 +588,7 @@ private:
         DEBUG("var size original " << gap_variants.size());
         auto new_gap_variants(gap_variants);
         new_gap_variants.resize(std::min(max_consensus_reads_, gap_variants.size()));
-        auto s = consensus_(new_gap_variants, cfg::get().pb);
+        auto s = consensus_(new_gap_variants, pb_config_);
         DEBUG("consenus for " << g_.int_id(left)
                               << " and " << g_.int_id(right)
                               << " found: '" << s << "'");
@@ -728,12 +727,13 @@ private:
 public:
     HybridGapCloser(Graph& g, const GapStorage& storage,
                     size_t min_weight, ConsensusF consensus,
-                    size_t long_seq_limit,
+                    debruijn_graph::config::pacbio_processor pb_config,
                     size_t max_consensus_reads = 20)
             : g_(g), storage_(storage),
               min_weight_(min_weight),
               consensus_(consensus),
-              long_seq_limit_(long_seq_limit),
+              pb_config_(pb_config),
+              long_seq_limit_(pb_config.long_seq_limit),
               max_consensus_reads_(max_consensus_reads) {
     }
 

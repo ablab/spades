@@ -467,8 +467,6 @@ void load(pacbio_processor& pb,
   load(pb.gap_extend, pt, "gap_extend", false);
   load(pb.gap_open_second, pt, "gap_open_second", false);
   load(pb.gap_extend_second, pt, "gap_extend_second", false);
-
-
 }
 
 void load(debruijn_config::position_handler& pos,
