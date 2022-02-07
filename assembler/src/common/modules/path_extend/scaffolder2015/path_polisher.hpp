@@ -6,13 +6,13 @@
 
 #pragma once
 
+#include "modules/path_extend/paired_library.hpp"
+#include "modules/path_extend/path_extender.hpp"
+#include "modules/path_extend/scaff_supplementary.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 #include "assembly_graph/paths/path_utils.hpp"
 #include "assembly_graph/paths/bidirectional_path.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
-#include "modules/path_extend/paired_library.hpp"
-#include "modules/path_extend/path_extender.hpp"
-#include "assembly_graph/graph_support/scaff_supplementary.hpp"
 
 namespace path_extend {
 

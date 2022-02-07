@@ -11,10 +11,10 @@
 #include "overlap_analysis.hpp"
 #include "path_filter.hpp"
 #include "gap_analyzer.hpp"
+#include "scaff_supplementary.hpp"
 #include "assembly_graph/paths/bidirectional_path.hpp"
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
-#include "assembly_graph/graph_support/scaff_supplementary.hpp"
 
 #include <cmath>
 
