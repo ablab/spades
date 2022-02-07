@@ -6,20 +6,24 @@
 
 #include "chromosome_remover.hpp"
 
+#include "simplification/tip_clipper.hpp"
 #include "assembly_graph/core/graph_iterators.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "assembly_graph/graph_support/contig_output.hpp"
 #include "assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
-#include "stages/simplification_pipeline/graph_simplification.hpp"
+#include "assembly_graph/graph_support/basic_edge_conditions.hpp"
+#include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
+#include "assembly_graph/handlers/edges_position_handler.hpp"
+#include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "paired_info/paired_info.hpp"
 #include "pipeline/config_struct.hpp"
 #include "sequence/genome_storage.hpp"
 #include "visualization/position_filler.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "math/xmath.h"
-#include "assembly_graph/paths/bidirectional_path_container.hpp"
 
 namespace debruijn_graph {
+using namespace omnigraph;
 
 using VertexSet = std::unordered_set<VertexId>;
 using SmartVertexSet = omnigraph::SmartContainer<VertexSet, Graph>;
