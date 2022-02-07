@@ -123,7 +123,8 @@ void SplitAndWriteReads(const debruijn_graph::Graph &graph,
     }
 
     io::OFastqPairedStream unbinned_reads_ostream(fs::append_path(prefix, "unbinned_1.fastq"),
-                                                  fs::append_path(prefix, "unbinned_2.fastq"));
+                                                  fs::append_path(prefix, "unbinned_2.fastq"),
+                                                  lib.orientation());
 
     std::vector<io::OFastqPairedStream> binned_reads_ostreams;
     for (size_t bin_id = 0; bin_id < binning.bins().size(); ++bin_id) {
@@ -133,7 +134,8 @@ void SplitAndWriteReads(const debruijn_graph::Graph &graph,
                 {fs::append_path(prefix, bin_label + "_1.fastq"),
                  fs::append_path(prefix, bin_label + "_2.fastq")};
         binned_reads_ostreams.emplace_back(cur_part_paired_reads_filenames.first,
-                                           cur_part_paired_reads_filenames.second);
+                                           cur_part_paired_reads_filenames.second,
+                                           lib.orientation());
     }
 
     SequenceMapperNotifier notifier;
