@@ -22,9 +22,9 @@ pacbio_processor
 {
     internal_length_cutoff 100
 ;align and traverse.
-    compression_cutoff 0.6
-    path_limit_stretching 1.3
-    path_limit_pressing 0.7
+;    compression_cutoff 0.6
+;    path_limit_stretching 1.3
+;    path_limit_pressing 0.7
     max_path_in_dijkstra 5000
     max_vertex_in_dijkstra 1000
     rna_filtering   true
@@ -36,13 +36,6 @@ pacbio_processor
     pacbio_min_gap_quantity 2
     contigs_min_gap_quantity 1
     max_contigs_gap_length 10000
-;spoa
-    match 5
-    mismatch -4
-    gap_open -8
-    gap_extend -6
-    gap_open_second -10
-    gap_extend_second -4
 }
 
 contig_output {

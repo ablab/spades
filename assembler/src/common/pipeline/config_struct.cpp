@@ -447,9 +447,9 @@ void load(pacbio_processor& pb,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
   load(pb.internal_length_cutoff, pt, "internal_length_cutoff");
-  load(pb.compression_cutoff, pt, "compression_cutoff");
-  load(pb.path_limit_stretching, pt, "path_limit_stretching");
-  load(pb.path_limit_pressing, pt, "path_limit_pressing");
+  load(pb.compression_cutoff, pt, "compression_cutoff", false);
+  load(pb.path_limit_stretching, pt, "path_limit_stretching", false);
+  load(pb.path_limit_pressing, pt, "path_limit_pressing", false);
   load(pb.max_path_in_dijkstra, pt, "max_path_in_dijkstra");
   load(pb.max_vertex_in_dijkstra, pt, "max_vertex_in_dijkstra");
   load(pb.rna_filtering, pt, "rna_filtering");
@@ -461,12 +461,12 @@ void load(pacbio_processor& pb,
   load(pb.contigs_min_gap_quantity, pt, "contigs_min_gap_quantity");
   load(pb.max_contigs_gap_length, pt, "max_contigs_gap_length");
 
-  load(pb.match, pt, "match");
-  load(pb.mismatch, pt, "mismatch");
-  load(pb.gap_open, pt, "gap_open");
-  load(pb.gap_extend, pt, "gap_extend");
-  load(pb.gap_open_second, pt, "gap_open_second");
-  load(pb.gap_extend_second, pt, "gap_extend_second");
+  load(pb.match, pt, "match", false);
+  load(pb.mismatch, pt, "mismatch", false);
+  load(pb.gap_open, pt, "gap_open", false);
+  load(pb.gap_extend, pt, "gap_extend", false);
+  load(pb.gap_open_second, pt, "gap_open_second", false);
+  load(pb.gap_extend_second, pt, "gap_extend_second", false);
 
 
 }
