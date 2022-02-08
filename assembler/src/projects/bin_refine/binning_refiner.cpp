@@ -52,6 +52,7 @@ struct gcfg {
     unsigned libindex = -1u;
     AssignStrategy assignment_strategy = AssignStrategy::MajorityLength;
     double eps = 1e-5;
+    unsigned niter = 5000;
     double labeled_alpha = 0.6;
     bool no_unbinned_bin = false;
     bool alpha_propagation = false;
@@ -78,6 +79,7 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
       (option("-e") & value("eps", cfg.eps)) % "convergence relative tolerance threshold",
+      (option("-n") & integer("value", cfg.niter)) % "maximum number of iterations",
       (option("-m").set(cfg.allow_multiple) % "allow multiple bin assignment"),
       (with_prefix("-S",
                    option("max").set(cfg.assignment_strategy, AssignStrategy::MajorityLength) |
@@ -135,8 +137,9 @@ std::unique_ptr<AlphaAssigner> get_alpha_assigner(const gcfg &cfg,
             if (not cfg.alpha_propagation)
                 return std::make_unique<CorrectionAssigner>(graph, cfg.labeled_alpha);
 
-            auto alpha_mask = AlphaPropagator(graph, links, cfg.metaalpha, cfg.eps, cfg.length_threshold,
-                                              cfg.distance_bound, fs::append_path(cfg.prefix, "alpha_stats.tsv")).GetAlphaMask(binning);
+            auto alpha_mask = AlphaPropagator(graph, links, cfg.metaalpha, cfg.eps, cfg.niter,
+                                              cfg.length_threshold, cfg.distance_bound,
+                                              fs::append_path(cfg.prefix, "alpha_stats.tsv")).GetAlphaMask(binning);
             return std::make_unique<bin_stats::CorrectionAssigner>(graph, alpha_mask, cfg.labeled_alpha);
     }
 }
@@ -316,7 +319,8 @@ int main(int argc, char** argv) {
               }
           }
       }
-      auto binning_refiner = std::make_unique<LabelsPropagation>(graph, links, alpha_assignment, nonpropagating_edges, cfg.eps);
+      auto binning_refiner = std::make_unique<LabelsPropagation>(graph, links, alpha_assignment, nonpropagating_edges,
+                                                                 cfg.eps, cfg.niter);
       auto soft_edge_labels = binning_refiner->RefineBinning(origin_state);
 
       INFO("Assigning edges & scaffolds to bins");
