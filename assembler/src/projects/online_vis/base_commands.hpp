@@ -11,6 +11,7 @@
 #include "command.hpp"
 #include "errors.hpp"
 #include "command_mapping.hpp"
+#include "pipeline/graph_pack_api.h"
 
 namespace online_visualization {
 
@@ -192,7 +193,7 @@ namespace online_visualization {
           shared_ptr<Env> new_env = MakeNewEnvironment(name, saves, K);
           loaded_environments.insert(make_pair(name, new_env));
           curr_env = new_env;
-          curr_env->graph_pack().EnsureBasicMapping();
+          EnsureBasicMapping(curr_env->graph_pack());
         }
 
     };

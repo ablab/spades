@@ -10,6 +10,7 @@
 #include "io/binary/graph_pack.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 #include "utils/segfault_handler.hpp"
+#include "pipeline/graph_pack_api.h"
 
 #include <cxxopts/cxxopts.hpp>
 
@@ -30,7 +31,7 @@ static void Run(size_t K, const string &graph_path, const string &contigs_file,
     io::EdgeLabelHelper<Graph> label_helper(element_finder,
                                             toolchain::LoadBaseGraph(gp, graph_path));
 
-    gp.EnsureBasicMapping();
+    EnsureBasicMapping(gp);
 
     ReadPathFinder<Graph> path_finder(graph, /*skip_unfixed*/false);
     auto mapper = MapperInstance(gp);

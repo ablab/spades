@@ -26,23 +26,7 @@ public:
     size_t k() const { return k_; }
     const std::string &workdir() const { return workdir_; }
 
-    void FillQuality();
-    void ClearQuality();
-
-    void EnsureIndex();
-    void EnsureBasicMapping();
-    void EnsureQuality();
-    void EnsurePos();
-    void EnsureDebugInfo();
-
-    void InitRRIndices();
-    void ClearRRIndices();
-    void ClearPaths();
-
     void DetachAll();
-    void DetachEdgeIndex();
-
-    void PrepareForStage(const char*);
 
 private:
     size_t k_;

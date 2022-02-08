@@ -6,6 +6,7 @@
  */
 
 #include "pipeline/graph_pack.hpp"
+#include "pipeline/graph_pack_api.h"
 #include "utils/stl_utils.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "utils/logger/log_writers.hpp"
@@ -150,7 +151,7 @@ int main(int argc, char** argv) {
         std::set<EdgeId> unbinned_edges;
 
         auto const &graph = gp.get<Graph>();
-        gp.EnsurePos();
+        EnsurePos(gp);
         for (size_t i = 0; i < genome_graph_path.size(); ++i) {
             EdgeId e = genome_graph_path[i].first;
             auto range = genome_graph_path[i].second.mapped_range;

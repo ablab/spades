@@ -14,12 +14,11 @@
 #include "modules/alignment/sequence_mapper.hpp"
 #include "io/binary/graph_pack.hpp"
 #include "io/binary/paired_index.hpp"
-//FIXME awful dependency to get write_lib_data
-#include "configs/config_struct.hpp"
 #include "visualization/position_filler.hpp"
 #include "visualization/visualization.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/components/graph_component.hpp"
+#include "configs/config_struct.hpp"
 #include "io/reads/rc_reader_wrapper.hpp"
 #include "io/reads/delegating_reader_wrapper.hpp"
 #include "io/reads/io_helper.hpp"
@@ -29,6 +28,7 @@
 #include "utils/filesystem/copy_file.hpp"
 #include "sequence/genome_storage.hpp"
 #include "paired_info/paired_info.hpp"
+#include "pipeline/graph_pack_api.h"
 
 #include <boost/algorithm/string.hpp>
 
@@ -245,7 +245,7 @@ inline boost::optional<RtSeq> FindCloseKP1mer(const GraphPack &gp, size_t genome
 }
 
 inline void PrepareForDrawing(GraphPack &gp) {
-    gp.EnsureDebugInfo();
+    EnsureDebugInfo(gp);
     CollectContigPositions(gp);
 }
 

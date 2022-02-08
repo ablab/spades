@@ -15,6 +15,7 @@
 #include "pair_info_count.hpp"
 #include "io/reads/multifile_reader.hpp"
 #include "io/reads/file_reader.hpp"
+#include "pipeline/graph_pack_api.h"
 
 namespace debruijn_graph {
 
@@ -351,7 +352,7 @@ void HybridLibrariesAligning::run(GraphPack& gp, const char*) {
                                    path_storage, gap_storage,
                                    cfg::get().max_threads, cfg::get().pb);
             } else {
-                gp.EnsureBasicMapping();
+                EnsureBasicMapping(gp);
                 gap_closing::GapTrackingListener mapping_listener(graph, gap_storage);
                 INFO("Processing reads from hybrid library " << lib_id);
 

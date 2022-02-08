@@ -17,7 +17,6 @@
 #include "modules/alignment/long_read_storage.hpp"
 #include "paired_info/paired_info.hpp"
 #include "sequence/genome_storage.hpp"
-#include "visualization/position_filler.hpp"
 #include "genomic_info.hpp"
 
 namespace debruijn_graph {
@@ -47,105 +46,11 @@ GraphPack::GraphPack(size_t k, const std::string &workdir, size_t lib_count,
         DetachAll();
 }
 
-void GraphPack::FillQuality() {
-    const auto &index = get<EdgeIndex<Graph>>();
-    const auto &kmer_mapper = get<KmerMapper<Graph>>();
-    const auto &genome = get<GenomeStorage>();
-    get_mutable<EdgeQuality<Graph>>().Fill(index, kmer_mapper, genome.GetSequence());
-}
-
-//todo remove with usages after checking
-void GraphPack::ClearQuality() {
-    get_mutable<EdgeQuality<Graph>>().clear();
-}
-
-void GraphPack::EnsureIndex() {
-    auto &index = get_mutable<EdgeIndex<Graph>>();
-    if (index.IsAttached())
-        return;
-
-    INFO("Index refill");
-    index.Refill();
-    index.Attach();
-}
-
-void GraphPack::EnsureBasicMapping() {
-    auto &kmer_mapper = get_mutable<KmerMapper<Graph>>();
-
-    VERIFY(kmer_mapper.IsAttached());
-    EnsureIndex();
-    INFO("Normalizing k-mer map. Total " << kmer_mapper.size() << " kmers to process");
-    kmer_mapper.Normalize();
-    INFO("Normalizing done");
-}
-
-void GraphPack::EnsureQuality() {
-    auto &edge_qual = get_mutable<EdgeQuality<Graph>>();
-
-    if (edge_qual.IsAttached())
-        return;
-
-    ClearQuality();
-    FillQuality();
-    edge_qual.Attach();
-}
-
-void GraphPack::EnsurePos() {
-    auto &edge_pos = get_mutable<EdgesPositionHandler<Graph>>();
-
-    if (!edge_pos.IsAttached())
-        edge_pos.Attach();
-
-    // Positions are refilled every time
-    edge_pos.clear();
-
-    const auto &genome = get<GenomeStorage>();
-    visualization::position_filler::FillPos(*this, genome.str(), "ref0");
-    visualization::position_filler::FillPos(*this, ReverseComplement(genome.str()), "ref1");
-}
-
-void GraphPack::EnsureDebugInfo() {
-    EnsureBasicMapping();
-    EnsureQuality();
-    EnsurePos();
-}
-
-void GraphPack::InitRRIndices() {
-    using Indices = omnigraph::de::PairedInfoIndicesT<Graph>;
-
-    get_mutable<Indices>("clustered_indices").Init();
-    get_mutable<Indices>("scaffolding_indices").Init();
-}
-
-void GraphPack::ClearRRIndices() {
-    using UnclusteredIndices = omnigraph::de::UnclusteredPairedInfoIndicesT<Graph>;
-    using Indices = omnigraph::de::PairedInfoIndicesT<Graph>;
-
-    get_mutable<UnclusteredIndices>().Clear();
-    get_mutable<Indices>("clustered_indices").Clear();
-    get_mutable<Indices>("scaffolding_indices").Clear();
-
-    get_mutable<LongReadContainer<Graph>>().Clear();
-}
-
-void GraphPack::ClearPaths() {
-    get_mutable<path_extend::PathContainer>("exSPAnder paths").clear();
-}
-
 void GraphPack::DetachAll() {
     get_mutable<EdgeIndex<Graph>>().Detach();
     get_mutable<KmerMapper<Graph>>().Detach();
     get_mutable<EdgesPositionHandler<Graph>>().Detach();
     get_mutable<EdgeQuality<Graph>>().Detach();
-}
-
-void GraphPack::PrepareForStage(const char*) {
-    get_mutable<Graph>().clear_state();
-}
-
-
-void GraphPack::DetachEdgeIndex() {
-    get_mutable<EdgeIndex<Graph>>().Detach();
 }
 
 } // namespace debruijn_graph

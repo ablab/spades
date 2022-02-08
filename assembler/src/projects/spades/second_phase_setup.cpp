@@ -9,6 +9,7 @@
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/core/graph_iterators.hpp"
 #include "utils/filesystem/path_helper.hpp"
+#include "pipeline/graph_pack_api.h"
 
 #include <unordered_set>
 
@@ -16,8 +17,8 @@ namespace debruijn_graph {
 
 void SecondPhaseSetup::run(GraphPack &gp, const char*) {
     INFO("Preparing second phase");
-    gp.ClearRRIndices();
-    gp.ClearPaths();
+    ClearRRIndices(gp);
+    ClearPaths(gp);
 
     std::string old_pe_contigs_filename = fs::append_path(cfg::get().output_dir, cfg::get().co.contigs_name + ".fasta");
     std::string new_pe_contigs_filename = fs::append_path(cfg::get().output_dir, "first_pe_contigs.fasta");

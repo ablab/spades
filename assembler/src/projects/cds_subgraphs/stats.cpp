@@ -11,6 +11,7 @@
 #include "io/binary/graph_pack.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 #include "utils/segfault_handler.hpp"
+#include "pipeline/graph_pack_api.h"
 
 #include "version.hpp"
 
@@ -225,7 +226,7 @@ int main(int argc, char** argv) {
         io::EdgeLabelHelper<Graph> label_helper(element_finder,
                 toolchain::LoadGraphPack(gp, cfg.graph_path));
 
-        gp.EnsureBasicMapping();
+        EnsureBasicMapping(gp);
 
         debruijn_graph::Run(gp, cfg.sequences_fn, cfg.paths_fn, cfg.edge_info_fn,
                             cfg.subgraph_prefix, cfg.edge_color_fn, label_helper);

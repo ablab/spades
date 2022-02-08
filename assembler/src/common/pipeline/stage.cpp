@@ -9,6 +9,7 @@
 #include "io/binary/graph_pack.hpp"
 
 #include "pipeline/stage.hpp"
+#include "pipeline/graph_pack_api.h"
 
 #include "utils/logger/log_writers.hpp"
 #include "utils/perf/timetracer.hpp"
@@ -137,7 +138,7 @@ void CompositeStageBase::run(debruijn_graph::GraphPack& gp,
 
 void AssemblyStage::prepare(debruijn_graph::GraphPack& g,
                             const char *stage, const char*) {
-    g.PrepareForStage(stage);
+    PrepareForStage(g, stage);
 }
 
 void StageManager::run(debruijn_graph::GraphPack& g,

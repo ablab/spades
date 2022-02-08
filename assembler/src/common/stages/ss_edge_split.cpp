@@ -10,6 +10,7 @@
 #include <modules/alignment/sequence_mapper.hpp>
 #include <modules/alignment/rna/ss_coverage_filler.hpp>
 #include <io/dataset_support/read_converter.hpp>
+#include "pipeline/graph_pack_api.h"
 
 namespace debruijn_graph {
 
@@ -22,7 +23,7 @@ void SSEdgeSplit::run(GraphPack& gp, const char *) {
         return;
     }
 
-    gp.EnsureBasicMapping();
+    EnsureBasicMapping(gp);
 
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         auto &lib = cfg::get_writable().ds.reads[i];

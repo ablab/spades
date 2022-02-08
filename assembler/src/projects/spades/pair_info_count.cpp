@@ -14,6 +14,7 @@
 #include "modules/alignment/long_read_mapper.hpp"
 #include "modules/alignment/bwa_sequence_mapper.hpp"
 #include "modules/alignment/rna/ss_coverage_filler.hpp"
+#include "pipeline/graph_pack_api.h"
 
 #include "io/dataset_support/read_converter.hpp"
 
@@ -143,8 +144,8 @@ size_t ProcessSingleReads(GraphPack &gp, size_t ilib,
 } // namespace
 
 void PairInfoCount::run(GraphPack &gp, const char *) {
-    gp.InitRRIndices();
-    gp.EnsureBasicMapping();
+    InitRRIndices(gp);
+    EnsureBasicMapping(gp);
 
     const auto &graph = gp.get<Graph>();
 

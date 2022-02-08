@@ -7,6 +7,7 @@
 #include "chromosome_remover.hpp"
 
 #include "simplification/tip_clipper.hpp"
+
 #include "assembly_graph/core/graph_iterators.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "assembly_graph/graph_support/contig_output.hpp"
@@ -15,8 +16,9 @@
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
-#include "paired_info/paired_info.hpp"
 #include "configs/config_struct.hpp"
+#include "paired_info/paired_info.hpp"
+#include "pipeline/graph_pack_api.h"
 #include "sequence/genome_storage.hpp"
 #include "visualization/position_filler.hpp"
 #include "utils/filesystem/path_helper.hpp"
@@ -194,7 +196,7 @@ void ChromosomeRemover::PlasmidSimplify(size_t long_edge_bound,
                    removal_handler, true);
         tc.Run();
     }
-    gp_.EnsureIndex();
+    EnsureIndex(gp_);
 }
 
 //Debug only

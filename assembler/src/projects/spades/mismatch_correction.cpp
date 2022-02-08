@@ -14,6 +14,7 @@
 #include "io/dataset_support/read_converter.hpp"
 
 #include "pipeline/graph_pack.hpp"
+#include "pipeline/graph_pack_api.h"
 #include "utils/logger/logger.hpp"
 
 #include "adt/flat_set.hpp"
@@ -444,7 +445,7 @@ public:
 } // namespace mismatches
 
 void MismatchCorrection::run(GraphPack &gp, const char*) {
-    gp.EnsureBasicMapping();
+    EnsureBasicMapping(gp);
     size_t corrected = mismatches::MismatchShallNotPass(gp, 2).
                        ParallelStopAllMismatches(1);
     INFO("Corrected " << corrected << " nucleotides");

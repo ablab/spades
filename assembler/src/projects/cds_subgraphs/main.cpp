@@ -14,6 +14,7 @@
 #include "toolchain/subgraph_utils.hpp"
 
 #include "utils/segfault_handler.hpp"
+#include "pipeline/graph_pack_api.h"
 
 #include "version.hpp"
 
@@ -337,7 +338,7 @@ int main(int argc, char** argv) {
         io::EdgeLabelHelper<Graph> label_helper(element_finder,
                 toolchain::LoadGraphPack(gp, cfg.graph));
 
-        gp.EnsureBasicMapping();
+        EnsureBasicMapping(gp);
 
         VERIFY(cfg.genes_desc.empty() != cfg.genes_seq.empty());
 

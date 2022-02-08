@@ -6,20 +6,18 @@
 //***************************************************************************
 
 #include "profile_storage.hpp"
+
+#include "configs/config_struct.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
-#include "modules/alignment/kmer_mapper.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
-
-#include "projects/mts/contig_abundance.hpp"
-#include "toolchain/edge_label_helper.hpp"
-#include "toolchain/utils.hpp"
-
 #include "library/library_data.hpp"
 #include "library/library.hpp"
-#include "configs/config_struct.hpp"
-
+#include "modules/alignment/kmer_mapper.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
+#include "projects/mts/contig_abundance.hpp"
+#include "pipeline/graph_pack_api.h"
+#include "toolchain/edge_label_helper.hpp"
+#include "toolchain/utils.hpp"
 #include "utils/segfault_handler.hpp"
-
 #include "version.hpp"
 
 #include <clipp/clipp.h>
@@ -65,7 +63,7 @@ static void Run(const std::string &graph_path, const std::string &dataset_desc, 
 
     config::init_libs(dataset, nthreads, tmpdir);
 
-    gp.EnsureBasicMapping();
+    EnsureBasicMapping(gp);
 
     std::vector<size_t> libs(dataset.lib_count());
     std::iota(libs.begin(), libs.end(), 0);

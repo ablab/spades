@@ -12,6 +12,7 @@
 #include "utils/segfault_handler.hpp"
 #include "io/reads/file_reader.hpp"
 #include "visualization/position_filler.hpp"
+#include "pipeline/graph_pack_api.h"
 
 #include "version.hpp"
 
@@ -81,7 +82,7 @@ static void Run(size_t K, const std::string &graph_path,
     io::EdgeLabelHelper<Graph> label_helper(element_finder,
                                             toolchain::LoadGraphPack(gp, graph_path));
 
-    gp.EnsureBasicMapping();
+    EnsureBasicMapping(gp);
 
     EdgeQuality<Graph> annotation(graph);
     double base_cov = bin_refinement::AnnotateEdges(gp, annotation, bin_contigs);
@@ -89,7 +90,7 @@ static void Run(size_t K, const std::string &graph_path,
     VERIFY(annotation.IsAttached());
 
     if (ref.size() > 0) {
-        gp.EnsureDebugInfo();
+        EnsureDebugInfo(gp);
     } else {
         VERIFY(!gp.get<EdgeQuality<Graph>>().IsAttached());
     }

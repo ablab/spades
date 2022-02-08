@@ -13,6 +13,7 @@
 #include "argument_list.hpp"
 #include "assembly_graph/graph_support/genomic_quality.hpp"
 #include "stages/simplification_pipeline/graph_simplification.hpp"
+#include "pipeline/graph_pack_api.h"
 
 namespace online_visualization {
 
@@ -51,8 +52,8 @@ private:
             } else {
                 cout << "Genome quality condition will be used" << endl;
 
-                curr_env.graph_pack().ClearQuality();
-                curr_env.graph_pack().FillQuality();
+                ClearQuality(curr_env.graph_pack());
+                FillQuality(curr_env.graph_pack());
 //                condition = make_shared<make_shared<debruijn_graph::ZeroQualityCondition<Graph, Index>>(curr_env.graph(), edge_qual);
                 condition = std::bind(&debruijn_graph::EdgeQuality<Graph>::IsZeroQuality,
                                       std::ref(curr_env.graph_pack().get<debruijn_graph::EdgeQuality<Graph>>()), std::placeholders::_1);

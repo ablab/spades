@@ -10,6 +10,7 @@
 #include "modules/alignment/sequence_mapper_notifier.hpp"
 #include "modules/graph_construction.hpp"
 #include "pipeline/graph_pack.hpp"
+#include "pipeline/graph_pack_api.h"
 #include "io/reads/rc_reader_wrapper.hpp"
 #include "io/reads/vector_reader.hpp"
 #include "io/reads/converting_reader_wrapper.hpp"
@@ -214,9 +215,9 @@ void AssertGraph(size_t k, const std::vector<MyPairedRead> &paired_reads, size_t
     AssertEdges(graph, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
     AssertCoverage(graph, AddComplement(etalon_coverage));
     
-    gp.InitRRIndices();
+    InitRRIndices(gp);
     kmer_mapper.Attach();
-    gp.EnsureBasicMapping();
+    EnsureBasicMapping(gp);
 
     io::ReadStreamList<io::PairedRead> paired_streams(std::move(single_stream_vector[0].recover<SquashingWrapper>().recover<RawStream>()));
 
