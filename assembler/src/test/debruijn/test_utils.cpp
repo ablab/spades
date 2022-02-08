@@ -20,6 +20,7 @@
 #include "paired_info/weights.hpp"
 
 #include "paired_info/pair_info_filler.hpp"
+#include "pipeline/sequence_mapper_gp_api.hpp"
 
 #include <gtest/gtest.h>
 #include <unordered_set>

@@ -8,6 +8,7 @@
 #include "utils/stl_utils.hpp"
 
 #include "pipeline/graph_pack.hpp"
+#include "pipeline/sequence_mapper_gp_api.hpp"
 //#include "io/reads_io/file_reader.hpp"
 #include "modules/simplification/tip_clipper.hpp"
 #include "propagate.hpp"

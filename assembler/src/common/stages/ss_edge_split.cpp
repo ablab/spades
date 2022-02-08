@@ -11,6 +11,7 @@
 #include "alignment/rna/ss_coverage_filler.hpp"
 #include "io/dataset_support/read_converter.hpp"
 #include "pipeline/graph_pack_helpers.h"
+#include "pipeline/sequence_mapper_gp_api.hpp"
 
 namespace debruijn_graph {
 

@@ -10,6 +10,7 @@
 #include "annotation.hpp"
 #include "io/reads/io_helper.hpp"
 #include "io/reads/osequencestream.hpp"
+#include "pipeline/sequence_mapper_gp_api.hpp"
 
 namespace debruijn_graph {
 

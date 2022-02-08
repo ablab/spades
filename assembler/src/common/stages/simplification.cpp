@@ -19,6 +19,7 @@
 #include "stages/simplification_pipeline/rna_simplification.hpp"
 
 #include "pipeline/genomic_info.hpp"
+#include "pipeline/sequence_mapper_gp_api.hpp"
 
 #include "utils/perf/timetracer.hpp"
 

@@ -11,6 +11,7 @@
 #include "modules/simplification/compressor.hpp"
 #include "alignment/sequence_mapper_notifier.hpp"
 #include "paired_info/concurrent_pair_info_buffer.hpp"
+#include "pipeline/sequence_mapper_gp_api.hpp"
 
 #include <parallel_hashmap/phmap.h>
 #include <numeric>

@@ -19,6 +19,7 @@
 #include "configs/config_struct.hpp"
 #include "paired_info/paired_info.hpp"
 #include "pipeline/graph_pack_helpers.h"
+#include "pipeline/sequence_mapper_gp_api.hpp"
 #include "sequence/genome_storage.hpp"
 #include "visualization/position_filler.hpp"
 #include "utils/filesystem/path_helper.hpp"

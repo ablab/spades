@@ -7,6 +7,7 @@
 #pragma once
 
 #include "pipeline/graph_pack.hpp"
+#include "pipeline/sequence_mapper_gp_api.hpp"
 #include "alignment/sequence_mapper.hpp"
 #include "io/reads/io_helper.hpp"
 #include "formats.hpp"

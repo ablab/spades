@@ -10,6 +10,7 @@
 #include "assembly_graph/core/graph_iterators.hpp"
 #include "io/reads/file_reader.hpp"
 #include "io/reads/wrapper_collection.hpp"
+#include "pipeline/sequence_mapper_gp_api.hpp"
 
 #include <unordered_set>
 

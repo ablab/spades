@@ -15,6 +15,7 @@
 #include "paired_info/pair_info_filler.hpp"
 #include "paired_info/paired_info_utils.hpp"
 #include "pipeline/graph_pack_helpers.h"
+#include "pipeline/sequence_mapper_gp_api.hpp"
 
 namespace debruijn_graph {
 

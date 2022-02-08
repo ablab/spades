@@ -12,6 +12,7 @@
 #include "alignment/sequence_mapper.hpp"
 #include "utils/segfault_handler.hpp"
 #include "pipeline/graph_pack_helpers.h"
+#include "pipeline/sequence_mapper_gp_api.hpp"
 
 #include "version.hpp"
 

@@ -8,6 +8,7 @@
 #include "stages/simplification_pipeline/graph_simplification.hpp"
 #include "stages/simplification_pipeline/single_cell_simplification.hpp"
 #include "stages/simplification_pipeline/rna_simplification.hpp"
+#include "pipeline/graph_pack.hpp"
 
 #include "graphio.hpp"
 #include "tmp_folder_fixture.hpp"

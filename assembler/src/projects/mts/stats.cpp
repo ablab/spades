@@ -21,6 +21,7 @@
 #include "visualization.hpp"
 #include "visualization/position_filler.hpp"
 #include "modules/simplification/tip_clipper.hpp"
+#include "pipeline/sequence_mapper_gp_api.hpp"
 #include "getopt_pp/getopt_pp.h"
 #include <iostream>
 #include <vector>

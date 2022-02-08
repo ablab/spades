@@ -13,6 +13,7 @@
 #include "assembly_graph/paths/path_processor.hpp"
 #include "assembly_graph/paths/bidirectional_path.hpp"
 #include "modules/path_extend/pe_utils.hpp"
+#include "pipeline/sequence_mapper_gp_api.hpp"
 #include "alignment/sequence_mapper.hpp"
 #include "domain_graph.hpp"
 #include "domain_matcher.hpp"

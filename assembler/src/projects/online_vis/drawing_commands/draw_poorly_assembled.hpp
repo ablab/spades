@@ -15,6 +15,7 @@
 
 #include <boost/algorithm/string.hpp>
 #include "assembly_graph/core/basic_graph_stats.hpp"
+#include "pipeline/sequence_mapper_gp_api.hpp"
 
 #include <boost/algorithm/string/predicate.hpp>
 

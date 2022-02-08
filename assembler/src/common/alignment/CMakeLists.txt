@@ -11,7 +11,6 @@ add_library(alignment STATIC
             gap_info.cpp
             bwa_index.cpp
             long_read_mapper.cpp
-            sequence_mapper.cpp
             sequence_mapper_notifier.cpp
             pacbio/gap_filler.cpp
             pacbio/gap_dijkstra.cpp
