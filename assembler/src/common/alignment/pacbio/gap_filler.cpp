@@ -4,7 +4,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "modules/alignment/pacbio/gap_filler.hpp"
+#include "gap_filler.hpp"
 
 #include "assembly_graph/paths/path_utils.hpp"
 

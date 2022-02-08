@@ -12,8 +12,8 @@
 #include "assembly_graph/graph_support/detail_coverage.hpp"
 #include "assembly_graph/index/edge_position_index.hpp"
 #include "paired_info/index_point.hpp"
-#include "modules/alignment/kmer_mapper.hpp"
-#include "modules/alignment/edge_index.hpp"
+#include "alignment/kmer_mapper.hpp"
+#include "alignment/edge_index.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "utils/filesystem/path_helper.hpp"
 

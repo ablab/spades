@@ -5,6 +5,12 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "alignment/pacbio/g_aligner.hpp"
+#include "alignment/pacbio/pac_index.hpp"
+#include "hybrid_gap_closer.hpp"
+#include "alignment/long_read_mapper.hpp"
+#include "io/reads/wrapper_collection.hpp"
+#include "assembly_graph/stats/picture_dump.hpp"
 #include "hybrid_aligning.hpp"
 
 #include "hybrid_gap_closer.hpp"
@@ -14,9 +20,6 @@
 #include "io/reads/wrapper_collection.hpp"
 #include "io/reads/multifile_reader.hpp"
 #include "io/reads/file_reader.hpp"
-#include "modules/alignment/pacbio/g_aligner.hpp"
-#include "modules/alignment/pacbio/pac_index.hpp"
-#include "modules/alignment/long_read_mapper.hpp"
 #include "pipeline/graph_pack_helpers.h"
 
 namespace debruijn_graph {

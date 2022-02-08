@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <modules/alignment/sequence_mapper_notifier.hpp>
-#include "modules/alignment/rna/ss_coverage.hpp"
+#include "common/alignment/sequence_mapper_notifier.hpp"
+#include "ss_coverage.hpp"
 
 namespace debruijn_graph {
 

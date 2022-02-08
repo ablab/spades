@@ -8,7 +8,7 @@
 #include "construction.hpp"
 
 #include "assembly_graph/construction/early_simplification.hpp"
-#include "modules/alignment/edge_index.hpp"
+#include "alignment/edge_index.hpp"
 #include "modules/graph_construction.hpp"
 
 #include "pipeline/graph_pack.hpp"

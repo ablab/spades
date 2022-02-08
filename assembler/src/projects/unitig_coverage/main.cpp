@@ -7,12 +7,12 @@
 
 #include "profile_storage.hpp"
 
+#include "alignment/kmer_mapper.hpp"
+#include "alignment/sequence_mapper.hpp"
 #include "configs/config_struct.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
 #include "library/library_data.hpp"
 #include "library/library.hpp"
-#include "modules/alignment/kmer_mapper.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
 #include "projects/mts/contig_abundance.hpp"
 #include "pipeline/graph_pack_helpers.h"
 #include "toolchain/edge_label_helper.hpp"

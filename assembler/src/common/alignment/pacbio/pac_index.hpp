@@ -13,12 +13,12 @@
 
 #include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
 
-#include "modules/alignment/edge_index_refiller.hpp"
-#include "modules/alignment/bwa_sequence_mapper.hpp"
-#include "modules/alignment/gap_info.hpp"
+#include "common/alignment/edge_index_refiller.hpp"
+#include "common/alignment/bwa_sequence_mapper.hpp"
+#include "common/alignment/gap_info.hpp"
 
-#include "modules/alignment/pacbio/pacbio_read_structures.hpp"
-#include "modules/alignment/pacbio/gap_filler.hpp"
+#include "pacbio_read_structures.hpp"
+#include "gap_filler.hpp"
 
 namespace sensitive_aligner {
 

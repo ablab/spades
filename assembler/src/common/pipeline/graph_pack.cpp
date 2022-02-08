@@ -8,16 +8,16 @@
 
 #include "genomic_info.hpp"
 
+#include "alignment/rna/ss_coverage.hpp"
+#include "alignment/edge_index.hpp"
+#include "alignment/kmer_mapper.hpp"
+#include "alignment/long_read_storage.hpp"
 #include "assembly_graph/components/connected_component.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
+#include "assembly_graph/graph_support/genomic_quality.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
-#include "assembly_graph/graph_support/genomic_quality.hpp"
-#include "modules/alignment/rna/ss_coverage.hpp"
-#include "modules/alignment/edge_index.hpp"
-#include "modules/alignment/kmer_mapper.hpp"
-#include "modules/alignment/long_read_storage.hpp"
 #include "paired_info/paired_info.hpp"
 #include "sequence/genome_storage.hpp"
 

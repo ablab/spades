@@ -6,9 +6,9 @@
 
 #include "long_read_mapper.hpp"
 
-#include "configs/config_struct.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
+#include "sequence_mapper.hpp"
 
+#include "configs/config_struct.hpp"
 
 namespace debruijn_graph {
 

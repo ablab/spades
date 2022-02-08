@@ -10,7 +10,7 @@
 
 
 #include "paired_info/insert_size_refiner.hpp"
-#include "modules/alignment/sequence_mapper_notifier.hpp"
+#include "alignment/sequence_mapper_notifier.hpp"
 
 namespace debruijn_graph {
 

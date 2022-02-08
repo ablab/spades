@@ -11,8 +11,8 @@
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 
-#include "modules/alignment/bwa_index.hpp"
-#include "modules/alignment/pacbio/gap_dijkstra.hpp"
+#include "common/alignment/bwa_index.hpp"
+#include "gap_dijkstra.hpp"
 
 namespace sensitive_aligner {
 using debruijn_graph::EdgeId;

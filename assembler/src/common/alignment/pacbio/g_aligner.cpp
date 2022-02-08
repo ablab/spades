@@ -4,9 +4,9 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "modules/alignment/pacbio/g_aligner.hpp"
-#include "modules/alignment/pacbio/gap_filler.hpp"
-#include "modules/alignment/pacbio/pacbio_read_structures.hpp"
+#include "g_aligner.hpp"
+#include "gap_filler.hpp"
+#include "pacbio_read_structures.hpp"
 
 namespace sensitive_aligner {
 using namespace std;

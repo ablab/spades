@@ -9,7 +9,7 @@
 #include "toolchain/subgraph_utils.hpp"
 #include "io/reads/file_reader.hpp"
 #include "io/binary/graph_pack.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
+#include "alignment/sequence_mapper.hpp"
 #include "utils/segfault_handler.hpp"
 #include "pipeline/graph_pack_helpers.h"
 

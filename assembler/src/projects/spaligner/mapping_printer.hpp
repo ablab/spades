@@ -8,7 +8,7 @@
 
 #include "io/utils/edge_namer.hpp"
 #include "assembly_graph/core/graph.hpp"
-#include "modules/alignment/pacbio/g_aligner.hpp"
+#include "alignment/pacbio/g_aligner.hpp"
 #include "io/utils/id_mapper.hpp"
 
 #include <fstream>

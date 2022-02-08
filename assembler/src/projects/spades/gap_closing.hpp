@@ -4,7 +4,7 @@
 #include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
 #include "assembly_graph/graph_support/edge_removal.hpp"
 #include "modules/simplification/compressor.hpp"
-#include "modules/alignment/gap_info.hpp"
+#include "alignment/gap_info.hpp"
 
 namespace debruijn_graph {
 

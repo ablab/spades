@@ -11,7 +11,7 @@
 #include "errors.hpp"
 #include "vis_logger.hpp"
 #include "io/binary/graph_pack.hpp"
-#include "modules/alignment/kmer_mapper.hpp"
+#include "alignment/kmer_mapper.hpp"
 #include "sequence/genome_storage.hpp"
 #include "configs/config_struct.hpp"
 

@@ -2,7 +2,7 @@
 #include "modules/path_extend/scaff_supplementary.hpp"
 #include "modules/path_extend/paired_library.hpp"
 #include "modules/path_extend/pe_utils.hpp"
-#include "modules/alignment/long_read_storage.hpp"
+#include "alignment/long_read_storage.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include "utils/logger/logger.hpp"
 #include <map>

@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <assembly_graph/core/graph.hpp>
-#include <sequence/range.hpp>
+#include "common/assembly_graph/core/graph.hpp"
+#include "common/sequence/range.hpp"
 #include "io/binary/binary.hpp"
 
 

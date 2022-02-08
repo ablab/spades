@@ -12,7 +12,7 @@
 #include "utils/filesystem/temporary.hpp"
 #include "pipeline/graph_pack.hpp" // FIXME: get rid of it
 #include "modules/graph_construction.hpp"
-#include "modules/alignment/edge_index.hpp"
+#include "alignment/edge_index.hpp"
 
 #include "test_utils.hpp"
 #include "tmp_folder_fixture.hpp"

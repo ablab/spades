@@ -6,10 +6,10 @@
 
 #include "assembly_graph/core/graph.hpp"
 
-#include "modules/alignment/bwa_index.hpp"
-#include "modules/alignment/sequence_mapper_notifier.hpp"
-#include "modules/alignment/bwa_sequence_mapper.hpp"
-#include "modules/alignment/long_read_mapper.hpp"
+#include "alignment/bwa_index.hpp"
+#include "alignment/sequence_mapper_notifier.hpp"
+#include "alignment/bwa_sequence_mapper.hpp"
+#include "alignment/long_read_mapper.hpp"
 
 #include "io/graph/gfa_reader.hpp"
 #include "io/dataset_support/read_converter.hpp"

@@ -7,7 +7,7 @@
 #include "paired_info_utils.hpp"
 #include "is_counter.hpp"
 
-#include "modules/alignment/sequence_mapper_notifier.hpp"
+#include "alignment/sequence_mapper_notifier.hpp"
 #include "paired_info/pair_info_filler.hpp"
 #include "library/library.hpp"
 #include "library/library_data.hpp"

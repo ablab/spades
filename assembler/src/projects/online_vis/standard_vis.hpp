@@ -10,7 +10,7 @@
 #include "pipeline/graph_pack.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
-#include "modules/alignment/edge_index.hpp"
+#include "alignment/edge_index.hpp"
 
 #include <readline/readline.h>
 #include <readline/history.h>

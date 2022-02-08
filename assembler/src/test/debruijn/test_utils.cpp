@@ -6,8 +6,8 @@
 
 #include "test_utils.hpp"
 
-#include "modules/alignment/sequence_mapper.hpp"
-#include "modules/alignment/sequence_mapper_notifier.hpp"
+#include "alignment/sequence_mapper.hpp"
+#include "alignment/sequence_mapper_notifier.hpp"
 #include "modules/graph_construction.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/graph_pack_helpers.h"

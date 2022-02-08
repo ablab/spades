@@ -11,7 +11,7 @@
 #include "../command.hpp"
 #include "../errors.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
+#include "alignment/sequence_mapper.hpp"
 #include "assembly_graph/paths/path_utils.hpp"
 
 namespace online_visualization {

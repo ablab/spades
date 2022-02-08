@@ -9,9 +9,13 @@
 
 #include "statistics.hpp"
 
-#include "assembly_graph/core/graph.hpp"
+#include "alignment/sequence_mapper.hpp"
+#include "configs/config_struct.hpp"
+#include "visualization/position_filler.hpp"
+#include "visualization/visualization.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/components/graph_component.hpp"
+#include "assembly_graph/core/graph.hpp"
 #include "configs/config_struct.hpp"
 #include "io/binary/graph_pack.hpp"
 #include "io/binary/paired_index.hpp"
@@ -21,7 +25,6 @@
 #include "io/reads/wrapper_collection.hpp"
 #include "io/reads/osequencestream.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
 #include "paired_info/paired_info.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/graph_pack_helpers.h"

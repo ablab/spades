@@ -14,7 +14,7 @@
 #include "io/graph/gfa_writer.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include "utils/logger/log_writers.hpp"
-#include "modules/alignment/pacbio/g_aligner.hpp"
+#include "alignment/pacbio/g_aligner.hpp"
 
 #include "mapping_printer.hpp"
 

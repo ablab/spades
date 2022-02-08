@@ -14,7 +14,7 @@
 #include "assembly_graph/construction/early_simplification.hpp"
 #include "assembly_graph/graph_support/coverage_filling.hpp"
 
-#include "modules/alignment/edge_index.hpp"
+#include "alignment/edge_index.hpp"
 
 // FIXME: layering violation
 #include "configs/config_struct.hpp"

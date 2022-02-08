@@ -7,8 +7,8 @@
 #include "pipeline/graph_pack.hpp"
 #include "configs/config_struct.hpp"
 
-#include "modules/alignment/sequence_mapper.hpp"
-#include "modules/alignment/pacbio/g_aligner.hpp"
+#include "alignment/sequence_mapper.hpp"
+#include "alignment/pacbio/g_aligner.hpp"
 
 #include "io/reads/io_helper.hpp"
 #include "edlib/edlib.h"

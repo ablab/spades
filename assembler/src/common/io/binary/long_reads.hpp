@@ -7,7 +7,7 @@
 #pragma once
 
 #include "io_base.hpp"
-#include "modules/alignment/long_read_storage.hpp"
+#include "alignment/long_read_storage.hpp"
 
 namespace io {
 

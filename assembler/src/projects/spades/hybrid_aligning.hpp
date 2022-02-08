@@ -7,8 +7,8 @@
 
 #pragma once
 
+#include "alignment/long_read_storage.hpp"
 #include "assembly_graph/core/graph.hpp"
-#include "modules/alignment/long_read_storage.hpp"
 #include "pipeline/stage.hpp"
 
 namespace debruijn_graph {

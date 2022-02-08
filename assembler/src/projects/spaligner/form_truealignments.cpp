@@ -17,7 +17,7 @@
 #include "io/graph/gfa_writer.hpp"
 
 #include "assembly_graph/core/graph.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
+#include "alignment/sequence_mapper.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
 
 #include <iostream>

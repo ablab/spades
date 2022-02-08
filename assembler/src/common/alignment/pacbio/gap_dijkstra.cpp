@@ -4,7 +4,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "modules/alignment/pacbio/gap_dijkstra.hpp"
+#include "gap_dijkstra.hpp"
 
 namespace sensitive_aligner {
 

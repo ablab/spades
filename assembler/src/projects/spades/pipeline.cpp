@@ -18,11 +18,10 @@
 #include "extract_domains.hpp"
 #include "domain_graph_construction.hpp"
 #include "restricted_edges_filling.hpp"
-
 #include "library/library.hpp"
-#include "modules/alignment/kmer_mapper.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/stage.hpp"
+#include "alignment/kmer_mapper.hpp"
 #include "stages/genomic_info_filler.hpp"
 #include "stages/read_conversion.hpp"
 #include "stages/construction.hpp"

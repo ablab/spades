@@ -13,7 +13,7 @@
 #include "assembly_graph/paths/path_processor.hpp"
 #include "io/reads/modifying_reader_wrapper.hpp"
 #include "assembly_graph/core/order_and_law.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
+#include "alignment/sequence_mapper.hpp"
 
 namespace debruijn_graph {
 

@@ -7,7 +7,7 @@
 #pragma once
 
 #include "assembly_graph/core/graph.hpp"
-#include "modules/alignment/gap_info.hpp"
+#include "alignment/gap_info.hpp"
 
 namespace path_extend {
 

@@ -6,16 +6,15 @@
 
 #include "launcher.hpp"
 
-#include "modules/alignment/long_read_storage.hpp"
-#include "modules/alignment/rna/ss_coverage.hpp"
 #include "modules/path_extend/path_visualizer.hpp"
 #include "modules/path_extend/loop_traverser.hpp"
 #include "modules/path_extend/path_extender.hpp"
 #include "modules/path_extend/scaff_supplementary.hpp"
-#include "modules/path_extend/scaffolder2015/extension_chooser2015.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_visualizer.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
 #include "modules/path_extend/scaffolder2015/path_polisher.hpp"
+#include "alignment/long_read_storage.hpp"
+#include "alignment/rna/ss_coverage.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
 

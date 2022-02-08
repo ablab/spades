@@ -13,7 +13,7 @@
 #include "modules/path_extend/scaffolder2015/scaffold_graph.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 
-#include "modules/alignment/rna/ss_coverage.hpp"
+#include "alignment/rna/ss_coverage.hpp"
 
 namespace path_extend {
 

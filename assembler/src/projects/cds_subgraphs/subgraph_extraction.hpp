@@ -11,7 +11,7 @@
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/paths/path_utils.hpp"
 #include "assembly_graph/components/graph_component.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
+#include "alignment/sequence_mapper.hpp"
 #include "io/utils/edge_namer.hpp"
 
 namespace cds_subgraphs {
