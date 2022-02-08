@@ -8,7 +8,7 @@
 #pragma once
 
 #include "assembly_graph/core/graph.hpp"
-#include "assembly_graph/graph_support/chimera_stats.hpp"
+#include "common/modules/simplification/chimera_stats.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include "assembly_graph/graph_support/parallel_processing.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
