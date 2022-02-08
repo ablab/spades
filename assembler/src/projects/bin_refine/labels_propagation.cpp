@@ -21,11 +21,12 @@ LabelsPropagation::LabelsPropagation(const debruijn_graph::Graph& g,
                                      const binning::LinkIndex &links,
                                      const AlphaAssignment &labeled_alpha,
                                      const std::unordered_set<debruijn_graph::EdgeId> &nonpropagating_edges,
-                                     double eps)
+                                     double eps, unsigned niter)
         : BinningRefiner(g, links),
           labeled_alpha_(labeled_alpha),
           nonpropagating_edges_(nonpropagating_edges),
           eps_(eps),
+          niter_(niter),
           rdeg_(g.max_eid()),
           rweight_(g.max_eid()){
     // Calculate the reverse root degree
@@ -172,9 +173,13 @@ LabelsPropagation::FinalIteration LabelsPropagation::PropagationIteration(SoftBi
   // FIXME: We need to refine the condition:
   // We always need to ensure that all edges are reached (so, after_prob will be stable)
   bool converged = (sum_diff / after_prob <= eps_);
-  if (converged)
+  if (converged) {
       INFO("Converged at iteration " << iteration_step << ", prob " << after_prob << ", diff " << sum_diff << ", eps " << sum_diff / after_prob);
-
+      return true;
+  } else if (iteration_step > niter_) {
+      INFO("Maximum number of iterations exceeded at " << iteration_step << ", prob " << after_prob << ", diff " << sum_diff << ", eps " << sum_diff / after_prob);
+      return true;
+  }
 
   return converged;
 }

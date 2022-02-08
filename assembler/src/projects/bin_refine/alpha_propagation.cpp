@@ -20,7 +20,7 @@ AlphaAssignment AlphaPropagator::GetAlphaMask(const Binning &bin_stats) const {
     CorrectionAssigner distance_assigner(g_, metaalpha_);
     auto correction_alpha = distance_assigner.GetAlphaAssignment(distance_state);
     std::unordered_set<EdgeId> nonpropagating_edges;
-    LabelsPropagation binning_refiner(g_, links_, correction_alpha, nonpropagating_edges, eps_);
+    LabelsPropagation binning_refiner(g_, links_, correction_alpha, nonpropagating_edges, eps_, niter_);
     INFO("Launching propagation refiner");
     auto refined_distance_coeffs = binning_refiner.RefineBinning(distance_state);
     for (const auto &labels: refined_distance_coeffs) {
