@@ -42,7 +42,7 @@ static bool HasValidLibs() {
 }
 
 
-void RepeatResolution::load(graph_pack::GraphPack &gp, const std::string &load_from, const char *prefix) {
+void RepeatResolution::load(graph_pack::GraphPack &gp, const std::filesystem::path &load_from, const char *prefix) {
     // Do nothing in final mode, otherwise - produce saves
     if (!preliminary_)
         return;
@@ -51,7 +51,7 @@ void RepeatResolution::load(graph_pack::GraphPack &gp, const std::string &load_f
 }
 
 
-void RepeatResolution::save(const graph_pack::GraphPack &gp, const std::string &save_to, const char *prefix) const {
+void RepeatResolution::save(const graph_pack::GraphPack &gp, const std::filesystem::path &save_to, const char *prefix) const {
     // Do nothing in final mode, otherwise - produce saves
     if (!preliminary_)
         return;

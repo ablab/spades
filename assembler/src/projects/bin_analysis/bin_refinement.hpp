@@ -589,21 +589,21 @@ static EdgeSet UnambiguousExtensions(const Graph &g,
 static void AnnotateExtraEdgesRound(const Graph &g,
                                     EdgeQuality<Graph> &edge_qual,
                                     double est_cov,
-                                    const std::string &out_path) {
+                                    const std::filesystem::path &out_path) {
     INFO("Annotation expansion");
     auto annotated_edges = edge_qual.PositiveQualEdges();
 
-    fs::make_dirs(out_path + "/unambig/");
-    fs::make_dirs(out_path + "/only_ann_reach/");
+    create_directory(out_path / "unambig/");
+    create_directory(out_path / "only_ann_reach/");
     EdgeSet expanded(annotated_edges);
-    utils::insert_all(expanded, UnambiguousExtensions(g, annotated_edges, out_path + "/unambig/"));
+    utils::insert_all(expanded, UnambiguousExtensions(g, annotated_edges, out_path / "unambig/"));
     ////TODO think about step by step additions (currently initial annotation set is not changed)
     //utils::insert_all(expanded, BoundedRegionsExpander(g, annotated_edges, 10000).Run());
     //INFO("Extra edges total " << expanded.size());
     utils::insert_all(expanded, OnlyAnnotatedReachableExpander(g, annotated_edges,
             //FIXME magic constants
                                                                   2500, 0.7 * est_cov, 1.3 * est_cov,
-                                                                  out_path + "/only_ann_reach/").Run());
+                                                                  out_path / "only_ann_reach/").Run());
     INFO("Only annotated reachable done");
 
     std::set<EdgeId> extra_edges;
@@ -670,7 +670,7 @@ static void CompareAnnotations(const graph_pack::GraphPack &gp, const EdgeQualit
 static void AnnotateExtraEdges(const graph_pack::GraphPack &gp,
                                EdgeQuality<Graph> &annotation,
                                double est_cov,
-                               const std::string &out_folder = "") {
+                               const std::filesystem::path &out_folder = "") {
     const size_t expansion_it_cnt = 3;
     const auto &edge_qual = gp.get<EdgeQuality<Graph>>();
     const auto &graph = gp.get<Graph>();
@@ -689,8 +689,8 @@ static void AnnotateExtraEdges(const graph_pack::GraphPack &gp,
 
     if (edge_qual.IsAttached()) {
         INFO("Reference was provided. Comparing annotations.");
-        fs::make_dirs(out_folder + "/unannotated_pics");
-        CompareAnnotations(gp, annotation, out_folder + "/unannotated_pics");
+        create_directory(out_folder / "unannotated_pics");
+        CompareAnnotations(gp, annotation, out_folder / "unannotated_pics");
     }
 }
 

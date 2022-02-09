@@ -7,15 +7,14 @@
 
 #include "library.hpp"
 
-#include "utils/filesystem/path_helper.hpp"
-
-#include "llvm/Support/YAMLTraits.h"
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/YAMLTraits.h"
 
-#include <string>
 #include <fstream>
 #include <iostream>
+#include <string>
+#include <string_view>
 
 using namespace llvm;
 using namespace io;
@@ -132,11 +131,9 @@ void SequencingLibraryBase::validate(llvm::yaml::IO &, llvm::StringRef &res) {
   }
 }
 
-void SequencingLibraryBase::update_relative_reads_filenames(const std::string &input_dir) {
-    auto update_relative_filename = [&input_dir](const std::string &filename) {
-        if (filename[0] == '/')
-            return filename;
-        return input_dir + filename;
+void SequencingLibraryBase::update_relative_reads_filenames(const std::filesystem::path &input_dir) {
+    auto update_relative_filename = [&input_dir](const std::filesystem::path &filename) {
+        return input_dir / filename;
     };
     
     std::transform(left_paired_reads_.begin(), left_paired_reads_.end(), left_paired_reads_.begin(),

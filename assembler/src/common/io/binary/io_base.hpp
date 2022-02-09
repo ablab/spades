@@ -8,7 +8,6 @@
 
 #include "binary.hpp"
 #include "utils/logger/logger.hpp"
-#include "utils/filesystem/path_helper.hpp"
 #include "utils/filesystem/file_opener.hpp"
 
 #include <fstream>

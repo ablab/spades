@@ -26,7 +26,7 @@ using namespace debruijn_graph;
 
 static void DrawNeighbourComponents(graph_pack::GraphPack &gp, const std::string &bin_contigs,
                              const EdgeQuality<Graph> &annotation,
-                             const std::string &pics_path, size_t edge_len_bound) {
+                             const std::filesystem::path &pics_path, size_t edge_len_bound) {
     auto &edge_pos = gp.get_mutable<EdgesPositionHandler<Graph>>();
     const auto &graph = gp.get<Graph>();
     edge_pos.Attach();
@@ -47,7 +47,8 @@ static void DrawNeighbourComponents(graph_pack::GraphPack &gp, const std::string
 
             DEBUG("Writing to dot");
             bin_refinement::DrawComponent(graph,
-                                          component_collector.reached(), pics_path + std::to_string(graph.int_id(e)) + ".dot",
+                                          component_collector.reached(),
+                                          static_cast<std::string>(pics_path) + std::to_string(graph.int_id(e)) + ".dot",
                                           annotation.PositiveQualEdges(), bin_refinement::EdgeSet(), &edge_pos);
             DEBUG("Written");
         }
@@ -56,14 +57,14 @@ static void DrawNeighbourComponents(graph_pack::GraphPack &gp, const std::string
     edge_pos.Detach();
 }
 
-static void Run(size_t K, const std::string &graph_path,
+static void Run(size_t K, const std::filesystem::path &graph_path,
                 const std::string &bin_contigs, const std::string &out_prefix,
-                const std::string &tmpdir, const std::string &reference_path = "") {
+                const std::filesystem::path &tmpdir, const std::filesystem::path &reference_path = "") {
     using namespace bin_refinement;
 
     std::vector<std::string> ref;
     if (!reference_path.empty()) {
-        fs::CheckFileExistenceFATAL(reference_path);
+        CHECK_FATAL_ERROR(exists(reference_path), "File " << reference_path << " doesn't exist or can't be read!");
         io::FileReadStream genome_stream(reference_path);
         while (!genome_stream.eof()) {
             io::SingleRead r;
@@ -95,10 +96,10 @@ static void Run(size_t K, const std::string &graph_path,
         VERIFY(!gp.get<EdgeQuality<Graph>>().IsAttached());
     }
 
-    const std::string pics_path = out_prefix + "_neighbourhoods/";
+    const std::filesystem::path pics_path = out_prefix + "_neighbourhoods/";
     //const std::string pics_path = "";
     if (!pics_path.empty()) {
-        fs::make_dirs(pics_path);
+        create_directory(pics_path);
         DrawNeighbourComponents(gp, bin_contigs, annotation, pics_path, /*edge_length_bound*/2500);
     }
 
@@ -158,9 +159,9 @@ int main(int argc, char** argv) {
     try {
         unsigned nthreads = cfg.nthreads;
         unsigned k = cfg.k;
-        std::string tmpdir = cfg.tmpdir;
+        std::filesystem::path tmpdir = cfg.tmpdir;
 
-        fs::make_dir(tmpdir);
+        create_directory(tmpdir);
 
         INFO("K-mer length set to " << k);
 

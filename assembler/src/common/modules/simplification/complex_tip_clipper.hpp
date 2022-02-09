@@ -127,7 +127,7 @@ class ComplexTipClipper : public PersistentProcessingAlgorithm<Graph, typename G
     typedef PersistentProcessingAlgorithm<Graph, VertexId> base;
     typedef typename ComponentRemover<Graph>::HandlerF HandlerF;
 
-    std::string pics_folder_;
+    std::filesystem::path pics_folder_;
     ComplexTipFinder<Graph> finder_;
     ComponentRemover<Graph> component_remover_;
 
@@ -136,14 +136,14 @@ public:
     ComplexTipClipper(Graph& g, double relative_coverage,
                       size_t max_edge_len, size_t max_path_len,
                       size_t chunk_cnt,
-                      const std::string &pics_folder = "" ,
+                      const std::filesystem::path &pics_folder = "" ,
                       HandlerF removal_handler = nullptr) :
             base(g, nullptr, false, adt::identity(), /*track changes*/false),
             pics_folder_(pics_folder),
             finder_(g, relative_coverage, max_edge_len, max_path_len),
             component_remover_(g, removal_handler) {
         if (!pics_folder_.empty()) {
-            fs::make_dir(pics_folder_);
+            create_directory(pics_folder_);
         }
         this->interest_el_finder_ = std::make_shared<ParallelInterestingElementFinder<Graph, VertexId>>(
                 [&](VertexId v) {return !finder_(v).empty();}, chunk_cnt);
@@ -159,9 +159,9 @@ public:
 
         if (!pics_folder_.empty()) {
             visualization::visualization_utils::WriteComponentSinksSources(component,
-                                                      pics_folder_
-                                                      + std::to_string(this->g().int_id(v)) //+ "_" + std::to_string(candidate_cnt)
-                                                      + ".dot");
+                                                      pics_folder_.concat(
+                                                      std::to_string(this->g().int_id(v)) //+ "_" + std::to_string(candidate_cnt)
+                                                      + ".dot"));
         }
 
         VERIFY(component.e_size() && component.v_size());

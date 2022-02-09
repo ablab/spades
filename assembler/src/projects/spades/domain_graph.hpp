@@ -13,6 +13,7 @@
 #include "modules/path_extend/path_extender.hpp"
 #include "pipeline/graph_pack.hpp"
 
+#include <filesystem>
 #include <unordered_map>
 #include <numeric>
 
@@ -248,10 +249,12 @@ namespace nrps {
         const omnigraph::MappingPath<EdgeId>& mapping_path(VertexId v) const;
         bool strong(EdgeId e) const;
         void SetContigNearEnd(VertexId v);
-        void ExportToDot(const std::string &output_path) const;
+        void ExportToDot(const std::filesystem::path &output_path) const;
         void FindDomainOrderings(graph_pack::GraphPack &gp,
-                                 size_t component_size_part, size_t component_min_size, bool start_only_from_tips,
-                                 const std::string &output_filename, const std::string &output_dir);
+                                 size_t component_size_part, size_t component_min_size,
+                                 bool start_only_from_tips,
+                                 const std::filesystem::path &output_filename,
+                                 const std::filesystem::path &output_dir);
         path_extend::Gap ConvertGapDescription(const path_extend::GapDescription &gap) const;
 
         friend class debruijn_graph::DomainGraphConstructor;

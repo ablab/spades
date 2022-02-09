@@ -5,7 +5,8 @@
 //***************************************************************************
 
 #include "domain_graph.hpp"
-#include "utils/filesystem/path_helper.hpp"
+
+
 namespace nrps {
     void DomainGraph::SetVisited(VertexId v) {
         data(v).SetVisited();
@@ -446,7 +447,7 @@ DomainGraph::Arrangements DomainGraph::FindAllPossibleArrangements(VertexId v,
         return AddEdge(from, to, EdgeData(strong, edges, length));
     }
 
-    void DomainGraph::ExportToDot(const std::string &output_path) const {
+    void DomainGraph::ExportToDot(const std::filesystem::path &output_path) const {
         std::ofstream out(output_path);
         out << "digraph domain_graph {" << std::endl;
         for (VertexId v : vertices()) {
@@ -476,10 +477,12 @@ void DomainGraph::OutputStat(const DomainGraph::Arrangements &arr, std::ostream 
 }
 
 void DomainGraph::FindDomainOrderings(graph_pack::GraphPack &gp,
-                                      size_t component_size_part, size_t component_min_size, bool start_only_from_tips,
-                                      const std::string &output_filename, const std::string &output_dir) {
+                                      size_t component_size_part, size_t component_min_size,
+                                      bool start_only_from_tips,
+                                      const std::filesystem::path &output_filename,
+                                      const std::filesystem::path &output_dir) {
     const auto &graph = gp.get<debruijn_graph::Graph>();
-    std::ofstream stat_stream(fs::append_path(output_dir, "hmm_statistics.txt"));
+    std::ofstream stat_stream(output_dir / "hmm_statistics.txt");
     FindBasicStatistic(stat_stream);
     path_extend::ContigWriter writer(graph, path_extend::MakeContigNameGenerator(cfg::get().mode, gp));
 
@@ -500,7 +503,7 @@ void DomainGraph::FindDomainOrderings(graph_pack::GraphPack &gp,
 
     INFO("Total start vertices: " << start_nodes.size());
 
-    io::osequencestream_bgc oss(fs::append_path(output_dir, output_filename));
+    io::osequencestream_bgc oss(output_dir / output_filename);
     path_extend::ScaffoldSequenceMaker seq_maker(graph);
     std::vector<DomainGraph::Arrangements> answer;
 

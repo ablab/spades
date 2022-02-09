@@ -14,13 +14,9 @@
 #include "io/reads/osequencestream.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "sequence/aa.hpp"
-#include "utils/filesystem/path_helper.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 
 #include <boost/algorithm/string.hpp>
-
-#include <string>
-#include <vector>
 
 extern "C" {
     #include "easel.h"
@@ -30,7 +26,7 @@ extern "C" {
 namespace nrps {
 
 static void match_contigs_internal(hmmer::HMMMatcher &matcher, const path_extend::BidirectionalPath &path,
-                                   const std::string &path_string,
+                                   const std::filesystem::path &path_string,
                                    const std::string &type, const std::string &desc,
                                    ContigAlnInfo &res, io::OFastaReadStream &oss_contig, size_t model_length) {
     for (size_t shift = 0; shift < 3; ++shift) {
@@ -66,7 +62,7 @@ static void match_contigs_internal(hmmer::HMMMatcher &matcher, const path_extend
             DEBUG("First - " << seqpos.first << ", second - " << seqpos.second);
             res.push_back({name, type, desc,
                            unsigned(seqpos.first), unsigned(seqpos.second),
-                           path_string.substr(seqpos.first, std::max(seqpos.second - seqpos.first, (int)path.g().k() + 1))});
+                           static_cast<std::string>(path_string).substr(seqpos.first, std::max(seqpos.second - seqpos.first, (int)path.g().k() + 1))});
         }
     }
     matcher.reset_top_hits();
@@ -83,7 +79,7 @@ static void match_contigs(const path_extend::PathContainer &contig_paths, const 
         if (path.Length() <= 0)
             continue;
 
-        std::string path_string = scaffold_maker.MakeSequence(path);
+        std::filesystem::path path_string = scaffold_maker.MakeSequence(path);
         match_contigs_internal(matcher, path, path_string,
                                hmm.name(), hmm.desc() ? hmm.desc() : "",
                                res, oss_contig, hmm.length());
@@ -92,7 +88,7 @@ static void match_contigs(const path_extend::PathContainer &contig_paths, const 
         if (conj_path.Length() <= 0)
             continue;
 
-        std::string path_string_conj = scaffold_maker.MakeSequence(conj_path);
+        std::filesystem::path path_string_conj = scaffold_maker.MakeSequence(conj_path);
         match_contigs_internal(matcher, conj_path, path_string_conj,
                                hmm.name(), hmm.desc() ? hmm.desc() : "",
                                res, oss_contig, hmm.length());
@@ -100,7 +96,7 @@ static void match_contigs(const path_extend::PathContainer &contig_paths, const 
 }
 
 
-static void ParseHMMFile(std::vector<hmmer::HMM> &hmms, const std::string &filename) {
+static void ParseHMMFile(std::vector<hmmer::HMM> &hmms, const std::filesystem::path &filename) {
     auto hmmfile = hmmer::open_file(filename);
     if (std::error_code ec = hmmfile.getError()) {
         FATAL_ERROR("Error opening HMM file "<< filename << ", reason: " << ec.message());
@@ -113,7 +109,7 @@ static void ParseHMMFile(std::vector<hmmer::HMM> &hmms, const std::string &filen
     }
 }
 
-static void ParseFASTAFile(std::vector<hmmer::HMM> &hmms, const std::string &filename) {
+static void ParseFASTAFile(std::vector<hmmer::HMM> &hmms, const std::filesystem::path &filename) {
     hmmer::HMMSequenceBuilder builder(hmmer::Alphabet::AMINO, hmmer::ScoreSystem::Default);
 
     ESL_ALPHABET   *abc  = esl_alphabet_Create(eslAMINO);
@@ -150,12 +146,12 @@ static void ParseFASTAFile(std::vector<hmmer::HMM> &hmms, const std::string &fil
 
 ContigAlnInfo DomainMatcher::MatchDomains(graph_pack::GraphPack &gp,
                                           const std::string &hmm_set,
-                                          const std::string &output_dir) {
-    std::string tmp_dir = fs::append_path(output_dir, "temp_anti");
-    if (fs::check_existence(tmp_dir))
-        fs::remove_dir(tmp_dir);
-    fs::make_dirs(tmp_dir);
-    fs::make_dirs(fs::append_path(output_dir, "bgc_in_gfa"));
+                                          const std::filesystem::path &output_dir) {
+    std::filesystem::path tmp_dir = output_dir / "temp_anti";
+    if (exists(tmp_dir))
+        remove(tmp_dir);
+    create_directory(tmp_dir);
+    create_directory(output_dir / "bgc_in_gfa");
 
     ContigAlnInfo res;
     hmmer::hmmer_cfg hcfg;
@@ -166,7 +162,7 @@ ContigAlnInfo DomainMatcher::MatchDomains(graph_pack::GraphPack &gp,
     path_extend::PathContainer broken_scaffolds;
     path_extend::ScaffoldBreaker(int(gp.k())).Break(gp.get<path_extend::PathContainer>("exSPAnder paths"), broken_scaffolds);
 
-    io::OFastaReadStream oss_contig(fs::append_path(output_dir, "restricted_edges.fasta"));
+    io::OFastaReadStream oss_contig(output_dir / "restricted_edges.fasta");
 
     std::vector<hmmer::HMM> hmms;
     for (const auto &f : hmm_files) {

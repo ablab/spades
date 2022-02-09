@@ -24,7 +24,7 @@
 namespace io {
 
 bool ReadConverter::CheckBinaryReadsExist(SequencingLibraryT& lib) {
-    return fs::FileExists(lib.data().binary_reads_info.bin_reads_info_file);
+    return exists(static_cast<std::filesystem::path>(lib.data().binary_reads_info.bin_reads_info_file));
 }
 
 //todo change to yaml
@@ -103,14 +103,14 @@ void ReadConverter::ConvertToBinary(SequencingLibraryT& lib,
 }
 
 void ReadConverter::ConvertEdgeSequencesToBinary(const debruijn_graph::Graph &g,
-                                                 const std::string &contigs_output_dir, unsigned nthreads) {
+                                                 const std::filesystem::path &contigs_output_dir, unsigned nthreads) {
     INFO("Outputting contigs to " << contigs_output_dir);
 
     std::unique_ptr<ThreadPool::ThreadPool> pool;
     if (nthreads > 1)
         pool = std::make_unique<ThreadPool::ThreadPool>(nthreads);
 
-    io::BinaryWriter single_converter(fs::append_path(contigs_output_dir, "contigs"));
+    io::BinaryWriter single_converter(contigs_output_dir / "contigs");
     io::ReadStream<io::SingleReadSeq> single_reader = io::EdgeSequencesStream(g);
     ReadStreamStat read_stat = single_converter.ToBinary(single_reader, pool.get());
 
@@ -120,7 +120,7 @@ void ReadConverter::ConvertEdgeSequencesToBinary(const debruijn_graph::Graph &g,
     data.merged_read_length = 0;
     data.read_count = read_stat.read_count;
     data.total_nucls = read_stat.total_len;
-    WriteBinaryInfo(fs::append_path(contigs_output_dir, "contigs_info"), data);
+    WriteBinaryInfo(contigs_output_dir / "contigs_info", data);
 }
 
 void ReadConverter::WriteBinaryInfo(const std::string &filename, LibraryData &data) {

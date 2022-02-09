@@ -7,13 +7,14 @@
 
 #pragma once
 
-#include "utils/filesystem/path_helper.hpp"
+
 #include "logger.hpp"
 
 #include <iostream>
 
 #include "config.hpp"
 
+#include <filesystem>
 #include <iostream>
 #include <mutex>
 
@@ -27,12 +28,14 @@ struct console_writer : public writer {
             std::cout << fmt::format("{:14s} {:>5s} / {:<5s} {:6.6s} {:24.24s} ({:26.26s}:{:4d})   {:s}",
                                      utils::human_readable_time(time), utils::human_readable_memory(cmem),
                                      utils::human_readable_memory(max_rss), logging::level_name(l),
-                                     source, fs::filename(file), int(line_num), msg)
+                                     source, static_cast<std::filesystem::path>(file).filename(), int(line_num), msg)
             << std::endl;
         else
             std::cout << fmt::format("{:14s} {:^5s} {:6.6s} {:24.24s} ({:26.26s}:{:4d})   {:s}",
                                      utils::human_readable_time(time), utils::human_readable_memory(max_rss),
-                                     logging::level_name(l), source, fs::filename(file), int(line_num), msg)
+                                     logging::level_name(l), source,
+                                     static_cast<std::filesystem::path>(file).filename(),
+                                     int(line_num), msg)
                       << std::endl;
     }
 

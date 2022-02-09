@@ -15,10 +15,12 @@
 
 #pragma once
 
+#include "utils/logger/logger.hpp"
 #include "read_stream.hpp"
 #include "single_read.hpp"
 #include "parser.hpp"
-#include "utils/filesystem/path_helper.hpp"
+
+#include <filesystem>
 
 namespace io {
 
@@ -34,10 +36,10 @@ public:
      * wrappers.
      * @param offset The offset of the read quality.
      */
-    explicit FileReadStream(const std::string &filename,
+    explicit FileReadStream(const std::filesystem::path &filename,
                             FileReadFlags flags = FileReadFlags())
             : filename_(filename), flags_(flags), parser_(nullptr) {
-        fs::CheckFileExistenceFATAL(filename_);
+        CHECK_FATAL_ERROR(exists(filename), "File " << filename << " doesn't exist or can't be read!");
         parser_.reset(SelectParser(filename_, flags_));
     }
 
@@ -102,7 +104,7 @@ public:
 
 private:
     /* @variable The name of the file which stream reads from. */
-    std::string filename_;
+    std::filesystem::path filename_;
     /* @variable Flags */
     FileReadFlags flags_;
     /* @variable Internal stream that reads from file. */

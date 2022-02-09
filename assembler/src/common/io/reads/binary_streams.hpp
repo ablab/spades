@@ -14,9 +14,9 @@
 
 #include "utils/verify.hpp"
 #include "utils/logger/logger.hpp"
-#include "utils/filesystem/path_helper.hpp"
 #include "utils/filesystem/file_opener.hpp"
 
+#include <filesystem>
 #include <fstream>
 
 namespace io {
@@ -45,16 +45,16 @@ public:
      * @param portion_count Total number of (roughly equal) portions.
      * @param portion_num Index of the portion (0..portion_count - 1).
      */
-    BinaryFileStream(const std::string &file_name_prefix, size_t portion_count, size_t portion_num) {
+    BinaryFileStream(const std::filesystem::path &file_name_prefix, size_t portion_count, size_t portion_num) {
         DEBUG("Preparing binary stream #" << portion_num << "/" << portion_count);
         VERIFY(portion_num < portion_count);
-        const std::string fname = file_name_prefix + ".seq";
+        const std::filesystem::path fname = file_name_prefix / ".seq";
         stream_.open(fname, std::ios_base::binary | std::ios_base::in);
         ReadStreamStat stat;
         stat.read(stream_);
 
-        const std::string offset_name = file_name_prefix + ".off";
-        const size_t chunk_count = fs::filesize(offset_name) / sizeof(size_t);
+        const std::filesystem::path offset_name = file_name_prefix / ".off";
+        const size_t chunk_count = file_size(offset_name) / sizeof(size_t);
 
         // We split all read chunks into portion_count portions
         // Portion could have size (chunk_count / portion_count) or (chunk_count / portion_count + 1)
@@ -99,7 +99,7 @@ public:
     /**
      * @brief Constructs a reader of all available reads.
      */
-    BinaryFileStream(const std::string &file_name_prefix)
+    BinaryFileStream(const std::filesystem::path &file_name_prefix)
             : BinaryFileStream(file_name_prefix, 1, 0) {}
 
     BinaryFileStream<SeqT>& operator>>(SeqT &read) {
@@ -132,7 +132,7 @@ class BinaryFileSingleStream : public BinaryFileStream<SingleReadSeq>  {
 protected:
     bool ReadImpl(SingleReadSeq &read) override;
 public:
-    BinaryFileSingleStream(const std::string &file_name_prefix, size_t portion_count, size_t portion_num);
+    BinaryFileSingleStream(const std::filesystem::path &file_name_prefix, size_t portion_count, size_t portion_num);
 };
 
 class BinaryFilePairedStream: public BinaryFileStream<PairedReadSeq> {
@@ -140,7 +140,7 @@ class BinaryFilePairedStream: public BinaryFileStream<PairedReadSeq> {
 protected:
     bool ReadImpl(PairedReadSeq& read) override;
 public:
-    BinaryFilePairedStream(const std::string &file_name_prefix, size_t insert_size,
+    BinaryFilePairedStream(const std::filesystem::path &file_name_prefix, size_t insert_size,
                            size_t portion_count, size_t portion_num);
 };
 
@@ -153,7 +153,7 @@ class BinaryUnmergingPairedStream {
     PairedReadSeq Convert(const SingleReadSeq &read) const;
 
 public:
-    BinaryUnmergingPairedStream(const std::string& file_name_prefix, size_t insert_size, size_t read_length,
+    BinaryUnmergingPairedStream(const std::filesystem::path& file_name_prefix, size_t insert_size, size_t read_length,
                                 size_t portion_count, size_t portion_num);
 
     bool is_open() { return stream_.is_open(); }

@@ -22,7 +22,7 @@ void create_console_logger(logging::level log_level) {
 
 
 io::IdMapper<std::string> *LoadGraphFromGFA(debruijn_graph::Graph &graph,
-                                            const std::string &filename) {
+                                            const std::filesystem::path &filename) {
     io::IdMapper<std::string> *id_mapper = new io::IdMapper<std::string>();
     gfa::GFAReader gfa(filename);
     INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
@@ -40,10 +40,11 @@ io::IdMapper<std::string> *LoadGraphFromGFA(debruijn_graph::Graph &graph,
 }
 
 
-io::IdMapper<std::string> *LoadGraphPack(graph_pack::GraphPack &gp, const std::string &filename) {
+io::IdMapper<std::string> *LoadGraphPack(graph_pack::GraphPack &gp, const std::filesystem::path
+&filename) {
     auto &graph = gp.get_mutable<debruijn_graph::Graph>();
     io::IdMapper<std::string> *id_mapper = nullptr;
-    if (fs::extension(filename) == ".gfa") {
+    if (filename.extension() == ".gfa") {
         id_mapper = LoadGraphFromGFA(graph, filename);
     } else {
         io::binary::BasePackIO().Load(filename, gp);
@@ -52,9 +53,10 @@ io::IdMapper<std::string> *LoadGraphPack(graph_pack::GraphPack &gp, const std::s
     return id_mapper;
 }
 
-io::IdMapper<std::string> *LoadBaseGraph(debruijn_graph::Graph &graph, const std::string &filename) {
+io::IdMapper<std::string> *LoadBaseGraph(debruijn_graph::Graph &graph,
+                                         const std::filesystem::path &filename) {
     io::IdMapper<std::string> *id_mapper = nullptr;
-    if (fs::extension(filename) == ".gfa") {
+    if (filename.extension() == ".gfa") {
         id_mapper = LoadGraphFromGFA(graph, filename);
     } else {
         io::binary::BasicGraphIO<debruijn_graph::Graph>().Load(filename, graph);
@@ -63,7 +65,7 @@ io::IdMapper<std::string> *LoadBaseGraph(debruijn_graph::Graph &graph, const std
     return id_mapper;
 }
 
-io::IdMapper<std::string> *LoadBaseGraph(graph_pack::GraphPack &gp, const std::string &filename) {
+io::IdMapper<std::string> *LoadBaseGraph(graph_pack::GraphPack &gp, const std::filesystem::path &filename) {
     auto &graph = gp.get_mutable<debruijn_graph::Graph>();
     return LoadBaseGraph(graph, filename);
 }

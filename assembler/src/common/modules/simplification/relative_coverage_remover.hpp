@@ -578,7 +578,7 @@ class RelativeCovComponentFinder {
     double max_coverage_;
     //bound on the number of inner vertices
     size_t vertex_count_limit_;
-    std::string vis_dir_;
+    std::filesystem::path vis_dir_;
 
     mutable std::atomic_uint fail_cnt_;
     mutable std::atomic_uint succ_cnt_;
@@ -602,11 +602,11 @@ class RelativeCovComponentFinder {
                 vertices.insert(g_.EdgeEnd(e));
             }
 
-            auto filename = success ? vis_dir_ + "/success/" + std::to_string(succ_cnt_++) : vis_dir_ + "/fail/" + std::to_string(fail_cnt_++);
+            auto filename = success ? vis_dir_ / ("success/" + std::to_string(succ_cnt_++)) : vis_dir_ / ("fail/" + std::to_string(fail_cnt_++));
             visualization::visualization_utils::WriteComponent(
                     ComponentCloser<Graph>(g_, 0).CloseComponent(
                             GraphComponent<Graph>::FromVertices(g_, vertices)),
-                    filename + ".dot", colorer, labeler);
+                    filename.concat(".dot"), colorer, labeler);
         }
     }
 
@@ -619,7 +619,7 @@ public:
             size_t longest_connecting_path_bound,
             double max_coverage,
             size_t vertex_count_limit,
-            const std::string& vis_dir)
+            const std::filesystem::path& vis_dir)
             : g_(g),
               rel_helper_(g, flanking_cov, min_coverage_gap),
               length_bound_(length_bound),
@@ -634,9 +634,9 @@ public:
         VERIFY(tip_allowing_length_bound >= length_bound);
         TRACE("Coverage gap " << min_coverage_gap);
         if (!vis_dir_.empty()) {
-            fs::make_dirs(vis_dir_);
-            fs::make_dirs(vis_dir_ + "/success/");
-            fs::make_dirs(vis_dir_ + "/fail/");
+            create_directory(vis_dir_);
+            create_directory(vis_dir_ / "success/");
+            create_directory(vis_dir_ / "fail/");
         }
     }
 
@@ -709,7 +709,7 @@ public:
             size_t longest_connecting_path_bound,
             double max_coverage = std::numeric_limits<double>::max(),
             HandlerF handler_function = nullptr, size_t vertex_count_limit = 10,
-            std::string vis_dir = "")
+            std::filesystem::path vis_dir = "")
             : base(g, nullptr, /*canonical only*/ false,
                     CoverageComparator<Graph>(g), /*track changes*/ false),
               finder_(g, flanking_cov,

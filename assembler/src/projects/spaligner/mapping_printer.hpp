@@ -11,6 +11,7 @@
 #include "io/utils/edge_namer.hpp"
 #include "io/utils/id_mapper.hpp"
 
+#include<filesystem>
 #include <fstream>
 
 namespace sensitive_aligner {
@@ -20,7 +21,7 @@ class MappingPrinter {
 
   MappingPrinter(const debruijn_graph::ConjugateDeBruijnGraph &g,
                  const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
-                 const std::string &output_dir)
+                 const std::filesystem::path &output_dir)
     : g_(g), edge_namer_(edge_namer), output_dir_(output_dir)
   {}
 
@@ -34,7 +35,7 @@ class MappingPrinter {
 
   const debruijn_graph::ConjugateDeBruijnGraph &g_;
   const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer_;
-  std::string output_dir_;
+    std::filesystem::path output_dir_;
   std::ofstream output_file_;
 };
 
@@ -42,10 +43,10 @@ class MappingPrinterTSV: public MappingPrinter {
  public:
   MappingPrinterTSV(const debruijn_graph::ConjugateDeBruijnGraph &g,
                     const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
-                    const std::string &output_dir)
+                    const std::filesystem::path &output_dir)
     : MappingPrinter(g, edge_namer, output_dir) {
-    fs::make_dirs(output_dir_);
-    output_file_.open(output_dir_ + "/alignment.tsv", std::ofstream::out);
+    create_directory(output_dir_);
+    output_file_.open(output_dir_.concat("/alignment.tsv"), std::ofstream::out);
   }
 
   void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) override;
@@ -60,10 +61,10 @@ class MappingPrinterFasta: public MappingPrinter {
  public:
   MappingPrinterFasta(const debruijn_graph::ConjugateDeBruijnGraph &g,
                     const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
-                    const std::string &output_dir)
+                    const std::filesystem::path &output_dir)
     : MappingPrinter(g, edge_namer, output_dir) {
-    fs::make_dirs(output_dir_);
-    output_file_.open(output_dir_ + "/alignment.fasta", std::ofstream::out);
+    create_directory(output_dir_);
+    output_file_.open(output_dir_.concat("/alignment.fasta"), std::ofstream::out);
   }
 
   void SaveMapping(const sensitive_aligner::OneReadMapping &aligned_mappings, const io::SingleRead &read) override;
@@ -77,10 +78,10 @@ class MappingPrinterGPA : public MappingPrinter {
  public:
   MappingPrinterGPA(const debruijn_graph::ConjugateDeBruijnGraph &g,
                     const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
-                    const std::string &output_dir)
+                    const std::filesystem::path &output_dir)
     : MappingPrinter(g, edge_namer, output_dir) {
-    fs::make_dirs(output_dir_);
-    output_file_.open(output_dir_ + "/alignment.gpa", std::ofstream::out);
+    create_directory(output_dir_);
+    output_file_.open(output_dir_.concat("/alignment.gpa"), std::ofstream::out);
     output_file_ << "H\n";
   }
 
@@ -116,7 +117,7 @@ class MappingPrinterHub {
  public:
   MappingPrinterHub(const debruijn_graph::ConjugateDeBruijnGraph &g,
                     const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
-                    const std::string &output_dir,
+                    const std::filesystem::path &output_dir,
                     const std::string formats) {
     if (formats.find("tsv") != std::string::npos) {
       mapping_printers_.push_back(new MappingPrinterTSV(g, edge_namer, output_dir));

@@ -224,7 +224,7 @@ void assemble_genome() {
                                     cfg::get().output_saves, cfg::get().load_from));
 
     if (SPAdes.saves_policy().EnabledAnyCheckpoint())
-        fs::make_dir(cfg::get().output_saves);
+        create_directory(static_cast<std::filesystem::path>(cfg::get().output_saves));
 
     bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable;
     INFO("Two-step repeat resolution " << (two_step_rr ? "enabled" : "disabled"));
@@ -281,7 +281,7 @@ void assemble_genome() {
     SPAdes.run(conj_gp, cfg::get().entry_point.c_str());
 
     // For informing spades.py about estimated params
-    write_lib_data(fs::append_path(cfg::get().output_dir, "final"));
+    write_lib_data(static_cast<std::filesystem::path>(cfg::get().output_dir) / "final");
 
     INFO("SPAdes finished");
 }

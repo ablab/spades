@@ -10,12 +10,12 @@
 
 #include "configs/config_struct.hpp"
 #include "pipeline/graph_pack.hpp"
-#include "utils/filesystem/path_helper.hpp"
 #include "utils/logger/logger.hpp"
 
-#include <vector>
+#include <filesystem>
 #include <memory>
 #include <variant>
+#include <vector>
 
 namespace spades {
 
@@ -34,8 +34,8 @@ public:
     const char *id() const { return id_; }
 
     /// @throw std::ios_base::failure if load_from does not contain all required files
-    virtual void load(graph_pack::GraphPack &, const std::string &load_from, const char *prefix = nullptr);
-    virtual void save(const graph_pack::GraphPack &, const std::string &save_to,
+    virtual void load(graph_pack::GraphPack &, const std::filesystem::path &load_from, const char *prefix = nullptr);
+    virtual void save(const graph_pack::GraphPack &, const std::filesystem::path &save_to,
                       const char *prefix = nullptr) const;
     void prepare(graph_pack::GraphPack &, const char *stage_name, const char *started_from = nullptr);
     virtual void run(graph_pack::GraphPack &, const char *started_from = nullptr) = 0;
@@ -162,7 +162,7 @@ public:
     }
 
     SavesPolicy(const std::variant<Checkpoints, std::string>& checkpoints,
-                const std::string &saves_path, const std::string &load_path = "")
+                const std::filesystem::path &saves_path, const std::filesystem::path &load_path = "")
             : checkpoints_(checkpoints), saves_path_(saves_path) {
         load_path_ = (load_path == "" ? saves_path_ : load_path);
     }
@@ -181,27 +181,27 @@ public:
         return std::holds_alternative<Checkpoints>(checkpoints_) and std::get<Checkpoints>(checkpoints_) == SavesPolicy::Checkpoints::Last;
     }
 
-    const std::string & SavesPath() const { return saves_path_; }
-    const std::string & LoadPath() const { return load_path_; }
+    const std::filesystem::path & SavesPath() const { return saves_path_; }
+    const std::filesystem::path & LoadPath() const { return load_path_; }
 
     std::string GetLastCheckpoint() const {
         std::string res;
-        std::ifstream ifs(fs::append_path(saves_path_, CHECKPOINT_FILE));
+        std::ifstream ifs(saves_path_ / CHECKPOINT_FILE);
         if (ifs.is_open())
             ifs >> res;
         return res;
     }
 
     void UpdateCheckpoint(const char *name) const {
-        std::ofstream(fs::append_path(saves_path_, CHECKPOINT_FILE)) << name;
+        std::ofstream(saves_path_ / CHECKPOINT_FILE) << name;
     }
 
 private:
     static constexpr const char *CHECKPOINT_FILE = "checkpoint.dat";
 
     std::variant<Checkpoints, std::string> checkpoints_;
-    std::string saves_path_;
-    std::string load_path_;
+    std::filesystem::path saves_path_;
+    std::filesystem::path load_path_;
 };
 
 class StageManager {

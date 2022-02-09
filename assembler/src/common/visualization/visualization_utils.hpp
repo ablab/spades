@@ -14,8 +14,10 @@
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "assembly_graph/components/splitters.hpp"
 #include "assembly_graph/components/graph_component.hpp"
-#include "utils/filesystem/path_helper.hpp"
+#include "visualizers.hpp"
+#include "vertex_linker.hpp"
 
+#include <filesystem>
 #include <fstream>
 
 namespace visualization {
@@ -24,7 +26,7 @@ namespace visualization_utils {
 
 template<class Graph>
 void WriteComponents(const Graph &g,
-                     const std::string &folder_name,
+                     const std::filesystem::path &folder_name,
                      std::shared_ptr<GraphSplitter<Graph>> inner_splitter,
                      std::shared_ptr<graph_colorer::GraphColorer<Graph>> colorer,
                      const graph_labeler::GraphLabeler<Graph> &labeler) {
@@ -38,14 +40,13 @@ void WriteComponents(const Graph &g,
 }
 
 template<class Graph>
-void DrawComponentsOfShortEdges(const Graph &g, const std::string &output_dir, size_t min_length, size_t sinks,
+void DrawComponentsOfShortEdges(const Graph &g, const std::filesystem::path &output_dir, size_t min_length, size_t sinks,
                                 size_t sources) {
     std::vector<typename Graph::EdgeId> short_edges;
-    std::string pics_folder_ =
-            output_dir + std::to_string(min_length) + "_" + std::to_string(sinks) + "_" + std::to_string(sources) + "_" +
-            "pics_polymorphic/";
-    fs::make_dir(pics_folder_);
-    INFO("Writing pics with components consisting of short edges to " + pics_folder_);
+    std::filesystem::path pics_folder_ =
+            output_dir / (std::to_string(min_length) + "_" + std::to_string(sinks) + "_" + std::to_string(sources) + "_" + "pics_polymorphic/");
+    create_directory(pics_folder_);
+    INFO("Writing pics with components consisting of short edges to " + static_cast<std::string>(pics_folder_));
     auto splitter = LongEdgesExclusiveSplitter<Graph>(g, min_length);
     while (splitter->HasNext()) {
         GraphComponent<Graph> component = splitter->Next();
@@ -87,7 +88,7 @@ void DrawComponentsOfShortEdges(const Graph &g, const std::string &output_dir, s
 
 template<class Graph>
 void WriteSizeLimitedComponents(const Graph &g,
-                                const std::string &folder_name,
+                                const std::filesystem::path &folder_name,
                                 std::shared_ptr<GraphSplitter<Graph>> inner_splitter,
                                 std::shared_ptr<graph_colorer::GraphColorer<Graph>> colorer,
                                 const graph_labeler::GraphLabeler<Graph> &labeler, int min_component_size,
@@ -104,7 +105,7 @@ void WriteSizeLimitedComponents(const Graph &g,
 
 template<class Graph>
 void WriteComponent(const GraphComponent<Graph> &gc,
-                    const std::string &file_name, std::shared_ptr<graph_colorer::GraphColorer<Graph>> colorer,
+                    const std::filesystem::path &file_name, std::shared_ptr<graph_colorer::GraphColorer<Graph>> colorer,
                     const graph_labeler::GraphLabeler<Graph> &labeler) {
     vertex_linker::EmptyGraphLinker<Graph> linker;
     graph_colorer::BorderDecorator<Graph> component_colorer(gc, *colorer, "yellow");
@@ -117,7 +118,7 @@ void WriteComponent(const GraphComponent<Graph> &gc,
 
 template<class Graph>
 void WriteComponentSinksSources(const GraphComponent<Graph> &gc,
-                                const std::string &file_name, std::shared_ptr<graph_colorer::GraphColorer<Graph>> colorer,
+                                const std::filesystem::path &file_name, std::shared_ptr<graph_colorer::GraphColorer<Graph>> colorer,
                                 const graph_labeler::GraphLabeler<Graph> &labeler) {
     vertex_linker::EmptyGraphLinker<Graph> linker;
     graph_colorer::SinkSourceDecorator<Graph> component_colorer(gc, *colorer);
@@ -130,7 +131,7 @@ void WriteComponentSinksSources(const GraphComponent<Graph> &gc,
 
 template<class Graph>
 void WriteComponentSinksSources(const GraphComponent<Graph> &gc,
-                                const std::string &file_name) {
+                                const std::filesystem::path &file_name) {
 
     graph_labeler::StrGraphLabeler<Graph> labeler(gc.g());
     graph_labeler::CoverageGraphLabeler<Graph> labeler2(gc.g());
@@ -141,7 +142,7 @@ void WriteComponentSinksSources(const GraphComponent<Graph> &gc,
 }
 
 template<class Graph>
-void WriteSimpleComponent(const GraphComponent<Graph> &gc, const std::string &file_name,
+void WriteSimpleComponent(const GraphComponent<Graph> &gc, const std::filesystem::path &file_name,
                           std::shared_ptr<graph_colorer::GraphColorer<Graph>> colorer,
                           const graph_labeler::GraphLabeler<Graph> &labeler) {
     vertex_linker::EmptyGraphLinker<Graph> linker;
@@ -154,7 +155,7 @@ void WriteSimpleComponent(const GraphComponent<Graph> &gc, const std::string &fi
 
 template<class Graph>
 void WriteComponentsAlongPath(const Graph &g, const std::vector<typename Graph::EdgeId> &path,
-                              const std::string &prefix_path, std::shared_ptr<graph_colorer::GraphColorer<Graph>> colorer,
+                              const std::filesystem::path &prefix_path, std::shared_ptr<graph_colorer::GraphColorer<Graph>> colorer,
                               const graph_labeler::GraphLabeler<Graph> &labeler, bool color_path = true) {
     auto edge_colorer = std::make_shared<graph_colorer::CompositeEdgeColorer<Graph>>("black");
     edge_colorer->AddColorer(colorer);
@@ -175,10 +176,10 @@ class LocalityPrintingRH {
     const Graph &g_;
     const graph_labeler::GraphLabeler<Graph> &labeler_;
     std::shared_ptr<graph_colorer::GraphColorer<Graph>> colorer_;
-    const std::string output_folder_;
+    const std::filesystem::path output_folder_;
 public:
     LocalityPrintingRH(const Graph &g, const graph_labeler::GraphLabeler<Graph> &labeler,
-                       std::shared_ptr<graph_colorer::GraphColorer<Graph>> colorer, const std::string &output_folder)
+                       std::shared_ptr<graph_colorer::GraphColorer<Graph>> colorer, const std::filesystem::path &output_folder)
             :
             g_(g),
             labeler_(labeler),
@@ -197,7 +198,7 @@ public:
         std::shared_ptr<graph_colorer::GraphColorer<Graph>> resulting_colorer =
                 std::make_shared<graph_colorer::CompositeGraphColorer<Graph>>(colorer_, edge_colorer);
 
-        std::string fn = output_folder_ + "/edge_" + std::to_string(g_.int_id(e)) + add_label + ".dot";
+        std::filesystem::path fn = output_folder_ / ("edge_" + std::to_string(g_.int_id(e)) + add_label + ".dot");
         visualization::visualization_utils::WriteComponent(omnigraph::EdgeNeighborhood<Graph>(g_, e, 50, 250),
                                                            fn, resulting_colorer, labeler_);
     }

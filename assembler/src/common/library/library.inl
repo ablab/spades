@@ -60,18 +60,18 @@ void io::SequencingLibrary<Data>::validate(llvm::yaml::IO &io, llvm::StringRef &
 }
 
 template<class Data>
-void io::DataSet<Data>::save(const std::string &filename) {
+void io::DataSet<Data>::save(const std::filesystem::path &filename) {
     std::error_code EC;
-    llvm::raw_fd_ostream ofs(filename, EC, llvm::sys::fs::OpenFlags::F_Text);
+    llvm::raw_fd_ostream ofs(static_cast<StringRef>(filename), EC, llvm::sys::fs::OpenFlags::F_Text);
     llvm::yaml::Output yout(ofs);
     yout << libraries_;
 }
 
 template<class Data>
-void io::DataSet<Data>::load(const std::string &filename) {
-    ErrorOr<std::unique_ptr<MemoryBuffer>> Buf = MemoryBuffer::getFile(filename);
+void io::DataSet<Data>::load(const std::filesystem::path &filename) {
+    ErrorOr<std::unique_ptr<MemoryBuffer>> Buf = MemoryBuffer::getFile(static_cast<llvm::Twine>(filename));
     if (!Buf) {
-        std::cerr << std::string("Failed to load file ") + filename;
+        std::cerr << std::string("Failed to load file ") << filename;
         throw;
     }
 
@@ -79,13 +79,13 @@ void io::DataSet<Data>::load(const std::string &filename) {
     yin >> libraries_;
 
     if (yin.error()) {
-        std::cerr << std::string("Failed to load file ") + filename;
+        std::cerr << std::string("Failed to load file ") << filename;
         throw;
     }
     
-    std::string input_dir = fs::parent_path(filename);
-    if (input_dir[input_dir.length() - 1] != '/')
-        input_dir += '/';
+    std::filesystem::path input_dir = filename.parent_path();
+    if (static_cast<std::string>(*input_dir.end()) != "/")
+        input_dir += "/";
 
     for (unsigned i = 0; i < libraries_.size(); ++i) {
         auto &lib = libraries_[i];

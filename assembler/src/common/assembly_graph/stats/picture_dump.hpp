@@ -227,7 +227,7 @@ inline void WriteKmerComponent(const graph_pack::GraphPack &gp, const RtSeq &kp1
 }
 
 
-inline std::optional<RtSeq> FindCloseKP1mer(const GraphPack &gp, size_t genome_pos, size_t k) {
+inline std::optional<RtSeq> FindCloseKP1mer(const graph_pack::GraphPack &gp, size_t genome_pos, size_t k) {
     const auto &genome = gp.get<GenomeStorage>();
     const auto &kmer_mapper = gp.get<KmerMapper<Graph>>();
     const auto &index = gp.get<EdgeIndex<Graph>>();

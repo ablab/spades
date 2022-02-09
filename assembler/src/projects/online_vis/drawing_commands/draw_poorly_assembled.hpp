@@ -204,7 +204,7 @@ private:
 //        return shared_ptr<MappingRange>(0);
 //    }
 //    
-//    shared_ptr<pair<EdgeId, EdgePosition>> NextEdge(const GraphPack& gp, VertexId v, EdgePosition curr_pos) const {
+//    shared_ptr<pair<EdgeId, EdgePosition>> NextEdge(const graph_pack::GraphPack& gp, VertexId v, EdgePosition curr_pos) const {
 //        for (EdgeId next_e : gp.g.OutgoingEdges(v)) {
 //            cout << "Considering " << gp.g.str(next_e) << " as next edge " << endl;
 //            set<MappingRange> relevant_ranges = gp.edge_pos.GetEdgePositions(next_e, curr_pos.contigId);
@@ -219,7 +219,7 @@ private:
 //        return shared_ptr<pair<EdgeId, EdgePosition>>(0);
 //    }
 //
-//    vector<EdgeId> FindReferencePath(const GraphPack& gp, EdgeId e1, EdgeId e2) const {
+//    vector<EdgeId> FindReferencePath(const graph_pack::GraphPack& gp, EdgeId e1, EdgeId e2) const {
 //        EdgePosition curr_pos = GatherPositions(gp, e1, ref_prefix_).front();
 //        VertexId curr_v = gp.g.EdgeEnd(e1);
 //        vector<EdgeId> answer;

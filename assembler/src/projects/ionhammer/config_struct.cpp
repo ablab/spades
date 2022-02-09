@@ -104,14 +104,14 @@ struct MappingTraits<hammer_config::hammer_config> {
 }  // namespace llvm
 
 namespace hammer_config {
-void load(hammer_config &cfg, const std::string &filename) {
-  ErrorOr<std::unique_ptr<MemoryBuffer>> Buf = MemoryBuffer::getFile(filename);
-  if (!Buf) throw(std::string("Failed to load config file ") + filename);
+void load(hammer_config &cfg, const std::filesystem::path &filename) {
+  ErrorOr<std::unique_ptr<MemoryBuffer>> Buf = MemoryBuffer::getFile(static_cast<llvm::Twine>(filename));
+  if (!Buf) throw(std::string("Failed to load config file ") + std::string(filename));
 
   yaml::Input yin(*Buf.get());
   yin >> cfg;
 
-  if (yin.error()) throw(std::string("Failed to load config file ") + filename);
+  if (yin.error()) throw(std::string("Failed to load config file ") + std::string(filename));
 
   cfg.max_nthreads = spades_set_omp_threads(cfg.max_nthreads);
 }

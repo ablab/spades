@@ -13,6 +13,7 @@
 #include "io/reads/file_reader.hpp"
 #include "io/reads/wrapper_collection.hpp"
 #include "io/utils/edge_namer.hpp"
+#include "utils/filesystem/path_helper.cpp"
 #include "utils/logger/log_writers.hpp"
 
 #include "llvm/Support/YAMLParser.h"
@@ -180,10 +181,11 @@ class LongReadsAligner {
 
 };
 
-void LoadGraph(const string &saves_path, debruijn_graph::ConjugateDeBruijnGraph &g, io::IdMapper<std::string> &id_mapper) {
-    if (fs::extension(saves_path) == ".gfa") {
+void LoadGraph(const std::filesystem::path &saves_path, debruijn_graph::ConjugateDeBruijnGraph &g,
+               io::IdMapper<std::string> &id_mapper) {
+    if (saves_path.extension() == ".gfa") {
         DEBUG("Load gfa");
-        CHECK_FATAL_ERROR(fs::is_regular_file(saves_path), "GFA-file " + saves_path + " doesn't exist");
+        CHECK_FATAL_ERROR(is_regular_file(saves_path), "GFA-file " + static_cast<std::string>(saves_path) + " doesn't exist");
         gfa::GFAReader gfa(saves_path);
         DEBUG("Segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
         gfa.to_graph(g, &id_mapper);
@@ -195,8 +197,8 @@ void LoadGraph(const string &saves_path, debruijn_graph::ConjugateDeBruijnGraph 
     }
 }
 
-void Launch(GAlignerConfig &cfg, const string output_dir, int threads) {
-    string tmpdir = fs::make_temp_dir(fs::current_dir(), "tmp");
+void Launch(GAlignerConfig &cfg, const std::filesystem::path output_dir, int threads) {
+    std::filesystem::path tmpdir = fs::make_temp_dir(std::filesystem::current_path(), "tmp");
     debruijn_graph::ConjugateDeBruijnGraph g(cfg.K);
     io::IdMapper<std::string> id_mapper;
     LoadGraph(cfg.path_to_graphfile, g, id_mapper);
@@ -208,8 +210,8 @@ void Launch(GAlignerConfig &cfg, const string output_dir, int threads) {
 
     INFO("Process reads from " << cfg.path_to_sequences);
     aligner.RunAligner();
-    INFO("Thank you for using SPAligner! Results can be found here: " + output_dir )
-    fs::remove_dir(tmpdir);
+    INFO("Thank you for using SPAligner! Results can be found here: " + static_cast<std::string>(output_dir))
+    remove(tmpdir);
 }
 } // namespace sensitive_aligner
 

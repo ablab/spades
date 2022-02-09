@@ -49,8 +49,8 @@ single_easy_readers_for_libs(DataSet& dataset_info,
     return streams;
 }
 
-static void Run(const std::string &graph_path, const std::string &dataset_desc, size_t K,
-         const std::string &profiles_fn, size_t nthreads, const std::string &tmpdir) {
+static void Run(const std::filesystem::path &graph_path, const std::string &dataset_desc, size_t K,
+         const std::string &profiles_fn, size_t nthreads, const std::filesystem::path &tmpdir) {
     DataSet dataset;
     dataset.load(dataset_desc);
 
@@ -61,7 +61,7 @@ static void Run(const std::string &graph_path, const std::string &dataset_desc, 
     omnigraph::GraphElementFinder<Graph> element_finder(graph);
     gp.get_mutable<KmerMapper<Graph>>().Attach();
     io::EdgeLabelHelper<Graph> label_helper(element_finder,
-                                            toolchain::LoadGraphPack(gp, graph_path));
+                                            toolchain::LoadGraphPack(gp,graph_path));
 
     config::init_libs(dataset, nthreads, tmpdir);
 

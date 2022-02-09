@@ -17,14 +17,14 @@ bool BinaryFileSingleStream::ReadImpl(SingleReadSeq &read) {
     return read.BinRead(stream_);
 }
 
-BinaryFileSingleStream::BinaryFileSingleStream(const std::string &file_name_prefix, size_t portion_count, size_t portion_num)
+BinaryFileSingleStream::BinaryFileSingleStream(const std::filesystem::path &file_name_prefix, size_t portion_count, size_t portion_num)
         : BinaryFileStream(file_name_prefix, portion_count, portion_num) {}
 
 bool BinaryFilePairedStream::ReadImpl(PairedReadSeq& read) {
     return read.BinRead(stream_, insert_size_);
 }
 
-BinaryFilePairedStream::BinaryFilePairedStream(const std::string &file_name_prefix, size_t insert_size,
+BinaryFilePairedStream::BinaryFilePairedStream(const std::filesystem::path &file_name_prefix, size_t insert_size,
                                                size_t portion_count, size_t portion_num)
         : BinaryFileStream(file_name_prefix, portion_count, portion_num), insert_size_ (insert_size) {}
 
@@ -43,7 +43,7 @@ PairedReadSeq BinaryUnmergingPairedStream::Convert(const SingleReadSeq &read) co
     return PairedReadSeq(left, right, insert_size_);
 }
 
-BinaryUnmergingPairedStream::BinaryUnmergingPairedStream(const std::string& file_name_prefix, size_t insert_size, size_t read_length,
+BinaryUnmergingPairedStream::BinaryUnmergingPairedStream(const std::filesystem::path& file_name_prefix, size_t insert_size, size_t read_length,
                                                          size_t portion_count, size_t portion_num) :
         stream_(file_name_prefix, portion_count, portion_num),
         insert_size_(insert_size),

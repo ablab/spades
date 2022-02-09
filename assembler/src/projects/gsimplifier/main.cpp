@@ -72,7 +72,7 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
   }
 }
 
-size_t DetermineSampleCnt(const std::string &profile_fn) {
+size_t DetermineSampleCnt(const std::filesystem::path &profile_fn) {
     std::ifstream is(profile_fn);
     std::string line;
     std::getline(is, line);
@@ -87,7 +87,7 @@ size_t DetermineSampleCnt(const std::string &profile_fn) {
     return i - 1;
 }
 
-static std::set<std::string> ReadDeadendNames(const std::string &deadends_fn) {
+static std::set<std::string> ReadDeadendNames(const std::filesystem::path &deadends_fn) {
     std::set<std::string> deadend_names;
     std::ifstream is(deadends_fn);
     std::string s;
@@ -138,9 +138,9 @@ int main(int argc, char** argv) {
     try {
         unsigned nthreads = cfg.nthreads;
         unsigned k = cfg.k;
-        std::string tmpdir = cfg.tmpdir.empty() ? cfg.outfile + ".tmp" : cfg.tmpdir;
+        std::filesystem::path tmpdir = cfg.tmpdir.empty() ? cfg.outfile + ".tmp" : cfg.tmpdir;
 
-        fs::make_dir(tmpdir);
+        create_directory(tmpdir);
 
         INFO("K-mer length set to " << k);
 
@@ -155,9 +155,9 @@ int main(int argc, char** argv) {
         INFO("Loading de Bruijn graph from " << cfg.graph);
         omnigraph::GraphElementFinder<Graph> element_finder(graph);
         gp.get_mutable<KmerMapper<Graph>>().Attach();
-
         io::EdgeLabelHelper<Graph> label_helper(element_finder,
-                                                toolchain::LoadBaseGraph(gp.get_mutable<Graph>(), cfg.graph));
+                                                toolchain::LoadBaseGraph(gp.get_mutable<Graph>(),
+                                                                         cfg.graph));
 
         //Refilling flanking coverage to get same behavior while working with gfa graphs
         auto &flanking_cov = gp.get_mutable<FlankingCoverage<Graph>>();
@@ -192,7 +192,8 @@ int main(int argc, char** argv) {
         std::unique_ptr<ProfileStorage> profile_storage;
         if (!cfg.edge_profile_fn.empty()) {
             INFO("Loading edge profiles from " << cfg.edge_profile_fn);
-            fs::CheckFileExistenceFATAL(cfg.edge_profile_fn);
+            CHECK_FATAL_ERROR(exists(static_cast<std::filesystem::path>(cfg.edge_profile_fn)),
+                              "File " << cfg.edge_profile_fn << " doesn't exist or can't be read!");
             size_t sample_cnt = DetermineSampleCnt(cfg.edge_profile_fn);
             INFO("Sample count determined as " << sample_cnt);
             profile_storage = std::make_unique<ProfileStorage>(graph, sample_cnt);
@@ -205,7 +206,8 @@ int main(int argc, char** argv) {
         std::unique_ptr<PositionStorage> stop_codons_storage;
         if (!cfg.stop_codons_fn.empty()) {
             INFO("Loading stop codon positions from " << cfg.stop_codons_fn);
-            fs::CheckFileExistenceFATAL(cfg.stop_codons_fn);
+            CHECK_FATAL_ERROR(exists(static_cast<std::filesystem::path>(cfg.stop_codons_fn)),
+                              "File " << cfg.stop_codons_fn << " doesn't exist or can't be read!");
             stop_codons_storage = std::make_unique<PositionStorage>(graph);
             std::ifstream is(cfg.stop_codons_fn);
             stop_codons_storage->Load(is, label_helper);
@@ -245,7 +247,7 @@ int main(int argc, char** argv) {
 
         INFO("Saving graph to " << cfg.outfile);
 
-        fs::make_dirs(fs::parent_path(cfg.outfile));
+        create_directory(static_cast<std::filesystem::path>(cfg.outfile).parent_path());
 
         if (cfg.save_gp) {
             INFO("Saving graph pack in SPAdes binary format");

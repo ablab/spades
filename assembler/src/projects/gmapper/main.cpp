@@ -119,10 +119,10 @@ static void ProcessContigs(const Graph &graph,
     notifier.ProcessLibrary(single_streams, mapper);
 }
 
-void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::string &filename,
+void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::filesystem::path &filename,
                io::IdMapper<std::string> *id_mapper) {
     using namespace debruijn_graph;
-    if (utils::ends_with(filename, ".gfa")) {
+    if (utils::ends_with(static_cast<std::string>(filename), ".gfa")) {
         gfa::GFAReader gfa(filename);
         INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
         gfa.to_graph(graph, id_mapper);
@@ -158,9 +158,9 @@ int main(int argc, char* argv[]) {
     try {
         unsigned nthreads = cfg.nthreads;
         unsigned k = cfg.k;
-        std::string tmpdir = cfg.tmpdir, dataset_desc = cfg.file;
+        std::filesystem::path tmpdir = cfg.tmpdir, dataset_desc = cfg.file;
 
-        fs::make_dir(tmpdir);
+        create_directory(tmpdir);
 
         DataSet dataset;
         dataset.load(dataset_desc);
@@ -191,7 +191,7 @@ int main(int argc, char* argv[]) {
         INFO("Graph loaded. Total vertices: " << graph.size() << ", total edges: " << graph.e_size());
 
         // FIXME: Get rid of this "/" junk
-        debruijn_graph::config::init_libs(dataset, nthreads, tmpdir + "/");
+        debruijn_graph::config::init_libs(dataset, nthreads, tmpdir.concat("/"));
 
         auto &lib = dataset[cfg.libindex];
 
@@ -225,8 +225,8 @@ int main(int argc, char* argv[]) {
             size_t idx = 0;
             for (const auto& entry : paths) {
                 idx += 1;
-                gfa_writer.WritePaths(entry.path(), std::string("PATH_") + std::to_string(idx) + "_length_" + std::to_string(entry.path().size()) + "_weigth_" + std::to_string(entry.weight()),
-                                      "Z:W:" + std::to_string(entry.weight()));
+                gfa_writer.WritePaths(entry.path(), static_cast<std::filesystem::path>(std::string("PATH_") + std::to_string(idx) + "_length_" + std::to_string(entry.path().size()) + "_weigth_" + std::to_string(entry.weight()),
+                                      "Z:W:" + std::to_string(entry.weight())));
             }
         } else if (lib.is_paired()) {
             paired_info::PairedIndex index(graph);

@@ -16,8 +16,8 @@ public:
             : AssemblyStage("Binary Read Conversion", "read_conversion") { }
 
     void run(graph_pack::GraphPack &, const char *) override;
-    void load(graph_pack::GraphPack &, const std::string &load_from, const char *prefix = nullptr) override;
-    void save(const graph_pack::GraphPack &, const std::string &save_to, const char *prefix = nullptr) const override;
+    void load(graph_pack::GraphPack &, const std::filesystem::path &load_from, const char *prefix = nullptr) override;
+    void save(const graph_pack::GraphPack &, const std::filesystem::path &save_to, const char *prefix = nullptr) const override;
 };
 
 }

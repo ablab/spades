@@ -1088,7 +1088,7 @@ class ComplexBulgeRemover : public PersistentProcessingAlgorithm<Graph, typename
     size_t max_length_;
     size_t length_diff_;
     const RestrictedEdgeSet *protected_edges_ = nullptr;
-    std::string pics_folder_;
+    std::filesystem::path pics_folder_;
 
     bool ProcessComponent(LocalizedComponent<Graph>& component,
             size_t candidate_cnt) {
@@ -1112,9 +1112,9 @@ class ComplexBulgeRemover : public PersistentProcessingAlgorithm<Graph, typename
 
             if (!pics_folder_.empty()) {
                 PrintComponent(component, tree,
-                        pics_folder_ + "success/"
+                        pics_folder_.concat("success/"
                                 + std::to_string(this->g().int_id(component.start_vertex()))
-                                + "_" + std::to_string(candidate_cnt) + ".dot");
+                                + "_" + std::to_string(candidate_cnt) + ".dot"));
             }
 
             ComponentProjector<Graph> projector(this->g(), component, coloring, tree);
@@ -1130,9 +1130,9 @@ class ComplexBulgeRemover : public PersistentProcessingAlgorithm<Graph, typename
             if (!pics_folder_.empty()) {
                 //todo check if we rewrite all of the previous pics!
                 PrintComponent(component,
-                        pics_folder_ + "fail/"
+                        pics_folder_.concat("fail/"
                                 + std::to_string(this->g().int_id(component.start_vertex())) //+ "_" + std::to_string(candidate_cnt)
-                                + ".dot");
+                                + ".dot"));
             }
             return false;
         }
@@ -1169,7 +1169,7 @@ public:
 
     //track_changes=false leads to every iteration run from scratch
     ComplexBulgeRemover(Graph& g, size_t max_length, size_t length_diff, const RestrictedEdgeSet *protected_edges,
-                        size_t chunk_cnt, const std::string& pics_folder = "") :
+                        size_t chunk_cnt, const std::filesystem::path& pics_folder = "") :
             base(g, std::make_shared<omnigraph::ParallelInterestingElementFinder<Graph, VertexId>>(
                 CandidateFinder<Graph>(g, max_length, length_diff), chunk_cnt),
                 false, adt::identity(), /*track changes*/false),
@@ -1179,9 +1179,9 @@ public:
             pics_folder_(pics_folder) {
         if (!pics_folder_.empty()) {
 //            remove_dir(pics_folder_);
-            fs::make_dir(pics_folder_);
-            fs::make_dir(pics_folder_ + "success/");
-            fs::make_dir(pics_folder_ + "fail/");
+            create_directory(pics_folder_);
+            create_directory(pics_folder_.concat("success/"));
+            create_directory(pics_folder_.concat("fail/"));
         }
 
     }

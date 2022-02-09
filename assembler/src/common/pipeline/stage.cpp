@@ -22,14 +22,15 @@ namespace spades {
 
 constexpr char BASE_NAME[] = "graph_pack";
 
+
 void AssemblyStage::load(graph_pack::GraphPack& gp,
-                         const std::string &load_from,
+                         const std::filesystem::path &load_from,
                          const char* prefix) {
     if (!prefix) prefix = id_;
-    auto dir = fs::append_path(load_from, prefix);
+    auto dir = load_from / prefix;
     INFO("Loading current state from " << dir);
 
-    auto p = fs::append_path(dir, BASE_NAME);
+    auto p = dir / BASE_NAME;
     io::binary::FullPackIO().Load(p, gp);
     debruijn_graph::config::load_lib_data(p);
 
@@ -37,16 +38,17 @@ void AssemblyStage::load(graph_pack::GraphPack& gp,
 
 }
 
+
 void AssemblyStage::save(const graph_pack::GraphPack& gp,
-                         const std::string &save_to,
+                         const std::filesystem::path &save_to,
                          const char* prefix) const {
     if (!prefix) prefix = id_;
-    auto dir = fs::append_path(save_to, prefix);
+    auto dir = save_to / prefix;
     INFO("Saving current state to " << dir);
-    fs::remove_if_exists(dir);
-    fs::make_dir(dir);
+    remove(dir);
+    create_directory(dir);
 
-    auto p = fs::append_path(dir, BASE_NAME);
+    auto p = dir / BASE_NAME;
     io::binary::FullPackIO().Save(p, gp);
     debruijn_graph::config::write_lib_data(p);
 }
@@ -167,7 +169,7 @@ void StageManager::run(graph_pack::GraphPack& g,
         }
 
         {
-            TIME_TRACE_SCOPE("load", saves_policy_.LoadPath());
+            TIME_TRACE_SCOPE("load", static_cast<llvm::StringRef>(saves_policy_.LoadPath()));
             while (start_stage != stages_.begin()) {
                 try {
                     (*std::prev(start_stage))->load(g, saves_policy_.LoadPath());
@@ -193,12 +195,12 @@ void StageManager::run(graph_pack::GraphPack& g,
         if (saves_policy_.EnabledCheckpoints(stage->id())) {
             auto prev_saves = saves_policy_.GetLastCheckpoint();
             {
-                TIME_TRACE_SCOPE("save", saves_policy_.SavesPath());
+                TIME_TRACE_SCOPE("save", static_cast<llvm::StringRef>(saves_policy_.SavesPath()));
                 stage->save(g, saves_policy_.SavesPath());
             }
             saves_policy_.UpdateCheckpoint(stage->id());
             if (!prev_saves.empty() && saves_policy_.RemovePreviousCheckpoint()) {
-                fs::remove_if_exists(fs::append_path(saves_policy_.SavesPath(), prev_saves));
+                remove(saves_policy_.SavesPath() / prev_saves);
             }
         }
     }

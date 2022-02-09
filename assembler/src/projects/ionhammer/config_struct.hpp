@@ -68,7 +68,7 @@ enum class CenterType { COUNT_ARGMAX, CONSENSUS, BY_POSTERIOR_QUALITY };
   CenterType center_type = CenterType::COUNT_ARGMAX;
 };
 
-void load(hammer_config& cfg, const std::string& filename);
+void load(hammer_config& cfg, const std::filesystem::path& filename);
 }  // namespace hammer_config
 
 typedef config_common::config<hammer_config::hammer_config> cfg;

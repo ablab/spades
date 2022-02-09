@@ -15,8 +15,9 @@
 #include <unordered_set>
 
 namespace debruijn_graph {
+
 static void FillRestrictedEdges(graph_pack::GraphPack &gp) {
-    if (!fs::check_existence(cfg::get().output_dir + "temp_anti/restricted_edges.fasta"))
+    if (!exists(static_cast<std::filesystem::path>(cfg::get().output_dir) / "temp_anti/restricted_edges.fasta"))
         return;
 
     auto mapper = MapperInstance(gp);

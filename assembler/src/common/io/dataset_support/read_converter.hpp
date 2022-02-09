@@ -32,7 +32,7 @@ public:
     static void ConvertToBinary(SequencingLibraryT& lib,
                                 ThreadPool::ThreadPool *pool = nullptr);
 
-    static void ConvertEdgeSequencesToBinary(const debruijn_graph::Graph &g, const std::string &contigs_output_dir,
+    static void ConvertEdgeSequencesToBinary(const debruijn_graph::Graph &g, const std::filesystem::path &contigs_output_dir,
                                              unsigned nthreads);
 };
 

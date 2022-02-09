@@ -7,7 +7,6 @@
 
 #include "perfect_hash_map.hpp"
 #include "io/kmers/kmer_iterator.hpp"
-#include "utils/filesystem/path_helper.hpp"
 #include "utils/logger/logger.hpp"
 
 namespace kmers {

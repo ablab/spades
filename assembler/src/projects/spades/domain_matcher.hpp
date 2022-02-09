@@ -6,6 +6,7 @@
 
 #include <pipeline/graph_pack.hpp>
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -30,7 +31,7 @@ class DomainMatcher {
 public:
     ContigAlnInfo MatchDomains(graph_pack::GraphPack &gp,
                                const std::string &hmm_set,
-                               const std::string &output_dir);
+                               const std::filesystem::path &output_dir);
 };
 
 }

@@ -18,6 +18,7 @@
 #include <boost/iterator/iterator_facade.hpp>
 
 #include <string>
+#include <filesystem>
 #include <vector>
 
 namespace io {
@@ -76,7 +77,7 @@ public:
         single_reads_.clear();
     }
 
-    void update_relative_reads_filenames(const std::string &input_dir);
+    void update_relative_reads_filenames(const std::filesystem::path &input_dir);
 
     void push_back_single(const std::string &reads) {
         single_reads_.push_back(reads);
@@ -301,8 +302,8 @@ public:
     DataSet() {}
     explicit DataSet(const std::string &path) { load(path); }
 
-    void load(const std::string &filename);
-    void save(const std::string &filename);
+    void load(const std::filesystem::path &filename);
+    void save(const std::filesystem::path &filename);
 
     void clear() { libraries_.clear(); }
     void push_back(const Library &lib) {

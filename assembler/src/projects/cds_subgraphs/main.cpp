@@ -7,22 +7,23 @@
 
 #include "stop_condon_finder.hpp"
 #include "subgraph_extraction.hpp"
+#include "version.hpp"
 
 #include "io/reads/file_reader.hpp"
+#include "pipeline/graph_pack_helpers.h"
 #include "pipeline/sequence_mapper_gp_api.hpp"
 #include "toolchain/edge_label_helper.hpp"
 #include "toolchain/subgraph_utils.hpp"
 #include "toolchain/utils.hpp"
 #include "utils/segfault_handler.hpp"
-#include "pipeline/graph_pack_helpers.h"
 
-#include "version.hpp"
+#include <numeric>
+#include <set>
+#include <string>
 
 #include <clipp/clipp.h>
-#include <string>
-#include <set>
-#include <numeric>
 #include <sys/types.h>
+
 
 using namespace debruijn_graph;
 
@@ -67,8 +68,8 @@ using GeneInitSeq = std::multimap<std::string, std::string>;
 static GeneInitSeq
 PredictionsFromDescFile(const Graph &g,
                         const omnigraph::GraphElementFinder<Graph> &element_finder,
-                        const std::string &desc_file) {
-    fs::CheckFileExistenceFATAL(desc_file);
+                        const std::filesystem::path &desc_file) {
+    CHECK_FATAL_ERROR(exists(desc_file), "File " << desc_file << " doesn't exist or can't be read!");
     std::ifstream descs(desc_file);
     std::string l;
     PartialGeneInfo info;
@@ -103,9 +104,9 @@ PredictionsFromDescFile(const Graph &g,
 }
 
 std::unordered_map<std::string, size_t>
-CDSLengthsFromFile(const std::string &fn) {
+CDSLengthsFromFile(const std::filesystem::path &fn) {
     INFO("Parsing estimated CDS lengths from " << fn);
-    fs::CheckFileExistenceFATAL(fn);
+    CHECK_FATAL_ERROR(exists(fn), "File " << fn << " doesn't exist or can't be read!");
     std::unordered_map<std::string, size_t> answer;
     std::ifstream in(fn);
     std::string l;
@@ -128,8 +129,8 @@ static std::string GeneNameFromFasta(const std::string &header) {
     return s;
 }
 
-static GeneInitSeq PredictionsFromFastaFile(const std::string &fasta_fn) {
-    fs::CheckFileExistenceFATAL(fasta_fn);
+static GeneInitSeq PredictionsFromFastaFile(const std::filesystem::path &fasta_fn) {
+    CHECK_FATAL_ERROR(exists(fasta_fn), "File " << fasta_fn << " doesn't exist or can't be read!");
     io::FileReadStream gene_frags(fasta_fn);
 
     io::SingleRead gene_frag;
@@ -276,8 +277,8 @@ struct gcfg {
 
     unsigned k;
     std::string graph;
-    std::string tmpdir;
-    std::string outdir;
+    std::filesystem::path tmpdir;
+    std::filesystem::path outdir;
     std::string genes_desc;
     std::string genes_seq;
     std::string cds_len_fn;
@@ -288,14 +289,14 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
     using namespace clipp;
 
     auto cli = (
-            (required("-o", "--output-folder") & value("dir", cfg.outdir)) % "output folder to use for GFA files",
+            (required("-o", "--output-folder") & value("dir", static_cast<std::string>(cfg.outdir))) % "output folder to use for GFA files",
                     one_of((option("--part-desc") & value("file", cfg.genes_desc)) % "file with partial genes description (.gff)",
                            (option("--part-seq") & value("file", cfg.genes_seq)) % "file with partial genes sequences (.fasta)"),
                     (required("--graph") & value("graph", cfg.graph)) % "In GFA (ending with .gfa) or prefix to SPAdes graph pack",
                     (required("--cds-len-est") & value("file", cfg.cds_len_fn)) % "file with cds length estimamtes",
                     (required("-k") & integer("value", cfg.k)) % "k-mer length to use",
                     (option("-t", "--threads") & integer("value", cfg.nthreads)) % "# of threads to use (default: max_threads / 2)",
-                    (option("--tmpdir") & value("dir", cfg.tmpdir)) % "scratch directory to use (default: <outdir>/tmp)"
+                    (option("--tmpdir") & value("dir", static_cast<std::string>(cfg.tmpdir))) % "scratch directory to use (default: <outdir>/tmp)"
     );
 
     auto result = parse(argc, argv, cli);
@@ -317,8 +318,8 @@ int main(int argc, char** argv) {
     try {
         unsigned nthreads = cfg.nthreads;
         unsigned k = cfg.k;
-        std::string out_folder = cfg.outdir + "/";
-        fs::make_dirs(out_folder);
+        std::filesystem::path out_folder = cfg.outdir.concat("/");
+        create_directory(out_folder);
 
         INFO("K-mer length set to " << k);
 
@@ -327,8 +328,8 @@ int main(int argc, char** argv) {
         omp_set_num_threads((int) nthreads);
         INFO("# of threads to use: " << nthreads);
 
-        std::string tmpdir = cfg.tmpdir.empty() ? out_folder + "tmp" : cfg.tmpdir;
-        fs::make_dirs(tmpdir);
+        std::filesystem::path tmpdir = cfg.tmpdir.empty() ? out_folder.concat("tmp") : cfg.tmpdir;
+        create_directory(tmpdir);
         graph_pack::GraphPack gp(k, tmpdir, 0);
         
         const auto &graph = gp.get<Graph>();
