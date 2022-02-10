@@ -9,7 +9,6 @@
 
 import os
 import shutil
-from distutils import dir_util
 
 import options_storage
 
@@ -17,15 +16,15 @@ class Pipeline(object):
     stages = []
 
     # copying configs before all computations (to prevent its changing at run time)
-    def copy_configs(self, cfg, spades_home, tmp_configs_dir):
+    def copy_configs(self, cfg, spades_home, tmp_configs_dir, stage):
         if os.path.isdir(tmp_configs_dir):
             shutil.rmtree(tmp_configs_dir)
         if not os.path.isdir(tmp_configs_dir):
             if options_storage.args.configs_dir:
-                dir_util.copy_tree(options_storage.args.configs_dir, tmp_configs_dir, preserve_times=False,
+                stage.copy_tree(options_storage.args.configs_dir, tmp_configs_dir, preserve_times=False,
                                    preserve_mode=False)
             else:
-                dir_util.copy_tree(os.path.join(spades_home, "configs"), tmp_configs_dir, preserve_times=False,
+                stage.copy_tree(os.path.join(spades_home, "configs"), tmp_configs_dir, preserve_times=False,
                                    preserve_mode=False)
 
     def add(self, stage):
@@ -37,7 +36,7 @@ class Pipeline(object):
             commands += stage.get_command(cfg)
         return commands
 
-    def generate_configs(self, cfg, spades_home, tmp_configs_dir):
+    def generate_configs(self, cfg, spades_home, tmp_configs_dir, stage):
         self.copy_configs(cfg, spades_home, tmp_configs_dir)
         for stage in self.stages:
             stage.generate_config(cfg)
