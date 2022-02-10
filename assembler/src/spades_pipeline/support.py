@@ -20,7 +20,10 @@ import sys
 import tempfile
 import traceback
 from platform import uname
-from distutils.version import LooseVersion
+try:
+    from packaging.version import Version
+except ModuleNotFoundError:
+    from distutils.version import LooseVersion as Version
 from os.path import abspath, expanduser, join
 
 import options_storage
@@ -115,7 +118,7 @@ def check_python_version():
             min_inc = max_inc = supported_versions
         max_exc = __next_version(max_inc)
         supported_versions_msg.append("Python%s: %s" % (major, supported_versions.replace('+', " and higher")))
-        if LooseVersion(min_inc) <= LooseVersion(current_version) < LooseVersion(max_exc):
+        if Version(min_inc) <= Version(current_version) < Version(max_exc):
             return True
     error("python version %s is not supported!\n"
           "Supported versions are %s" % (current_version, ", ".join(supported_versions_msg)))

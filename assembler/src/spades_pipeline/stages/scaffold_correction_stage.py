@@ -9,7 +9,6 @@
 
 import os
 import shutil
-from distutils import dir_util
 
 import commands_parser
 import options_storage
@@ -84,7 +83,7 @@ class ScaffoldCorrectionStage(stage.Stage):
             shutil.rmtree(data_dir)
         os.makedirs(data_dir)
 
-        dir_util.copy_tree(os.path.join(self.tmp_configs_dir, "debruijn"), dst_configs, preserve_times=False)
+        self.copy_tree(os.path.join(self.tmp_configs_dir, "debruijn"), dst_configs, preserve_times=False)
 
         scaffolds_file = os.path.join(latest, "scaffolds.fasta")
         if "read_buffer_size" in cfg.__dict__:
