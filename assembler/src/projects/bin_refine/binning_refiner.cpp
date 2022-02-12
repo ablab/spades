@@ -50,7 +50,7 @@ struct gcfg {
     std::string file = "";
     std::string tmpdir = "tmp";
     unsigned libindex = -1u;
-    AssignStrategy assignment_strategy = AssignStrategy::MajorityLength;
+    AssignStrategy assignment_strategy = AssignStrategy::MaxLikelihood;
     double eps = 1e-5;
     unsigned niter = 5000;
     double labeled_alpha = 0.6;
@@ -60,7 +60,7 @@ struct gcfg {
     size_t length_threshold = 5000;
     size_t distance_bound = 10000;
     bool allow_multiple = false;
-    RefinerType refiner_type = RefinerType::Propagation;
+    RefinerType refiner_type = RefinerType::Correction;
     bool bin_load = false;
     bool debug = false;
     bool bin_dist = false;
