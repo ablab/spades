@@ -306,16 +306,16 @@ inline std::string SPOAConsensus(const std::vector<std::string> &gap_seqs, const
 //Default values from SPOA man
     auto alignment_engine = spoa::AlignmentEngine::Create(spoa::AlignmentType::kNW,
             pb_.match, pb_.mismatch, pb_.gap_open, pb_.gap_extend, pb_.gap_open_second, pb_.gap_extend_second);
-    spoa::Graph graph{};
+    spoa::Graph spoa_graph{};
 
     for (const auto& it : gap_seqs) {
         std::int32_t score = 0;
-        auto alignment = alignment_engine->Align(it, graph, &score);
-        graph.AddAlignment(alignment, it);
+        auto alignment = alignment_engine->Align(it, spoa_graph, &score);
+        spoa_graph.AddAlignment(alignment, it);
     }
 
     std::vector<uint32_t > coverages;
-    std::string consensus = graph.GenerateConsensus(&coverages);
+    std::string consensus = spoa_graph.GenerateConsensus(&coverages);
     size_t cov = gap_seqs.size();
     int pref_remove = 0;
     int suf_remove = int(coverages.size()) - 1;
