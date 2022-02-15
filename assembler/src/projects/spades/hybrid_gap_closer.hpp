@@ -7,11 +7,11 @@
 
 #pragma once
 
+#include "gap_closing.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
-
-#include "gap_closing.hpp"
 #include "pipeline/config_struct.hpp"
+
 #include <spoa/spoa.hpp>
 #include <algorithm>
 #include <fstream>
