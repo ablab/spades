@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils/ph_map/perfect_hash_map_builder.hpp"
+#include "kmer_index/ph_map/perfect_hash_map_builder.hpp"
 #include "io/kmers/mmapped_reader.hpp"
 #include "sequence/rtseq.hpp"
 
@@ -28,11 +28,11 @@ template<typename T> using Profile = std::vector<T>;
 
 class KmerProfileIndex {
 private:
-    typedef typename utils::InvertableStoring::trivial_inverter InverterT;
-    typedef utils::KeyStoringMap<RtSeq,
+    typedef typename kmers::InvertableStoring::trivial_inverter InverterT;
+    typedef kmers::KeyStoringMap<RtSeq,
         Offset,
         kmers::kmer_index_traits<RtSeq>,
-        utils::InvertableStoring> IndexT;
+        kmers::InvertableStoring> IndexT;
 
     static size_t sample_cnt_;
 

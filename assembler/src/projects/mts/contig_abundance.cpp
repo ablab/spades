@@ -1,5 +1,5 @@
 #include "contig_abundance.hpp"
-#include "utils/kmer_mph/kmer_splitters.hpp"
+#include "kmer_index/kmer_mph/kmer_splitters.hpp"
 #include "common/math/xmath.h"
 
 namespace debruijn_graph {

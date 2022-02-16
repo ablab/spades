@@ -8,7 +8,7 @@
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/logger/logger.hpp"
 
-namespace utils {
+namespace kmers {
 
 typedef qf::cqf CQFKmerFilter;
 
@@ -112,7 +112,7 @@ public:
 
 };
 
-template<class Hasher, class KMerFilter = utils::StoringTypeFilter<utils::SimpleStoring>>
+template<class Hasher, class KMerFilter = kmers::StoringTypeFilter<kmers::SimpleStoring>>
 class HllFiller {
  private:
     std::vector<HllProcessor> processors;
@@ -164,9 +164,9 @@ class HllFiller {
     }
 };
 
-template<class ReadStream, class Hasher, class KMerFilter = utils::StoringTypeFilter<utils::SimpleStoring>>
+template<class ReadStream, class Hasher, class KMerFilter = kmers::StoringTypeFilter<kmers::SimpleStoring>>
 size_t EstimateCardinalityForOneStream(unsigned k, ReadStream &streams, const Hasher &hasher,
-                           const KMerFilter &filter = utils::StoringTypeFilter<utils::SimpleStoring>()) {
+                           const KMerFilter &filter = kmers::StoringTypeFilter<kmers::SimpleStoring>()) {
     streams.reset();
     unsigned nthreads = (unsigned)omp_get_max_threads();
     std::vector<hll::hll<>> hlls(nthreads);
@@ -198,9 +198,9 @@ size_t EstimateCardinalityForOneStream(unsigned k, ReadStream &streams, const Ha
     return size_t(res);
 }
 
-template<class ReadStream, class Hasher, class KMerFilter = utils::StoringTypeFilter<utils::SimpleStoring>>
+template<class ReadStream, class Hasher, class KMerFilter = kmers::StoringTypeFilter<kmers::SimpleStoring>>
 size_t EstimateCardinalityUpperBound(unsigned k, ReadStream &streams, const Hasher &hasher,
-                           const KMerFilter &filter = utils::StoringTypeFilter<utils::SimpleStoring>()) {
+                           const KMerFilter &filter = kmers::StoringTypeFilter<kmers::SimpleStoring>()) {
     unsigned stream_num = unsigned(streams.size());
     std::vector<hll::hll<>> hlls(stream_num);
     std::vector<HllProcessor> processors;
@@ -234,9 +234,9 @@ size_t EstimateCardinalityUpperBound(unsigned k, ReadStream &streams, const Hash
     return size_t(res);
 }
 
-template<class Hasher, class ReadStream, class KMerFilter = utils::StoringTypeFilter<utils::SimpleStoring>>
+template<class Hasher, class ReadStream, class KMerFilter = kmers::StoringTypeFilter<kmers::SimpleStoring>>
 void FillCoverageHistogram(qf::cqf &cqf, unsigned k, const Hasher &hasher, ReadStream &streams,
-                           unsigned thr, const KMerFilter &filter = utils::StoringTypeFilter<utils::SimpleStoring>()) {
+                           unsigned thr, const KMerFilter &filter = kmers::StoringTypeFilter<kmers::SimpleStoring>()) {
     unsigned stream_num = unsigned(streams.size());
 
     // Create fallback per-thread CQF using same hash_size (important!) but different # of slots

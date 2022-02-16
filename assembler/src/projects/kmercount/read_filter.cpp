@@ -14,7 +14,7 @@
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
-#include "utils/kmer_counting.hpp"
+#include "common/kmer_index/kmer_counting.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "utils/filesystem/temporary.hpp"
 
@@ -169,11 +169,11 @@ int main(int argc, char* argv[]) {
         INFO("Estimating kmer cardinality");
         SeqHasher hasher(args.k);
 
-        size_t kmers_cnt_est = utils::EstimateCardinalityUpperBound(args.k, single_readers, hasher);
+        size_t kmers_cnt_est = kmers::EstimateCardinalityUpperBound(args.k, single_readers, hasher);
 
         CQFKmerFilter cqf(kmers_cnt_est);
         INFO("Filling kmer coverage");
-        utils::FillCoverageHistogram(cqf, args.k, hasher, single_readers, args.thr + 1);
+        kmers::FillCoverageHistogram(cqf, args.k, hasher, single_readers, args.thr + 1);
         INFO("Kmer coverage filled");
 
         const unsigned FILTER_READS_BUFF_SIZE = 1 << 20;

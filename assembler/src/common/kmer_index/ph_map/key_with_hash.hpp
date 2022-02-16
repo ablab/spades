@@ -9,7 +9,7 @@
 
 #include "storing_traits.hpp"
 
-namespace utils {
+namespace kmers {
 
 template<typename Key, class HashFunction>
 class SimpleKeyWithHash {

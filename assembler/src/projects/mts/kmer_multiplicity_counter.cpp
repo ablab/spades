@@ -14,9 +14,9 @@
 #include "io/kmers/mmapped_reader.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "utils/stl_utils.hpp"
-#include "utils/ph_map/perfect_hash_map_builder.hpp"
-#include "utils/ph_map/storing_traits.hpp"
-#include "utils/kmer_mph/kmer_splitters.hpp"
+#include "kmer_index/ph_map/perfect_hash_map_builder.hpp"
+#include "kmer_index/ph_map/storing_traits.hpp"
+#include "kmer_index/kmer_mph/kmer_splitters.hpp"
 #include "logger.hpp"
 
 using std::string;
@@ -146,19 +146,19 @@ class KmerMultiplicityCounter {
 
         using KMerDiskStorage = kmers::KMerDiskStorage<RtSeq>;
         constexpr size_t read_buffer_size = 0; //FIXME some buffer size
-        DeBruijnKMerKMerSplitter<StoringTypeFilter<InvertableStoring>,
+        kmers::DeBruijnKMerKMerSplitter<kmers::StoringTypeFilter<kmers::InvertableStoring>,
                                  KMerDiskStorage::kmer_iterator>
                 splitter(workdir, k_, k_, true, read_buffer_size);
         splitter.AddKMers(adt::make_range(KMerDiskStorage::kmer_iterator(*kmer_file, k_), KMerDiskStorage::kmer_iterator()));
 
         kmers::KMerDiskCounter<RtSeq> counter(workdir, std::move(splitter));
-        KeyStoringMap<RtSeq, Offset, kmers::kmer_index_traits<RtSeq>, InvertableStoring> kmer_mpl(k_);
+        kmers::KeyStoringMap<RtSeq, Offset, kmers::kmer_index_traits<RtSeq>, kmers::InvertableStoring> kmer_mpl(k_);
         BuildIndex(kmer_mpl, counter, 16, nthreads);
         INFO("Built index with " << kmer_mpl.size() << " kmers");
 
         //Building kmer->profile offset index
         std::ifstream kmers_in(*kmer_file, std::ios::binary);
-        utils::InvertableStoring::trivial_inverter inverter;
+        kmers::InvertableStoring::trivial_inverter inverter;
         RtSeq kmer(k_);
         for (Offset offset = 0; ; offset += sample_cnt) {
             kmer.BinRead(kmers_in);

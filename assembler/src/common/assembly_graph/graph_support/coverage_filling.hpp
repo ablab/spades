@@ -53,7 +53,7 @@ class GraphCoverageFiller {
                 kmer <<= seq[j];
 
                 auto kwh = phm_.ConstructKWH(kmer);
-                uint32_t cov = phm_.get_value(kwh, utils::InvertableStoring::trivial_inverter());
+                uint32_t cov = phm_.get_value(kwh, kmers::InvertableStoring::trivial_inverter());
                 inc_coverage(e, j - this->k_ + 1, cov);
             }
         }

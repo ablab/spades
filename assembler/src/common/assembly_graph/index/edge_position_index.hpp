@@ -8,8 +8,8 @@
 #pragma once
 
 #include "sequence/rtseq.hpp"
-#include "utils/ph_map/perfect_hash_map.hpp"
-#include "utils/ph_map/kmer_maps.hpp"
+#include "kmer_index/ph_map/perfect_hash_map.hpp"
+#include "kmer_index/ph_map/kmer_maps.hpp"
 
 #include <folly/SmallLocks.h>
 
@@ -100,11 +100,11 @@ struct GraphInverter {
 };
 
 
-template<class Graph, class IdHolder = typename Graph::EdgeId, class StoringType = utils::DefaultStoring>
-class KmerFreeEdgeIndex : public utils::PerfectHashMap<RtSeq,
+template<class Graph, class IdHolder = typename Graph::EdgeId, class StoringType = kmers::DefaultStoring>
+class KmerFreeEdgeIndex : public kmers::PerfectHashMap<RtSeq,
                                                        EdgeInfo<typename Graph::EdgeId, IdHolder>,
                                                        kmers::kmer_index_traits<RtSeq>, StoringType> {
-  typedef utils::PerfectHashMap<RtSeq, EdgeInfo<typename Graph::EdgeId, IdHolder>,
+  typedef kmers::PerfectHashMap<RtSeq, EdgeInfo<typename Graph::EdgeId, IdHolder>,
                                 kmers::kmer_index_traits<RtSeq>, StoringType> base;
   const Graph &graph_;
 
@@ -164,11 +164,11 @@ public:
     }
 };
 
-template<class Graph, class IdHolder = typename Graph::EdgeId, class StoringType = utils::DefaultStoring>
+template<class Graph, class IdHolder = typename Graph::EdgeId, class StoringType = kmers::DefaultStoring>
 class KmerStoringEdgeIndex :
-      public utils::KeyStoringMap<RtSeq, EdgeInfo<typename Graph::EdgeId, IdHolder>,
+      public kmers::KeyStoringMap<RtSeq, EdgeInfo<typename Graph::EdgeId, IdHolder>,
                                   kmers::kmer_index_traits<RtSeq>, StoringType> {
-  typedef utils::KeyStoringMap<RtSeq, EdgeInfo<typename Graph::EdgeId, IdHolder>,
+  typedef kmers::KeyStoringMap<RtSeq, EdgeInfo<typename Graph::EdgeId, IdHolder>,
                                kmers::kmer_index_traits<RtSeq>, StoringType> base;
 
 public:

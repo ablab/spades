@@ -12,17 +12,17 @@
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/core/kmer_iterator.hpp"
 
-#include "utils/kmer_mph/kmer_splitters.hpp"
-#include "utils/ph_map/perfect_hash_map_builder.hpp"
+#include "kmer_index/kmer_mph/kmer_splitters.hpp"
+#include "kmer_index/ph_map/perfect_hash_map_builder.hpp"
 
 namespace debruijn_graph {
 
 template<class Graph, class KmerFilter>
-class DeBruijnGraphKMerSplitter : public utils::DeBruijnKMerSplitter<KmerFilter> {
+class DeBruijnGraphKMerSplitter : public kmers::DeBruijnKMerSplitter<KmerFilter> {
     typedef typename omnigraph::GraphEdgeIterator<Graph> EdgeIt;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename adt::iterator_range<EdgeIt> EdgeRange;
-    using typename utils::DeBruijnKMerSplitter<KmerFilter>::RawKMers;
+    using typename kmers::DeBruijnKMerSplitter<KmerFilter>::RawKMers;
 
     const Graph &g_;
 
@@ -32,7 +32,7 @@ public:
     DeBruijnGraphKMerSplitter(fs::TmpDir work_dir,
                               unsigned K, const Graph &g,
                               size_t read_buffer_size = 0)
-            : utils::DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size),
+            : kmers::DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size),
               g_(g) {}
 
     RawKMers Split(size_t num_files, unsigned nthreads) override;
@@ -85,9 +85,9 @@ DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_files, unsigned n
 }
 
 template<class Graph, class KmerFilter>
-class DeBruijnEdgeKMerSplitter : public utils::DeBruijnKMerSplitter<KmerFilter> {
+class DeBruijnEdgeKMerSplitter : public kmers::DeBruijnKMerSplitter<KmerFilter> {
     typedef typename Graph::EdgeId EdgeId;
-    using typename utils::DeBruijnKMerSplitter<KmerFilter>::RawKMers;
+    using typename kmers::DeBruijnKMerSplitter<KmerFilter>::RawKMers;
 
     const Graph &g_;
     const std::vector<EdgeId> &edges_;
@@ -96,7 +96,7 @@ class DeBruijnEdgeKMerSplitter : public utils::DeBruijnKMerSplitter<KmerFilter> 
     DeBruijnEdgeKMerSplitter(fs::TmpDir work_dir,
                              unsigned K, const Graph &g, const std::vector<EdgeId> &edges,
                              size_t read_buffer_size = 0)
-        : utils::DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size),
+        : kmers::DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size),
           g_(g), edges_(edges) {}
 
     RawKMers Split(size_t num_files, unsigned nthreads) override;
@@ -180,13 +180,13 @@ public:
         size_t bucket_size(size_t i) const { return sizes_.at(i); }
 
         auto bucket_begin(size_t i) const {
-            return boost::make_filter_iterator(utils::StoringTypeFilter<typename Index::storing_type>(),
+            return boost::make_filter_iterator(kmers::StoringTypeFilter<typename Index::storing_type>(),
                                                kmer_begin(buckets_.at(i).begin(), buckets_.at(i).end(), g_, k_),
                                                kmer_end(buckets_.at(i).end(), g_));
         }
 
         auto bucket_end(size_t i) const {
-            return boost::make_filter_iterator(utils::StoringTypeFilter<typename Index::storing_type>(),
+            return boost::make_filter_iterator(kmers::StoringTypeFilter<typename Index::storing_type>(),
                                                kmer_end(buckets_.at(i).end(), g_),
                                                kmer_end(buckets_.at(i).end(), g_));
         }
@@ -271,7 +271,7 @@ public:
         unsigned nthreads = omp_get_max_threads();
 
         using Splitter = DeBruijnGraphKMerSplitter<Graph,
-                                                   utils::StoringTypeFilter<typename Index::storing_type>>;
+                                                   kmers::StoringTypeFilter<typename Index::storing_type>>;
 
         kmers::KMerDiskCounter<RtSeq> counter(workdir,
                                               Splitter(workdir, index.k(), g, read_buffer_size));
@@ -289,7 +289,7 @@ public:
         unsigned nthreads = omp_get_max_threads();
 
         using Splitter = DeBruijnEdgeKMerSplitter<Graph,
-                                                  utils::StoringTypeFilter<typename Index::storing_type>>;
+                                                  kmers::StoringTypeFilter<typename Index::storing_type>>;
 
         kmers::KMerDiskCounter<RtSeq> counter(workdir,
                                               Splitter(workdir, index.k(), g, edges, read_buffer_size));
