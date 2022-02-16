@@ -31,7 +31,7 @@ GraphPack::GraphPack(size_t k, const std::string &workdir, size_t lib_count,
     Graph &g = emplace<Graph>(k);
     emplace<EdgeIndex<Graph>>(g, workdir);
     emplace<KmerMapper<Graph>>(g);
-    emplace<FlankingCoverage<Graph>>(g, flanking_range);
+    emplace<omnigraph::FlankingCoverage<Graph>>(g, flanking_range);
     emplace<UnclusteredPairedInfoIndicesT<Graph>>(g, lib_count);
     emplace_with_key<PairedInfoIndicesT<Graph>>("clustered_indices", g, lib_count);
     emplace_with_key<PairedInfoIndicesT<Graph>>("scaffolding_indices", g, lib_count);
@@ -41,7 +41,7 @@ GraphPack::GraphPack(size_t k, const std::string &workdir, size_t lib_count,
     emplace<GenomicInfo>();
     emplace<GenomeStorage>(genome);
     emplace<EdgeQuality<Graph>>(g);
-    emplace<EdgesPositionHandler<Graph>>(g, max_mapping_gap + k, max_gap_diff);
+    emplace<omnigraph::EdgesPositionHandler<Graph>>(g, max_mapping_gap + k, max_gap_diff);
     emplace<ConnectedComponentCounter>(g);
     emplace_with_key<path_extend::PathContainer>("exSPAnder paths");
     if (detach_indices)
@@ -51,7 +51,7 @@ GraphPack::GraphPack(size_t k, const std::string &workdir, size_t lib_count,
 void GraphPack::DetachAll() {
     get_mutable<EdgeIndex<Graph>>().Detach();
     get_mutable<KmerMapper<Graph>>().Detach();
-    get_mutable<EdgesPositionHandler<Graph>>().Detach();
+    get_mutable<omnigraph::EdgesPositionHandler<Graph>>().Detach();
     get_mutable<EdgeQuality<Graph>>().Detach();
 }
 

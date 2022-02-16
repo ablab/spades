@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "visualization/visualization.hpp"
+#include "graph_labeler.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 #include "assembly_graph/core/action_handlers.hpp"
@@ -208,30 +208,6 @@ public:
 
 private:
     DECL_LOGGER("QualityLoggingRemovalHandler");
-};
-
-template<class Graph>
-class QualityEdgeLocalityPrintingRH : public QualityLoggingRemovalHandler<Graph> {
-    typedef QualityLoggingRemovalHandler<Graph> base;
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-    visualization::visualization_utils::LocalityPrintingRH<Graph> printing_rh_;
-public:
-    QualityEdgeLocalityPrintingRH(const Graph &g
-            , const EdgeQuality<Graph> &quality_handler
-            , const visualization::graph_labeler::GraphLabeler<Graph> &labeler
-            , std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> colorer
-            , const std::string &output_folder, bool handle_all = false) :
-            base(g, quality_handler, handle_all),
-            printing_rh_(g, labeler, colorer, output_folder)
-    {}
-
-    void HandlePositiveQuality(EdgeId e) override {
-        printing_rh_.HandleDelete(e, "_" + std::to_string(this->quality_handler().quality(e)));
-    }
-
-private:
-    DECL_LOGGER("QualityEdgeLocalityPrintingRH");
 };
 
 }

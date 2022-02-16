@@ -65,7 +65,7 @@ void EnsureQuality(GraphPack& gp) {
 }
 
 void EnsurePos(GraphPack& gp) {
-    auto &edge_pos = gp.get_mutable<EdgesPositionHandler<Graph>>();
+    auto &edge_pos = gp.get_mutable<omnigraph::EdgesPositionHandler<Graph>>();
 
     if (!edge_pos.IsAttached())
         edge_pos.Attach();

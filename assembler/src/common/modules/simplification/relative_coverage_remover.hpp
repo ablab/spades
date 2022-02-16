@@ -10,6 +10,7 @@
 
 #include "assembly_graph/components/graph_component.hpp"
 #include "visualization/graph_colorer.hpp"
+#include "visualization/visualization_utils.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
 #include "assembly_graph/graph_support/comparators.hpp"
