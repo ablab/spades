@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "visualization/graph_labeler.hpp"
 #include "utils/stl_utils.hpp"
 #include "assembly_graph/core/action_handlers.hpp"
 

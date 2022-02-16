@@ -7,6 +7,7 @@
 
 
 #pragma once
+#include "path_extend/scaff_supplementary.hpp"
 #include "visualization/graph_labeler.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
@@ -15,7 +16,6 @@
 #include "visualization/position_filler.hpp"
 #include "assembly_graph/paths/bidirectional_path.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
-#include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "modules/path_extend/pe_utils.hpp"
 #include "pipeline/config_struct.hpp"
 

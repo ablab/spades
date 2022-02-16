@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "bulge_utils.hpp"
 #include "assembly_graph/graph_support/parallel_processing.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
@@ -14,11 +15,10 @@
 #include "assembly_graph/graph_support/comparators.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "sequence/sequence_tools.hpp"
-#include "common/utils/bulge_utils.hpp"
+#include "math/xmath.h"
 #include <cmath>
 #include <stack>
 #include <unordered_set>
-#include "math/xmath.h"
 
 namespace omnigraph {
 
