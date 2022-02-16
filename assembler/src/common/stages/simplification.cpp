@@ -27,7 +27,7 @@ namespace debruijn_graph {
 using namespace debruijn::simplification;
 using namespace config;
 
-SimplifInfoContainer CreateInfoContainer(const GraphPack &gp) {
+SimplifInfoContainer CreateInfoContainer(const graph_pack::GraphPack &gp) {
     SimplifInfoContainer info_container(cfg::get().mode);
     info_container.set_read_length(cfg::get().ds.RL)
             .set_main_iteration(cfg::get().main_iteration)
@@ -48,7 +48,7 @@ class GraphSimplifier {
     typedef std::function<void(EdgeId)> HandlerF;
     typedef SmartEdgeSet<std::unordered_set<EdgeId>, Graph> RestrictedEdgeSet;
 
-    GraphPack& gp_;
+    graph_pack::GraphPack& gp_;
     Graph& g_;
     SimplifInfoContainer info_container_;
     const debruijn_config::simplification simplif_cfg_;
@@ -90,7 +90,7 @@ class GraphSimplifier {
     }
 
 public:
-    GraphSimplifier(GraphPack &gp, const SimplifInfoContainer& info_container,
+    GraphSimplifier(graph_pack::GraphPack &gp, const SimplifInfoContainer& info_container,
                     const debruijn_config::simplification& simplif_cfg,
                     const std::function<void(EdgeId)>& removal_handler,
                     stats::detail_info_printer& printer)
@@ -407,7 +407,7 @@ public:
 };
 
 std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> DefaultGPColorer(
-        const GraphPack &gp) {
+        const graph_pack::GraphPack &gp) {
     auto mapper = MapperInstance(gp);
     const auto &genome = gp.get<GenomeStorage>();
     auto path1 = mapper->MapSequence(genome.GetSequence()).path();
@@ -415,7 +415,7 @@ std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> DefaultGPColo
     return visualization::graph_colorer::DefaultColorer(gp.get<Graph>(), path1, path2);
 }
 
-void RawSimplification::run(GraphPack &gp, const char*) {
+void RawSimplification::run(graph_pack::GraphPack &gp, const char*) {
     using namespace omnigraph;
 
     //no other handlers here, todo change with DetachAll
@@ -441,7 +441,7 @@ void RawSimplification::run(GraphPack &gp, const char*) {
     }
 }
 
-void Simplification::run(GraphPack &gp, const char*) {
+void Simplification::run(graph_pack::GraphPack &gp, const char*) {
     using namespace omnigraph;
 
     //no other handlers here, todo change with DetachAll
@@ -474,7 +474,7 @@ void Simplification::run(GraphPack &gp, const char*) {
     CompressAllVertices(gp.get_mutable<Graph>());
 }
 
-void SimplificationCleanup::run(GraphPack &gp, const char*) {
+void SimplificationCleanup::run(graph_pack::GraphPack &gp, const char*) {
     const auto &graph = gp.get<Graph>();
     visualization::graph_labeler::DefaultLabeler<Graph> labeler(graph, gp.get<EdgesPositionHandler<Graph>>());
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);

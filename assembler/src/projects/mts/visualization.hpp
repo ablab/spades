@@ -41,7 +41,7 @@ public:
 
 };
 
-void PrintColoredAnnotatedGraphAroundEdge(const GraphPack &gp, const EdgeId &edge,
+void PrintColoredAnnotatedGraphAroundEdge(const graph_pack::GraphPack &gp, const EdgeId &edge,
                                           const EdgeAnnotation &annotation, const std::string &output_filename) {
     //std::cout << output_filename << std::endl;
     const auto &graph = gp.get<Graph>();
@@ -51,7 +51,7 @@ void PrintColoredAnnotatedGraphAroundEdge(const GraphPack &gp, const EdgeId &edg
     visualization::visualization_utils::WriteComponent<Graph>(component, output_filename, colorer_ptr, labeler);
 }
 
-void PrintAnnotatedAlongPath(const GraphPack &gp, const std::vector<EdgeId> &path,
+void PrintAnnotatedAlongPath(const graph_pack::GraphPack &gp, const std::vector<EdgeId> &path,
                              const EdgeAnnotation &annotation, const std::string &output_prefix) {
     const auto &graph = gp.get<Graph>();
     visualization::graph_labeler::DefaultLabeler<Graph> labeler(graph, gp.get<EdgesPositionHandler<Graph>>());

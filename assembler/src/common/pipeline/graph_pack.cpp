@@ -19,7 +19,9 @@
 #include "sequence/genome_storage.hpp"
 #include "genomic_info.hpp"
 
-namespace debruijn_graph {
+namespace graph_pack {
+
+using namespace debruijn_graph;
 
 GraphPack::GraphPack(size_t k, const std::string &workdir, size_t lib_count,
                      const std::vector<std::string> &genome,

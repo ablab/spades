@@ -49,14 +49,14 @@ FindGenomeMappingPath(const Sequence& genome, const Graph& g,
     return srt.MapSequence(genome);
 }
 
-inline MappingPath<Graph::EdgeId> FindGenomeMappingPath(const Sequence& genome, const GraphPack &gp) {
+inline MappingPath<Graph::EdgeId> FindGenomeMappingPath(const Sequence& genome, const graph_pack::GraphPack &gp) {
     const auto &graph = gp.get<Graph>();
     const auto &index = gp.get<EdgeIndex<Graph>>();
     const auto &kmer_mapper = gp.get<KmerMapper<Graph>>();
     return FindGenomeMappingPath(genome, graph, index, kmer_mapper);
 }
 
-inline std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> DefaultColorer(const GraphPack &gp) {
+inline std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> DefaultColorer(const graph_pack::GraphPack &gp) {
     const auto &graph = gp.get<Graph>();
     const auto &index = gp.get<EdgeIndex<Graph>>();
     const auto &kmer_mapper = gp.get<KmerMapper<Graph>>();
@@ -66,7 +66,7 @@ inline std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> Defaul
         FindGenomeMappingPath(!genome.GetSequence(), graph, index, kmer_mapper).path());
 }
 
-inline void CollectContigPositions(GraphPack &gp) {
+inline void CollectContigPositions(graph_pack::GraphPack &gp) {
     if (!cfg::get().pos.contigs_for_threading.empty() &&
         fs::FileExists(cfg::get().pos.contigs_for_threading))
       visualization::position_filler::FillPos(gp, cfg::get().pos.contigs_for_threading, "thr_", true);
@@ -151,7 +151,7 @@ void WriteErrorLoc(const Graph &g,
     INFO("Error localities written written to folder " << folder_name);
 }
 
-inline void CountStats(const GraphPack &gp) {
+inline void CountStats(const graph_pack::GraphPack &gp) {
     typedef typename Graph::EdgeId EdgeId;
     INFO("Counting stats");
     StatList stats;
@@ -208,7 +208,7 @@ void WriteGraphComponentsAlongContigs(const Graph &g,
     INFO("Writing graph components along contigs finished");
 }
 
-inline void WriteKmerComponent(const GraphPack &gp, const RtSeq &kp1mer, const std::string &file,
+inline void WriteKmerComponent(const graph_pack::GraphPack &gp, const RtSeq &kp1mer, const std::string &file,
                         std::shared_ptr<visualization::graph_colorer::GraphColorer<Graph>> colorer,
                         const visualization::graph_labeler::GraphLabeler<Graph> &labeler) {
     const auto &graph = gp.get<Graph>();
@@ -226,7 +226,7 @@ inline void WriteKmerComponent(const GraphPack &gp, const RtSeq &kp1mer, const s
     visualization::visualization_utils::WriteComponent<Graph>(component, file, colorer, labeler);
 }
 
-inline boost::optional<RtSeq> FindCloseKP1mer(const GraphPack &gp, size_t genome_pos, size_t k) {
+inline boost::optional<RtSeq> FindCloseKP1mer(const graph_pack::GraphPack &gp, size_t genome_pos, size_t k) {
     const auto &genome = gp.get<GenomeStorage>();
     const auto &kmer_mapper = gp.get<KmerMapper<Graph>>();
     const auto &index = gp.get<EdgeIndex<Graph>>();
@@ -244,14 +244,14 @@ inline boost::optional<RtSeq> FindCloseKP1mer(const GraphPack &gp, size_t genome
     return boost::none;
 }
 
-inline void PrepareForDrawing(GraphPack &gp) {
+inline void PrepareForDrawing(graph_pack::GraphPack &gp) {
     EnsureDebugInfo(gp);
     CollectContigPositions(gp);
 }
 
 
 struct detail_info_printer {
-    detail_info_printer(GraphPack &gp,
+    detail_info_printer(graph_pack::GraphPack &gp,
                         const visualization::graph_labeler::GraphLabeler<Graph> &labeler,
                         const std::string &folder)
             :  gp_(gp),
@@ -425,7 +425,7 @@ struct detail_info_printer {
         }
     }
 
-    GraphPack& gp_;
+    graph_pack::GraphPack& gp_;
     const visualization::graph_labeler::GraphLabeler<Graph>& labeler_;
     std::string folder_;
 };

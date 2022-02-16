@@ -75,7 +75,7 @@ inline Extenders ExtractExtenders(const ExtenderTriplets& triplets) {
 class ExtendersGenerator {
     const config::dataset &dataset_info_;
     const PathExtendParamsContainer &params_;
-    const GraphPack &gp_;
+    const graph_pack::GraphPack &gp_;
     const Graph &graph_;
 
     const GraphCoverageMap &cover_map_;
@@ -87,7 +87,7 @@ class ExtendersGenerator {
 public:
     ExtendersGenerator(const config::dataset &dataset_info,
                        const PathExtendParamsContainer &params,
-                       const GraphPack &gp,
+                       const graph_pack::GraphPack &gp,
                        const GraphCoverageMap &cover_map,
                        const UniqueData &unique_data,
                        UsedUniqueStorage &used_unique_storage,

@@ -40,7 +40,7 @@ io::IdMapper<std::string> *LoadGraphFromGFA(debruijn_graph::Graph &graph,
 }
 
 
-io::IdMapper<std::string> *LoadGraphPack(debruijn_graph::GraphPack &gp, const std::string &filename) {
+io::IdMapper<std::string> *LoadGraphPack(graph_pack::GraphPack &gp, const std::string &filename) {
     auto &graph = gp.get_mutable<debruijn_graph::Graph>();
     io::IdMapper<std::string> *id_mapper = nullptr;
     if (fs::extension(filename) == ".gfa") {
@@ -63,7 +63,7 @@ io::IdMapper<std::string> *LoadBaseGraph(debruijn_graph::Graph &graph, const std
     return id_mapper;
 }
 
-io::IdMapper<std::string> *LoadBaseGraph(debruijn_graph::GraphPack &gp, const std::string &filename) {
+io::IdMapper<std::string> *LoadBaseGraph(graph_pack::GraphPack &gp, const std::string &filename) {
     auto &graph = gp.get_mutable<debruijn_graph::Graph>();
     return LoadBaseGraph(graph, filename);
 }

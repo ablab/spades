@@ -20,7 +20,7 @@ public:
             : AssemblyStage("Raw Simplification", "raw_simplification"),
               preliminary_(preliminary) { }
 
-    void run(GraphPack &gp, const char *) override;
+    void run(graph_pack::GraphPack &gp, const char *) override;
 };
 
 class Simplification : public spades::AssemblyStage {
@@ -31,7 +31,7 @@ public:
                             preliminary ? "simplification_preliminary" : "simplification"),
               preliminary_(preliminary) { }
 
-    void run(GraphPack &gp, const char *) override;
+    void run(graph_pack::GraphPack &gp, const char *) override;
 };
 
 class SimplificationCleanup : public spades::AssemblyStage {
@@ -39,7 +39,7 @@ public:
     SimplificationCleanup()
             : AssemblyStage("Simplification Cleanup", "simplification_cleanup") { }
 
-    void run(GraphPack &gp, const char *) override;
+    void run(graph_pack::GraphPack &gp, const char *) override;
 };
 
 }

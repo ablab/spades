@@ -67,7 +67,7 @@ TEST_F( GraphConstruction, CondenseSimple ) {
 
 void CheckIndex(const std::vector<std::string> &reads, const std::string &tmpdir, size_t k) {
     typedef io::VectorReadStream<io::SingleRead> RawStream;
-    GraphPack gp(k, tmpdir, 0);
+    graph_pack::GraphPack gp(k, tmpdir, 0);
     auto workdir = fs::tmp::make_temp_dir(gp.workdir(), "tests");
     io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(RawStream(MakeReads(reads))));
     auto &graph = gp.get_mutable<Graph>();

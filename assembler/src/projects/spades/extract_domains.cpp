@@ -9,7 +9,7 @@
 
 namespace debruijn_graph {
 
-void ExtractDomains::run(GraphPack &gp, const char*) {
+void ExtractDomains::run(graph_pack::GraphPack &gp, const char*) {
     nrps::DomainMatcher().MatchDomains(gp, cfg::get().hm->hmm_set, cfg::get().output_dir);
 }
 

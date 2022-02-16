@@ -20,7 +20,9 @@ namespace debruijn_graph {
 class DeBruijnGraph;
 typedef DeBruijnGraph ConjugateDeBruijnGraph;
 typedef ConjugateDeBruijnGraph Graph;
+}
 
+namespace graph_pack {
 class GraphPack;
 }
 
@@ -29,9 +31,9 @@ namespace toolchain {
 void create_console_logger(logging::level log_level = logging::L_INFO);
 io::IdMapper<std::string> *LoadGraphFromGFA(debruijn_graph::Graph &graph,
                                             const std::string &filename);
-io::IdMapper<std::string> *LoadGraphPack(debruijn_graph::GraphPack &gp, const std::string &filename);
+io::IdMapper<std::string> *LoadGraphPack(graph_pack::GraphPack &gp, const std::string &filename);
 io::IdMapper<std::string> *LoadBaseGraph(debruijn_graph::Graph &g, const std::string &filename);
-io::IdMapper<std::string> *LoadBaseGraph(debruijn_graph::GraphPack &gp, const std::string &filename);
+io::IdMapper<std::string> *LoadBaseGraph(graph_pack::GraphPack &gp, const std::string &filename);
 
 
 }

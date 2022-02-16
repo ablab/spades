@@ -230,7 +230,7 @@ void assemble_genome() {
     bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable;
     INFO("Two-step repeat resolution " << (two_step_rr ? "enabled" : "disabled"));
 
-    debruijn_graph::GraphPack conj_gp(cfg::get().K,
+    graph_pack::GraphPack conj_gp(cfg::get().K,
                                             cfg::get().tmp_dir,
                                             two_step_rr ? cfg::get().ds.reads.lib_count() + 1
                                                         : cfg::get().ds.reads.lib_count(),

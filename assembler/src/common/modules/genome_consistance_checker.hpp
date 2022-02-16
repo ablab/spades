@@ -137,7 +137,7 @@ public:
 
 class GenomeConsistenceChecker {
     typedef omnigraph::MappingPath<EdgeId> MappingPathT;
-    GraphPack &gp_;
+    graph_pack::GraphPack &gp_;
     Graph &graph_;
     const omnigraph::EdgesPositionHandler<Graph> &edge_pos_;
     const size_t absolute_max_gap_;
@@ -202,7 +202,7 @@ class GenomeConsistenceChecker {
 
     DECL_LOGGER("GenomeConsistenceChecker");
 public:
-    GenomeConsistenceChecker(GraphPack &gp,
+    GenomeConsistenceChecker(graph_pack::GraphPack &gp,
                              size_t max_gap,
                              double relative_max_gap /*= 0.2*/,
                              size_t unresolvable_len,

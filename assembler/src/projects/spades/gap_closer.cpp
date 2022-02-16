@@ -100,7 +100,7 @@ private:
     }
 
 public:
-    GapCloserPairedIndexFiller(const GraphPack &gp, omnigraph::de::PairedInfoIndexT<Graph> &paired_index,
+    GapCloserPairedIndexFiller(const graph_pack::GraphPack &gp, omnigraph::de::PairedInfoIndexT<Graph> &paired_index,
                                size_t max_dist_to_tip, size_t cnt_libs_to_process)
             :  graph_(gp.get<Graph>()), paired_index_(paired_index), buffer_pi_(graph_),
             index_(graph_, gp.workdir()), max_dist_to_tip_(max_dist_to_tip), cnt_libs_to_process_(cnt_libs_to_process) {
@@ -450,7 +450,7 @@ private:
     DECL_LOGGER("GapCloser");
 };
 
-void GapClosing::run(GraphPack &gp, const char *) {
+void GapClosing::run(graph_pack::GraphPack &gp, const char *) {
     visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.get<Graph>(), gp.get<EdgesPositionHandler<Graph>>());
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
     printer(config::info_printer_pos::before_first_gap_closer);

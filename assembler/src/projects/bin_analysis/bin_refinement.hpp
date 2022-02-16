@@ -627,7 +627,7 @@ static void AnnotateExtraEdgesRound(const Graph &g,
     INFO("Annotation expansion done");
 }
 
-static void CompareAnnotations(const GraphPack &gp, const EdgeQuality<Graph> &annotation,
+static void CompareAnnotations(const graph_pack::GraphPack &gp, const EdgeQuality<Graph> &annotation,
                         const std::string &out_folder = "") {
     const auto &g = gp.get<Graph>();
     const auto &edge_qual = gp.get<EdgeQuality<Graph>>();
@@ -667,7 +667,7 @@ static void CompareAnnotations(const GraphPack &gp, const EdgeQuality<Graph> &an
     INFO("Total length " << total_len);
 }
 
-static void AnnotateExtraEdges(const GraphPack &gp,
+static void AnnotateExtraEdges(const graph_pack::GraphPack &gp,
                                EdgeQuality<Graph> &annotation,
                                double est_cov,
                                const std::string &out_folder = "") {
@@ -694,7 +694,7 @@ static void AnnotateExtraEdges(const GraphPack &gp,
     }
 }
 
-static double AnnotateEdges(const GraphPack &gp,
+static double AnnotateEdges(const graph_pack::GraphPack &gp,
                            EdgeQuality<Graph> &annotation,
                            const std::string &bin_contigs) {
     auto stream = io::EasyStream(bin_contigs,

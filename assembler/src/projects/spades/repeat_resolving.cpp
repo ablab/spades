@@ -13,7 +13,7 @@
 
 namespace debruijn_graph {
 
-static void PEResolving(GraphPack& gp) {
+static void PEResolving(graph_pack::GraphPack& gp) {
     path_extend::PathExtendParamsContainer params(cfg::get().ds,
                                                   cfg::get().pe_params,
                                                   cfg::get().ss,
@@ -42,7 +42,7 @@ static bool HasValidLibs() {
 }
 
 
-void RepeatResolution::load(GraphPack &gp, const std::string &load_from, const char *prefix) {
+void RepeatResolution::load(graph_pack::GraphPack &gp, const std::string &load_from, const char *prefix) {
     // Do nothing in final mode, otherwise - produce saves
     if (!preliminary_)
         return;
@@ -51,7 +51,7 @@ void RepeatResolution::load(GraphPack &gp, const std::string &load_from, const c
 }
 
 
-void RepeatResolution::save(const GraphPack &gp, const std::string &save_to, const char *prefix) const {
+void RepeatResolution::save(const graph_pack::GraphPack &gp, const std::string &save_to, const char *prefix) const {
     // Do nothing in final mode, otherwise - produce saves
     if (!preliminary_)
         return;
@@ -59,7 +59,7 @@ void RepeatResolution::save(const GraphPack &gp, const std::string &save_to, con
     AssemblyStage::save(gp, save_to, prefix);
 }
 
-void RepeatResolution::run(GraphPack &gp, const char*) {
+void RepeatResolution::run(graph_pack::GraphPack &gp, const char*) {
     if (cfg::get().developer_mode)
         stats::PrepareForDrawing(gp);
 

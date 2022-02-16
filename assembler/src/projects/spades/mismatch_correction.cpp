@@ -110,7 +110,7 @@ private:
     const Graph &g_;
 
     template <typename Iter>
-    void CollectPotentialMismatches(const GraphPack &gp, Iter b, Iter e, MismatchCandidates &candidates) {
+    void CollectPotentialMismatches(const graph_pack::GraphPack &gp, Iter b, Iter e, MismatchCandidates &candidates) {
         const auto &index = gp.get<EdgeIndex<Graph>>();
 
         for (const auto &mentry : adt::make_range(b, e)) {
@@ -162,7 +162,7 @@ private:
         }
     }
 
-    void CollectPotentialMismatches(const GraphPack &gp) {
+    void CollectPotentialMismatches(const graph_pack::GraphPack &gp) {
         size_t nthreads = omp_get_max_threads();
         const auto &kmer_mapper = gp.get<KmerMapper<Graph>>();
         auto iters = split_iterator(nthreads, kmer_mapper.begin(), kmer_mapper.end(), kmer_mapper.size());
@@ -246,7 +246,7 @@ private:
     }
 
 public:
-    MismatchStatistics(const GraphPack &gp):
+    MismatchStatistics(const graph_pack::GraphPack &gp):
             g_(gp.get<Graph>()) {
         CollectPotentialMismatches(gp);
     }
@@ -290,7 +290,7 @@ private:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 
-    GraphPack &gp_;
+    graph_pack::GraphPack &gp_;
     Graph &graph_;
     const size_t k_;
     const double relative_threshold_;
@@ -420,7 +420,7 @@ private:
     }
 
 public:
-    MismatchShallNotPass(GraphPack &gp, double relative_threshold = 1.5) :
+    MismatchShallNotPass(graph_pack::GraphPack &gp, double relative_threshold = 1.5) :
             gp_(gp),
             graph_(gp.get_mutable<Graph>()),
             k_(gp.k()),
@@ -444,7 +444,7 @@ public:
 
 } // namespace mismatches
 
-void MismatchCorrection::run(GraphPack &gp, const char*) {
+void MismatchCorrection::run(graph_pack::GraphPack &gp, const char*) {
     EnsureBasicMapping(gp);
     size_t corrected = mismatches::MismatchShallNotPass(gp, 2).
                        ParallelStopAllMismatches(1);

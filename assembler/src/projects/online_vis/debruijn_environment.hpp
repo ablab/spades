@@ -27,7 +27,7 @@ class DebruijnEnvironment : public Environment {
         size_t max_vertices_;
         size_t edge_length_bound_;
 
-        GraphPack gp_;
+        graph_pack::GraphPack gp_;
         GraphElementFinder<Graph> element_finder_;
         std::shared_ptr<MapperClass> mapper_;
         FillerClass filler_;
@@ -51,7 +51,7 @@ class DebruijnEnvironment : public Environment {
                   cfg::get().pos.max_mapping_gap,
                   cfg::get().pos.max_gap_diff),
               element_finder_(gp_.get<Graph>()),
-              mapper_(MapperInstance(gp_)),
+              mapper_(debruijn_graph::MapperInstance(gp_)),
               filler_(gp_.get<Graph>(), mapper_, gp_.get_mutable<EdgePos>()),
               labeler_(gp_.get<Graph>(), gp_.get<EdgePos>()),
               path_finder_(gp_.get<Graph>()) {
@@ -142,7 +142,7 @@ class DebruijnEnvironment : public Environment {
             return gp_.get<Graph>();
         }
 
-        GraphPack& graph_pack() {
+        graph_pack::GraphPack& graph_pack() {
             return gp_;
         }
 

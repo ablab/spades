@@ -23,7 +23,7 @@ static void Run(size_t K, const string &graph_path, const string &contigs_file,
          const string &tmpdir) {
     fs::make_dir(tmpdir);
 
-    GraphPack gp(K, tmpdir, 0);
+    graph_pack::GraphPack gp(K, tmpdir, 0);
     const auto& graph = gp.get<Graph>();
     INFO("Loading de Bruijn graph from " << graph_path);
     omnigraph::GraphElementFinder<Graph> element_finder(graph);

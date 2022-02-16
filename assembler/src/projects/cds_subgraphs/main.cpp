@@ -166,7 +166,7 @@ static void WriteComponent(const omnigraph::GraphComponent<Graph> &component, co
     }
 }
 
-void ExtractCDSSubgraphs(const GraphPack &gp,
+void ExtractCDSSubgraphs(const graph_pack::GraphPack &gp,
                          const GeneInitSeq &starting_seqs,
                          const std::unordered_map<std::string, size_t> &cds_len_ests,
                          const io::EdgeNamingF<Graph> &edge_naming_f,
@@ -205,7 +205,7 @@ void ExtractCDSSubgraphs(const GraphPack &gp,
     }
 }
 
-void ParallelExtractCDSSubgraphs(const GraphPack &gp,
+void ParallelExtractCDSSubgraphs(const graph_pack::GraphPack &gp,
                                  const GeneInitSeq &starting_seqs,
                                  const std::unordered_map<std::string, size_t> &cds_len_ests,
                                  const io::EdgeNamingF<Graph> &edge_naming_f,
@@ -329,7 +329,7 @@ int main(int argc, char** argv) {
 
         std::string tmpdir = cfg.tmpdir.empty() ? out_folder + "tmp" : cfg.tmpdir;
         fs::make_dirs(tmpdir);
-        debruijn_graph::GraphPack gp(k, tmpdir, 0);
+        graph_pack::GraphPack gp(k, tmpdir, 0);
         
         const auto &graph = gp.get<Graph>();
         omnigraph::GraphElementFinder<Graph> element_finder(graph);

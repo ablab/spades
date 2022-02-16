@@ -28,7 +28,7 @@ using ContigAlnInfo = std::vector<AlnInfo>;
 
 class DomainMatcher {
 public:
-    ContigAlnInfo MatchDomains(debruijn_graph::GraphPack &gp,
+    ContigAlnInfo MatchDomains(graph_pack::GraphPack &gp,
                                const std::string &hmm_set,
                                const std::string &output_dir);
 };

@@ -190,7 +190,7 @@ int main(int argc, char* argv[]) {
         } else if (cfg.k == -1U)
             FATAL_ERROR("k-mer length should be specified");
 
-        debruijn_graph::GraphPack gp(k, tmpdir, dataset.lib_count());
+        graph_pack::GraphPack gp(k, tmpdir, dataset.lib_count());
 
         const auto &graph = gp.get<Graph>();
         if (gfa) {

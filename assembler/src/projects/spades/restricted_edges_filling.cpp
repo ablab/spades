@@ -13,7 +13,7 @@
 #include <unordered_set>
 
 namespace debruijn_graph {
-static void FillRestrictedEdges(GraphPack &gp) {
+static void FillRestrictedEdges(graph_pack::GraphPack &gp) {
     if (!fs::check_existence(cfg::get().output_dir + "temp_anti/restricted_edges.fasta"))
         return;
 
@@ -36,7 +36,7 @@ static void FillRestrictedEdges(GraphPack &gp) {
     gp.emplace<omnigraph::SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>(graph, domain_edges);
 }
 
-void RestrictedEdgesFilling::run(GraphPack &gp, const char*) {
+void RestrictedEdgesFilling::run(graph_pack::GraphPack &gp, const char*) {
     FillRestrictedEdges(gp);
 }
 

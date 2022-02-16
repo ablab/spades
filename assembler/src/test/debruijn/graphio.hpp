@@ -8,18 +8,21 @@
 
 #include <string>
 
+namespace graph_pack {
+class GraphPack;
+}
+
 // FIXME: Add fwd header
 namespace debruijn_graph {
 class DeBruijnGraph;
 typedef DeBruijnGraph ConjugateDeBruijnGraph;
 typedef ConjugateDeBruijnGraph Graph;
-class GraphPack;
 
 //Legacy wrappers
 namespace graphio {
 
 bool ScanBasicGraph(const std::string &file_name, Graph &g);
-bool ScanGraphPack(const std::string &file_name, GraphPack &gp);
+bool ScanGraphPack(const std::string &file_name, graph_pack::GraphPack &gp);
 
 };
 

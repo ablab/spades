@@ -475,7 +475,7 @@ void DomainGraph::OutputStat(const DomainGraph::Arrangements &arr, std::ostream 
               << arr.strong_edges << "/" << arr.weak_edges << std::endl;
 }
 
-void DomainGraph::FindDomainOrderings(debruijn_graph::GraphPack &gp,
+void DomainGraph::FindDomainOrderings(graph_pack::GraphPack &gp,
                                       size_t component_size_part, size_t component_min_size, bool start_only_from_tips,
                                       const std::string &output_filename, const std::string &output_dir) {
     const auto &graph = gp.get<debruijn_graph::Graph>();

@@ -22,7 +22,7 @@ using namespace debruijn_graph;
 class PathExtendLauncher {
     const config::dataset& dataset_info_;
     const PathExtendParamsContainer& params_;
-    GraphPack& gp_;
+    graph_pack::GraphPack& gp_;
     const Graph &graph_;
     PELaunchSupport support_;
 
@@ -88,7 +88,7 @@ public:
 
     PathExtendLauncher(const config::dataset& dataset_info,
                        const PathExtendParamsContainer& params,
-                       GraphPack& gp):
+                       graph_pack::GraphPack& gp):
         dataset_info_(dataset_info),
         params_(params),
         gp_(gp),

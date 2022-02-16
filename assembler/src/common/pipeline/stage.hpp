@@ -34,11 +34,11 @@ public:
     const char *id() const { return id_; }
 
     /// @throw std::ios_base::failure if load_from does not contain all required files
-    virtual void load(debruijn_graph::GraphPack &, const std::string &load_from, const char *prefix = nullptr);
-    virtual void save(const debruijn_graph::GraphPack &, const std::string &save_to,
+    virtual void load(graph_pack::GraphPack &, const std::string &load_from, const char *prefix = nullptr);
+    virtual void save(const graph_pack::GraphPack &, const std::string &save_to,
                       const char *prefix = nullptr) const;
-    void prepare(debruijn_graph::GraphPack &, const char *stage_name, const char *started_from = nullptr);
-    virtual void run(debruijn_graph::GraphPack &, const char *started_from = nullptr) = 0;
+    void prepare(graph_pack::GraphPack &, const char *stage_name, const char *started_from = nullptr);
+    virtual void run(graph_pack::GraphPack &, const char *started_from = nullptr) = 0;
 
 private:
     const char *name_;
@@ -81,9 +81,9 @@ public:
         return *this;
     }
 
-    virtual void init(debruijn_graph::GraphPack &, const char * = nullptr) = 0;
-    virtual void fini(debruijn_graph::GraphPack &) = 0;
-    void run(debruijn_graph::GraphPack &gp, const char * = nullptr);
+    virtual void init(graph_pack::GraphPack &, const char * = nullptr) = 0;
+    virtual void fini(graph_pack::GraphPack &) = 0;
+    void run(graph_pack::GraphPack &gp, const char * = nullptr);
 
 private:
     std::vector<std::unique_ptr<PhaseBase> > phases_;
@@ -107,8 +107,8 @@ public:
     CompositeStageWithStorage(const char *name, const char *id)
             : CompositeStageBase(name, id) { }
 
-    void init(debruijn_graph::GraphPack &, const char * = nullptr) override {};
-    void fini(debruijn_graph::GraphPack &) override {};
+    void init(graph_pack::GraphPack &, const char * = nullptr) override {};
+    void fini(graph_pack::GraphPack &) override {};
 
     virtual Storage &storage() = 0;
     virtual const Storage &storage() const = 0;
@@ -211,7 +211,7 @@ public:
         return *this;
     }
 
-    void run(debruijn_graph::GraphPack &g,
+    void run(graph_pack::GraphPack &g,
              const char *start_from = nullptr);
 
     const SavesPolicy &saves_policy() const {

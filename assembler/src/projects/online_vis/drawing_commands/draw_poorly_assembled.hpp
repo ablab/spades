@@ -91,7 +91,7 @@ public:
 
 class StructuredFileLogger : public RepeatProcessor {
 
-    string Log(const GraphPack& gp, const RepeatInfo& repeat_info) const {
+    string Log(const graph_pack::GraphPack& gp, const RepeatInfo& repeat_info) const {
         const auto &graph = gp.get<Graph>();
         return fmt::format("{:d} {:d} {:d} {:d} {:d}", repeat_info.genomic_gap, repeat_info.ref_path.size(),
                                 CumulativeLength(graph, repeat_info.ref_path),
@@ -176,7 +176,7 @@ private:
     const double good_mapping_coeff_;
     vector<shared_ptr<RepeatProcessor>> processors_;
 
-    vector<EdgePosition> GatherPositions(const GraphPack& gp, EdgeId e, const string& prefix) const {
+    vector<EdgePosition> GatherPositions(const graph_pack::GraphPack& gp, EdgeId e, const string& prefix) const {
         vector<EdgePosition> answer;
         for (EdgePosition pos : gp.get<EdgePos>().GetEdgePositions(e)) {
             if (boost::starts_with(pos.contigId, prefix)) {
@@ -241,7 +241,7 @@ private:
 //        return answer;
 //    }
 
-    MappingPath<EdgeId> FindReferencePath(const GraphPack& gp, EdgeId e1, EdgeId e2) const {
+    MappingPath<EdgeId> FindReferencePath(const graph_pack::GraphPack& gp, EdgeId e1, EdgeId e2) const {
         auto e1_poss = GatherPositions(gp, e1, ref_prefix_);
         auto e2_poss = GatherPositions(gp, e2, ref_prefix_);
         VERIFY(e1_poss.size() == 1 && e2_poss.size() == 1);
@@ -257,7 +257,7 @@ private:
         return debruijn_graph::MapperInstance(gp)->MapSequence(gap_fragment);
     }
 
-    size_t GenomicGap(const GraphPack& gp, EdgeId e1, EdgeId e2) const {
+    size_t GenomicGap(const graph_pack::GraphPack& gp, EdgeId e1, EdgeId e2) const {
         auto poss1 = GatherPositions(gp, e1, ref_prefix_);
         auto poss2 = GatherPositions(gp, e2, ref_prefix_);
         VERIFY_MSG(poss1.size() == 1, "Positions of first edge " << poss1);
@@ -277,7 +277,7 @@ private:
         return r2.initial_range.start_pos - r1.initial_range.end_pos;
     }
 
-    set<string> GatherNames(const GraphPack& gp, EdgeId e, const string& prefix) const {
+    set<string> GatherNames(const graph_pack::GraphPack& gp, EdgeId e, const string& prefix) const {
         set<string> answer;
         for (auto pos : GatherPositions(gp, e, prefix)) {
             answer.insert(pos.contigId);
@@ -285,11 +285,11 @@ private:
         return answer;
     }
 
-    bool IsOfMultiplicityOne(const GraphPack& gp, EdgeId e) const {
+    bool IsOfMultiplicityOne(const graph_pack::GraphPack& gp, EdgeId e) const {
         return GatherPositions(gp, e, ref_prefix_).size() == 1;
     }
     
-    bool BelongToSameContig(const GraphPack& gp, EdgeId e1, EdgeId e2, string assembly_prefix) const {
+    bool BelongToSameContig(const graph_pack::GraphPack& gp, EdgeId e1, EdgeId e2, string assembly_prefix) const {
         auto names1 = GatherNames(gp, e1, assembly_prefix);
         auto names2 = GatherNames(gp, e2, assembly_prefix);
         //checking non-empty intersection
@@ -305,7 +305,7 @@ private:
         return double(mapped_range_length) > good_mapping_coeff_ * double(edge_length);
     }
 
-    vector<EdgeId> EdgesOfInterest(const GraphPack& gp, const MappingPath<EdgeId>& mapping_path, size_t length_threshold) const {
+    vector<EdgeId> EdgesOfInterest(const graph_pack::GraphPack& gp, const MappingPath<EdgeId>& mapping_path, size_t length_threshold) const {
         vector<EdgeId> answer;
         const auto &graph = gp.get<Graph>();
         for (size_t i = 0; i < mapping_path.size(); ++i) {
@@ -327,7 +327,7 @@ protected:
                                         size_t edge_length,
                                         size_t max_genomic_gap, 
                                         size_t max_gap_cnt = -1u) const {
-        GraphPack& gp = curr_env.graph_pack();
+        graph_pack::GraphPack& gp = curr_env.graph_pack();
         auto mapper_ptr = debruijn_graph::MapperInstance(gp);
         MappingPath<EdgeId> mapping_path = mapper_ptr->MapRead(contig);
         const auto &graph = gp.get<Graph>();
@@ -533,7 +533,7 @@ class DrawPoorlyAssembledCommand : public DrawingCommand {
     const double WELL_ASSEMBLED_CONSTANT = 0.7;
 private:
     
-    bool IsPoorlyAssembled(const GraphPack& gp, io::SingleRead contig, string base_assembly_prefix) const {
+    bool IsPoorlyAssembled(const graph_pack::GraphPack& gp, io::SingleRead contig, string base_assembly_prefix) const {
         MappingPath<EdgeId> mapping_path = debruijn_graph::MapperInstance(gp)->MapRead(contig);
         const auto &pos_handler = gp.get<EdgePos>();
         map<string, size_t> base_ctg_2_len;
@@ -627,14 +627,14 @@ class DrawCoverageDropsCommand : public DrawingCommand {
     const size_t min_ende_len = 2000;
 private:
 
-    bool IsRepeat(const GraphPack& gp, EdgeId e) const {
+    bool IsRepeat(const graph_pack::GraphPack& gp, EdgeId e) const {
         const auto &graph = gp.get<Graph>();
         auto v1 = graph.EdgeStart(e);
         auto v2 = graph.EdgeEnd(e);
         return graph.IncomingEdgeCount(v1) >= 2 || graph.OutgoingEdgeCount(v2) >= 2 ;
     }
 
-    std::vector<std::vector<EdgeId>> Split(const GraphPack& gp, std::vector<EdgeId> mapping_path) const {
+    std::vector<std::vector<EdgeId>> Split(const graph_pack::GraphPack& gp, std::vector<EdgeId> mapping_path) const {
         std::vector<std::vector<EdgeId>> answer;
         std::vector<EdgeId> temp;
 
@@ -662,7 +662,7 @@ private:
         return answer;
     }
 
-    bool HasCoverageDrops(const GraphPack& gp, std::vector<EdgeId> mapping_path) const {
+    bool HasCoverageDrops(const graph_pack::GraphPack& gp, std::vector<EdgeId> mapping_path) const {
         double min_coverage = std::numeric_limits<double>::max();
         double max_coverage = 0;
 

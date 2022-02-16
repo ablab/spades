@@ -18,8 +18,8 @@ public:
     Construction();
     ~Construction();
 
-    void init(debruijn_graph::GraphPack &gp, const char *) override;
-    void fini(debruijn_graph::GraphPack &gp) override;
+    void init(graph_pack::GraphPack &gp, const char *) override;
+    void fini(graph_pack::GraphPack &gp) override;
 };
 
 }

@@ -47,7 +47,7 @@ std::string NeighboursString(const Graph& g, const EdgeContainer& edges) {
 void Launch(size_t K, string saves_path, size_t edge_length_bound,
             const string& fastg_output) {
     //TODO no need for whole graph pack; change to Graph
-    GraphPack gp(K, "tmp", 0);
+    graph_pack::GraphPack gp(K, "tmp", 0);
     io::binary::BasePackIO().Load(saves_path, gp);
 
     io::OFastaReadStream oss(fastg_output);

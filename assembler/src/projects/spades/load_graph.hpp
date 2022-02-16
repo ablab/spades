@@ -15,7 +15,7 @@ class LoadGraph : public spades::AssemblyStage {
     LoadGraph()
         : AssemblyStage("Load and prepare assembly graph", "load_graph") {}
 
-    void run(GraphPack &gp, const char*) override;
+    void run(graph_pack::GraphPack &gp, const char*) override;
 };
 
 }

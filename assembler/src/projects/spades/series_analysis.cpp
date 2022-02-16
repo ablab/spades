@@ -244,7 +244,7 @@ void PrintEdgeFragmentProfiles(const Graph &graph, const ContigAbundanceCounter 
     }
 }
 
-void SeriesAnalysis::run(GraphPack &gp, const char *) {
+void SeriesAnalysis::run(graph_pack::GraphPack &gp, const char *) {
     std::string cfg = cfg::get().series_analysis;
     INFO("Series analysis enabled with config " << cfg);
 

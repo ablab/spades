@@ -221,7 +221,7 @@ public:
         return true;
     }
 
-    bool LoadGraphPack(const std::string &file_name, GraphPack &gp) {
+    bool LoadGraphPack(const std::string &file_name, graph_pack::GraphPack &gp) {
         auto &graph = gp.get_mutable<Graph>();
         auto &index = gp.get_mutable<EdgeIndex<Graph>>();
         auto &edge_pos = gp.get_mutable<omnigraph::EdgesPositionHandler<Graph>>();
@@ -268,7 +268,7 @@ bool ScanBasicGraph(const std::string &file_name, debruijn_graph::Graph &g) {
     return LegacyTextIO().LoadBasicGraph(file_name, g);
 }
 
-bool ScanGraphPack(const std::string &file_name, GraphPack &gp) {
+bool ScanGraphPack(const std::string &file_name, graph_pack::GraphPack &gp) {
     return LegacyTextIO().LoadGraphPack(file_name, gp);
 }
 

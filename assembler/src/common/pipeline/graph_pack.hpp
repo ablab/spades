@@ -11,7 +11,7 @@
 
 #include <boost/noncopyable.hpp>
 
-namespace debruijn_graph {
+namespace graph_pack {
 
 class GraphPack: public adt::pack, private boost::noncopyable {
 public:

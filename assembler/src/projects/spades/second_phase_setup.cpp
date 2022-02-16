@@ -15,7 +15,7 @@
 
 namespace debruijn_graph {
 
-void SecondPhaseSetup::run(GraphPack &gp, const char*) {
+void SecondPhaseSetup::run(graph_pack::GraphPack &gp, const char*) {
     INFO("Preparing second phase");
     ClearRRIndices(gp);
     ClearPaths(gp);

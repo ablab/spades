@@ -24,7 +24,7 @@ namespace {
 
 using paired_info::SequencingLib;
 
-std::shared_ptr<SequenceMapper<Graph>> ChooseProperMapper(const GraphPack& gp,
+std::shared_ptr<SequenceMapper<Graph>> ChooseProperMapper(const graph_pack::GraphPack& gp,
                                                           const SequencingLib& library) {
     const auto &graph = gp.get<Graph>();
 
@@ -102,7 +102,7 @@ bool ShouldObtainSingleReadsPaths(size_t ilib) {
     return false;
 }
 
-size_t ProcessSingleReads(GraphPack &gp, size_t ilib,
+size_t ProcessSingleReads(graph_pack::GraphPack &gp, size_t ilib,
                           bool use_binary = true, bool map_paired = false) {
     //FIXME make const
     auto& reads = cfg::get_writable().ds.reads[ilib];
@@ -143,7 +143,7 @@ size_t ProcessSingleReads(GraphPack &gp, size_t ilib,
 
 } // namespace
 
-void PairInfoCount::run(GraphPack &gp, const char *) {
+void PairInfoCount::run(graph_pack::GraphPack &gp, const char *) {
     InitRRIndices(gp);
     EnsureBasicMapping(gp);
 

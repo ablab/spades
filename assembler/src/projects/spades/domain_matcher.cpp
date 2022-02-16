@@ -151,7 +151,7 @@ static void ParseFASTAFile(std::vector<hmmer::HMM> &hmms, const std::string &fil
     esl_alphabet_Destroy(abc);
 }
 
-ContigAlnInfo DomainMatcher::MatchDomains(debruijn_graph::GraphPack &gp,
+ContigAlnInfo DomainMatcher::MatchDomains(graph_pack::GraphPack &gp,
                                           const std::string &hmm_set,
                                           const std::string &output_dir) {
     std::string tmp_dir = fs::append_path(output_dir, "temp_anti");

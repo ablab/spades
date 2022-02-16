@@ -17,18 +17,18 @@ namespace debruijn_graph {
 
 class ChromosomeRemover {
 public:
-    ChromosomeRemover(GraphPack &gp, size_t ext_limit, config::debruijn_config::plasmid plasmid_config)
+    ChromosomeRemover(graph_pack::GraphPack &gp, size_t ext_limit, config::debruijn_config::plasmid plasmid_config)
             : gp_(gp), ext_limit_(ext_limit), plasmid_config_(plasmid_config), chromosome_coverage_((double) ext_limit), long_component_(), long_vertex_component_(),
               deadends_count_(), component_list_(), full_name_(std::string("chromosome_removal") + (ext_limit == 0 ? std::string(""):std::to_string(ext_limit))) {
     }
 
-    void run(GraphPack &gp, const char *);
+    void run(graph_pack::GraphPack &gp, const char *);
     void RunMetaPipeline();
     void RunIsolatedPipeline();
     void FilterSmallComponents();
 private:
 
-    GraphPack& gp_;
+    graph_pack::GraphPack& gp_;
     size_t ext_limit_;
     config::debruijn_config::plasmid plasmid_config_;
     double chromosome_coverage_;

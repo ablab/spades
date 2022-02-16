@@ -52,7 +52,7 @@ static void Run(const std::string &graph_path, const std::string &dataset_desc, 
     DataSet dataset;
     dataset.load(dataset_desc);
 
-    GraphPack gp(K, tmpdir, dataset.lib_count());
+    graph_pack::GraphPack gp(K, tmpdir, dataset.lib_count());
     auto &graph = gp.get<Graph>();
 
     INFO("Loading de Bruijn graph from " << graph_path);

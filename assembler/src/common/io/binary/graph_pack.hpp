@@ -16,10 +16,10 @@ namespace binary {
 /**
  * @brief  This IOer processes the graph pack including only graph-related components.
  */
-class BasePackIO : public IOBase<debruijn_graph::GraphPack> {
+class BasePackIO : public IOBase<graph_pack::GraphPack> {
 public:
     using Graph = debruijn_graph::Graph;
-    using Type = debruijn_graph::GraphPack;
+    using Type = graph_pack::GraphPack;
 
     void Save(const std::string &basename, const Type &gp) override;
 
@@ -39,7 +39,7 @@ protected:
 class FullPackIO : public BasePackIO {
 public:
     typedef BasePackIO base;
-    typedef typename debruijn_graph::GraphPack Type;
+    typedef typename graph_pack::GraphPack Type;
     void Save(const std::string &basename, const Type &gp) override;
 
     bool Load(const std::string &basename, Type &gp) override;

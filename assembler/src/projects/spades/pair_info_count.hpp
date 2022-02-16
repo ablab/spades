@@ -17,7 +17,7 @@ class PairInfoCount : public spades::AssemblyStage {
         : AssemblyStage(preliminary ? "Preliminary Paired Information Counting" : "Paired Information Counting",
                         preliminary ? "late_pair_info_count_preliminary" : "late_pair_info_count") {}
 
-    void run(GraphPack &gp, const char*) override;
+    void run(graph_pack::GraphPack &gp, const char*) override;
 };
 
 }

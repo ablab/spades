@@ -280,7 +280,7 @@ TEST_F( Simplification,  ComplexBulgeRemoverOnSimpleBulge ) {
 }
 
 TEST_F( Simplification,  ComplexBulge ) {
-    GraphPack gp(55, tmp_folder(), 0);
+    graph_pack::GraphPack gp(55, tmp_folder(), 0);
     ASSERT_TRUE(graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge", gp));
     auto &graph = gp.get_mutable<Graph>();
 
@@ -291,7 +291,7 @@ TEST_F( Simplification,  ComplexBulge ) {
 }
 
 TEST_F( Simplification,  BigComplexBulge ) {
-    GraphPack gp(55, tmp_folder(), 0);
+    graph_pack::GraphPack gp(55, tmp_folder(), 0);
     ASSERT_TRUE(graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge", gp));
     auto &graph = gp.get_mutable<Graph>();
 
@@ -303,7 +303,7 @@ TEST_F( Simplification,  BigComplexBulge ) {
 //Relative coverage removal tests
 
 void TestRelativeCoverageRemover(const std::string &path, const std::string &tmp_folder, size_t graph_size) {
-    GraphPack gp(55, tmp_folder, 0);
+    graph_pack::GraphPack gp(55, tmp_folder, 0);
     ASSERT_TRUE(graphio::ScanGraphPack(path, gp));
     INFO("Relative coverage component removal:");
     auto &graph = gp.get_mutable<Graph>();
@@ -343,7 +343,7 @@ TEST_F( Simplification,  RelativeCoverageRemover4 ) {
 TEST_F( Simplification,  CompressorTest ) {
     std::string path = "./src/test/debruijn/graph_fragments/compression/graph";
     size_t graph_size = 12;
-    GraphPack gp(55, tmp_folder(), 0);
+    graph_pack::GraphPack gp(55, tmp_folder(), 0);
     ASSERT_TRUE(graphio::ScanGraphPack(path, gp));
     auto &graph = gp.get_mutable<Graph>();
 
@@ -355,7 +355,7 @@ TEST_F( Simplification,  CompressorTest ) {
 TEST_F( Simplification,  ParallelCompressor1 ) {
     std::string path = "./src/test/debruijn/graph_fragments/compression/graph";
     size_t graph_size = 12;
-    GraphPack gp(55, tmp_folder(), 0);
+    graph_pack::GraphPack gp(55, tmp_folder(), 0);
     ASSERT_TRUE(graphio::ScanGraphPack(path, gp));
     auto &graph = gp.get_mutable<Graph>();
 
@@ -366,7 +366,7 @@ TEST_F( Simplification,  ParallelCompressor1 ) {
 TEST_F( Simplification,  ParallelTipClipper1 ) {
     std::string path = "./src/test/debruijn/graph_fragments/tips/graph";
     size_t graph_size = 12;
-    GraphPack gp(55, tmp_folder(), 0);
+    graph_pack::GraphPack gp(55, tmp_folder(), 0);
     ASSERT_TRUE(graphio::ScanGraphPack(path, gp));
     auto &graph = gp.get_mutable<Graph>();
     debruijn::simplification::ConditionParser<Graph> parser(graph, standard_tc_config().condition, standard_simplif_relevant_info());
@@ -377,7 +377,7 @@ TEST_F( Simplification,  ParallelTipClipper1 ) {
 
 TEST_F( Simplification,  ParallelECRemover ) {
     std::string path = graph_fragment_root() + "complex_bulge/complex_bulge";
-    GraphPack gp(55, tmp_folder(), 0);
+    graph_pack::GraphPack gp(55, tmp_folder(), 0);
     ASSERT_TRUE(graphio::ScanGraphPack(path, gp));
     std::string condition = "{ cb 1000 , ec_lb 20 }";
     auto &graph = gp.get_mutable<Graph>();
@@ -392,7 +392,7 @@ TEST_F( Simplification,  ParallelECRemover ) {
 TEST_F( Simplification,  ParallelECRemover1 ) {
     std::string path = graph_fragment_root() + "complex_bulge_2/graph";
     std::string condition = "{ cb 100 , ec_lb 20 }";
-    GraphPack gp(55, tmp_folder(), 0);
+    graph_pack::GraphPack gp(55, tmp_folder(), 0);
     ASSERT_TRUE(graphio::ScanGraphPack(path, gp));
     auto &graph = gp.get_mutable<Graph>();
     debruijn::simplification::ConditionParser<Graph> parser(graph, condition, standard_simplif_relevant_info());
@@ -407,7 +407,7 @@ TEST_F( Simplification,  ParallelECRemover1 ) {
 TEST_F( Simplification,  ParallelECRemover2 ) {
     std::string path = graph_fragment_root() + "rel_cov_ec/constructed_graph";
     std::string condition = "{ cb 100 , ec_lb 20 }";
-    GraphPack gp(55, tmp_folder(), 0);
+    graph_pack::GraphPack gp(55, tmp_folder(), 0);
     ASSERT_TRUE(graphio::ScanGraphPack(path, gp));
     auto &graph = gp.get_mutable<Graph>();
     debruijn::simplification::ConditionParser<Graph> parser(graph, condition, standard_simplif_relevant_info());

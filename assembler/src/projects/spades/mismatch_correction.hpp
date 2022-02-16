@@ -16,7 +16,7 @@ public:
     MismatchCorrection()
             : AssemblyStage("Mismatch Correction", "mismatch_correction") { }
 
-    void run(GraphPack &gp, const char *) override;
+    void run(graph_pack::GraphPack &gp, const char *) override;
 };
 
 }

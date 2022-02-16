@@ -22,7 +22,7 @@ namespace spades {
 
 constexpr char BASE_NAME[] = "graph_pack";
 
-void AssemblyStage::load(debruijn_graph::GraphPack& gp,
+void AssemblyStage::load(graph_pack::GraphPack& gp,
                          const std::string &load_from,
                          const char* prefix) {
     if (!prefix) prefix = id_;
@@ -37,7 +37,7 @@ void AssemblyStage::load(debruijn_graph::GraphPack& gp,
 
 }
 
-void AssemblyStage::save(const debruijn_graph::GraphPack& gp,
+void AssemblyStage::save(const graph_pack::GraphPack& gp,
                          const std::string &save_to,
                          const char* prefix) const {
     if (!prefix) prefix = id_;
@@ -85,7 +85,7 @@ class PhaseIdComparator {
     const char* id_;
 };
 
-void CompositeStageBase::run(debruijn_graph::GraphPack& gp,
+void CompositeStageBase::run(graph_pack::GraphPack& gp,
                              const char* started_from) {
     // The logic here is as follows. By this time StageManager already called
     // load() function of the Stage itself. Therefore we only need to do
@@ -136,12 +136,12 @@ void CompositeStageBase::run(debruijn_graph::GraphPack& gp,
     fini(gp);
 }
 
-void AssemblyStage::prepare(debruijn_graph::GraphPack& g,
+void AssemblyStage::prepare(graph_pack::GraphPack& g,
                             const char *stage, const char*) {
     PrepareForStage(g, stage);
 }
 
-void StageManager::run(debruijn_graph::GraphPack& g,
+void StageManager::run(graph_pack::GraphPack& g,
                        const char* start_from) {
     auto start_stage = stages_.begin();
     if (start_from) {

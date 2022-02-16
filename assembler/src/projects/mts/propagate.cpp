@@ -23,7 +23,7 @@ static const size_t EDGE_LENGTH_THRESHOLD = 2000,
 
 //FIXME 2kb edge length threshold might affect tip propagator in undesired way
 class EdgeAnnotationPropagator {
-    const GraphPack& gp_;
+    const graph_pack::GraphPack& gp_;
     const string name_;
     size_t edge_length_threshold_, edge_upper_threshold_;
 
@@ -32,7 +32,7 @@ protected:
         return edge_length_threshold_;
     }
 
-    const GraphPack& gp() const {
+    const graph_pack::GraphPack& gp() const {
         return gp_;
     }
 
@@ -43,7 +43,7 @@ protected:
     virtual set<EdgeId> PropagateEdges(const set<EdgeId>& edges) const = 0;
 
 public:
-    EdgeAnnotationPropagator(const GraphPack& gp,
+    EdgeAnnotationPropagator(const graph_pack::GraphPack& gp,
                              const string& name,
                              size_t edge_length_threshold = EDGE_LENGTH_THRESHOLD,
                              size_t edge_upper_threshold = EDGE_UPPER_THRESHOLD) :
@@ -121,7 +121,7 @@ class ConnectingPathPropagator : public EdgeAnnotationPropagator {
     }
 
 public:
-    ConnectingPathPropagator(const GraphPack& gp,
+    ConnectingPathPropagator(const graph_pack::GraphPack& gp,
                              size_t length_threshold,
                              size_t path_length_threshold,
                              size_t path_edge_cnt) :
@@ -154,7 +154,7 @@ class PairedInfoPropagator : public EdgeAnnotationPropagator {
         return answer;
     }
 public:
-    PairedInfoPropagator(const GraphPack& gp,
+    PairedInfoPropagator(const graph_pack::GraphPack& gp,
                          size_t length_threshold,
                          size_t upper_threshold,
                          omnigraph::de::DEWeight weight_threshold):
@@ -167,7 +167,7 @@ private:
 
 class ContigPropagator : public EdgeAnnotationPropagator {
 public:
-    ContigPropagator(const GraphPack& gp,
+    ContigPropagator(const graph_pack::GraphPack& gp,
                      io::SingleStream& contigs) :
         EdgeAnnotationPropagator(gp, "ContigPropagator"),
         contigs_(contigs),
@@ -203,7 +203,7 @@ private:
 class TipPropagator : public EdgeAnnotationPropagator {
 
 public:
-    TipPropagator(const GraphPack& gp, size_t length_threshold) :
+    TipPropagator(const graph_pack::GraphPack& gp, size_t length_threshold) :
         EdgeAnnotationPropagator(gp, "TipPropagator", length_threshold), tipper_(gp.get<Graph>()) {}
 
 protected:

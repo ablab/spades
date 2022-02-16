@@ -195,7 +195,7 @@ void AssertGraph(size_t k, const std::vector<MyPairedRead> &paired_reads, size_t
 
     DEBUG("Streams initialized");
 
-    GraphPack gp(k, "tmp", 1);
+    graph_pack::GraphPack gp(k, "tmp", 1);
     auto workdir = fs::tmp::make_temp_dir(gp.workdir(), "tests");
     DEBUG("Graph pack created");
 

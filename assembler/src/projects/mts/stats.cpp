@@ -41,7 +41,7 @@ io::SingleRead ReadGenome(const string& genome_path) {
     return ReadSequence(genome_stream_ptr);
 }
 
-EdgeAnnotation LoadAnnotation(const GraphPack& gp,
+EdgeAnnotation LoadAnnotation(const graph_pack::GraphPack& gp,
                               const vector<bin_id>& bins_of_interest,
                               io::SingleStream& contigs_stream,
                               io::SingleStream& splits_stream,
@@ -108,7 +108,7 @@ int main(int argc, char** argv) {
     }
     //TmpFolderFixture fixture("tmp");
 
-    GraphPack gp(k, "tmp", 0);
+    graph_pack::GraphPack gp(k, "tmp", 0);
     gp.get_mutable<KmerMapper<Graph>>().Attach();
     INFO("Load graph from " << saves_path);
     io::binary::BasePackIO().Load(saves_path, gp);

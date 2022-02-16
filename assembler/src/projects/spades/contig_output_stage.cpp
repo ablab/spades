@@ -120,7 +120,7 @@ std::vector<path_extend::PathsWriterT> CreatePathsWriters(const std::string &fn_
 
 namespace debruijn_graph {
 
-void ContigOutput::run(GraphPack &gp, const char*) {
+void ContigOutput::run(graph_pack::GraphPack &gp, const char*) {
     using namespace path_extend;
     auto output_dir = cfg::get().output_dir;
     const auto &graph = gp.get<Graph>();

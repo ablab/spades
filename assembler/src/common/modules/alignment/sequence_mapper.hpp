@@ -393,7 +393,7 @@ class BasicSequenceMapper: public AbstractSequenceMapper<Graph> {
   DECL_LOGGER("BasicSequenceMapper");
 };
 
-std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> MapperInstance(const GraphPack &gp);
-std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> MapperInstance(const GraphPack &gp,
+std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> MapperInstance(const graph_pack::GraphPack &gp);
+std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> MapperInstance(const graph_pack::GraphPack &gp,
                                                                              const EdgeIndex<Graph> &index);
 } // namespace debruijn_graph

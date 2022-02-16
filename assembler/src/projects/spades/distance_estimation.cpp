@@ -20,7 +20,7 @@
 
 namespace debruijn_graph {
 
-void DistanceEstimation::run(GraphPack &gp, const char*) {
+void DistanceEstimation::run(graph_pack::GraphPack &gp, const char*) {
     using namespace omnigraph::de;
     using namespace distance_estimation;
 

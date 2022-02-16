@@ -105,7 +105,7 @@ int main(int argc, char** argv) {
         INFO("Loaded " << bins_of_interest.size() << " interesting bins");
     }
 
-    GraphPack gp(k, "tmp", 1);
+    graph_pack::GraphPack gp(k, "tmp", 1);
     gp.get_mutable<KmerMapper<Graph>>().Attach();
 
     INFO("Load graph and clustered paired info from " << saves_path);

@@ -141,7 +141,7 @@ private:
     DECL_LOGGER("GapTrackingListener");
 };
 
-void CloseGaps(GraphPack& gp, bool rtype,
+void CloseGaps(graph_pack::GraphPack& gp, bool rtype,
                const GapStorage& gap_storage,
                size_t min_weight) {
     INFO("Closing gaps with long reads");
@@ -320,7 +320,7 @@ bool ShouldAlignWithPacbioAligner(io::LibraryType lib_type) {
 //           lib_type == io::LibraryType::TSLReads;
 }
 
-void HybridLibrariesAligning::run(GraphPack& gp, const char*) {
+void HybridLibrariesAligning::run(graph_pack::GraphPack& gp, const char*) {
     using namespace omnigraph;
 
     bool make_additional_saves = (bool)parent_->saves_policy().EnabledCheckpoints();

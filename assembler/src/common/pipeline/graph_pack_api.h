@@ -9,7 +9,7 @@
 
 #include "graph_pack.hpp"
 
-namespace debruijn_graph {
+namespace graph_pack {
 
 void FillQuality(GraphPack& gp);
 void ClearQuality(GraphPack& gp);

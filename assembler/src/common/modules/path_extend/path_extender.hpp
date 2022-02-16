@@ -533,7 +533,7 @@ public:
            , weight_threshold_(weight_threshold)
         {}
 
-    SimpleExtender(const GraphPack &gp,
+    SimpleExtender(const graph_pack::GraphPack &gp,
                    const GraphCoverageMap &cov_map,
                    UsedUniqueStorage &unique,
                    std::shared_ptr<ExtensionChooser> ec,
@@ -617,7 +617,7 @@ protected:
     }
 
 public:
-    ScaffoldingPathExtender(const GraphPack &gp,
+    ScaffoldingPathExtender(const graph_pack::GraphPack &gp,
                             const GraphCoverageMap &cov_map,
                             UsedUniqueStorage &unique,
                             std::shared_ptr<ExtensionChooser> extension_chooser,
@@ -657,7 +657,7 @@ protected:
     }
 
 public:
-    RNAScaffoldingPathExtender(const GraphPack &gp,
+    RNAScaffoldingPathExtender(const graph_pack::GraphPack &gp,
                                const GraphCoverageMap &cov_map,
                                UsedUniqueStorage &unique,
                                std::shared_ptr<ExtensionChooser> extension_chooser,

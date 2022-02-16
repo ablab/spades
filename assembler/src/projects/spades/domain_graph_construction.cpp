@@ -89,7 +89,7 @@ public:
 
 class DomainGraphConstructor {
 public:
-    DomainGraphConstructor(debruijn_graph::GraphPack &gp)
+    DomainGraphConstructor(graph_pack::GraphPack &gp)
             : gp_(gp), domain_graph_(gp_.get<Graph>()) {}
 
     nrps::DomainGraph& ConstructGraph(const nrps::ContigAlnInfo &info) {
@@ -414,12 +414,12 @@ private:
                 domain_graph_.SetMaxVisited(v, IsInsideRepeat(v) ? 2 : 1);
     }
 
-    GraphPack &gp_;
+    graph_pack::GraphPack &gp_;
     nrps::DomainGraph domain_graph_;
     DECL_LOGGER("DomainGraphConstruction");
 };
 
-void DomainGraphConstruction::run(GraphPack &gp, const char*) {
+void DomainGraphConstruction::run(graph_pack::GraphPack &gp, const char*) {
     auto res = nrps::DomainMatcher().MatchDomains(gp, cfg::get().hm->hmm_set, cfg::get().output_dir);
     DomainGraphConstructor constructor(gp);
     auto &domain_graph = constructor.ConstructGraph(res);

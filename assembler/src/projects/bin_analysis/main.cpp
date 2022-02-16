@@ -24,7 +24,7 @@
 
 using namespace debruijn_graph;
 
-static void DrawNeighbourComponents(GraphPack &gp, const std::string &bin_contigs,
+static void DrawNeighbourComponents(graph_pack::GraphPack &gp, const std::string &bin_contigs,
                              const EdgeQuality<Graph> &annotation,
                              const std::string &pics_path, size_t edge_len_bound) {
     auto &edge_pos = gp.get_mutable<EdgesPositionHandler<Graph>>();
@@ -73,7 +73,7 @@ static void Run(size_t K, const std::string &graph_path,
     }
 
     //Fixme check if 1 is a good value
-    GraphPack gp(K, tmpdir, 1, ref);
+    graph_pack::GraphPack gp(K, tmpdir, 1, ref);
     const auto &graph = gp.get<Graph>();
 
     INFO("Loading de Bruijn graph from " << graph_path);

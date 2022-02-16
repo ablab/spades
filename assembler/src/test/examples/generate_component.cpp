@@ -74,7 +74,7 @@ public:
 void Launch(size_t K, string saves_path, size_t start_vertex_int_id,
             vector<size_t> blocking_int_ids, size_t edge_length_bound,
             string component_out_path) {
-    GraphPack gp(K, "tmp", 0);
+    graph_pack::GraphPack gp(K, "tmp", 0);
     const auto& graph = gp.get<Graph>(); 
     omnigraph::GraphElementFinder<Graph> element_finder(graph);
     io::binary::BasePackIO io;

@@ -94,7 +94,7 @@ AlgoPtr<Graph> ConditionedTipClipperInstance(Graph &g,
     }
 }
 
-static void Simplify(GraphPack &gp,
+static void Simplify(graph_pack::GraphPack &gp,
                      const SimplifInfoContainer &simplif_info,
                      bool rel_cov_proc_enabled,
                      const std::function<void(EdgeId)>& removal_handler = nullptr) {

@@ -105,7 +105,7 @@ void add_additional_contigs_to_lib(std::string path_to_additional_contigs_dir, s
     merge_read_streams(trusted_list, lib_streams);
 }
 
-void Construction::init(debruijn_graph::GraphPack &gp, const char *) {
+void Construction::init(graph_pack::GraphPack &gp, const char *) {
     init_storage(unsigned(gp.k()));
 
     auto& dataset = cfg::get_writable().ds;
@@ -159,7 +159,7 @@ void Construction::init(debruijn_graph::GraphPack &gp, const char *) {
     INFO("Average read length " << dataset.aRL);
 }
 
-void Construction::fini(debruijn_graph::GraphPack &) {
+void Construction::fini(graph_pack::GraphPack &) {
     reset_storage();
 }
 
@@ -173,7 +173,7 @@ class CoverageFilter: public Construction::Phase {
             : Construction::Phase("k-mer multiplicity estimation", "cqf_filter") { }
     virtual ~CoverageFilter() = default;
 
-    void run(debruijn_graph::GraphPack &, const char*) override {
+    void run(graph_pack::GraphPack &, const char*) override {
         auto &read_streams = storage().read_streams;
         const auto &index = storage().ext_index;
         using storing_type = decltype(storage().ext_index)::storing_type;
@@ -200,13 +200,13 @@ class CoverageFilter: public Construction::Phase {
         storage().read_streams = io::CovFilteringWrap(std::move(read_streams), kplusone, hasher, *storage().cqf, rthr);
     }
 
-    void load(debruijn_graph::GraphPack&,
+    void load(graph_pack::GraphPack&,
               const std::string &,
               const char*) override {
         VERIFY_MSG(false, "implement me");
     }
 
-    void save(const debruijn_graph::GraphPack&,
+    void save(const graph_pack::GraphPack&,
               const std::string &,
               const char*) const override {
         // VERIFY_MSG(false, "implement me");
@@ -223,7 +223,7 @@ public:
 
     virtual ~KMerCounting() = default;
 
-    void run(debruijn_graph::GraphPack &, const char*) override {
+    void run(graph_pack::GraphPack &, const char*) override {
         auto &read_streams = storage().read_streams;
         auto &contigs_streams = storage().contigs_streams;
         const auto &index = storage().ext_index;
@@ -246,13 +246,13 @@ public:
         storage().kmers.reset(new kmers::KMerDiskStorage<RtSeq>(std::move(kmers)));
     }
 
-    void load(debruijn_graph::GraphPack&,
+    void load(graph_pack::GraphPack&,
               const std::string &,
               const char*) override {
         VERIFY_MSG(false, "implement me");
     }
 
-    void save(const debruijn_graph::GraphPack&,
+    void save(const graph_pack::GraphPack&,
               const std::string &,
               const char*) const override {
         // VERIFY_MSG(false, "implement me");
@@ -266,7 +266,7 @@ public:
 
     virtual ~ExtensionIndexBuilder() = default;
 
-    void run(debruijn_graph::GraphPack &, const char*) override {
+    void run(graph_pack::GraphPack &, const char*) override {
         // FIXME: We just need files here, not the full counter. Implement refererence counting scheme!
         kmers::DeBruijnExtensionIndexBuilder().BuildExtensionIndexFromKPOMers(storage().workdir,
                                                                               storage().ext_index,
@@ -275,13 +275,13 @@ public:
                                                                               storage().params.read_buffer_size);
     }
 
-    void load(debruijn_graph::GraphPack&,
+    void load(graph_pack::GraphPack&,
               const std::string &,
               const char*) override {
         VERIFY_MSG(false, "implement me");
     }
 
-    void save(const debruijn_graph::GraphPack&,
+    void save(const graph_pack::GraphPack&,
               const std::string &,
               const char*) const override {
         // VERIFY_MSG(false, "implement me");
@@ -296,7 +296,7 @@ public:
 
     virtual ~EarlyTipClipper() = default;
 
-    void run(debruijn_graph::GraphPack &gp, const char*) override {
+    void run(graph_pack::GraphPack &gp, const char*) override {
         if (!storage().params.early_tc.length_bound) {
             INFO("Early tip clipper length bound set as (RL - K)");
             storage().params.early_tc.length_bound.reset(cfg::get().ds.RL - gp.k());
@@ -304,13 +304,13 @@ public:
         EarlyTipClipperProcessor(storage().ext_index, *storage().params.early_tc.length_bound).ClipTips();
     }
 
-    void load(debruijn_graph::GraphPack&,
+    void load(graph_pack::GraphPack&,
               const std::string &,
               const char*) override {
         VERIFY_MSG(false, "implement me");
     }
 
-    void save(const debruijn_graph::GraphPack&,
+    void save(const graph_pack::GraphPack&,
               const std::string &,
               const char*) const override {
         // VERIFY_MSG(false, "implement me");
@@ -324,19 +324,19 @@ public:
 
     virtual ~EarlyATClipper() = default;
 
-    void run(debruijn_graph::GraphPack &, const char*) override {
+    void run(graph_pack::GraphPack &, const char*) override {
         EarlyLowComplexityClipperProcessor at_processor(storage().ext_index, 0.8, 10, 200);
         at_processor.RemoveATEdges();
         at_processor.RemoveATTips();
     }
 
-    void load(debruijn_graph::GraphPack&,
+    void load(graph_pack::GraphPack&,
               const std::string &,
               const char*) override {
         VERIFY_MSG(false, "implement me");
     }
 
-    void save(const debruijn_graph::GraphPack&,
+    void save(const graph_pack::GraphPack&,
               const std::string &,
               const char*) const override {
         // VERIFY_MSG(false, "implement me");
@@ -350,20 +350,20 @@ public:
 
     virtual ~GraphCondenser() = default;
 
-    void run(debruijn_graph::GraphPack &gp, const char*) override {
+    void run(graph_pack::GraphPack &gp, const char*) override {
         auto &index = gp.get_mutable<EdgeIndex<Graph>>();
         if (index.IsAttached())
             index.Detach();
         DeBruijnGraphExtentionConstructor<Graph>(gp.get_mutable<Graph>(), storage().ext_index).ConstructGraph(storage().params.keep_perfect_loops);
     }
 
-    void load(debruijn_graph::GraphPack&,
+    void load(graph_pack::GraphPack&,
               const std::string &,
               const char*) override {
         VERIFY_MSG(false, "implement me");
     }
 
-    void save(const debruijn_graph::GraphPack&,
+    void save(const graph_pack::GraphPack&,
               const std::string &,
               const char*) const override {
         //FIXME why commented here and others
@@ -379,19 +379,19 @@ public:
 
     virtual ~EdgeIndexFiller() = default;
 
-    void run(debruijn_graph::GraphPack &gp, const char*) override {
+    void run(graph_pack::GraphPack &gp, const char*) override {
         auto &index = gp.get_mutable<EdgeIndex<Graph>>();
         index.Refill();
         index.Attach();
     }
 
-    void load(debruijn_graph::GraphPack&,
+    void load(graph_pack::GraphPack&,
               const std::string &,
               const char*) override {
         VERIFY_MSG(false, "implement me");
     }
 
-    void save(const debruijn_graph::GraphPack&,
+    void save(const graph_pack::GraphPack&,
               const std::string &,
               const char*) const override {
         // VERIFY_MSG(false, "implement me");
@@ -404,7 +404,7 @@ public:
             : Construction::Phase("Filling coverage indices (PHM)", "coverage_filling_phm") {}
     virtual ~PHMCoverageFiller() = default;
 
-    void run(debruijn_graph::GraphPack &gp, const char *) override {
+    void run(graph_pack::GraphPack &gp, const char *) override {
         storage().coverage_map.reset(new ConstructionStorage::CoverageMap(storage().kmers->k()));
         auto &coverage_map = *storage().coverage_map;
 
@@ -450,13 +450,13 @@ public:
         gp.get_mutable<GenomicInfo>().set_cov_histogram(hist);
     }
 
-    void load(debruijn_graph::GraphPack&,
+    void load(graph_pack::GraphPack&,
               const std::string &,
               const char*) override {
         VERIFY_MSG(false, "implement me");
     }
 
-    void save(const debruijn_graph::GraphPack&,
+    void save(const graph_pack::GraphPack&,
               const std::string &,
               const char*) const override {
         // VERIFY_MSG(false, "implement me");

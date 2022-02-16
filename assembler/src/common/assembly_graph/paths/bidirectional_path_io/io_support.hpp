@@ -149,7 +149,7 @@ public:
 };
 
 inline std::shared_ptr<ContigNameGenerator> MakeContigNameGenerator(config::pipeline_type mode,
-                                                                    const GraphPack &gp) {
+                                                                    const graph_pack::GraphPack &gp) {
     std::shared_ptr<path_extend::ContigNameGenerator> name_generator;
     if (mode == config::pipeline_type::plasmid)
         name_generator = std::make_shared<PlasmidContigNameGenerator>(gp.get<ConnectedComponentCounter>());

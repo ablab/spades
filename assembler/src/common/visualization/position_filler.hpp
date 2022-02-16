@@ -30,7 +30,7 @@ public:
     PosFiller(const Graph &g, MapperPtr mapper, omnigraph::EdgesPositionHandler<Graph> &edge_pos)
             : g_(g), mapper_(mapper), edge_pos_(edge_pos) {}
 
-    PosFiller(debruijn_graph::GraphPack &gp)
+    PosFiller(graph_pack::GraphPack &gp)
             : g_(gp.get<Graph>()), mapper_(debruijn_graph::MapperInstance(gp)),
               edge_pos_(gp.get_mutable<omnigraph::EdgesPositionHandler<Graph>>()) {}
 
@@ -85,12 +85,12 @@ private:
     DECL_LOGGER("PosFiller");
 };
 
-inline void FillPos(debruijn_graph::GraphPack &gp, const std::string &contig_file, const std::string &prefix, bool with_rc) {
+inline void FillPos(graph_pack::GraphPack &gp, const std::string &contig_file, const std::string &prefix, bool with_rc) {
     PosFiller pos_filler(gp);
     pos_filler.Process(io::PrefixAddingReaderWrapper(io::EasyStream(contig_file, with_rc, false), prefix));
 }
 
-inline void FillPos(debruijn_graph::GraphPack &gp, const std::string &s, const std::string &name) {
+inline void FillPos(graph_pack::GraphPack &gp, const std::string &s, const std::string &name) {
     PosFiller pos_filler(gp);
     pos_filler.Process(s, name);
 }

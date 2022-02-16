@@ -17,7 +17,7 @@ public:
             : AssemblyStage("Chromosome Removal", "chromosome_removal"), ext_limit_(ext_limit) {
     }
 
-    void run(GraphPack &gp, const char *) override;
+    void run(graph_pack::GraphPack &gp, const char *) override;
 
 private:
     size_t ext_limit_;

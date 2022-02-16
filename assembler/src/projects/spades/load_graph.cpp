@@ -13,7 +13,7 @@
 
 namespace debruijn_graph {
 
-void LoadGraph::run(GraphPack &gp, const char*) {
+void LoadGraph::run(graph_pack::GraphPack &gp, const char*) {
     std::string path;
     for (const auto &lib : cfg::get().ds.reads.libraries()) {
         if (lib.is_assembly_graph()) {

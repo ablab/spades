@@ -20,7 +20,7 @@ using namespace std;
 using namespace fs;
 
 namespace online_visualization {
-    using debruijn_graph::GraphPack;
+    using graph_pack::GraphPack;
     using debruijn_graph::Graph;
     using Index = debruijn_graph::EdgeIndex<Graph>;
     using EdgePos = omnigraph::EdgesPositionHandler<Graph>;

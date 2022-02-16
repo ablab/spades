@@ -15,7 +15,7 @@
 namespace debruijn_graph {
 
 using namespace config;
-void SSEdgeSplit::run(GraphPack& gp, const char *) {
+void SSEdgeSplit::run(graph_pack::GraphPack& gp, const char *) {
     using namespace omnigraph;
 
     if (!cfg::get().ss.ss_enabled) {

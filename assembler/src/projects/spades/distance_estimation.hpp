@@ -17,7 +17,7 @@ class DistanceEstimation : public spades::AssemblyStage {
         : AssemblyStage(preliminary ? "Preliminary Distance Estimation" : "Distance Estimation",
                         preliminary ? "distance_estimation_preliminary" : "distance_estimation") {}
 
-    void run(GraphPack &gp, const char*) override;
+    void run(graph_pack::GraphPack &gp, const char*) override;
 };
 
 }

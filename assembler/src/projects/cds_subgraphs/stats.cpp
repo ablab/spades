@@ -60,7 +60,7 @@ static bool UsedOnBothSides(const Graph &g, EdgeId e, const std::multimap<EdgeId
             std::any_of(g.in_begin(g.EdgeStart(e)), g.in_end(g.EdgeStart(e)), used_f);
 }
 
-static void Run(const GraphPack &gp, const std::string &contigs_file,
+static void Run(const graph_pack::GraphPack &gp, const std::string &contigs_file,
                 const std::string &paths_fn, const std::string &edge_info_fn,
                 const std::string &subgraph_prefix, const std::string &edge_color_fn,
                 const io::EdgeLabelHelper<Graph> &label_helper) {
@@ -218,7 +218,7 @@ int main(int argc, char** argv) {
         INFO("# of threads to use: " << nthreads);
 
         fs::make_dirs(cfg.workdir);
-        debruijn_graph::GraphPack gp(k, cfg.workdir, 0);
+        graph_pack::GraphPack gp(k, cfg.workdir, 0);
 
         omnigraph::GraphElementFinder<Graph> element_finder(gp.get<Graph>());
         INFO("Loading de Bruijn graph from " << cfg.graph_path);

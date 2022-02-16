@@ -149,7 +149,7 @@ int main(int argc, char** argv) {
         omp_set_num_threads((int) nthreads);
         INFO("# of threads to use: " << nthreads);
 
-        debruijn_graph::GraphPack gp(k, tmpdir, 0);
+        graph_pack::GraphPack gp(k, tmpdir, 0);
         const auto &graph = gp.get<Graph>();
 
         INFO("Loading de Bruijn graph from " << cfg.graph);

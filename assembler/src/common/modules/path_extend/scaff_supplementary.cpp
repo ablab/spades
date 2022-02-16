@@ -7,7 +7,7 @@ using namespace std;
 
 namespace path_extend {
 
-ScaffoldingUniqueEdgeAnalyzer::ScaffoldingUniqueEdgeAnalyzer(const debruijn_graph::GraphPack &gp,
+ScaffoldingUniqueEdgeAnalyzer::ScaffoldingUniqueEdgeAnalyzer(const graph_pack::GraphPack &gp,
                                                              size_t apriori_length_cutoff,
                                                              double max_relative_coverage)
         : gp_(gp), graph_(gp.get<debruijn_graph::Graph>())

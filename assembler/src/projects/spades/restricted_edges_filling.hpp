@@ -16,7 +16,7 @@ namespace debruijn_graph {
         RestrictedEdgesFilling()
                 : AssemblyStage("Restricted Edges Filling", "restricted_edges_filling") {}
 
-        void run(GraphPack &gp, const char*) override;
+        void run(graph_pack::GraphPack &gp, const char*) override;
     };
 
 }

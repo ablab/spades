@@ -14,7 +14,7 @@
 namespace debruijn_graph {
 
 class ContigBinner {
-    const GraphPack& gp_;
+    const graph_pack::GraphPack& gp_;
     const EdgeAnnotation& edge_annotation_;
     std::string out_root_;
     std::string sample_name_;
@@ -29,7 +29,7 @@ class ContigBinner {
     void Init(bin_id bin);
 
 public:
-    ContigBinner(const GraphPack& gp,
+    ContigBinner(const graph_pack::GraphPack& gp,
                  const EdgeAnnotation& edge_annotation,
                  const std::string& out_root,
                  const std::string& sample_name,
@@ -49,7 +49,7 @@ public:
     void Run(io::PairedStream& paired_reads);
 };
 
-void BinReads(const GraphPack& gp, const std::string& out_root,
+void BinReads(const graph_pack::GraphPack& gp, const std::string& out_root,
              const std::string& sample,
              const std::string& left_reads, const std::string& right_reads,
              const EdgeAnnotation& edge_annotation,

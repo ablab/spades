@@ -17,7 +17,9 @@
 #include "visualization/position_filler.hpp"
 #include "genomic_info.hpp"
 
-namespace debruijn_graph {
+namespace graph_pack {
+
+using namespace debruijn_graph;
 
 void FillQuality(GraphPack& gp) {
     const auto &index = gp.get<EdgeIndex<Graph>>();

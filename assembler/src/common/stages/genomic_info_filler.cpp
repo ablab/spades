@@ -28,7 +28,7 @@ static std::vector<size_t> extract(const std::map<size_t, size_t> &hist) {
     return res;
 }
 
-void GenomicInfoFiller::run(GraphPack &gp, const char*) {
+void GenomicInfoFiller::run(graph_pack::GraphPack &gp, const char*) {
     auto &ginfo = gp.get_mutable<GenomicInfo>();
 
     if (cfg::get().uneven_depth) {
