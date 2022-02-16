@@ -5,8 +5,10 @@
 //***************************************************************************
 
 #include "long_read_mapper.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
+
 #include "configs/config_struct.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
+
 
 namespace debruijn_graph {
 

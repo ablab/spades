@@ -11,6 +11,7 @@
 #include "single_read.hpp"
 #include "paired_read.hpp"
 #include "header_naming.hpp"
+
 #include "library/library_fwd.hpp"
 
 #include <fstream>
