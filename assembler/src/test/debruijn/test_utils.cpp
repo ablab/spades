@@ -10,7 +10,7 @@
 #include "modules/alignment/sequence_mapper_notifier.hpp"
 #include "modules/graph_construction.hpp"
 #include "pipeline/graph_pack.hpp"
-#include "pipeline/graph_pack_api.h"
+#include "pipeline/graph_pack_helpers.h"
 #include "io/reads/rc_reader_wrapper.hpp"
 #include "io/reads/vector_reader.hpp"
 #include "io/reads/converting_reader_wrapper.hpp"

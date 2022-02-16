@@ -11,7 +11,7 @@
 #include "command.hpp"
 #include "errors.hpp"
 #include "command_mapping.hpp"
-#include "pipeline/graph_pack_api.h"
+#include "pipeline/graph_pack_helpers.h"
 
 namespace online_visualization {
 

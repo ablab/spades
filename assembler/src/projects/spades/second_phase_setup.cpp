@@ -9,7 +9,7 @@
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/core/graph_iterators.hpp"
 #include "utils/filesystem/path_helper.hpp"
-#include "pipeline/graph_pack_api.h"
+#include "pipeline/graph_pack_helpers.h"
 
 #include <unordered_set>
 

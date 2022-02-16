@@ -14,7 +14,7 @@
 #include "toolchain/subgraph_utils.hpp"
 
 #include "utils/segfault_handler.hpp"
-#include "pipeline/graph_pack_api.h"
+#include "pipeline/graph_pack_helpers.h"
 
 #include "version.hpp"
 

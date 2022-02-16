@@ -12,7 +12,7 @@
 #include "utils/segfault_handler.hpp"
 #include "io/reads/file_reader.hpp"
 #include "visualization/position_filler.hpp"
-#include "pipeline/graph_pack_api.h"
+#include "pipeline/graph_pack_helpers.h"
 
 #include "version.hpp"
 

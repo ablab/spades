@@ -15,7 +15,7 @@
 #include "pair_info_count.hpp"
 #include "io/reads/multifile_reader.hpp"
 #include "io/reads/file_reader.hpp"
-#include "pipeline/graph_pack_api.h"
+#include "pipeline/graph_pack_helpers.h"
 
 namespace debruijn_graph {
 

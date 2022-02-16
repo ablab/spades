@@ -14,7 +14,7 @@
 #include "io/dataset_support/read_converter.hpp"
 
 #include "pipeline/graph_pack.hpp"
-#include "pipeline/graph_pack_api.h"
+#include "pipeline/graph_pack_helpers.h"
 #include "utils/logger/logger.hpp"
 
 #include "adt/flat_set.hpp"

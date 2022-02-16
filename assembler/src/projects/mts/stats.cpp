@@ -6,7 +6,7 @@
  */
 
 #include "pipeline/graph_pack.hpp"
-#include "pipeline/graph_pack_api.h"
+#include "pipeline/graph_pack_helpers.h"
 #include "utils/stl_utils.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "utils/logger/log_writers.hpp"

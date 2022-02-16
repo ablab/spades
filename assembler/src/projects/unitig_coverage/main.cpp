@@ -14,7 +14,7 @@
 #include "modules/alignment/kmer_mapper.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 #include "projects/mts/contig_abundance.hpp"
-#include "pipeline/graph_pack_api.h"
+#include "pipeline/graph_pack_helpers.h"
 #include "toolchain/edge_label_helper.hpp"
 #include "toolchain/utils.hpp"
 #include "utils/segfault_handler.hpp"

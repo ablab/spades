@@ -9,7 +9,7 @@ project(pipeline CXX)
 
 add_library(pipeline STATIC
             graph_pack.cpp
-            graph_pack_api.cpp
+            graph_pack_helpers.cpp
             stage.cpp)
 
 target_link_libraries(pipeline binary_io path_extend input llvm-support library configs)

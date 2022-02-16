@@ -10,7 +10,7 @@
 #include <modules/alignment/sequence_mapper.hpp>
 #include <modules/alignment/rna/ss_coverage_filler.hpp>
 #include <io/dataset_support/read_converter.hpp>
-#include "pipeline/graph_pack_api.h"
+#include "pipeline/graph_pack_helpers.h"
 
 namespace debruijn_graph {
 

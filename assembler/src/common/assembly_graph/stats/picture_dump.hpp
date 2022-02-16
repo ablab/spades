@@ -28,7 +28,7 @@
 #include "utils/filesystem/copy_file.hpp"
 #include "sequence/genome_storage.hpp"
 #include "paired_info/paired_info.hpp"
-#include "pipeline/graph_pack_api.h"
+#include "pipeline/graph_pack_helpers.h"
 
 #include <boost/algorithm/string.hpp>
 

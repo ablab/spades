@@ -9,7 +9,7 @@
 #include "io/binary/graph_pack.hpp"
 
 #include "pipeline/stage.hpp"
-#include "pipeline/graph_pack_api.h"
+#include "pipeline/graph_pack_helpers.h"
 
 #include "utils/logger/log_writers.hpp"
 #include "utils/perf/timetracer.hpp"

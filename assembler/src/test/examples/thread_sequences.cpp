@@ -10,7 +10,7 @@
 #include "io/binary/graph_pack.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 #include "utils/segfault_handler.hpp"
-#include "pipeline/graph_pack_api.h"
+#include "pipeline/graph_pack_helpers.h"
 
 #include <cxxopts/cxxopts.hpp>
 
