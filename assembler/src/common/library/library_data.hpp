@@ -6,11 +6,21 @@
 
 #pragma once
 
+#include <filesystem>
 #include <map>
 #include <string>
 
 // Forward decls for LLVM YAML API
-namespace llvm { namespace yaml { class IO; template<typename T> struct MappingTraits; } }
+namespace llvm {
+    class StringRef;
+    class raw_ostream;
+    namespace yaml {
+        class IO;
+        enum class QuotingType;
+        template<typename T> struct MappingTraits;
+        template<typename T, typename Enable> struct ScalarTraits;
+    }
+}
 
 namespace debruijn_graph {
 
@@ -38,7 +48,7 @@ struct LibraryData {
         BinaryReadsInfo() {}
 
         bool binary_converted = false;
-        std::string bin_reads_info_file;
+        std::filesystem::path bin_reads_info_file;
         std::string paired_read_prefix;
         std::string merged_read_prefix;
         std::string single_read_prefix;
@@ -70,6 +80,13 @@ struct LibraryData {
 } // namespace debruijn_graph
 
 namespace llvm { namespace yaml {
+
+template<>
+struct ScalarTraits<std::filesystem::path, void> {
+    static void output(const std::filesystem::path &value, void*, llvm::raw_ostream &out);
+    static StringRef input(StringRef scalar, void*, std::filesystem::path &value);
+    static QuotingType mustQuote(StringRef);
+};
 
 template<>
 struct MappingTraits<debruijn_graph::config::LibraryData::BinaryReadsInfo> {

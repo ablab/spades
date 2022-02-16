@@ -62,7 +62,7 @@ void io::SequencingLibrary<Data>::validate(llvm::yaml::IO &io, llvm::StringRef &
 template<class Data>
 void io::DataSet<Data>::save(const std::filesystem::path &filename) {
     std::error_code EC;
-    llvm::raw_fd_ostream ofs(static_cast<StringRef>(filename), EC, llvm::sys::fs::OpenFlags::F_Text);
+    llvm::raw_fd_ostream ofs(filename.c_str(), EC, llvm::sys::fs::OpenFlags::F_Text);
     llvm::yaml::Output yout(ofs);
     yout << libraries_;
 }
@@ -84,8 +84,6 @@ void io::DataSet<Data>::load(const std::filesystem::path &filename) {
     }
     
     std::filesystem::path input_dir = filename.parent_path();
-    if (static_cast<std::string>(*input_dir.end()) != "/")
-        input_dir += "/";
 
     for (unsigned i = 0; i < libraries_.size(); ++i) {
         auto &lib = libraries_[i];

@@ -6,23 +6,22 @@
 
 #pragma once
 
-#include "utils/filesystem/path_helper.hpp"
 #include <string>
 
 class TmpFolderFixture {
-    std::string tmp_folder_;
+    std::filesystem::path tmp_folder_;
 
 public:
-    TmpFolderFixture(std::string tmp_folder = "tmp")
+    TmpFolderFixture(std::filesystem::path tmp_folder = "tmp")
             : tmp_folder_(tmp_folder) {
-        fs::make_dirs(tmp_folder_);
+        create_directories(tmp_folder_);
     }
 
     ~TmpFolderFixture() {
-        fs::remove_dir(tmp_folder_);
+        remove(tmp_folder_);
     }
 
-    const std::string &tmp_folder() const {
+    const std::filesystem::path &tmp_folder() const {
         return tmp_folder_;
     }    
 };

@@ -11,7 +11,6 @@
 #include "kmc_api/kmc_file.h"
 //#include "omp.h"
 #include "io/kmers/mmapped_reader.hpp"
-#include "utils/filesystem/path_helper.hpp"
 #include "utils/stl_utils.hpp"
 #include "kmer_index/ph_map/perfect_hash_map_builder.hpp"
 #include "kmer_index/ph_map/storing_traits.hpp"
@@ -26,15 +25,15 @@ const string KMER_SORTED_EXTENSION = ".sorted";
 
 class KmerMultiplicityCounter {
     size_t k_ ;
-    std::string file_prefix_;
+    std::filesystem::path file_prefix_;
 
     //TODO: get rid of intermediate .bin file
-    string ParseKmc(const string& filename) {
+    filesystem::path ParseKmc(const filesystem::path& filename) {
         CKMCFile kmcFile;
         kmcFile.OpenForListing(filename);
         CKmerAPI kmer((unsigned int) k_);
         uint32 count;
-        std::string parsed_filename = filename + KMER_PARSED_EXTENSION;
+        std::filesystem::path parsed_filename = filename.concat(KMER_PARSED_EXTENSION);
         std::ofstream output(parsed_filename, std::ios::binary);
         while (kmcFile.ReadNextKmer(kmer, count)) {
             RtSeq seq(k_, kmer.to_string());
@@ -46,10 +45,10 @@ class KmerMultiplicityCounter {
         return parsed_filename;
     }
 
-    string SortKmersCountFile(const string& filename) {
+    filesystem::path SortKmersCountFile(const filesystem::path& filename) {
         MMappedRecordArrayReader<seq_element_type> ins(filename, RtSeq::GetDataSize(k_) + 1, false);
         libcxx::sort(ins.begin(), ins.end(), adt::array_less<seq_element_type>());
-        std::string sorted_filename = filename + KMER_SORTED_EXTENSION;
+        std::filesystem::path sorted_filename = filename.concat(KMER_SORTED_EXTENSION);
         std::ofstream out(sorted_filename);
         out.write((char*) ins.data(), ins.data_size());
         out.close();
@@ -68,7 +67,7 @@ class KmerMultiplicityCounter {
         return true;
     }
 
-    fs::TmpFile FilterCombinedKmers(fs::TmpDir workdir, const std::vector<string>& files,
+    fs::TmpFile FilterCombinedKmers(fs::TmpDir workdir, const std::vector<filesystem::path>& files,
                                     size_t all_min, size_t min_mult) {
         size_t n = files.size();
         vector<std::unique_ptr<ifstream>> infiles;
@@ -90,7 +89,7 @@ class KmerMultiplicityCounter {
 
         typedef uint16_t Mpl;
         std::ofstream output_kmer(*kmer_file, std::ios::binary);
-        std::ofstream mpl_file(file_prefix_ + ".bpr", std::ios_base::binary);
+        std::ofstream mpl_file(file_prefix_.concat(".bpr"), std::ios_base::binary);
 
         RtSeq::less3 kmer_less;
         while (true) {
@@ -174,18 +173,18 @@ class KmerMultiplicityCounter {
             kmer_mpl.put_value(kwh, offset, inverter);
         }
 
-        std::ofstream map_file(file_prefix_ + ".kmm", std::ios_base::binary | std::ios_base::out);
+        std::ofstream map_file(file_prefix_.concat(".kmm"), std::ios_base::binary | std::ios_base::out);
         kmer_mpl.BinWrite(map_file);
         INFO("Saved kmer profile map");
     }
 
 public:
-    KmerMultiplicityCounter(size_t k, std::string file_prefix):
+    KmerMultiplicityCounter(size_t k, std::filesystem::path file_prefix):
         k_(k), file_prefix_(std::move(file_prefix)) {
     }
 
-    void CombineMultiplicities(const vector<string>& input_files, size_t min_samples,
-                               size_t min_mult, const string& tmpdir, size_t nthreads = 1) {
+    void CombineMultiplicities(const vector<filesystem::path>& input_files, size_t min_samples,
+                               size_t min_mult, const filesystem::path& tmpdir, size_t nthreads = 1) {
         auto workdir = fs::tmp::make_temp_dir(tmpdir, "kmidx");
         auto kmer_file = FilterCombinedKmers(workdir, input_files, min_samples, min_mult);
         BuildKmerIndex(workdir, kmer_file, input_files.size(), nthreads);
@@ -211,7 +210,7 @@ int main(int argc, char *argv[]) {
     create_console_logger();
 
     size_t k, sample_cnt, min_samples, min_mult, nthreads;
-    string output, work_dir;
+    filesystem::path output, work_dir;
 
     try {
         GetOpt_pp ops(argc, argv);
@@ -229,9 +228,9 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    std::vector<string> input_files;
+    std::vector<filesystem::path> input_files;
     for (size_t i = 1; i <= sample_cnt; ++i) {
-        input_files.push_back(work_dir + "/sample" + std::to_string(i));
+        input_files.push_back(work_dir / ("sample" + std::to_string(i)));
     }
 
     KmerMultiplicityCounter kmcounter(k, output);

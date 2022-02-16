@@ -602,7 +602,7 @@ class RelativeCovComponentFinder {
                 vertices.insert(g_.EdgeEnd(e));
             }
 
-            auto filename = success ? vis_dir_ / ("success/" + std::to_string(succ_cnt_++)) : vis_dir_ / ("fail/" + std::to_string(fail_cnt_++));
+            auto filename = vis_dir_ / (success ? ("success" / std::to_string(succ_cnt_++)) : ("fail" / std::to_string(fail_cnt_++)));
             visualization::visualization_utils::WriteComponent(
                     ComponentCloser<Graph>(g_, 0).CloseComponent(
                             GraphComponent<Graph>::FromVertices(g_, vertices)),
@@ -635,8 +635,8 @@ public:
         TRACE("Coverage gap " << min_coverage_gap);
         if (!vis_dir_.empty()) {
             create_directory(vis_dir_);
-            create_directory(vis_dir_ / "success/");
-            create_directory(vis_dir_ / "fail/");
+            create_directory(vis_dir_ / "success");
+            create_directory(vis_dir_ / "fail");
         }
     }
 

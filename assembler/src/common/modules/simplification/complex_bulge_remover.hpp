@@ -710,7 +710,7 @@ private:
 
 template<class Graph>
 void PrintComponent(const LocalizedComponent<Graph> &component,
-                    const SkeletonTree<Graph> &tree, const std::string &file_name) {
+                    const SkeletonTree<Graph> &tree, const std::filesystem::path &file_name) {
     typedef typename Graph::EdgeId EdgeId;
     const std::set<EdgeId> &tree_edges = tree.edges();
     std::shared_ptr<visualization::graph_colorer::ElementColorer<typename Graph::EdgeId>> edge_colorer =
@@ -723,7 +723,7 @@ void PrintComponent(const LocalizedComponent<Graph> &component,
 }
 
 template<class Graph>
-void PrintComponent(const LocalizedComponent<Graph> &component, const std::string &file_name) {
+void PrintComponent(const LocalizedComponent<Graph> &component, const std::filesystem::path &file_name) {
     visualization::visualization_utils::WriteComponent(component.AsGraphComponent(), file_name,
             visualization::graph_colorer::DefaultColorer(component.g()),
             *visualization::graph_labeler::StrGraphLabelerInstance(component.g()));
@@ -1112,8 +1112,8 @@ class ComplexBulgeRemover : public PersistentProcessingAlgorithm<Graph, typename
 
             if (!pics_folder_.empty()) {
                 PrintComponent(component, tree,
-                        pics_folder_.concat("success/"
-                                + std::to_string(this->g().int_id(component.start_vertex()))
+                        pics_folder_ / "success" /
+                                (std::to_string(this->g().int_id(component.start_vertex()))
                                 + "_" + std::to_string(candidate_cnt) + ".dot"));
             }
 
@@ -1129,9 +1129,8 @@ class ComplexBulgeRemover : public PersistentProcessingAlgorithm<Graph, typename
             DEBUG("Failed to find skeleton tree for candidate " << candidate_cnt << " start_v " << this->g().str(component.start_vertex()));
             if (!pics_folder_.empty()) {
                 //todo check if we rewrite all of the previous pics!
-                PrintComponent(component,
-                        pics_folder_.concat("fail/"
-                                + std::to_string(this->g().int_id(component.start_vertex())) //+ "_" + std::to_string(candidate_cnt)
+                PrintComponent(component, pics_folder_ / "fail" /
+                                (std::to_string(this->g().int_id(component.start_vertex())) //+ "_" + std::to_string(candidate_cnt)
                                 + ".dot"));
             }
             return false;
@@ -1178,10 +1177,10 @@ public:
             protected_edges_(protected_edges),
             pics_folder_(pics_folder) {
         if (!pics_folder_.empty()) {
-//            remove_dir(pics_folder_);
+            remove(pics_folder_);
             create_directory(pics_folder_);
-            create_directory(pics_folder_.concat("success/"));
-            create_directory(pics_folder_.concat("fail/"));
+            create_directory(pics_folder_ / "success");
+            create_directory(pics_folder_ / "fail");
         }
 
     }

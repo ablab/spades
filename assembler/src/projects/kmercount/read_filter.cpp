@@ -14,8 +14,7 @@
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/logger/log_writers.hpp"
 #include "utils/segfault_handler.hpp"
-#include "common/kmer_index/kmer_counting.hpp"
-#include "utils/filesystem/path_helper.hpp"
+#include "kmer_index/kmer_counting.hpp"
 #include "utils/filesystem/temporary.hpp"
 
 #include "adt/cyclichash.hpp"
@@ -43,7 +42,7 @@ void create_console_logger() {
 namespace read_filter {
 struct Args {
     unsigned thr = 2, k = 21;
-    std::string dataset_desc, workdir = ".";
+    std::filesystem::path dataset_desc, workdir = ".";
     unsigned nthreads = (omp_get_max_threads() / 2);
     bool drop_names = false;
     bool drop_quality = false;
@@ -57,9 +56,9 @@ void process_cmdline(int argc, char **argv, read_filter::Args &args) {
     auto cli = (
         (option("-k", "--kmer") & integer("value", args.k)) % "K-mer length",
         (option("-c", "--cov") & integer("value", args.thr)) % "Median kmer count threshold (read pairs, s.t. kmer count median for BOTH reads LESS OR EQUAL to this value will be ignored)",
-        (required("-d", "--dataset") & value("yaml", args.dataset_desc)) % "Dataset description (in YAML)",
+        (required("-d", "--dataset") & value("yaml", args.dataset_desc.c_str())) % "Dataset description (in YAML)",
         (option("-t", "--threads") & integer("value", args.nthreads)) % "# of threads to use",
-        (option("-o", "--outdir") & value("dir", args.workdir)) %  "Output directory to use",
+        (option("-o", "--outdir") & value("dir", args.workdir.c_str())) %  "Output directory to use",
         (option("--drop-names").set(args.drop_names)) % "Drop read names and quality (makes everything faster)",
         (option("--drop-quality").set(args.drop_quality)) % "Drop read quality (makes everything faster)",
         (option("-h", "--help").set(print_help)) % "Show help"
@@ -148,7 +147,7 @@ int main(int argc, char* argv[]) {
         io::DataSet<debruijn_graph::config::LibraryData> dataset;
         dataset.load(args.dataset_desc);
 
-        fs::make_dir(args.workdir);
+        create_directory(args.workdir);
         auto tmpdir = fs::tmp::make_temp_dir(args.workdir, "binreads");
         debruijn_graph::config::init_libs(dataset, args.nthreads, tmpdir->dir());
 
@@ -194,16 +193,15 @@ int main(int argc, char* argv[]) {
                 io::CoverageFilter<io::PairedRead, SeqHasher> filter(args.k, hasher, cqf, args.thr + 1);
                 // FIXME: we cannot use unique_ptr here as OFasta / OFastq streams do not have common base class :(
                 if (args.drop_names || args.drop_quality) {
-                    std::string left = to_string(i + 1) + ".1.fasta";
-                    std::string right = to_string(i + 1) + ".2.fasta";
+                    std::filesystem::path left = to_string(i + 1) + ".1.fasta";
+                    std::filesystem::path right = to_string(i + 1) + ".2.fasta";
 
-                    io::OFastaPairedStream ostream(fs::append_path(args.workdir, left),
-                                                   fs::append_path(args.workdir, right));
+                    io::OFastaPairedStream ostream(args.workdir / left, args.workdir / right);
                     filter_reads(paired_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
                     outlib.push_back_paired(left, right);
                 } else {
-                    std::string left = fs::append_path(args.workdir, to_string(i + 1) + ".1.fastq");
-                    std::string right = fs::append_path(args.workdir, to_string(i + 1) + ".2.fastq");
+                    std::filesystem::path left = args.workdir / (to_string(i + 1) + ".1.fastq");
+                    std::filesystem::path right = args.workdir / (to_string(i + 1) + ".2.fastq");
 
                     io::OFastqPairedStream ostream(left, right);
                     filter_reads(paired_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
@@ -218,12 +216,12 @@ int main(int argc, char* argv[]) {
                 io::CoverageFilter<io::SingleRead, SeqHasher> filter(args.k, hasher, cqf, args.thr + 1);
                 // FIXME: we cannot use unique_ptr here as OFasta / OFastq streams do not have common base class :(
                 if (args.drop_names || args.drop_quality) {
-                    std::string single = to_string(i + 1) + ".s.fasta";
-                    io::OFastqReadStream ostream(fs::append_path(args.workdir, single));
+                    std::filesystem::path single = to_string(i + 1) + ".s.fasta";
+                    io::OFastqReadStream ostream(args.workdir / single);
                     filter_reads(single_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
                     outlib.push_back_single(single);
                 } else {
-                    std::string single = fs::append_path(args.workdir, to_string(i + 1) + ".s.fastq");
+                    std::filesystem::path single = args.workdir / (to_string(i + 1) + ".s.fastq");
                     io::OFastqReadStream ostream(single);
                     filter_reads(single_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
                     outlib.push_back_single(single);
@@ -237,13 +235,13 @@ int main(int argc, char* argv[]) {
                 io::CoverageFilter<io::SingleRead, SeqHasher> filter(args.k, hasher, cqf, args.thr + 1);
                 // FIXME: we cannot use unique_ptr here as OFasta / OFastq streams do not have common base class :(
                 if (args.drop_names || args.drop_quality) {
-                    std::string merged = fs::append_path(args.workdir, to_string(i + 1) + ".m.fasta");
+                    std::filesystem::path merged = args.workdir / (to_string(i + 1) + ".m.fasta");
                     io::OFastaReadStream ostream(merged);
                     filter_reads(single_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
                     outlib.push_back_merged(merged);
                 } else {
-                    std::string merged = to_string(i + 1) + ".m.fastq";
-                    io::OFastqReadStream ostream(fs::append_path(args.workdir, merged));
+                    std::filesystem::path merged = to_string(i + 1) + ".m.fastq";
+                    io::OFastqReadStream ostream(args.workdir / merged);
                     filter_reads(single_reads_stream, ostream, filter, FILTER_READS_BUFF_SIZE, args.nthreads);
                     outlib.push_back_merged(merged);
                 }
@@ -252,7 +250,7 @@ int main(int argc, char* argv[]) {
             outdataset.push_back(outlib);
         }
         INFO("Filtering finished");
-        std::string fname = fs::append_path(args.workdir, "dataset.yaml");
+        std::filesystem::path fname = args.workdir / "dataset.yaml";
         INFO("Saving filtered dataset description to " << fname);
         outdataset.save(fname);
     } catch (std::string const &s) {

@@ -61,9 +61,9 @@ static bool UsedOnBothSides(const Graph &g, EdgeId e, const std::multimap<EdgeId
             std::any_of(g.in_begin(g.EdgeStart(e)), g.in_end(g.EdgeStart(e)), used_f);
 }
 
-static void Run(const graph_pack::GraphPack &gp, const std::string &contigs_file,
-                const std::string &paths_fn, const std::string &edge_info_fn,
-                const std::string &subgraph_prefix, const std::string &edge_color_fn,
+static void Run(const GraphPack &gp, const std::filesystem::path &contigs_file,
+                const std::filesystem::path &paths_fn, const std::filesystem::path &edge_info_fn,
+                const std::string &subgraph_prefix, const std::filesystem::path &edge_color_fn,
                 const io::EdgeLabelHelper<Graph> &label_helper) {
 
     const auto &graph = gp.get<Graph>();
@@ -167,13 +167,13 @@ struct gcfg {
     {}
 
     unsigned k;
-    std::string graph_path;
-    std::string sequences_fn;
-    std::string paths_fn;
-    std::string edge_info_fn;
-    std::string edge_color_fn;
+    std::filesystem::path graph_path;
+    std::filesystem::path sequences_fn;
+    std::filesystem::path paths_fn;
+    std::filesystem::path edge_info_fn;
+    std::filesystem::path edge_color_fn;
     std::string subgraph_prefix;
-    std::string workdir;
+    std::filesystem::path workdir;
     unsigned nthreads;
 };
 
@@ -182,14 +182,14 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
 
     auto cli = (
                (required("-k") & integer("value", cfg.k)) % "k-mer length to use",
-               (required("-g", "--graph") & value("graph", cfg.graph_path)) % "In GFA (ending with .gfa) or prefix to SPAdes graph pack",
-               (required("-q", "--cds-queries") & value("file", cfg.sequences_fn)) % "Path to FASTA file with ground truth CDS sequences",
-               (option("-p", "--paths") & value("file", cfg.paths_fn)) % "Destination for outputting paths corresponding to CDS sequences",
-               (option("-e", "--edge-info") & value("file", cfg.edge_info_fn)) % "Destination for outputting edge usage information",
+               (required("-g", "--graph") & value("graph", cfg.graph_path.c_str())) % "In GFA (ending with .gfa) or prefix to SPAdes graph pack",
+               (required("-q", "--cds-queries") & value("file", cfg.sequences_fn.c_str())) % "Path to FASTA file with ground truth CDS sequences",
+               (option("-p", "--paths") & value("file", cfg.paths_fn.c_str())) % "Destination for outputting paths corresponding to CDS sequences",
+               (option("-e", "--edge-info") & value("file", cfg.edge_info_fn.c_str())) % "Destination for outputting edge usage information",
                (option("-t", "--threads") & integer("value", cfg.nthreads)) % "# of threads to use (default: max_threads / 2)",
-               (option("-c", "--colors") & value("file", cfg.edge_color_fn)) % "Destination for outputting edge coloring to be displayed in Bandage",
+               (option("-c", "--colors") & value("file", cfg.edge_color_fn.c_str())) % "Destination for outputting edge coloring to be displayed in Bandage",
                (option("-s", "--subgraph") & value("file", cfg.subgraph_prefix)) % "Destination for outputting locality of covered edges in GFA",
-               (option("--workdir") & value("dir", cfg.workdir)) % "scratch directory to use (default: ./tmp)"
+               (option("--workdir") & value("dir", cfg.workdir.c_str())) % "scratch directory to use (default: ./tmp)"
     );
 
     auto result = parse(argc, argv, cli);
@@ -218,7 +218,7 @@ int main(int argc, char** argv) {
         omp_set_num_threads((int) nthreads);
         INFO("# of threads to use: " << nthreads);
 
-        create_directory(static_cast<std::filesystem::path>(cfg.workdir));
+        create_directory(cfg.workdir);
         graph_pack::GraphPack gp(k, cfg.workdir, 0);
 
         omnigraph::GraphElementFinder<Graph> element_finder(gp.get<Graph>());

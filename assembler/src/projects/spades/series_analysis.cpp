@@ -189,9 +189,9 @@ private:
     DECL_LOGGER("AggressiveClearing");
 };
 
-std::optional<AbundanceVector> InferAbundance(const std::string& bin_mult_fn,
+std::optional<AbundanceVector> InferAbundance(const std::filesystem::path& bin_mult_fn,
                                               const std::string& b_id) {
-    fs::CheckFileExistenceFATAL(bin_mult_fn);
+    CHECK_FATAL_ERROR(exists(bin_mult_fn), "File " << bin_mult_fn << " doesn't exist or can't be read!");
 
     std::ifstream is(bin_mult_fn);
     std::vector<AbundanceVector> abundances;

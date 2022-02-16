@@ -13,6 +13,7 @@
 
 #include <boost/property_tree/ptree_fwd.hpp>
 
+#include <filesystem>
 #include <string>
 #include <vector>
 #include <map>
@@ -201,7 +202,7 @@ struct pe_config {
 
     struct MainPEParamsT {
         bool debug_output;
-        std::string etc_dir;
+        std::filesystem::path etc_dir;
 
         OutputParamsT output;
         VisualizeParamsT viz;

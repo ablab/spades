@@ -22,15 +22,15 @@
 
 #include "debruijn_online_visualizer.hpp"
 
-void create_console_logger(string const& cfg_filename) {
+void create_console_logger(filesystem::path const& cfg_filename) {
     using namespace logging;
 
-    string log_props_file = cfg::get().log_filename;
+    filesystem::path log_props_file = cfg::get().log_filename;
 
-    if (!fs::FileExists(log_props_file))
-        log_props_file = fs::append_path(fs::parent_path(cfg_filename), cfg::get().log_filename);
+    if (!exists(log_props_file))
+        log_props_file = cfg_filename.parent_path() / cfg::get().log_filename;
 
-    logger *lg = create_logger(fs::FileExists(log_props_file) ? log_props_file : "");
+    logger *lg = create_logger(exists(log_props_file) ? log_props_file : "");
     lg->add_writer(std::make_shared<console_writer>());
 
     attach_logger(lg);
@@ -42,8 +42,8 @@ int main(int argc, char** argv) {
     try {
         VERIFY(argc > 1)
         using namespace online_visualization;
-        string cfg_filename = argv[1];
-        fs::CheckFileExistenceFATAL(cfg_filename);
+        filesystem::path cfg_filename = argv[1];
+        CHECK_FATAL_ERROR(exists(cfg_filename), "File " << cfg_filename << " doesn't exist or can't be read!");
 
         cfg::create_instance(cfg_filename);
 

@@ -14,7 +14,6 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <string_view>
 
 using namespace llvm;
 using namespace io;
@@ -49,13 +48,27 @@ struct ScalarEnumerationTraits<LibraryType> {
     }
 };
 
+template<>
+struct ScalarTraits<std::filesystem::path> {
+    void output(const std::filesystem::path &val, void *, raw_ostream &out) {
+        out << val;
+    }
+    StringRef input(StringRef scalar, void *, std::filesystem::path &val) {
+        val = scalar.str();
+        return StringRef();
+    }
+    static QuotingType mustQuote(StringRef S) {
+        return needsQuotes(S);
+    }
+};
+
 template <>
-struct SequenceTraits<std::vector<std::string>> {
-    static size_t size(IO &, std::vector<std::string> &seq) {
+struct SequenceTraits<std::vector<std::filesystem::path>> {
+    static size_t size(IO &, std::vector<std::filesystem::path> &seq) {
         return seq.size();
     }
-    static std::string&
-    element(IO &, std::vector<std::string> &seq, size_t index) {
+    static std::filesystem::path&
+    element(IO &, std::vector<std::filesystem::path> &seq, size_t index) {
         if (index >= seq.size())
             seq.resize(index+1);
         return seq[index];

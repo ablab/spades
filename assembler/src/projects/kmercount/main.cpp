@@ -85,10 +85,10 @@ class ParallelSortingSplitter : public kmers::KMerSortingSplitter<RtSeq> {
 
   public:
     using kmers::KMerSortingSplitter<RtSeq>::RawKMers;
-    ParallelSortingSplitter(const std::string &workdir, unsigned K, size_t read_buffer_size = 0)
+    ParallelSortingSplitter(const std::filesystem::path &workdir, unsigned K, size_t read_buffer_size = 0)
             : KMerSortingSplitter<Seq>(workdir, K), read_buffer_size_(read_buffer_size) {}
 
-    void push_back(const std::string &filename) {
+    void push_back(const std::filesystem::path &filename) {
         files_.push_back(filename);
     }
 
@@ -124,7 +124,7 @@ namespace kmer_count {
 struct Args {
     unsigned nthreads = omp_get_max_threads();
     unsigned K = 21;
-    std::string workdir, dataset = "";
+    std::filesystem::path workdir, dataset = "";
     size_t read_buffer_size = 536870912;
     std::vector<std::string> input;
 };
@@ -138,7 +138,7 @@ void process_cmdline(int argc, char **argv, kmer_count::Args &args) {
         (option("-k", "--kmer") & integer("value", args.K)) % "K-mer length",
         (option("-d", "--dataset") & value("dir", args.dataset)) % "Dataset description (in YAML), input files ignored",
         (option("-t", "--threads") & integer("value", args.nthreads)) % "# of threads to use",
-        (option("-w", "--workdir") & value("dir", args.workdir)) % "Working directory to use",
+        (option("-w", "--workdir") & value("dir", args.workdir.c_str())) % "Working directory to use",
         (option("-b", "--bufsize") & integer("value", args.read_buffer_size)) % "Sorting buffer size, per thread",
         (option("-h", "--help").set(print_help)) % "Show help",
         opt_values("input files", args.input)
@@ -215,7 +215,7 @@ int main(int argc, char* argv[]) {
         auto res = counter.CountAll(16, args.nthreads, /* merge */ true);
         auto final_kmers = res.final_kmers();
 
-        std::string outputfile_name = fs::append_path(args.workdir, "final_kmers");
+        std::filesystem::path outputfile_name = args.workdir / "final_kmers";
         std::rename(final_kmers->file().c_str(), outputfile_name.c_str());
 
         INFO("K-mer counting done, kmers saved to " << outputfile_name);

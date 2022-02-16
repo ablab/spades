@@ -48,10 +48,10 @@ class KMerAligner {
   public:
     KMerAligner(const debruijn_graph::ConjugateDeBruijnGraph &g,
                  const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
-                 const string &output_file,
+                 const filesystem::path &output_file,
                  shared_ptr<MapperClass> mapper):
         g_(g), edge_namer_(edge_namer), output_file_(output_file), mapper_(mapper) {
-        myfile_.open(output_file_ + ".tsv", ofstream::out);
+        myfile_.open(std::string(output_file_) + ".tsv", ofstream::out);
     }
 
     ReadMappingStr AlignRead(const io::SingleRead &read) const {
@@ -182,17 +182,18 @@ class KMerAligner {
 
     const debruijn_graph::ConjugateDeBruijnGraph &g_;
     const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer_;
-    const string &output_file_;
+    const filesystem::path &output_file_;
     shared_ptr<MapperClass> mapper_;
     ofstream myfile_;
 
 
 };
 
-void LoadGraph(const string &saves_path, debruijn_graph::ConjugateDeBruijnGraph &g, io::IdMapper<std::string> &id_mapper) {
-    if (fs::extension(saves_path) == ".gfa") {
+void LoadGraph(const filesystem::path &saves_path,
+               debruijn_graph::ConjugateDeBruijnGraph &g, io::IdMapper<std::string> &id_mapper) {
+    if (saves_path.extension() == ".gfa") {
         DEBUG("Load gfa")
-        CHECK_FATAL_ERROR(fs::is_regular_file(saves_path), "GFA-file " + saves_path + " doesn't exist");
+        CHECK_FATAL_ERROR(is_regular_file(saves_path), "GFA-file " + std::string(saves_path) + " doesn't exist");
         gfa::GFAReader gfa(saves_path);
         DEBUG("Segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
         gfa.to_graph(g, &id_mapper);
@@ -205,8 +206,9 @@ void LoadGraph(const string &saves_path, debruijn_graph::ConjugateDeBruijnGraph 
 }
 
 
-void Launch(size_t K, const string &saves_path, const string &reads_fasta, const string &output_file) {
-    string tmpdir = fs::make_temp_dir(fs::current_dir(), "tmp");
+void Launch(size_t K, const filesystem::path &saves_path, const string &reads_fasta,
+            const filesystem::path &output_file) {
+    filesystem::path tmpdir = fs::make_temp_dir(std::filesystem::current_path(), "tmp");
     debruijn_graph::ConjugateDeBruijnGraph g(K);
     io::IdMapper<std::string> id_mapper;
     LoadGraph(saves_path, g, id_mapper);
@@ -241,7 +243,7 @@ void Launch(size_t K, const string &saves_path, const string &reads_fasta, const
             aligner.Print(wrappedreads[i], read_mapping_res);
         }
     }
-    fs::remove_dir(tmpdir);
+    remove(tmpdir);
 }
 }
 
@@ -256,9 +258,9 @@ int main(int argc, char **argv) {
     size_t K = stoll(argv[1]);
     string saves_path = argv[2];
     INFO("Load graph from " << saves_path);
-    string longreads_file = argv[3];
+    filesystem::path longreads_file = argv[3];
     INFO("Load long reads from " << longreads_file);
-    string output_file = argv[4];
+    filesystem::path output_file = argv[4];
     debruijn_graph::Launch(K, saves_path, longreads_file, output_file);
     return 0;
 }

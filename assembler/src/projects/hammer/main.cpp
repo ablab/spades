@@ -70,7 +70,7 @@ int main(int argc, char * argv[]) {
   try {
     create_console_logger();
 
-    std::string config_file = CONFIG_FILENAME;
+    std::filesystem::path config_file = CONFIG_FILENAME;
     if (argc > 1) config_file = argv[1];
     START_BANNER("BayesHammer");
     INFO("Loading config from " << config_file.c_str());
@@ -206,7 +206,7 @@ int main(int argc, char * argv[]) {
           }
 
           if (cfg::get().expand_write_each_iteration) {
-            std::ofstream oftmp(hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "goodkmers", expand_iter_no).data());
+            std::ofstream oftmp(hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "goodkmers", expand_iter_no));
             for (size_t n = 0; n < Globals::kmer_data->size(); ++n) {
               const KMerStat &kmer_data = (*Globals::kmer_data)[n];
               if (kmer_data.good())

@@ -41,8 +41,8 @@ public:
 
 };
 
-void PrintColoredAnnotatedGraphAroundEdge(const graph_pack::GraphPack &gp, const EdgeId &edge,
-                                          const EdgeAnnotation &annotation, const std::string &output_filename) {
+void PrintColoredAnnotatedGraphAroundEdge(const GraphPack &gp, const EdgeId &edge,
+                                          const EdgeAnnotation &annotation, const std::filesystem::path &output_filename) {
     //std::cout << output_filename << std::endl;
     const auto &graph = gp.get<Graph>();
     visualization::graph_labeler::DefaultLabeler<Graph> labeler(graph, gp.get<EdgesPositionHandler<Graph>>());

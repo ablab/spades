@@ -17,11 +17,11 @@
 namespace debruijn_graph {
 
 static void FillRestrictedEdges(graph_pack::GraphPack &gp) {
-    if (!exists(static_cast<std::filesystem::path>(cfg::get().output_dir) / "temp_anti/restricted_edges.fasta"))
+    if (!exists(cfg::get().output_dir / "temp_anti/restricted_edges.fasta"))
         return;
 
     auto mapper = MapperInstance(gp);
-    auto reader = io::FixingWrapper(io::FileReadStream(cfg::get().output_dir + "temp_anti/restricted_edges.fasta"));
+    auto reader = io::FixingWrapper(io::FileReadStream(cfg::get().output_dir / "temp_anti/restricted_edges.fasta"));
 
     const auto &graph = gp.get<Graph>();
     std::unordered_set<EdgeId> domain_edges;

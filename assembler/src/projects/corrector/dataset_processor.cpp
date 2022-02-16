@@ -11,7 +11,6 @@
 #include "config_struct.hpp"
 
 #include "io/reads/file_reader.hpp"
-#include "utils/filesystem/path_helper.hpp"
 #include "io/reads/osequencestream.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 
@@ -31,7 +30,7 @@ std::string DatasetProcessor::GetLibDir(const size_t lib_count) {
     return res;
 }
 
-void DatasetProcessor::SplitGenome(const string &genome_splitted_dir) {
+void DatasetProcessor::SplitGenome(const filesystem::path &genome_splitted_dir) {
     io::FileReadStream frs(genome_file_);
     size_t cur_id = 0;
     while (!frs.eof()) {
@@ -42,15 +41,15 @@ void DatasetProcessor::SplitGenome(const string &genome_splitted_dir) {
         if (all_contigs_.find(contig_name) != all_contigs_.end()) {
             WARN("Duplicated contig names! Multiple contigs with name" << contig_name);
         }
-        string full_path = fs::append_path(genome_splitted_dir, contig_name + ".fasta");
-        string out_full_path = fs::append_path(genome_splitted_dir, contig_name + ".ref.fasta");
-        string sam_filename = fs::append_path(genome_splitted_dir, contig_name + ".pair.sam");
+        filesystem::path full_path = genome_splitted_dir / (contig_name + ".fasta");
+        filesystem::path out_full_path = genome_splitted_dir / (contig_name + ".ref.fasta");
+        filesystem::path sam_filename = genome_splitted_dir / (contig_name + ".pair.sam");
         all_contigs_[contig_name] = {full_path, out_full_path, contig_seq.length(), sam_files_type(), sam_filename, cur_id};
         cur_id ++;
         buffered_reads_[contig_name].clear();
         io::OFastaReadStream oss(full_path);
         oss << io::SingleRead(contig_name, contig_seq);
-        DEBUG("full_path " + full_path)
+        DEBUG("full_path " + std::string(full_path))
     }
 }
 
@@ -67,7 +66,7 @@ void DatasetProcessor::GetAlignedContigs(const string &read, set<string> &contig
 
 }
 
-void DatasetProcessor::SplitLibrary(const string &all_reads_filename, const size_t lib_count, bool is_paired = false) {
+void DatasetProcessor::SplitLibrary(const filesystem::path &all_reads_filename, const size_t lib_count, bool is_paired = false) {
     int reads_cnt = is_paired ? 2 : 1;
     ifstream fs(all_reads_filename);
     while (!fs.eof()) {
@@ -136,8 +135,8 @@ int DatasetProcessor::RunBwaIndex() {
 
 std::string DatasetProcessor::RunBwaMem(const std::vector<std::string> &reads, const size_t lib,
     const std::string &params = "") {
-    string cur_dir = GetLibDir(lib);
-    string tmp_sam_filename = fs::append_path(cur_dir, "tmp.sam");
+    filesystem::path cur_dir = GetLibDir(lib);
+    filesystem::path tmp_sam_filename = cur_dir / "tmp.sam";
     string bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));
     string genome_screened = fs::screen_whitespaces(genome_file_);
     int run_res = 0;
@@ -160,10 +159,10 @@ std::string DatasetProcessor::RunBwaMem(const std::vector<std::string> &reads, c
 }
 
 void DatasetProcessor::PrepareContigDirs(const size_t lib_count) {
-    string out_dir = GetLibDir(lib_count);
+    filesystem::path out_dir = GetLibDir(lib_count);
     for (auto &ac : all_contigs_) {
         auto contig_name = ac.first;
-        string out_name = fs::append_path(out_dir, contig_name + ".sam");
+        string out_name = out_dir / (contig_name + ".sam");
         ac.second.sam_filenames.push_back(make_pair(out_name, unsplitted_sam_files_[lib_count].second));
         BufferedOutputRead("@SQ\tSN:" + contig_name + "\tLN:" + to_string(all_contigs_[contig_name].contig_length), contig_name, lib_count);
     }
@@ -173,7 +172,7 @@ void DatasetProcessor::PrepareContigDirs(const size_t lib_count) {
 void DatasetProcessor::ProcessDataset() {
     size_t lib_num = 0;
     INFO("Splitting assembly...");
-    INFO("Assembly file: " + genome_file_);
+    INFO("Assembly file: " + std::string(genome_file_));
     SplitGenome(work_dir_);
 
     if (RunBwaIndex() != 0) {
@@ -248,7 +247,7 @@ void DatasetProcessor::ProcessDataset() {
     GlueSplittedContigs(output_contig_file_);
 }
 
-void DatasetProcessor::GlueSplittedContigs(string &out_contigs_filename) {
+void DatasetProcessor::GlueSplittedContigs(filesystem::path &out_contigs_filename) {
     ofstream of_c(out_contigs_filename, std::ios_base::binary);
     vector<string> ordered_names;
     ordered_names.resize(all_contigs_.size());

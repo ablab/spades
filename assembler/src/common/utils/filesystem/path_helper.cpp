@@ -27,17 +27,17 @@ bool make_dir(std::string const& folder) {
     return mkdir(folder.c_str(), 0755) == 0;
 }
 
-std::string make_temp_dir(std::string const& prefix,
+std::filesystem::path make_temp_dir(std::filesystem::path const& prefix,
                           std::string const& suffix) {
-    std::string name = append_path(prefix, suffix + "_XXXXXX");
+    std::filesystem::path name = prefix / (suffix + "_XXXXXX");
     char* actual;
-    if ((actual = ::mkdtemp(strcpy(new char[name.length() + 1], name.c_str())))
+    if ((actual = ::mkdtemp(strcpy(new char[strlen(name.c_str()) + 1], name.c_str())))
             == NULL)
-        throw std::runtime_error("Cannot create temporary dir " + name);
+        throw std::runtime_error("Cannot create temporary dir " + std::string(name));
 
-    std::string result(actual);
+    std::filesystem::path result(actual);
     if (result == name)
-        throw std::runtime_error("Cannot create temporary dir " + name);
+        throw std::runtime_error("Cannot create temporary dir " + std::string(name));
 
     delete[] actual;
 

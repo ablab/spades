@@ -91,13 +91,13 @@ class TKMerDataEstimator {
 
   void SaveKMerData(const std::filesystem::path &filename = "count.kmdata") {
     INFO("Debug mode on. Saving K-mer index.");
-    std::ofstream ofs(static_cast<std::filesystem::path>(cfg::get().working_dir) / filename, std::ios::binary);
+    std::ofstream ofs(cfg::get().working_dir / filename, std::ios::binary);
     Data.binary_write(ofs);
   }
 
   void SaveClusters() {
     INFO("Debug mode on. Writing down clusters.");
-    std::ofstream ofs(static_cast<std::filesystem::path>(Config.working_dir) / "hamming.cls", std::ios::binary);
+    std::ofstream ofs(Config.working_dir / "hamming.cls", std::ios::binary);
     const size_t num_classes = Classes.size();
     ofs.write((char*)&num_classes, sizeof(num_classes));
     for (size_t i = 0; i < Classes.size(); ++i) {
@@ -130,7 +130,7 @@ class TKMerDataEstimator {
 
   void LoadClusters() {
     INFO("Loading clusters.");
-    std::ifstream ifs(static_cast<std::filesystem::path>(Config.working_dir) / "hamming.cls", std::ios::binary);
+    std::ifstream ifs(Config.working_dir / "hamming.cls", std::ios::binary);
     VERIFY(ifs.good());
 
     size_t num_classes = 0;
@@ -259,8 +259,7 @@ class TKMerDataEstimator {
             Expander expander(Data);
             const io::DataSet<> &dataset = Config.dataset;
             for (auto I = dataset.reads_begin(), E = dataset.reads_end(); I != E; ++I) {
-                std::filesystem::path I_path = static_cast<std::filesystem::path>(*I);
-                io::FileReadStream irs(I_path, io::PhredOffset);
+                io::FileReadStream irs(*I, io::PhredOffset);
                 hammer::ReadProcessor rp(Config.max_nthreads);
                 rp.Run(irs, expander);
                 VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
@@ -329,8 +328,7 @@ int main(int argc, char** argv) {
       // First, correct all the paired FASTQ files
       for (auto I = lib.paired_begin(), E = lib.paired_end(); I != E;
            ++I, ++iread) {
-        if (static_cast<std::filesystem::path>(I->first).extension() == ".bam" ||
-          static_cast<std::filesystem::path>(I->second).extension() == ".bam") {
+        if (I->first.extension() == ".bam" || I->second.extension() == ".bam") {
           continue;
         }
 
@@ -339,8 +337,8 @@ int main(int argc, char** argv) {
         std::string usuffix =
             std::to_string(ilib) + "_" + std::to_string(iread) + ".cor.fasta";
 
-        std::filesystem::path outcorl = cfg::get().output_dir / (static_cast<std::filesystem::path>(I->first).stem().concat(usuffix));
-        std::filesystem::path outcorr = cfg::get().output_dir / (static_cast<std::filesystem::path>(I->second).stem().concat(usuffix));
+        std::filesystem::path outcorl = cfg::get().output_dir / I->first.stem().concat(usuffix);
+        std::filesystem::path outcorr = cfg::get().output_dir / I->second).stem().concat(usuffix);
 
         io::OFastaPairedStream ors(outcorl, outcorr);
 
@@ -356,20 +354,19 @@ int main(int argc, char** argv) {
       // Second, correct all the single FASTQ files
       for (auto I = lib.single_begin(), E = lib.single_end(); I != E;
            ++I, ++iread) {
-        std::filesystem::path I_path = static_cast<std::filesystem::path>(*I);
-        if (I_path.extension() == ".bam") {
+        if (*I.extension() == ".bam") {
           continue;
         }
 
-        INFO("Correcting " << I_path);
+        INFO("Correcting " << *I);
 
         std::string usuffix =
             std::to_string(ilib) + "_" + std::to_string(iread) + ".cor.fasta";
 
-        std::filesystem::path outcor = cfg::get().output_dir / (I_path.stem().concat(usuffix));
+        std::filesystem::path outcor = cfg::get().output_dir / *I.stem().concat(usuffix);
         io::OFastaReadStream ors(outcor);
 
-        io::FileReadStream irs(I_path, io::PhredOffset);
+        io::FileReadStream irs(*I, io::PhredOffset);
         SingleReadsCorrector read_corrector(kmerData, calcerFactory, debug_pred,
                                             select_pred);
         hammer::ReadProcessor(cfg::get().max_nthreads)
@@ -381,27 +378,26 @@ int main(int argc, char** argv) {
       // Finally, correct all the BAM stuff in a row
       for (auto I = lib.reads_begin(), E = lib.reads_end(); I != E;
            ++I, ++iread) {
-        std::filesystem::path I_path =  static_cast<std::filesystem::path>(*I);
-        if (I_path.extension() != ".bam") {
+        if (*I.extension() != ".bam") {
           continue;
         }
 
-        INFO("Correcting " << I_path);
+        INFO("Correcting " << *I);
 
         std::string usuffix =
             std::to_string(ilib) + "_" + std::to_string(iread) + ".cor.fasta";
 
-        std::filesystem::path outcor = cfg::get().output_dir / (I_path.stem().concat(usuffix));
+        std::filesystem::path outcor = cfg::get().output_dir / *I.stem().concat(usuffix);
         io::OFastaReadStream ors(outcor);
 
         BamTools::BamReader bam_reader;
-        bam_reader.Open(I_path);
+        bam_reader.Open(*I);
         auto header = bam_reader.GetHeader();
         bam_reader.Close();
 
         SingleReadsCorrector read_corrector(kmerData, calcerFactory, &header,
                                             debug_pred, select_pred);
-        io::UnmappedBamStream irs(I_path);
+        io::UnmappedBamStream irs(*I);
         hammer::ReadProcessor(cfg::get().max_nthreads)
             .Run(irs, read_corrector, ors);
 
@@ -412,7 +408,7 @@ int main(int argc, char** argv) {
     }
     cfg::get_writable().dataset = outdataset;
 
-    std::filesystem::path fname = static_cast<std::filesystem::path>(cfg::get().output_dir) / "corrected.yaml";
+    std::filesystem::path fname = cfg::get().output_dir / "corrected.yaml";
     INFO("Saving corrected dataset description to " << fname);
     cfg::get_writable().dataset.save(fname);
   } catch (std::bad_alloc const& e) {

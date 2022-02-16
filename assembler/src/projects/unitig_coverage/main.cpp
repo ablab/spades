@@ -89,10 +89,10 @@ struct gcfg {
     {}
 
     unsigned k;
-    std::string file;
+    std::filesystem::path file;
     std::string graph;
-    std::string tmpdir;
-    std::string outfile;
+    std::filesystem::path tmpdir;
+    std::filesystem::path outfile;
     unsigned nthreads;
 };
 
@@ -105,7 +105,7 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
       cfg.outfile << value("output filename"),
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-t", "--threads") & integer("value", cfg.nthreads)) % "# of threads to use",
-      (option("--tmpdir") & value("dir", cfg.tmpdir)) % "scratch directory to use"
+      (option("--tmpdir") & value("dir", cfg.tmpdir.c_str())) % "scratch directory to use"
   );
 
   auto result = parse(argc, argv, cli);
@@ -127,9 +127,9 @@ int main(int argc, char** argv) {
     try {
         unsigned nthreads = cfg.nthreads;
         unsigned k = cfg.k;
-        std::string tmpdir = cfg.tmpdir;
+        std::filesystem::path tmpdir = cfg.tmpdir;
 
-        fs::make_dir(tmpdir);
+        create_directory(tmpdir);
 
         INFO("K-mer length set to " << k);
 

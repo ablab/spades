@@ -13,7 +13,6 @@
 #include "io/dataset_support/read_converter.hpp"
 #include "modules/path_extend/pe_resolver.hpp"
 #include "modules/path_extend/pe_utils.hpp"
-#include "utils/filesystem/path_helper.hpp"
 
 #include <unordered_set>
 
@@ -126,13 +125,13 @@ void ContigOutput::run(graph_pack::GraphPack &gp, const char*) {
     const auto &graph = gp.get<Graph>();
 
     if (outputs_.count(Kind::BinaryContigs)) {
-        std::string contigs_output_dir = fs::append_path(output_dir, outputs_[Kind::BinaryContigs]);
-        fs::make_dir(contigs_output_dir);
+        std::filesystem::path contigs_output_dir = output_dir / outputs_[Kind::BinaryContigs];
+        create_directory(contigs_output_dir);
         io::ReadConverter::ConvertEdgeSequencesToBinary(graph, contigs_output_dir, cfg::get().max_threads);
     }
 
     if (outputs_.count(Kind::EdgeSequences)) {
-        OutputEdgeSequences(graph, fs::append_path(output_dir, outputs_[Kind::EdgeSequences]));
+        OutputEdgeSequences(graph, output_dir / outputs_[Kind::EdgeSequences]);
     }
 
     std::unique_ptr<std::ostream> gfa_os;
@@ -144,7 +143,7 @@ void ContigOutput::run(graph_pack::GraphPack &gp, const char*) {
                 config::PipelineHelper::IsPlasmidPipeline(cfg::get().mode) && components.IsFilled()?
                 PlasmidNamingF<Graph>(io::IdNamingF<Graph>(), components) :
                 io::IdNamingF<Graph>();
-        std::string gfa_fn = fs::append_path(output_dir, outputs_[Kind::GFAGraph] + ".gfa");
+        std::filesystem::path gfa_fn = output_dir / (outputs_[Kind::GFAGraph] + ".gfa");
 
         gfa_os.reset(new std::ofstream(gfa_fn));
         gfa_writer.emplace(graph, *gfa_os, naming_f);
@@ -159,7 +158,7 @@ void ContigOutput::run(graph_pack::GraphPack &gp, const char*) {
                 PlasmidNamingF<Graph>(io::BasicNamingF<Graph>(), components) :
                 io::BasicNamingF<Graph>();
 
-        std::string fastg_fn = fs::append_path(output_dir, outputs_[Kind::FASTGGraph] + ".fastg");
+        std::filesystem::path fastg_fn = output_dir / (outputs_[Kind::FASTGGraph] + ".fastg");
 
         fastg_writer.emplace(graph, fastg_fn, naming_f);
         INFO("Outputting FastG graph to " << fastg_fn);
@@ -207,7 +206,7 @@ void ContigOutput::run(graph_pack::GraphPack &gp, const char*) {
 
             if (outputs_.count(Kind::FinalContigs))
                 writer.OutputPaths(broken_scaffolds,
-                                   CreatePathsWriters(fs::append_path(output_dir, outputs_[Kind::FinalContigs]),
+                                   CreatePathsWriters(output_dir / (outputs_[Kind::FinalContigs]),
                                                       fastg_writer));
 
             if (outputs_.count(Kind::PlasmidContigs)) {
@@ -216,14 +215,14 @@ void ContigOutput::run(graph_pack::GraphPack &gp, const char*) {
                     gp.add("used_edges", UsedEdges(graph));
                 PathContainer circulars = GetCircularScaffolds(broken_scaffolds, gp.get_mutable<UsedEdges>("used_edges"), cfg::get().pd->min_circular_length);
                 writer.OutputPaths(circulars,
-                                   CreatePathsWriters(fs::append_path(output_dir, outputs_[Kind::PlasmidContigs] + ".circular"),
+                                   CreatePathsWriters(output_dir / (outputs_[Kind::PlasmidContigs] + ".circular"),
                                                           fastg_writer));
                 if (cfg::get().pd->output_linear) {
                     if (gp.count<PathContainer>("Plasmid paths")) {
                         PathContainer &pcres = gp.get_mutable<PathContainer>("Plasmid paths");
                         writer.OutputPaths(pcres,
                                            CreatePathsWriters(
-                                                   fs::append_path(output_dir, outputs_[Kind::PlasmidContigs] + ".linearrepeat"),
+                                                   output_dir / (outputs_[Kind::PlasmidContigs] + ".linearrepeat"),
                                                    fastg_writer));
                     }
 
@@ -234,7 +233,7 @@ void ContigOutput::run(graph_pack::GraphPack &gp, const char*) {
                                                   gp.get_mutable<UsedEdges>("used_edges"), cfg::get().pd->min_linear_length);
                     writer.OutputPaths(linears,
                                        CreatePathsWriters(
-                                               fs::append_path(output_dir, outputs_[Kind::PlasmidContigs] + ".linears"),
+                                               output_dir / (outputs_[Kind::PlasmidContigs] + ".linears"),
                                                fastg_writer));
                 }
             }
@@ -242,10 +241,10 @@ void ContigOutput::run(graph_pack::GraphPack &gp, const char*) {
 
         if (outputs_.count(Kind::Scaffolds))
             writer.OutputPaths(contig_paths,
-                               CreatePathsWriters(fs::append_path(output_dir, outputs_[Kind::Scaffolds]),
+                               CreatePathsWriters(output_dir / outputs_[Kind::Scaffolds],
                                                   fastg_writer, gfa_writer));
     } else if (outputs_.count(Kind::FinalContigs)) {
-        OutputEdgeSequences(graph, fs::append_path(output_dir, outputs_[Kind::FinalContigs]));
+        OutputEdgeSequences(graph, output_dir / outputs_[Kind::FinalContigs]);
     }
 }
 

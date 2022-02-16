@@ -20,9 +20,8 @@
 using namespace debruijn_graph;
 using namespace std;
 
-std::string add_suffix(const std::string& path, const std::string& suffix) {
-    auto ext = fs::extension(path);
-    return path.substr(0, path.length() - ext.length()) + suffix + ext;
+std::filesystem::path add_suffix(const std::filesystem::path& path, const std::string& suffix) {
+    return path.stem().c_str() + suffix + path.extension().c_str();
 }
 
 //TODO: refactor to process the graph only once
@@ -55,7 +54,7 @@ int main(int argc, char** argv) {
     create_console_logger();
 
     size_t k;
-    string saves_path, contigs_path, splits_path, annotation_path, bins_file;
+    filesystem::path saves_path, contigs_path, splits_path, annotation_path, bins_file;
     vector<string> sample_names, left_reads, right_reads;
     string out_root, edges_dump, propagation_dump;
     size_t length_threshold;

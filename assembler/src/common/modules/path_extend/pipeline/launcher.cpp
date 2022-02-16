@@ -95,13 +95,13 @@ void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph 
     INFO("Visualizing scaffold graph");
     ScaffoldGraphVisualizer singleVisualizer(scaffold_graph, genome_checker.EdgeLabels());
     std::ofstream single_dot;
-    single_dot.open((filename + "_single.dot").c_str());
+    single_dot.open(filename + "_single.dot");
     singleVisualizer.Visualize(single_dot, colorer);
     single_dot.close();
 
     INFO("Printing scaffold graph");
     std::ofstream data_stream;
-    data_stream.open((filename + ".data").c_str());
+    data_stream.open(filename + ".data");
     scaffold_graph.Print(data_stream);
     data_stream.close();
 }
@@ -123,7 +123,7 @@ void PathExtendLauncher::MakeAndOutputScaffoldGraph() const {
         PrintScaffoldGraph(*scaffold_graph,
                            unique_data_.main_unique_storage_.unique_edges(),
                            genome_checker,
-                           params_.etc_dir + "scaffold_graph");
+                           params_.etc_dir / "scaffold_graph");
     }
 }
 
@@ -218,9 +218,9 @@ void PathExtendLauncher::DebugOutputPaths(const PathContainer &paths, const std:
 
     PathVisualizer visualizer;
 
-    writer_.OutputPaths(paths, params_.etc_dir + name + ".fasta");
+    writer_.OutputPaths(paths, params_.etc_dir / (name + ".fasta"));
     if (params_.pe_cfg.output.write_paths) {
-        std::ofstream oss(params_.etc_dir + name + ".dat");
+        std::ofstream oss(params_.etc_dir / (name + ".dat"));
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
             iter.get().Print(oss);
         }
@@ -228,7 +228,7 @@ void PathExtendLauncher::DebugOutputPaths(const PathContainer &paths, const std:
     }
 
     if (params_.pe_cfg.viz.print_paths) {
-        visualizer.writeGraphWithPathsSimple(gp_, params_.etc_dir + name + ".dot", name, paths);
+        visualizer.writeGraphWithPathsSimple(gp_, params_.etc_dir / (name + ".dot"), name, paths);
     }
 }
 
@@ -499,7 +499,7 @@ void PathExtendLauncher::FilterPaths(PathContainer &contig_paths) {
             PathContainer to_clean(contig_paths.begin(), contig_paths.end());
             CleanPaths(to_clean, it->second);
             DebugOutputPaths(to_clean, filtration_name + "_final_paths");
-            writer_.OutputPaths(to_clean, params_.output_dir + filtration_name + "_filtered_final_paths" + ".fasta");
+            writer_.OutputPaths(to_clean, params_.output_dir / (filtration_name + "_filtered_final_paths.fasta"));
         }
     }
     if (default_filtration != params_.pset.path_filtration.end()) {
@@ -585,7 +585,7 @@ void PathExtendLauncher::SelectStrandSpecificPaths(PathContainer &paths) const {
 }
 
 void MakeConjugateEdgePairsDump(ConjugateDeBruijnGraph const & graph) {
-    std::ofstream out(cfg::get().output_dir+"/conjugate_edge_pairs_dump.info");
+    std::ofstream out(cfg::get().output_dir / "conjugate_edge_pairs_dump.info");
     if (!out.is_open()) {
         FATAL_ERROR("Cannot open conjugate_edge_pairs_dump.info for writing");
         return;
@@ -597,8 +597,8 @@ void MakeConjugateEdgePairsDump(ConjugateDeBruijnGraph const & graph) {
 
 void PathExtendLauncher::Launch() {
     INFO("ExSPAnder repeat resolving tool started");
-    fs::make_dir(params_.output_dir);
-    fs::make_dir(params_.etc_dir);
+    create_directory(params_.output_dir);
+    create_directory(params_.etc_dir);
 
     CheckCoverageUniformity();
 
@@ -613,7 +613,7 @@ void PathExtendLauncher::Launch() {
     PathContainer fl_paths;
     AddFLPaths(fl_paths);
     if (fl_paths.size() > 0)
-        writer_.OutputPaths(fl_paths, params_.output_dir + "fl_transcripts" + ".fasta");
+        writer_.OutputPaths(fl_paths, params_.output_dir / "fl_transcripts.fasta");
 
     auto &contig_paths = gp_.get_mutable<PathContainer>("exSPAnder paths");
     PathExtendResolver resolver(graph_);

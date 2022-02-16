@@ -8,7 +8,6 @@
 
 #include "assembly_graph/core/graph_iterators.hpp"
 #include "pipeline/graph_pack_helpers.h"
-#include "utils/filesystem/path_helper.hpp"
 
 #include <unordered_set>
 
@@ -18,10 +17,10 @@ void SecondPhaseSetup::run(graph_pack::GraphPack &gp, const char*) {
     INFO("Preparing second phase");
     ClearRRIndicesAndPaths(gp);
 
-    std::string old_pe_contigs_filename = fs::append_path(cfg::get().output_dir, cfg::get().co.contigs_name + ".fasta");
-    std::string new_pe_contigs_filename = fs::append_path(cfg::get().output_dir, "first_pe_contigs.fasta");
+    std::filesystem::path old_pe_contigs_filename = cfg::get().output_dir / (cfg::get().co.contigs_name + ".fasta");
+    std::filesystem::path new_pe_contigs_filename = cfg::get().output_dir / "first_pe_contigs.fasta";
 
-    VERIFY(fs::check_existence(old_pe_contigs_filename));
+    VERIFY(exists(old_pe_contigs_filename));
     INFO("Moving preliminary contigs from " << old_pe_contigs_filename << " to " << new_pe_contigs_filename);
     int code = rename(old_pe_contigs_filename.c_str(), new_pe_contigs_filename.c_str());
     VERIFY(code == 0);

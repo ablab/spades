@@ -20,15 +20,15 @@ enum class Strategy {
 };
 struct corrector_config {
     io::DataSet<> dataset;
-    std::string work_dir;
-    std::string output_dir;
+    std::filesystem::path work_dir;
+    std::filesystem::path output_dir;
     unsigned max_nthreads;
     Strategy strat;
     std::string bwa;
-    std::string log_filename;
+    std::filesystem::path log_filename;
 };
 
-void load(corrector::corrector_config& cfg, const std::string &filename);
+void load(corrector::corrector_config& cfg, const std::filesystem::path &filename);
 }
 
 typedef config_common::config<corrector::corrector_config> corr_cfg;

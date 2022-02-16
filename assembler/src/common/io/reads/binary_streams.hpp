@@ -45,15 +45,15 @@ public:
      * @param portion_count Total number of (roughly equal) portions.
      * @param portion_num Index of the portion (0..portion_count - 1).
      */
-    BinaryFileStream(const std::filesystem::path &file_name_prefix, size_t portion_count, size_t portion_num) {
+    BinaryFileStream(const std::string &file_name_prefix, size_t portion_count, size_t portion_num) {
         DEBUG("Preparing binary stream #" << portion_num << "/" << portion_count);
         VERIFY(portion_num < portion_count);
-        const std::filesystem::path fname = file_name_prefix / ".seq";
+        const std::filesystem::path fname = file_name_prefix + ".seq";
         stream_.open(fname, std::ios_base::binary | std::ios_base::in);
         ReadStreamStat stat;
         stat.read(stream_);
 
-        const std::filesystem::path offset_name = file_name_prefix / ".off";
+        const std::filesystem::path offset_name = file_name_prefix + ".off";
         const size_t chunk_count = file_size(offset_name) / sizeof(size_t);
 
         // We split all read chunks into portion_count portions

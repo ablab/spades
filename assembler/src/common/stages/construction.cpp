@@ -85,15 +85,15 @@ io::ReadStreamList<io::SingleReadSeq> temp_merge_read_streams(io::ReadStreamList
 
 
 
-void add_additional_contigs_to_lib(std::string path_to_additional_contigs_dir, size_t max_threads,
+void add_additional_contigs_to_lib(std::filesystem::path path_to_additional_contigs_dir, size_t max_threads,
                                    io::ReadStreamList<io::SingleReadSeq> &trusted_list) {
     io::SequencingLibraryT seq_lib;
     seq_lib.set_type(io::LibraryType::TrustedContigs);
     seq_lib.set_orientation(io::LibraryOrientation::Undefined);
     seq_lib.data().lib_index = size_t(-1);
     auto& bin_info = seq_lib.data().binary_reads_info;
-    bin_info.single_read_prefix = path_to_additional_contigs_dir + "/contigs";
-    bin_info.bin_reads_info_file = path_to_additional_contigs_dir + "/contigs_info";
+    bin_info.single_read_prefix = path_to_additional_contigs_dir / "contigs";
+    bin_info.bin_reads_info_file = path_to_additional_contigs_dir / "contigs_info";
     bin_info.binary_converted = true;
     bin_info.chunk_num = max_threads;
 

@@ -12,7 +12,6 @@
 #include "io/reads/file_reader.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/logger/logger.hpp"
-#include "utils/filesystem/path_helper.hpp"
 #include "utils/filesystem/file_opener.hpp"
 #include "utils/verify.hpp"
 
@@ -125,7 +124,7 @@ std::vector<std::string> BrokenScaffoldsModeNames() {
 }
 
 template<class T>
-void LoadFromYaml(const std::string& filename, T &t) {
+void LoadFromYaml(const std::filesystem::path& filename, T &t) {
     auto ifs = fs::open_file(filename, std::ios::binary);
     LoadFromYaml(ifs, t);
 }
@@ -140,7 +139,7 @@ void LoadFromYaml(std::istream& in, T &t) {
 }
 
 template<class T>
-void WriteToYaml(T &t, const std::string& filename) {
+void WriteToYaml(T &t, const std::filesystem::path& filename) {
     std::ofstream ofs(filename, std::ios::binary);
     WriteToYaml(t, ofs);
 }
@@ -572,20 +571,19 @@ void load(debruijn_config::hmm_matching& hm,
 
 void load(dataset &ds,
           boost::property_tree::ptree const &pt,
-          const std::string &input_dir) {
+          const std::filesystem::path &input_dir) {
     using config_common::load;
 
     //loading reads
-    std::string reads_filename;
+    std::filesystem::path reads_filename;
     load(reads_filename, pt, "reads");
 
-    if (reads_filename[0] != '/')
-        reads_filename = input_dir + reads_filename;
-    fs::CheckFileExistenceFATAL(reads_filename);
+    reads_filename = input_dir / reads_filename;
+    CHECK_FATAL_ERROR(exists(reads_filename), "File " << reads_filename << " doesn't exist or can't be read!");
     ds.reads.load(reads_filename);
 
     //loading reference
-    std::string reference_genome_filename;
+    std::filesystem::path reference_genome_filename;
     std::optional<std::string> refgen;
     if (pt.count("reference_genome")) {
         std::string refgen = pt.get<std::string>("reference_genome");
@@ -593,12 +591,12 @@ void load(dataset &ds,
           reference_genome_filename = refgen;
     }
 
-    if (reference_genome_filename == "")
+    if (reference_genome_filename.empty())
         return;
 
-    if (reference_genome_filename[0] != '/')
-        reference_genome_filename = input_dir + reference_genome_filename;
-    fs::CheckFileExistenceFATAL(reference_genome_filename);
+    reference_genome_filename = input_dir / reference_genome_filename;
+    CHECK_FATAL_ERROR(exists(reference_genome_filename),
+                      "File " << reference_genome_filename << " doesn't exist or can't be read!");
     io::FileReadStream genome_stream(reference_genome_filename);
     while (!genome_stream.eof()) {
         io::SingleRead genome;
@@ -692,14 +690,10 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
     // input options:
     load(cfg.dataset_file, pt, "dataset");
     // input dir is based on dataset file location (all paths in datasets are relative to its location)
-    cfg.input_dir = fs::parent_path(cfg.dataset_file);
-    if (cfg.input_dir[cfg.input_dir.length() - 1] != '/')
-        cfg.input_dir += '/';
+    //change to cfg.dataset_file.parent_path()
+    cfg.input_dir = cfg.dataset_file.parent_path();
 
     load(cfg.output_base, pt, "output_base");
-    if (cfg.output_base[cfg.output_base.length() - 1] != '/')
-        cfg.output_base += '/';
-
     load(cfg.log_filename, pt, "log_filename");
 
     cfg.checkpoints = ModeByNameOrName<Checkpoints>(pt.get("checkpoints", "none"), {"none", "last", "all"});
@@ -716,9 +710,7 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
     }
 
     load(cfg.load_from, pt, "load_from");
-    if (cfg.load_from[0] != '/') { // relative path
-        cfg.load_from = fs::append_path(cfg.output_dir, cfg.load_from);
-    }
+    cfg.load_from = cfg.output_dir / cfg.load_from;
 
     load(cfg.tmp_dir, pt, "tmp_dir");
     load(cfg.main_iteration, pt, "main_iteration");
@@ -731,15 +723,13 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
     load(cfg.rr_enable, pt, "rr_enable");
 
     load(cfg.temp_bin_reads_dir, pt, "temp_bin_reads_dir");
-    if (cfg.temp_bin_reads_dir[cfg.temp_bin_reads_dir.length() - 1] != '/')
-        cfg.temp_bin_reads_dir += '/';
 
     load(cfg.max_threads, pt, "max_threads");
     cfg.max_threads = spades_set_omp_threads(cfg.max_threads);
 
     load(cfg.max_memory, pt, "max_memory");
 
-    fs::CheckFileExistenceFATAL(cfg.dataset_file);
+    CHECK_FATAL_ERROR(exists(cfg.dataset_file), "File " << cfg.dataset_file << " doesn't exist or can't be read!");
     boost::property_tree::ptree ds_pt;
     boost::property_tree::read_info(cfg.dataset_file, ds_pt);
     load(cfg.ds, ds_pt, cfg.input_dir);
@@ -835,25 +825,25 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     load(cfg.tt, pt, "time_tracer", complete);
 }
 
-void load(debruijn_config &cfg, const std::string &cfg_fns) {
-    load(cfg, std::vector<std::string>({ cfg_fns }));
+void load(debruijn_config &cfg, const std::filesystem::path &cfg_fns) {
+    load(cfg, std::vector<std::filesystem::path>({ cfg_fns }));
 }
 
 void init_libs(io::DataSet<LibraryData> &dataset, size_t max_threads,
-               const std::string &temp_bin_reads_path) {
+               const std::filesystem::path &temp_bin_reads_path) {
     for (size_t i = 0; i < dataset.lib_count(); ++i) {
         auto& lib = dataset[i];
         lib.data().lib_index = i;
         auto& bin_info = lib.data().binary_reads_info;
         bin_info.chunk_num = max_threads;
-        bin_info.bin_reads_info_file = fs::append_path(temp_bin_reads_path, "INFO_" + std::to_string(i));
-        bin_info.paired_read_prefix = fs::append_path(temp_bin_reads_path, "paired_" + std::to_string(i));
-        bin_info.merged_read_prefix = fs::append_path(temp_bin_reads_path, "merged_" + std::to_string(i));
-        bin_info.single_read_prefix = fs::append_path(temp_bin_reads_path, "single_" + std::to_string(i));
+        bin_info.bin_reads_info_file = temp_bin_reads_path / ("INFO_" + std::to_string(i));
+        bin_info.paired_read_prefix = temp_bin_reads_path / ("paired_" + std::to_string(i));
+        bin_info.merged_read_prefix = temp_bin_reads_path / ("merged_" + std::to_string(i));
+        bin_info.single_read_prefix = temp_bin_reads_path / ("single_" + std::to_string(i));
     }
 }
 
-void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
+void load(debruijn_config &cfg, const std::vector<std::filesystem::path> &cfg_fns) {
     CHECK_FATAL_ERROR(cfg_fns.size() > 0, "Should provide at least one config file");
     boost::property_tree::ptree base_pt;
     boost::property_tree::read_info(cfg_fns[0], base_pt);
@@ -888,16 +878,13 @@ void load(debruijn_config &cfg, const std::vector<std::string> &cfg_fns) {
                        cfg.gap_closer_enable || cfg.rr_enable ||
                        cfg.ss_coverage_splitter.enabled;
 
-    cfg.output_dir = fs::append_path(cfg.output_base, "K" + std::to_string(cfg.K)) + "/";
+    cfg.output_dir = cfg.output_base / ("K" + std::to_string(cfg.K));
 
-    cfg.output_saves = fs::append_path(cfg.output_dir, "saves") + "/";
+    cfg.output_saves = cfg.output_dir / "saves";
 
-    if (cfg.tmp_dir[0] != '/') { // relative path
-        cfg.tmp_dir = fs::append_path(cfg.output_dir, cfg.tmp_dir);
-    }
+    cfg.tmp_dir = cfg.output_dir / cfg.tmp_dir;
 
-    cfg.temp_bin_reads_path = fs::append_path(cfg.output_base, cfg.temp_bin_reads_dir);
-    //cfg.temp_bin_reads_info = cfg.temp_bin_reads_path + "INFO";
+    cfg.temp_bin_reads_path = cfg.output_base / cfg.temp_bin_reads_dir;
 
     init_libs(cfg.ds.reads, cfg.max_threads, cfg.temp_bin_reads_path);
 }

@@ -95,7 +95,7 @@ class LongReadsAligner {
     LongReadsAligner(const debruijn_graph::ConjugateDeBruijnGraph &g,
                      const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
                      const GAlignerConfig &cfg,
-                     const string output_dir,
+                     const filesystem::path output_dir,
                      const int threads)
         : g_(g),
           cfg_(cfg),

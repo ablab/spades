@@ -8,7 +8,6 @@
 #include "utils/stl_utils.hpp"
 #include "utils/logger/log_writers.hpp"
 
-#include "utils/filesystem/path_helper.hpp"
 #include "io/reads/file_reader.hpp"
 #include "io/reads/wrapper_collection.hpp"
 #include "io/reads/osequencestream.hpp"
@@ -27,8 +26,8 @@ int main(int argc, char** argv) {
         return 1;
     }
     create_console_logger();
-    string fn = argv[1];
-    fs::CheckFileExistenceFATAL(fn);
+    filesystem::path fn = argv[1];
+    CHECK_FATAL_ERROR(FileExists(fn), "File " << fn << " doesn't exist or can't be read!");
     string out_fn = argv[2];
     auto reader = io::NonNuclCollapsingWrapper(io::FileReadStream(fn));
     io::SingleRead read;

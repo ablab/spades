@@ -25,8 +25,8 @@ enum class CenterType { COUNT_ARGMAX, CONSENSUS, BY_POSTERIOR_QUALITY };
   struct hammer_config {
   io::DataSet<> dataset;
 
-  std::string working_dir;
-  std::string output_dir;
+  std::filesystem::path working_dir;
+  std::filesystem::path output_dir;
 
   unsigned max_nthreads;
   unsigned tau;

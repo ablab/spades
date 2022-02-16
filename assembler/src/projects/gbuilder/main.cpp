@@ -52,9 +52,9 @@ struct gcfg {
     {}
 
     unsigned k;
-    std::string file;
-    std::string tmpdir;
-    std::string outfile;
+    std::filesystem::path file;
+    std::filesystem::path tmpdir;
+    std::filesystem::path outfile;
     unsigned nthreads;
     size_t buff_size;
     enum output_type mode;
@@ -71,7 +71,7 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-c").set(cfg.coverage)) % "infer coverage",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
-      (option("-tmp-dir") & value("dir", cfg.tmpdir)) % "scratch directory to use",
+      (option("-tmp-dir") & value("dir", cfg.tmpdir.c_str())) % "scratch directory to use",
       (option("-b") & integer("value", cfg.buff_size)) % "sorting buffer size, per thread",
       one_of(option("--unitigs").set(cfg.mode, output_type::unitigs) % "produce unitigs (default)",
              option("--fastg").set(cfg.mode, output_type::fastg) % "produce graph in FASTG format",
@@ -87,10 +87,10 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
 }
 
 void LoadDataset(io::DataSet<debruijn_graph::config::LibraryData> &dataset,
-                 const std::string &filename) {
-    if (fs::extension(filename) == ".yaml") {
+                 const std::filesystem::path &filename) {
+    if (filename.extension() == ".yaml") {
         dataset.load(filename);
-    } else if (fs::FileExists(filename)) {
+    } else if (exists(filename)) {
         io::SequencingLibrary<debruijn_graph::config::LibraryData> input;
         input.push_back_single(filename);
         input.set_orientation(io::LibraryOrientation::Undefined);
@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
     try {
         unsigned nthreads = cfg.nthreads;
         unsigned k = cfg.k;
-        std::string tmpdir = cfg.tmpdir;
+        std::filesystem::path tmpdir = cfg.tmpdir;
         size_t buff_size = cfg.buff_size;
 
         create_console_logger();
@@ -148,11 +148,11 @@ int main(int argc, char* argv[]) {
         io::DataSet<debruijn_graph::config::LibraryData> dataset;
         LoadDataset(dataset, cfg.file);
 
-        fs::make_dir(tmpdir);
+        create_directory(tmpdir);
         auto workdir = fs::tmp::make_temp_dir(tmpdir, "construction");
 
         // FIXME: Get rid of this "/" junk
-        debruijn_graph::config::init_libs(dataset, nthreads, tmpdir + "/");
+        debruijn_graph::config::init_libs(dataset, nthreads, tmpdir);
 
         std::vector<size_t> libs_for_construction;
         for (size_t i = 0; i < dataset.lib_count(); ++i) {

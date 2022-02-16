@@ -159,8 +159,7 @@ public:
 
         if (!pics_folder_.empty()) {
             visualization::visualization_utils::WriteComponentSinksSources(component,
-                                                      pics_folder_.concat(
-                                                      std::to_string(this->g().int_id(v)) //+ "_" + std::to_string(candidate_cnt)
+                                                      pics_folder_ / (std::to_string(this->g().int_id(v)) //+ "_" + std::to_string(candidate_cnt)
                                                       + ".dot"));
         }
 

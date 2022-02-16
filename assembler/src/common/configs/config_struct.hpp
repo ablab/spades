@@ -418,14 +418,14 @@ struct debruijn_config {
     
     typedef std::map<info_printer_pos, info_printer> info_printers_t;
 
-    std::string dataset_file;
-    std::string input_dir;
-    std::string output_base;
-    std::string output_dir;
-    std::string tmp_dir;
+    std::filesystem::path dataset_file;
+    std::filesystem::path input_dir;
+    std::filesystem::path output_base;
+    std::filesystem::path output_dir;
+    std::filesystem::path tmp_dir;
     std::variant<Checkpoints, std::string> checkpoints;
-    std::string output_saves;
-    std::string log_filename;
+    std::filesystem::path output_saves;
+    std::filesystem::path log_filename;
     std::string series_analysis;
 
     bool output_pictures;
@@ -455,7 +455,7 @@ struct debruijn_config {
     
     contig_output co;
 
-    std::string load_from;
+    std::filesystem::path load_from;
     std::string entry_point;
 
     bool rr_enable;
@@ -472,8 +472,8 @@ struct debruijn_config {
     size_t max_repeat_length;
 
     // Conversion options
-    std::string temp_bin_reads_dir;
-    std::string temp_bin_reads_path;
+    std::filesystem::path temp_bin_reads_dir;
+    std::filesystem::path temp_bin_reads_path;
     std::string paired_read_prefix;
     std::string single_read_prefix;
 
@@ -520,9 +520,9 @@ struct debruijn_config {
 };
 
 void init_libs(io::DataSet<LibraryData> &dataset, size_t max_threads,
-               const std::string &temp_bin_reads_path);
-void load(debruijn_config& cfg, const std::vector<std::string> &filenames);
-void load(debruijn_config& cfg, const std::string &filename);
+               const std::filesystem::path &temp_bin_reads_path);
+void load(debruijn_config& cfg, const std::vector<std::filesystem::path> &filenames);
+void load(debruijn_config& cfg, const std::filesystem::path &filename);
 void load_lib_data(const std::string& prefix);
 void load_lib_data(std::istream& is);
 void write_lib_data(const std::string& prefix);

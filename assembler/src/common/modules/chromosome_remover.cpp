@@ -8,21 +8,21 @@
 
 #include "simplification/tip_clipper.hpp"
 
-#include "assembly_graph/core/graph_iterators.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
+#include "assembly_graph/core/graph_iterators.hpp"
+#include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include "assembly_graph/graph_support/contig_output.hpp"
 #include "assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
-#include "assembly_graph/graph_support/basic_edge_conditions.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "configs/config_struct.hpp"
 #include "math/xmath.h"
+#include "math/xmath.h"
 #include "paired_info/paired_info.hpp"
 #include "pipeline/graph_pack_helpers.h"
 #include "pipeline/sequence_mapper_gp_api.hpp"
 #include "sequence/genome_storage.hpp"
-#include "utils/filesystem/path_helper.hpp"
 #include "visualization/position_filler.hpp"
 
 namespace debruijn_graph {
@@ -287,7 +287,7 @@ void ChromosomeRemover::OutputSuspiciousComponents () {
     size_t component_size_min = 1000;
     std::string tmp = std::to_string(ext_limit_);
     while (tmp.length() < 4) tmp = "_" + tmp;
-    std::string out_file = "components" + tmp + ".fasta";
+    std::filesystem::path out_file = "components" + tmp + ".fasta";
     double var = 0.3;
     DEBUG("calculating component sizes");
     for (EdgeId e: graph.canonical_edges()) {
@@ -296,7 +296,7 @@ void ChromosomeRemover::OutputSuspiciousComponents () {
         }
     }
     CoverageUniformityAnalyzer coverage_analyzer(graph, 0);
-    std::ofstream is(cfg::get().output_dir + out_file);
+    std::ofstream is(cfg::get().output_dir / out_file);
     size_t component_count = 1;
     const auto& used_edges = gp_.get<SmartContainer<std::unordered_set<EdgeId>, Graph>>("used_edges");
     for (auto &comp: component_list_) {
@@ -378,7 +378,7 @@ void ChromosomeRemover::RunMetaPipeline() {
         }
         gp_.add("paired_handlers", paired_handlers);
         gp_.add("scaffolding_handlers", scaffolding_handlers);
-        OutputEdgeSequences(graph, cfg::get().output_dir + "before_chromosome_removal");
+        OutputEdgeSequences(graph, cfg::get().output_dir / "before_chromosome_removal");
     }
 //first iteration of coverage-based chromosome removal
     if (gp_.count<SmartVertexSet>("forbidden_vertices") == 0) {
@@ -393,7 +393,7 @@ void ChromosomeRemover::RunMetaPipeline() {
     std::string suffix = std::to_string(ext_limit_);
     while (suffix.length() < 4) suffix = "_" + suffix;
 
-    OutputEdgesByID(graph, cfg::get().output_dir + "edges_before" + suffix);
+    OutputEdgesByID(graph, cfg::get().output_dir / ("edges_before" + suffix));
     RemoveNearlyEverythingByCoverage((double) ext_limit_);
     FilterSmallComponents(); 
 //Graph is not changed after this line and before next chromosome remover iteration

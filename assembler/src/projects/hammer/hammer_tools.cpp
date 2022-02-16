@@ -38,42 +38,42 @@ void InitializeSubKMerPositions(int tau) {
   INFO("Hamming graph threshold tau=" << cfg::get().general_tau << ", k=" << K << ", subkmer positions = [ " << log_sstream.str() << "]" );
 }
 
-std::string getFilename(const string & dirprefix, const string & suffix) {
-  std::ostringstream tmp;
-  tmp.str(""); tmp << dirprefix.data() << "/" << suffix.data();
-  return tmp.str();
+filesystem::path getFilename(const filesystem::path & dirprefix,
+                                  const string & suffix) {
+  return dirprefix / suffix;
 }
 
-string getFilename(const string & dirprefix, unsigned iter_count, const string & suffix ) {
-  ostringstream tmp;
-  tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << "." << suffix.data();
-  return tmp.str();
+filesystem::path getFilename(const filesystem::path & dirprefix,
+                             unsigned iter_count, const string & suffix ) {
+  string iter_count_str = to_string(iter_count);
+  iter_count_str = iter_count_str.length()==2 ? iter_count_str : '0' + iter_count_str;
+  return dirprefix / (iter_count_str + '.' + suffix);
 }
 
-string getReadsFilename(const std::string & dirprefix, const std::string &fname, unsigned iter_no, const std::string & suffix) {
-  ostringstream tmp;
-  tmp.str("");
-
-  tmp << dirprefix.data() << "/" << fs::basename(fname) << '.' << std::setfill('0') << std::setw(2) << iter_no << "." << suffix.data();
-  return tmp.str();
+filesystem::path getReadsFilename(const filesystem::path & dirprefix, const filesystem::path &fname,
+                        unsigned iter_no, const string & suffix) {
+  string iter_no_str = to_string(iter_no);
+  iter_no_str = iter_no_str.length()==2 ? iter_no_str : "0" + iter_no_str;
+  return dirprefix / fname.stem().concat(iter_no_str + "." + suffix);
 }
 
-string getFilename( const string & dirprefix, const string & suffix, int suffix_num ) {
-  ostringstream tmp;
-  tmp.str(""); tmp << dirprefix.data() << "/" << suffix.data() << "." << suffix_num;
-  return tmp.str();
+filesystem::path getFilename( const filesystem::path & dirprefix, const string & suffix,
+                              int suffix_num) {
+  return dirprefix / (suffix + "." + to_string(suffix_num));
 }
 
-string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num ) {
-  ostringstream tmp;
-  tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << "." << suffix.data() << "." << suffix_num;
-  return tmp.str();
+filesystem::path getFilename( const filesystem::path & dirprefix, int iter_count,
+                              const string & suffix, int suffix_num ) {
+  string iter_count_str = to_string(iter_count);
+  iter_count_str = iter_count_str.length()==2 ? iter_count_str : "0" + iter_count_str;
+  return dirprefix / (iter_count_str + "." + suffix + "." + to_string(suffix_num));
 }
 
-string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num, const string & suffix2 ) {
-  ostringstream tmp;
-  tmp.str(""); tmp << dirprefix.data() << "/" << std::setfill('0') << std::setw(2) << iter_count << "." << suffix.data() << "." << suffix_num << "." << suffix2.data();
-  return tmp.str();
+filesystem::path getFilename( const filesystem::path & dirprefix, int iter_count,
+                    const string & suffix, int suffix_num, const string & suffix2 ) {
+  string iter_count_str = to_string(iter_count);
+  iter_count_str = iter_count_str.length()==2 ? iter_count_str : "0" + iter_count_str;
+  return dirprefix / (iter_count_str + "." + suffix + "." + to_string(suffix_num) + "." + suffix2);
 }
 
 CorrectionStats CorrectReadsBatch(std::vector<bool> &res,
@@ -105,7 +105,7 @@ CorrectionStats CorrectReadsBatch(std::vector<bool> &res,
 }
 
 CorrectionStats CorrectReadFile(const KMerData &data,
-                     const std::string &fname,
+                     const std::filesystem::path &fname,
                      std::ofstream *outf_good, std::ofstream *outf_bad) {
   int qvoffset = cfg::get().input_qvoffset;
   int trim_quality = cfg::get().input_trim_quality;
@@ -142,8 +142,9 @@ CorrectionStats CorrectReadFile(const KMerData &data,
 }
 
 CorrectionStats CorrectPairedReadFiles(const KMerData &data,
-                            const std::string &fnamel, const std::string &fnamer,
-                            ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp) {
+                            const std::filesystem::path &fnamel, const std::filesystem::path &fnamer,
+                            ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr,
+                            ofstream * ofunp) {
   int qvoffset = cfg::get().input_qvoffset;
   int trim_quality = cfg::get().input_trim_quality;
 
@@ -188,7 +189,7 @@ CorrectionStats CorrectPairedReadFiles(const KMerData &data,
     ++buffer_no;
   }
   if (!irsl.eof() || !irsr.eof())
-      FATAL_ERROR("Pair of read files " + fnamel + " and " + fnamer + " contain unequal amount of reads");
+      FATAL_ERROR("Pair of read files " + std::string(fnamel) + " and " + std::string(fnamer) + " contain unequal amount of reads");
   return stats;
 }
 
@@ -203,11 +204,12 @@ std::string getLargestPrefix(const std::string &str1, const std::string &str2) {
   return substr;
 }
 
-std::string CorrectSingleReadSet(size_t ilib, size_t iread, const std::string &fn, CorrectionStats &stats) {
-  std::string usuffix = std::to_string(ilib) + "_" +
+std::filesystem::path CorrectSingleReadSet(size_t ilib, size_t iread, const std::filesystem::path &fn,
+                                 CorrectionStats &stats) {
+  std::filesystem::path usuffix = std::to_string(ilib) + "_" +
                         std::to_string(iread) + ".cor.fastq";
 
-  std::string outcor = getReadsFilename(cfg::get().output_dir, fn, Globals::iteration_no, usuffix);
+  std::filesystem::path outcor = getReadsFilename(cfg::get().output_dir, fn, Globals::iteration_no, usuffix);
   std::ofstream ofgood(outcor.c_str());
   std::ofstream ofbad(getReadsFilename(cfg::get().output_dir, fn, Globals::iteration_no, "bad.fastq").c_str(),
                       std::ios::out | std::ios::ate);
@@ -233,14 +235,14 @@ size_t CorrectAllReads() {
     size_t iread = 0;
     for (auto I = lib.paired_begin(), E = lib.paired_end(); I != E; ++I, ++iread) {
       INFO("Correcting pair of reads: " << I->first << " and " << I->second);
-      std::string usuffix =  std::to_string(ilib) + "_" +
+      std::filesystem::path usuffix =  std::to_string(ilib) + "_" +
                              std::to_string(iread) + ".cor.fastq";
 
-      std::string unpaired = getLargestPrefix(I->first, I->second) + "_unpaired.fastq";
+      std::filesystem::path unpaired = getLargestPrefix(I->first, I->second) + "_unpaired.fastq";
 
-      std::string outcorl = getReadsFilename(cfg::get().output_dir, I->first,  Globals::iteration_no, usuffix);
-      std::string outcorr = getReadsFilename(cfg::get().output_dir, I->second, Globals::iteration_no, usuffix);
-      std::string outcoru = getReadsFilename(cfg::get().output_dir, unpaired,  Globals::iteration_no, usuffix);
+      std::filesystem::path outcorl = getReadsFilename(cfg::get().output_dir, I->first,  Globals::iteration_no, usuffix);
+      std::filesystem::path outcorr = getReadsFilename(cfg::get().output_dir, I->second, Globals::iteration_no, usuffix);
+      std::filesystem::path outcoru = getReadsFilename(cfg::get().output_dir, unpaired,  Globals::iteration_no, usuffix);
 
       std::ofstream ofcorl(outcorl.c_str());
       std::ofstream ofbadl(getReadsFilename(cfg::get().output_dir, I->first,  Globals::iteration_no, "bad.fastq").c_str(),

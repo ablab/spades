@@ -35,7 +35,7 @@ namespace online_visualization {
     cout << "Please try again" << endl;
   }
 
-  void FireFileDoesNotExist(const string& file) {
+  void FireFileDoesNotExist(const filesystem::path& file) {
     cout << "File " << file << " does not exist." << endl;
     cout << "Please try again" << endl;
   }
@@ -51,8 +51,8 @@ namespace online_visualization {
     cout << "Please try again" << endl;
   }
 
-  bool CheckFileExists(const string& file) {
-    if (!fs::is_regular_file(file)) {
+  bool CheckFileExists(const filesystem::path& file) {
+    if (!is_regular_file(file)) {
       FireFileDoesNotExist(file);
       return false;
     }
@@ -79,8 +79,8 @@ namespace online_visualization {
     return true;
   }
 
-  bool CheckEnvIsCorrect(string path, size_t K) {
-    if (!CheckFileExists(path + ".grseq"))
+  bool CheckEnvIsCorrect(filesystem::path path, size_t K) {
+    if (!exists(path.concat(".grseq")))
       return false;
 
     if (!(K >= runtime_k::MIN_K && cfg::get().K < runtime_k::MAX_K)) {

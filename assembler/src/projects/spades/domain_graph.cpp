@@ -420,8 +420,8 @@ DomainGraph::Arrangements DomainGraph::FindAllPossibleArrangements(VertexId v,
         auto edges = CollectEdges(p);
         auto comp = omnigraph::GraphComponent<debruijn_graph::Graph>::FromEdges(g_,
                                                                                 edges.begin(), edges.end(), true);
-        std::ofstream os(cfg::get().output_dir + "/bgc_in_gfa/" +
-                         std::to_string(component_id) + "_" + std::to_string(ordering_id) + ".gfa");
+        std::ofstream os(cfg::get().output_dir / ("bgc_in_gfa/" +
+                         std::to_string(component_id) + "_" + std::to_string(ordering_id) + ".gfa"));
         gfa::GFAComponentWriter writer(comp, os);
         writer.WriteSegmentsAndLinks();
     }

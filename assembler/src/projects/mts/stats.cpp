@@ -33,8 +33,8 @@ io::SingleRead ReadSequence(io::SingleStream& reader) {
     return read;
 }
 
-io::SingleRead ReadGenome(const string& genome_path) {
-    fs::CheckFileExistenceFATAL(genome_path);
+io::SingleRead ReadGenome(const filesystem::path& genome_path) {
+    CHECK_FATAL_ERROR(exists(genome_path), "File " << genome_path << " doesn't exist or can't be read!");
     auto genome_stream_ptr = io::EasyStream(genome_path, false);
     return ReadSequence(genome_stream_ptr);
 }
@@ -76,10 +76,10 @@ int main(int argc, char** argv) {
     using namespace GetOpt;
 
     size_t k;
-    string saves_path, contigs_path, splits_path, edges_path;
-    vector<string> genomes_path;
-    string annotation_in_fn, prop_annotation_in_fn;
-    string table_fn, graph_dir;
+    filesystem::path saves_path, contigs_path, splits_path, edges_path;
+    vector<filesystem::path> genomes_path;
+    filesystem::path annotation_in_fn, prop_annotation_in_fn;
+    filesystem::path table_fn, graph_dir;
     vector<bin_id> bins_of_interest;
 
     try {
@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
            << "Propagated edges\tPropagated length" << endl;
 
     for (const auto &genome_path : genomes_path) {
-        auto ref_name = fs::basename(genome_path);
+        auto ref_name = genome_path.stem();
         io::SingleRead genome = ReadGenome(genome_path);
 
         visualization::position_filler::FillPos(gp, genome_path, "", true);

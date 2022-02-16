@@ -17,7 +17,6 @@
 
 #include <boost/iterator/iterator_facade.hpp>
 
-#include <string>
 #include <filesystem>
 #include <vector>
 
@@ -27,11 +26,11 @@ class SequencingLibraryBase {
 public:
     class paired_reads_iterator :
             public boost::iterator_facade<paired_reads_iterator,
-                                          std::pair<std::string, std::string>,
+                                          std::pair<std::filesystem::path, std::filesystem::path>,
                                           boost::forward_traversal_tag,
-                                          std::pair<std::string, std::string> > {
+                                          std::pair<std::filesystem::path, std::filesystem::path> > {
 
-        typedef std::vector<std::string>::const_iterator inner_iterator;
+        typedef std::vector<std::filesystem::path>::const_iterator inner_iterator;
 
     public:
         paired_reads_iterator(inner_iterator left, inner_iterator right)
@@ -44,7 +43,7 @@ public:
         bool equal(const paired_reads_iterator &other) const {
             return this->left_ == other.left_ && this->right_ == other.right_;
         }
-        std::pair<std::string, std::string> dereference() const {
+        std::pair<std::filesystem::path, std::filesystem::path> dereference() const {
             return std::make_pair(*left_, *right_);
         }
 
@@ -52,7 +51,7 @@ public:
         inner_iterator right_;
     };
 
-    typedef typename adt::chained_iterator<std::vector<std::string>::const_iterator> single_reads_iterator;
+    typedef typename adt::chained_iterator<std::vector<std::filesystem::path>::const_iterator> single_reads_iterator;
 
     SequencingLibraryBase()
             : type_(LibraryType::PairedEnd), orientation_(LibraryOrientation::FR), number_(-1u) {}
@@ -79,15 +78,15 @@ public:
 
     void update_relative_reads_filenames(const std::filesystem::path &input_dir);
 
-    void push_back_single(const std::string &reads) {
+    void push_back_single(const std::filesystem::path &reads) {
         single_reads_.push_back(reads);
     }
 
-    void push_back_merged(const std::string &reads) {
+    void push_back_merged(const std::filesystem::path &reads) {
         merged_reads_.push_back(reads);
     }
 
-    void push_back_paired(const std::string &left, const std::string &right) {
+    void push_back_paired(const std::filesystem::path &left, const std::filesystem::path &right) {
         left_paired_reads_.push_back(left);
         right_paired_reads_.push_back(right);
     }
@@ -263,11 +262,11 @@ private:
     LibraryOrientation orientation_;
     unsigned number_;
 
-    std::vector<std::string> left_paired_reads_;
-    std::vector<std::string> right_paired_reads_;
-    std::vector<std::string> interlaced_reads_;
-    std::vector<std::string> merged_reads_;
-    std::vector<std::string> single_reads_;
+    std::vector<std::filesystem::path> left_paired_reads_;
+    std::vector<std::filesystem::path> right_paired_reads_;
+    std::vector<std::filesystem::path> interlaced_reads_;
+    std::vector<std::filesystem::path> merged_reads_;
+    std::vector<std::filesystem::path> single_reads_;
 };
 
 template<class Data>
@@ -300,7 +299,7 @@ public:
     typedef adt::chained_iterator<typename Library::paired_reads_iterator> paired_reads_iterator;
 
     DataSet() {}
-    explicit DataSet(const std::string &path) { load(path); }
+    explicit DataSet(const std::filesystem::path &path) { load(path); }
 
     void load(const std::filesystem::path &filename);
     void save(const std::filesystem::path &filename);

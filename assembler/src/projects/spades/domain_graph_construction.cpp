@@ -429,7 +429,7 @@ void DomainGraphConstruction::run(graph_pack::GraphPack &gp, const char*) {
     domain_graph.FindDomainOrderings(gp,
                                      hm.component_size_part, 1, hm.start_only_from_tips,
                                      "gene_clusters.fasta", cfg::get().output_dir);
-    domain_graph.ExportToDot(fs::append_path(cfg::get().output_dir, "domain_graph.dot"));
+    domain_graph.ExportToDot(cfg::get().output_dir / "domain_graph.dot");
 }
 
 }

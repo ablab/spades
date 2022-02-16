@@ -169,7 +169,7 @@ void StageManager::run(graph_pack::GraphPack& g,
         }
 
         {
-            TIME_TRACE_SCOPE("load", static_cast<llvm::StringRef>(saves_policy_.LoadPath()));
+            TIME_TRACE_SCOPE("load", saves_policy_.LoadPath().c_str());
             while (start_stage != stages_.begin()) {
                 try {
                     (*std::prev(start_stage))->load(g, saves_policy_.LoadPath());

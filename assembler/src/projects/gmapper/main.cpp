@@ -54,10 +54,10 @@ struct gcfg {
     {}
 
     unsigned k;
-    std::string file;
+    std::filesystem::path file;
     std::string graph;
-    std::string tmpdir;
-    std::string outfile;
+    std::filesystem::path tmpdir;
+    std::filesystem::path outfile;
     unsigned nthreads;
     unsigned libindex;
     alignment::BWAIndex::AlignmentMode mode;
@@ -76,7 +76,7 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
       (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
-      (option("--tmp-dir") & value("dir", cfg.tmpdir)) % "scratch directory to use",
+      (option("--tmp-dir") & value("dir", cfg.tmpdir.c_str())) % "scratch directory to use",
       (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option",
       (option("--hic").set(cfg.hic)) % "enable HiC-aware paired-end processing (implies -Xhic unless mode is specified)",
       (with_prefix("-X",
@@ -122,7 +122,7 @@ static void ProcessContigs(const Graph &graph,
 void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::filesystem::path &filename,
                io::IdMapper<std::string> *id_mapper) {
     using namespace debruijn_graph;
-    if (utils::ends_with(static_cast<std::string>(filename), ".gfa")) {
+    if (filename.extension() == ".gfa") {
         gfa::GFAReader gfa(filename);
         INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
         gfa.to_graph(graph, id_mapper);
@@ -190,8 +190,7 @@ int main(int argc, char* argv[]) {
         }
         INFO("Graph loaded. Total vertices: " << graph.size() << ", total edges: " << graph.e_size());
 
-        // FIXME: Get rid of this "/" junk
-        debruijn_graph::config::init_libs(dataset, nthreads, tmpdir.concat("/"));
+        debruijn_graph::config::init_libs(dataset, nthreads, tmpdir);
 
         auto &lib = dataset[cfg.libindex];
 
@@ -225,8 +224,8 @@ int main(int argc, char* argv[]) {
             size_t idx = 0;
             for (const auto& entry : paths) {
                 idx += 1;
-                gfa_writer.WritePaths(entry.path(), static_cast<std::filesystem::path>(std::string("PATH_") + std::to_string(idx) + "_length_" + std::to_string(entry.path().size()) + "_weigth_" + std::to_string(entry.weight()),
-                                      "Z:W:" + std::to_string(entry.weight())));
+                gfa_writer.WritePaths(entry.path(), std::string("PATH_") + std::to_string(idx) + "_length_" + std::to_string(entry.path().size()) + "_weigth_" + std::to_string(entry.weight()),
+                                      "Z:W:" + std::to_string(entry.weight()));
             }
         } else if (lib.is_paired()) {
             paired_info::PairedIndex index(graph);

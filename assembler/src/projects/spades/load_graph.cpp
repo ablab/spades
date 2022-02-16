@@ -6,22 +6,21 @@
 
 #include "load_graph.hpp"
 #include "io/graph/gfa_reader.hpp"
-#include "utils/filesystem/path_helper.hpp"
 #include "utils/logger/logger.hpp"
 
 #include <iterator>
 
 namespace debruijn_graph {
 
-void LoadGraph::run(graph_pack::GraphPack &gp, const char*) {
-    std::string path;
+void LoadGraph::run(GraphPack &gp, const char*) {
+    std::filesystem::path path;
     for (const auto &lib : cfg::get().ds.reads.libraries()) {
         if (lib.is_assembly_graph()) {
             path = *lib.single_begin();
             break;
         }
     }
-    fs::CheckFileExistenceFATAL(path);
+    CHECK_FATAL_ERROR(exists(path), "File " << path << " doesn't exist or can't be read!");
     
     gfa::GFAReader gfa(path);
     INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());

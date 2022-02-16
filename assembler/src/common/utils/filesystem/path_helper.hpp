@@ -9,6 +9,7 @@
 
 #include <string>
 #include <vector>
+#include <filesystem>
 
 namespace fs {
 //todo review and make names consistent!
@@ -17,7 +18,7 @@ typedef std::vector<std::string> files_t;
 
 bool make_dir(std::string const &folder);
 
-std::string make_temp_dir(std::string const &prefix, std::string const &suffix);
+std::filesystem::path make_temp_dir(std::filesystem::path const &prefix, std::string const &suffix);
 
 void remove_dir(std::string const &folder);
 

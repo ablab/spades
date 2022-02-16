@@ -32,11 +32,11 @@ struct gcfg {
     unsigned RL = 0;
     std::string bin_cov_str;
     std::string graph;
-    std::string tmpdir;
-    std::string edge_profile_fn;
-    std::string stop_codons_fn;
-    std::string deadends_fn;
-    std::string outfile;
+    std::filesystem::path tmpdir;
+    std::filesystem::path edge_profile_fn;
+    std::filesystem::path stop_codons_fn;
+    std::filesystem::path deadends_fn;
+    std::filesystem::path outfile;
     bool save_gfa = false;
     bool save_gp = false;
     bool use_cov_ratios = false;
@@ -59,10 +59,10 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
       (option("-c", "--coverage") & value("coverage", cfg.bin_cov_str)) % "estimated average (k+1-mer) bin coverage (default: 0.) "
                                                                           "or 'auto' (works only with '-d/--dead-ends' provided)",
       (option("-t", "--threads") & integer("value", cfg.nthreads)) % "# of threads to use (default: max_threads / 2)",
-      (option("-p", "--profile") & value("file", cfg.edge_profile_fn)) % "file with edge coverage profiles across multiple samples",
-      (option("-s", "--stop-codons") & value("file", cfg.stop_codons_fn)) % "file stop codon positions",
-      (option("-d", "--dead-ends") & value("file", cfg.deadends_fn)) % "while processing a subgraph -- file listing edges which are dead-ends in the original graph",
-      (option("--tmpdir") & value("dir", cfg.tmpdir)) % "scratch directory to use (default: <output prefix>.tmp)"
+      (option("-p", "--profile") & value("file", cfg.edge_profile_fn.c_str())) % "file with edge coverage profiles across multiple samples",
+      (option("-s", "--stop-codons") & value("file", cfg.stop_codons_fn.c_str())) % "file stop codon positions",
+      (option("-d", "--dead-ends") & value("file", cfg.deadends_fn.c_str())) % "while processing a subgraph -- file listing edges which are dead-ends in the original graph",
+      (option("--tmpdir") & value("dir", cfg.tmpdir.c_str())) % "scratch directory to use (default: <output prefix>.tmp)"
   );
 
   auto result = parse(argc, argv, cli);
@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
     try {
         unsigned nthreads = cfg.nthreads;
         unsigned k = cfg.k;
-        std::filesystem::path tmpdir = cfg.tmpdir.empty() ? cfg.outfile + ".tmp" : cfg.tmpdir;
+        std::filesystem::path tmpdir = cfg.tmpdir.empty() ? cfg.outfile.concat(".tmp") : cfg.tmpdir;
 
         create_directory(tmpdir);
 
@@ -192,7 +192,7 @@ int main(int argc, char** argv) {
         std::unique_ptr<ProfileStorage> profile_storage;
         if (!cfg.edge_profile_fn.empty()) {
             INFO("Loading edge profiles from " << cfg.edge_profile_fn);
-            CHECK_FATAL_ERROR(exists(static_cast<std::filesystem::path>(cfg.edge_profile_fn)),
+            CHECK_FATAL_ERROR(exists(cfg.edge_profile_fn),
                               "File " << cfg.edge_profile_fn << " doesn't exist or can't be read!");
             size_t sample_cnt = DetermineSampleCnt(cfg.edge_profile_fn);
             INFO("Sample count determined as " << sample_cnt);
@@ -206,7 +206,7 @@ int main(int argc, char** argv) {
         std::unique_ptr<PositionStorage> stop_codons_storage;
         if (!cfg.stop_codons_fn.empty()) {
             INFO("Loading stop codon positions from " << cfg.stop_codons_fn);
-            CHECK_FATAL_ERROR(exists(static_cast<std::filesystem::path>(cfg.stop_codons_fn)),
+            CHECK_FATAL_ERROR(exists(cfg.stop_codons_fn),
                               "File " << cfg.stop_codons_fn << " doesn't exist or can't be read!");
             stop_codons_storage = std::make_unique<PositionStorage>(graph);
             std::ifstream is(cfg.stop_codons_fn);
@@ -247,7 +247,7 @@ int main(int argc, char** argv) {
 
         INFO("Saving graph to " << cfg.outfile);
 
-        create_directory(static_cast<std::filesystem::path>(cfg.outfile).parent_path());
+        create_directory(cfg.outfile.parent_path());
 
         if (cfg.save_gp) {
             INFO("Saving graph pack in SPAdes binary format");
@@ -256,7 +256,7 @@ int main(int argc, char** argv) {
 
         if (cfg.save_gfa || !cfg.save_gp) {
             INFO("Saving GFA");
-            std::ofstream os(cfg.outfile + ".gfa");
+            std::ofstream os(cfg.outfile.concat(".gfa"));
             gfa::GFAWriter writer(graph, os);
             writer.WriteSegmentsAndLinks();
         }
@@ -264,20 +264,20 @@ int main(int argc, char** argv) {
         //Saving all the additional storages if were loaded
         if (profile_storage) {
             INFO("Saving profile storage");
-            std::ofstream os(cfg.outfile + ".tsv");
+            std::ofstream os(cfg.outfile.concat(".tsv"));
             profile_storage->Save(os);
         }
 
         if (stop_codons_storage) {
             INFO("Saving codons");
-            std::ofstream os(cfg.outfile + ".stops");
+            std::ofstream os(cfg.outfile.concat(".stops"));
             stop_codons_storage->Save(os);
         }
 
         if (!cfg.deadends_fn.empty()) {
             INFO("Saving deadends");
             VERIFY_MSG(edge_qual.IsAttached(), "Edge quality got detached");
-            std::ofstream deadends_os(cfg.outfile + ".deadends");
+            std::ofstream deadends_os(cfg.outfile.concat(".deadends"));
             for (auto it = graph.ConstEdgeBegin(/*canonical_only*/true); !it.IsEnd(); ++it) {
                 EdgeId e = *it;
                 if (IsDeadEnd(graph, graph.EdgeStart(e)) || IsDeadEnd(graph, graph.EdgeEnd(e))) {

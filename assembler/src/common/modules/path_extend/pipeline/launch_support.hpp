@@ -39,7 +39,7 @@ struct PathExtendParamsContainer {
     PathExtendParamsContainer(const config::dataset& dataset_info,
                               const pe_config::MainPEParamsT& pe_cfg_,
                               const config::debruijn_config::strand_specificity& strand_specificity,
-                              const std::string& output_dir_,
+                              const std::filesystem::path& output_dir_,
                               config::pipeline_type mode_,
                               bool uneven_depth_,
                               bool avoid_rc_connections_,
@@ -48,7 +48,7 @@ struct PathExtendParamsContainer {
         pset(pe_cfg_.param_set),
         ss(strand_specificity),
         output_dir(output_dir_),
-        etc_dir(output_dir + pe_cfg_.etc_dir + "/"),
+        etc_dir(output_dir / pe_cfg_.etc_dir),
         mode(mode_),
         uneven_depth(uneven_depth_),
         avoid_rc_connections(avoid_rc_connections_),
@@ -79,8 +79,8 @@ struct PathExtendParamsContainer {
 
     const config::debruijn_config::strand_specificity& ss;
 
-    std::string output_dir;
-    std::string etc_dir;
+    std::filesystem::path output_dir;
+    std::filesystem::path etc_dir;
 
     config::pipeline_type mode;
     bool uneven_depth;

@@ -593,17 +593,17 @@ static void AnnotateExtraEdgesRound(const Graph &g,
     INFO("Annotation expansion");
     auto annotated_edges = edge_qual.PositiveQualEdges();
 
-    create_directory(out_path / "unambig/");
-    create_directory(out_path / "only_ann_reach/");
+    create_directory(out_path / "unambig");
+    create_directory(out_path / "only_ann_reach");
     EdgeSet expanded(annotated_edges);
-    utils::insert_all(expanded, UnambiguousExtensions(g, annotated_edges, out_path / "unambig/"));
+    utils::insert_all(expanded, UnambiguousExtensions(g, annotated_edges, out_path / "unambig"));
     ////TODO think about step by step additions (currently initial annotation set is not changed)
     //utils::insert_all(expanded, BoundedRegionsExpander(g, annotated_edges, 10000).Run());
     //INFO("Extra edges total " << expanded.size());
     utils::insert_all(expanded, OnlyAnnotatedReachableExpander(g, annotated_edges,
             //FIXME magic constants
                                                                   2500, 0.7 * est_cov, 1.3 * est_cov,
-                                                                  out_path / "only_ann_reach/").Run());
+                                                                  out_path / "only_ann_reach").Run());
     INFO("Only annotated reachable done");
 
     std::set<EdgeId> extra_edges;
@@ -627,8 +627,8 @@ static void AnnotateExtraEdgesRound(const Graph &g,
     INFO("Annotation expansion done");
 }
 
-static void CompareAnnotations(const graph_pack::GraphPack &gp, const EdgeQuality<Graph> &annotation,
-                        const std::string &out_folder = "") {
+static void CompareAnnotations(const GraphPack &gp, const EdgeQuality<Graph> &annotation,
+                        const std::filesystem::path &out_folder = "") {
     const auto &g = gp.get<Graph>();
     const auto &edge_qual = gp.get<EdgeQuality<Graph>>();
     using namespace visualization::graph_colorer;
@@ -653,10 +653,10 @@ static void CompareAnnotations(const graph_pack::GraphPack &gp, const EdgeQualit
                     edge_colorer->AddColorer(std::make_shared<SetColorer<Graph>>(g, std::vector<EdgeId>(1, e), "green"));
 
                     WriteComponent<Graph>(omnigraph::VertexNeighborhood<Graph>(g, g.EdgeStart(e), 50, 5000),
-                                          out_folder + "/edge_" + std::to_string(g.int_id(e)) + "_s.dot",
+                                          out_folder / ("edge_" + std::to_string(g.int_id(e)) + "_s.dot"),
                                           DefaultColorer(g, edge_colorer), labeler);
                     WriteComponent<Graph>(omnigraph::VertexNeighborhood<Graph>(g, g.EdgeEnd(e), 50, 5000),
-                                          out_folder + "/edge_" + std::to_string(g.int_id(e)) + "_e.dot",
+                                          out_folder / ("edge_" + std::to_string(g.int_id(e)) + "_e.dot"),
                                           DefaultColorer(g, edge_colorer), labeler);
                     edge_colorer->PopColorer();
                 }

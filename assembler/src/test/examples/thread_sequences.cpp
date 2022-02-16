@@ -19,10 +19,10 @@ using namespace std;
 
 namespace debruijn_graph {
 
-static void Run(size_t K, const string &graph_path, const string &contigs_file,
-         const string& out_paths_fn, const string& out_edge_info_fn,
-         const string &tmpdir) {
-    fs::make_dir(tmpdir);
+static void Run(size_t K, const filesystem::path &graph_path, const filesystem::path &contigs_file,
+         const filesystem::path& out_paths_fn, const filesystem::path& out_edge_info_fn,
+         const filesystem::path &tmpdir) {
+    create_directory(tmpdir);
 
     graph_pack::GraphPack gp(K, tmpdir, 0);
     const auto& graph = gp.get<Graph>();
@@ -76,16 +76,16 @@ int main(int argc, char** argv) {
 
     try {
         unsigned k;
-        std::string workdir, graph_path, sequences_fn, path_out_fn, edge_out_fn;
+        std::filesystem::path workdir, graph_path, sequences_fn, path_out_fn, edge_out_fn;
 
         cxxopts::Options options(argv[0], " thread sequences through the graph");
         options.add_options()
                 ("k,kmer", "K-mer length", cxxopts::value<unsigned>(k)->default_value("55"), "K")
-                ("g,graph", "GFA file or folder with SPAdes saves", cxxopts::value<std::string>(graph_path))
-                ("q,queries", "Query sequences", cxxopts::value<std::string>(sequences_fn), "file")
-                ("p,path_out_file", "File to store path output", cxxopts::value<std::string>(path_out_fn))
-                ("e,edge_out_file", "File to store edge output", cxxopts::value<std::string>(edge_out_fn))
-                ("w,workdir", "Working directory (default: ./tmp)", cxxopts::value<std::string>(workdir)->default_value("./tmp"), "dir")
+                ("g,graph", "GFA file or folder with SPAdes saves", cxxopts::value<std::filesystem::path>(graph_path))
+                ("q,queries", "Query sequences", cxxopts::value<std::filesystem::path>(sequences_fn), "file")
+                ("p,path_out_file", "File to store path output", cxxopts::value<std::filesystem::path>(path_out_fn))
+                ("e,edge_out_file", "File to store edge output", cxxopts::value<std::filesystem::path>(edge_out_fn))
+                ("w,workdir", "Working directory (default: ./tmp)", cxxopts::value<std::filesystem::path>(workdir)->default_value("./tmp"), "dir")
                 ("h,help", "Print help");
 
         options.parse(argc, argv);

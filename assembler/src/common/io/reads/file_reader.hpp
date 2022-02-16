@@ -15,10 +15,11 @@
 
 #pragma once
 
-#include "utils/logger/logger.hpp"
+#include "parser.hpp"
 #include "read_stream.hpp"
 #include "single_read.hpp"
-#include "parser.hpp"
+
+#include "utils/logger/logger.hpp"
 
 #include <filesystem>
 

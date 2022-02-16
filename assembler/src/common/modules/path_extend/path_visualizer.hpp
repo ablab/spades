@@ -73,7 +73,7 @@ public:
 
     }
 
-    void writeGraphWithPathsSimple(const graph_pack::GraphPack& gp, const std::string& file_name,
+    void writeGraphWithPathsSimple(const GraphPack& gp, const std::filesystem::path& file_name,
                                    const std::string& graph_name, const PathContainer& paths) const {
         INFO("Visualizing graph " << graph_name << " to file " << file_name);
         std::fstream filestr;
@@ -102,8 +102,8 @@ public:
         filestr.close();
         INFO("Visualizing graph done");
     }
-
-    void writeGraphSimple(const graph_pack::GraphPack& gp, const std::string& file_name, const std::string& graph_name) const{
+    
+    void writeGraphSimple(const graph_pack::GraphPack& gp, const std::filesystem::path& file_name, const std::string& graph_name) const{
         INFO("Visualizing graph " << graph_name << " to file " << file_name);
         std::fstream filestr;
         filestr.open(file_name.c_str(), std::fstream::out);
@@ -133,7 +133,7 @@ public:
         INFO("Visualizing graph done");
     }
 
-    void writeGraphSimple(const Graph& g, const std::string& file_name, const std::string& graph_name) const{
+    void writeGraphSimple(const Graph& g, const std::filesystem::path& file_name, const std::string& graph_name) const{
         INFO("Visualizing graph " << graph_name << " to file " << file_name);
         std::fstream filestr;
         filestr.open(file_name.c_str(), std::fstream::out);

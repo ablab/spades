@@ -48,7 +48,7 @@ static void DrawNeighbourComponents(graph_pack::GraphPack &gp, const std::string
             DEBUG("Writing to dot");
             bin_refinement::DrawComponent(graph,
                                           component_collector.reached(),
-                                          static_cast<std::string>(pics_path) + std::to_string(graph.int_id(e)) + ".dot",
+                                          pics_path / (std::to_string(graph.int_id(e)) + ".dot"),
                                           annotation.PositiveQualEdges(), bin_refinement::EdgeSet(), &edge_pos);
             DEBUG("Written");
         }
@@ -96,7 +96,7 @@ static void Run(size_t K, const std::filesystem::path &graph_path,
         VERIFY(!gp.get<EdgeQuality<Graph>>().IsAttached());
     }
 
-    const std::filesystem::path pics_path = out_prefix + "_neighbourhoods/";
+    const std::filesystem::path pics_path = out_prefix + "_neighbourhoods";
     //const std::string pics_path = "";
     if (!pics_path.empty()) {
         create_directory(pics_path);
@@ -122,7 +122,7 @@ struct gcfg {
     std::string graph;
     std::string core_contigs;
     std::string reference;
-    std::string tmpdir;
+    std::filesystem::path tmpdir;
     std::string out_prefix;
     unsigned nthreads;
 };
@@ -137,7 +137,7 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-r", "--reference") & value("file", cfg.reference)) % "fasta file with reference sequence (for benchmarking purposes)",
       (option("-t", "--threads") & integer("value", cfg.nthreads)) % "# of threads to use",
-      (option("--tmpdir") & value("dir", cfg.tmpdir)) % "scratch directory to use"
+      (option("--tmpdir") & value("dir", cfg.tmpdir.c_str())) % "scratch directory to use"
   );
 
   auto result = parse(argc, argv, cli);

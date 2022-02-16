@@ -24,7 +24,7 @@
 namespace io {
 
 bool ReadConverter::CheckBinaryReadsExist(SequencingLibraryT& lib) {
-    return exists(static_cast<std::filesystem::path>(lib.data().binary_reads_info.bin_reads_info_file));
+    return exists(lib.data().binary_reads_info.bin_reads_info_file);
 }
 
 //todo change to yaml

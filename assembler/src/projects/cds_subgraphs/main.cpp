@@ -171,7 +171,7 @@ void ExtractCDSSubgraphs(const graph_pack::GraphPack &gp,
                          const GeneInitSeq &starting_seqs,
                          const std::unordered_map<std::string, size_t> &cds_len_ests,
                          const io::EdgeNamingF<Graph> &edge_naming_f,
-                         const std::string &out_folder) {
+                         const std::filesystem::path &out_folder) {
     const auto &graph = gp.get<Graph>();
     //fixme rename
     PartialGenePathProcessor partial_path_processor(graph, edge_naming_f);
@@ -199,7 +199,7 @@ void ExtractCDSSubgraphs(const graph_pack::GraphPack &gp,
                                                                           edges.end(), /*add conjugate*/true));
 
         if (component.e_size() > 0) {
-            WriteComponent(component, out_folder + gene_id, stop_codon_poss, edge_naming_f);
+            WriteComponent(component, out_folder / gene_id, stop_codon_poss, edge_naming_f);
         } else {
             INFO("Couldn't find a non-trivial component for gene " << gene_id);
         }
@@ -210,7 +210,7 @@ void ParallelExtractCDSSubgraphs(const graph_pack::GraphPack &gp,
                                  const GeneInitSeq &starting_seqs,
                                  const std::unordered_map<std::string, size_t> &cds_len_ests,
                                  const io::EdgeNamingF<Graph> &edge_naming_f,
-                                 const std::string &out_folder) {
+                                 const std::filesystem::path &out_folder) {
     const auto &graph = gp.get<Graph>();
     //fixme rename
     PartialGenePathProcessor partial_path_processor(graph, edge_naming_f);
@@ -257,7 +257,7 @@ void ParallelExtractCDSSubgraphs(const graph_pack::GraphPack &gp,
                                                                               edges.end(), /*add conjugate*/true));
 
             if (component.e_size() > 0) {
-                WriteComponent(component, out_folder + gene_id, stop_codon_poss, edge_naming_f);
+                WriteComponent(component, out_folder / gene_id, stop_codon_poss, edge_naming_f);
             } else {
                 INFO("Couldn't find a non-trivial component for gene " << gene_id);
             }
@@ -289,14 +289,14 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
     using namespace clipp;
 
     auto cli = (
-            (required("-o", "--output-folder") & value("dir", static_cast<std::string>(cfg.outdir))) % "output folder to use for GFA files",
+            (required("-o", "--output-folder") & value("dir", cfg.outdir.c_str())) % "output folder to use for GFA files",
                     one_of((option("--part-desc") & value("file", cfg.genes_desc)) % "file with partial genes description (.gff)",
                            (option("--part-seq") & value("file", cfg.genes_seq)) % "file with partial genes sequences (.fasta)"),
                     (required("--graph") & value("graph", cfg.graph)) % "In GFA (ending with .gfa) or prefix to SPAdes graph pack",
                     (required("--cds-len-est") & value("file", cfg.cds_len_fn)) % "file with cds length estimamtes",
                     (required("-k") & integer("value", cfg.k)) % "k-mer length to use",
                     (option("-t", "--threads") & integer("value", cfg.nthreads)) % "# of threads to use (default: max_threads / 2)",
-                    (option("--tmpdir") & value("dir", static_cast<std::string>(cfg.tmpdir))) % "scratch directory to use (default: <outdir>/tmp)"
+                    (option("--tmpdir") & value("dir", cfg.tmpdir.c_str())) % "scratch directory to use (default: <outdir>/tmp)"
     );
 
     auto result = parse(argc, argv, cli);
@@ -318,8 +318,7 @@ int main(int argc, char** argv) {
     try {
         unsigned nthreads = cfg.nthreads;
         unsigned k = cfg.k;
-        std::filesystem::path out_folder = cfg.outdir.concat("/");
-        create_directory(out_folder);
+        create_directory(cfg.outdir);
 
         INFO("K-mer length set to " << k);
 
@@ -328,7 +327,7 @@ int main(int argc, char** argv) {
         omp_set_num_threads((int) nthreads);
         INFO("# of threads to use: " << nthreads);
 
-        std::filesystem::path tmpdir = cfg.tmpdir.empty() ? out_folder.concat("tmp") : cfg.tmpdir;
+        std::filesystem::path tmpdir = cfg.tmpdir.empty() ? cfg.outdir / "tmp" : cfg.tmpdir;
         create_directory(tmpdir);
         graph_pack::GraphPack gp(k, tmpdir, 0);
         
@@ -353,10 +352,10 @@ int main(int argc, char** argv) {
         if (parallel) {
             //Experimental parallel mode
             cds_subgraphs::ParallelExtractCDSSubgraphs(gp, starting_seqs, cds_len_ests,
-                              label_helper.edge_naming_f(), out_folder);
+                              label_helper.edge_naming_f(), cfg.outdir);
         } else {
             cds_subgraphs::ExtractCDSSubgraphs(gp, starting_seqs, cds_len_ests,
-                              label_helper.edge_naming_f(), out_folder);
+                              label_helper.edge_naming_f(), cfg.outdir);
         }
 
         INFO("Done");

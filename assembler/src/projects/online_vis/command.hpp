@@ -62,27 +62,6 @@ class Command {
 
 };
 
-//todo reduce code duplication in cap's test_utils
-void MakeDirPath(const std::string &path) {
-  if (path.size() == 0) {
-    TRACE("Somewhat delirium: trying to create directory ``");
-    return;
-  }
-
-  size_t slash_pos = 0;
-  while ((slash_pos = path.find_first_of('/', slash_pos + 1)) != std::string::npos) {
-    fs::make_dir(path.substr(0, slash_pos));
-  }
-  if (path[path.size() - 1] != '/') {
-    fs::make_dir(path);
-  }
-}
-
-inline bool DirExist(const std::string &path) {
-  struct stat st;
-  return (stat(path.c_str(), &st) == 0) && (S_ISDIR(st.st_mode));
-}
-
 template <class Env>
 class LocalCommand : public Command<Env> {
 
@@ -112,7 +91,7 @@ class LocalCommand : public Command<Env> {
 
   std::string TryFetchFolder(Env &curr_env, const Args &args, size_t arg_nmb = 1) const {
     if (args.size() > arg_nmb) {
-      return MakeDirIfAbsent(args[arg_nmb] + "/");
+      return MakeDirIfAbsent(args[arg_nmb]);
     } else {
       return MakeDirIfAbsent(CurrentFolder(curr_env));
     }
@@ -128,9 +107,13 @@ class LocalCommand : public Command<Env> {
   }
 
 private:
-  std::string MakeDirIfAbsent(const string& folder) const {
-      if (!DirExist(folder))
-          MakeDirPath(folder);
+  std::filesystem::path MakeDirIfAbsent(const std::filesystem::path& folder) const {
+      if (!exists(folder)) {
+          if (path.empty())
+              TRACE("Somewhat delirium: trying to create directory ``");
+          else
+            create_directories(folder);
+      }
       return folder;
   }
 

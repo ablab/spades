@@ -189,13 +189,13 @@ size_t KmerProfileIndex::sample_cnt_ = 0;
 KmerProfileIndex::KmerProfileIndex(unsigned k,
                                    const std::string& index_prefix):
     index_(k) {
-    std::string index_file = index_prefix + ".kmm";
+    std::filesystem::path index_file = index_prefix + ".kmm";
     INFO("Loading kmer index from " << index_file);
     std::ifstream kmers_in(index_file, std::ios::binary);
     index_.BinRead(kmers_in, index_file);
 
     const size_t data_size = SampleCount() * index_.size();
-    std::string profiles_file = index_prefix + ".bpr";
+    std::filesystem::path profiles_file = index_prefix + ".bpr";
     INFO("Loading profiles data of " << data_size << " elements from " << profiles_file);
     profiles_ = ProfilesT(profiles_file, data_size, false);
     //Prefetch mmapped data by force

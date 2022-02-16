@@ -23,8 +23,8 @@ class LoadGenomeCommand : public LocalCommand<DebruijnEnvironment> {
         bool CheckCorrectness(const vector<string>& args) const {
             if (!CheckEnoughArguments(args))
                 return false;
-            const string& file = args[1];
-            if (!CheckFileExists(file))
+            const filesystem::path& file = args[1];
+            if (!exists(file))
                 return false;
             return true;
         }
@@ -48,7 +48,7 @@ class LoadGenomeCommand : public LocalCommand<DebruijnEnvironment> {
           const vector<string>& args = arg_list.GetAllArguments();
             if (!CheckCorrectness(args))
                 return;
-            const string& file = args[1];
+            const filesystem::path& file = args[1];
             auto genome_reader = io::FixingWrapper(io::FileReadStream(file));
             io::SingleRead genome;
             genome_reader >> genome;
@@ -119,8 +119,8 @@ class SetFolderCommand : public LocalCommand<DebruijnEnvironment> {
             const vector<string>& args = arg_list.GetAllArguments();
             if (!CheckCorrectness(args))
                 return;
-            string folder_name = args[1];
-            fs::make_dirs(folder_name);
+            filesystem::path folder_name = args[1];
+            create_directories(folder_name);
             curr_env.set_folder(folder_name);
         }
 };
@@ -153,7 +153,7 @@ class SetFileNameCommand : public LocalCommand<DebruijnEnvironment> {
             const vector<string>& args = arg_list.GetAllArguments();
             if (!CheckCorrectness(args))
                 return;
-            string file_name = args[1];
+            filesystem::path file_name = args[1];
             curr_env.set_file_name(file_name);
         }
 };

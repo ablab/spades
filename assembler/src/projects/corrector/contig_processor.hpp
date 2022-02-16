@@ -25,9 +25,9 @@ using namespace sam_reader;
 typedef std::vector<std::pair<std::string, io::LibraryType> > sam_files_type;
 class ContigProcessor {
     sam_files_type sam_files_;
-    std::string contig_file_;
+    std::filesystem::path contig_file_;
     std::string contig_name_;
-    std::string output_contig_file_;
+    std::filesystem::path output_contig_file_;
     std::string contig_;
     std::vector<position_description> charts_;
     InterestingPositionProcessor ipp_;
@@ -38,7 +38,7 @@ class ContigProcessor {
 protected:
     DECL_LOGGER("ContigProcessor")
 public:
-    ContigProcessor(const sam_files_type &sam_files, const std::string &contig_file)
+    ContigProcessor(const sam_files_type &sam_files, const std::filesystem::path &contig_file)
             : sam_files_(sam_files), contig_file_(contig_file) {
         ReadContig();
         ipp_.set_contig(contig_);

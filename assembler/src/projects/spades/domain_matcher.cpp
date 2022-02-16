@@ -79,7 +79,7 @@ static void match_contigs(const path_extend::PathContainer &contig_paths, const 
         if (path.Length() <= 0)
             continue;
 
-        std::filesystem::path path_string = scaffold_maker.MakeSequence(path);
+        std::string path_string = scaffold_maker.MakeSequence(path);
         match_contigs_internal(matcher, path, path_string,
                                hmm.name(), hmm.desc() ? hmm.desc() : "",
                                res, oss_contig, hmm.length());
@@ -88,7 +88,7 @@ static void match_contigs(const path_extend::PathContainer &contig_paths, const 
         if (conj_path.Length() <= 0)
             continue;
 
-        std::filesystem::path path_string_conj = scaffold_maker.MakeSequence(conj_path);
+        std::string path_string_conj = scaffold_maker.MakeSequence(conj_path);
         match_contigs_internal(matcher, conj_path, path_string_conj,
                                hmm.name(), hmm.desc() ? hmm.desc() : "",
                                res, oss_contig, hmm.length());

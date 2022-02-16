@@ -17,6 +17,7 @@
 using namespace llvm;
 
 namespace llvm { namespace yaml {
+
 template <>
 struct ScalarEnumerationTraits<corrector::Strategy> {
     static void enumeration(yaml::IO &io, corrector::Strategy &value) {
@@ -38,10 +39,26 @@ class DataSetReader {
         return io::DataSet<>(path);
     }
 
-    std::string path;
+    std::filesystem::path path;
 };
 
 namespace llvm { namespace yaml {
+
+template<>
+struct ScalarTraits<std::filesystem::path> {
+    static void output(const std::filesystem::path &value, void*, llvm::raw_ostream &out) {
+        out << value;
+    }
+    static StringRef input(StringRef scalar, void*, std::filesystem::path &value) {
+        value = scalar.str();
+        return StringRef();
+    }
+    static QuotingType mustQuote(StringRef S) {
+        return needsQuotes(S);
+    }
+};
+
+
 template <>
 struct MappingTraits<corrector::corrector_config> {
     static void mapping(yaml::IO &io, corrector::corrector_config &cfg) {
@@ -63,13 +80,13 @@ namespace corrector {
 void load(corrector_config& cfg, const std::string &filename) {
     ErrorOr<std::unique_ptr<MemoryBuffer>> Buf = MemoryBuffer::getFile(filename);
     if (!Buf)
-        throw(std::string("Failed to load config file ") + filename);
+        throw(std::string("Failed to load config file " + filename));
 
     yaml::Input yin(*Buf.get());
     yin >> cfg;
 
     if (yin.error())
-        throw(std::string("Failed to load config file ") + filename);
+        throw(std::string("Failed to load config file " + filename));
 
     cfg.max_nthreads = spades_set_omp_threads(cfg.max_nthreads);
 }

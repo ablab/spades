@@ -58,9 +58,9 @@ class OnlineVisualizer {
   }
 
   inline void init() {
-    string p = fs::append_path(cfg::get().load_from, "simplification"); // just for default
+    string p = cfg::get().load_from / "simplification"; // just for default
 
-    fs::make_dir("tmp");
+    std::filesystem::create_directory("tmp");
     DEBUG("Adding Commands");
     AddBaseCommands();
     AddSpecificCommands();

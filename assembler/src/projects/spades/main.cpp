@@ -16,8 +16,6 @@
 #include "k_range.hpp"
 #include "version.hpp"
 
-using fs::make_dir;
-
 namespace spades {
 void assemble_genome();
 }
@@ -45,26 +43,26 @@ struct TimeTracerRAII {
     std::string time_trace_file_;
 };
 
-void load_config(const std::vector<std::string>& cfg_fns) {
+void load_config(const std::vector<std::filesystem::path>& cfg_fns) {
     for (const auto& s : cfg_fns) {
-        fs::CheckFileExistenceFATAL(s);
+        CHECK_FATAL_ERROR(exists(s), "File " << s << " doesn't exist or can't be read!");
     }
 
     cfg::create_instance(cfg_fns);
 
-    make_dir(cfg::get().output_dir);
-    make_dir(cfg::get().tmp_dir);
+    create_directory(cfg::get().output_dir);
+    create_directory(cfg::get().tmp_dir);
 
-    make_dir(cfg::get().temp_bin_reads_path);
+    create_directory(cfg::get().temp_bin_reads_path);
 }
 
-void create_console_logger(const std::string& dir, std::string log_prop_fn) {
+void create_console_logger(const std::filesystem::path& dir, std::filesystem::path log_prop_fn) {
     using namespace logging;
 
-    if (!fs::FileExists(log_prop_fn))
-        log_prop_fn = fs::append_path(dir, log_prop_fn);
+    if (!exists(log_prop_fn))
+        log_prop_fn = dir / log_prop_fn;
 
-    logger *lg = create_logger(fs::FileExists(log_prop_fn) ? log_prop_fn : "");
+    logger *lg = create_logger(exists(log_prop_fn) ? log_prop_fn : "");
     lg->add_writer(std::make_shared<console_writer>());
     //lg->add_writer(std::make_shared<mutex_writer>(std::make_shared<console_writer>()));
     attach_logger(lg);
@@ -81,9 +79,9 @@ int main(int argc, char **argv) {
     try {
         using namespace debruijn_graph;
 
-        std::string cfg_dir = fs::parent_path(argv[1]);
+        std::filesystem::path cfg_dir = std::filesystem::path(argv[1]).parent_path();
 
-        std::vector<std::string> cfg_fns;
+        std::vector<std::filesystem::path> cfg_fns;
         for (int i = 1; i < argc; ++i) {
            cfg_fns.push_back(argv[i]);
         }

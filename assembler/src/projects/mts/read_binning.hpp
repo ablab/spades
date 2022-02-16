@@ -17,8 +17,8 @@ namespace debruijn_graph {
 class ContigBinner {
     const graph_pack::GraphPack& gp_;
     const EdgeAnnotation& edge_annotation_;
-    std::string out_root_;
-    std::string sample_name_;
+    std::filesystem::path out_root_;
+    std::filesystem::path sample_name_;
     std::shared_ptr<SequenceMapper<Graph>> mapper_;
     std::set<std::string> bins_of_interest_;
 

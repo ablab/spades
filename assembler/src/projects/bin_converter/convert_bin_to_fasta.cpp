@@ -38,9 +38,9 @@ void create_console_logger() {
 
 namespace convert_bin_to_fasta {
 struct Args {
-    std::string prefix_file = "";
-    std::string info_file = "";
-    std::string output_file = "contigs.fasta";
+    std::filesystem::path prefix_file;
+    std::filesystem::path info_file;
+    std::filesystem::path output_file = "contigs.fasta";
 };
 }
 
@@ -49,9 +49,9 @@ void process_cmdline(int argc, char **argv, convert_bin_to_fasta::Args &args) {
     bool print_help = false;
 
     auto cli = (
-        (option("--prefix") & value("path", args.prefix_file)) % "Prefix of .off and .seq file for contigs in binary format",
-        (option("--info_file") & value("path", args.info_file)) % "Path to info file for contigs in binary format",
-        (option("-o", "--output_file") & value("path", args.output_file)) % "Output file name",
+        (option("--prefix") & value("path", args.prefix_file.c_str())) % "Prefix of .off and .seq file for contigs in binary format",
+        (option("--info_file") & value("path", args.info_file.c_str())) % "Path to info file for contigs in binary format",
+        (option("-o", "--output_file") & value("path", args.output_file.c_str())) % "Output file name",
         (option("-h", "--help").set(print_help)) % "Show help"
     );
 
@@ -69,7 +69,7 @@ void process_cmdline(int argc, char **argv, convert_bin_to_fasta::Args &args) {
         }
     }
 
-    if (args.prefix_file == "" || args.info_file == "") {
+    if (args.prefix_file.empty() || args.info_file.empty()) {
         std::cerr << "ERROR: No binary file were specified (you should specify info file and prefix to .off and .seq)"
                   << std::endl << std::endl;
         std::cout << help_message << std::endl;
