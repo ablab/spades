@@ -66,8 +66,8 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
   using namespace clipp;
 
   auto cli = (
-      cfg.file << value("dataset description (in YAML) or input FASTA file"),
-      cfg.outfile << value("output filename"),
+      cfg.file.c_str() << value("dataset description (in YAML) or input FASTA file"),
+      cfg.outfile.c_str() << value("output filename"),
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-c").set(cfg.coverage)) % "infer coverage",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",

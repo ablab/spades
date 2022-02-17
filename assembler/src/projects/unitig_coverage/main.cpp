@@ -100,9 +100,9 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
   using namespace clipp;
 
   auto cli = (
-      cfg.file << value("dataset description (in YAML)"),
-      cfg.graph << value("graph (in GFA)"),
-      cfg.outfile << value("output filename"),
+      cfg.file.c_str() << value("dataset description (in YAML)"),
+      cfg.graph.c_str() << value("graph (in GFA)"),
+      cfg.outfile.c_str() << value("output filename"),
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-t", "--threads") & integer("value", cfg.nthreads)) % "# of threads to use",
       (option("--tmpdir") & value("dir", cfg.tmpdir.c_str())) % "scratch directory to use"

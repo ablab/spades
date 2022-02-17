@@ -32,7 +32,7 @@ namespace corrector {
         contig_name_ = cur_read.name();
         contig_ = cur_read.GetSequenceString();
 
-        output_contig_file_ = contig_file_.parent_path() / (std::string(contig_file_.stem()) + ".ref.fasta");
+        output_contig_file_ = contig_file_.parent_path() / (contig_file_.stem().native() + ".ref.fasta");
         charts_.resize(contig_.length());
     }
 

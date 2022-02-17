@@ -49,7 +49,7 @@ void DatasetProcessor::SplitGenome(const filesystem::path &genome_splitted_dir) 
         buffered_reads_[contig_name].clear();
         io::OFastaReadStream oss(full_path);
         oss << io::SingleRead(contig_name, contig_seq);
-        DEBUG("full_path " + std::string(full_path))
+        DEBUG("full_path " + full_path.native())
     }
 }
 
@@ -172,7 +172,7 @@ void DatasetProcessor::PrepareContigDirs(const size_t lib_count) {
 void DatasetProcessor::ProcessDataset() {
     size_t lib_num = 0;
     INFO("Splitting assembly...");
-    INFO("Assembly file: " + std::string(genome_file_));
+    INFO("Assembly file: " + genome_file_.native());
     SplitGenome(work_dir_);
 
     if (RunBwaIndex() != 0) {

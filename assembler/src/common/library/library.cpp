@@ -11,9 +11,9 @@
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/YAMLTraits.h"
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <string>
 
 using namespace llvm;
 using namespace io;
@@ -50,10 +50,10 @@ struct ScalarEnumerationTraits<LibraryType> {
 
 template<>
 struct ScalarTraits<std::filesystem::path> {
-    void output(const std::filesystem::path &val, void *, raw_ostream &out) {
+    static void output(const std::filesystem::path &val, void *, raw_ostream &out) {
         out << val;
     }
-    StringRef input(StringRef scalar, void *, std::filesystem::path &val) {
+    static StringRef input(StringRef scalar, void *, std::filesystem::path &val) {
         val = scalar.str();
         return StringRef();
     }

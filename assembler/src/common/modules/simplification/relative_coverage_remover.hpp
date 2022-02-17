@@ -602,7 +602,7 @@ class RelativeCovComponentFinder {
                 vertices.insert(g_.EdgeEnd(e));
             }
 
-            auto filename = vis_dir_ / (success ? ("success" / std::to_string(succ_cnt_++)) : ("fail" / std::to_string(fail_cnt_++)));
+            auto filename = vis_dir_ / (success ? ("success/" + std::to_string(succ_cnt_++)) : ("fail/" + std::to_string(fail_cnt_++)));
             visualization::visualization_utils::WriteComponent(
                     ComponentCloser<Graph>(g_, 0).CloseComponent(
                             GraphComponent<Graph>::FromVertices(g_, vertices)),

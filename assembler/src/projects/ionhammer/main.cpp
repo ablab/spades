@@ -338,7 +338,7 @@ int main(int argc, char** argv) {
             std::to_string(ilib) + "_" + std::to_string(iread) + ".cor.fasta";
 
         std::filesystem::path outcorl = cfg::get().output_dir / I->first.stem().concat(usuffix);
-        std::filesystem::path outcorr = cfg::get().output_dir / I->second).stem().concat(usuffix);
+        std::filesystem::path outcorr = cfg::get().output_dir / I->second.stem().concat(usuffix);
 
         io::OFastaPairedStream ors(outcorl, outcorr);
 
@@ -354,7 +354,7 @@ int main(int argc, char** argv) {
       // Second, correct all the single FASTQ files
       for (auto I = lib.single_begin(), E = lib.single_end(); I != E;
            ++I, ++iread) {
-        if (*I.extension() == ".bam") {
+        if (I->extension() == ".bam") {
           continue;
         }
 
@@ -363,7 +363,7 @@ int main(int argc, char** argv) {
         std::string usuffix =
             std::to_string(ilib) + "_" + std::to_string(iread) + ".cor.fasta";
 
-        std::filesystem::path outcor = cfg::get().output_dir / *I.stem().concat(usuffix);
+        std::filesystem::path outcor = cfg::get().output_dir / I->stem().concat(usuffix);
         io::OFastaReadStream ors(outcor);
 
         io::FileReadStream irs(*I, io::PhredOffset);
@@ -378,7 +378,7 @@ int main(int argc, char** argv) {
       // Finally, correct all the BAM stuff in a row
       for (auto I = lib.reads_begin(), E = lib.reads_end(); I != E;
            ++I, ++iread) {
-        if (*I.extension() != ".bam") {
+        if (I->extension() != ".bam") {
           continue;
         }
 
@@ -387,7 +387,7 @@ int main(int argc, char** argv) {
         std::string usuffix =
             std::to_string(ilib) + "_" + std::to_string(iread) + ".cor.fasta";
 
-        std::filesystem::path outcor = cfg::get().output_dir / *I.stem().concat(usuffix);
+        std::filesystem::path outcor = cfg::get().output_dir / I->stem().concat(usuffix);
         io::OFastaReadStream ors(outcor);
 
         BamTools::BamReader bam_reader;

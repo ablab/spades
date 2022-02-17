@@ -136,7 +136,7 @@ void process_cmdline(int argc, char **argv, kmer_count::Args &args) {
 
     auto cli = (
         (option("-k", "--kmer") & integer("value", args.K)) % "K-mer length",
-        (option("-d", "--dataset") & value("dir", args.dataset)) % "Dataset description (in YAML), input files ignored",
+        (option("-d", "--dataset") & value("dir", args.dataset.c_str())) % "Dataset description (in YAML), input files ignored",
         (option("-t", "--threads") & integer("value", args.nthreads)) % "# of threads to use",
         (option("-w", "--workdir") & value("dir", args.workdir.c_str())) % "Working directory to use",
         (option("-b", "--bufsize") & integer("value", args.read_buffer_size)) % "Sorting buffer size, per thread",

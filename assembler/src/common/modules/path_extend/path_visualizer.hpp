@@ -73,7 +73,7 @@ public:
 
     }
 
-    void writeGraphWithPathsSimple(const GraphPack& gp, const std::filesystem::path& file_name,
+    void writeGraphWithPathsSimple(const graph_pack::GraphPack& gp, const std::filesystem::path& file_name,
                                    const std::string& graph_name, const PathContainer& paths) const {
         INFO("Visualizing graph " << graph_name << " to file " << file_name);
         std::fstream filestr;

@@ -11,6 +11,7 @@
 #include "io/reads/file_reader.hpp"
 #include "io/reads/wrapper_collection.hpp"
 #include "io/utils/edge_namer.hpp"
+#include "utils/filesystem/path_helper.hpp"
 #include "utils/logger/log_writers.hpp"
 #include "utils/stl_utils.hpp"
 
@@ -51,7 +52,7 @@ class KMerAligner {
                  const filesystem::path &output_file,
                  shared_ptr<MapperClass> mapper):
         g_(g), edge_namer_(edge_namer), output_file_(output_file), mapper_(mapper) {
-        myfile_.open(std::string(output_file_) + ".tsv", ofstream::out);
+        myfile_.open(output_file_.native() + ".tsv", ofstream::out);
     }
 
     ReadMappingStr AlignRead(const io::SingleRead &read) const {
@@ -193,7 +194,7 @@ void LoadGraph(const filesystem::path &saves_path,
                debruijn_graph::ConjugateDeBruijnGraph &g, io::IdMapper<std::string> &id_mapper) {
     if (saves_path.extension() == ".gfa") {
         DEBUG("Load gfa")
-        CHECK_FATAL_ERROR(is_regular_file(saves_path), "GFA-file " + std::string(saves_path) + " doesn't exist");
+        CHECK_FATAL_ERROR(is_regular_file(saves_path), "GFA-file " + saves_path.native() + " doesn't exist");
         gfa::GFAReader gfa(saves_path);
         DEBUG("Segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
         gfa.to_graph(g, &id_mapper);

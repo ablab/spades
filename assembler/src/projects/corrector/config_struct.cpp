@@ -77,16 +77,16 @@ struct MappingTraits<corrector::corrector_config> {
 
 
 namespace corrector {
-void load(corrector_config& cfg, const std::string &filename) {
-    ErrorOr<std::unique_ptr<MemoryBuffer>> Buf = MemoryBuffer::getFile(filename);
+void load(corrector_config& cfg, const std::filesystem::path &filename) {
+    ErrorOr<std::unique_ptr<MemoryBuffer>> Buf = MemoryBuffer::getFile(filename.c_str());
     if (!Buf)
-        throw(std::string("Failed to load config file " + filename));
+        throw(std::string("Failed to load config file ") + filename.native());
 
     yaml::Input yin(*Buf.get());
     yin >> cfg;
 
     if (yin.error())
-        throw(std::string("Failed to load config file " + filename));
+        throw(std::string("Failed to load config file ") + filename.native());
 
     cfg.max_nthreads = spades_set_omp_threads(cfg.max_nthreads);
 }

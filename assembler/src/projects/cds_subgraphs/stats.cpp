@@ -61,7 +61,7 @@ static bool UsedOnBothSides(const Graph &g, EdgeId e, const std::multimap<EdgeId
             std::any_of(g.in_begin(g.EdgeStart(e)), g.in_end(g.EdgeStart(e)), used_f);
 }
 
-static void Run(const GraphPack &gp, const std::filesystem::path &contigs_file,
+static void Run(const graph_pack::GraphPack &gp, const std::filesystem::path &contigs_file,
                 const std::filesystem::path &paths_fn, const std::filesystem::path &edge_info_fn,
                 const std::string &subgraph_prefix, const std::filesystem::path &edge_color_fn,
                 const io::EdgeLabelHelper<Graph> &label_helper) {

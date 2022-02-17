@@ -10,32 +10,21 @@
 #include "utils/stl_utils.hpp"
 #include "utils/verify.hpp"
 
-#include <cppformat/format.h>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/info_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <cppformat/format.h>
 
-#include <string>
-#include <vector>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <map>
+#include <string>
+#include <type_traits>
+#include <vector>
 
 namespace config_common {
-// for enable_if/disable_if
-namespace details {
-template<class T, class S>
-struct is_equal_type {
-    static const bool value = false;
-};
 
 template<class T>
-struct is_equal_type<T, T> {
-    static const bool value = true;
-};
-}
-
-template<class T>
-typename boost::enable_if_c<details::is_equal_type<T, std::string>::value ||
+typename boost::enable_if_c<std::is_convertible<T, std::string>::value ||
                             boost::is_arithmetic<T>::value>::type
 load(T &value,
      boost::property_tree::ptree const &pt, std::string const &key,
@@ -45,8 +34,7 @@ load(T &value,
 }
 
 template<class T>
-typename boost::disable_if_c<details::is_equal_type<T,
-                                                    std::string>::value ||
+typename boost::disable_if_c<std::is_convertible<T, std::string>::value ||
                              boost::is_arithmetic<T>::value>::type
 load(T &value,
      boost::property_tree::ptree const &pt, std::string const &key,

@@ -8,17 +8,20 @@
 #ifndef HAMMER_TOOLS_HPP
 #define HAMMER_TOOLS_HPP
 
-#include <unordered_map>
-#include <algorithm>
-#include <stdexcept>
-#include <iomanip>
-#include <fstream>
-#include "io/reads/read.hpp"
-#include "io/reads/ireadstream.hpp"
-#include "sequence/seq.hpp"
 #include "globals.hpp"
 #include "kmer_stat.hpp"
+
 #include "io/kmers/mmapped_reader.hpp"
+#include "io/reads/ireadstream.hpp"
+#include "io/reads/read.hpp"
+#include "sequence/seq.hpp"
+
+#include <algorithm>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <stdexcept>
+#include <unordered_map>
 
 namespace hammer {
 

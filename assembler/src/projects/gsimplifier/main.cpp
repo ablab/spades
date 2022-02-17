@@ -47,8 +47,8 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
   using namespace clipp;
 
   auto cli = (
-      cfg.graph << value("graph. In GFA (ending with .gfa) or prefix to SPAdes graph pack"),
-      cfg.outfile << value("output prefix"),
+      cfg.graph.c_str() << value("graph. In GFA (ending with .gfa) or prefix to SPAdes graph pack"),
+      cfg.outfile.c_str() << value("output prefix"),
       option("--gfa").set(cfg.save_gfa) % "produce GFA output (default: true)",
       option("--spades-gp").set(cfg.save_gp) % "produce output graph pack in SPAdes internal format (default: false). "
                                                       "Recommended if bulges are removed to improve further read mapping. "

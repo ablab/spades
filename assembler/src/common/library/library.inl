@@ -69,7 +69,7 @@ void io::DataSet<Data>::save(const std::filesystem::path &filename) {
 
 template<class Data>
 void io::DataSet<Data>::load(const std::filesystem::path &filename) {
-    ErrorOr<std::unique_ptr<MemoryBuffer>> Buf = MemoryBuffer::getFile(static_cast<llvm::Twine>(filename));
+    ErrorOr<std::unique_ptr<MemoryBuffer>> Buf = MemoryBuffer::getFile(filename.c_str());
     if (!Buf) {
         std::cerr << std::string("Failed to load file ") << filename;
         throw;

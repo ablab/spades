@@ -627,7 +627,7 @@ static void AnnotateExtraEdgesRound(const Graph &g,
     INFO("Annotation expansion done");
 }
 
-static void CompareAnnotations(const GraphPack &gp, const EdgeQuality<Graph> &annotation,
+static void CompareAnnotations(const graph_pack::GraphPack &gp, const EdgeQuality<Graph> &annotation,
                         const std::filesystem::path &out_folder = "") {
     const auto &g = gp.get<Graph>();
     const auto &edge_qual = gp.get<EdgeQuality<Graph>>();
