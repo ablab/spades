@@ -16,6 +16,7 @@ else ()
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options(-Wno-deprecated)
 
 # Use libc++ with clang due to C++11 mode
