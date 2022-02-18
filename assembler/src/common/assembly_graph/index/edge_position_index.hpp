@@ -38,8 +38,7 @@ class EdgeInfo {
         if (!valid())
             return EdgeInfo(IdType(), removed() ? TOMBSTONE : CLEARED);
 
-        return EdgeInfo(g.conjugate(edge()), unsigned(g.length(edge()) + g.k() - k
-                                                      - offset() - 1));
+        return EdgeInfo(g.conjugate(edge()), unsigned(g.length(edge()) + g.k() - k - offset()));
     }
 
     IdType edge() const {
@@ -82,8 +81,8 @@ class EdgeInfo {
     }
 } __attribute__((packed));
 
-template<class stream, class IdType>
-stream &operator<<(stream &s, const EdgeInfo<IdType> &info) {
+template<class stream, class IdType, class IdHolder = IdType>
+stream &operator<<(stream &s, const EdgeInfo<IdType, IdHolder> &info) {
     return s << "EdgeInfo[" << info.edge() << ", " << info.offset() << "]";
 }
 
