@@ -33,7 +33,7 @@ add_executable(spades-ionhammer
 
 
 
-target_link_libraries(spades-ionhammer input utils pipeline mph_index ${COMMON_LIBRARIES})
+target_link_libraries(spades-ionhammer modules input utils pipeline mph_index ${COMMON_LIBRARIES})
 #target_link_libraries(kmer_evaluator input  utils mph_index  BamTools ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
