@@ -1,13 +1,13 @@
 # -*- cmake -*-
 
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
-  # Require at least gcc 5.3
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.3)
-    message(FATAL_ERROR "SPAdes requires gcc version 5.3 or later")
+  # Require at least gcc 9.1
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.1)
+    message(FATAL_ERROR "SPAdes requires gcc version 9.1 or later")
   endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.8)
-    message(FATAL_ERROR "SPAdes requires clang version 3.8 or later")
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5)
+    message(FATAL_ERROR "SPAdes requires clang version 5 or later")
   endif()
 else()
   message(WARNING "Unsupported compiler is detected. SPAdes compilation was not tested on it and may fail")
