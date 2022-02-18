@@ -16,9 +16,10 @@
 #include "io/kmers/mmapped_writer.hpp"
 #include "utils/filesystem/path_helper.hpp"
 
-#include <iostream>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <iostream>
 
 #include "config_struct_hammer.hpp"
 
