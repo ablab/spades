@@ -383,7 +383,7 @@ void AnalyzeVertices(debruijn_graph::Graph &graph,
     LinkIndexGraphConstructor link_index_constructor(graph, barcode_extractor_ptr, score_threshold,
                                                      tail_threshold, length_threshold, count_threshold, threads);
     auto score_function = link_index_constructor.ConstructScoreFunction();
-
+    std::unordered_set<debruijn_graph::VertexId> covered_vertices;
     std::ofstream os(fs::append_path(output_path, "complex_tellseq_links.tsv"));
     os << "First id\tSecond id\tFirst barcodes\tSecond barcodes\tShared links\n";
     for (const auto &vertex: interesting_vertices) {
@@ -392,6 +392,7 @@ void AnalyzeVertices(debruijn_graph::Graph &graph,
                 scaffold_graph::ScaffoldGraph::ScaffoldEdge sc_edge(in_edge, out_edge);
                 auto score = score_function->GetScore(sc_edge);
                 if (math::ge(score, score_threshold)) {
+                    covered_vertices.insert(vertex);
                     //fixme head\tail
                     size_t in_barcodes = barcode_extractor_ptr->GetNumberOfBarcodes(in_edge);
                     size_t out_barcodes = barcode_extractor_ptr->GetNumberOfBarcodes(out_edge);
@@ -401,6 +402,7 @@ void AnalyzeVertices(debruijn_graph::Graph &graph,
             }
         }
     }
+    INFO(covered_vertices.size() << " covered vertices");
 }
 
 
@@ -497,7 +499,8 @@ int main(int argc, char** argv) {
         }
 
         AnalyzeVertices(graph, barcode_extractor_ptr, count_threshold, tail_threshold, length_threshold, cfg.nthreads,
-                        4.0, id_mapper.get(), cfg.output_dir);
+                        2.0, id_mapper.get(), cfg.output_dir);
+
 
 //        GetLongEdgeStatistics(graph, barcode_index, training_length_threshold, training_length_offset,
 //                              training_min_read_threshold, training_linkage_distance, cfg.nthreads, cfg.output_dir);
