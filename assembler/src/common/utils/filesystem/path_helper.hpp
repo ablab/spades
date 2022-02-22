@@ -23,6 +23,4 @@ std::filesystem::path make_full_path(std::filesystem::path const &path);
 std::filesystem::path screen_whitespaces(std::filesystem::path const &path);
 
 std::filesystem::path resolve(const std::filesystem::path &path);
-
-std::filesystem::path make_launch_time_dir_name();
 }

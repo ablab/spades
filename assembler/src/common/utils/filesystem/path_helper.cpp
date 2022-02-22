@@ -76,16 +76,4 @@ std::filesystem::path resolve(const std::filesystem::path &path) {
     }
     return result.make_preferred();
 }
-
-std::filesystem::path make_launch_time_dir_name() {
-    time_t rawtime;
-    struct tm * timeinfo;
-    char buffer[80];
-
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
-
-    strftime(buffer, 80, "%m.%d_%H.%M.%S", timeinfo);
-    return std::filesystem::path(buffer);
-}
 }
