@@ -130,6 +130,7 @@ struct gcfg {
 static void process_cmdline(int argc, char **argv, gcfg &cfg) {
   using namespace clipp;
 
+  std::string tmpdir;
   auto cli = (
       cfg.graph << value("graph (in binary or GFA)"),
       cfg.core_contigs << value("path to contigs attributed to the bin"),
@@ -137,7 +138,7 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-r", "--reference") & value("file", cfg.reference)) % "fasta file with reference sequence (for benchmarking purposes)",
       (option("-t", "--threads") & integer("value", cfg.nthreads)) % "# of threads to use",
-      (option("--tmpdir") & value("dir", cfg.tmpdir.c_str())) % "scratch directory to use"
+      (option("--tmpdir") & value("dir", tmpdir)) % "scratch directory to use"
   );
 
   auto result = parse(argc, argv, cli);
@@ -145,6 +146,7 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
       std::cout << make_man_page(cli, argv[0]);
       exit(1);
   }
+  cfg.tmpdir = tmpdir;
 }
 
 int main(int argc, char** argv) {

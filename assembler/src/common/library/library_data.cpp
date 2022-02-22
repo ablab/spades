@@ -12,21 +12,19 @@ using namespace debruijn_graph::config;
 
 namespace llvm { namespace yaml {
 
-
-void ScalarTraits<std::filesystem::path, void>::output(const std::filesystem::path &value,
-                                                 void*, llvm::raw_ostream &out) {
-    out << value;
-}
-
-StringRef ScalarTraits<std::filesystem::path, void>::input(StringRef scalar,
-                                                     void*, std::filesystem::path &value) {
-    value = scalar.str();
-    return StringRef();
-}
-
-QuotingType ScalarTraits<std::filesystem::path, void>::mustQuote(StringRef) {
-    return QuotingType::Double;
-}
+template<>
+struct ScalarTraits<std::filesystem::path> {
+    static void output(const std::filesystem::path &value, void*, llvm::raw_ostream &out) {
+        out << value;
+    }
+    static StringRef input(StringRef scalar, void*, std::filesystem::path &value) {
+        value = scalar.str();
+        return StringRef();
+    }
+    static QuotingType mustQuote(StringRef s) {
+        return needsQuotes(s);
+    }
+};
 
 
 void MappingTraits<LibraryData::BinaryReadsInfo>::mapping(IO &io, LibraryData::BinaryReadsInfo &info) {

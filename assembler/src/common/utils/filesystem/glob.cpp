@@ -16,7 +16,7 @@ namespace fs {
 
 // https://stackoverflow.com/questions/8401777/simple-glob-in-c-on-unix-system
 // TODO add only_dirs/only_files option?
-std::vector<std::string> glob(const std::string &pattern) {
+std::vector<std::filesystem::path> glob(const std::string &pattern) {
     glob_t glob_result;
     ::memset(&glob_result, 0, sizeof(glob_result));
 
@@ -33,7 +33,7 @@ std::vector<std::string> glob(const std::string &pattern) {
         throw std::runtime_error(std::string("::glob() failed with return_value ") + status);
     }
 
-    std::vector<std::string> filenames;
+    std::vector<std::filesystem::path> filenames;
     for (size_t i = 0; i < glob_result.gl_pathc; ++i) {
         filenames.emplace_back(glob_result.gl_pathv[i]);
     }

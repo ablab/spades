@@ -220,9 +220,10 @@ void process_cmdline(int argc, char **argv,
                     string &cfg_name,
                     string &seq_type,
                     unsigned &nthreads,
-                    string &output_dir) {
+                    filesystem::path &output_dir) {
     using namespace clipp;
 
+    string output_dir_;
     auto cli = (
       cfg_name << value("aligner parameters description (in YAML)")
                         .if_missing([]{ cout << "ERROR: No input YAML was specified\n"; } ),
@@ -239,7 +240,7 @@ void process_cmdline(int argc, char **argv,
                                          .if_missing([]{ cout << "ERROR: k-mer value is not provided\n"; } ))
                                          % "graph k-mer size (odd value)",
       (option("-t", "--threads") & integer("value", nthreads)) % "# of threads to use",
-      (option("-o", "--outdir") & value("dir", output_dir)) % "output directory"
+      (option("-o", "--outdir") & value("dir", output_dir_)) % "output directory"
     );
 
     auto result = parse(argc, argv, cli);
@@ -257,12 +258,14 @@ void process_cmdline(int argc, char **argv,
         std::cout << make_man_page(cli, argv[0]);
         exit(-1);
     }
+    output_dir = output_dir_;
 }
 
 int main(int argc, char **argv) {
 
     unsigned nthreads = 8;
-    string cfg, output_dir = "./spaligner_result", seq_type;
+    string cfg, seq_type;
+    filesystem::path output_dir = "./spaligner_result";
     sensitive_aligner::GAlignerConfig config;
 
     process_cmdline(argc, argv, config, cfg, seq_type, nthreads, output_dir);

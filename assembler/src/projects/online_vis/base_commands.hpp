@@ -426,7 +426,7 @@ namespace online_visualization {
             return;
 
           size_t number = GetInt(args[1]);
-          const string& file = args[2];
+          const std::filesystem::path& file = args[2];
 
           ofstream outfile;
           outfile.open(file);
@@ -477,8 +477,8 @@ namespace online_visualization {
           if (!CheckCorrectness(args))
             return;
 
-          const string& file = args[1];
-          if (!CheckFileExists(file))
+          const std::filesystem::path& file = args[1];
+          if (!exists(file))
             return;
 
           ifstream infile;

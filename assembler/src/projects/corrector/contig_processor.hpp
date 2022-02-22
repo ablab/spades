@@ -22,7 +22,7 @@ namespace corrector {
 
 using namespace sam_reader;
 
-typedef std::vector<std::pair<std::string, io::LibraryType> > sam_files_type;
+typedef std::vector<std::pair<std::filesystem::path, io::LibraryType> > sam_files_type;
 class ContigProcessor {
     sam_files_type sam_files_;
     std::filesystem::path contig_file_;

@@ -47,7 +47,7 @@ class SimplePerfectHashMap : public kmers::KeyIteratingMap<RtSeq, uint32_t> {
 class ParallelSortingSplitter : public kmers::KMerSortingSplitter<RtSeq> {
   using Seq = RtSeq;
 
-  std::vector<std::string> files_;
+  std::vector<std::filesystem::path> files_;
   size_t read_buffer_size_;
 
   class BufferFiller {
@@ -124,24 +124,25 @@ namespace kmer_count {
 struct Args {
     unsigned nthreads = omp_get_max_threads();
     unsigned K = 21;
-    std::filesystem::path workdir, dataset = "";
+    std::filesystem::path workdir, dataset;
     size_t read_buffer_size = 536870912;
-    std::vector<std::string> input;
+    std::vector<std::filesystem::path> input;
 };
 }
 
 void process_cmdline(int argc, char **argv, kmer_count::Args &args) {
     using namespace clipp;
     bool print_help = false;
-
+    std::string workdir, dataset;
+    std::vector<std::string> input;
     auto cli = (
         (option("-k", "--kmer") & integer("value", args.K)) % "K-mer length",
-        (option("-d", "--dataset") & value("dir", args.dataset.c_str())) % "Dataset description (in YAML), input files ignored",
+        (option("-d", "--dataset") & value("dir", dataset)) % "Dataset description (in YAML), input files ignored",
         (option("-t", "--threads") & integer("value", args.nthreads)) % "# of threads to use",
-        (option("-w", "--workdir") & value("dir", args.workdir.c_str())) % "Working directory to use",
+        (option("-w", "--workdir") & value("dir", workdir)) % "Working directory to use",
         (option("-b", "--bufsize") & integer("value", args.read_buffer_size)) % "Sorting buffer size, per thread",
         (option("-h", "--help").set(print_help)) % "Show help",
-        opt_values("input files", args.input)
+        opt_values("input files", input)
     );
 
     auto help_message = make_man_page(cli, argv[0])
@@ -180,6 +181,11 @@ void process_cmdline(int argc, char **argv, kmer_count::Args &args) {
         std::cerr << "ERROR: No input files were specified" << std::endl << std::endl;
         std::cout << help_message << std::endl;
         exit(-1);
+    }
+    args.workdir = workdir;
+    args.dataset = dataset;
+    for(const auto& file : input) {
+        args.input.push_back(file);
     }
 }
 

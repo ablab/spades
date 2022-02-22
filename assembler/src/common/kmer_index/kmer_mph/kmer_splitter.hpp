@@ -151,7 +151,7 @@ protected:
                 fclose(f);
 
                 // Write index
-                f = fopen((ostreams[k]->file() + ".idx").c_str(), "ab");
+                f = fopen((ostreams[k]->file().native() + ".idx").c_str(), "ab");
                 if (!f)
                     FATAL_ERROR("Cannot open temporary file " << ostreams[k]->file() << " for writing");
                 res = fwrite(&cnt, sizeof(cnt), 1, f);

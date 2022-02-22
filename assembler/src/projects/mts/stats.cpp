@@ -43,7 +43,7 @@ EdgeAnnotation LoadAnnotation(const graph_pack::GraphPack& gp,
                               const vector<bin_id>& bins_of_interest,
                               io::SingleStream& contigs_stream,
                               io::SingleStream& splits_stream,
-                              const string& annotation_path) {
+                              const filesystem::path& annotation_path) {
     AnnotationFiller filler(gp, bins_of_interest);
     AnnotationStream annotation_stream(annotation_path);
     return filler(contigs_stream, splits_stream, annotation_stream);

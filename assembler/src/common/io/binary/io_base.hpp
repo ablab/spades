@@ -97,7 +97,7 @@ public:
     }
 
     void Save(const std::string &basename, const T &value) override {
-        std::string filename = basename + this->ext_;
+        std::filesystem::path filename = basename + this->ext_;
         std::ofstream file(filename, std::ios::binary);
         DEBUG("Saving " << this->name_ << " into " << filename);
         VERIFY(file);
@@ -106,7 +106,7 @@ public:
     }
 
     void SaveEmpty(const std::string &basename) {
-        std::string filename = basename + this->ext_;
+        std::filesystem::path filename = basename + this->ext_;
         std::ofstream file(filename, std::ios::binary);
         DEBUG("Create empty file " << filename);
         VERIFY(file);
@@ -117,7 +117,7 @@ public:
      *         Fails if the file is present but cannot be read.
      */
     bool Load(const std::string &basename, T &value) override {
-        std::string filename = basename + this->ext_;
+        std::filesystem::path filename = basename + this->ext_;
         auto file = fs::open_file(filename, std::ios::binary);
         //check file is empty
         if (file.peek() == std::ifstream::traits_type::eof()) {

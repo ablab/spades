@@ -8,6 +8,7 @@
 #ifndef __GENOMIC_INFO_HPP__
 #define __GENOMIC_INFO_HPP__
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -33,8 +34,8 @@ class GenomicInfo {
     double trusted_bound() const { return trusted_bound_; }
     void set_trusted_bound(double trusted_bound) { trusted_bound_ = trusted_bound; }
 
-    bool Load(const std::string &filename);
-    void Save(const std::string &filename) const;
+    bool Load(const std::filesystem::path &filename);
+    void Save(const std::filesystem::path &filename) const;
 
     bool BinWrite(std::ostream &os) const;
     void BinRead(std::istream &is);

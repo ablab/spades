@@ -211,8 +211,8 @@ std::filesystem::path CorrectSingleReadSet(size_t ilib, size_t iread, const std:
                         std::to_string(iread) + ".cor.fastq";
 
   std::filesystem::path outcor = getReadsFilename(cfg::get().output_dir, fn, Globals::iteration_no, usuffix);
-  std::ofstream ofgood(outcor.c_str());
-  std::ofstream ofbad(getReadsFilename(cfg::get().output_dir, fn, Globals::iteration_no, "bad.fastq").c_str(),
+  std::ofstream ofgood(outcor);
+  std::ofstream ofbad(getReadsFilename(cfg::get().output_dir, fn, Globals::iteration_no, "bad.fastq"),
                       std::ios::out | std::ios::ate);
   stats += CorrectReadFile(*Globals::kmer_data, fn, &ofgood, &ofbad);
   return outcor;
@@ -245,13 +245,13 @@ size_t CorrectAllReads() {
       std::filesystem::path outcorr = getReadsFilename(cfg::get().output_dir, I->second, Globals::iteration_no, usuffix);
       std::filesystem::path outcoru = getReadsFilename(cfg::get().output_dir, unpaired,  Globals::iteration_no, usuffix);
 
-      std::ofstream ofcorl(outcorl.c_str());
-      std::ofstream ofbadl(getReadsFilename(cfg::get().output_dir, I->first,  Globals::iteration_no, "bad.fastq").c_str(),
+      std::ofstream ofcorl(outcorl);
+      std::ofstream ofbadl(getReadsFilename(cfg::get().output_dir, I->first,  Globals::iteration_no, "bad.fastq"),
                            std::ios::out | std::ios::ate);
-      std::ofstream ofcorr(outcorr.c_str());
-      std::ofstream ofbadr(getReadsFilename(cfg::get().output_dir, I->second, Globals::iteration_no, "bad.fastq").c_str(),
+      std::ofstream ofcorr(outcorr);
+      std::ofstream ofbadr(getReadsFilename(cfg::get().output_dir, I->second, Globals::iteration_no, "bad.fastq"),
                            std::ios::out | std::ios::ate);
-      std::ofstream ofunp (outcoru.c_str());
+      std::ofstream ofunp (outcoru);
 
       stats += CorrectPairedReadFiles(*Globals::kmer_data,
                              I->first, I->second,

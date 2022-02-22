@@ -40,7 +40,7 @@ public:
      * @param filename The name of the file to be opened.
      * @param offset The offset of the read quality.
      */
-    Parser(const std::string &filename,
+    Parser(const std::filesystem::path &filename,
            FileReadFlags flags = FileReadFlags() )
             : filename_(filename), flags_(flags),
               is_open_(false), eof_(true) { }
@@ -95,7 +95,7 @@ protected:
     /*
      * @variable The name the file which stream reads from.
      */
-    std::string filename_;
+    std::filesystem::path filename_;
     /*
      * @variable Reading flags
      */
@@ -117,14 +117,6 @@ private:
     virtual void open() = 0;
 };
 
-/*
-* Get extension from filename.
-*
-* @param filename The name of the file to read from.
-*
-* @return File extension (e.g. "fastq", "fastq.gz").
-*/
-std::string GetExtension(const std::string &filename);
 
 /*
 * Select parser type according to file extension.
@@ -135,7 +127,7 @@ std::string GetExtension(const std::string &filename);
 * @return Pointer to the new parser object with these filename and
 * offset.
 */
-Parser *SelectParser(const std::string &filename,
+Parser *SelectParser(const std::filesystem::path &filename,
                      FileReadFlags flags = FileReadFlags());
 
 }

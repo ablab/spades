@@ -179,17 +179,23 @@ struct gcfg {
 
 static void process_cmdline(int argc, char **argv, gcfg &cfg) {
     using namespace clipp;
+    std::string graph_path;
+    std::string sequences_fn;
+    std::string paths_fn;
+    std::string edge_info_fn;
+    std::string edge_color_fn;
+    std::string workdir;
 
     auto cli = (
                (required("-k") & integer("value", cfg.k)) % "k-mer length to use",
-               (required("-g", "--graph") & value("graph", cfg.graph_path.c_str())) % "In GFA (ending with .gfa) or prefix to SPAdes graph pack",
+               (required("-g", "--graph") & value("graph", graph_path)) % "In GFA (ending with .gfa) or prefix to SPAdes graph pack",
                (required("-q", "--cds-queries") & value("file", cfg.sequences_fn.c_str())) % "Path to FASTA file with ground truth CDS sequences",
-               (option("-p", "--paths") & value("file", cfg.paths_fn.c_str())) % "Destination for outputting paths corresponding to CDS sequences",
-               (option("-e", "--edge-info") & value("file", cfg.edge_info_fn.c_str())) % "Destination for outputting edge usage information",
+               (option("-p", "--paths") & value("file", paths_fn)) % "Destination for outputting paths corresponding to CDS sequences",
+               (option("-e", "--edge-info") & value("file", edge_info_fn)) % "Destination for outputting edge usage information",
                (option("-t", "--threads") & integer("value", cfg.nthreads)) % "# of threads to use (default: max_threads / 2)",
-               (option("-c", "--colors") & value("file", cfg.edge_color_fn.c_str())) % "Destination for outputting edge coloring to be displayed in Bandage",
+               (option("-c", "--colors") & value("file", edge_color_fn)) % "Destination for outputting edge coloring to be displayed in Bandage",
                (option("-s", "--subgraph") & value("file", cfg.subgraph_prefix)) % "Destination for outputting locality of covered edges in GFA",
-               (option("--workdir") & value("dir", cfg.workdir.c_str())) % "scratch directory to use (default: ./tmp)"
+               (option("--workdir") & value("dir", workdir)) % "scratch directory to use (default: ./tmp)"
     );
 
     auto result = parse(argc, argv, cli);
@@ -197,6 +203,13 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
         std::cout << make_man_page(cli, argv[0]);
         exit(1);
     }
+
+    cfg.graph_path = graph_path;
+    cfg.sequences_fn = sequences_fn;
+    cfg.paths_fn = paths_fn;
+    cfg.edge_info_fn = edge_info_fn;
+    cfg.edge_color_fn = edge_color_fn;
+    cfg.workdir = workdir;
 }
 
 int main(int argc, char** argv) {

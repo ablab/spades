@@ -31,7 +31,7 @@ class SeparatePairedReadStream {
    * @param distance Distance between parts of PairedReads.
    * @param offset The offset of the read quality.
    */
-  explicit SeparatePairedReadStream(const std::string& filename1, const std::string& filename2,
+  explicit SeparatePairedReadStream(const std::filesystem::path& filename1, const std::filesystem::path& filename2,
                                     size_t insert_size,
                                     FileReadFlags flags = FileReadFlags(),
                                     ThreadPool::ThreadPool *pool = nullptr);
@@ -91,8 +91,8 @@ class SeparatePairedReadStream {
   ReadStream<SingleRead> second_;
 
   //Only for providing information about error for users
-  const std::string filename1_;
-  const std::string filename2_;
+  const std::filesystem::path filename1_;
+  const std::filesystem::path filename2_;
 };
 
 class InterleavingPairedReadStream {
@@ -104,7 +104,7 @@ class InterleavingPairedReadStream {
    * @param distance Distance between parts of PairedReads.
    * @param offset The offset of the read quality.
    */
-  explicit InterleavingPairedReadStream(const std::string& filename,
+  explicit InterleavingPairedReadStream(const std::filesystem::path& filename,
                                         size_t insert_size,
                                         FileReadFlags flags = FileReadFlags(),
                                         ThreadPool::ThreadPool *pool = nullptr);
@@ -154,7 +154,7 @@ class InterleavingPairedReadStream {
   /*
    * @variable The names of the file which stream reads from.
    */
-  const std::string filename_;
+  const std::filesystem::path filename_;
   const size_t insert_size_;
 
   /*

@@ -65,13 +65,17 @@ struct gcfg {
 void process_cmdline(int argc, char **argv, gcfg &cfg) {
   using namespace clipp;
 
+  std::string file;
+  std::string tmpdir;
+  std::string outfile;
+
   auto cli = (
-      cfg.file.c_str() << value("dataset description (in YAML) or input FASTA file"),
-      cfg.outfile.c_str() << value("output filename"),
+      file << value("dataset description (in YAML) or input FASTA file"),
+      outfile << value("output filename"),
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-c").set(cfg.coverage)) % "infer coverage",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
-      (option("-tmp-dir") & value("dir", cfg.tmpdir.c_str())) % "scratch directory to use",
+      (option("-tmp-dir") & value("dir", tmpdir)) % "scratch directory to use",
       (option("-b") & integer("value", cfg.buff_size)) % "sorting buffer size, per thread",
       one_of(option("--unitigs").set(cfg.mode, output_type::unitigs) % "produce unitigs (default)",
              option("--fastg").set(cfg.mode, output_type::fastg) % "produce graph in FASTG format",
@@ -84,6 +88,10 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
       std::cout << make_man_page(cli, argv[0]);
       exit(1);
   }
+
+  cfg.file = file;
+  cfg.tmpdir = tmpdir;
+  cfg.outfile = outfile;
 }
 
 void LoadDataset(io::DataSet<debruijn_graph::config::LibraryData> &dataset,

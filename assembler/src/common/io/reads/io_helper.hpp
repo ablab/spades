@@ -13,7 +13,6 @@
 
 #include "library/library_fwd.hpp"
 
-#include <string>
 
 namespace ThreadPool {
 class ThreadPool;
@@ -32,20 +31,23 @@ typedef ReadStreamList<SingleReadSeq> BinarySingleStreams;
 typedef ReadStream<PairedReadSeq> BinaryPairedStream;
 typedef ReadStreamList<PairedReadSeq> BinaryPairedStreams;
 
-SingleStream EasyStream(const std::string& filename, bool followed_by_rc,
+SingleStream EasyStream(const std::filesystem::path& filename, bool followed_by_rc,
                         bool handle_Ns = true,
                         FileReadFlags flags = FileReadFlags(),
                         ThreadPool::ThreadPool *pool = nullptr);
+
 PairedStream EasyWrapPairedStream(PairedStream stream,
                                   bool followed_by_rc,
                                   LibraryOrientation orientation, bool handle_Ns=true);
-PairedStream PairedEasyStream(const std::string& filename1, const std::string& filename2,
+
+PairedStream PairedEasyStream(const std::filesystem::path& filename1, const std::filesystem::path& filename2,
                               bool followed_by_rc, size_t insert_size,
                               bool use_orientation = true, bool handle_Ns=true,
                               LibraryOrientation orientation = LibraryOrientation::FR,
                               FileReadFlags flags = FileReadFlags(),
                               ThreadPool::ThreadPool *pool = nullptr);
-PairedStream PairedEasyStream(const std::string& filename, bool followed_by_rc,
+
+PairedStream PairedEasyStream(const std::filesystem::path& filename, bool followed_by_rc,
                               size_t insert_size,
                               bool use_orientation = true,  bool handle_Ns=true,
                               LibraryOrientation orientation = LibraryOrientation::FR,

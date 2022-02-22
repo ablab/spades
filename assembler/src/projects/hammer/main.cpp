@@ -73,7 +73,7 @@ int main(int argc, char * argv[]) {
     std::filesystem::path config_file = CONFIG_FILENAME;
     if (argc > 1) config_file = argv[1];
     START_BANNER("BayesHammer");
-    INFO("Loading config from " << config_file.c_str());
+    INFO("Loading config from " << config_file);
     cfg::create_instance(config_file);
     INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg::get().general_max_nthreads);
 
@@ -128,14 +128,14 @@ int main(int argc, char * argv[]) {
 
         if (cfg::get().general_debug) {
           INFO("Debug mode on. Dumping K-mer index");
-          std::string fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index");
-          std::ofstream os(fname.c_str(), std::ios::binary);
+          std::filesystem::path fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index");
+          std::ofstream os(fname, std::ios::binary);
           Globals::kmer_data->binary_write(os);
         }
       } else {
         INFO("Reading K-mer index");
-        std::string fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index");
-        std::ifstream is(fname.c_str(), std::ios::binary);
+        std::filesystem::path fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index");
+        std::ifstream is(fname, std::ios::binary);
         VERIFY(is.good());
         Globals::kmer_data->binary_read(is, fname);
       }
@@ -179,14 +179,14 @@ int main(int argc, char * argv[]) {
 
         if (cfg::get().general_debug) {
           INFO("Debug mode on. Dumping K-mer index");
-          std::string fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index2");
-          std::ofstream os(fname.c_str(), std::ios::binary);
+          std::filesystem::path fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index2");
+          std::ofstream os(fname, std::ios::binary);
           Globals::kmer_data->binary_write(os);
         }
       } else {
         INFO("Reading K-mer index");
-        std::string fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index2");
-        std::ifstream is(fname.c_str(), std::ios::binary);
+        std::filesystem::path fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index2");
+        std::ifstream is(fname, std::ios::binary);
         VERIFY(is.good());
         Globals::kmer_data->binary_read(is, fname);
       }
@@ -223,14 +223,14 @@ int main(int argc, char * argv[]) {
 
         if (cfg::get().general_debug) {
           INFO("Debug mode on. Dumping K-mer index");
-          std::string fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index3");
-          std::ofstream os(fname.c_str(), std::ios::binary);
+          std::filesystem::path fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index3");
+          std::ofstream os(fname, std::ios::binary);
           Globals::kmer_data->binary_write(os);
         }
       } else {
         INFO("Reading K-mer index");
-        std::string fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index3");
-        std::ifstream is(fname.c_str(), std::ios::binary);
+        std::filesystem::path fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index3");
+        std::ifstream is(fname, std::ios::binary);
         VERIFY(is.good());
         Globals::kmer_data->binary_read(is, fname);
       }

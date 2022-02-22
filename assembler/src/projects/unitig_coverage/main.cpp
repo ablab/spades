@@ -50,7 +50,7 @@ single_easy_readers_for_libs(DataSet& dataset_info,
 }
 
 static void Run(const std::filesystem::path &graph_path, const std::string &dataset_desc, size_t K,
-         const std::string &profiles_fn, size_t nthreads, const std::filesystem::path &tmpdir) {
+         const std::filesystem::path &profiles_fn, size_t nthreads, const std::filesystem::path &tmpdir) {
     DataSet dataset;
     dataset.load(dataset_desc);
 
@@ -99,13 +99,17 @@ struct gcfg {
 static void process_cmdline(int argc, char **argv, gcfg &cfg) {
   using namespace clipp;
 
+  std::string file;
+  std::string tmpdir;
+  std::string outfile;
+
   auto cli = (
-      cfg.file.c_str() << value("dataset description (in YAML)"),
-      cfg.graph.c_str() << value("graph (in GFA)"),
-      cfg.outfile.c_str() << value("output filename"),
+      file << value("dataset description (in YAML)"),
+      cfg.graph << value("graph (in GFA)"),
+      outfile << value("output filename"),
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-t", "--threads") & integer("value", cfg.nthreads)) % "# of threads to use",
-      (option("--tmpdir") & value("dir", cfg.tmpdir.c_str())) % "scratch directory to use"
+      (option("--tmpdir") & value("dir", tmpdir)) % "scratch directory to use"
   );
 
   auto result = parse(argc, argv, cli);
@@ -113,6 +117,10 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
       std::cout << make_man_page(cli, argv[0]);
       exit(1);
   }
+
+  cfg.file = file;
+  cfg.tmpdir = tmpdir;
+  cfg.outfile = outfile;
 }
 
 int main(int argc, char** argv) {

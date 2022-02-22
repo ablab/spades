@@ -15,11 +15,15 @@
 #ifndef IREADSTREAM_HPP_
 #define IREADSTREAM_HPP_
 
-#include "kseq/kseq.h"
-#include <zlib.h>
-#include "utils/verify.hpp"
 #include "read.hpp"
+
+#include "kseq/kseq.h"
 #include "sequence/nucl.hpp"
+#include "utils/verify.hpp"
+
+#include<filesystem>
+
+#include <zlib.h>
 
 // Silence bogus gcc warnings
 #pragma GCC diagnostic push
@@ -37,11 +41,11 @@ class ireadstream {
 public:
 typedef Read ReadT;
 
-ireadstream(const std::string &filename) : filename_(filename), offset_(Read::PHRED_OFFSET)  {
+ireadstream(const std::filesystem::path &filename) : filename_(filename), offset_(Read::PHRED_OFFSET)  {
     is_open_ = open(filename);
 }
 
-ireadstream(const std::string &filename, int offset) : filename_(filename), offset_(offset) {
+ireadstream(const std::filesystem::path &filename, int offset) : filename_(filename), offset_(offset) {
     is_open_ = open(filename);
 }
 
@@ -57,7 +61,7 @@ bool eof() const {
     return eof_;
 }
 
-static std::vector <Read> *readAll(std::string filename, int cnt = -1) {
+static std::vector <Read> *readAll(std::filesystem::path filename, int cnt = -1) {
     ireadstream irs(filename);
     VERIFY(irs.is_open());
     std::vector <Read> *res = new std::vector<Read>();
@@ -74,7 +78,7 @@ static std::vector <Read> *readAll(std::string filename, int cnt = -1) {
     return res;
 }
 
-static void readAllNoValidation(std::vector <Read> *res, std::string filename, uint64_t *totalsize,
+static void readAllNoValidation(std::vector <Read> *res, std::filesystem::path filename, uint64_t *totalsize,
                                 int qvoffset = Read::PHRED_OFFSET, int trim_quality = -1, int cnt = -1) {
     ireadstream irs(filename, qvoffset);
     VERIFY(irs.is_open());
@@ -118,7 +122,7 @@ void reset() {
 }
 
 private:
-std::string filename_;
+std::filesystem::path filename_;
 gzFile fp_;
 kseq_t *seq_;
 bool is_open_;
@@ -129,7 +133,7 @@ int offset_;
  * open i's file with FASTQ reads,
  * return true if it opened file, false otherwise
  */
-bool open(std::string filename) {
+bool open(std::filesystem::path filename) {
     fp_ = gzopen(filename.c_str(), "r"); // STEP 2: open the file handler
     if (!fp_) {
         return false;
@@ -151,7 +155,7 @@ void read_ahead() {
 };
 
 //return -1 if failed to determine offset
-inline int determine_offset(const std::string &filename) {
+inline int determine_offset(const std::filesystem::path &filename) {
 ireadstream stream(filename, 0);
 size_t count = 0;
 Read r;

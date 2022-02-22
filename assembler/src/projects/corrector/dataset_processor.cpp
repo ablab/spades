@@ -13,6 +13,7 @@
 #include "io/reads/file_reader.hpp"
 #include "io/reads/osequencestream.hpp"
 #include "utils/parallel/openmp_wrapper.h"
+#include "utils/filesystem/path_helper.hpp"
 
 #include <boost/algorithm/string.hpp>
 
@@ -25,7 +26,7 @@ namespace corrector {
 std::string DatasetProcessor::GetLibDir(const size_t lib_count) {
     if (lib_dirs_.find(lib_count) != lib_dirs_.end())
         return lib_dirs_[lib_count];
-    std::string res = fs::make_temp_dir(corr_cfg::get().work_dir, "lib" + to_string(lib_count));
+    std::filesystem::path res = fs::make_temp_dir(corr_cfg::get().work_dir, "lib" + to_string(lib_count));
     lib_dirs_[lib_count] = res;
     return res;
 }
@@ -121,9 +122,9 @@ void DatasetProcessor::BufferedOutputRead(const string &read, const string &cont
 
 
 int DatasetProcessor::RunBwaIndex() {
-    string bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));
-    string genome_screened = fs::screen_whitespaces(genome_file_);
-    string index_line = bwa_string + " index " + genome_screened;
+    std::filesystem::path bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));
+    std::filesystem::path genome_screened = fs::screen_whitespaces(genome_file_);
+    string index_line = bwa_string.native() + " index " + genome_screened.native();
     INFO("Running bwa index ...: " << index_line);
     int run_res = system(index_line.c_str());
     if (run_res != 0) {
@@ -133,22 +134,22 @@ int DatasetProcessor::RunBwaIndex() {
     return run_res;
 }
 
-std::string DatasetProcessor::RunBwaMem(const std::vector<std::string> &reads, const size_t lib,
+std::filesystem::path DatasetProcessor::RunBwaMem(const std::vector<std::filesystem::path> &reads, const size_t lib,
     const std::string &params = "") {
-    filesystem::path cur_dir = GetLibDir(lib);
-    filesystem::path tmp_sam_filename = cur_dir / "tmp.sam";
-    string bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));
-    string genome_screened = fs::screen_whitespaces(genome_file_);
+    std::filesystem::path cur_dir = GetLibDir(lib);
+    std::filesystem::path tmp_sam_filename = cur_dir / "tmp.sam";
+    std::filesystem::path bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));
+    std::filesystem::path genome_screened = fs::screen_whitespaces(genome_file_);
     int run_res = 0;
 
     std::string reads_line = "";
     for (auto& filename : reads) {
-        reads_line += fs::screen_whitespaces(filename) + " ";
+        reads_line += fs::screen_whitespaces(filename).native() + " ";
     }
 
     string nthreads_str = to_string(nthreads_);
-    string last_line = bwa_string + " mem  -v 1 -t " + nthreads_str + " " + params + " " + genome_screened + " " + reads_line  + "  > "
-        + fs::screen_whitespaces(tmp_sam_filename) ;
+    string last_line = bwa_string.native() + " mem  -v 1 -t " + nthreads_str + " " + params + " " + genome_screened.native() + " " + reads_line  + "  > "
+        + fs::screen_whitespaces(tmp_sam_filename).native();
     INFO("Running bwa mem ...:" << last_line);
     run_res = system(last_line.c_str());
     if (run_res != 0) {
@@ -162,7 +163,7 @@ void DatasetProcessor::PrepareContigDirs(const size_t lib_count) {
     filesystem::path out_dir = GetLibDir(lib_count);
     for (auto &ac : all_contigs_) {
         auto contig_name = ac.first;
-        string out_name = out_dir / (contig_name + ".sam");
+        std::filesystem::path out_name = out_dir / (contig_name + ".sam");
         ac.second.sam_filenames.push_back(make_pair(out_name, unsplitted_sam_files_[lib_count].second));
         BufferedOutputRead("@SQ\tSN:" + contig_name + "\tLN:" + to_string(all_contigs_[contig_name].contig_length), contig_name, lib_count);
     }
@@ -179,11 +180,11 @@ void DatasetProcessor::ProcessDataset() {
         FATAL_ERROR("Failed to build bwa index for " << genome_file_);
     }
 
-    auto handle_one_lib = [this, &lib_num](const std::vector<std::string>& reads,
+    auto handle_one_lib = [this, &lib_num](const std::vector<std::filesystem::path>& reads,
         const std::string& type, const auto& lib_type){
         std::string reads_files_str = "";
         for (const auto& filename : reads) {
-            reads_files_str += filename + " ";
+            reads_files_str += filename.native() + " ";
         }
 
         INFO("Processing " + type + " sublib of number " << lib_num);
@@ -193,8 +194,8 @@ void DatasetProcessor::ProcessDataset() {
             param = "-p";
         }
 
-        string samf = RunBwaMem(reads, lib_num, param);
-        if (samf != "") {
+        std::filesystem::path samf = RunBwaMem(reads, lib_num, param);
+        if (!samf.empty()) {
             INFO("Adding samfile " << samf);
             unsplitted_sam_files_.push_back(make_pair(samf, lib_type));
             PrepareContigDirs(lib_num);

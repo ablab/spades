@@ -21,7 +21,7 @@ class FastgWriter {
 
 public:
     FastgWriter(const Graph &graph,
-                const std::string &fn,
+                const std::filesystem::path &fn,
                 io::EdgeNamingF<Graph> edge_naming_f = io::BasicNamingF<Graph>())
             : graph_(graph), fn_(fn),
               short_namer_(graph_),
@@ -32,7 +32,7 @@ public:
 
   protected:
     const Graph &graph_;
-    const std::string &fn_;
+    const std::filesystem::path &fn_;
     io::CanonicalEdgeHelper<Graph> short_namer_;
     io::CanonicalEdgeHelper<Graph> extended_namer_;
 };

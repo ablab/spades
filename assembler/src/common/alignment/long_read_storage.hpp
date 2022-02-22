@@ -157,7 +157,7 @@ public:
         }
     }
 
-    void DumpToFile(const std::string &filename) const{
+    void DumpToFile(const std::filesystem::path &filename) const{
         std::map<EdgeId, EdgeId> auxilary;
         DumpToFile(filename, auxilary);
     }
@@ -198,7 +198,7 @@ public:
         }
     }
 
-    void DumpToFile(const std::string& filename, const std::map<EdgeId, EdgeId>& replacement,
+    void DumpToFile(const std::filesystem::path& filename, const std::map<EdgeId, EdgeId>& replacement,
                     size_t stats_weight_cutoff = 1, bool need_log = false) const {
         std::ofstream filestr(filename);
         std::set<EdgeId> continued_edges;
@@ -264,7 +264,7 @@ public:
         }
     }
 
-    void LoadFromFile(const std::string &s, bool force_exists = true) {
+    void LoadFromFile(const std::filesystem::path &s, bool force_exists = true) {
         FILE* file = fopen(s.c_str(), "r");
         if (force_exists) {
             VERIFY(file != NULL);
@@ -283,7 +283,7 @@ public:
         }
         int fl;
 
-        file = fopen((s).c_str(), "r");
+        file = fopen(s.c_str(), "r");
         char ss[14];
         while (!feof(file)) {
             int n;

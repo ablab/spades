@@ -22,7 +22,7 @@ class AnnotationStream {
     ContigAnnotation Parse(const std::string& s) const;
 public:
 
-    AnnotationStream(const std::string& fn) : inner_stream_(fn) {
+    AnnotationStream(const std::filesystem::path& fn) : inner_stream_(fn) {
         std::getline(inner_stream_, line_);
     }
 
@@ -41,7 +41,7 @@ class AnnotationOutStream {
     std::ofstream inner_stream_;
 public:
 
-    AnnotationOutStream(const std::string& fn) : inner_stream_(fn) {
+    AnnotationOutStream(const std::filesystem::path& fn) : inner_stream_(fn) {
     }
 
     AnnotationOutStream& operator <<(const ContigAnnotation& annotation);

@@ -6,9 +6,10 @@
 
 #pragma once
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
 namespace fs {
-std::vector<std::string> glob(const std::string &pattern);
+std::vector<std::filesystem::path> glob(const std::string &pattern);
 }  // namespace fs

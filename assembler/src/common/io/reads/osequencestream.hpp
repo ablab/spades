@@ -43,7 +43,7 @@ protected:
     }
 
 public:
-    osequencestream(const std::string& filename):
+    osequencestream(const std::filesystem::path& filename):
             ofstream_(filename), id_(1) {
     }
 
@@ -72,7 +72,7 @@ protected:
     }
 
 public:
-    osequencestream_cov(const std::string& filename)
+    osequencestream_cov(const std::filesystem::path& filename)
         : osequencestream(filename), coverage_(0.) { }
 
     osequencestream_cov& operator<<(double coverage) {
@@ -97,7 +97,7 @@ protected:
 
 
 public:
-    osequencestream_bgc(const std::string& filename)
+    osequencestream_bgc(const std::filesystem::path& filename)
             : osequencestream(filename), cluster_(0), candidate_(0) { }
 
     void SetCluster(unsigned cluster, unsigned candidate, unsigned domains) {
@@ -130,7 +130,7 @@ class OReadStream {
 public:
     typedef SingleRead ReadT;
 
-    OReadStream(const std::string &filename)
+    OReadStream(const std::filesystem::path &filename)
             : stream_(filename) {
     }
 
@@ -155,7 +155,7 @@ class OPairedReadStream {
 public:
     typedef PairedRead ReadT;
 
-    OPairedReadStream(const std::string &left_filename, const std::string &right_filename,
+    OPairedReadStream(const std::filesystem::path &left_filename, const std::filesystem::path &right_filename,
                       LibraryOrientation orientation = LibraryOrientation::Undefined)
                       : left_stream_(left_filename), right_stream_(right_filename) {
         std::tie(rc1_, rc2_) = GetRCFlags(orientation);

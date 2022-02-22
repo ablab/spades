@@ -14,6 +14,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <cppformat/format.h>
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -100,7 +101,7 @@ void load(T &value, boost::property_tree::ptree const &pt) {
 }
 
 template<class T>
-void load_param(const std::string &filename, const std::string &key,
+void load_param(const std::filesystem::path &filename, const std::string &key,
                 std::optional<T> &value) {
     boost::property_tree::ptree pt;
     boost::property_tree::read_info(filename, pt);
@@ -108,18 +109,18 @@ void load_param(const std::string &filename, const std::string &key,
 }
 
 template<class T>
-void write_param(const std::string &filename, const std::string &key,
+void write_param(const std::filesystem::path &filename, const std::string &key,
                  const std::optional<T> &value) {
     if (value) {
-        std::ofstream params_stream(filename.c_str(), std::ios_base::app);
+        std::ofstream params_stream(filename, std::ios_base::app);
         params_stream << key << "\t" << value << std::endl;
     }
 }
 
 template<class T>
-void write_param(const std::string &filename, const std::string &key,
+void write_param(const std::filesystem::path &filename, const std::string &key,
                  const T &value) {
-    std::ofstream params_stream(filename.c_str(), std::ios_base::app);
+    std::ofstream params_stream(filename, std::ios_base::app);
     params_stream << key << "\t" << value << std::endl;
 }
 

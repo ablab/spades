@@ -17,9 +17,8 @@
 #include "utils/parallel/openmp_wrapper.h"
 
 #include <boost/property_tree/ptree.hpp>
-#include <string>
 
-void load(hammer_config& cfg, const std::string &filename) {
+void load(hammer_config& cfg, const std::filesystem::path &filename) {
   boost::property_tree::ptree pt;
   boost::property_tree::read_info(filename, pt);
 
@@ -70,7 +69,7 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt) {
   load(cfg.correct_discard_bad, pt, "correct_discard_bad");
   load(cfg.correct_stats, pt, "correct_stats");
 
-  std::string fname;
+  std::filesystem::path fname;
   load(fname, pt, "dataset");
   cfg.dataset.load(fname);
 

@@ -261,7 +261,7 @@ public:
         std::swap(index_, empty.index_);
     }
 
-    void DumpToFile(const std::string &filename) const {
+    void DumpToFile(const std::filesystem::path &filename) const {
         std::ofstream filestr(filename);
         for (const auto& e_gaps : inner_index_) {
             EdgeId e = e_gaps.first;
@@ -328,7 +328,6 @@ inline std::string SPOAConsensus(const std::vector<std::string> &gap_seqs, const
         return "";
     }
     return consensus.substr(pref_remove, suf_remove - pref_remove + 1);
-
 }
 
 

@@ -39,7 +39,7 @@ public:
      * @param filename The name of the file to be opened.
      * @param offset The offset of the read quality.
      */
-    FastaFastqGzParser(const std::string& filename,
+    FastaFastqGzParser(const std::filesystem::path& filename,
                        FileReadFlags flags = FileReadFlags())
             : Parser(filename, flags), fp_(), seq_(NULL) {
         open();

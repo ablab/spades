@@ -123,7 +123,7 @@ void ReadConverter::ConvertEdgeSequencesToBinary(const debruijn_graph::Graph &g,
     WriteBinaryInfo(contigs_output_dir / "contigs_info", data);
 }
 
-void ReadConverter::WriteBinaryInfo(const std::string &filename, LibraryData &data) {
+void ReadConverter::WriteBinaryInfo(const std::filesystem::path &filename, LibraryData &data) {
     std::ofstream info;
     info.open(filename, std::ios_base::out);
     info << BINARY_FORMAT_VERSION << " " <<

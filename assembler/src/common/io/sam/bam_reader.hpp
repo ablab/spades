@@ -57,7 +57,7 @@ class UnmappedBamStream {
 public:
     typedef BamRead ReadT;
     
-    UnmappedBamStream(const std::string &filename)
+    UnmappedBamStream(const std::filesystem::path &filename)
             : filename_(filename) {
         open();
     }
@@ -92,7 +92,7 @@ public:
 private:
     BamTools::BamReader reader_;
     BamTools::BamAlignment seq_;
-    std::string filename_;
+    std::filesystem::path filename_;
     bool is_open_;
     bool eof_;
 

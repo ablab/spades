@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "utils/filesystem/path_helper.hpp"
 #include "io/reads/file_reader.hpp"
 #include "library/library_fwd.hpp"
 #include "utils/logger/logger.hpp"
@@ -19,14 +18,14 @@
 
 namespace corrector {
 
-typedef std::vector<std::pair<std:: string, io::LibraryType> > sam_files_type;
+typedef std::vector<std::pair<std::filesystem::path, io::LibraryType> > sam_files_type;
 
 struct OneContigDescription {
-    std::string input_contig_filename;
-    std::string output_contig_filename;
+    std::filesystem::path input_contig_filename;
+    std::filesystem::path output_contig_filename;
     size_t contig_length;
     sam_files_type sam_filenames;
-    std::string sam_filename;
+    std::filesystem::path sam_filename;
     size_t id;
 };
 typedef std::unordered_map<std::string, OneContigDescription> ContigInfoMap;
@@ -40,7 +39,7 @@ class DatasetProcessor {
     std::unordered_map<std::string, std::vector<std::string> > buffered_reads_;
     size_t nthreads_;
     size_t buffered_count_;
-    std::unordered_map<size_t, std::string> lib_dirs_;
+    std::unordered_map<size_t, std::filesystem::path> lib_dirs_;
     const size_t kBuffSize = 100000;
     const size_t kMinContigLengthForInfo = 20000;
 
@@ -64,7 +63,7 @@ private:
     void SplitLibrary(const std::filesystem::path &out_contigs_filename, const size_t lib_count, bool is_paired);
     void GlueSplittedContigs(std::filesystem::path &out_contigs_filename);
     int RunBwaIndex();
-    std::string RunBwaMem(const std::vector<std::string> &reads, const size_t lib, const std::string &params);
+    std::filesystem::path RunBwaMem(const std::vector<std::filesystem::path> &reads, const size_t lib, const std::string &params);
     void PrepareContigDirs(const size_t lib_count);
     std::string GetLibDir(const size_t lib_count);
 };

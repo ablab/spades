@@ -25,7 +25,7 @@ std::filesystem::path add_suffix(const std::filesystem::path& path, const std::s
 }
 
 //TODO: refactor to process the graph only once
-void DumpEdges(const Graph& g, const string& out_edges) {
+void DumpEdges(const Graph& g, const filesystem::path& out_edges) {
     INFO("Dumping edges to " << out_edges);
     io::OFastaReadStream oss(out_edges);
     for (auto it = g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
@@ -34,7 +34,7 @@ void DumpEdges(const Graph& g, const string& out_edges) {
     }
 }
 
-void DumpAnnotation(const Graph& g, const EdgeAnnotation& edge_annotation, const string& out_annotation) {
+void DumpAnnotation(const Graph& g, const EdgeAnnotation& edge_annotation, const filesystem::path& out_annotation) {
     INFO("Dumping annotation to " << out_annotation);
     AnnotationOutStream annotation_out(out_annotation);
     for (auto it = g.ConstEdgeBegin(true); !it.IsEnd(); ++it) {

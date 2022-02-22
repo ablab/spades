@@ -25,12 +25,11 @@
 #include <cstring>
 #include <cerrno>
 
-#include <string>
 #include <algorithm>
 
 class MMappedReader {
     bool Unlink = false;
-    std::string FileName = "";
+    std::filesystem::path FileName = "";
 
     void map() {
         // We do not add PROT_WRITE here intentionaly - remapping and write access
@@ -105,7 +104,7 @@ protected:
 public:
     MMappedReader() {}
 
-    MMappedReader(const std::string &filename, bool unlink = false,
+    MMappedReader(const std::filesystem::path &filename, bool unlink = false,
                   size_t blocksize = 64 * 1024 * 1024, off_t off = 0, size_t sz = 0)
             : Unlink(unlink), FileName(filename), BlockSize(blocksize) {
         struct stat buf;
@@ -233,7 +232,7 @@ public:
 
     MMappedRecordReader() {}
 
-    MMappedRecordReader(const std::string &FileName, bool unlink = true,
+    MMappedRecordReader(const std::filesystem::path &FileName, bool unlink = true,
                         size_t blocksize = 64 * 1024 * 1024 / (sizeof(T) * (unsigned) getpagesize()) *
                                            (sizeof(T) * (unsigned) getpagesize()),
                         off_t off = 0, size_t sz = 0) :
@@ -275,7 +274,7 @@ public:
     // Default ctor, used to implement "end" iterator
     MMappedFileRecordIterator() : good_(false) { }
 
-    MMappedFileRecordIterator(const std::string &FileName)
+    MMappedFileRecordIterator(const std::filesystem::path &FileName)
             : reader_(FileName, false), good_(true) {
         reader_.read(&value_, sizeof(value_));
     }
@@ -322,7 +321,7 @@ public:
     typedef typename adt::array_vector<T>::iterator iterator;
     typedef typename adt::array_vector<T>::const_iterator const_iterator;
 
-    MMappedRecordArrayReader(const std::string &FileName,
+    MMappedRecordArrayReader(const std::filesystem::path &FileName,
                              size_t elcnt = 1,
                              bool unlink = true,
                              off_t off = 0, size_t sz = 0) :
@@ -376,7 +375,7 @@ public:
     MMappedFileRecordArrayIterator()
             : value_(nullptr), array_size_(0), reader_(), good_(false) { }
 
-    MMappedFileRecordArrayIterator(const std::string &FileName,
+    MMappedFileRecordArrayIterator(const std::filesystem::path &FileName,
                                    size_t elcnt,
                                    off_t offset = 0, size_t filesize = 0)
             : value_(nullptr),

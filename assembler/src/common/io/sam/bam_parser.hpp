@@ -23,7 +23,7 @@ namespace io {
 
 class BAMParser: public Parser {
 public:
-    BAMParser(const std::string& filename, FileReadFlags flags = FileReadFlags())
+    BAMParser(const std::filesystem::path& filename, FileReadFlags flags = FileReadFlags())
             : Parser(filename, flags) {
         open();
     }

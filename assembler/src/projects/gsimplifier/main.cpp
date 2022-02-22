@@ -46,9 +46,15 @@ struct gcfg {
 static void process_cmdline(int argc, char **argv, gcfg &cfg) {
   using namespace clipp;
 
+  std::string tmpdir;
+  std::string edge_profile_fn;
+  std::string stop_codons_fn;
+  std::string deadends_fn;
+  std::string outfile;
+
   auto cli = (
-      cfg.graph.c_str() << value("graph. In GFA (ending with .gfa) or prefix to SPAdes graph pack"),
-      cfg.outfile.c_str() << value("output prefix"),
+      cfg.graph << value("graph. In GFA (ending with .gfa) or prefix to SPAdes graph pack"),
+      outfile << value("output prefix"),
       option("--gfa").set(cfg.save_gfa) % "produce GFA output (default: true)",
       option("--spades-gp").set(cfg.save_gp) % "produce output graph pack in SPAdes internal format (default: false). "
                                                       "Recommended if bulges are removed to improve further read mapping. "
@@ -59,10 +65,10 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
       (option("-c", "--coverage") & value("coverage", cfg.bin_cov_str)) % "estimated average (k+1-mer) bin coverage (default: 0.) "
                                                                           "or 'auto' (works only with '-d/--dead-ends' provided)",
       (option("-t", "--threads") & integer("value", cfg.nthreads)) % "# of threads to use (default: max_threads / 2)",
-      (option("-p", "--profile") & value("file", cfg.edge_profile_fn.c_str())) % "file with edge coverage profiles across multiple samples",
-      (option("-s", "--stop-codons") & value("file", cfg.stop_codons_fn.c_str())) % "file stop codon positions",
-      (option("-d", "--dead-ends") & value("file", cfg.deadends_fn.c_str())) % "while processing a subgraph -- file listing edges which are dead-ends in the original graph",
-      (option("--tmpdir") & value("dir", cfg.tmpdir.c_str())) % "scratch directory to use (default: <output prefix>.tmp)"
+      (option("-p", "--profile") & value("file", edge_profile_fn)) % "file with edge coverage profiles across multiple samples",
+      (option("-s", "--stop-codons") & value("file", stop_codons_fn)) % "file stop codon positions",
+      (option("-d", "--dead-ends") & value("file", deadends_fn)) % "while processing a subgraph -- file listing edges which are dead-ends in the original graph",
+      (option("--tmpdir") & value("dir", tmpdir)) % "scratch directory to use (default: <output prefix>.tmp)"
   );
 
   auto result = parse(argc, argv, cli);
@@ -70,6 +76,11 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
       std::cout << make_man_page(cli, argv[0]);
       exit(1);
   }
+  cfg.tmpdir = tmpdir;
+  cfg.edge_profile_fn = edge_profile_fn;
+  cfg.stop_codons_fn = stop_codons_fn;
+  cfg.deadends_fn = deadends_fn;
+  cfg.outfile = outfile;
 }
 
 size_t DetermineSampleCnt(const std::filesystem::path &profile_fn) {

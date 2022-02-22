@@ -28,12 +28,12 @@ namespace logging {
 properties::properties(level default_level)
         : def_level(default_level), all_default(true) {}
 
-properties::properties(std::string filename, level default_level)
+properties::properties(std::filesystem::path filename, level default_level)
     : def_level(default_level), all_default(true) {
     if (filename.empty())
         return;
 
-    std::ifstream in(filename.c_str());
+    std::ifstream in(filename);
 
     std::map<std::string, level> remap = {
         {"TRACE", L_TRACE},
@@ -100,7 +100,7 @@ bool logger::need_log(level desired_level, const char* source) const {
     return desired_level >= source_level;
 }
 
-void logger::log(level desired_level, const char* file, size_t line_num, const char* source, const char* msg) {
+void logger::log(level desired_level, const std::filesystem::path file, size_t line_num, const char* source, const char* msg) {
   double time = timer_.time();
   size_t mem = -1ull;
   size_t max_rss = -1ull;
@@ -152,7 +152,7 @@ std::shared_ptr<logger> &__logger() {
   return l;
 }
 
-logger *create_logger(std::string filename, level default_level) {
+logger *create_logger(std::filesystem::path filename, level default_level) {
   return new logger(properties(filename, default_level));
 }
 

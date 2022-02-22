@@ -234,9 +234,9 @@ public:
         WriteLengths(cfg::get().output_dir, "isolated_edges.txt");
     }
 
-    void WriteLengths(const std::string &folder_name, const std::string &file_name) {
+    void WriteLengths(const std::filesystem::path &folder_name, const std::filesystem::path &file_name) {
         std::ofstream os;
-        os.open((folder_name + "/" + file_name).c_str());
+        os.open(folder_name / file_name);
         WriteLengths(os);
         os.close();
     }

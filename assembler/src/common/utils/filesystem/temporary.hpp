@@ -9,6 +9,7 @@
 #include "utils/logger/decl_logger.hpp"
 
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
+#include <filesystem>
 #include <string>
 #include <atomic>
 
@@ -37,18 +38,18 @@ class non_copy_move_assign_able {
 class TmpDirImpl : public llvm::ThreadSafeRefCountedBase<TmpDirImpl>, non_copy_move_assign_able {
   public:
     // Create new tmp dir
-    TmpDirImpl(const std::string &prefix, const std::string &suffix);
+    TmpDirImpl(const std::filesystem::path &prefix, const std::string &suffix);
     // Acquire existing tmp dir
-    TmpDirImpl(std::nullptr_t, const std::string &dir);
+    TmpDirImpl(std::nullptr_t, const std::filesystem::path &dir);
     ~TmpDirImpl();
 
-    const std::string &dir() const { return dir_; }
-    operator std::string() const { return dir_; }
+    const std::filesystem::path &dir() const { return dir_; }
+    operator std::filesystem::path() const { return dir_; }
     TmpFile tmp_file(const std::string &prefix = "tmp");
-    const std::string &release();
+    const std::filesystem::path &release();
 
   private:
-    std::string dir_;
+    std::filesystem::path dir_;
     std::atomic<bool> released_;
 
     DECL_LOGGER("Temporary");
@@ -59,22 +60,22 @@ class TmpFileImpl : public llvm::ThreadSafeRefCountedBase<TmpFileImpl>, non_copy
     // Create new tmp file
     TmpFileImpl(const std::string &prefix = "tmp", TmpDir parent = nullptr);
     // Acquire existing file
-    TmpFileImpl(std::nullptr_t, const std::string &file, TmpDir parent = nullptr);
+    TmpFileImpl(std::nullptr_t, const std::filesystem::path &file, TmpDir parent = nullptr);
     ~TmpFileImpl();
 
-    const std::string &file() const { return file_; }
-    operator std::string() const { return file_; }
-    const std::string &dir() const {
-        static std::string noparent("");
+    const std::filesystem::path &file() const { return file_; }
+    operator std::filesystem::path() const { return file_; }
+    const std::filesystem::path &dir() const {
+        static std::filesystem::path noparent("");
         return (parent_ ? parent_->dir() : noparent);
     }
     int fd() const { return fd_; }
     void close();
     DependentTmpFile CreateDep(const std::string &suffix);
-    const std::string &release();
+    const std::filesystem::path &release();
 
   private:
-    std::string file_;
+    std::filesystem::path file_;
     TmpDir parent_;
     int fd_;
     std::atomic<bool> released_;
@@ -87,20 +88,20 @@ class DependentTmpFileImpl : public llvm::ThreadSafeRefCountedBase<DependentTmpF
     DependentTmpFileImpl(const std::string &suffix, TmpFile parent);
     ~DependentTmpFileImpl();
 
-    const std::string &file() const { return file_; }
-    const std::string &dir() const { return parent_->dir(); }
-    operator std::string() const { return file_; }
-    const std::string &release();
+    const std::filesystem::path &file() const { return file_; }
+    const std::filesystem::path &dir() const { return parent_->dir(); }
+    operator std::filesystem::path() const { return file_; }
+    const std::filesystem::path &release();
 
   private:
     TmpFile parent_;
-    std::string file_;
+    std::filesystem::path file_;
     std::atomic<bool> released_;
 
     DECL_LOGGER("Temporary");
 };
 
-inline TmpDir make_temp_dir(const std::string &prefix, const std::string &suffix) {
+inline TmpDir make_temp_dir(const std::filesystem::path &prefix, const std::string &suffix) {
     return new TmpDirImpl(prefix, suffix);
 }
 
@@ -108,11 +109,11 @@ inline TmpFile make_temp_file(const std::string &prefix = "tmp", TmpDir parent =
     return new TmpFileImpl(prefix, parent);
 }
 
-inline TmpDir acquire_temp_dir(const std::string &dir) {
+inline TmpDir acquire_temp_dir(const std::filesystem::path &dir) {
     return new TmpDirImpl(nullptr, dir);
 }
 
-inline TmpFile acquire_temp_file(const std::string &file, TmpDir parent = nullptr) {
+inline TmpFile acquire_temp_file(const std::filesystem::path &file, TmpDir parent = nullptr) {
     return new TmpFileImpl(nullptr, file, parent);
 }
 

@@ -16,9 +16,7 @@ namespace llvm {
     class raw_ostream;
     namespace yaml {
         class IO;
-        enum class QuotingType;
         template<typename T> struct MappingTraits;
-        template<typename T, typename Enable> struct ScalarTraits;
     }
 }
 
@@ -80,13 +78,6 @@ struct LibraryData {
 } // namespace debruijn_graph
 
 namespace llvm { namespace yaml {
-
-template<>
-struct ScalarTraits<std::filesystem::path, void> {
-    static void output(const std::filesystem::path &value, void*, llvm::raw_ostream &out);
-    static StringRef input(StringRef scalar, void*, std::filesystem::path &value);
-    static QuotingType mustQuote(StringRef);
-};
 
 template<>
 struct MappingTraits<debruijn_graph::config::LibraryData::BinaryReadsInfo> {

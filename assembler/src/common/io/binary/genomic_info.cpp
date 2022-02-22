@@ -48,13 +48,13 @@ void GenomicInfo::yamlize(yaml::IO &io) {
     io.mapOptional("coverage histogram", cov_histogram_);
 }
 
-bool GenomicInfo::Load(const std::string &filename) {
+bool GenomicInfo::Load(const std::filesystem::path &filename) {
     auto ifs = fs::open_file(filename, std::ios::binary);
     BinRead(ifs);
     return true;
 }
 
-void GenomicInfo::Save(const std::string &filename) const {
+void GenomicInfo::Save(const std::filesystem::path &filename) const {
     std::ofstream ofs(filename, std::ios::binary);
     BinWrite(ofs);
 }

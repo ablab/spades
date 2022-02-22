@@ -15,7 +15,8 @@
 
 namespace io {
 
-SeparatePairedReadStream::SeparatePairedReadStream(const std::string& filename1, const std::string& filename2,
+SeparatePairedReadStream::SeparatePairedReadStream(const std::filesystem::path& filename1,
+                                                   const std::filesystem::path& filename2,
                                                    size_t insert_size,
                                                    FileReadFlags flags,
                                                    ThreadPool::ThreadPool *pool)
@@ -50,7 +51,7 @@ SeparatePairedReadStream& SeparatePairedReadStream::operator>>(PairedRead& paire
     return *this;
 }
 
-InterleavingPairedReadStream::InterleavingPairedReadStream(const std::string& filename,
+InterleavingPairedReadStream::InterleavingPairedReadStream(const std::filesystem::path& filename,
                                                            size_t insert_size,
                                                            FileReadFlags flags,
                                                            ThreadPool::ThreadPool *pool)

@@ -123,7 +123,7 @@ public:
 
 class UnresolvedPrinter : public RepeatProcessor {
 
-    void DrawGap(DebruijnEnvironment& curr_env, const vector<EdgeId>& path, string filename, string /*label*/ = "") const {
+    void DrawGap(DebruijnEnvironment& curr_env, const vector<EdgeId>& path, std::filesystem::path filename, string /*label*/ = "") const {
         visualization::visualization_utils::WriteComponentsAlongPath<Graph>(curr_env.graph(), path, filename, curr_env.coloring(), curr_env.labeler());
         LOG("The pictures is written to " << filename);
     }
@@ -131,13 +131,13 @@ class UnresolvedPrinter : public RepeatProcessor {
 public:
 
     virtual void ProcessUnresolved(DebruijnEnvironment& curr_env, const RepeatInfo& repeat_info) const {
-        make_dir(curr_env.folder());
-        string pics_folder = curr_env.folder() + "/" + curr_env.GetFormattedPictureCounter()  + "_" + repeat_info.seq_name + "/";
-        make_dir(pics_folder);
+        create_directory(curr_env.folder());
+        std::filesystem::path pics_folder = curr_env.folder() / (curr_env.GetFormattedPictureCounter()  + "_" + repeat_info.seq_name);
+        create_directory(pics_folder);
         string pic_name = std::to_string(repeat_info.local_cnt) + "_" +  std::to_string(repeat_info.genomic_gap) +
                 "_" + std::to_string(curr_env.graph().int_id(repeat_info.e1)) + "_" + std::to_string(curr_env.graph().int_id(repeat_info.e2)) + "_";
 
-        DrawGap(curr_env, repeat_info.ref_path, pics_folder + pic_name);
+        DrawGap(curr_env, repeat_info.ref_path, pics_folder / pic_name);
     }
 
 };
@@ -439,11 +439,11 @@ public:
         if (!CheckCorrectness(args))
             return;
 
-        std::string contigs_file = args[1];
+        std::filesystem::path contigs_file = args[1];
         string base_assembly_prefix = args[2];
         size_t edge_length = std::stoll(args[3]);
 
-        if (!CheckFileExists(contigs_file)) {
+        if (!exists(contigs_file)) {
             LOG("File with contigs " << contigs_file << " not found");
             return;
         }
@@ -587,10 +587,10 @@ public:
         if (!CheckCorrectness(args))
             return;
 
-        std::string contigs_file = args[1];
+        std::filesystem::path contigs_file = args[1];
         string base_assembly_prefix = args[2];
 
-        if (!CheckFileExists(contigs_file)) {
+        if (!exists(contigs_file)) {
             LOG("File with contigs " << contigs_file << " not found");
             return;
         }
@@ -709,8 +709,8 @@ public:
         if (!CheckCorrectness(args))
             return;
 
-        std::string contigs_file = args[1];
-        if (!CheckFileExists(contigs_file)) {
+        std::filesystem::path contigs_file = args[1];
+        if (!exists(contigs_file)) {
             LOG("File with contigs " << contigs_file << " not found");
             return;
         }

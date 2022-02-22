@@ -24,7 +24,7 @@ class DebruijnEnvironment : public Environment {
 
     private :
         size_t picture_counter_;
-        string folder_;
+        filesystem::path folder_;
         string file_name_base_;
         size_t max_vertices_;
         size_t edge_length_bound_;
@@ -66,7 +66,7 @@ class DebruijnEnvironment : public Environment {
         }
 
         inline bool IsCorrect() const {
-            if (!CheckFileExists(path_ + ".grseq"))
+            if (!exists(filesystem::path(path_ + ".grseq")))
                 return false;
 
             size_t K = gp_.k();

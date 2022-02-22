@@ -21,7 +21,6 @@
 
 #include <boost/property_tree/ptree_fwd.hpp>
 
-#include <string>
 #include <optional>
 
 #define CONFIG_FILENAME "/home/snikolenko/algorithmic-biology/assembler/src/hammer/config.inp"
@@ -30,11 +29,11 @@
 struct hammer_config {
   io::DataSet<> dataset;
 
-  std::string input_working_dir;
+  std::filesystem::path input_working_dir;
   int input_trim_quality;
   std::optional<int> input_qvoffset_opt;
   int input_qvoffset;
-  std::string output_dir;
+  std::filesystem::path output_dir;
 
   bool general_do_everything_after_first_iteration;
   int general_hard_memory_limit;
@@ -81,7 +80,7 @@ struct hammer_config {
 
 
 // main debruijn config load function
-void load(hammer_config& cfg, const std::string &filename);
+void load(hammer_config& cfg, const std::filesystem::path &filename);
 void load(hammer_config& cfg, boost::property_tree::ptree const& pt);
 
 typedef config_common::config<hammer_config> cfg;

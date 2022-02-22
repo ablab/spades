@@ -16,7 +16,7 @@
 
 namespace io {
 
-SingleStream EasyStream(const std::string& filename, bool followed_by_rc,
+SingleStream EasyStream(const std::filesystem::path& filename, bool followed_by_rc,
                         bool handle_Ns,
                         FileReadFlags flags,
                         ThreadPool::ThreadPool *pool) {
@@ -47,7 +47,7 @@ PairedStream EasyWrapPairedStream(PairedStream stream,
     return reader;
 }
 
-PairedStream PairedEasyStream(const std::string& filename1, const std::string& filename2,
+PairedStream PairedEasyStream(const std::filesystem::path& filename1, const std::filesystem::path& filename2,
                               bool followed_by_rc, size_t insert_size,
                               bool use_orientation, bool handle_Ns, LibraryOrientation orientation,
                               FileReadFlags flags,
@@ -58,7 +58,7 @@ PairedStream PairedEasyStream(const std::string& filename1, const std::string& f
                                 use_orientation ? orientation : LibraryOrientation::Undefined, handle_Ns);
 }
 
-PairedStream PairedEasyStream(const std::string& filename, bool followed_by_rc,
+PairedStream PairedEasyStream(const std::filesystem::path& filename, bool followed_by_rc,
                               size_t insert_size,
                               bool use_orientation, bool handle_Ns, LibraryOrientation orientation,
                               FileReadFlags flags,

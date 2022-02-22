@@ -14,56 +14,15 @@
 namespace fs {
 //todo review and make names consistent!
 
-typedef std::vector<std::string> files_t;
-
-bool make_dir(std::string const &folder);
+typedef std::vector<std::filesystem::path> files_t;
 
 std::filesystem::path make_temp_dir(std::filesystem::path const &prefix, std::string const &suffix);
 
-void remove_dir(std::string const &folder);
+std::filesystem::path make_full_path(std::filesystem::path const &path);
 
-bool is_regular_file(std::string const &path);
+std::filesystem::path screen_whitespaces(std::filesystem::path const &path);
 
-std::string append_path(std::string const &prefix, std::string const &suffix);
+std::filesystem::path resolve(const std::filesystem::path &path);
 
-std::string current_dir();
-
-std::string make_full_path(std::string const &path);
-
-std::string filename(std::string const &path);
-
-std::string basename(std::string const &path);
-
-std::string extension(std::string const &path);
-
-std::string parent_path(std::string const &path);
-
-size_t filesize(std::string const &path);
-
-bool check_existence(std::string const &path);
-
-void remove_if_exists(std::string const &path);
-
-std::string screen_whitespaces(std::string const &path);
-
-/**
-* Checks if file exists.
-* Analogs: http://www.techbytes.ca/techbyte103.html , http://www.gamedev.net/topic/211918-determining-if-a-file-exists-c/
-*/
-bool FileExists(std::string const &filename);
-
-/**
-* Exit(1) if file doesn't exists, writes FATAL log message.
-*/
-void CheckFileExistenceFATAL(std::string const &filename);
-
-void make_dirs(std::string const &path);
-
-// doesn't support symlinks
-std::string resolve(std::string const &path);
-
-std::string make_relative_path(std::string p, std::string base = current_dir());
-
-std::string MakeLaunchTimeDirName();
-
+std::filesystem::path make_launch_time_dir_name();
 }

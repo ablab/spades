@@ -121,7 +121,7 @@ CDSLengthsFromFile(const std::filesystem::path &fn) {
     return answer;
 }
 
-static std::string GeneNameFromFasta(const std::string &header) {
+static std::string GeneNameFromFasta(const std::filesystem::path &header) {
     std::stringstream ss(header);
     std::string s;
     ss >> s;
@@ -288,15 +288,18 @@ struct gcfg {
 static void process_cmdline(int argc, char **argv, gcfg &cfg) {
     using namespace clipp;
 
+    std::string tmpdir;
+    std::string outdir;
+
     auto cli = (
-            (required("-o", "--output-folder") & value("dir", cfg.outdir.c_str())) % "output folder to use for GFA files",
+            (required("-o", "--output-folder") & value("dir", outdir)) % "output folder to use for GFA files",
                     one_of((option("--part-desc") & value("file", cfg.genes_desc)) % "file with partial genes description (.gff)",
                            (option("--part-seq") & value("file", cfg.genes_seq)) % "file with partial genes sequences (.fasta)"),
                     (required("--graph") & value("graph", cfg.graph)) % "In GFA (ending with .gfa) or prefix to SPAdes graph pack",
                     (required("--cds-len-est") & value("file", cfg.cds_len_fn)) % "file with cds length estimamtes",
                     (required("-k") & integer("value", cfg.k)) % "k-mer length to use",
                     (option("-t", "--threads") & integer("value", cfg.nthreads)) % "# of threads to use (default: max_threads / 2)",
-                    (option("--tmpdir") & value("dir", cfg.tmpdir.c_str())) % "scratch directory to use (default: <outdir>/tmp)"
+                    (option("--tmpdir") & value("dir", tmpdir)) % "scratch directory to use (default: <outdir>/tmp)"
     );
 
     auto result = parse(argc, argv, cli);
@@ -304,6 +307,9 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
         std::cout << make_man_page(cli, argv[0]);
         exit(1);
     }
+
+    cfg.tmpdir = tmpdir;
+    cfg.outdir = outdir;
 }
 
 int main(int argc, char** argv) {

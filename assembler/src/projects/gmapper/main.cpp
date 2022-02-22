@@ -55,7 +55,7 @@ struct gcfg {
 
     unsigned k;
     std::filesystem::path file;
-    std::string graph;
+    std::filesystem::path graph;
     std::filesystem::path tmpdir;
     std::filesystem::path outfile;
     unsigned nthreads;
@@ -69,10 +69,15 @@ struct gcfg {
 void process_cmdline(int argc, char **argv, gcfg &cfg) {
   using namespace clipp;
 
+  std::string file;
+  std::string graph;
+  std::string tmpdir;
+  std::string outfile;
+
   auto cli = (
-      cfg.file.c_str() << value("dataset description (in YAML)"),
-      cfg.graph.c_str() << value("graph (in GFA)"),
-      cfg.outfile.c_str() << value("output filename"),
+      file << value("dataset description (in YAML)"),
+      graph << value("graph (in GFA)"),
+      outfile << value("output filename"),
       (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
@@ -99,6 +104,11 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
       std::cout << make_man_page(cli, argv[0], fmt);
       exit(1);
   }
+
+  cfg.file = file;
+  cfg.graph = graph;
+  cfg.tmpdir = tmpdir;
+  cfg.outfile = outfile;
 }
 
 typedef io::DataSet<debruijn_graph::config::LibraryData> DataSet;

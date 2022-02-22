@@ -85,7 +85,7 @@ std::shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructScaf
 void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph &scaffold_graph,
                                             const std::set<EdgeId> &main_edge_set,
                                             const debruijn_graph::GenomeConsistenceChecker &genome_checker,
-                                            const std::string &filename) const {
+                                            const std::filesystem::path &filename) const {
     using namespace scaffold_graph;
 
     auto vertex_colorer = std::make_shared<ScaffoldVertexSetColorer>(main_edge_set);
@@ -95,13 +95,13 @@ void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph 
     INFO("Visualizing scaffold graph");
     ScaffoldGraphVisualizer singleVisualizer(scaffold_graph, genome_checker.EdgeLabels());
     std::ofstream single_dot;
-    single_dot.open(filename + "_single.dot");
+    single_dot.open(filename.native() + "_single.dot");
     singleVisualizer.Visualize(single_dot, colorer);
     single_dot.close();
 
     INFO("Printing scaffold graph");
     std::ofstream data_stream;
-    data_stream.open(filename + ".data");
+    data_stream.open(filename.native() + ".data");
     scaffold_graph.Print(data_stream);
     data_stream.close();
 }

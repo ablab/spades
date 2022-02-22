@@ -46,13 +46,13 @@ public:
     using io::FastgWriter::FastgWriter;
 
     FastgPathWriter(const Graph &graph,
-                    const std::string &fn,
+                    const std::filesystem::path &fn,
                     io::EdgeNamingF<Graph> edge_naming_f = io::BasicNamingF<Graph>())
             :  io::FastgWriter(graph, fn, edge_naming_f),
                path_writer_(graph)
     {}
 
-    void WritePaths(const ScaffoldStorage &scaffold_storage, const std::string &fn) const {
+    void WritePaths(const ScaffoldStorage &scaffold_storage, const std::filesystem::path &fn) const {
         std::ofstream os(fn);
         for (const auto& scaffold_info : scaffold_storage) {
             os << scaffold_info.name << "\n"
@@ -138,7 +138,7 @@ class ContigWriter {
     std::shared_ptr<ContigNameGenerator> name_generator_;
 
 public:
-    static void WriteScaffolds(const ScaffoldStorage &scaffold_storage, const std::string &fn) {
+    static void WriteScaffolds(const ScaffoldStorage &scaffold_storage, const std::filesystem::path &fn) {
         io::OFastaReadStream oss(fn);
         std::ofstream os_fastg;
 
@@ -148,7 +148,7 @@ public:
         }
     }
 
-    static PathsWriterT BasicFastaWriter(const std::string &fn) {
+    static PathsWriterT BasicFastaWriter(const std::filesystem::path &fn) {
         return [=](const ScaffoldStorage& scaffold_storage) {
             WriteScaffolds(scaffold_storage, fn);
         };
@@ -166,7 +166,7 @@ public:
         OutputPaths(paths, std::vector<PathsWriterT>{writer});
     }
 
-    void OutputPaths(const PathContainer &paths, const std::string &fn) const {
+    void OutputPaths(const PathContainer &paths, const std::filesystem::path &fn) const {
         OutputPaths(paths, BasicFastaWriter(fn));
     }
 

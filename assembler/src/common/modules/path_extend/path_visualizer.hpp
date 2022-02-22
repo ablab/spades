@@ -77,7 +77,7 @@ public:
                                    const std::string& graph_name, const PathContainer& paths) const {
         INFO("Visualizing graph " << graph_name << " to file " << file_name);
         std::fstream filestr;
-        filestr.open(file_name.c_str(), std::fstream::out);
+        filestr.open(file_name, std::fstream::out);
 
         const auto &graph = gp.get<Graph>();
         const auto &edge_pos = gp.get<EdgesPositionHandler<Graph>>();
@@ -106,7 +106,7 @@ public:
     void writeGraphSimple(const graph_pack::GraphPack& gp, const std::filesystem::path& file_name, const std::string& graph_name) const{
         INFO("Visualizing graph " << graph_name << " to file " << file_name);
         std::fstream filestr;
-        filestr.open(file_name.c_str(), std::fstream::out);
+        filestr.open(file_name, std::fstream::out);
 
         const auto &graph = gp.get<Graph>();
         const auto &edge_pos = gp.get<EdgesPositionHandler<Graph>>();
@@ -136,7 +136,7 @@ public:
     void writeGraphSimple(const Graph& g, const std::filesystem::path& file_name, const std::string& graph_name) const{
         INFO("Visualizing graph " << graph_name << " to file " << file_name);
         std::fstream filestr;
-        filestr.open(file_name.c_str(), std::fstream::out);
+        filestr.open(file_name, std::fstream::out);
 
         visualization::graph_labeler::StrGraphLabeler<Graph> str_labeler(g);
         visualization::graph_labeler::CoverageGraphLabeler<Graph> cov_labler(g);

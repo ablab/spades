@@ -24,9 +24,9 @@ namespace gfa {
 
 GFAReader::GFAReader()
         : gfa_(nullptr, gfa_destroy) {}
-GFAReader::GFAReader(const std::string &filename)
+GFAReader::GFAReader(const std::filesystem::path &filename)
         : gfa_(gfa_read(filename.c_str()), gfa_destroy) {}
-bool GFAReader::open(const std::string &filename) {
+bool GFAReader::open(const std::filesystem::path &filename) {
     gfa_.reset(gfa_read(filename.c_str()));
 
     return (bool)gfa_;

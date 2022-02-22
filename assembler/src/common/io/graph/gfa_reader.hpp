@@ -44,8 +44,8 @@ class GFAReader {
     typedef std::vector<GFAPath>::const_iterator path_iterator;
 
     GFAReader();
-    GFAReader(const std::string &filename);
-    bool open(const std::string &filename);
+    GFAReader(const std::filesystem::path &filename);
+    bool open(const std::filesystem::path &filename);
     bool valid() const { return (bool)gfa_; }
     gfa_t *get() const { return gfa_.get(); }
 

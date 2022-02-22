@@ -17,12 +17,12 @@
 
 namespace fs {
 namespace impl {
-TmpDirImpl::TmpDirImpl(const std::string &prefix, const std::string &suffix)
+TmpDirImpl::TmpDirImpl(const std::filesystem::path &prefix, const std::string &suffix)
         : dir_(fs::make_temp_dir(prefix, suffix)), released_(false) {
     TRACE("Creating " << dir_);
 }
 
-TmpDirImpl::TmpDirImpl(std::nullptr_t, const std::string &dir)
+TmpDirImpl::TmpDirImpl(std::nullptr_t, const std::filesystem::path &dir)
         : dir_(dir), released_(false) {
     TRACE("Acquiring " << dir_);
 }
@@ -32,10 +32,10 @@ TmpDirImpl::~TmpDirImpl() {
         return;
     }
     TRACE("Removing " << dir_);
-    fs::remove_dir(dir_);
+    remove(dir_);
 }
 
-const std::string &TmpDirImpl::release() {
+const std::filesystem::path &TmpDirImpl::release() {
     bool already_released = released_.exchange(true);
     CHECK_FATAL_ERROR(!already_released, "Temp dir is already released");
     return dir_;
@@ -47,9 +47,9 @@ TmpFile TmpDirImpl::tmp_file(const std::string &prefix) {
 
 TmpFileImpl::TmpFileImpl(const std::string &prefix, TmpDir parent)
         : parent_(parent), fd_(-1), released_(false) {
-    std::string tprefix = prefix + "_XXXXXX";
+    std::filesystem::path tprefix = prefix + "_XXXXXX";
     if (parent)
-        tprefix = fs::append_path(parent->dir(), tprefix);
+        tprefix = parent->dir() / tprefix;
     char *tempprefix = strdup(tprefix.c_str());
     CHECK_FATAL_ERROR(-1 != (fd_ = ::mkstemp(tempprefix)), "Cannot create temporary file");
     file_ = tempprefix;
@@ -57,7 +57,7 @@ TmpFileImpl::TmpFileImpl(const std::string &prefix, TmpDir parent)
     TRACE("Creating " << file_);
 }
 
-TmpFileImpl::TmpFileImpl(std::nullptr_t, const std::string &file, TmpDir parent)
+TmpFileImpl::TmpFileImpl(std::nullptr_t, const std::filesystem::path &file, TmpDir parent)
         : file_(file), parent_(parent), fd_(-1), released_(false) {
     fd_ = ::open(file_.c_str(), O_CREAT | O_RDWR, 0600);
     CHECK_FATAL_ERROR(-1 != fd_, "Cannot open file");
@@ -77,7 +77,7 @@ void TmpFileImpl::close() {
     ::close(fd_);
 }
 
-const std::string &TmpFileImpl::release() {
+const std::filesystem::path &TmpFileImpl::release() {
     CHECK_FATAL_ERROR(!released_.exchange(true), "Temp file is already released");
     return file_;
 }
@@ -87,7 +87,7 @@ DependentTmpFile TmpFileImpl::CreateDep(const std::string &suffix) {
 }
 
 DependentTmpFileImpl::DependentTmpFileImpl(const std::string &suffix, TmpFile parent)
-        : parent_(parent), file_(parent_->file() + "." + suffix), released_(false) {
+        : parent_(parent), file_(parent_->file().native() + "." + suffix), released_(false) {
     TRACE("Dependent: " << file_);
 }
 
@@ -99,7 +99,7 @@ DependentTmpFileImpl::~DependentTmpFileImpl() {
     ::unlink(file_.c_str());
 }
 
-const std::string &DependentTmpFileImpl::release() {
+const std::filesystem::path &DependentTmpFileImpl::release() {
     bool already_released = released_.exchange(true);
     CHECK_FATAL_ERROR(!already_released, "Temp file is already released");
     return file_;

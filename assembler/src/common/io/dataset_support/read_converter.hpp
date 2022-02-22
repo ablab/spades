@@ -26,7 +26,7 @@ class ReadConverter {
     static constexpr size_t BINARY_FORMAT_VERSION = 13;
 
     static bool CheckBinaryReadsExist(SequencingLibraryT& lib);
-    static void WriteBinaryInfo(const std::string& filename, LibraryData& data);
+    static void WriteBinaryInfo(const std::filesystem::path& filename, LibraryData& data);
 public:
     static bool LoadLibIfExists(SequencingLibraryT& lib);
     static void ConvertToBinary(SequencingLibraryT& lib,

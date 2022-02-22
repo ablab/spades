@@ -6,17 +6,19 @@
 //***************************************************************************
 
 #pragma once
+
 #include "decl_logger.hpp"
 #include "utils/perf/perfcounter.hpp"
 #include "version.hpp"
 
-#include <vector>
-#include <unordered_map>
-#include <string>
-#include <sstream>
-#include <memory>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "config.hpp"
 
@@ -51,7 +53,7 @@ inline std::string level_name(level l)
 /////////////////////////////////////////////////////
 struct writer
 {
-  virtual void write_msg(double time_in_sec, size_t cmem, size_t max_rss, level l, const char* file, size_t line_num, const char* source, const char* msg) = 0;
+  virtual void write_msg(double time_in_sec, size_t cmem, size_t max_rss, level l, const std::filesystem::path file, size_t line_num, const char* source, const char* msg) = 0;
 
   virtual ~writer(){}
 };
@@ -75,7 +77,7 @@ struct properties
      *
      */
 
-    properties(std::string filename = "", level default_level = L_INFO);
+    properties(std::filesystem::path filename = "", level default_level = L_INFO);
     properties(level default_level = L_INFO);
 
     std::unordered_map<std::string, level> levels;
@@ -90,7 +92,7 @@ struct logger
 
     //
     bool need_log(level desired_level, const char* source) const;
-    void log(level desired_level, const char* file, size_t line_num, const char* source, const char* msg);
+    void log(level desired_level, const std::filesystem::path file, size_t line_num, const char* source, const char* msg);
 
     //
     void add_writer(writer_ptr ptr) {
@@ -110,7 +112,7 @@ private:
 };
 
 std::shared_ptr<logger>& __logger();
-logger* create_logger(std::string filename = "", level default_level = L_INFO);
+logger* create_logger(std::filesystem::path filename = "", level default_level = L_INFO);
 
 void attach_logger(logger *lg);
 void detach_logger();

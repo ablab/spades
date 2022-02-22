@@ -65,7 +65,7 @@ class KMerDiskStorage {
         : inner_iterator_(),
           k_(0), kmer_bytes_(0) { }
 
-    kmer_iterator(const std::string &FileName, unsigned k)
+    kmer_iterator(const std::filesystem::path &FileName, unsigned k)
         : inner_iterator_(FileName, Seq::GetDataSize(k)),
           k_(k), kmer_bytes_(Seq::GetDataSize(k_) * sizeof(typename Seq::DataType)) {}
 
@@ -132,10 +132,10 @@ class KMerDiskStorage {
   size_t total_kmers() const {
     size_t fsize = 0;
     if (all_kmers_) {
-      fsize = fs::filesize(*all_kmers_);
+      fsize = std::filesystem::file_size(*all_kmers_);
     } else {
       for (const auto &file : buckets_)
-        fsize += fs::filesize(*file);
+        fsize += std::filesystem::file_size(*file);
     }
 
     return fsize / (Seq::GetDataSize(k_) * sizeof(typename Seq::DataType));
@@ -147,7 +147,7 @@ class KMerDiskStorage {
   }
 
   size_t bucket_size(size_t i) const {
-    return fs::filesize(*buckets_.at(i)) / (Seq::GetDataSize(k_) * sizeof(typename Seq::DataType));
+    return std::filesystem::file_size(*buckets_.at(i)) / (Seq::GetDataSize(k_) * sizeof(typename Seq::DataType));
   }
 
   kmer_iterator bucket_begin(size_t i) const {
@@ -170,7 +170,7 @@ class KMerDiskStorage {
     TIME_TRACE_SCOPE("KMerDiskStorage::MergeFinal");
 
     all_kmers_ = work_dir_->tmp_file("final_kmers");
-    std::ofstream ofs(*all_kmers_, std::ios::out | std::ios::binary);
+    std::ofstream ofs(all_kmers_->file(), std::ios::out | std::ios::binary);
     for (auto &entry : buckets_) {
       BucketStorage bucket(*entry, Seq::GetDataSize(k_), false);
       ofs.write((const char*)bucket.data(), bucket.data_size());
@@ -278,13 +278,13 @@ private:
   std::unique_ptr<kmers::KMerSplitter<Seq>> splitter_;
   fs::TmpDir work_dir_;
 
-  size_t MergeKMers(const std::string &ifname, const std::string &ofname) {
+  size_t MergeKMers(const std::filesystem::path &ifname, const std::filesystem::path &ofname) {
     MMappedRecordArrayReader<typename Seq::DataType> ins(ifname, Seq::GetDataSize(this->k()), /* unlink */ true);
 
-    std::string IdxFileName = ifname + ".idx";
+    std::filesystem::path IdxFileName = ifname.native() + ".idx";
     if (FILE *f = fopen(IdxFileName.c_str(), "rb")) {
       fclose(f);
-      MMappedRecordReader<size_t> index(ifname + ".idx", true, -1ULL);
+      MMappedRecordReader<size_t> index(ifname.native() + ".idx", true, -1ULL);
 
       // INFO("Total runs: " << index.size());
 

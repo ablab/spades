@@ -42,7 +42,7 @@ void create_console_logger() {
 namespace read_filter {
 struct Args {
     unsigned thr = 2, k = 21;
-    std::filesystem::path dataset_desc, workdir = ".";
+    std::filesystem::path dataset_desc, workdir;
     unsigned nthreads = (omp_get_max_threads() / 2);
     bool drop_names = false;
     bool drop_quality = false;
@@ -52,13 +52,14 @@ struct Args {
 void process_cmdline(int argc, char **argv, read_filter::Args &args) {
     using namespace clipp;
     bool print_help = false;
+    std::string dataset_desc, workdir = ".";
 
     auto cli = (
         (option("-k", "--kmer") & integer("value", args.k)) % "K-mer length",
         (option("-c", "--cov") & integer("value", args.thr)) % "Median kmer count threshold (read pairs, s.t. kmer count median for BOTH reads LESS OR EQUAL to this value will be ignored)",
-        (required("-d", "--dataset") & value("yaml", args.dataset_desc.c_str())) % "Dataset description (in YAML)",
+        (required("-d", "--dataset") & value("yaml", dataset_desc)) % "Dataset description (in YAML)",
         (option("-t", "--threads") & integer("value", args.nthreads)) % "# of threads to use",
-        (option("-o", "--outdir") & value("dir", args.workdir.c_str())) %  "Output directory to use",
+        (option("-o", "--outdir") & value("dir", workdir)) %  "Output directory to use",
         (option("--drop-names").set(args.drop_names)) % "Drop read names and quality (makes everything faster)",
         (option("--drop-quality").set(args.drop_quality)) % "Drop read quality (makes everything faster)",
         (option("-h", "--help").set(print_help)) % "Show help"
@@ -73,6 +74,8 @@ void process_cmdline(int argc, char **argv, read_filter::Args &args) {
             exit(1);
         }
     }
+    args.dataset_desc = dataset_desc;
+    args.workdir = workdir;
 }
 
 template<class IS, class OS, class Filter>

@@ -38,7 +38,6 @@
 #endif
 
 #include <atomic>
-#include <fstream>
 #include "gamma_poisson_model.hpp"
 #include "read_corrector_structs_new.h"
 

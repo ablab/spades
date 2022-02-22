@@ -48,10 +48,14 @@ void process_cmdline(int argc, char **argv, convert_bin_to_fasta::Args &args) {
     using namespace clipp;
     bool print_help = false;
 
+    std::string prefix_file;
+    std::string info_file;
+    std::string output_file = "contigs.fasta";
+
     auto cli = (
-        (option("--prefix") & value("path", args.prefix_file.c_str())) % "Prefix of .off and .seq file for contigs in binary format",
-        (option("--info_file") & value("path", args.info_file.c_str())) % "Path to info file for contigs in binary format",
-        (option("-o", "--output_file") & value("path", args.output_file.c_str())) % "Output file name",
+        (option("--prefix") & value("path", prefix_file)) % "Prefix of .off and .seq file for contigs in binary format",
+        (option("--info_file") & value("path", info_file)) % "Path to info file for contigs in binary format",
+        (option("-o", "--output_file") & value("path", output_file)) % "Output file name",
         (option("-h", "--help").set(print_help)) % "Show help"
     );
 
@@ -75,6 +79,9 @@ void process_cmdline(int argc, char **argv, convert_bin_to_fasta::Args &args) {
         std::cout << help_message << std::endl;
         exit(-1);
     }
+    args.prefix_file = prefix_file;
+    args.info_file = info_file;
+    args.output_file = output_file;
 }
 
 io::ReadStreamList<io::SingleReadSeq> get_bin_stream(const convert_bin_to_fasta::Args& args) {

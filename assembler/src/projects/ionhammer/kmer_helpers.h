@@ -59,7 +59,7 @@ class SetFiller {
   }
 };
 
-inline void FillSet(HKMerSet& kmers, const char* filename) {
+inline void FillSet(HKMerSet& kmers, const std::filesystem::path filename) {
   const unsigned num_threads = 16;
   SetFiller filler(kmers);
   io::FileReadStream irs(filename, io::PhredOffset);
