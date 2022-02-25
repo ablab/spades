@@ -14,7 +14,6 @@
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "paired_info/index_point.hpp"
 #include "pipeline/graph_pack.hpp"
-#include "utils/filesystem/path_helper.hpp"
 
 namespace debruijn_graph {
 
@@ -148,7 +147,7 @@ public:
     }
 
     bool LoadFlankingCoverage(const std::string &file_name, omnigraph::FlankingCoverage<Graph> &flanking_cov) {
-        if (!fs::FileExists(file_name + ".flcvr")) {
+        if (!std::filesystem::exists(file_name + ".flcvr")) {
             INFO("Flanking coverage saves are missing");
             return false;
         }

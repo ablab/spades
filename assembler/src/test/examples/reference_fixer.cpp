@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
     }
     create_console_logger();
     filesystem::path fn = argv[1];
-    CHECK_FATAL_ERROR(FileExists(fn), "File " << fn << " doesn't exist or can't be read!");
+    CHECK_FATAL_ERROR(exists(fn), "File " << fn << " doesn't exist or can't be read!");
     string out_fn = argv[2];
     auto reader = io::NonNuclCollapsingWrapper(io::FileReadStream(fn));
     io::SingleRead read;

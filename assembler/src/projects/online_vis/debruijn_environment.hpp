@@ -180,11 +180,11 @@ class DebruijnEnvironment : public Environment {
             max_vertices_ = max_vertices;
         }
 
-        void set_folder(string folder) {
+        void set_folder(filesystem::path folder) {
             folder_ = folder;
         }
 
-        string folder() const {
+        filesystem::path folder() const {
             return folder_;
         }
 

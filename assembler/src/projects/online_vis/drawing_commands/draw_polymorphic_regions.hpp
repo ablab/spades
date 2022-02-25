@@ -82,12 +82,11 @@ class DrawPolymorphicRegions : public DrawingCommand {
                     {
                         using namespace visualization::visualization_utils;
                         WriteComponentSinksSources(polymorphicRegion,
-                                                   curr_env.folder() + "/" +
-                                                           std::to_string(curr_env.graph().int_id(*polymorphicRegion.vertices().begin())) + ".dot",
+                                                   curr_env.folder() / (std::to_string(curr_env.graph().int_id(*polymorphicRegion.vertices().begin())) + ".dot"),
                                                    visualization::graph_colorer::DefaultColorer(curr_env.graph()),
                                                    curr_env.labeler());
 
-                        INFO("Component is written to " + curr_env.folder() + std::to_string(curr_env.graph().int_id(*polymorphicRegion.vertices().begin())) + ".dot");
+                        INFO("Component is written to " + curr_env.folder().native() + std::to_string(curr_env.graph().int_id(*polymorphicRegion.vertices().begin())) + ".dot");
                     }
 
                     i += curr_env.graph().length(positionSecond.first) - positionSecond.second;
@@ -127,7 +126,7 @@ public:
         const vector<string>& args = arg_list.GetAllArguments();
         if (!CheckCorrectness(args))
             return;
-        make_dir(curr_env.folder());
+        create_directory(curr_env.folder());
         Sequence genome = curr_env.genome();
         if(genome.size() == 0)
         {

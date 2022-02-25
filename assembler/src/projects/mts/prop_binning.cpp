@@ -60,15 +60,16 @@ int main(int argc, char** argv) {
     size_t length_threshold;
     bool no_binning;
     try {
+        string saves_path_str, contigs_path_str, splits_path_str, annotation_path_str, bins_file_str;
         GetOpt_pp ops(argc, argv);
         ops.exceptions_all();
         ops >> Option('k', k)
-            >> Option('s', saves_path)
-            >> Option('c', contigs_path)
-            >> Option('f', splits_path)
-            >> Option('a', annotation_path)
+            >> Option('s', saves_path_str)
+            >> Option('c', contigs_path_str)
+            >> Option('f', splits_path_str)
+            >> Option('a', annotation_path_str)
             >> Option('t', length_threshold, (size_t)2000)
-            >> Option('b', bins_file, "")
+            >> Option('b', bins_file_str, "")
             >> Option('n', "names", sample_names, {})
             >> Option('l', "lefts", left_reads, {})
             >> Option('r', "rights", right_reads, {})
@@ -84,6 +85,11 @@ int main(int argc, char** argv) {
             cerr << "All of -n -l -r -o options must present for read binning" << endl;
             throw OptionNotFoundEx();
         }
+        saves_path = saves_path_str;
+        contigs_path = contigs_path_str;
+        splits_path = splits_path_str;
+        annotation_path = annotation_path_str;
+        bins_file = bins_file_str;
     } catch(GetOptEx &ex) {
         cerr << "Usage: prop_binning -k <K> -s <saves path> -c <contigs path> -f <splits path> "
                 "-a <binning annotation> [-t <length threshold>] [-b <bins to propagate>] "

@@ -13,6 +13,8 @@
 #include "argument_list.hpp"
 #include "errors.hpp"
 
+#include <filesystem>
+
 namespace online_visualization {
 
 typedef std::vector<std::string> Args;
@@ -109,10 +111,12 @@ class LocalCommand : public Command<Env> {
 private:
   std::filesystem::path MakeDirIfAbsent(const std::filesystem::path& folder) const {
       if (!exists(folder)) {
-          if (path.empty())
+          if (folder.empty()) {
               TRACE("Somewhat delirium: trying to create directory ``");
-          else
-            create_directories(folder);
+          }
+          else {
+              create_directories(folder);
+          }
       }
       return folder;
   }

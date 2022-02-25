@@ -164,8 +164,8 @@ int main(int argc, char** argv) {
                                   << gp.g.length(e) << "\t"
                                   << range.size() << std::endl;*/
                         if (!graph_dir.empty()) {
-                            std::string dot_export_path =
-                                graph_dir + "/" + ref_name + "/" + std::to_string(e.int_id()) + ".dot";
+                            std::filesystem::path dot_export_path =
+                                graph_dir / (ref_name / (std::to_string(e.int_id()) + ".dot"));
                             PrintColoredAnnotatedGraphAroundEdge(
                                 gp, e, prop_edge_annotation, dot_export_path);
                         }

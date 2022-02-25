@@ -33,7 +33,7 @@ class KmerMultiplicityCounter {
         kmcFile.OpenForListing(filename);
         CKmerAPI kmer((unsigned int) k_);
         uint32 count;
-        std::filesystem::path parsed_filename = filename.concat(KMER_PARSED_EXTENSION);
+        std::filesystem::path parsed_filename = filename.native() + KMER_PARSED_EXTENSION;
         std::ofstream output(parsed_filename, std::ios::binary);
         while (kmcFile.ReadNextKmer(kmer, count)) {
             RtSeq seq(k_, kmer.to_string());
@@ -48,7 +48,7 @@ class KmerMultiplicityCounter {
     filesystem::path SortKmersCountFile(const filesystem::path& filename) {
         MMappedRecordArrayReader<seq_element_type> ins(filename, RtSeq::GetDataSize(k_) + 1, false);
         libcxx::sort(ins.begin(), ins.end(), adt::array_less<seq_element_type>());
-        std::filesystem::path sorted_filename = filename.concat(KMER_SORTED_EXTENSION);
+        std::filesystem::path sorted_filename = filename.native() + KMER_SORTED_EXTENSION;
         std::ofstream out(sorted_filename);
         out.write((char*) ins.data(), ins.data_size());
         out.close();
@@ -88,7 +88,7 @@ class KmerMultiplicityCounter {
         auto kmer_file = fs::tmp::make_temp_file("kmer", workdir);
 
         typedef uint16_t Mpl;
-        std::ofstream output_kmer(*kmer_file, std::ios::binary);
+        std::ofstream output_kmer(kmer_file->file(), std::ios::binary);
         std::ofstream mpl_file(file_prefix_.concat(".bpr"), std::ios_base::binary);
 
         RtSeq::less3 kmer_less;
@@ -155,7 +155,7 @@ class KmerMultiplicityCounter {
         INFO("Built index with " << kmer_mpl.size() << " kmers");
 
         //Building kmer->profile offset index
-        std::ifstream kmers_in(*kmer_file, std::ios::binary);
+        std::ifstream kmers_in(kmer_file->file(), std::ios::binary);
         kmers::InvertableStoring::trivial_inverter inverter;
         RtSeq kmer(k_);
         for (Offset offset = 0; ; offset += sample_cnt) {
