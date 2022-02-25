@@ -31,7 +31,7 @@ struct OneContigDescription {
 typedef std::unordered_map<std::string, OneContigDescription> ContigInfoMap;
 
 class DatasetProcessor {
-    const std::filesystem::path &genome_file_;
+    const std::filesystem::path genome_file_;
     std::filesystem::path output_contig_file_;
     ContigInfoMap all_contigs_;
     sam_files_type unsplitted_sam_files_;
@@ -47,9 +47,9 @@ protected:
     DECL_LOGGER("DatasetProcessor")
 
 public:
-    DatasetProcessor(const std::filesystem::path &genome_file, const std::filesystem::path &work_dir,
+    DatasetProcessor(std::filesystem::path genome_file, const std::filesystem::path &work_dir,
                      const std::filesystem::path &output_dir, const size_t &thread_num)
-            : genome_file_(genome_file), work_dir_(work_dir), nthreads_(thread_num) {
+            : genome_file_(std::move(genome_file)), work_dir_(work_dir), nthreads_(thread_num) {
         output_contig_file_ = output_dir / "corrected_contigs.fasta";
         buffered_count_ = 0;
     }

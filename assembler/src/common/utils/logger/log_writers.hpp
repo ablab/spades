@@ -7,14 +7,11 @@
 
 #pragma once
 
-
+#include "config.hpp"
 #include "logger.hpp"
 
-#include <iostream>
-
-#include "config.hpp"
-
 #include <filesystem>
+#include <iostream>
 #include <iostream>
 #include <mutex>
 
@@ -28,13 +25,13 @@ struct console_writer : public writer {
             std::cout << fmt::format("{:14s} {:>5s} / {:<5s} {:6.6s} {:24.24s} ({:26.26s}:{:4d})   {:s}",
                                      utils::human_readable_time(time), utils::human_readable_memory(cmem),
                                      utils::human_readable_memory(max_rss), logging::level_name(l),
-                                     source, file.filename(), int(line_num), msg)
+                                     source, file.filename().c_str(), int(line_num), msg)
             << std::endl;
         else
             std::cout << fmt::format("{:14s} {:^5s} {:6.6s} {:24.24s} ({:26.26s}:{:4d})   {:s}",
                                      utils::human_readable_time(time), utils::human_readable_memory(max_rss),
                                      logging::level_name(l), source,
-                                     file.filename(),
+                                     file.filename().c_str(),
                                      int(line_num), msg)
                       << std::endl;
     }

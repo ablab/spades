@@ -4,20 +4,20 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "config.hpp"
+
+#include "utils/logger/logger.hpp"
+#include "utils/memory_limit.hpp"
+#include "utils/parallel/openmp_wrapper.h"
+#include "utils/perf/memory.hpp"
+
 #include <boost/algorithm/string.hpp>
 #include <cppformat/format.h>
 
-#include <string>
-#include <map>
 #include <fstream>
+#include <map>
+#include <string>
 #include <vector>
-
-#include "utils/logger/logger.hpp"
-#include "utils/perf/memory.hpp"
-#include "utils/memory_limit.hpp"
-#include "utils/parallel/openmp_wrapper.h"
-
-#include "config.hpp"
 
 #ifdef SPADES_USE_JEMALLOC
 # include <jemalloc/jemalloc.h>

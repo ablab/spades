@@ -8,8 +8,9 @@
 #pragma once
 
 #include "decl_logger.hpp"
-#include "utils/perf/perfcounter.hpp"
 #include "version.hpp"
+
+#include "utils/perf/perfcounter.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -20,7 +21,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "config.hpp"
 
 namespace logging
 {

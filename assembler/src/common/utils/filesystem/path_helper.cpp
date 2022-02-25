@@ -6,16 +6,18 @@
 //***************************************************************************
 
 #include "path_helper.hpp"
+
 #include "utils/logger/logger.hpp"
 #include "utils/verify.hpp"
 
-
 #include <boost/algorithm/string.hpp>
 
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+
 #include <dirent.h>
 #include <unistd.h>
+
 #include <cstring>
 
 namespace fs {

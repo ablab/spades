@@ -8,9 +8,8 @@
 
 #include <glob.h>
 
-#include <stdexcept>
-
 #include <cstring>
+#include <stdexcept>
 
 namespace fs {
 
