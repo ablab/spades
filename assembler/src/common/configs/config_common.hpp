@@ -35,6 +35,16 @@ load(T &value,
 }
 
 template<class T>
+typename boost::enable_if_c<std::is_convertible<T, std::string>::value ||
+                            boost::is_arithmetic<T>::value>::type
+load(std::optional<T> &value,
+     boost::property_tree::ptree const &pt, std::string const &key,
+     bool complete) {
+    if (complete || pt.find(key) != pt.not_found())
+        value = pt.get<T>(key);
+}
+
+template<class T>
 typename boost::disable_if_c<std::is_convertible<T, std::string>::value ||
                              boost::is_arithmetic<T>::value>::type
 load(T &value,
@@ -42,6 +52,19 @@ load(T &value,
      bool complete) {
     if (complete || pt.find(key) != pt.not_found())
         load(value, pt.get_child(key), complete);
+}
+
+template<class T>
+typename boost::disable_if_c<std::is_convertible<T, std::string>::value ||
+                             boost::is_arithmetic<T>::value>::type
+load(std::optional<T> &value,
+     boost::property_tree::ptree const &pt, std::string const &key,
+     bool complete) {
+    if (complete || pt.find(key) != pt.not_found()) {
+        T new_value;
+        load(new_value, pt.get_child(key), complete);
+        value = new_value;
+    }
 }
 
 template<class T>

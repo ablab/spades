@@ -91,8 +91,7 @@ void load(pe_config::ParamSetT::CoordinatedCoverageT& coord_cov,
 }
 
 void load(pe_config::ParamSetT::ScaffolderOptionsT& so, 
-            boost::property_tree::ptree const& pt, bool complete)
-{
+            boost::property_tree::ptree const& pt, bool complete) {
     using config_common::load;
     load(so.enabled, pt, "enabled"      , complete);
     load(so.cutoff      , pt, "cutoff", complete);
@@ -118,7 +117,7 @@ void load(pe_config::ParamSetT::ScaffolderOptionsT& so,
     if (pt.count("min_overlap_for_rna_scaffolding")) {
         VERIFY_MSG(!so.min_overlap_for_rna_scaffolding, "Option can be loaded only once");
         so.min_overlap_for_rna_scaffolding.reset();
-        load(*so.min_overlap_for_rna_scaffolding, pt, "min_overlap_for_rna_scaffolding");
+        load(so.min_overlap_for_rna_scaffolding, pt, "min_overlap_for_rna_scaffolding");
     }
 }
 
