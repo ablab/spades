@@ -809,12 +809,12 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     if (pt.count("preliminary_simp")) {
         CHECK_FATAL_ERROR(!cfg.preliminary_simp, "Option preliminary can be loaded only once");
         cfg.preliminary_simp = cfg.simp;
-        load(cfg.preliminary_simp, pt, "preliminary_simp", false);
+        load(*cfg.preliminary_simp, pt, "preliminary_simp", false);
     }
     if (pt.count("prelim_pe")) {
         CHECK_FATAL_ERROR(!cfg.prelim_pe_params, "Option prelim_pe can be loaded only once");
         cfg.prelim_pe_params = cfg.pe_params;
-        load(cfg.prelim_pe_params, pt, "prelim_pe", false);
+        load(*cfg.prelim_pe_params, pt, "prelim_pe", false);
     }
 
     if (pt.count("hmm_match")) {
