@@ -114,7 +114,7 @@ static void Run(size_t K, const std::filesystem::path &graph_path,
 
 struct gcfg {
     gcfg()
-        : k(55), tmpdir("tmp"), out_prefix(""),
+        : k(55), out_prefix(""),
           nthreads(omp_get_max_threads() / 2 + 1)
     {}
 
@@ -146,7 +146,7 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
       std::cout << make_man_page(cli, argv[0]);
       exit(1);
   }
-  cfg.tmpdir = tmpdir;
+  cfg.tmpdir = tmpdir.empty() ? "tmp" : tmpdir;
 }
 
 int main(int argc, char** argv) {

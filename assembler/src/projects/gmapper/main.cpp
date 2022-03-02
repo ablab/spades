@@ -45,7 +45,7 @@ using namespace debruijn_graph;
 
 struct gcfg {
     gcfg()
-        : k(-1U), tmpdir("tmp"), outfile("-"),
+        : k(-1U),
           nthreads(omp_get_max_threads() / 2 + 1),
           libindex(0),
           mode(alignment::BWAIndex::AlignmentMode::Default),
@@ -107,8 +107,8 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
 
   cfg.file = file;
   cfg.graph = graph;
-  cfg.tmpdir = tmpdir;
-  cfg.outfile = outfile;
+  cfg.tmpdir = tmpdir.empty() ? "tmp" : tmpdir;
+  cfg.outfile = outfile.empty() ? "-" : outfile;
 }
 
 typedef io::DataSet<debruijn_graph::config::LibraryData> DataSet;

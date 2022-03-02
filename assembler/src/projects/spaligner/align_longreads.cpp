@@ -258,7 +258,8 @@ void process_cmdline(int argc, char **argv,
         std::cout << make_man_page(cli, argv[0]);
         exit(-1);
     }
-    output_dir = output_dir_;
+    if (!output_dir_.empty())
+        output_dir = output_dir_;
 }
 
 int main(int argc, char **argv) {

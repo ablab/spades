@@ -84,7 +84,7 @@ static void Run(const std::filesystem::path &graph_path, const std::string &data
 
 struct gcfg {
     gcfg()
-        : k(21), tmpdir("tmp"), outfile("-"),
+        : k(21),
           nthreads(omp_get_max_threads() / 2 + 1)
     {}
 
@@ -119,8 +119,8 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
   }
 
   cfg.file = file;
-  cfg.tmpdir = tmpdir;
-  cfg.outfile = outfile;
+  cfg.tmpdir = tmpdir.empty() ? "tmp" : tmpdir;
+  cfg.outfile = outfile.empty() ? "-" : outfile;
 }
 
 int main(int argc, char** argv) {

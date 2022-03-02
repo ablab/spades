@@ -162,7 +162,6 @@ static void Run(const graph_pack::GraphPack &gp, const std::filesystem::path &co
 
 struct gcfg {
     gcfg() : k(0),
-             workdir("./tmp"),
              nthreads(omp_get_max_threads() / 2 + 1)
     {}
 
@@ -209,7 +208,7 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
     cfg.paths_fn = paths_fn;
     cfg.edge_info_fn = edge_info_fn;
     cfg.edge_color_fn = edge_color_fn;
-    cfg.workdir = workdir;
+    cfg.workdir = workdir.empty() ? "./tmp" : workdir;
 }
 
 int main(int argc, char** argv) {

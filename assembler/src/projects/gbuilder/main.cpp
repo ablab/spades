@@ -46,7 +46,7 @@ enum class output_type {
 
 struct gcfg {
     gcfg()
-        : k(21), tmpdir("tmp"), outfile("-"),
+        : k(21),
           nthreads(omp_get_max_threads() / 2 + 1), buff_size(512ULL << 20),
           mode(output_type::unitigs), coverage(false)
     {}
@@ -88,10 +88,10 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
       std::cout << make_man_page(cli, argv[0]);
       exit(1);
   }
-
+  
   cfg.file = file;
-  cfg.tmpdir = tmpdir;
-  cfg.outfile = outfile;
+  cfg.tmpdir = tmpdir.empty() ? "tmp" : tmpdir;
+  cfg.outfile = outfile.empty() ? "-" : outfile;
 }
 
 void LoadDataset(io::DataSet<debruijn_graph::config::LibraryData> &dataset,
@@ -159,7 +159,6 @@ int main(int argc, char* argv[]) {
         create_directory(tmpdir);
         auto workdir = fs::tmp::make_temp_dir(tmpdir, "construction");
 
-        // FIXME: Get rid of this "/" junk
         debruijn_graph::config::init_libs(dataset, nthreads, tmpdir);
 
         std::vector<size_t> libs_for_construction;
