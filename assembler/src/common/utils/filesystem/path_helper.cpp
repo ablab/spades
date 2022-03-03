@@ -28,11 +28,11 @@ std::filesystem::path make_temp_dir(std::filesystem::path const& prefix,
     char* actual;
     if ((actual = ::mkdtemp(strcpy(new char[strlen(name.c_str()) + 1], name.c_str())))
             == NULL)
-        throw std::runtime_error("Cannot create temporary dir " + std::string(name));
+        throw std::runtime_error("Cannot create temporary dir " + name.native());
 
     std::filesystem::path result(actual);
     if (result == name)
-        throw std::runtime_error("Cannot create temporary dir " + std::string(name));
+        throw std::runtime_error("Cannot create temporary dir " + name.native());
 
     delete[] actual;
 

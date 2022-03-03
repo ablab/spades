@@ -11,21 +11,21 @@
 
 namespace graph_pack {
 
-void FillQuality(GraphPack& gp);
-void ClearQuality(GraphPack& gp);
+void FillQuality(graph_pack::GraphPack& gp);
+void ClearQuality(graph_pack::GraphPack& gp);
 
-void EnsureIndex(GraphPack& gp);
-void EnsureBasicMapping(GraphPack& gp);
-void EnsureQuality(GraphPack& gp);
-void EnsurePos(GraphPack& gp);
-void EnsureDebugInfo(GraphPack& gp);
+void EnsureIndex(graph_pack::GraphPack& gp);
+void EnsureBasicMapping(graph_pack::GraphPack& gp);
+void EnsureQuality(graph_pack::GraphPack& gp);
+void EnsurePos(graph_pack::GraphPack& gp);
+void EnsureDebugInfo(graph_pack::GraphPack& gp);
 
-void InitRRIndices(GraphPack& gp);
-void ClearRRIndicesAndPaths(GraphPack& gp);
+void InitRRIndices(graph_pack::GraphPack& gp);
+void ClearRRIndicesAndPaths(graph_pack::GraphPack& gp);
 
-void DetachAll(GraphPack& gp);
-void DetachEdgeIndex(GraphPack& gp);
+void DetachAll(graph_pack::GraphPack& gp);
+void DetachEdgeIndex(graph_pack::GraphPack& gp);
 
-void PrepareForStage(GraphPack& gp, const char*);
+void PrepareForStage(graph_pack::GraphPack& gp, const char*);
 
 } // namespace debruijn_graph

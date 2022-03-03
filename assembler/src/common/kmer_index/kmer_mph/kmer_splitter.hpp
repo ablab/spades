@@ -26,7 +26,7 @@ public:
     typedef typename kmer::KMerSegmentPolicy<Seq> KMerBuckets;
     typedef std::vector<fs::DependentTmpFile> RawKMers;
 
-    KMerSplitter(const std::string &work_dir, unsigned K)
+    KMerSplitter(const std::filesystem::path &work_dir, unsigned K)
             : KMerSplitter(fs::tmp::make_temp_dir(work_dir, "kmer_splitter"), K) {}
 
     KMerSplitter(fs::TmpDir work_dir, unsigned K)
@@ -56,7 +56,7 @@ class KMerSortingSplitter : public KMerSplitter<Seq> {
 public:
     using typename KMerSplitter<Seq>::RawKMers;
 
-    KMerSortingSplitter(const std::string &work_dir, unsigned K)
+    KMerSortingSplitter(const std::filesystem::path &work_dir, unsigned K)
             : KMerSplitter<Seq>(work_dir, K), cell_size_(0), num_files_(0) {}
 
     KMerSortingSplitter(fs::TmpDir work_dir, unsigned K)

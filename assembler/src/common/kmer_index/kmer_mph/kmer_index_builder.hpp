@@ -228,7 +228,7 @@ public:
       : __super(splitter.K()), splitter_(new Splitter{std::move(splitter)}), work_dir_(work_dir) {}
 
   template<class Splitter>
-  KMerDiskCounter(const std::string &work_dir,
+  KMerDiskCounter(const std::filesystem::path &work_dir,
                   Splitter splitter)
       : KMerDiskCounter(fs::tmp::make_temp_dir(work_dir, "kmer_counter"), std::move(splitter)) {}
 

@@ -41,7 +41,7 @@ class HammerFilteringKMerSplitter : public kmers::KMerSortingSplitter<hammer::KM
   using typename kmers::KMerSortingSplitter<hammer::KMer>::RawKMers;
   typedef std::function<bool(const KMer&)> KMerFilter;
 
-  HammerFilteringKMerSplitter(std::string &work_dir,
+  HammerFilteringKMerSplitter(std::filesystem::path &work_dir,
                               KMerFilter filter = [](const KMer&) { return true; })
       : KMerSortingSplitter<hammer::KMer>(work_dir, hammer::K),
       filter_(std::move(filter)) {}
@@ -272,7 +272,7 @@ class KMerCountEstimator {
 
 void KMerDataCounter::BuildKMerIndex(KMerData &data) {
   // Build the index
-  std::string workdir = cfg::get().input_working_dir;
+  std::filesystem::path workdir = cfg::get().input_working_dir;
 
   // Optionally perform a filtering step
   size_t kmers = 0;

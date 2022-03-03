@@ -17,10 +17,6 @@ namespace config_common {
 // config singleton-wrap
 template<class Config>
 struct config {
-    static std::string dirnameOf(const std::string &fname) {
-        size_t pos = fname.find_last_of("\\/");
-        return (std::string::npos == pos) ? "" : fname.substr(0, pos);
-    }
 
     template<class Source>
     static void create_instance(Source const &source) {

@@ -28,22 +28,12 @@ namespace numeric = boost::numeric::ublas;
 
 using namespace hammer;
 
-std::string KMerClustering::GetGoodKMersFname() const {
-  // FIXME: This is ugly!
-  std::ostringstream tmp;
-  tmp.str("");
-  tmp << workdir_ << "/" << "kmers.solid";
-
-  return tmp.str();
+std::filesystem::path KMerClustering::GetGoodKMersFname() const {
+  return workdir_ / "kmers.solid";
 }
 
-std::string KMerClustering::GetBadKMersFname() const {
-  // FIXME: This is ugly!
-  std::ostringstream tmp;
-  tmp.str("");
-  tmp << workdir_ << "/" << "kmers.bad";
-
-  return tmp.str();
+std::filesystem::path KMerClustering::GetBadKMersFname() const {
+  return workdir_ / "kmers.bad";
 }
 
 static hammer::ExpandedSeq ConsensusWithMask(const std::vector<hammer::ExpandedKMer> &kmers,

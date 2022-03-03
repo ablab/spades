@@ -190,7 +190,7 @@ CorrectionStats CorrectPairedReadFiles(const KMerData &data,
     ++buffer_no;
   }
   if (!irsl.eof() || !irsr.eof())
-      FATAL_ERROR("Pair of read files " + std::string(fnamel) + " and " + std::string(fnamer) + " contain unequal amount of reads");
+      FATAL_ERROR("Pair of read files " + fnamel.native() + " and " + fnamer.native() + " contain unequal amount of reads");
   return stats;
 }
 

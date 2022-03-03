@@ -16,7 +16,7 @@ using EdgeIndex = KmerFreeEdgeIndex<ConjugateDeBruijnGraph>;
 using EdgeIndex64 = KmerFreeEdgeIndex<ConjugateDeBruijnGraph, uint64_t>;
 using EdgeIndex32 = KmerFreeEdgeIndex<ConjugateDeBruijnGraph, uint32_t>;
 
-EdgeIndexRefiller::EdgeIndexRefiller(const std::string &workdir)
+EdgeIndexRefiller::EdgeIndexRefiller(const std::filesystem::path &workdir)
     : workdir_(workdir)
 {}
 

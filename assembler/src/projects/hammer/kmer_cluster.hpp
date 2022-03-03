@@ -25,7 +25,7 @@
 
 class KMerClustering {
 public:
-  KMerClustering(KMerData &data, unsigned nthreads, const std::string &workdir, bool debug) :
+  KMerClustering(KMerData &data, unsigned nthreads, const std::filesystem::path &workdir, bool debug) :
       data_(data), nthreads_(nthreads), workdir_(workdir), debug_(debug) { }
 
   void process(const std::string &Prefix);
@@ -33,7 +33,7 @@ public:
 private:
   KMerData &data_;
   unsigned nthreads_;
-  std::string workdir_;
+  std::filesystem::path workdir_;
   bool debug_;
 
   struct Center {
@@ -55,8 +55,8 @@ private:
 
   size_t SubClusterSingle(const std::vector<size_t> & block, std::vector< std::vector<size_t> > & vec);
 
-  std::string GetGoodKMersFname() const;
-  std::string GetBadKMersFname() const;
+  std::filesystem::path GetGoodKMersFname() const;
+  std::filesystem::path GetBadKMersFname() const;
 
   size_t ProcessCluster(const std::vector<size_t> &cur_class,
                         boost::numeric::ublas::matrix<uint64_t> &errs,

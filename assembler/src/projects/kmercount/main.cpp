@@ -176,16 +176,16 @@ void process_cmdline(int argc, char **argv, kmer_count::Args &args) {
             exit(1);
         }
     }
+    args.workdir = workdir;
+    args.dataset = dataset;
+    for(const auto& file : input) {
+        args.input.push_back(file);
+    }
 
     if (args.input.size() == 0 && args.dataset == "") {
         std::cerr << "ERROR: No input files were specified" << std::endl << std::endl;
         std::cout << help_message << std::endl;
         exit(-1);
-    }
-    args.workdir = workdir;
-    args.dataset = dataset;
-    for(const auto& file : input) {
-        args.input.push_back(file);
     }
 }
 
@@ -207,6 +207,7 @@ int main(int argc, char* argv[]) {
 
         SimplePerfectHashMap index(args.K);
         ParallelSortingSplitter splitter(args.workdir, args.K, args.read_buffer_size);
+
         if (args.dataset != "") {
             io::DataSet<> idataset;
             idataset.load(args.dataset);
@@ -216,11 +217,9 @@ int main(int argc, char* argv[]) {
             for (const auto& s : args.input)
                 splitter.push_back(s);
         }
-
         kmers::KMerDiskCounter<RtSeq> counter(args.workdir, std::move(splitter));
         auto res = counter.CountAll(16, args.nthreads, /* merge */ true);
         auto final_kmers = res.final_kmers();
-
         std::filesystem::path outputfile_name = args.workdir / "final_kmers";
         std::rename(final_kmers->file().c_str(), outputfile_name.c_str());
 

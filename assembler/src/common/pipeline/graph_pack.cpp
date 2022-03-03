@@ -26,7 +26,7 @@ namespace graph_pack {
 
 using namespace debruijn_graph;
 
-GraphPack::GraphPack(size_t k, const std::string &workdir, size_t lib_count,
+GraphPack::GraphPack(size_t k, const std::filesystem::path &workdir, size_t lib_count,
                      const std::vector<std::string> &genome,
                      size_t flanking_range, size_t max_mapping_gap, size_t max_gap_diff,
                      bool detach_indices) : k_(k), workdir_(workdir) {

@@ -210,7 +210,7 @@ void Launch(GAlignerConfig &cfg, const std::filesystem::path output_dir, int thr
 
     INFO("Process reads from " << cfg.path_to_sequences);
     aligner.RunAligner();
-    INFO("Thank you for using SPAligner! Results can be found here: " + static_cast<std::string>(output_dir))
+    INFO("Thank you for using SPAligner! Results can be found here: " + output_dir.native())
     remove(tmpdir);
 }
 } // namespace sensitive_aligner

@@ -18,9 +18,9 @@ namespace debruijn_graph {
 // do not want to pull the corresponding headers here until we untangle all
 // the mess
 struct EdgeIndexRefiller {
-    std::string workdir_;
+    std::filesystem::path workdir_;
 
-    EdgeIndexRefiller(const std::string &workdir);
+    EdgeIndexRefiller(const std::filesystem::path &workdir);
 
     template<class EdgeIndex>
     void Refill(EdgeIndex &index, const Graph &g);

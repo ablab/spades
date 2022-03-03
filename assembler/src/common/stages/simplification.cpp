@@ -383,11 +383,6 @@ public:
         algo_tc_br->AddAlgo(BRInstance(g_, simplif_cfg_.br, info_container_, bulge_callback_f, removal_handler_),
                             "Bulge remover");
 
-//        algo.AddAlgo(
-//                RelativelyLowCoverageDisconnectorInstance(gp_.g, gp_.flanking_cov,
-//                                                          simplif_cfg_.red, info_container_),
-//                "Disconnecting edges with relatively low coverage");
-
         if (rna_mode) {
             algo.AddAlgo<LoopedAlgorithm<Graph>>("", g_, algo_tc_br);
         } else {
@@ -453,17 +448,6 @@ void Simplification::run(graph_pack::GraphPack &gp, const char*) {
 
     visualization::graph_labeler::DefaultLabeler<Graph> labeler(gp.get<Graph>(), gp.get<EdgesPositionHandler<Graph>>());
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
-
-    //  QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
-//    auto colorer = debruijn_graph::DefaultGPColorer(gp);
-//    QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, gp.edge_qual, labeler, colorer,
-//                                   cfg::get().output_dir + "pictures/colored_edges_deleted/");
-//
-//    //positive quality edges removed (folder colored_edges_deleted)
-//    std::function<void(EdgeId)> removal_handler_f = boost::bind(
-//            //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
-//            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
-//            boost::ref(qual_removal_handler), _1);
 
     SimplifInfoContainer info_container = CreateInfoContainer(gp);
 

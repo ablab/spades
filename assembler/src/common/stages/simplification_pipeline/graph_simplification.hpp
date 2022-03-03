@@ -421,7 +421,7 @@ AlgoPtr<Graph> RelativeCoverageComponentRemoverInstance (
     size_t connecting_path_length_bound = LengthThresholdFinder::MaxErroneousConnectionLength(
             g.k(), rcc_config.max_ec_length_coefficient);
 
-    std::string pics_dir = "";
+    std::filesystem::path pics_dir = "";
 
     double max_coverage = math::ge(rcc_config.max_coverage_coeff, 0.)
                           ? info.detected_coverage_bound() * rcc_config.max_coverage_coeff

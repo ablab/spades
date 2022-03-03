@@ -27,7 +27,7 @@ class HammerKMerSplitter : public kmers::KMerSortingSplitter<HKMer> {
  public:
   using typename kmers::KMerSortingSplitter<HKMer>::RawKMers;
 
-  HammerKMerSplitter(const std::string &work_dir)
+  HammerKMerSplitter(const std::filesystem::path &work_dir)
           : kmers::KMerSortingSplitter<HKMer>(work_dir, hammer::K) {}
 
   RawKMers Split(size_t num_files, unsigned nthreads) override;

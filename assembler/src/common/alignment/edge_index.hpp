@@ -107,7 +107,7 @@ private:
     }
 
 public:
-    EdgeIndex(const Graph& g, const std::string &workdir)
+    EdgeIndex(const Graph& g, const std::filesystem::path &workdir)
             : omnigraph::GraphActionHandler<Graph>(g, "EdgeIndex"),
               large_index_(true), inner_index_(nullptr),
               refiller_(workdir) {

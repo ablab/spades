@@ -8,8 +8,9 @@
 #ifndef __STAGE_HPP__
 #define __STAGE_HPP__
 
+#include "graph_pack.hpp"
+
 #include "configs/config_struct.hpp"
-#include "pipeline/graph_pack.hpp"
 #include "utils/logger/logger.hpp"
 
 #include <filesystem>

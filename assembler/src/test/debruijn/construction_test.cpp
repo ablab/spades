@@ -62,7 +62,7 @@ TEST_F( GraphConstruction, CondenseSimple ) {
     AssertGraph (5, reads, edges);
 }
 
-void CheckIndex(const std::vector<std::string> &reads, const std::string &tmpdir, size_t k) {
+void CheckIndex(const std::vector<std::string> &reads, const std::filesystem::path &tmpdir, size_t k) {
     typedef io::VectorReadStream<io::SingleRead> RawStream;
     graph_pack::GraphPack gp(k, tmpdir, 0);
     auto workdir = fs::tmp::make_temp_dir(gp.workdir(), "tests");
