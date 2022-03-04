@@ -593,8 +593,8 @@ static void AnnotateExtraEdgesRound(const Graph &g,
     INFO("Annotation expansion");
     auto annotated_edges = edge_qual.PositiveQualEdges();
 
-    create_directory(out_path / "unambig");
-    create_directory(out_path / "only_ann_reach");
+    create_directories(out_path / "unambig");
+    create_directories(out_path / "only_ann_reach");
     EdgeSet expanded(annotated_edges);
     utils::insert_all(expanded, UnambiguousExtensions(g, annotated_edges, out_path / "unambig"));
     ////TODO think about step by step additions (currently initial annotation set is not changed)
@@ -689,7 +689,7 @@ static void AnnotateExtraEdges(const graph_pack::GraphPack &gp,
 
     if (edge_qual.IsAttached()) {
         INFO("Reference was provided. Comparing annotations.");
-        create_directory(out_folder / "unannotated_pics");
+        create_directories(out_folder / "unannotated_pics");
         CompareAnnotations(gp, annotation, out_folder / "unannotated_pics");
     }
 }

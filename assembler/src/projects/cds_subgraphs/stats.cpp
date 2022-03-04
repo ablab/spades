@@ -230,7 +230,7 @@ int main(int argc, char** argv) {
         omp_set_num_threads((int) nthreads);
         INFO("# of threads to use: " << nthreads);
 
-        create_directory(cfg.workdir);
+        create_directories(cfg.workdir);
         graph_pack::GraphPack gp(k, cfg.workdir, 0);
 
         omnigraph::GraphElementFinder<Graph> element_finder(gp.get<Graph>());

@@ -45,7 +45,7 @@ class MappingPrinterTSV: public MappingPrinter {
                     const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
                     const std::filesystem::path &output_dir)
     : MappingPrinter(g, edge_namer, output_dir) {
-    create_directory(output_dir_);
+    create_directories(output_dir_);
     output_file_.open(output_dir_ / "alignment.tsv", std::ofstream::out);
   }
 
@@ -63,7 +63,7 @@ class MappingPrinterFasta: public MappingPrinter {
                     const io::CanonicalEdgeHelper<debruijn_graph::Graph> &edge_namer,
                     const std::filesystem::path &output_dir)
     : MappingPrinter(g, edge_namer, output_dir) {
-    create_directory(output_dir_);
+    create_directories(output_dir_);
     output_file_.open(output_dir_ / "alignment.fasta", std::ofstream::out);
   }
 

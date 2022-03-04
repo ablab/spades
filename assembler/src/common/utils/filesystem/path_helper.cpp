@@ -26,7 +26,7 @@ std::filesystem::path make_temp_dir(std::filesystem::path const& prefix,
                           std::string const& suffix) {
     std::filesystem::path name = prefix / (suffix + "_XXXXXX");
     char* actual;
-    if ((actual = ::mkdtemp(strcpy(new char[strlen(name.c_str()) + 1], name.c_str())))
+    if ((actual = ::mkdtemp(strcpy(new char[name.native().length() + 1], name.c_str())))
             == NULL)
         throw std::runtime_error("Cannot create temporary dir " + name.native());
 

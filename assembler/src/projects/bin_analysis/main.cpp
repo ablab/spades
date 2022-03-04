@@ -99,7 +99,7 @@ static void Run(size_t K, const std::filesystem::path &graph_path,
     const std::filesystem::path pics_path = out_prefix + "_neighbourhoods";
     //const std::string pics_path = "";
     if (!pics_path.empty()) {
-        create_directory(pics_path);
+        create_directories(pics_path);
         DrawNeighbourComponents(gp, bin_contigs, annotation, pics_path, /*edge_length_bound*/2500);
     }
 

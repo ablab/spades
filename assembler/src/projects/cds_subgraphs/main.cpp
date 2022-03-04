@@ -324,7 +324,7 @@ int main(int argc, char** argv) {
     try {
         unsigned nthreads = cfg.nthreads;
         unsigned k = cfg.k;
-        create_directory(cfg.outdir);
+        create_directories(cfg.outdir);
 
         INFO("K-mer length set to " << k);
 
@@ -334,7 +334,7 @@ int main(int argc, char** argv) {
         INFO("# of threads to use: " << nthreads);
 
         std::filesystem::path tmpdir = cfg.tmpdir.empty() ? cfg.outdir / "tmp" : cfg.tmpdir;
-        create_directory(tmpdir);
+        create_directories(tmpdir);
         graph_pack::GraphPack gp(k, tmpdir, 0);
         
         const auto &graph = gp.get<Graph>();

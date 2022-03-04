@@ -258,7 +258,7 @@ int main(int argc, char** argv) {
 
         INFO("Saving graph to " << cfg.outfile);
 
-        create_directory(cfg.outfile.parent_path());
+        create_directories(cfg.outfile.parent_path());
 
         if (cfg.save_gp) {
             INFO("Saving graph pack in SPAdes binary format");

@@ -18,7 +18,7 @@ public:
     }
 
     ~TmpFolderFixture() {
-        remove(tmp_folder_);
+        remove_all(tmp_folder_);
     }
 
     const std::filesystem::path &tmp_folder() const {

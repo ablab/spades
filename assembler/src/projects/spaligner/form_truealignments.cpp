@@ -244,7 +244,7 @@ void Launch(size_t K, const filesystem::path &saves_path, const string &reads_fa
             aligner.Print(wrappedreads[i], read_mapping_res);
         }
     }
-    remove(tmpdir);
+    remove_all(tmpdir);
 }
 }
 

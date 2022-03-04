@@ -149,9 +149,9 @@ ContigAlnInfo DomainMatcher::MatchDomains(graph_pack::GraphPack &gp,
                                           const std::filesystem::path &output_dir) {
     std::filesystem::path tmp_dir = output_dir / "temp_anti";
     if (exists(tmp_dir))
-        remove(tmp_dir);
-    create_directory(tmp_dir);
-    create_directory(output_dir / "bgc_in_gfa");
+        remove_all(tmp_dir);
+    create_directories(tmp_dir);
+    create_directories(output_dir / "bgc_in_gfa");
 
     ContigAlnInfo res;
     hmmer::hmmer_cfg hcfg;

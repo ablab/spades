@@ -634,7 +634,7 @@ public:
         VERIFY(tip_allowing_length_bound >= length_bound);
         TRACE("Coverage gap " << min_coverage_gap);
         if (!vis_dir_.empty()) {
-            create_directory(vis_dir_);
+            create_directories(vis_dir_);
             create_directory(vis_dir_ / "success");
             create_directory(vis_dir_ / "fail");
         }

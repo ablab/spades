@@ -1177,7 +1177,7 @@ public:
             protected_edges_(protected_edges),
             pics_folder_(pics_folder) {
         if (!pics_folder_.empty()) {
-            remove(pics_folder_);
+            remove_all(pics_folder_);
             create_directory(pics_folder_);
             create_directory(pics_folder_ / "success");
             create_directory(pics_folder_ / "fail");

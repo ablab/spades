@@ -149,7 +149,6 @@ int main(int argc, char* argv[]) {
 
         io::DataSet<debruijn_graph::config::LibraryData> dataset;
         dataset.load(args.dataset_desc);
-
         create_directory(args.workdir);
         auto tmpdir = fs::tmp::make_temp_dir(args.workdir, "binreads");
         debruijn_graph::config::init_libs(dataset, args.nthreads, tmpdir->dir());

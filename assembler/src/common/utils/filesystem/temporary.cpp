@@ -32,7 +32,7 @@ TmpDirImpl::~TmpDirImpl() {
         return;
     }
     TRACE("Removing " << dir_);
-    remove(dir_);
+    remove_all(dir_);
 }
 
 const std::filesystem::path &TmpDirImpl::release() {

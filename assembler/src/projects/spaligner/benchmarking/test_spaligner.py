@@ -82,7 +82,7 @@ class DataLoader:
             mapped_s = [int(x) for x in e_starts.split(",")] if "," in e_starts else [int(e_starts)]
             mapped_e = [int(x) for x in e_ends.split(",")] if "," in e_ends else [int(e_ends)]
             max_ind = []
-            for i in xrange(len(initial_s)):
+            for i in range(len(initial_s)):
                 if stat == "max":
                     if initial_e[i] - initial_s[i] >0.8*len(reads[cur_read]) and (len(max_ind) == 0 or initial_e[i] - initial_s[i] > initial_e[max_ind[0]] - initial_s[max_ind[0]]):
                         max_ind = []

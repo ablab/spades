@@ -18,7 +18,7 @@ std::set<bin_id> ContigBinner::RelevantBins(const io::SingleRead& r) const {
 
 void ContigBinner::Init(bin_id bin) {
     std::filesystem::path out_dir = out_root_ / bin;
-    create_directory(out_dir);
+    create_directories(out_dir);
     out_streams_.emplace(bin, std::make_unique<ContigBinner::Stream>(
         out_dir / sample_name_.concat("_1.fastq.gz"),
         out_dir / sample_name_.concat("_2.fastq.gz"))

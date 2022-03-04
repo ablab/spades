@@ -303,7 +303,7 @@ struct detail_info_printer {
 
         if (config.save_graph_pack) {
             auto saves_folder = folder_ / "saves" / (ToString(call_cnt++, 2) + "_" + pos_name);
-            create_directory(saves_folder);
+            create_directories(saves_folder);
             BasePackIO().Save(saves_folder / "graph_pack", gp_);
             //TODO: separate
             const auto &indices = gp_.get<omnigraph::de::PairedInfoIndicesT<Graph>>("clustered_indices");
@@ -312,7 +312,7 @@ struct detail_info_printer {
 
         if (config.save_all) {
             auto saves_folder = folder_ / "saves" / (ToString(call_cnt++, 2) + "_" + pos_name);
-            create_directory (saves_folder);
+            create_directories(saves_folder);
             auto p = saves_folder / "saves";
             INFO("Saving current state to " << p);
 
