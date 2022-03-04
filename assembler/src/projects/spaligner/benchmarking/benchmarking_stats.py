@@ -141,7 +141,7 @@ class DataLoader:
 
     def extract_seq(self, connected_nodes):
         graph_seq_full = ""
-        for i in xrange(len(connected_nodes)):
+        for i in range(len(connected_nodes)):
             node = connected_nodes[i]
             edge_offset_s = node["path"][0]["start"]
             edge_offset_f = node["path"][-1]["end"]
@@ -192,7 +192,7 @@ class DataLoader:
             mapped_s = [int(x) for x in e_starts.split(",")] if "," in e_starts else [int(e_starts)]
             mapped_e = [int(x) for x in e_ends.split(",")] if "," in e_ends else [int(e_ends)]
             max_ind = []
-            for i in xrange(len(initial_s)):
+            for i in range(len(initial_s)):
                 if stat == "max":
                     if initial_e[i] - initial_s[i] >0.8*len(reads[cur_read]) and (len(max_ind) == 0 or initial_e[i] - initial_s[i] > initial_e[max_ind[0]] - initial_s[max_ind[0]]):
                         max_ind = []
@@ -216,9 +216,9 @@ def print_stats(reads, res_mp):
         print name
         df = pd.DataFrame(res_mp[name]["res"])
         df["r"] = df.apply(lambda x: reads[x["r_name"]], axis = 1)
-        df["ed"] = df.apply(lambda x: sum([edist([reads[x["r_name"]][x["s_start"][i]: x["s_end"][i]], x["mapped_seq"][i]]) for i in xrange(len(x["mapped_seq"])) ]), axis = 1)
-        df["prop_len"] = df.apply(lambda x: sum(x["mapping_len"][i] for i in xrange(len(x["mapping_len"])))*100/len(reads[x["r_name"]]), axis = 1)
-        df["prop_ed"] = df.apply(lambda x: x["ed"]*100/sum(x["mapping_len"][i] for i in xrange(len(x["mapping_len"]))), axis = 1)
+        df["ed"] = df.apply(lambda x: sum([edist([reads[x["r_name"]][x["s_start"][i]: x["s_end"][i]], x["mapped_seq"][i]]) for i in range(len(x["mapped_seq"])) ]), axis = 1)
+        df["prop_len"] = df.apply(lambda x: sum(x["mapping_len"][i] for i in range(len(x["mapping_len"])))*100/len(reads[x["r_name"]]), axis = 1)
+        df["prop_ed"] = df.apply(lambda x: x["ed"]*100/sum(x["mapping_len"][i] for i in range(len(x["mapping_len"]))), axis = 1)
         print "Mapped >80%:", len(df)*100/len(reads), "%"
         print "Average Identity:", 100 - int(df["prop_ed"].mean()), "%"
         print "Time:", res_mp[name]["time"]
@@ -248,7 +248,7 @@ def get_memory(files_lst):
 
 def save_fasta(aligner_res, filename):
     with open(filename, "w") as fout:
-        for i in xrange(len(aligner_res)):
+        for i in range(len(aligner_res)):
             fout.write(">" + aligner_res[i]["r_name"] + "\n" + aligner_res[i]["mapped_seq"] + "\n")
 
 

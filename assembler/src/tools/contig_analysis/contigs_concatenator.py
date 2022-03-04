@@ -36,7 +36,7 @@ if (len(sys.argv) > 3):
     coords = open(sys.argv[3], 'w')
 
 padding = ""
-for i in xrange(0, padding_length):
+for i in range(0, padding_length):
     padding += "N"
 
 fasta = fastaparser.read_fasta(infilename)
@@ -51,7 +51,7 @@ for name, seq in fasta:
 
 out = open(outfilename, 'w')
 out.write(">sum_contig total_length=" + str(len(summary_seq)) + '\n')
-for i in xrange(0,len(summary_seq),60):
+for i in range(0,len(summary_seq),60):
     out.write(summary_seq[i:i+60] + '\n')
 
 out.close()

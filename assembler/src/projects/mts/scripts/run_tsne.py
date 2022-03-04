@@ -15,7 +15,7 @@ import matplotlib.cm as cm
 
 def draw_points(points, names, fig):
     ax = fig.add_subplot(111)
-    for i in xrange(len(points)):
+    for i in range(len(points)):
         ax.annotate(names[i], xy=points[i], textcoords='data')
 
 def points_mean(x, y):
@@ -35,7 +35,7 @@ def find_cluster_centers(mp):
 
 def divide_by_cluster(names, clusters):
     res = {}
-    for i in xrange(len(clusters)):
+    for i in range(len(clusters)):
         c = clusters[i]
         if not c in res.keys():
             res[c] = []
@@ -46,7 +46,7 @@ def divide_by_cluster(names, clusters):
 def take_first_per(clusters, per = 0.1):
     res = []
     for c in clusters.keys():
-        for i in xrange(max(int(len(clusters[c])*0.1), min(10, len(clusters[c])) ) ):
+        for i in range(max(int(len(clusters[c])*0.1), min(10, len(clusters[c])) ) ):
             res.append(clusters[c][i])
 
     return res
@@ -56,7 +56,7 @@ def take_first_per(clusters, per = 0.1):
 def divide_by_color(x, y, color):
     res = {}
 
-    for i in xrange(len(color)):
+    for i in range(len(color)):
         c = color[i]
         if not c in res.keys():
             res[c] = {}

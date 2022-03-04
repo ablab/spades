@@ -18,7 +18,7 @@ for line in f:
   s += line.strip()
 l = len(s)
 s += s[:RL] # make it circular
-for i in xrange(l):
+for i in range(l):
   print '@read%d' % i 
   print s[i:i+RL] 
   print '+'

@@ -103,9 +103,9 @@ class DataLoader:
 def save_stats(reads, res_mp):
     df = pd.DataFrame(res_mp)
     df["r"] = df.apply(lambda x: reads[x["r_name"]], axis = 1)
-    df["ed"] = df.apply(lambda x: sum([edist([reads[x["r_name"]][x["s_start"][i]: x["s_end"][i]], x["mapped_seq"][i]]) for i in xrange(len(x["mapped_seq"])) ]), axis = 1)
-    df["prop_len"] = df.apply(lambda x: sum(x["mapping_len"][i] for i in xrange(len(x["mapping_len"])))*100/len(reads[x["r_name"]]), axis = 1)
-    df["prop_ed"] = df.apply(lambda x: x["ed"]*100/sum(x["mapping_len"][i] for i in xrange(len(x["mapping_len"]))), axis = 1)
+    df["ed"] = df.apply(lambda x: sum([edist([reads[x["r_name"]][x["s_start"][i]: x["s_end"][i]], x["mapped_seq"][i]]) for i in range(len(x["mapped_seq"])) ]), axis = 1)
+    df["prop_len"] = df.apply(lambda x: sum(x["mapping_len"][i] for i in range(len(x["mapping_len"])))*100/len(reads[x["r_name"]]), axis = 1)
+    df["prop_ed"] = df.apply(lambda x: x["ed"]*100/sum(x["mapping_len"][i] for i in range(len(x["mapping_len"]))), axis = 1)
     res = str(len(df)*100/len(reads))  + "% " + str( 100 - int(df["prop_ed"].mean())) + "%"
     return res
 

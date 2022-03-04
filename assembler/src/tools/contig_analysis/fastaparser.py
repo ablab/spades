@@ -81,14 +81,14 @@ def read_fasta(filename):
 def write_fasta(fasta):
     for name, seq in fasta:
         print name
-        for i in xrange(0,len(seq),60):
+        for i in range(0,len(seq),60):
             print seq[i:i+60]
 
 def write_fasta_to_file(filename, fasta):
     outfile = open(filename, 'w')
     for name, seq in fasta:
         outfile.write(name + '\n')
-        for i in xrange(0,len(seq),60):
+        for i in range(0,len(seq),60):
             outfile.write(seq[i:i+60] + '\n')
     outfile.close()
 

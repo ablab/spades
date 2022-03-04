@@ -40,7 +40,7 @@ def simulate_by_fasta(fasta, read_length, filename):
     ideal = ''.join(['I' for i in range(0, read_length)])
     n = 0
     for name, seq in fasta:
-        for i in xrange(0, len(seq) - read_length - 1):
+        for i in range(0, len(seq) - read_length - 1):
             outfile.write('@' + name[1:] + '_' + str(n) + '_' + str(i) + '\n')
             outfile.write(seq[i : i + read_length] + '\n')
             outfile.write('+' + name[1:] + '_' + str(n) + '_' + str(i) + '\n')
