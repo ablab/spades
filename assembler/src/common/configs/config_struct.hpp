@@ -14,7 +14,7 @@
 #include "pe_config_struct.hpp"
 #include "aligner_config.hpp"
 #include "distance_estimation.hpp"
-#include "common/utils/logger/logger.hpp"
+#include "utils/logger/logger.hpp"
 
 #include <boost/optional.hpp>
 #include "math/xmath.h"

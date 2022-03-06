@@ -9,7 +9,7 @@
 #include "io_base.hpp"
 
 #include "assembly_graph/core/graph.hpp"
-#include "common/sequence/sequence.hpp"
+#include "sequence/sequence.hpp"
 
 namespace io {
 

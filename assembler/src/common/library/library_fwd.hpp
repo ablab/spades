@@ -12,7 +12,7 @@ namespace llvm { class StringRef;  }
 
 namespace io {
 
-// LibraryType's priorities are set in the 'path_extend::ExtenderTriplet::GetPriority' function [common/modules/path_extend/pipeline/extenders_logic.hpp]
+// LibraryType's priorities are set in the 'path_extend::ExtenderTriplet::GetPriority' function [modules/path_extend/pipeline/extenders_logic.hpp]
 // Do not forget to change them when you change LibraryType
 
 enum class LibraryType {

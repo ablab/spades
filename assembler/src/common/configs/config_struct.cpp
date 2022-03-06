@@ -4,7 +4,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "common/configs/config_common.hpp"
+#include "configs/config_common.hpp"
 #include "config_struct.hpp"
 
 #include "utils/parallel/openmp_wrapper.h"
@@ -19,7 +19,7 @@
 
 #include <string>
 #include <vector>
-#include "common/io/binary/binary.hpp"
+#include "io/binary/binary.hpp"
 
 using namespace llvm;
 

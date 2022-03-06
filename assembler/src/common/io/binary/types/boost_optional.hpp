@@ -7,7 +7,7 @@
 #pragma once
 
 #include <boost/optional.hpp>
-#include "common/io/binary/binary.hpp"
+#include "io/binary/binary.hpp"
 
 namespace io {
 namespace binary {

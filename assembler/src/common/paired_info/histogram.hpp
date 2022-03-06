@@ -11,8 +11,8 @@
 #include "adt/flat_set.hpp"
 #include "adt/small_pod_vector.hpp"
 #include "index_point.hpp"
-#include "common/io/binary/binary.hpp"
-#include "common/io/binary/types/boost_optional.hpp"
+#include "io/binary/binary.hpp"
+#include "io/binary/types/boost_optional.hpp"
 
 namespace omnigraph {
 

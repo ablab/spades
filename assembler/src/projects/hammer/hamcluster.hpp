@@ -17,7 +17,7 @@
 
 #include <iostream>
 #include <vector>
-#include <common/adt/concurrent_dsu.hpp>
+#include <adt/concurrent_dsu.hpp>
 
 
 typedef Seq<(hammer::K + 1) / 2, uint32_t> SubKMer;

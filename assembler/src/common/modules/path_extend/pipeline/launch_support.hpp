@@ -6,8 +6,8 @@
 
 
 #include "modules/path_extend/paired_library.hpp"
-#include "common/configs/config_struct.hpp"
-#include "common/configs/pe_config_struct.hpp"
+#include "configs/config_struct.hpp"
+#include "configs/pe_config_struct.hpp"
 
 namespace path_extend {
 

@@ -10,8 +10,8 @@
 
 #include "adt/pointer_iterator.hpp"
 #include "adt/array_vector.hpp"
-#include "common/utils/verify.hpp"
-#include "common/utils/logger/logger.hpp"
+#include "utils/verify.hpp"
+#include "utils/logger/logger.hpp"
 
 #include <string>
 

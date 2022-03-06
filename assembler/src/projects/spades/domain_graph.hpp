@@ -7,11 +7,11 @@
 #pragma once
 
 #include "assembly_graph/core/graph.hpp"
-#include "common/pipeline/graph_pack.hpp"
+#include "pipeline/graph_pack.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
-#include "common/modules/path_extend/path_extender.hpp"
+#include "modules/path_extend/path_extender.hpp"
 #include <unordered_map>
 #include <numeric>
 

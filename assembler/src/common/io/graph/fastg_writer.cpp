@@ -8,7 +8,7 @@
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/core/graph_iterators.hpp"
-#include "common/io/reads/osequencestream.hpp"
+#include "io/reads/osequencestream.hpp"
 
 #include <set>
 #include <string>

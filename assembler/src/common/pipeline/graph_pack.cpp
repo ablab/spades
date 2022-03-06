@@ -11,7 +11,7 @@
 #include "assembly_graph/graph_support/genomic_quality.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
-#include "common/modules/alignment/rna/ss_coverage.hpp"
+#include "modules/alignment/rna/ss_coverage.hpp"
 #include "modules/alignment/edge_index.hpp"
 #include "modules/alignment/kmer_mapper.hpp"
 #include "modules/alignment/long_read_storage.hpp"

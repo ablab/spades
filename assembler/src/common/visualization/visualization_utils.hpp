@@ -13,7 +13,7 @@
 #include "assembly_graph/components/graph_component.hpp"
 #include "visualizers.hpp"
 #include "vertex_linker.hpp"
-#include "common/utils/filesystem/path_helper.hpp"
+#include "utils/filesystem/path_helper.hpp"
 
 #include <fstream>
 

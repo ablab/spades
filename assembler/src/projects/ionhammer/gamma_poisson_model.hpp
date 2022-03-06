@@ -5,7 +5,7 @@
 #ifndef PROJECT_GAMMA_POISSON_MODEL_HPP
 #define PROJECT_GAMMA_POISSON_MODEL_HPP
 
-#include <common/utils/parallel/openmp_wrapper.h>
+#include <utils/parallel/openmp_wrapper.h>
 #include <boost/math/special_functions/binomial.hpp>
 #include <boost/math/special_functions/gamma.hpp>
 #include <boost/math/special_functions/trigamma.hpp>

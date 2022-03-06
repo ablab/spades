@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "common/io/reads/single_read.hpp"
-#include "common/io/reads/paired_read.hpp"
+#include "io/reads/single_read.hpp"
+#include "io/reads/paired_read.hpp"
 
 #include <unordered_set>
 #include <string>

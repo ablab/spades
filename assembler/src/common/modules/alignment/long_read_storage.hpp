@@ -9,7 +9,7 @@
 
 #include "io/binary/binary.hpp"
 
-#include "common/utils/logger/logger.hpp"
+#include "utils/logger/logger.hpp"
 #include "utils/filesystem/file_opener.hpp"
 
 #include <string>

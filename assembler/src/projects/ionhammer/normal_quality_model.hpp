@@ -5,7 +5,7 @@
 #ifndef PROJECT_NORMAL_QUALITY_MODEL_HPP
 #define PROJECT_NORMAL_QUALITY_MODEL_HPP
 
-#include <common/utils/parallel/openmp_wrapper.h>
+#include <utils/parallel/openmp_wrapper.h>
 #include <array>
 #include <boost/math/special_functions/binomial.hpp>
 #include <boost/math/special_functions/gamma.hpp>

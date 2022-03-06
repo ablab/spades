@@ -5,7 +5,7 @@
 #ifndef PROJECT_HAMCLUSTER_1_H
 #define PROJECT_HAMCLUSTER_1_H
 
-#include <common/adt/concurrent_dsu.hpp>
+#include <adt/concurrent_dsu.hpp>
 #include "configs/config_singl.hpp"
 #include "HSeq.hpp"
 #include "kmer_data.hpp"

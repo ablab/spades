@@ -7,7 +7,7 @@
 #pragma once
 
 #include <parallel_hashmap/phmap.h>
-#include "common/io/binary/binary.hpp"
+#include "io/binary/binary.hpp"
 
 namespace io {
 namespace binary {

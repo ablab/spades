@@ -24,8 +24,8 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <common/io/dataset_support/read_converter.hpp>
-#include <common/io/reads/osequencestream.hpp>
+#include <io/dataset_support/read_converter.hpp>
+#include <io/reads/osequencestream.hpp>
 
 using namespace std;
 void create_console_logger() {

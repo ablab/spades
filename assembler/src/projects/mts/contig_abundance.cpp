@@ -1,6 +1,6 @@
 #include "contig_abundance.hpp"
 #include "kmer_index/kmer_mph/kmer_splitters.hpp"
-#include "common/math/xmath.h"
+#include "math/xmath.h"
 
 namespace debruijn_graph {
 

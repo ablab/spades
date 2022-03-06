@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "common/adt/pack.hpp"
+#include "adt/pack.hpp"
 
 #include <boost/noncopyable.hpp>
 

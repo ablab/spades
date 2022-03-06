@@ -13,7 +13,7 @@
 #include "quality_thresholds_estimator.h"
 #include "reference.h"
 
-#include <common/adt/concurrent_dsu.hpp>
+#include <adt/concurrent_dsu.hpp>
 #include <vector>
 #include "gamma_poisson_model.hpp"
 #include "normal_quality_model.hpp"
