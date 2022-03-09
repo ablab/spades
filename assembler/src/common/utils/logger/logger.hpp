@@ -53,7 +53,7 @@ inline std::string level_name(level l)
 /////////////////////////////////////////////////////
 struct writer
 {
-  virtual void write_msg(double time_in_sec, size_t cmem, size_t max_rss, level l, const std::filesystem::path file, size_t line_num, const char* source, const char* msg) = 0;
+  virtual void write_msg(double time_in_sec, size_t cmem, size_t max_rss, level l, const std::filesystem::path& file, size_t line_num, const char* source, const char* msg) = 0;
 
   virtual ~writer(){}
 };
@@ -92,7 +92,7 @@ struct logger
 
     //
     bool need_log(level desired_level, const char* source) const;
-    void log(level desired_level, const std::filesystem::path file, size_t line_num, const char* source, const char* msg);
+    void log(level desired_level, const std::filesystem::path& file, size_t line_num, const char* source, const char* msg);
 
     //
     void add_writer(writer_ptr ptr) {

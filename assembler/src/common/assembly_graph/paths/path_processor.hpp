@@ -119,7 +119,7 @@ private:
             TRACE("Iterating through incoming edges of vertex " << g_.int_id(v))
             std::vector<EdgeId> incoming;
             incoming.reserve(4);
-            std::copy_if(g_.in_begin(v), g_.in_end(v), std::back_inserter(incoming), [&] (EdgeId e) {
+            std::copy_if (g_.in_begin(v), g_.in_end(v), std::back_inserter(incoming), [&] (EdgeId e) {
                 return dijkstra_.DistanceCounted(g_.EdgeStart(e));
             });
 

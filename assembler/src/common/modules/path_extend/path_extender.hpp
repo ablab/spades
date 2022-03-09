@@ -124,7 +124,7 @@ private:
                 if (cfg::get().pd && loop_count * (g_.length(forward_cycle_edge) + g_.length(loop_outgoing)) < 1000) {
                     INFO(" Plasmid mode: full loop resolving. Loop multiplicity: " << loop_count);
                     INFO(" Loop edges " << forward_cycle_edge << " " << back_cycle_edge);
-                    for(size_t i = 0; i < loop_count - 1; i++) {
+                    for (size_t i = 0; i < loop_count - 1; i++) {
                         path.PushBack(forward_cycle_edge);
                         path.PushBack(back_cycle_edge);
                     }

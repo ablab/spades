@@ -26,7 +26,6 @@
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/graph_pack_helpers.h"
 #include "sequence/genome_storage.hpp"
-#include "utils/filesystem/copy_file.hpp"
 #include "visualization/position_filler.hpp"
 #include "visualization/visualization.hpp"
 
@@ -213,7 +212,7 @@ inline void WriteKmerComponent(const graph_pack::GraphPack &gp, const RtSeq &kp1
                         const visualization::graph_labeler::GraphLabeler<Graph> &labeler) {
     const auto &graph = gp.get<Graph>();
     const auto &index = gp.get<EdgeIndex<Graph>>();
-    if(!index.contains(kp1mer)) {
+    if (!index.contains(kp1mer)) {
         WARN("no such kmer in the graph");
         return;
     }
@@ -302,7 +301,7 @@ struct detail_info_printer {
         }
 
         if (config.save_graph_pack) {
-            auto saves_folder = folder_ / "saves" / (ToString(call_cnt++, 2) + "_" + pos_name);
+            std::filesystem::path saves_folder = folder_ / "saves" / (ToString(call_cnt++, 2) + "_" + pos_name);
             create_directories(saves_folder);
             BasePackIO().Save(saves_folder / "graph_pack", gp_);
             //TODO: separate
@@ -311,9 +310,9 @@ struct detail_info_printer {
         }
 
         if (config.save_all) {
-            auto saves_folder = folder_ / "saves" / (ToString(call_cnt++, 2) + "_" + pos_name);
+            std::filesystem::path saves_folder = folder_ / "saves" / (ToString(call_cnt++, 2) + "_" + pos_name);
             create_directories(saves_folder);
-            auto p = saves_folder / "saves";
+            std::filesystem::path p = saves_folder / "saves";
             INFO("Saving current state to " << p);
 
             FullPackIO().Save(saves_folder / "graph_pack", gp_);
@@ -321,14 +320,14 @@ struct detail_info_printer {
         }
 
         if (config.save_full_graph) {
-            auto saves_folder = folder_ / "saves" / (ToString(call_cnt++, 2) + "_" + pos_name);
+            std::filesystem::path saves_folder = folder_ / "saves" / (ToString(call_cnt++, 2) + "_" + pos_name);
             create_directory(saves_folder);
 
             BasicGraphIO<Graph>().Save(saves_folder / "graph", graph);
         }
 
         if (config.lib_info) {
-            auto saves_folder = folder_ / "saves" / (ToString(call_cnt++, 2) + "_" + pos_name);
+            std::filesystem::path saves_folder = folder_ / "saves" / (ToString(call_cnt++, 2) + "_" + pos_name);
             create_directory(saves_folder);
             config::write_lib_data(saves_folder / "lib_info");
         }
@@ -350,7 +349,7 @@ struct detail_info_printer {
         } 
 
         VERIFY(cfg::get().developer_mode);
-        auto pics_folder = folder_ / "pictures" / (ToString(call_cnt++, 2) + "_" + pos_name);
+        std::filesystem::path pics_folder = folder_ / "pictures" / (ToString(call_cnt++, 2) + "_" + pos_name);
         create_directory(pics_folder);
         PrepareForDrawing(gp_);
     
@@ -380,10 +379,10 @@ struct detail_info_printer {
         }
     
         if (!config.components_for_kmer.empty()) {
-            auto kmer_folder = pics_folder / "kmer_loc";
+            std::filesystem::path kmer_folder = pics_folder / "kmer_loc";
             create_directory(kmer_folder);
             auto kmer = RtSeq(gp_.k() + 1, config.components_for_kmer.substr(0, gp_.k() + 1).c_str());
-            auto file_name = kmer_folder / (pos_name + ".dot");
+            std::filesystem::path file_name = kmer_folder / (pos_name + ".dot");
             WriteKmerComponent(gp_, kmer, file_name, colorer, labeler_);
         }
     
@@ -400,7 +399,7 @@ struct detail_info_printer {
         }
 
         if (!config.components_for_genome_pos.empty()) {
-            auto pos_loc_folder = pics_folder / "pos_loc";
+            std::filesystem::path pos_loc_folder = pics_folder / "pos_loc";
             create_directory(pos_loc_folder);
             std::vector<std::string> positions;
             boost::split(positions, config.components_for_genome_pos,
@@ -409,7 +408,7 @@ struct detail_info_printer {
             for (auto it = positions.begin(); it != positions.end(); ++it) {
                 auto close_kp1mer = FindCloseKP1mer(gp_, std::stoi(*it), gp_.k());
                 if (close_kp1mer) {
-                    auto locality_folder = pos_loc_folder / *it;
+                    std::filesystem::path locality_folder = pos_loc_folder / *it;
                     create_directory(locality_folder);
                     WriteKmerComponent(gp_, *close_kp1mer, locality_folder / (pos_name + ".dot"), colorer, labeler_);
                 } else {

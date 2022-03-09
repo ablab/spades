@@ -25,7 +25,7 @@ class PathGraphLabeler : public visualization::graph_labeler::AbstractGraphLabel
 
 public:
     PathGraphLabeler(const Graph& g, const PathContainer& paths) : base(g) {
-        for(size_t i = 0; i < paths.size(); ++i) {
+        for (size_t i = 0; i < paths.size(); ++i) {
             {
                 const BidirectionalPath &path = paths.Get(i);
                 for (size_t j = 0; j < path.Size(); ++j) {

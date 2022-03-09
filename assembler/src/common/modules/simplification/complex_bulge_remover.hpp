@@ -128,7 +128,7 @@ public:
             if (v == start_vertex_)
                 continue;
             std::vector<EdgeId> filtered_incoming;
-            std::copy_if(g_.in_begin(v), g_.in_end(v), std::back_inserter(filtered_incoming),
+            std::copy_if (g_.in_begin(v), g_.in_end(v), std::back_inserter(filtered_incoming),
                         [&] (EdgeId e) {return contains(g_.EdgeStart(e));});
             VERIFY_MSG(filtered_incoming.size() == g_.IncomingEdgeCount(v), "Strange component");
             if (g_.IncomingEdgeCount(v) > 1) {

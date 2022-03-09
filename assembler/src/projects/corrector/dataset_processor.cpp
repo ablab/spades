@@ -50,7 +50,7 @@ void DatasetProcessor::SplitGenome(const filesystem::path &genome_splitted_dir) 
         buffered_reads_[contig_name].clear();
         io::OFastaReadStream oss(full_path);
         oss << io::SingleRead(contig_name, contig_seq);
-        DEBUG("full_path " + full_path.native())
+        DEBUG("full_path " << full_path)
     }
 }
 
@@ -122,7 +122,7 @@ void DatasetProcessor::BufferedOutputRead(const string &read, const string &cont
 
 
 int DatasetProcessor::RunBwaIndex() {
-    std::filesystem::path bwa_string = fs::screen_whitespaces(fs::screen_whitespaces(corr_cfg::get().bwa));
+    std::filesystem::path bwa_string = fs::screen_whitespaces(corr_cfg::get().bwa);
     std::filesystem::path genome_screened = fs::screen_whitespaces(genome_file_);
     string index_line = bwa_string.native() + " index " + genome_screened.native();
     INFO("Running bwa index ...: " << index_line);
@@ -173,7 +173,7 @@ void DatasetProcessor::PrepareContigDirs(const size_t lib_count) {
 void DatasetProcessor::ProcessDataset() {
     size_t lib_num = 0;
     INFO("Splitting assembly...");
-    INFO("Assembly file: " + genome_file_.native());
+    INFO("Assembly file: " << genome_file_);
     SplitGenome(work_dir_);
 
     if (RunBwaIndex() != 0) {

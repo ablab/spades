@@ -73,11 +73,11 @@ public:
   int FlowsToBases(const std::vector<char>& ionogram, std::string &bases) const
   {
     int num_bases = 0;
-    for(int flow = 0; flow < (int)ionogram.size() and flow < num_flows_; ++flow)
+    for (int flow = 0; flow < (int)ionogram.size() and flow < num_flows_; ++flow)
       num_bases += ionogram[flow];
     bases.clear();
     bases.reserve(num_bases+1);
-    for(int flow = 0; flow < (int)ionogram.size() and flow < num_flows_; ++flow)
+    for (int flow = 0; flow < (int)ionogram.size() and flow < num_flows_; ++flow)
       for (int hp = 0; hp < ionogram[flow]; ++hp)
         bases.push_back(nuc_at(flow));
     return num_bases;

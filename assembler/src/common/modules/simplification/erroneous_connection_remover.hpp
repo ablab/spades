@@ -129,7 +129,7 @@ inline bool IsAlternativeInclusivePathExist(const Graph &g, typename Graph::Edge
         VERIFY(g.EdgeStart(path[0]) == start);
         VERIFY(g.EdgeEnd(path.back()) == end);
 
-        if(std::find(path.begin(), path.end(), compulsory_edge) != path.end()){
+        if (std::find(path.begin(), path.end(), compulsory_edge) != path.end()){
             return true;
         }
     }
@@ -142,7 +142,7 @@ inline bool IsReachableBulge(const Graph &g, typename Graph::EdgeId e){
     typedef typename Graph::VertexId VertexId;
 
     bool res = IsAlternativePathExist(g, e);
-    if(res)
+    if (res)
         return res;
     else{
         VertexId start = g.EdgeStart(e), end = g.EdgeEnd(e);
@@ -151,7 +151,7 @@ inline bool IsReachableBulge(const Graph &g, typename Graph::EdgeId e){
         utils::push_back_all(incident, g.OutgoingEdges(start));
         for (auto it = incident.begin(); it != incident.end(); ++it){
             res = IsAlternativeInclusivePathExist(g, *it, e);
-            if(res){
+            if (res){
                 return res;
             }
         }
@@ -372,11 +372,11 @@ class ECLoopRemover : public EdgeProcessingAlgorithm<Graph> {
     }
 
     bool FindHiddenLoopEC(EdgeId e) {
-        if(flanking_coverage_.GetInCov(e) * relative_threshold_ < flanking_coverage_.GetOutCov(e) && flanking_coverage_.GetInCov(e) < ec_threshold_) {
+        if (flanking_coverage_.GetInCov(e) * relative_threshold_ < flanking_coverage_.GetOutCov(e) && flanking_coverage_.GetInCov(e) < ec_threshold_) {
             //start is bad, end is OK.
             RemoveHiddenLoopEC(e, false);
             return true;
-        } else if(flanking_coverage_.GetOutCov(e) * relative_threshold_ < flanking_coverage_.GetInCov(e) && flanking_coverage_.GetOutCov(e) < ec_threshold_) {
+        } else if (flanking_coverage_.GetOutCov(e) * relative_threshold_ < flanking_coverage_.GetInCov(e) && flanking_coverage_.GetOutCov(e) < ec_threshold_) {
             //end is bad, start is OK.
             RemoveHiddenLoopEC(e, true);
             return true;

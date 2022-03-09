@@ -48,19 +48,6 @@ struct ScalarEnumerationTraits<LibraryType> {
     }
 };
 
-template<>
-struct ScalarTraits<std::filesystem::path> {
-    static void output(const std::filesystem::path &val, void *, raw_ostream &out) {
-        out << val;
-    }
-    static StringRef input(StringRef scalar, void *, std::filesystem::path &val) {
-        val = scalar.str();
-        return StringRef();
-    }
-    static QuotingType mustQuote(StringRef S) {
-        return needsQuotes(S);
-    }
-};
 
 template <>
 struct SequenceTraits<std::vector<std::filesystem::path>> {

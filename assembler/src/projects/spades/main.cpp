@@ -10,7 +10,6 @@
 #include "utils/logger/log_writers.hpp"
 #include "utils/memory_limit.hpp"
 #include "utils/segfault_handler.hpp"
-#include "utils/filesystem/copy_file.hpp"
 #include "utils/perf/timetracer.hpp"
 
 #include "k_range.hpp"

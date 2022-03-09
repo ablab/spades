@@ -58,7 +58,7 @@ properties::properties(std::filesystem::path filename, level default_level)
         std::vector<std::string> entry;
         split(entry, str, is_any_of("="));
 
-        if(entry.size() != 2)
+        if (entry.size() != 2)
             throw std::runtime_error("invalid log file property entry: " + str);
 
         trim    (entry[0]);
@@ -66,7 +66,7 @@ properties::properties(std::filesystem::path filename, level default_level)
         to_upper(entry[1]);
 
         auto it = remap.find(entry[1]);
-        if(it == remap.end())
+        if (it == remap.end())
             throw std::runtime_error("invalid log file level description: " + entry[1]);
 
         levels[entry[0]] = it->second;
@@ -100,7 +100,7 @@ bool logger::need_log(level desired_level, const char* source) const {
     return desired_level >= source_level;
 }
 
-void logger::log(level desired_level, const std::filesystem::path file, size_t line_num, const char* source, const char* msg) {
+void logger::log(level desired_level, const std::filesystem::path& file, size_t line_num, const char* source, const char* msg) {
   double time = timer_.time();
   size_t mem = -1ull;
   size_t max_rss = -1ull;

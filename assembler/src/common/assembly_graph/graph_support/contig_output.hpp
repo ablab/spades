@@ -12,9 +12,10 @@
 
 namespace debruijn_graph {
 
-inline void OutputEdgeSequences(const Graph &g, const std::filesystem::path &contigs_output_filename) {
-    INFO("Outputting contigs to " << contigs_output_filename << ".fasta");
-    io::osequencestream_cov oss(contigs_output_filename.native() + ".fasta");
+inline void OutputEdgeSequences(const Graph &g, const std::string &contigs_output) {
+    std::filesystem::path contigs_output_filename = contigs_output + ".fasta";
+    INFO("Outputting contigs to " << contigs_output_filename);
+    io::osequencestream_cov oss(contigs_output_filename);
 
     for (EdgeId e: g.canonical_edges()) {
         oss << g.coverage(e);
@@ -22,10 +23,10 @@ inline void OutputEdgeSequences(const Graph &g, const std::filesystem::path &con
     }
 }
 
-inline void OutputEdgesByID(const Graph &g,
-                            const std::filesystem::path &contigs_output_filename) {
-    INFO("Outputting contigs to " << contigs_output_filename << ".fasta");
-    io::OFastaReadStream oss(contigs_output_filename.native() + ".fasta");
+inline void OutputEdgesByID(const Graph &g, const std::string &contigs_output) {
+    std::filesystem::path contigs_output_filename = contigs_output + ".fasta";
+    INFO("Outputting contigs to " << contigs_output_filename);
+    io::OFastaReadStream oss(contigs_output_filename);
     for (EdgeId e: g.canonical_edges()) {
         std::string s = g.EdgeNucls(e).str();
         oss << io::SingleRead(io::MakeContigId(g.int_id(e), s.size(), g.coverage(e), "EDGE"), s);

@@ -53,21 +53,7 @@ class DataSetReader {
 
 namespace llvm {
 namespace yaml {
-
-template<>
-struct ScalarTraits<std::filesystem::path> {
-    static void output(const std::filesystem::path & val, void *, raw_ostream & out) {
-        out << val;
-    }
-    static StringRef input(StringRef scalar, void *, std::filesystem::path & val) {
-        val = scalar.str();
-        return StringRef();
-    }
-    static QuotingType mustQuote(StringRef s) {
-        return needsQuotes(s);
-    }
-};
-
+    
 template <>
 struct MappingTraits<hammer_config::hammer_config> {
   static void mapping(yaml::IO &io, hammer_config::hammer_config &cfg) {

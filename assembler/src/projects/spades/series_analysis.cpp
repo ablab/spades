@@ -36,20 +36,6 @@ struct SeriesAnalysisConfig {
 
 namespace llvm { namespace yaml {
 
-template<>
-struct ScalarTraits<std::filesystem::path> {
-    static void output(const std::filesystem::path & val, void *, raw_ostream & out) {
-        out << val;
-    }
-    static StringRef input(StringRef scalar, void *, std::filesystem::path & val) {
-        val = scalar.str();
-        return StringRef();
-    }
-    static QuotingType mustQuote(StringRef s) {
-        return needsQuotes(s);
-    }
-};
-
 template<> struct MappingTraits<debruijn_graph::SeriesAnalysisConfig> {
     static void mapping(IO& io, debruijn_graph::SeriesAnalysisConfig& cfg) {
         io.mapRequired("k", cfg.k);

@@ -514,7 +514,7 @@ public:
     void VerifyIndex() {
         std::set<EdgeId> edges_in_index;
         size_t sz = 0;
-        for( auto iter = data_begin(); iter != data_end(); iter ++ ) {
+        for ( auto iter = data_begin(); iter != data_end(); iter ++ ) {
             VERIFY_MSG(iter->second.size() > 0, " empty map! ");
             VERIFY_MSG(this->graph_.edges().find(iter->first) != this->graph_.edges().end(), " left edge wrong  " << iter->first);
             for (const auto &e_iter: iter->second) {

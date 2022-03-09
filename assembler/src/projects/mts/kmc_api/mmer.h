@@ -60,7 +60,7 @@ class CMmer
 		{
 			uint32 rev = 0;
 			uint32 shift = len*2 - 2;
-			for(uint32 i = 0 ; i < len ; ++i)
+			for (uint32 i = 0 ; i < len ; ++i)
 			{
 				rev += (3 - (mmer & 3)) << shift;
 				mmer >>= 2;
@@ -74,7 +74,7 @@ class CMmer
 		static void init_norm(uint32* norm, uint32 len)
 		{
 			uint32 special = 1 << len * 2;
-			for(uint32 i = 0 ; i < special ; ++i)
+			for (uint32 i = 0 ; i < special ; ++i)
 			{				
 				uint32 rev = get_rev(i, len);
 				uint32 str_val = is_allowed(i, len) ? i : special;

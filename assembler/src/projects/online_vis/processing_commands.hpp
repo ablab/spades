@@ -38,7 +38,7 @@ private:
     /*virtual*/ void InnerExecute(DebruijnEnvironment& curr_env,
                  const vector<string>& args) const {
         size_t length = 0;
-        if(args.size() > 0) {
+        if (args.size() > 0) {
             length = GetInt(args[1]);
         } else {
             length = curr_env.edge_length_bound();

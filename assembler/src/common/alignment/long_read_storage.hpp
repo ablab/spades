@@ -203,7 +203,7 @@ public:
         std::ofstream filestr(filename);
         std::set<EdgeId> continued_edges;
 
-        for(auto iter = inner_index_.begin(); iter != inner_index_.end(); ++iter){
+        for (auto iter = inner_index_.begin(); iter != inner_index_.end(); ++iter){
             filestr << iter->second.size() << std::endl;
             int non1 = 0;
             for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
@@ -318,7 +318,7 @@ public:
 
     void AddStorage(PathStorage<Graph> &to_add) {
         for (auto iter = to_add.inner_index_.begin(); iter != to_add.inner_index_.end(); iter++) {
-            for(auto j_iter = iter->second.begin(); j_iter != iter->second.end(); j_iter ++) {
+            for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); j_iter ++) {
                 this->AddPath(j_iter->path(), (int) j_iter->weight());
             }
         }

@@ -310,9 +310,9 @@ bool CKMCFile::CheckKmer(CKmerAPI &kmer, float &count)
 //------------------------------------------------------------------------------------------
 bool CKMCFile::CheckKmer(CKmerAPI &kmer, uint32 &count)
 {
-	if(is_opened != opened_for_RA)
+	if (is_opened != opened_for_RA)
 		return false;
-	if(end_of_file)
+	if (end_of_file)
 		return false;
 	
 	//recognize a prefix:
@@ -377,14 +377,14 @@ bool CKMCFile::ReadNextKmer(CKmerAPI &kmer, uint32 &count)
 {
 	uint64 prefix_mask = (1 << 2 * lut_prefix_length) - 1; //for kmc2 db
 
-	if(is_opened != opened_for_listing)
+	if (is_opened != opened_for_listing)
 		return false;
 	do
 	{
-		if(end_of_file)
+		if (end_of_file)
 			return false;
 		
-		if(sufix_number == prefix_file_buf[prefix_index + 1]) 
+		if (sufix_number == prefix_file_buf[prefix_index + 1])
 		{
 			prefix_index++;
 						
@@ -398,7 +398,7 @@ bool CKMCFile::ReadNextKmer(CKmerAPI &kmer, uint32 &count)
 		
 		kmer.kmer_data[0] = temp_prefix;			// store prefix in an object CKmerAPI
 
-		for(uint32 i = 1; i < kmer.no_of_rows; i++)
+		for (uint32 i = 1; i < kmer.no_of_rows; i++)
 			kmer.kmer_data[i] = 0;
 
 		//read sufix:
@@ -407,9 +407,9 @@ bool CKMCFile::ReadNextKmer(CKmerAPI &kmer, uint32 &count)
 	
 		off = off - 8;
 				
- 		for(uint32 a = 0; a < sufix_size; a ++)
+ 		for (uint32 a = 0; a < sufix_size; a ++)
 		{
-			if(index_in_partial_buf == part_size)
+			if (index_in_partial_buf == part_size)
 				Reload_sufix_file_buf();
 						
 			suf = sufix_file_buf[index_in_partial_buf++];
@@ -426,14 +426,14 @@ bool CKMCFile::ReadNextKmer(CKmerAPI &kmer, uint32 &count)
 		}
 	
 		//read counter:
-		if(index_in_partial_buf == part_size)
+		if (index_in_partial_buf == part_size)
 			Reload_sufix_file_buf();
 		
 		count = sufix_file_buf[index_in_partial_buf++];
 
-		for(uint32 b = 1; b < counter_size; b++)
+		for (uint32 b = 1; b < counter_size; b++)
 		{
-			if(index_in_partial_buf == part_size)
+			if (index_in_partial_buf == part_size)
 				Reload_sufix_file_buf();
 			
 			uint32 aux = 0x000000ff & sufix_file_buf[index_in_partial_buf++];
@@ -443,7 +443,7 @@ bool CKMCFile::ReadNextKmer(CKmerAPI &kmer, uint32 &count)
 			
 		sufix_number++;
 	
-		if(sufix_number == total_kmers)
+		if (sufix_number == total_kmers)
 			end_of_file = true;
 
 		if (mode != 0)
@@ -475,14 +475,14 @@ void CKMCFile::Reload_sufix_file_buf()
 //-------------------------------------------------------------------------------
 bool CKMCFile::Close()
 {
-	if(is_opened)
+	if (is_opened)
 	{
-		if(file_pre)
+		if (file_pre)
 		{
 			fclose(file_pre);	
 			file_pre = NULL;
 		}
-		if(file_suf)
+		if (file_suf)
 		{
 			fclose(file_suf);
 			file_suf = NULL;
@@ -508,7 +508,7 @@ bool CKMCFile::Close()
 //----------------------------------------------------------------------------------
 bool CKMCFile::RestartListing(void)
 {
-	if(is_opened == opened_for_listing)
+	if (is_opened == opened_for_listing)
 	{
 		
 		my_fseek ( file_suf , 4 , SEEK_SET );
@@ -531,7 +531,7 @@ bool CKMCFile::RestartListing(void)
 //----------------------------------------------------------------------------------------
 bool CKMCFile::SetMinCount(uint32 x)
 {
-	if((original_min_count <= x) && (x < max_count))
+	if ((original_min_count <= x) && (x < max_count))
 	{
 		min_count = x;
 		return true;
@@ -556,7 +556,7 @@ uint32 CKMCFile::GetMinCount(void)
 //----------------------------------------------------------------------------------------
 bool CKMCFile::SetMaxCount(uint32 x)
 {
-	if((original_max_count >= x) && (x > min_count))
+	if ((original_max_count >= x) && (x > min_count))
 	{
 		max_count = x;
 		return true; 
@@ -601,7 +601,7 @@ uint32 CKMCFile::KmerLength(void)
 bool CKMCFile::IsKmer(CKmerAPI &kmer)
 {
 	uint32 _count;
-	if(CheckKmer(kmer, _count))
+	if (CheckKmer(kmer, _count))
 		return true;
 	else
 		return false;
@@ -613,8 +613,8 @@ bool CKMCFile::IsKmer(CKmerAPI &kmer)
 //-----------------------------------------------------------------------------------------
 uint64 CKMCFile::KmerCount(void)
 {
-	if(is_opened)
-		if((min_count == original_min_count) && (max_count == original_max_count))
+	if (is_opened)
+		if ((min_count == original_min_count) && (max_count == original_max_count))
 			return total_kmers;
 		else
 		{
@@ -622,17 +622,17 @@ uint64 CKMCFile::KmerCount(void)
 			uint32 int_counter;
 			uint64 aux_kmerCount = 0;
 
-			if(is_opened == opened_for_RA)
+			if (is_opened == opened_for_RA)
 			{
 				uchar *ptr = sufix_file_buf;
 				
-				for(uint64 i = 0; i < total_kmers; i++)		
+				for (uint64 i = 0; i < total_kmers; i++)
 				{
 					ptr += sufix_size;
 					int_counter = *ptr;
 					ptr++;
 
-					for(uint32 b = 1; b < counter_size; b ++)
+					for (uint32 b = 1; b < counter_size; b ++)
 					{
 						uint32 aux = 0x000000ff & *(ptr);
 						aux = aux << 8 * ( b);
@@ -640,12 +640,12 @@ uint64 CKMCFile::KmerCount(void)
 						ptr++;
 					}
 					
-					if(mode == 0)
+					if (mode == 0)
 						count = int_counter;
 					else
 						memcpy(&count, &int_counter, counter_size);
 	
-					if((count >= min_count) && (count <= max_count))
+					if ((count >= min_count) && (count <= max_count))
 						aux_kmerCount++;
 				}
 			}
@@ -654,10 +654,10 @@ uint64 CKMCFile::KmerCount(void)
 				CKmerAPI kmer(kmer_length);
 				float count;
 				RestartListing();
-				for(uint64 i = 0; i < total_kmers; i++)		
+				for (uint64 i = 0; i < total_kmers; i++)
 				{
 					ReadNextKmer(kmer, count);
-					if((count >= min_count) && (count <= max_count))
+					if ((count >= min_count) && (count <= max_count))
 						aux_kmerCount++;
 				}
 				RestartListing();
@@ -680,7 +680,7 @@ uint64 CKMCFile::KmerCount(void)
 //---------------------------------------------------------------------------------
 bool CKMCFile::Info(uint32 &_kmer_length, uint32 &_mode, uint32 &_counter_size, uint32 &_lut_prefix_length, uint32 &_signature_len, uint32 &_min_count, uint32 &_max_count, uint64 &_total_kmers)
 {
-	if(is_opened)
+	if (is_opened)
 	{
 		_kmer_length = kmer_length;
 		_mode = mode;

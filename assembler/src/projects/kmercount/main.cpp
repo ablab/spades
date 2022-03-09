@@ -178,7 +178,7 @@ void process_cmdline(int argc, char **argv, kmer_count::Args &args) {
     }
     args.workdir = workdir;
     args.dataset = dataset;
-    for(const auto& file : input) {
+    for (const auto& file : input) {
         args.input.push_back(file);
     }
 

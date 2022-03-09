@@ -44,21 +44,6 @@ class DataSetReader {
 
 namespace llvm { namespace yaml {
 
-template<>
-struct ScalarTraits<std::filesystem::path> {
-    static void output(const std::filesystem::path &value, void*, llvm::raw_ostream &out) {
-        out << value;
-    }
-    static StringRef input(StringRef scalar, void*, std::filesystem::path &value) {
-        value = scalar.str();
-        return StringRef();
-    }
-    static QuotingType mustQuote(StringRef S) {
-        return needsQuotes(S);
-    }
-};
-
-
 template <>
 struct MappingTraits<corrector::corrector_config> {
     static void mapping(yaml::IO &io, corrector::corrector_config &cfg) {

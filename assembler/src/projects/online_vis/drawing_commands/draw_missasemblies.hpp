@@ -23,7 +23,7 @@ protected:
     bool CheckCorrectness(const vector<string>& args) const {
         if (!CheckEnoughArguments(args))
             return false;
-        if(!CheckFileExists(args[1]))
+        if (!CheckFileExists(args[1]))
             return false;
         return true;
     }
@@ -32,8 +32,8 @@ private:
 
     vector<EdgeId> FilterByLength(Graph& g, const vector<EdgeId>& edges) const {
         vector<EdgeId> filtered_edges;
-        for(auto e : edges) {
-            if(g.length(e) > 500) {
+        for (auto e : edges) {
+            if (g.length(e) > 500) {
                 filtered_edges.push_back(e);
             }
         }
@@ -48,15 +48,15 @@ private:
         std::set<EdgeId> non_unique_genome;
 
 
-        for(auto e : edges) {
-            if(set_edges.find(e) != set_edges.end()) {
+        for (auto e : edges) {
+            if (set_edges.find(e) != set_edges.end()) {
                 non_unique.insert(e);
             }
             set_edges.insert(e);
         }
 
-        for(auto e : genome_edges) {
-            if(genome_set.find(e) != genome_set.end()) {
+        for (auto e : genome_edges) {
+            if (genome_set.find(e) != genome_set.end()) {
                 non_unique_genome.insert(e);
             }
             genome_set.insert(e);
@@ -64,8 +64,8 @@ private:
 
 
 
-        for(auto e : edges) {
-            if(non_unique.find(e) == non_unique.end() && non_unique_genome.find(e) == non_unique_genome.end()) {
+        for (auto e : edges) {
+            if (non_unique.find(e) == non_unique.end() && non_unique_genome.find(e) == non_unique_genome.end()) {
                 filtered_edges.push_back(e);
                 INFO("Put " << g.int_id(e) << " into filtered set");
             }
@@ -82,7 +82,7 @@ private:
         utils::push_back_all(rc_and_usual_genome_edges, rc_genome_edges);
         vector<EdgeId> edges = path.simple_path();
         auto filtered_edges = FilterNonUnique(curr_env.graph(), edges, rc_and_usual_genome_edges);
-        if(filtered_edges.size() < 2)
+        if (filtered_edges.size() < 2)
             return;
 
         auto it_genome = find(rc_and_usual_genome_edges.begin(), rc_and_usual_genome_edges.end(), filtered_edges[0]);
@@ -93,7 +93,7 @@ private:
         auto it_contig = find(edges.begin(), edges.end(), filtered_edges[i]);
         while(it_contig == edges.end()) {
             ++i;
-            if(i > filtered_edges.size()) {
+            if (i > filtered_edges.size()) {
                 return;
             }
             it_contig = find(edges.begin(), edges.end(), filtered_edges[i]);
@@ -113,12 +113,12 @@ private:
             size_t index_genome = it_genome - rc_and_usual_genome_edges.begin();
             size_t index_contig = it_contig - edges.begin();
 
-            if(it_genome == rc_and_usual_genome_edges.end()) {
+            if (it_genome == rc_and_usual_genome_edges.end()) {
                 vector<EdgeId> path_to_draw;
 
                 while(it_genome == rc_and_usual_genome_edges.end()) {
                     ++i;
-                    if(i == filtered_edges.size())
+                    if (i == filtered_edges.size())
                     {
                         break;
                     }
@@ -128,7 +128,7 @@ private:
                 auto new_it_contig = find(edges.begin(), edges.end(), filtered_edges[i]);
                 size_t new_index_contig = new_it_contig - edges.begin();
 
-                for(size_t z = index_contig; z <= new_index_contig ; ++z) {
+                for (size_t z = index_contig; z <= new_index_contig ; ++z) {
                     path_to_draw.push_back(edges[z]);
                 }
 
@@ -140,7 +140,7 @@ private:
             }
 
             int difference = (int)genome_path[index_genome].second.initial_range.start_pos - (int)path[index_contig].second.initial_range.start_pos;
-            if(abs(difference - real_difference) > allowed_error) {
+            if (abs(difference - real_difference) > allowed_error) {
                 real_difference = (int)genome_path[index_genome].second.initial_range.start_pos - (int)path[index_contig].second.initial_range.start_pos;
                 vector<EdgeId> path_to_draw;
                 path_to_draw.push_back(genome_path[index_genome].first);
@@ -173,7 +173,7 @@ public:
             return;
         }
 
-        if(curr_env.genome() == Sequence()) {
+        if (curr_env.genome() == Sequence()) {
             cout << "Reference should be loaded. Command will not be executed" << endl;
             return;
         }

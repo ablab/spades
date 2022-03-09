@@ -548,7 +548,7 @@ class PathContainerCoverageSwitcher {
     double CalculateCoverage(const BidirectionalPath& p, bool reverse) const {
         double res = 0.0;
         double len = 0;
-        for(auto e : p) {
+        for (auto e : p) {
             res += coverage_storage_.GetCoverage(e, reverse) * double(g_.length(e));
             len += (double) g_.length(e);
         }

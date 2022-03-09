@@ -26,9 +26,9 @@ class DrawPolymorphicRegions : public DrawingCommand {
         vector<vector<EdgeId>> paths = callback.paths();
         vector<VertexId> verticesToAdd;
         verticesToAdd.push_back(curr_env.graph().EdgeEnd(firstEdge));
-        for(auto edges : paths)
+        for (auto edges : paths)
         {
-            for(auto edge : edges)
+            for (auto edge : edges)
             {
                 verticesToAdd.push_back(curr_env.graph().EdgeEnd(edge));
             }
@@ -38,19 +38,19 @@ class DrawPolymorphicRegions : public DrawingCommand {
 
     void DrawPicture(DebruijnEnvironment& curr_env, Sequence& genome) const {
         size_t windowSize = 500;
-        for(size_t i = 0; i < genome.size() - windowSize - 1 - curr_env.k_value(); ++i)
+        for (size_t i = 0; i < genome.size() - windowSize - 1 - curr_env.k_value(); ++i)
         {
             RtSeq firstKmer = genome.Subseq(i).start<RtSeq>(curr_env.k_value() + 1);
             RtSeq secondKmer = genome.Subseq(i + windowSize).start<RtSeq>(curr_env.k_value() + 1);
             firstKmer = curr_env.kmer_mapper().Substitute(firstKmer);
             secondKmer = curr_env.kmer_mapper().Substitute(secondKmer);
             pair<EdgeId, size_t> positionFirst = curr_env.index().get(firstKmer);
-            if(positionFirst.first == EdgeId())
+            if (positionFirst.first == EdgeId())
             {
                 continue;
             }
 
-            if(curr_env.graph().length(positionFirst.first) < 300)
+            if (curr_env.graph().length(positionFirst.first) < 300)
             {
                 i += curr_env.graph().length(positionFirst.first) - positionFirst.second;
                 continue;
@@ -58,19 +58,19 @@ class DrawPolymorphicRegions : public DrawingCommand {
             else
             {
                 pair<EdgeId, size_t> positionSecond = curr_env.index().get(secondKmer);
-                if(positionSecond.first == EdgeId())
+                if (positionSecond.first == EdgeId())
                 {
                     continue;
                 }
 
-                if(curr_env.graph().length(positionSecond.first) < 300)
+                if (curr_env.graph().length(positionSecond.first) < 300)
                 {
                     i += curr_env.graph().length(positionSecond.first) - positionSecond.second;
                     continue;
                 }
                 else
                 {
-                    if(positionFirst.first == positionSecond.first)
+                    if (positionFirst.first == positionSecond.first)
                     {
                         i += curr_env.graph().length(positionSecond.first) - positionSecond.second;
                         continue;
@@ -78,7 +78,7 @@ class DrawPolymorphicRegions : public DrawingCommand {
                     INFO("Constructing component around " << i << "-th position in the genome");
                     GraphComponent<Graph> polymorphicRegion = ConstructComponent(curr_env, positionFirst.first, positionSecond.first, windowSize);
 
-                    if(polymorphicRegion.e_size() > 5)
+                    if (polymorphicRegion.e_size() > 5)
                     {
                         using namespace visualization::visualization_utils;
                         WriteComponentSinksSources(polymorphicRegion,
@@ -128,7 +128,7 @@ public:
             return;
         create_directory(curr_env.folder());
         Sequence genome = curr_env.genome();
-        if(genome.size() == 0)
+        if (genome.size() == 0)
         {
             cout << "Reference genome is not uploaded\n";
             return;

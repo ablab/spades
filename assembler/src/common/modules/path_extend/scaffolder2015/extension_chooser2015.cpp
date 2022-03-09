@@ -42,7 +42,7 @@ ExtensionChooser::EdgeContainer ExtensionChooser2015::FindNextUniqueEdge(const E
     }
 //descending order, reverse iterators;
     sort(to_sort.rbegin(), to_sort.rend());
-    for(size_t j = 0; j < to_sort.size(); j++) {
+    for (size_t j = 0; j < to_sort.size(); j++) {
         if (j == 0 || to_sort[j].first* relative_weight_threshold_ > to_sort[j - 1].first) {
             result.push_back(EdgeWithDistance(to_sort[j].second.first, to_sort[j].second.second));
             DEBUG("Edge " << g_.int_id(to_sort[j].second.first) << " gap " << to_sort[j].second.second << " weight "<< to_sort[j].first <<  " passed absolute weight threshold " << absolute_weight_threshold_);

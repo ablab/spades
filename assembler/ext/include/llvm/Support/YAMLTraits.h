@@ -18,14 +18,17 @@
 #include "llvm/Support/AlignOf.h"
 #include "llvm/Support/Allocator.h"
 #include "llvm/Support/Endian.h"
+#include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Regex.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/YAMLParser.h"
-#include "llvm/Support/raw_ostream.h"
+
 #include <cassert>
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
+
+#include <filesystem>
 #include <iterator>
 #include <map>
 #include <memory>
@@ -1281,6 +1284,16 @@ struct ScalarTraits<double> {
   static void output(const double &, void *, raw_ostream &);
   static StringRef input(StringRef, void *, double &);
   static QuotingType mustQuote(StringRef) { return QuotingType::None; }
+};
+
+template<>
+struct ScalarTraits<std::filesystem::path> {
+    static void output(const std::filesystem::path & val, void *, raw_ostream & out) { out << val; }
+    static StringRef input(StringRef scalar, void *, std::filesystem::path & val) {
+      val = scalar.str();
+      return StringRef();
+    }
+    static QuotingType mustQuote(StringRef s) { return needsQuotes(s); }
 };
 
 // For endian types, we use existing scalar Traits class for the underlying

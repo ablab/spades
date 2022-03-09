@@ -11,7 +11,7 @@
 #include "io/utils/edge_namer.hpp"
 #include "io/utils/id_mapper.hpp"
 
-#include<filesystem>
+#include <filesystem>
 #include <fstream>
 
 namespace sensitive_aligner {

@@ -167,8 +167,8 @@ private:
 
     static Path ExtractVertices(const Graph &graph, const std::vector<EdgeId> &path) {
         Path result;
-        for(size_t i = 0; i < path.size(); i++) {
-            if(i == 0 || path[i] != path[i - 1]) {
+        for (size_t i = 0; i < path.size(); i++) {
+            if (i == 0 || path[i] != path[i - 1]) {
                 result.push_back(graph.EdgeStart(path[i]));
                 result.push_back(graph.EdgeEnd(path[i]));
             }
@@ -182,7 +182,7 @@ public:
     }
 
     VertexId Next() {
-        if(!HasNext()) {
+        if (!HasNext()) {
             VERIFY(HasNext());
         }
         VertexId next = path_[current_];
@@ -411,7 +411,7 @@ private:
         std::set<VertexId> result(s.begin(), s.end());
         for (VertexId v : result) {
             for (EdgeId e : this->graph().IncidentEdges(v)) {
-                if(this->graph().length(e) <= edge_length_bound_) {
+                if (this->graph().length(e) <= edge_length_bound_) {
                     result.insert(this->graph().EdgeEnd(e));
                     result.insert(this->graph().EdgeStart(e));
                 }
@@ -422,7 +422,7 @@ private:
 
     std::set<VertexId> FindNeighbours(const std::set<VertexId> &s, size_t eps) const {
         std::set<VertexId> result = s;
-        for(size_t i = 0; i < eps; i++) {
+        for (size_t i = 0; i < eps; i++) {
             result = FindNeighbours(result);
         }
         return result;
@@ -730,7 +730,7 @@ private:
         }
         std::set<VertexId> vertices(next.v_begin(), next.v_end());
         std::string name = next.name();
-        for(size_t i = 0; i < 10 && inner_splitter_->HasNext(); i++) {
+        for (size_t i = 0; i < 10 && inner_splitter_->HasNext(); i++) {
             next = inner_splitter_->Next();
             if (checker_->Check(next)) {
                 VERIFY(!next_);

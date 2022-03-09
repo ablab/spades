@@ -640,16 +640,16 @@ private:
         std::vector<EdgeId> temp;
 
         const auto &graph = gp.get<Graph>();
-        for(auto e : mapping_path) {
+        for (auto e : mapping_path) {
 
-            if(graph.OutgoingEdgeCount(graph.EdgeEnd(e)) == 0) {
+            if (graph.OutgoingEdgeCount(graph.EdgeEnd(e)) == 0) {
                 temp.push_back(e);
                 answer.push_back(temp);
                 temp.clear();
                 continue;
             }
 
-            if(graph.IncomingEdgeCount(graph.EdgeStart(e)) == 0) {
+            if (graph.IncomingEdgeCount(graph.EdgeStart(e)) == 0) {
                 answer.push_back(temp);
                 temp.clear();
                 temp.push_back(e);
@@ -657,7 +657,7 @@ private:
             }
             temp.push_back(e);
         }
-        if(temp.size() > 0) {
+        if (temp.size() > 0) {
             answer.push_back(temp);
         }
         return answer;
@@ -669,12 +669,12 @@ private:
 
         const auto &graph = gp.get<Graph>();
         std::for_each(mapping_path.begin(), mapping_path.end(), [this, &max_coverage, &min_coverage, &gp, &graph](EdgeId e){
-            if(!IsRepeat(gp, e) && graph.length(e) > min_ende_len) {
+            if (!IsRepeat(gp, e) && graph.length(e) > min_ende_len) {
                 min_coverage = std::min(graph.coverage(e), min_coverage);
                 max_coverage = std::max(graph.coverage(e), max_coverage);
             }
         });
-        if(max_coverage > min_coverage && max_coverage - min_coverage > cov_drop) {
+        if (max_coverage > min_coverage && max_coverage - min_coverage > cov_drop) {
             return true;
         }
         return false;
@@ -732,7 +732,7 @@ public:
 
             std::vector<EdgeId> mapping_path = debruijn_graph::MapperInstance(curr_env.graph_pack())->MapRead(contig).simple_path();
             std::vector<std::vector<EdgeId>> splitted_path = Split(curr_env.graph_pack(), mapping_path);
-            for(auto subpath : splitted_path) {
+            for (auto subpath : splitted_path) {
                 if (HasCoverageDrops(curr_env.graph_pack(), subpath)) {
                     LOG("Has coverage drops, drawing");
                     DrawPicturesAlongPath(curr_env, subpath, contig.name());

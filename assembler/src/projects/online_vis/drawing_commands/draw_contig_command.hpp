@@ -68,7 +68,7 @@ public:
             //LOG("Contig " << read.name() << " is being processed now");
 
             // if the name contains a given string <contig_name> as a substring.
-            if((starts_with && read.name().find(contig_name) != string::npos) || contig_name == read.name()) {
+            if ((starts_with && read.name().find(contig_name) != string::npos) || contig_name == read.name()) {
                 DrawPicturesAlongContig(curr_env, read);
             }
         }

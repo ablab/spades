@@ -115,8 +115,8 @@ class MismatchTipCondition : public EdgeCondition<Graph> {
         Sequence seq2 = this->g().EdgeNucls(edge2);
         VERIFY(seq1.size() < seq2.size());
         size_t len = std::min(seq1.size(), seq2.size());
-        for(size_t i = this->g().k(); i < len; i++) {
-            if(seq1[i] != seq2[i])
+        for (size_t i = this->g().k(); i < len; i++) {
+            if (seq1[i] != seq2[i])
                 cnt++;
         }
         return cnt;

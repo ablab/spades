@@ -61,7 +61,7 @@ bool eof() const {
     return eof_;
 }
 
-static std::vector <Read> *readAll(std::filesystem::path filename, int cnt = -1) {
+static std::vector <Read> *readAll(const std::filesystem::path& filename, int cnt = -1) {
     ireadstream irs(filename);
     VERIFY(irs.is_open());
     std::vector <Read> *res = new std::vector<Read>();
@@ -78,7 +78,7 @@ static std::vector <Read> *readAll(std::filesystem::path filename, int cnt = -1)
     return res;
 }
 
-static void readAllNoValidation(std::vector <Read> *res, std::filesystem::path filename, uint64_t *totalsize,
+static void readAllNoValidation(std::vector <Read> *res, const std::filesystem::path& filename, uint64_t *totalsize,
                                 int qvoffset = Read::PHRED_OFFSET, int trim_quality = -1, int cnt = -1) {
     ireadstream irs(filename, qvoffset);
     VERIFY(irs.is_open());
@@ -133,7 +133,7 @@ int offset_;
  * open i's file with FASTQ reads,
  * return true if it opened file, false otherwise
  */
-bool open(std::filesystem::path filename) {
+bool open(const std::filesystem::path& filename) {
     fp_ = gzopen(filename.c_str(), "r"); // STEP 2: open the file handler
     if (!fp_) {
         return false;

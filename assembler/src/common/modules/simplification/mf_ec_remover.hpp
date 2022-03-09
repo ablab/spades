@@ -167,16 +167,16 @@ public:
     }
 
 //    void Print() const {
-//        for(auto it = vertex_mapping_.begin(); it != vertex_mapping_.end(); ++it) {
+//        for (auto it = vertex_mapping_.begin(); it != vertex_mapping_.end(); ++it) {
 //            TRACE(it->first << " " << it->second);
 //        }
-//        for(auto it = vertices_.begin(); it != vertices_.end();) {
+//        for (auto it = vertices_.begin(); it != vertices_.end();) {
 //            auto out = OutgoingEdges(*it);
-//            for(auto it1 = out.begin(); it1 != out.end(); ++it1) {
+//            for (auto it1 = out.begin(); it1 != out.end(); ++it1) {
 //                TRACE("edge " << (*it1) << " " << GetCapacity(*it, it1->second));
 //            }
 //            ++it;
-//            if(it == vertices_.end())
+//            if (it == vertices_.end())
 //                break;
 //        }
 //    }

@@ -775,7 +775,7 @@ public:
         //      TRACE("Outgoing check: " << (CheckUniqueOutgoingEdge(v)));
         //      TRACE("Incoming check: " << (IncomingEdgeCount(v) == 1));
         //      TRACE("Incoming check: " << (CheckUniqueIncomingEdge(v) == 1));
-        //      if((OutgoingEdgeCount(v) == 1) && (IncomingEdgeCount(v) == 1)) {
+        //      if ((OutgoingEdgeCount(v) == 1) && (IncomingEdgeCount(v) == 1)) {
         //          TRACE("Loop check: " << (GetUniqueOutgoingEdge(v) != GetUniqueIncomingEdge(v)));
         //          TRACE("Additional check: " << AdditionalCompressCondition(v));
         //      }

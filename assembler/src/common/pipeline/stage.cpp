@@ -45,7 +45,7 @@ void AssemblyStage::save(const graph_pack::GraphPack& gp,
     if (!prefix) prefix = id_;
     auto dir = save_to / prefix;
     INFO("Saving current state to " << dir);
-    remove(dir);
+    remove_all(dir);
     create_directory(dir);
 
     auto p = dir / BASE_NAME;
@@ -200,7 +200,7 @@ void StageManager::run(graph_pack::GraphPack& g,
             }
             saves_policy_.UpdateCheckpoint(stage->id());
             if (!prev_saves.empty() && saves_policy_.RemovePreviousCheckpoint()) {
-                remove(saves_policy_.SavesPath() / prev_saves);
+                remove_all(saves_policy_.SavesPath() / prev_saves);
             }
         }
     }

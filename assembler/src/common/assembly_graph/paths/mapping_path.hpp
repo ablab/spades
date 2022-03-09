@@ -76,15 +76,15 @@ struct MappingRange {
 
     MappingRange Shift(int shift) const {
         VERIFY(initial_range.end_pos >= initial_range.start_pos);
-        if(empty())
+        if (empty())
             return MappingRange();
         MappingRange result(*this);
-        if(int(result.mapped_range.end_pos) <= -shift)
+        if (int(result.mapped_range.end_pos) <= -shift)
             return MappingRange();
         result.mapped_range.end_pos += shift;
-        if(int(result.mapped_range.start_pos) <= -shift) {
+        if (int(result.mapped_range.start_pos) <= -shift) {
             result.initial_range.start_pos -= result.mapped_range.start_pos + shift;
-            if(result.initial_range.start_pos >= result.initial_range.end_pos)
+            if (result.initial_range.start_pos >= result.initial_range.end_pos)
                 result.initial_range.start_pos = result.initial_range.end_pos - 1;
             result.mapped_range.start_pos = 0;
         } else {
@@ -95,13 +95,13 @@ struct MappingRange {
 
     MappingRange Fit(size_t length) const {
         VERIFY(initial_range.end_pos >= initial_range.start_pos);
-        if(empty())
+        if (empty())
             return MappingRange();
         MappingRange result(*this);
-        if(result.mapped_range.start_pos >= length)
+        if (result.mapped_range.start_pos >= length)
             return MappingRange();
-        if(result.mapped_range.end_pos >= length) {
-            if(result.initial_range.end_pos + length < result.mapped_range.end_pos)
+        if (result.mapped_range.end_pos >= length) {
+            if (result.initial_range.end_pos + length < result.mapped_range.end_pos)
                 return MappingRange();
             result.initial_range.end_pos -= result.mapped_range.end_pos - length;
             result.mapped_range.end_pos = length;
@@ -114,7 +114,7 @@ struct MappingRange {
     }
 
     bool operator<(const MappingRange &other) const {
-        if(this->initial_range != other.initial_range)
+        if (this->initial_range != other.initial_range)
             return this->initial_range < other.initial_range;
         return this->mapped_range < other.mapped_range;
     }
@@ -309,7 +309,7 @@ class MappingPath {
 template <typename ElementId>
 inline std::ostream &operator<<(std::ostream &os, const MappingPath<ElementId> &mp) {
     os << "MappingPath ( ";
-    for(size_t i = 0; i < mp.size(); i++) {
+    for (size_t i = 0; i < mp.size(); i++) {
         os << mp[i] << " ";
     }
     os << " )";

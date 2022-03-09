@@ -202,7 +202,7 @@ protected:
 					if (i_in_string == kmer_length) break;
 				}
 
-				//!!!if((i == 0) && temp_byte_alignment)	//poprawka zg3oszona przez Maaka D3ugosza			// check if a byte_alignment placed before a prefix is to be skipped
+				//!!!if ((i == 0) && temp_byte_alignment)	//poprawka zg3oszona przez Maaka D3ugosza			// check if a byte_alignment placed before a prefix is to be skipped
 				if ((i_in_string == 0) && temp_byte_alignment)				// check if a byte_alignment placed before a prefix is to be skipped
 				{
 					temp_byte_alignment--;
@@ -259,9 +259,9 @@ public:
 // ----------------------------------------------------------------------------------
 	inline CKmerAPI(uint32 length = 0)
 	{
-		if(length)
+		if (length)
 		{
-			if(length % 4)
+			if (length % 4)
 				byte_alignment = 4 - (length % 4);	
 			else
 				byte_alignment = 0;
@@ -310,9 +310,9 @@ public:
 //-----------------------------------------------------------------------	
 	inline CKmerAPI& operator=(const CKmerAPI &kmer)
 	{
-		if(kmer.kmer_length != kmer_length)		
+		if (kmer.kmer_length != kmer_length)
 		{
-			if(kmer_length && kmer_data)
+			if (kmer_length && kmer_data)
 				delete [] kmer_data;
 		
 			kmer_length = kmer.kmer_length;
@@ -333,11 +333,11 @@ public:
 //-----------------------------------------------------------------------
 	inline bool operator==(const CKmerAPI &kmer)
 	{
-			if(kmer.kmer_length != kmer_length)
+			if (kmer.kmer_length != kmer_length)
 				return false;
 
 			for(uint32 i = 0; i < no_of_rows; i++)
-				if(kmer.kmer_data[i] != kmer_data[i])
+				if (kmer.kmer_data[i] != kmer_data[i])
 					return false;
 
 			return true;
@@ -349,14 +349,14 @@ public:
 //-----------------------------------------------------------------------
 	inline bool operator<(const CKmerAPI &kmer)
 	{
-			if(kmer.kmer_length != kmer_length)
+			if (kmer.kmer_length != kmer_length)
 				return false;					
 
 			for(uint32 i = 0; i < no_of_rows; i++)
-				if(kmer.kmer_data[i] > kmer_data[i])
+				if (kmer.kmer_data[i] > kmer_data[i])
 					return true;
 				else
-					if(kmer.kmer_data[i] < kmer_data[i])
+					if (kmer.kmer_data[i] < kmer_data[i])
 						return false;
 				
 			return false;
@@ -370,7 +370,7 @@ public:
 //-----------------------------------------------------------------------
 	inline char get_asci_symbol(unsigned int pos)
 	{
-		if(pos >= kmer_length)
+		if (pos >= kmer_length)
 			return 0;
 		
 		uint32 current_row = (pos + byte_alignment) / 32;

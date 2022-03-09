@@ -148,7 +148,7 @@ private:
     }
 
     bool is_minimal() const {
-        if(!ready_) {
+        if (!ready_) {
             return key_.IsMinimal();
         }
         return is_minimal_;
@@ -209,7 +209,7 @@ private:
 template<class stream, class Key, class Index>
 stream &operator<<(stream &s, const InvertableKeyWithHash<Key, Index> &kwh) {
     s << "IKWH[" << kwh.key();
-    if(kwh.ready()) {
+    if (kwh.ready()) {
         return s << ", " << kwh.is_minimal() << ", " << kwh.idx() << "]";
     } else {
         return s << ", not ready]";

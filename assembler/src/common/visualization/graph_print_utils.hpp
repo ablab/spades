@@ -158,7 +158,7 @@ public:
         this->os() << ",";
         this->recordParameter("color", "black");
         this->os() << ",";
-        if(vertex.href_ != "") {
+        if (vertex.href_ != "") {
             this->recordParameterInQuotes("href", vertex.href_);
             this->os() << ",";
         }
@@ -229,7 +229,7 @@ private:
         ss << "<TD BORDER=\"0\" ";
         this->recordParameterInQuotes(ss, "color", color);
         this->recordParameterInQuotes(ss, "bgcolor", color);
-        if(href != "") {
+        if (href != "") {
             ss <<"href=\"" << href << "\"";
         }
         ss << ">"

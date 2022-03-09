@@ -71,7 +71,7 @@ template<class Data>
 void io::DataSet<Data>::load(const std::filesystem::path &filename) {
     ErrorOr<std::unique_ptr<MemoryBuffer>> Buf = MemoryBuffer::getFile(filename.c_str());
     if (!Buf) {
-        std::cerr << std::string("Failed to load file ") << filename;
+        std::cerr << "Failed to load file " << filename;
         throw;
     }
 
@@ -79,7 +79,7 @@ void io::DataSet<Data>::load(const std::filesystem::path &filename) {
     yin >> libraries_;
 
     if (yin.error()) {
-        std::cerr << std::string("Failed to load file ") << filename;
+        std::cerr << "Failed to load file " << filename;
         throw;
     }
     

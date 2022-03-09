@@ -19,7 +19,7 @@ namespace logging {
 
 struct console_writer : public writer {
 
-    void write_msg(double time, size_t cmem, size_t max_rss, level l, const std::filesystem::path file, size_t line_num,
+    void write_msg(double time, size_t cmem, size_t max_rss, level l, const std::filesystem::path& file, size_t line_num,
                    const char *source, const char *msg) {
         if (cmem != -1ull)
             std::cout << fmt::format("{:14s} {:>5s} / {:<5s} {:6.6s} {:24.24s} ({:26.26s}:{:4d})   {:s}",
@@ -46,7 +46,7 @@ public:
 
     mutex_writer(std::shared_ptr<writer> writer) : writer_(writer) {}
 
-    void write_msg(double time, size_t cmem, size_t max_rss, level l, const std::filesystem::path file, size_t line_num,
+    void write_msg(double time, size_t cmem, size_t max_rss, level l, const std::filesystem::path& file, size_t line_num,
                    const char *source, const char *msg) override {
         std::lock_guard<std::mutex> guard(writer_mutex_);
         writer_->write_msg(time, cmem, max_rss, l, file, line_num, source, msg);

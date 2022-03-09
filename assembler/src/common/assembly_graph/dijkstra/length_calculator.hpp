@@ -56,7 +56,7 @@ public:
         graph_(graph), bound_(bound) { }
 
     distance_t GetLength(EdgeId edge) const{
-        if(graph_.length(edge) <= bound_)
+        if (graph_.length(edge) <= bound_)
             return 0;
         return 1;
     }
@@ -74,7 +74,7 @@ class AlongPathLengthCalculator {
 
     std::set<VertexId> CollectVertices(const std::vector<EdgeId> &edge_path) const {
         std::set<VertexId> result;
-        for(auto e = edge_path.begin(); e != edge_path.end(); e++){
+        for (auto e = edge_path.begin(); e != edge_path.end(); e++){
             result.insert(this->graph_.EdgeStart(*e));
             result.insert(this->graph_.EdgeEnd(*e));
         }

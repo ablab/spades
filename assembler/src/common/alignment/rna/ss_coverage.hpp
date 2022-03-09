@@ -54,7 +54,7 @@ public:
     }
 
     void RecalculateCoverage() {
-        for(auto& it : storage_) {
+        for (auto& it : storage_) {
             it.second = it.second / double(g_.length(it.first));
         }
     }
@@ -347,11 +347,11 @@ public:
         VERIFY(other.min_edge_len_ == min_edge_len_);
         VERIFY(other.min_edge_coverage_ == min_edge_coverage_);
 
-        for(auto it = other.storage_.begin(); it != other.storage_.end(); ++it) {
+        for (auto it = other.storage_.begin(); it != other.storage_.end(); ++it) {
             auto to_insert = storage_.find(it->first);
             VERIFY(to_insert != storage_.end());
             VERIFY(to_insert->second.size() == it->second.size());
-            for(size_t i = 0; i < it->second.size(); ++i) {
+            for (size_t i = 0; i < it->second.size(); ++i) {
                 to_insert->second[i] += it->second[i];
             }
         }

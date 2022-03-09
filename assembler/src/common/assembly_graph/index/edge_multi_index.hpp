@@ -82,7 +82,7 @@ public:
 
     EdgeInfoStorage conjugate(size_t k) const {
         EdgeInfoStorage result;
-        for(auto it = content_.rbegin(); it != content_.rend(); ++it) {
+        for (auto it = content_.rbegin(); it != content_.rend(); ++it) {
             result.push_back(it->conjugate(k));
         }
         return result;
