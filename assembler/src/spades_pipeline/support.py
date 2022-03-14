@@ -20,11 +20,13 @@ import sys
 import tempfile
 import traceback
 from platform import uname
+from os.path import abspath, expanduser, join
+
 try:
     from packaging.version import Version
-except ModuleNotFoundError:
+except ImportError:
     from distutils.version import LooseVersion as Version
-from os.path import abspath, expanduser, join
+
 
 import options_storage
 from common import SeqIO
