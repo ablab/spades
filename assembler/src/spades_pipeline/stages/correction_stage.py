@@ -17,6 +17,7 @@ import support
 from process_cfg import merge_configs
 import commands_parser
 import options_storage
+from support import copy_tree
 
 def prepare_config_corr(filename, cfg, ext_python_modules_home):
     addsitedir(ext_python_modules_home)
@@ -71,7 +72,7 @@ class CorrectionIterationStage(stage.Stage):
         if os.path.isdir(dst_configs):
             shutil.rmtree(dst_configs)
 
-        self.copy_tree(os.path.join(self.tmp_configs_dir, "corrector"), dst_configs, preserve_times=False)
+        copy_tree(os.path.join(self.tmp_configs_dir, "corrector"), dst_configs, preserve_times=False)
 
         cfg_file_name = os.path.join(dst_configs, "corrector.info")
 

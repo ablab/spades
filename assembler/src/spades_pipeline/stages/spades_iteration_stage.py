@@ -15,6 +15,7 @@ import options_storage
 from stages import stage
 import process_cfg
 from process_cfg import bool_to_str
+from support import copy_tree
 
 
 # FIXME double with scaffold correction stage
@@ -138,7 +139,7 @@ class IterationStage(stage.Stage):
             if not os.path.isdir(data_dir):
                 os.makedirs(data_dir)
 
-            self.copy_tree(os.path.join(self.tmp_configs_dir, "debruijn"), dst_configs, preserve_times=False)
+            copy_tree(os.path.join(self.tmp_configs_dir, "debruijn"), dst_configs, preserve_times=False)
 
         if self.prev_K:
             additional_contigs_dname = os.path.join(cfg.output_dir, "K%d" % self.prev_K, "simplified_contigs")

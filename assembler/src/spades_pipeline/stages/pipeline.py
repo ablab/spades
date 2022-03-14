@@ -11,20 +11,21 @@ import os
 import shutil
 
 import options_storage
+from support import copy_tree
 
 class Pipeline(object):
     stages = []
 
     # copying configs before all computations (to prevent its changing at run time)
-    def copy_configs(self, cfg, spades_home, tmp_configs_dir, stage):
+    def copy_configs(self, cfg, spades_home, tmp_configs_dir):
         if os.path.isdir(tmp_configs_dir):
             shutil.rmtree(tmp_configs_dir)
         if not os.path.isdir(tmp_configs_dir):
             if options_storage.args.configs_dir:
-                stage.copy_tree(options_storage.args.configs_dir, tmp_configs_dir, preserve_times=False,
+                copy_tree(options_storage.args.configs_dir, tmp_configs_dir, preserve_times=False,
                                    preserve_mode=False)
             else:
-                stage.copy_tree(os.path.join(spades_home, "configs"), tmp_configs_dir, preserve_times=False,
+                copy_tree(os.path.join(spades_home, "configs"), tmp_configs_dir, preserve_times=False,
                                    preserve_mode=False)
 
     def add(self, stage):
@@ -36,7 +37,7 @@ class Pipeline(object):
             commands += stage.get_command(cfg)
         return commands
 
-    def generate_configs(self, cfg, spades_home, tmp_configs_dir, stage):
+    def generate_configs(self, cfg, spades_home, tmp_configs_dir):
         self.copy_configs(cfg, spades_home, tmp_configs_dir)
         for stage in self.stages:
             stage.generate_config(cfg)

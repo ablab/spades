@@ -18,6 +18,7 @@ from stages import stage
 import process_cfg
 import support
 from process_cfg import merge_configs
+from support import copy_tree
 
 
 class ECRunningToolStage(stage.Stage):
@@ -62,10 +63,10 @@ class ECRunningToolStage(stage.Stage):
         if os.path.isdir(dst_configs):
             shutil.rmtree(dst_configs)
         if cfg.iontorrent:
-            self.copy_tree(os.path.join(self.tmp_configs_dir, "ionhammer"), dst_configs, preserve_times=False)
+            copy_tree(os.path.join(self.tmp_configs_dir, "ionhammer"), dst_configs, preserve_times=False)
             cfg_file_name = os.path.join(dst_configs, "ionhammer.cfg")
         else:
-            self.copy_tree(os.path.join(self.tmp_configs_dir, "hammer"), dst_configs, preserve_times=False)
+            copy_tree(os.path.join(self.tmp_configs_dir, "hammer"), dst_configs, preserve_times=False)
             cfg_file_name = os.path.join(dst_configs, "config.info")
 
         cfg.tmp_dir = support.get_tmp_dir(prefix="hammer_")
