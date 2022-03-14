@@ -955,8 +955,11 @@ def copy_tree(src, dst, preserve_times = True, preserve_mode = True):
     else:
         copy_fn = shutil.copy2
 
+    if os.path.exists(dst):
+        shutil.rmtree(dst)
+
     # shutil.copytree preserves the timestamp, so we must update it afterwards.
-    shutil.copytree(src, dst, copy_function = copy_fn, dirs_exist_ok = True)
+    shutil.copytree(src, dst, copy_function = copy_fn)
 
     if preserve_times == False:
         for dirpath, _, filenames in os.walk(dst):
