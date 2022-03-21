@@ -11,6 +11,7 @@
 
 #include "io/dataset_support/read_converter.hpp"
 #include "io/binary/graph_pack.hpp"
+#include "pipeline/stage.hpp"
 #include "utils/logger/log_writers.hpp"
 #include "utils/perf/timetracer.hpp"
 #include "utils/filesystem/file_opener.hpp"
