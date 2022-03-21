@@ -15,8 +15,8 @@
 #ifndef KMER_MAPPER_LOGGER_H_
 #define KMER_MAPPER_LOGGER_H_
 
-#include "sequence/sequence.hpp"
 #include "assembly_graph/core/action_handlers.hpp"
+#include "sequence/sequence.hpp"
 
 namespace debruijn {
 

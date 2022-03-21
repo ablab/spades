@@ -5,12 +5,13 @@
 //***************************************************************************
 
 #pragma once
-#include "common/alignment/bwa_sequence_mapper.hpp"
-#include "common/alignment/gap_info.hpp"
 
-#include "pacbio_read_structures.hpp"
 #include "gap_filler.hpp"
+#include "pacbio_read_structures.hpp"
 #include "pac_index.hpp"
+
+#include "alignment/bwa_sequence_mapper.hpp"
+#include "alignment/gap_info.hpp"
 
 namespace sensitive_aligner {
 

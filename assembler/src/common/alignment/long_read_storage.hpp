@@ -8,7 +8,6 @@
 #pragma once
 
 #include "io/binary/binary.hpp"
-
 #include "utils/logger/logger.hpp"
 #include "utils/filesystem/file_opener.hpp"
 

@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "sequence_mapper.hpp"
 #include "bwa_index.hpp"
+#include "sequence_mapper.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 
 namespace alignment {

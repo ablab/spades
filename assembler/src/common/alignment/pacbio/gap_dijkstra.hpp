@@ -8,7 +8,6 @@
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
-
 #include "sequence/sequence_tools.hpp"
 #include "utils/perf/perfcounter.hpp"
 

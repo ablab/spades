@@ -7,18 +7,17 @@
 
 #pragma once
 
+#include "gap_filler.hpp"
+#include "pacbio_read_structures.hpp"
+
+#include "alignment/edge_index_refiller.hpp"
+#include "alignment/bwa_sequence_mapper.hpp"
+#include "alignment/gap_info.hpp"
+#include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
+
 #include <algorithm>
 #include <vector>
 #include <set>
-
-#include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
-
-#include "common/alignment/edge_index_refiller.hpp"
-#include "common/alignment/bwa_sequence_mapper.hpp"
-#include "common/alignment/gap_info.hpp"
-
-#include "pacbio_read_structures.hpp"
-#include "gap_filler.hpp"
 
 namespace sensitive_aligner {
 

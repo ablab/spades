@@ -7,10 +7,9 @@
 
 #pragma once
 
-#include "common/assembly_graph/core/graph.hpp"
-#include "common/sequence/range.hpp"
+#include "assembly_graph/core/graph.hpp"
 #include "io/binary/binary.hpp"
-
+#include "sequence/range.hpp"
 
 namespace debruijn_graph {
 

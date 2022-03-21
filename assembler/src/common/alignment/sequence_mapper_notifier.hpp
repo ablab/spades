@@ -14,7 +14,6 @@
 #include "assembly_graph/core/graph.hpp"
 #include "io/reads/paired_read.hpp"
 #include "io/reads/read_stream_vector.hpp"
-
 #include "utils/perf/timetracer.hpp"
 
 #include <string>

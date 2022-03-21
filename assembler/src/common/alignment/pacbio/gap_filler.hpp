@@ -6,13 +6,13 @@
 
 #pragma once
 
-#include "configs/aligner_config.hpp"
+#include "gap_dijkstra.hpp"
+
+#include "alignment/bwa_index.hpp"
 #include "assembly_graph/paths/path_utils.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
-
-#include "common/alignment/bwa_index.hpp"
-#include "gap_dijkstra.hpp"
+#include "configs/aligner_config.hpp"
 
 namespace sensitive_aligner {
 using debruijn_graph::EdgeId;

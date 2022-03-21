@@ -9,11 +9,10 @@
 
 #include "kmer_map.hpp"
 
+#include "adt/kmer_vector.hpp"
 #include "assembly_graph/core/action_handlers.hpp"
-
 #include "sequence/sequence.hpp"
 #include "sequence/sequence_tools.hpp"
-#include "adt/kmer_vector.hpp"
 
 #include <set>
 #include <cstdlib>

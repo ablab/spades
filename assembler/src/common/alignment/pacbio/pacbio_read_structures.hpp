@@ -7,7 +7,8 @@
 
 #pragma once
 
-#include "common/alignment/sequence_mapper.hpp"
+#include "alignment/gap_info.hpp"
+#include "alignment/sequence_mapper.hpp"
 #include "assembly_graph/core/graph.hpp"
 
 #include <algorithm>

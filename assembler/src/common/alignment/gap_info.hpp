@@ -1,8 +1,8 @@
 #pragma once
 
+#include "sequence/sequence.hpp"
 #include "utils/logger/logger.hpp"
 #include "utils/verify.hpp"
-#include "sequence/sequence.hpp"
 
 #include <boost/optional.hpp>
 

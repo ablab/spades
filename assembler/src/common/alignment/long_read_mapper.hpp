@@ -10,7 +10,6 @@
 
 #include "long_read_storage.hpp"
 #include "sequence_mapper_notifier.hpp"
-
 #include "assembly_graph/paths/bidirectional_path.hpp"
 #include "library/library_fwd.hpp"
 

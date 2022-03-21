@@ -1,5 +1,6 @@
-#include "io/reads/single_read.hpp"
 #include "gap_info.hpp"
+
+#include "io/reads/single_read.hpp"
 
 namespace omnigraph {
 

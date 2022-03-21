@@ -3,13 +3,12 @@
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
+#include "edge_index_refiller.hpp"
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/core/kmer_iterator.hpp"
 #include "assembly_graph/index/edge_index_builders.hpp"
 #include "utils/filesystem/temporary.hpp"
-
-#include "edge_index_refiller.hpp"
 
 namespace debruijn_graph {
 
