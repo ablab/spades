@@ -9,7 +9,7 @@
   Date   : 2015-04-15
 */
 
-#include "../kmc_api/mmer.h"
+#include "mmer.h"
 
 
 uint32 CMmer::norm5[];

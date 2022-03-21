@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "../environment.hpp"
-#include "../command.hpp"
-#include "../errors.hpp"
+#include "projects/online_vis/environment.hpp"
+#include "projects/online_vis/command.hpp"
+#include "projects/online_vis/errors.hpp"
 #include "io/reads/wrapper_collection.hpp"
 
 namespace online_visualization {

@@ -7,16 +7,15 @@
 
 #pragma once
 
-#include "../environment.hpp"
-#include "../command.hpp"
-#include "../errors.hpp"
+#include "projects/online_vis/environment.hpp"
+#include "projects/online_vis/command.hpp"
+#include "projects/online_vis/errors.hpp"
+#include "assembly_graph/core/basic_graph_stats.hpp"
 #include "io/reads/wrapper_collection.hpp"
 #include "io/reads/file_reader.hpp"
-
-#include <boost/algorithm/string.hpp>
-#include "assembly_graph/core/basic_graph_stats.hpp"
 #include "pipeline/sequence_mapper_gp_api.hpp"
 
+#include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace online_visualization {

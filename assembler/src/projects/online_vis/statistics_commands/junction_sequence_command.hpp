@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include "../environment.hpp"
-#include "../command.hpp"
-#include "../errors.hpp"
+#include "projects/online_vis/environment.hpp"
+#include "projects/online_vis/command.hpp"
+#include "projects/online_vis/errors.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "alignment/sequence_mapper.hpp"
 #include "assembly_graph/paths/path_utils.hpp"
