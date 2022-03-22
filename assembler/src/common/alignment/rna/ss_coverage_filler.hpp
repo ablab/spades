@@ -8,6 +8,7 @@
 #pragma once
 
 #include "ss_coverage.hpp"
+
 #include "alignment/sequence_mapper_notifier.hpp"
 
 namespace debruijn_graph {

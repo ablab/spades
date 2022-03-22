@@ -8,10 +8,10 @@
 
 #include "genomic_info.hpp"
 
-#include "alignment/rna/ss_coverage.hpp"
 #include "alignment/edge_index.hpp"
 #include "alignment/kmer_mapper.hpp"
 #include "alignment/long_read_storage.hpp"
+#include "alignment/rna/ss_coverage.hpp"
 #include "assembly_graph/components/connected_component.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
@@ -20,6 +20,7 @@
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "paired_info/paired_info.hpp"
 #include "sequence/genome_storage.hpp"
+#include "visualization/position_filler.hpp"
 
 namespace graph_pack {
 

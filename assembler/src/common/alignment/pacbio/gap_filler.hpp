@@ -9,9 +9,9 @@
 #include "gap_dijkstra.hpp"
 
 #include "alignment/bwa_index.hpp"
-#include "assembly_graph/paths/path_utils.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
+#include "assembly_graph/paths/path_utils.hpp"
 #include "configs/aligner_config.hpp"
 
 namespace sensitive_aligner {

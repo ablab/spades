@@ -8,6 +8,7 @@
 #pragma once
 
 #include "graph_pack.hpp"
+
 #include "alignment/sequence_mapper.hpp"
 
 namespace debruijn_graph {

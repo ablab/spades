@@ -5,6 +5,7 @@
 //***************************************************************************
 
 #include "sequence_mapper_gp_api.hpp"
+
 #include "alignment/edge_index.hpp"
 
 namespace debruijn_graph {

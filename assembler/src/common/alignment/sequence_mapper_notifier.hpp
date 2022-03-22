@@ -10,8 +10,8 @@
 
 #include "sequence_mapper_fwd.hpp"
 
-#include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/core/graph.hpp"
+#include "assembly_graph/paths/mapping_path.hpp"
 #include "io/reads/paired_read.hpp"
 #include "io/reads/read_stream_vector.hpp"
 #include "utils/perf/timetracer.hpp"

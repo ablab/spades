@@ -7,10 +7,10 @@
 
 #pragma once
 
+#include "edge_index.hpp"
+#include "kmer_mapper.hpp"
 #include "sequence_mapper_fwd.hpp"
 
-#include "kmer_mapper.hpp"
-#include "edge_index.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 #include "assembly_graph/paths/path_processor.hpp"

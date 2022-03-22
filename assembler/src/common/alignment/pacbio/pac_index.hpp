@@ -10,8 +10,8 @@
 #include "gap_filler.hpp"
 #include "pacbio_read_structures.hpp"
 
-#include "alignment/edge_index_refiller.hpp"
 #include "alignment/bwa_sequence_mapper.hpp"
+#include "alignment/edge_index_refiller.hpp"
 #include "alignment/gap_info.hpp"
 #include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
 

@@ -7,8 +7,8 @@
 #pragma once
 
 #include "gap_filler.hpp"
-#include "pacbio_read_structures.hpp"
 #include "pac_index.hpp"
+#include "pacbio_read_structures.hpp"
 
 #include "alignment/bwa_sequence_mapper.hpp"
 #include "alignment/gap_info.hpp"
