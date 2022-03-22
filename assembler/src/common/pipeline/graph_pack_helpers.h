@@ -21,8 +21,7 @@ void EnsurePos(GraphPack& gp);
 void EnsureDebugInfo(GraphPack& gp);
 
 void InitRRIndices(GraphPack& gp);
-void ClearRRIndices(GraphPack& gp);
-void ClearPaths(GraphPack& gp);
+void ClearRRIndicesAndPaths(GraphPack& gp);
 
 void DetachAll(GraphPack& gp);
 void DetachEdgeIndex(GraphPack& gp);

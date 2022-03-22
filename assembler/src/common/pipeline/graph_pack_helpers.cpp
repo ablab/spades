@@ -93,7 +93,7 @@ void InitRRIndices(GraphPack& gp) {
     gp.get_mutable<Indices>("scaffolding_indices").Init();
 }
 
-void ClearRRIndices(GraphPack& gp) {
+void ClearRRIndicesAndPaths(GraphPack& gp) {
     using UnclusteredIndices = omnigraph::de::UnclusteredPairedInfoIndicesT<Graph>;
     using Indices = omnigraph::de::PairedInfoIndicesT<Graph>;
 
@@ -102,9 +102,6 @@ void ClearRRIndices(GraphPack& gp) {
     gp.get_mutable<Indices>("scaffolding_indices").Clear();
 
     gp.get_mutable<LongReadContainer<Graph>>().Clear();
-}
-
-void ClearPaths(GraphPack& gp) {
     gp.get_mutable<path_extend::PathContainer>("exSPAnder paths").clear();
 }
 
