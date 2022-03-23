@@ -4,22 +4,19 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "assembly_graph/core/graph.hpp"
-#include "io/reads/vector_reader.hpp"
-#include "io/reads/read_stream_vector.hpp"
-#include "io/reads/rc_reader_wrapper.hpp"
-#include "utils/filesystem/path_helper.hpp"
-#include "utils/filesystem/temporary.hpp"
-#include "pipeline/graph_pack.hpp" // FIXME: get rid of it
-#include "modules/graph_construction.hpp"
-#include "alignment/edge_index.hpp"
-
 #include "test_utils.hpp"
 #include "tmp_folder_fixture.hpp"
 
+#include "alignment/edge_index.hpp"
+#include "io/reads/vector_reader.hpp"
+#include "io/reads/read_stream_vector.hpp"
+#include "io/reads/rc_reader_wrapper.hpp"
+#include "modules/graph_construction.hpp"
+#include "pipeline/graph_pack.hpp" // FIXME: get rid of it
+#include "utils/filesystem/temporary.hpp"
+
 #include <vector>
 #include <set>
-#include <string>
 
 #include <gtest/gtest.h>
 

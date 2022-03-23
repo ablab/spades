@@ -1,8 +1,10 @@
-#include "modules/genome_consistance_checker.hpp"
-#include "modules/path_extend/paired_library.hpp"
+#include "genome_consistance_checker.hpp"
+
+#include "path_extend/paired_library.hpp"
+
 #include "assembly_graph/core/graph.hpp"
-#include "sequence/genome_storage.hpp"
 #include "pipeline/sequence_mapper_gp_api.hpp"
+#include "sequence/genome_storage.hpp"
 
 #include <algorithm>
 #include <numeric>

@@ -4,14 +4,14 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "toolchain/edge_label_helper.hpp"
-#include "toolchain/utils.hpp"
+#include "alignment/sequence_mapper.hpp"
 #include "io/reads/file_reader.hpp"
 #include "io/binary/graph_pack.hpp"
-#include "alignment/sequence_mapper.hpp"
-#include "utils/segfault_handler.hpp"
 #include "pipeline/graph_pack_helpers.h"
 #include "pipeline/sequence_mapper_gp_api.hpp"
+#include "toolchain/edge_label_helper.hpp"
+#include "toolchain/utils.hpp"
+#include "utils/segfault_handler.hpp"
 
 #include <cxxopts/cxxopts.hpp>
 

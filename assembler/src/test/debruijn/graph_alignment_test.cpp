@@ -1,22 +1,14 @@
-#include "assembly_graph/core/graph.hpp"
-#include "assembly_graph/core/coverage.hpp"
-
-#include "utils/stl_utils.hpp"
-#include "utils/logger/log_writers.hpp"
-
-#include "pipeline/graph_pack.hpp"
-#include "configs/config_struct.hpp"
-
-#include "alignment/sequence_mapper.hpp"
-#include "alignment/pacbio/g_aligner.hpp"
-
-#include "io/reads/io_helper.hpp"
-#include "edlib/edlib.h"
-
 #include "graphio.hpp"
 
-#include <gtest/gtest.h>
+#include "alignment/pacbio/g_aligner.hpp"
+#include "assembly_graph/core/graph.hpp"
+#include "configs/config_struct.hpp"
+#include "edlib/edlib.h"
+#include "io/reads/io_helper.hpp"
+#include "utils/logger/log_writers.hpp"
+#include "utils/stl_utils.hpp"
 
+#include <gtest/gtest.h>
 
 using namespace debruijn_graph;
 

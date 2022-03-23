@@ -9,9 +9,9 @@
 #include "projects/mts/contig_abundance.hpp"
 
 #include "alignment/sequence_mapper.hpp"
-#include "assembly_graph/handlers/id_track_handler.hpp"
-#include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
+#include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
+#include "assembly_graph/handlers/id_track_handler.hpp"
 #include "io/reads/osequencestream.hpp"
 #include "modules/simplification/tip_clipper.hpp"
 #include "pipeline/sequence_mapper_gp_api.hpp"

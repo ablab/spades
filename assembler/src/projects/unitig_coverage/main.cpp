@@ -13,13 +13,13 @@
 #include "io/dataset_support/dataset_readers.hpp"
 #include "library/library_data.hpp"
 #include "library/library.hpp"
-#include "projects/mts/contig_abundance.hpp"
 #include "pipeline/graph_pack_helpers.h"
 #include "pipeline/sequence_mapper_gp_api.hpp"
+#include "projects/mts/contig_abundance.hpp"
 #include "toolchain/edge_label_helper.hpp"
 #include "toolchain/utils.hpp"
-
 #include "utils/segfault_handler.hpp"
+
 #include "version.hpp"
 
 #include <clipp/clipp.h>

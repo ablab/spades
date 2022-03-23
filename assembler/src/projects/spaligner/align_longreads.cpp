@@ -4,25 +4,21 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "io/utils/edge_namer.hpp"
-#include "io/binary/graph.hpp"
-#include "io/reads/io_helper.hpp"
-#include "io/reads/wrapper_collection.hpp"
-#include "io/reads/multifile_reader.hpp"
-#include "io/reads/file_reader.hpp"
-#include "io/graph/gfa_reader.hpp"
-#include "io/graph/gfa_writer.hpp"
-#include "assembly_graph/core/graph.hpp"
-#include "utils/logger/log_writers.hpp"
-#include "alignment/pacbio/g_aligner.hpp"
-
 #include "mapping_printer.hpp"
+
+#include "alignment/pacbio/g_aligner.hpp"
+#include "assembly_graph/core/graph.hpp"
+#include "io/binary/graph.hpp"
+#include "io/graph/gfa_reader.hpp"
+#include "io/reads/wrapper_collection.hpp"
+#include "io/reads/file_reader.hpp"
+#include "io/utils/edge_namer.hpp"
+#include "utils/logger/log_writers.hpp"
 
 #include "llvm/Support/YAMLParser.h"
 #include "llvm/Support/YAMLTraits.h"
 
 #include <iostream>
-#include <fstream>
 #include <clipp/clipp.h>
 
 using namespace std;

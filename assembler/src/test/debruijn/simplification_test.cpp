@@ -4,14 +4,13 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-//#include "modules/simplification/parallel_simplification_algorithms.hpp"
-#include "stages/simplification_pipeline/graph_simplification.hpp"
-#include "stages/simplification_pipeline/single_cell_simplification.hpp"
-#include "stages/simplification_pipeline/rna_simplification.hpp"
-#include "pipeline/graph_pack.hpp"
-
 #include "graphio.hpp"
 #include "tmp_folder_fixture.hpp"
+
+#include "pipeline/graph_pack.hpp"
+#include "stages/simplification_pipeline/graph_simplification.hpp"
+#include "stages/simplification_pipeline/rna_simplification.hpp"
+#include "stages/simplification_pipeline/single_cell_simplification.hpp"
 
 #include <gtest/gtest.h>
 

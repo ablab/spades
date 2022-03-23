@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include "pipeline/graph_pack.hpp"
+#include "alignment/edge_index.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
-#include "alignment/edge_index.hpp"
+#include "pipeline/graph_pack.hpp"
 
 #include <readline/readline.h>
 #include <readline/history.h>

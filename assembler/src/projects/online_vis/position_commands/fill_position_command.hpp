@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "projects/online_vis/environment.hpp"
 #include "projects/online_vis/command.hpp"
+#include "projects/online_vis/environment.hpp"
 #include "projects/online_vis/errors.hpp"
 
 namespace online_visualization {

@@ -10,8 +10,9 @@
 
 #include "weight_counter.hpp"
 #include "pe_utils.hpp"
-#include "assembly_graph/components/graph_component.hpp"
+
 #include "alignment/rna/ss_coverage.hpp"
+#include "assembly_graph/components/graph_component.hpp"
 
 #include <queue>
 #include <cfloat>

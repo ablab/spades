@@ -1,28 +1,25 @@
-/*
- * stats.cpp
- *
- *  Created on: 3 Dec 2015
- *      Author: idmit
- */
+//***************************************************************************
+//* Copyright (c) 2015-2022 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
 
+
+#include "annotation.hpp"
+#include "visualization.hpp"
+
+#include "getopt_pp/getopt_pp.h"
+#include "io/binary/graph_pack.hpp"
+#include "io/reads/file_reader.hpp"
+#include "math/xmath.h"
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/graph_pack_helpers.h"
+#include "pipeline/sequence_mapper_gp_api.hpp"
 #include "utils/stl_utils.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "utils/logger/log_writers.hpp"
-#include "math/xmath.h"
-#include "io/binary/graph_pack.hpp"
-#include "io/reads/multifile_reader.hpp"
-#include "io/reads/splitting_wrapper.hpp"
-#include "io/reads/modifying_reader_wrapper.hpp"
-#include "io/reads/vector_reader.hpp"
-#include "io/reads/file_reader.hpp"
-#include "annotation.hpp"
-#include "visualization.hpp"
 #include "visualization/position_filler.hpp"
-#include "modules/simplification/tip_clipper.hpp"
-#include "pipeline/sequence_mapper_gp_api.hpp"
-#include "getopt_pp/getopt_pp.h"
+
 #include <iostream>
 #include <vector>
 

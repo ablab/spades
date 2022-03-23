@@ -7,6 +7,7 @@
 #pragma once
 
 #include "io_base.hpp"
+
 #include "alignment/edge_index.hpp"
 
 namespace io {

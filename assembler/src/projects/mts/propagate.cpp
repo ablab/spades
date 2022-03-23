@@ -5,15 +5,14 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "utils/stl_utils.hpp"
-
-#include "pipeline/graph_pack.hpp"
-#include "pipeline/sequence_mapper_gp_api.hpp"
-#include "modules/simplification/tip_clipper.hpp"
 #include "propagate.hpp"
-#include "visualization.hpp"
+
+#include "modules/simplification/tip_clipper.hpp"
 #include "paired_info/index_point.hpp"
 #include "paired_info/paired_info.hpp"
+#include "pipeline/graph_pack.hpp"
+#include "pipeline/sequence_mapper_gp_api.hpp"
+#include "utils/stl_utils.hpp"
 
 using namespace std;
 
@@ -107,9 +106,9 @@ class ConnectingPathPropagator : public EdgeAnnotationPropagator {
         set<EdgeId> answer;
         set<VertexId> starts = CollectEdgeStarts(edges);
         for (EdgeId e : edges) {
-            PathProcessor<Graph> path_searcher(g(), g().EdgeEnd(e), path_length_threshold_);
+            omnigraph::PathProcessor<Graph> path_searcher(g(), g().EdgeEnd(e), path_length_threshold_);
             for (VertexId v : starts) {
-                auto callback = AdapterCallback<Graph>([&](const vector<EdgeId>& path) {
+                auto callback = omnigraph::AdapterCallback<Graph>([&](const vector<EdgeId>& path) {
                     utils::insert_all(answer, path);
                 }, true);
                 TRACE("Launching path search between edge " << g().str(e) << " and vertex "
@@ -232,7 +231,7 @@ protected:
     }
 
 private:
-    TipCondition<Graph> tipper_;
+    omnigraph::TipCondition<Graph> tipper_;
     DECL_LOGGER("TipPropagator");
 };
 

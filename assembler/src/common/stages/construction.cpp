@@ -7,21 +7,17 @@
 
 #include "construction.hpp"
 
-#include "assembly_graph/construction/early_simplification.hpp"
 #include "alignment/edge_index.hpp"
-#include "modules/graph_construction.hpp"
-
-#include "pipeline/graph_pack.hpp"
-#include "pipeline/genomic_info.hpp"
-
+#include "assembly_graph/construction/early_simplification.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
 #include "io/dataset_support/read_converter.hpp"
 #include "io/reads/coverage_filtering_read_wrapper.hpp"
 #include "io/reads/multifile_reader.hpp"
-
-#include "utils/filesystem/temporary.hpp"
+#include "modules/graph_construction.hpp"
 #include "kmer_index/ph_map/coverage_hash_map_builder.hpp"
-
+#include "pipeline/genomic_info.hpp"
+#include "pipeline/graph_pack.hpp"
+#include "utils/filesystem/temporary.hpp"
 
 namespace debruijn_graph {
 

@@ -7,13 +7,14 @@
 
 #pragma once
 
-#include "paired_info/distance_estimation.hpp"
-#include "projects/online_vis/environment.hpp"
-#include "projects/online_vis/command.hpp"
-#include "projects/online_vis/errors.hpp"
-#include "projects/online_vis/argument_list.hpp"
-
 #include "drawing_command.hpp"
+
+#include "projects/online_vis/argument_list.hpp"
+#include "projects/online_vis/command.hpp"
+#include "projects/online_vis/environment.hpp"
+#include "projects/online_vis/errors.hpp"
+
+#include "paired_info/distance_estimation.hpp"
 
 namespace online_visualization {
     class DrawPartOfGenomeCommand : public DrawingCommand {

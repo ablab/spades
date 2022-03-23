@@ -7,10 +7,11 @@
 
 #pragma once
 
-#include "projects/online_vis/environment.hpp"
-#include "projects/online_vis/command.hpp"
-#include "projects/online_vis/errors.hpp"
 #include "projects/online_vis/argument_list.hpp"
+#include "projects/online_vis/command.hpp"
+#include "projects/online_vis/environment.hpp"
+#include "projects/online_vis/errors.hpp"
+
 #include "alignment/sequence_mapper.hpp"
 #include "io/reads/single_read.hpp"
 

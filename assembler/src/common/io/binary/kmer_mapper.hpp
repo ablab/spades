@@ -7,6 +7,7 @@
 #pragma once
 
 #include "io_base.hpp"
+
 #include "alignment/kmer_mapper.hpp"
 
 namespace io {

@@ -9,6 +9,7 @@
 #define PAIR_INFO_FILLER_HPP_
 
 #include "paired_info/concurrent_pair_info_buffer.hpp"
+
 #include "alignment/sequence_mapper_notifier.hpp"
 
 namespace debruijn_graph {

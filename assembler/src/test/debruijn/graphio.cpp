@@ -6,14 +6,13 @@
 
 #include "graphio.hpp"
 
+#include "alignment/edge_index.hpp"
+#include "alignment/kmer_mapper.hpp"
 #include "assembly_graph/core/construction_helper.hpp"
 #include "assembly_graph/core/graph.hpp"
-#include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
-#include "assembly_graph/index/edge_position_index.hpp"
+#include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "paired_info/index_point.hpp"
-#include "alignment/kmer_mapper.hpp"
-#include "alignment/edge_index.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "utils/filesystem/path_helper.hpp"
 

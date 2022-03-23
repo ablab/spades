@@ -7,11 +7,12 @@
 
 #pragma once
 
-#include "projects/online_vis/environment.hpp"
 #include "projects/online_vis/command.hpp"
+#include "projects/online_vis/environment.hpp"
 #include "projects/online_vis/errors.hpp"
-#include "io/reads/wrapper_collection.hpp"
+
 #include "io/reads/file_reader.hpp"
+#include "io/reads/wrapper_collection.hpp"
 
 namespace online_visualization {
 class DrawContigCommand : public DrawingCommand {

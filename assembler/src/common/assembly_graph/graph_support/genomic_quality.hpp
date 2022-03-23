@@ -7,11 +7,13 @@
 
 #pragma once
 
-#include "assembly_graph/graph_support/basic_edge_conditions.hpp"
+#include "basic_edge_conditions.hpp"
+
+#include "assembly_graph/core/action_handlers.hpp"
 
 #include "alignment/sequence_mapper.hpp"
-#include "assembly_graph/core/action_handlers.hpp"
 #include "visualization/graph_labeler.hpp"
+#include "visualization/visualization.hpp"
 
 #include <algorithm>
 

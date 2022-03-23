@@ -10,10 +10,11 @@
 #include "environment.hpp"
 #include "errors.hpp"
 #include "vis_logger.hpp"
-#include "io/binary/graph_pack.hpp"
+
 #include "alignment/kmer_mapper.hpp"
-#include "sequence/genome_storage.hpp"
 #include "configs/config_struct.hpp"
+#include "io/binary/graph_pack.hpp"
+#include "sequence/genome_storage.hpp"
 #include "pipeline/sequence_mapper_gp_api.hpp"
 
 namespace online_visualization {

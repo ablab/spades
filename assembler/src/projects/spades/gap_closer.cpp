@@ -6,10 +6,11 @@
 //***************************************************************************
 
 #include "gap_closer.hpp"
+
+#include "alignment/sequence_mapper_notifier.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "io/dataset_support/read_converter.hpp"
 #include "modules/simplification/compressor.hpp"
-#include "alignment/sequence_mapper_notifier.hpp"
 #include "paired_info/concurrent_pair_info_buffer.hpp"
 #include "pipeline/sequence_mapper_gp_api.hpp"
 

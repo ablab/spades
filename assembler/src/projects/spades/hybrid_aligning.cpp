@@ -10,13 +10,13 @@
 #include "hybrid_gap_closer.hpp"
 #include "pair_info_count.hpp"
 
+#include "alignment/long_read_mapper.hpp"
 #include "alignment/pacbio/g_aligner.hpp"
 #include "alignment/pacbio/pac_index.hpp"
-#include "alignment/long_read_mapper.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
-#include "io/reads/wrapper_collection.hpp"
-#include "io/reads/multifile_reader.hpp"
 #include "io/reads/file_reader.hpp"
+#include "io/reads/multifile_reader.hpp"
+#include "io/reads/wrapper_collection.hpp"
 #include "pipeline/graph_pack_helpers.h"
 #include "pipeline/sequence_mapper_gp_api.hpp"
 

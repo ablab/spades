@@ -7,12 +7,12 @@
 
 #pragma once
 
-#include "projects/online_vis/environment.hpp"
-#include "projects/online_vis/command.hpp"
-#include "projects/online_vis/errors.hpp"
-#include "projects/online_vis/argument_list.hpp"
-
 #include "drawing_command.hpp"
+
+#include "projects/online_vis/argument_list.hpp"
+#include "projects/online_vis/command.hpp"
+#include "projects/online_vis/environment.hpp"
+#include "projects/online_vis/errors.hpp"
 
 namespace online_visualization {
     class ShowPositionCommand : public DrawingCommand {

@@ -6,11 +6,12 @@
 //***************************************************************************
 #pragma once
 
-#include "pipeline/graph_pack.hpp"
-#include "pipeline/sequence_mapper_gp_api.hpp"
+#include "formats.hpp"
+
 #include "alignment/sequence_mapper.hpp"
 #include "io/reads/io_helper.hpp"
-#include "formats.hpp"
+#include "pipeline/graph_pack.hpp"
+#include "pipeline/sequence_mapper_gp_api.hpp"
 
 namespace debruijn_graph {
 

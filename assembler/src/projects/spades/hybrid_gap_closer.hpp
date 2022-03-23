@@ -9,8 +9,8 @@
 
 #include "gap_closing.hpp"
 
-#include "assembly_graph/core/graph.hpp"
 #include "alignment/sequence_mapper.hpp"
+#include "assembly_graph/core/graph.hpp"
 #include "configs/config_struct.hpp"
 
 #include <spoa/spoa.hpp>

@@ -5,9 +5,9 @@
 //***************************************************************************
 #pragma once
 
-#include "stages/simplification_pipeline/graph_simplification.hpp"
 #include "configs/config_struct.hpp"
 #include "pipeline/graph_pack.hpp"
+#include "stages/simplification_pipeline/graph_simplification.hpp"
 
 namespace debruijn {
 namespace simplification {

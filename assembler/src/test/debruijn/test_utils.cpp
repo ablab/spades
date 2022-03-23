@@ -8,19 +8,18 @@
 
 #include "alignment/sequence_mapper.hpp"
 #include "alignment/sequence_mapper_notifier.hpp"
-#include "modules/graph_construction.hpp"
-#include "pipeline/graph_pack.hpp"
-#include "pipeline/graph_pack_helpers.h"
-#include "io/reads/rc_reader_wrapper.hpp"
-#include "io/reads/vector_reader.hpp"
 #include "io/reads/converting_reader_wrapper.hpp"
+#include "io/reads/rc_reader_wrapper.hpp"
 #include "io/reads/read_stream_vector.hpp"
-#include "utils/stl_utils.hpp"
+#include "io/reads/vector_reader.hpp"
+#include "modules/graph_construction.hpp"
+#include "paired_info/pair_info_filler.hpp"
 #include "paired_info/paired_info_helpers.hpp"
 #include "paired_info/weights.hpp"
-
-#include "paired_info/pair_info_filler.hpp"
+#include "pipeline/graph_pack.hpp"
+#include "pipeline/graph_pack_helpers.h"
 #include "pipeline/sequence_mapper_gp_api.hpp"
+#include "utils/stl_utils.hpp"
 
 #include <gtest/gtest.h>
 #include <unordered_set>

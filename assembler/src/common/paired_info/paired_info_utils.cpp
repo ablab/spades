@@ -7,12 +7,12 @@
 #include "paired_info_utils.hpp"
 #include "is_counter.hpp"
 
-#include "alignment/sequence_mapper_notifier.hpp"
 #include "paired_info/pair_info_filler.hpp"
+
+#include "alignment/sequence_mapper_notifier.hpp"
+#include "io/dataset_support/read_converter.hpp"
 #include "library/library.hpp"
 #include "library/library_data.hpp"
-
-#include "io/dataset_support/read_converter.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 
 #include "adt/hll.hpp"

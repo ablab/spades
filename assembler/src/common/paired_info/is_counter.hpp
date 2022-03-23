@@ -8,8 +8,8 @@
 #ifndef IS_COUNTER_HPP_
 #define IS_COUNTER_HPP_
 
-
 #include "paired_info/insert_size_refiner.hpp"
+
 #include "alignment/sequence_mapper_notifier.hpp"
 
 namespace debruijn_graph {
