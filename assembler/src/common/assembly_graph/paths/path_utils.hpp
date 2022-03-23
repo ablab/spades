@@ -12,11 +12,12 @@
 
 #pragma once
 
-#include "sequence/sequence.hpp"
 #include "path_processor.hpp"
 #include "mapping_path.hpp"
 #include "assembly_graph/dijkstra/dijkstra_algorithm.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
+
+#include "sequence/sequence.hpp"
 
 namespace debruijn_graph {
 

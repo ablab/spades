@@ -11,9 +11,9 @@
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 
 #include "adt/bag.hpp"
+#include "utils/perf/timetracer.hpp"
 
 #include <boost/optional.hpp>
-#include "utils/perf/timetracer.hpp"
 
 namespace omnigraph {
 

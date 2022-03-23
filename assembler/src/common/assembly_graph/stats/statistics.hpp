@@ -7,11 +7,11 @@
 
 #pragma once
 
-#include "utils/stl_utils.hpp"
+#include "assembly_graph/paths/mapping_path.hpp"
 #include "math/xmath.h"
 #include "configs/config_struct.hpp"
-#include "assembly_graph/paths/mapping_path.hpp"
 #include "utils/logger/logger.hpp"
+#include "utils/stl_utils.hpp"
 
 #include <iostream>
 #include <fstream>

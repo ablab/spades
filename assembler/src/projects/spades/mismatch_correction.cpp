@@ -6,18 +6,16 @@
 
 #include "mismatch_correction.hpp"
 
+#include "adt/flat_set.hpp"
+#include "io/reads/read_stream_vector.hpp"
+#include "io/dataset_support/read_converter.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 #include "modules/alignment/sequence_mapper_notifier.hpp"
 #include "modules/simplification/compressor.hpp"
-
-#include "io/reads/read_stream_vector.hpp"
-#include "io/dataset_support/read_converter.hpp"
-
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/graph_pack_helpers.h"
 #include "utils/logger/logger.hpp"
 
-#include "adt/flat_set.hpp"
 #include <parallel_hashmap/phmap.h>
 
 template <typename Iter>

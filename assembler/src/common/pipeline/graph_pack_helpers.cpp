@@ -5,6 +5,9 @@
 //***************************************************************************
 
 #include "graph_pack.hpp"
+
+#include "genomic_info.hpp"
+
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/graph_support/genomic_quality.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
@@ -15,7 +18,6 @@
 #include "paired_info/paired_info.hpp"
 #include "sequence/genome_storage.hpp"
 #include "visualization/position_filler.hpp"
-#include "genomic_info.hpp"
 
 namespace graph_pack {
 

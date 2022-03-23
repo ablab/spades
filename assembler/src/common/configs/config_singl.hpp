@@ -8,7 +8,6 @@
 #ifndef __CONFIG_SINGL_HPP__
 #define __CONFIG_SINGL_HPP__
 
-
 #include "utils/verify.hpp"
 
 #include <string>

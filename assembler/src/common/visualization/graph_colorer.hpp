@@ -7,9 +7,10 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "printing_parameter_storage.hpp"
+
 #include "assembly_graph/components/graph_component.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
-#include "visualization/printing_parameter_storage.hpp"
 //#include "edges_position_handler.hpp"
 
 using namespace omnigraph;

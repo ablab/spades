@@ -8,8 +8,8 @@
 #pragma once
 
 #include "assembly_graph/core/graph.hpp"
-#include "io/binary/binary.hpp"
 #include "adt/small_pod_vector.hpp"
+#include "io/binary/binary.hpp"
 
 #include <algorithm>
 #include <atomic>

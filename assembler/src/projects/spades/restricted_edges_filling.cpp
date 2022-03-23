@@ -5,9 +5,10 @@
 //***************************************************************************
 
 #include "restricted_edges_filling.hpp"
+
+#include "assembly_graph/core/graph_iterators.hpp"
 #include "io/reads/file_reader.hpp"
 #include "io/reads/wrapper_collection.hpp"
-#include "assembly_graph/core/graph_iterators.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 
 #include <unordered_set>

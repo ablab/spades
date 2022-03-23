@@ -7,17 +7,17 @@
 #pragma once
 
 #include "config_singl.hpp"
+
 #include "library/library.hpp"
 #include "library/library_data.hpp"
-#include "utils/verify.hpp"
-
-#include "modules/path_extend/pe_config_struct.hpp"
 #include "configs/aligner_config.hpp"
 #include "configs/distance_estimation.hpp"
+#include "configs/pe_config_struct.hpp"
+#include "math/xmath.h"
+#include "utils/verify.hpp"
 #include "utils/logger/logger.hpp"
 
 #include <boost/optional.hpp>
-#include "math/xmath.h"
 
 namespace debruijn_graph {
 namespace config {

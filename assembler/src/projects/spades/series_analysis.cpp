@@ -4,15 +4,16 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "visualization/graph_colorer.hpp"
+#include "series_analysis.hpp"
+
+#include "projects/mts/contig_abundance.hpp"
 #include "assembly_graph/handlers/id_track_handler.hpp"
 #include "assembly_graph/graph_support/graph_processing_algorithm.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
+#include "io/reads/osequencestream.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 #include "modules/simplification/tip_clipper.hpp"
-#include "projects/mts/contig_abundance.hpp"
-#include "io/reads/osequencestream.hpp"
-#include "series_analysis.hpp"
+#include "visualization/graph_colorer.hpp"
 
 #include "llvm/Support/YAMLParser.h"
 #include "llvm/Support/YAMLTraits.h"

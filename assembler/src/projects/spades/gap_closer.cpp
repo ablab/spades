@@ -7,10 +7,10 @@
 
 #include "gap_closer.hpp"
 #include "assembly_graph/stats/picture_dump.hpp"
+#include "io/dataset_support/read_converter.hpp"
 #include "modules/simplification/compressor.hpp"
 #include "modules/alignment/sequence_mapper_notifier.hpp"
 #include "paired_info/concurrent_pair_info_buffer.hpp"
-#include "io/dataset_support/read_converter.hpp"
 
 #include <parallel_hashmap/phmap.h>
 #include <numeric>

@@ -8,11 +8,12 @@
 //***************************************************************************
 
 #include "graph_printer.hpp"
+#include "visualizers.hpp"
+#include "vertex_linker.hpp"
+
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "assembly_graph/components/splitters.hpp"
 #include "assembly_graph/components/graph_component.hpp"
-#include "visualizers.hpp"
-#include "vertex_linker.hpp"
 #include "utils/filesystem/path_helper.hpp"
 
 #include <fstream>

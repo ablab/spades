@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include "modules/alignment/sequence_mapper.hpp"
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "io/reads/wrapper_collection.hpp"
 #include "io/reads/io_helper.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
 
 namespace visualization {
 

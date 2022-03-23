@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include "graph_labeler.hpp"
 #include "assembly_graph/graph_support/basic_edge_conditions.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
 #include "assembly_graph/core/action_handlers.hpp"
+#include "modules/alignment/sequence_mapper.hpp"
+#include "visualization/graph_labeler.hpp"
 
 #include <algorithm>
 

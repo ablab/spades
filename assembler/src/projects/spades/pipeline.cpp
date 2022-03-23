@@ -4,34 +4,31 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "load_graph.hpp"
 #include "gap_closer.hpp"
 #include "mismatch_correction.hpp"
 #include "pair_info_count.hpp"
-#include "library/library.hpp"
 #include "second_phase_setup.hpp"
 #include "repeat_resolving.hpp"
 #include "distance_estimation.hpp"
 #include "hybrid_aligning.hpp"
 #include "chromosome_removal.hpp"
 #include "series_analysis.hpp"
-#include "pipeline/stage.hpp"
 #include "contig_output_stage.hpp"
 #include "extract_domains.hpp"
 #include "domain_graph_construction.hpp"
 #include "restricted_edges_filling.hpp"
 
+#include "library/library.hpp"
 #include "modules/alignment/kmer_mapper.hpp"
-
+#include "pipeline/graph_pack.hpp"
+#include "pipeline/stage.hpp"
 #include "stages/genomic_info_filler.hpp"
 #include "stages/read_conversion.hpp"
 #include "stages/construction.hpp"
 #include "stages/simplification.hpp"
 #include "stages/ss_edge_split.hpp"
-
 #include "configs/config_struct.hpp"
-#include "pipeline/graph_pack.hpp"
-
-#include "load_graph.hpp"
 
 namespace spades {
 

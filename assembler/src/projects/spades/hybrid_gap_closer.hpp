@@ -8,6 +8,7 @@
 #pragma once
 
 #include "gap_closing.hpp"
+
 #include "assembly_graph/core/graph.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
 #include "configs/config_struct.hpp"

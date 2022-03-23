@@ -8,15 +8,14 @@
 #include "pair_info_count.hpp"
 
 #include "assembly_graph/core/basic_graph_stats.hpp"
-#include "paired_info/pair_info_filler.hpp"
-#include "paired_info/paired_info_utils.hpp"
-
+#include "io/dataset_support/read_converter.hpp"
 #include "modules/alignment/long_read_mapper.hpp"
 #include "modules/alignment/bwa_sequence_mapper.hpp"
 #include "modules/alignment/rna/ss_coverage_filler.hpp"
+#include "paired_info/pair_info_filler.hpp"
+#include "paired_info/paired_info_utils.hpp"
 #include "pipeline/graph_pack_helpers.h"
 
-#include "io/dataset_support/read_converter.hpp"
 
 namespace debruijn_graph {
 

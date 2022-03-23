@@ -12,4 +12,3 @@
 #include "graph_printer.hpp"
 #include "vertex_linker.hpp"
 #include "visualizers.hpp"
-

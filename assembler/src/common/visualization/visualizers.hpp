@@ -8,6 +8,9 @@
 //***************************************************************************
 
 #include "graph_printer.hpp"
+
+#include "assembly_graph/components/splitters.hpp"
+
 #include <fstream>
 
 using namespace omnigraph;

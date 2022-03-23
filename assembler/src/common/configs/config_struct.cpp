@@ -4,22 +4,23 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "configs/config_common.hpp"
 #include "config_struct.hpp"
 
+#include "config_common.hpp"
+
+#include "io/binary/binary.hpp"
+#include "io/reads/file_reader.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/logger/logger.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "utils/filesystem/file_opener.hpp"
 #include "utils/verify.hpp"
-#include "io/reads/file_reader.hpp"
 
 #include "llvm/Support/YAMLTraits.h"
 #include "llvm/Support/FileSystem.h"
 
 #include <string>
 #include <vector>
-#include "io/binary/binary.hpp"
 
 using namespace llvm;
 

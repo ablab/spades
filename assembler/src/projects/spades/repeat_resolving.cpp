@@ -5,11 +5,11 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "utils/logger/logger.hpp"
+#include "repeat_resolving.hpp"
+
 #include "assembly_graph/stats/picture_dump.hpp"
 #include "modules/path_extend/pipeline/launcher.hpp"
-
-#include "repeat_resolving.hpp"
+#include "utils/logger/logger.hpp"
 
 namespace debruijn_graph {
 

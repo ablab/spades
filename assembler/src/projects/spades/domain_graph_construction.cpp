@@ -5,13 +5,15 @@
 //***************************************************************************
 
 #include "domain_graph_construction.hpp"
+
+#include "domain_graph.hpp"
+#include "domain_matcher.hpp"
+
 #include "assembly_graph/core/construction_helper.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 #include "assembly_graph/paths/bidirectional_path.hpp"
 #include "modules/path_extend/pe_utils.hpp"
 #include "modules/alignment/sequence_mapper.hpp"
-#include "domain_graph.hpp"
-#include "domain_matcher.hpp"
 #include "utils/filesystem/path_helper.hpp"
 
 namespace debruijn_graph {

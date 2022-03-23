@@ -6,17 +6,14 @@
 
 #include "domain_matcher.hpp"
 
-#include "hmm/hmmfile.hpp"
-#include "hmm/hmmmatcher.hpp"
-
 #include "assembly_graph/paths/bidirectional_path.hpp"
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/io_support.hpp"
-
-#include "pipeline/graph_pack.hpp"
-
-#include "sequence/aa.hpp"
+#include "hmm/hmmfile.hpp"
+#include "hmm/hmmmatcher.hpp"
 #include "io/reads/osequencestream.hpp"
+#include "pipeline/graph_pack.hpp"
+#include "sequence/aa.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 
