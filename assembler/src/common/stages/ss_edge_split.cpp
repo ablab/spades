@@ -6,9 +6,9 @@
 
 #include "ss_edge_split.hpp"
 
+#include "alignment/rna/ss_coverage_filler.hpp"
 #include "alignment/sequence_mapper_notifier.hpp"
 #include "alignment/sequence_mapper.hpp"
-#include "alignment/rna/ss_coverage_filler.hpp"
 #include "io/dataset_support/read_converter.hpp"
 #include "pipeline/graph_pack_helpers.h"
 #include "pipeline/sequence_mapper_gp_api.hpp"

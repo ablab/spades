@@ -10,16 +10,16 @@
 #include "assembly_graph/core/graph.hpp"
 #include "io/binary/graph.hpp"
 #include "io/graph/gfa_reader.hpp"
-#include "io/reads/wrapper_collection.hpp"
 #include "io/reads/file_reader.hpp"
+#include "io/reads/wrapper_collection.hpp"
 #include "io/utils/edge_namer.hpp"
 #include "utils/logger/log_writers.hpp"
 
 #include "llvm/Support/YAMLParser.h"
 #include "llvm/Support/YAMLTraits.h"
 
-#include <iostream>
 #include <clipp/clipp.h>
+#include <iostream>
 
 using namespace std;
 

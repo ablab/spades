@@ -21,8 +21,9 @@
 #include "pipeline/sequence_mapper_gp_api.hpp"
 #include "utils/stl_utils.hpp"
 
-#include <gtest/gtest.h>
 #include <unordered_set>
+
+#include <gtest/gtest.h>
 
 using namespace debruijn_graph;
 

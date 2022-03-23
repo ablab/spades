@@ -16,8 +16,8 @@
 #include "assembly_graph/graph_support/basic_vertex_conditions.hpp"
 
 #include <algorithm>
-#include <vector>
 #include <set>
+#include <vector>
 
 namespace sensitive_aligner {
 

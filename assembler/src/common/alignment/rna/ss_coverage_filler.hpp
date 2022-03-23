@@ -10,6 +10,7 @@
 #include "ss_coverage.hpp"
 
 #include "alignment/sequence_mapper_notifier.hpp"
+#include "assembly_graph/paths/mapping_path.hpp"
 
 namespace debruijn_graph {
 
@@ -23,7 +24,7 @@ private:
 
     bool symmetric_;
 
-    void ProcessRange(size_t thread_index, const MappingPath<EdgeId>& read) {
+    void ProcessRange(size_t thread_index, const omnigraph::MappingPath<EdgeId>& read) {
         for (size_t i = 0; i < read.size(); ++i) {
             const auto& range = read[i].second;
             size_t kmer_count = range.mapped_range.end_pos - range.mapped_range.start_pos;
@@ -50,11 +51,11 @@ public:
         storage_.RecalculateCoverage();
     }
 
-    void ProcessSingleRead(size_t thread_index, const io::SingleRead& /* r */, const MappingPath<EdgeId>& read) override {
+    void ProcessSingleRead(size_t thread_index, const io::SingleRead& /* r */, const omnigraph::MappingPath<EdgeId>& read) override {
         ProcessRange(thread_index, read);
     }
 
-    void ProcessSingleRead(size_t thread_index, const io::SingleReadSeq& /* r */, const MappingPath<EdgeId>& read) override {
+    void ProcessSingleRead(size_t thread_index, const io::SingleReadSeq& /* r */, const omnigraph::MappingPath<EdgeId>& read) override {
         ProcessRange(thread_index, read);
     }
 
@@ -72,7 +73,7 @@ private:
 
     std::vector<SSCoverageSplitter> tmp_storages_;
 
-    void ProcessRange(size_t thread_index, const MappingPath<EdgeId>& read) {
+    void ProcessRange(size_t thread_index, const omnigraph::MappingPath<EdgeId>& read) {
         for (size_t i = 0; i < read.size(); ++i) {
             auto range = read.mapping_at(i).mapped_range;
             tmp_storages_[thread_index].IncreaseKmerCount(read.edge_at(i), range);
@@ -98,11 +99,11 @@ public:
             storage.Clear();
     }
 
-    void ProcessSingleRead(size_t thread_index, const io::SingleRead& /* r */, const MappingPath<EdgeId>& read) override {
+    void ProcessSingleRead(size_t thread_index, const io::SingleRead& /* r */, const omnigraph::MappingPath<EdgeId>& read) override {
         ProcessRange(thread_index, read);
     }
 
-    void ProcessSingleRead(size_t thread_index, const io::SingleReadSeq& /* r */, const MappingPath<EdgeId>& read) override {
+    void ProcessSingleRead(size_t thread_index, const io::SingleReadSeq& /* r */, const omnigraph::MappingPath<EdgeId>& read) override {
         ProcessRange(thread_index, read);
     }
 

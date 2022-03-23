@@ -14,12 +14,11 @@
 #include "paired_info/concurrent_pair_info_buffer.hpp"
 #include "pipeline/sequence_mapper_gp_api.hpp"
 
+#include <numeric>
 #include <parallel_hashmap/phmap.h>
-#include <numeric>
 #include <stack>
-#include <vector>
 #include <unordered_set>
-#include <numeric>
+#include <vector>
 
 namespace debruijn_graph {
 

@@ -4,44 +4,38 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "assembly_graph/core/graph.hpp"
-
-#include "alignment/bwa_index.hpp"
 #include "alignment/sequence_mapper_notifier.hpp"
+#include "alignment/bwa_index.hpp"
 #include "alignment/bwa_sequence_mapper.hpp"
 #include "alignment/long_read_mapper.hpp"
-
-#include "io/graph/gfa_reader.hpp"
-#include "io/dataset_support/read_converter.hpp"
-#include "io/dataset_support/dataset_readers.hpp"
-#include "io/binary/graph.hpp"
-
+#include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
-
+#include "configs/aligner_config.hpp"
+#include "io/binary/graph.hpp"
+#include "io/dataset_support/dataset_readers.hpp"
+#include "io/dataset_support/read_converter.hpp"
+#include "io/graph/gfa_reader.hpp"
 #include "paired_info/index_point.hpp"
 #include "paired_info/paired_info_utils.hpp"
-#include "utils/logger/log_writers.hpp"
-#include "utils/logger/logger.hpp"
-#include "utils/segfault_handler.hpp"
-#include "utils/filesystem/temporary.hpp"
-
 #include "pipeline/graph_pack.hpp"
-#include "configs/aligner_config.hpp"
-
 #include "projects/spades/hybrid_aligning.hpp"
 #include "projects/spades/hybrid_gap_closer.hpp"
+#include "threadpool/threadpool.hpp"
+#include "utils/logger/log_writers.hpp"
+#include "utils/logger/logger.hpp"
+#include "utils/filesystem/temporary.hpp"
+#include "utils/segfault_handler.hpp"
 
 #include "version.hpp"
 
-#include "threadpool/threadpool.hpp"
 #include <clipp/clipp.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <fstream>
 #include <limits>
 #include <string>
-#include <fstream>
 
 void create_console_logger() {
     using namespace logging;

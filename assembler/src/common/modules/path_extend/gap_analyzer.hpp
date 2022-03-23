@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "assembly_graph/core/graph.hpp"
 #include "alignment/gap_info.hpp"
+#include "assembly_graph/core/graph.hpp"
 
 namespace path_extend {
 

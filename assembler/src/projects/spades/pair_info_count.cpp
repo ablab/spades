@@ -7,8 +7,8 @@
 
 #include "pair_info_count.hpp"
 
-#include "alignment/long_read_mapper.hpp"
 #include "alignment/bwa_sequence_mapper.hpp"
+#include "alignment/long_read_mapper.hpp"
 #include "alignment/rna/ss_coverage_filler.hpp"
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "io/dataset_support/read_converter.hpp"

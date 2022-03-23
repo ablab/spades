@@ -15,8 +15,8 @@
 #include "pipeline/graph_pack.hpp" // FIXME: get rid of it
 #include "utils/filesystem/temporary.hpp"
 
-#include <vector>
 #include <set>
+#include <vector>
 
 #include <gtest/gtest.h>
 

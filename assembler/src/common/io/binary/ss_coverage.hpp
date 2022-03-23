@@ -7,6 +7,7 @@
 #pragma once
 
 #include "io_base.hpp"
+
 #include "alignment/rna/ss_coverage.hpp"
 
 namespace io {
