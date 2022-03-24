@@ -11,8 +11,8 @@
 #include "io/reads/file_reader.hpp"
 #include "io/reads/wrapper_collection.hpp"
 #include "io/utils/edge_namer.hpp"
-#include "utils/stl_utils.hpp"
 #include "utils/logger/log_writers.hpp"
+#include "utils/stl_utils.hpp"
 
 #include <fstream>
 #include <iostream>

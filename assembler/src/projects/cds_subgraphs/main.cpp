@@ -11,8 +11,8 @@
 #include "io/reads/file_reader.hpp"
 #include "pipeline/sequence_mapper_gp_api.hpp"
 #include "toolchain/edge_label_helper.hpp"
-#include "toolchain/utils.hpp"
 #include "toolchain/subgraph_utils.hpp"
+#include "toolchain/utils.hpp"
 #include "utils/segfault_handler.hpp"
 #include "pipeline/graph_pack_helpers.h"
 

@@ -5,15 +5,15 @@
 #ifndef PROJECT_LAUNCHER_H
 #define PROJECT_LAUNCHER_H
 
-#include "launch_support.hpp"
 #include "extenders_logic.hpp"
+#include "launch_support.hpp"
 
 #include "modules/path_extend/pe_resolver.hpp"
-#include "modules/genome_consistance_checker.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph.hpp"
-#include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
+#include "modules/genome_consistance_checker.hpp"
 
 #include "alignment/rna/ss_coverage.hpp"
+#include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 
 namespace path_extend {
 

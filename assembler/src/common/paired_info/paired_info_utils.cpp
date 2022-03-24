@@ -5,17 +5,16 @@
 //***************************************************************************
 
 #include "paired_info_utils.hpp"
+
 #include "is_counter.hpp"
+#include "pair_info_filler.hpp"
 
-#include "paired_info/pair_info_filler.hpp"
-
+#include "adt/hll.hpp"
 #include "alignment/sequence_mapper_notifier.hpp"
 #include "io/dataset_support/read_converter.hpp"
 #include "library/library.hpp"
 #include "library/library_data.hpp"
 #include "utils/parallel/openmp_wrapper.h"
-
-#include "adt/hll.hpp"
 
 #define XXH_INLINE_ALL
 #include "xxh/xxhash.h"

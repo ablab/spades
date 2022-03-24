@@ -12,8 +12,8 @@
 #include "assembly_graph/handlers/edges_position_handler.hpp"
 #include "pipeline/graph_pack.hpp"
 
-#include <readline/readline.h>
 #include <readline/history.h>
+#include <readline/readline.h>
 
 //TODO: remove this sometime
 using namespace std;

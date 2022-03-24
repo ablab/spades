@@ -8,11 +8,11 @@
 
 #include "paired_info.hpp"
 
+#include "adt/bf.hpp"
 #include "alignment/sequence_mapper_fwd.hpp"
 #include "assembly_graph/core/graph.hpp"
-#include "library/library_fwd.hpp"
 #include "library/library_data.hpp"
-#include "adt/bf.hpp"
+#include "library/library_fwd.hpp"
 
 namespace paired_info {
 

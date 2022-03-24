@@ -8,17 +8,17 @@
 #ifndef EXTENSION_HPP_
 #define EXTENSION_HPP_
 
-#include "weight_counter.hpp"
 #include "pe_utils.hpp"
+#include "weight_counter.hpp"
 
 #include "alignment/rna/ss_coverage.hpp"
 #include "assembly_graph/components/graph_component.hpp"
 
-#include <queue>
 #include <cfloat>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <map>
+#include <queue>
 
 namespace path_extend {
 

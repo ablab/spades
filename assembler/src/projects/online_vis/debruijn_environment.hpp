@@ -14,8 +14,8 @@
 #include "alignment/kmer_mapper.hpp"
 #include "configs/config_struct.hpp"
 #include "io/binary/graph_pack.hpp"
-#include "sequence/genome_storage.hpp"
 #include "pipeline/sequence_mapper_gp_api.hpp"
+#include "sequence/genome_storage.hpp"
 
 namespace online_visualization {
 

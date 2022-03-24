@@ -8,17 +8,17 @@
 #include "tmp_folder_fixture.hpp"
 
 #include "alignment/edge_index.hpp"
-#include "io/reads/vector_reader.hpp"
-#include "io/reads/read_stream_vector.hpp"
 #include "io/reads/rc_reader_wrapper.hpp"
+#include "io/reads/read_stream_vector.hpp"
+#include "io/reads/vector_reader.hpp"
 #include "modules/graph_construction.hpp"
 #include "pipeline/graph_pack.hpp" // FIXME: get rid of it
 #include "utils/filesystem/temporary.hpp"
 
+#include <gtest/gtest.h>
+
 #include <set>
 #include <vector>
-
-#include <gtest/gtest.h>
 
 using namespace debruijn_graph;
 using namespace test_utils;
