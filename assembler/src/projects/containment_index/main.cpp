@@ -386,11 +386,29 @@ void AnalyzeVertices(debruijn_graph::Graph &graph,
     std::unordered_set<debruijn_graph::VertexId> covered_vertices;
     std::ofstream os(fs::append_path(output_path, "complex_tellseq_links.tsv"));
     os << "First id\tSecond id\tFirst barcodes\tSecond barcodes\tShared links\n";
+
+    size_t ambiguous = 0;
+    size_t completely_resolved = 0;
+    size_t partially_resolved = 0;
+    double rel_threshold = 2.0;
+
+    std::ofstream ver_stream(fs::append_path(output_path, "vertex_stats.tsv"));
+    ver_stream << "Vertex Id\tInDegree\tInEdges\tOutDegree\tOutEdges\tVertex result\tSupported paths\tTotal links\tAnswer links\tAnswer\n";
     for (const auto &vertex: interesting_vertices) {
+        size_t total_links = 0;
+        size_t answer_links = 0;
+        size_t supported_paths = 0;
+        std::unordered_map<EdgeId, EdgeId> in_to_out;
+        bool is_ambiguous = false;
         for (const EdgeId &in_edge: graph.IncomingEdges(vertex)) {
+            std::pair<EdgeId, EdgeId> max_pair(0, 0);
+            std::pair<EdgeId, EdgeId> second_pair(0, 0);
+            size_t max_links = 0;
+            size_t second_links = 0;
             for (const EdgeId &out_edge: graph.OutgoingEdges(vertex)) {
                 scaffold_graph::ScaffoldGraph::ScaffoldEdge sc_edge(in_edge, out_edge);
                 auto score = score_function->GetScore(sc_edge);
+                total_links += score;
                 if (math::ge(score, score_threshold)) {
                     covered_vertices.insert(vertex);
                     //fixme head\tail
@@ -398,11 +416,60 @@ void AnalyzeVertices(debruijn_graph::Graph &graph,
                     size_t out_barcodes = barcode_extractor_ptr->GetNumberOfBarcodes(out_edge);
                     os << (*id_mapper)[in_edge.int_id()] << "\t" << (*id_mapper)[out_edge.int_id()] << "\t"
                        << in_barcodes << "\t" << out_barcodes << "\t" << score << std::endl;
+
+                    if (score > max_links) {
+                        second_pair = max_pair;
+                        second_links = max_links;
+                        max_links = score;
+                        max_pair = std::make_pair(in_edge, out_edge);
+                        ++supported_paths;
+                    }
                 }
             }
+            if (max_links < second_links * rel_threshold) {
+                is_ambiguous = true;
+            } else if (max_links >= score_threshold) {
+                in_to_out[max_pair.first] = max_pair.second;
+                answer_links += max_links;
+            }
         }
+        std::string vertex_result;
+        if (covered_vertices.find(vertex) == covered_vertices.end()) {
+            vertex_result = "Uncovered";
+        } else {
+            if (in_to_out.size() == graph.IncomingEdgeCount(vertex) and not is_ambiguous) {
+                ++completely_resolved;
+                vertex_result = "Completely";
+            } else if (is_ambiguous) {
+                ++ambiguous;
+                vertex_result = "Ambiguous";
+            } else {
+                ++partially_resolved;
+                vertex_result = "Partially";
+            }
+        }
+        std::string answer_string;
+        for (const auto &entry: in_to_out) {
+            answer_string += (*id_mapper)[entry.first.int_id()] + "#" + (*id_mapper)[entry.second.int_id()] + ",";
+        }
+        std::string in_edge_string, out_edge_string;
+        for (const EdgeId &edge: graph.IncomingEdges(vertex)) {
+            in_edge_string += (*id_mapper)[edge.int_id()] + ",";
+        }
+        for (const EdgeId &edge: graph.OutgoingEdges(vertex)) {
+            out_edge_string += (*id_mapper)[edge.int_id()] + ",";
+        }
+        in_edge_string = in_edge_string.substr(0, in_edge_string.size() - 1);
+        out_edge_string = out_edge_string.substr(0, out_edge_string.size() - 1);
+        answer_string = answer_string.substr(0, answer_string.size() - 1);
+        ver_stream << vertex.int_id() << "\t" << graph.IncomingEdgeCount(vertex) << "\t" << in_edge_string << "\t"
+                   << graph.OutgoingEdgeCount(vertex) << "\t" << out_edge_string << "\t" << vertex_result << "\t"
+                   << supported_paths << "\t" << total_links << "\t" << answer_links << "\t" << answer_string << std::endl;
     }
     INFO(covered_vertices.size() << " covered vertices");
+    INFO(ambiguous << " ambiguous vertices");
+    INFO(partially_resolved << " partially resolved vertices");
+    INFO(completely_resolved << " completely resolved vertices");
 }
 
 
@@ -514,37 +581,5 @@ int main(int argc, char** argv) {
 //                        min_read_threshold, length_threshold, cfg.nthreads, id_mapper.get(), lja, cfg.output_dir);
 //        ConstructCloudOnlyLinks(graph, barcode_extractor_ptr, graph_score_threshold, length_threshold, tail_threshold,
 //                                count_threshold, cfg.nthreads, cfg.bin_load, cfg.debug, cfg.output_dir, id_mapper.get());
-
-
-
-//        cont_index::VertexInfoGetter vertex_info_getter(graph, tail_threshold, barcode_extractor_ptr, id_mapper.get());
-//        std::string vertex_path = fs::append_path(cfg.output_dir, "vertex_info.tsv");
-//        std::ofstream vertex_stream(vertex_path);
-//        vertex_stream << "FirstId\tFirstLength\tFirstTotalBarcodes\tFirstTailBarcodes\tFirstTotalReads\tFirstTailReads\t";
-//        vertex_stream << "SecondId\tSecondLength\tSecondTotalBarcodes\tSecondTailBarcodes\tSecondTotalReads\tSecondTailReads\t";
-//        vertex_stream << "TailIntersection\tTotalIntersection" << std::endl;
-//        for (const auto &repeat: uncompressed_vertices) {
-//            VertexId start = graph.EdgeStart(repeat);
-//            for (const auto &first: graph.IncomingEdges(start)) {
-//                VertexId end = graph.EdgeEnd(repeat);
-//                for (const auto &second: graph.OutgoingEdges(end)) {
-//                    auto link_info = vertex_info_getter.GetLinkInfo(first, second);
-//                    auto first_info = link_info.first_info;
-//                    auto second_info = link_info.second_info;
-//                    vertex_stream << first_info.edge_id << "\t" << std::to_string(first_info.length) << "\t"
-//                                  << std::to_string(first_info.total_barcodes) << "\t"
-//                                  << std::to_string(first_info.tail_barcodes) << "\t"
-//                                  << std::to_string(first_info.total_reads) << "\t"
-//                                  << std::to_string(first_info.tail_reads) << "\t"
-//                                << second_info.edge_id << "\t" << std::to_string(second_info.length) << "\t"
-//                                << std::to_string(second_info.total_barcodes) << "\t"
-//                                << std::to_string(second_info.tail_barcodes) << "\t"
-//                                << std::to_string(second_info.total_reads) << "\t"
-//                                << std::to_string(second_info.tail_reads) << "\t"
-//                                << std::to_string(link_info.tail_intersection) << "\t"
-//                                << std::to_string(link_info.total_intersection) << std::endl;
-//                }
-//            }
-//        }
     }
 }
