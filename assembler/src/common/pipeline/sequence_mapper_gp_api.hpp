@@ -12,8 +12,8 @@
 #include "alignment/sequence_mapper.hpp"
 
 namespace debruijn_graph {
-std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> MapperInstance(const GraphPack &gp);
+std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> MapperInstance(const graph_pack::GraphPack &gp);
 
-std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> MapperInstance(const GraphPack &gp,
+std::shared_ptr<BasicSequenceMapper<Graph, EdgeIndex<Graph>>> MapperInstance(const graph_pack::GraphPack &gp,
                                                                              const EdgeIndex<Graph> &index);
 }
