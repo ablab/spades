@@ -35,6 +35,7 @@ public:
     const char *id() const { return id_; }
 
     /// @throw std::ios_base::failure if load_from does not contain all required files
+
     virtual void load(graph_pack::GraphPack &, const std::filesystem::path &load_from, const char *prefix = nullptr);
     virtual void save(const graph_pack::GraphPack &, const std::filesystem::path &save_to,
                       const char *prefix = nullptr) const;

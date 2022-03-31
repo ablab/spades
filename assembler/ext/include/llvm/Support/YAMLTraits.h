@@ -1952,6 +1952,32 @@ struct SequenceTraits<
     std::enable_if_t<CheckIsBool<SequenceElementTraits<T>::flow>::value>>
     : SequenceTraitsImpl<SmallVectorImpl<T>, SequenceElementTraits<T>::flow> {};
 
+template <>
+struct SequenceTraits<std::vector<std::string>> {
+    static size_t size(IO &, std::vector<std::string> &seq) {
+      return seq.size();
+    }
+    static std::string&
+    element(IO &, std::vector<std::string> &seq, size_t index) {
+      if (index >= seq.size())
+        seq.resize(index+1);
+      return seq[index];
+    }
+};
+
+template <>
+struct SequenceTraits<std::vector<std::filesystem::path>> {
+    static size_t size(IO &, std::vector<std::filesystem::path> &seq) {
+      return seq.size();
+    }
+    static std::filesystem::path&
+    element(IO &, std::vector<std::filesystem::path> &seq, size_t index) {
+      if (index >= seq.size())
+        seq.resize(index+1);
+      return seq[index];
+    }
+};
+
 // Sequences of fundamental types use flow formatting.
 template <typename T>
 struct SequenceElementTraits<T,

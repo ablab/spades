@@ -35,4 +35,4 @@ private:
     std::filesystem::path workdir_;
 };
 
-} // namespace debruijn_graph
+} // namespace graph_pack

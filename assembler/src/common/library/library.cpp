@@ -47,20 +47,6 @@ struct ScalarEnumerationTraits<LibraryType> {
         io.enumCase(value, "assembly-graph",      LibraryType::AssemblyGraph);
     }
 };
-
-
-template <>
-struct SequenceTraits<std::vector<std::filesystem::path>> {
-    static size_t size(IO &, std::vector<std::filesystem::path> &seq) {
-        return seq.size();
-    }
-    static std::filesystem::path&
-    element(IO &, std::vector<std::filesystem::path> &seq, size_t index) {
-        if (index >= seq.size())
-            seq.resize(index+1);
-        return seq[index];
-    }
-};
 }}
 
 namespace io {

@@ -58,4 +58,4 @@ void GraphPack::DetachAll() {
     get_mutable<EdgeQuality<Graph>>().Detach();
 }
 
-} // namespace debruijn_graph
+} // namespace graph_pack

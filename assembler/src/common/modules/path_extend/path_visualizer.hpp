@@ -102,7 +102,7 @@ public:
         filestr.close();
         INFO("Visualizing graph done");
     }
-    
+
     void writeGraphSimple(const graph_pack::GraphPack& gp, const std::filesystem::path& file_name, const std::string& graph_name) const{
         INFO("Visualizing graph " << graph_name << " to file " << file_name);
         std::fstream filestr;

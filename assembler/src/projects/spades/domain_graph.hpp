@@ -14,8 +14,8 @@
 #include "pipeline/graph_pack.hpp"
 
 #include <filesystem>
-#include <unordered_map>
 #include <numeric>
+#include <unordered_map>
 
 namespace debruijn_graph {
     class DomainGraphConstructor;
