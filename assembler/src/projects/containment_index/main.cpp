@@ -10,6 +10,7 @@
 #include "reference_path_checker.hpp"
 #include "scaffold_graph_helper.hpp"
 #include "vertex_info_getter.hpp"
+#include "vertex_resolver.hpp"
 #include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 
 #include "io/binary/read_cloud.hpp"
@@ -372,104 +373,15 @@ void AnalyzeVertices(debruijn_graph::Graph &graph,
                      double score_threshold,
                      io::IdMapper<std::string> *id_mapper,
                      const std::string &output_path) {
-    std::unordered_set<debruijn_graph::VertexId> interesting_vertices;
-    for (const auto &vertex: graph.vertices()) {
-        //todo use predicate iterator
-        if (graph.OutgoingEdgeCount(vertex) >= 2 and graph.IncomingEdgeCount(vertex) >= 2) {
-            interesting_vertices.insert(vertex);
-        }
-    }
-    INFO(interesting_vertices.size() << " complex vertices");
-    LinkIndexGraphConstructor link_index_constructor(graph, barcode_extractor_ptr, score_threshold,
-                                                     tail_threshold, length_threshold, count_threshold, threads);
-    auto score_function = link_index_constructor.ConstructScoreFunction();
-    std::unordered_set<debruijn_graph::VertexId> covered_vertices;
-    std::ofstream os(fs::append_path(output_path, "complex_tellseq_links.tsv"));
-    os << "First id\tSecond id\tFirst barcodes\tSecond barcodes\tShared links\n";
-
-    size_t ambiguous = 0;
-    size_t completely_resolved = 0;
-    size_t partially_resolved = 0;
-    double rel_threshold = 2.0;
-
-    std::ofstream ver_stream(fs::append_path(output_path, "vertex_stats.tsv"));
-    ver_stream << "Vertex Id\tInDegree\tInEdges\tOutDegree\tOutEdges\tVertex result\tSupported paths\tTotal links\tAnswer links\tAnswer\n";
-    for (const auto &vertex: interesting_vertices) {
-        size_t total_links = 0;
-        size_t answer_links = 0;
-        size_t supported_paths = 0;
-        std::unordered_map<EdgeId, EdgeId> in_to_out;
-        bool is_ambiguous = false;
-        for (const EdgeId &in_edge: graph.IncomingEdges(vertex)) {
-            std::pair<EdgeId, EdgeId> max_pair(0, 0);
-            std::pair<EdgeId, EdgeId> second_pair(0, 0);
-            size_t max_links = 0;
-            size_t second_links = 0;
-            for (const EdgeId &out_edge: graph.OutgoingEdges(vertex)) {
-                scaffold_graph::ScaffoldGraph::ScaffoldEdge sc_edge(in_edge, out_edge);
-                auto score = score_function->GetScore(sc_edge);
-                total_links += score;
-                if (math::ge(score, score_threshold)) {
-                    covered_vertices.insert(vertex);
-                    //fixme head\tail
-                    size_t in_barcodes = barcode_extractor_ptr->GetNumberOfBarcodes(in_edge);
-                    size_t out_barcodes = barcode_extractor_ptr->GetNumberOfBarcodes(out_edge);
-                    os << (*id_mapper)[in_edge.int_id()] << "\t" << (*id_mapper)[out_edge.int_id()] << "\t"
-                       << in_barcodes << "\t" << out_barcodes << "\t" << score << std::endl;
-
-                    if (score > max_links) {
-                        second_pair = max_pair;
-                        second_links = max_links;
-                        max_links = score;
-                        max_pair = std::make_pair(in_edge, out_edge);
-                        ++supported_paths;
-                    }
-                }
-            }
-            if (max_links < second_links * rel_threshold) {
-                is_ambiguous = true;
-            } else if (max_links >= score_threshold) {
-                in_to_out[max_pair.first] = max_pair.second;
-                answer_links += max_links;
-            }
-        }
-        std::string vertex_result;
-        if (covered_vertices.find(vertex) == covered_vertices.end()) {
-            vertex_result = "Uncovered";
-        } else {
-            if (in_to_out.size() == graph.IncomingEdgeCount(vertex) and not is_ambiguous) {
-                ++completely_resolved;
-                vertex_result = "Completely";
-            } else if (is_ambiguous) {
-                ++ambiguous;
-                vertex_result = "Ambiguous";
-            } else {
-                ++partially_resolved;
-                vertex_result = "Partially";
-            }
-        }
-        std::string answer_string;
-        for (const auto &entry: in_to_out) {
-            answer_string += (*id_mapper)[entry.first.int_id()] + "#" + (*id_mapper)[entry.second.int_id()] + ",";
-        }
-        std::string in_edge_string, out_edge_string;
-        for (const EdgeId &edge: graph.IncomingEdges(vertex)) {
-            in_edge_string += (*id_mapper)[edge.int_id()] + ",";
-        }
-        for (const EdgeId &edge: graph.OutgoingEdges(vertex)) {
-            out_edge_string += (*id_mapper)[edge.int_id()] + ",";
-        }
-        in_edge_string = in_edge_string.substr(0, in_edge_string.size() - 1);
-        out_edge_string = out_edge_string.substr(0, out_edge_string.size() - 1);
-        answer_string = answer_string.substr(0, answer_string.size() - 1);
-        ver_stream << vertex.int_id() << "\t" << graph.IncomingEdgeCount(vertex) << "\t" << in_edge_string << "\t"
-                   << graph.OutgoingEdgeCount(vertex) << "\t" << out_edge_string << "\t" << vertex_result << "\t"
-                   << supported_paths << "\t" << total_links << "\t" << answer_links << "\t" << answer_string << std::endl;
-    }
-    INFO(covered_vertices.size() << " covered vertices");
-    INFO(ambiguous << " ambiguous vertices");
-    INFO(partially_resolved << " partially resolved vertices");
-    INFO(completely_resolved << " completely resolved vertices");
+    cont_index::VertexResolver vertex_resolver
+        (graph, barcode_extractor_ptr, count_threshold, tail_threshold, length_threshold, threads, score_threshold,
+         output_path);
+    const auto &vertex_results = vertex_resolver.ResolveVertices();
+    std::string vertex_output_path = fs::append_path(output_path, "vertex_stats.tsv");
+    vertex_resolver.PrintVertexResults(vertex_results, output_path, id_mapper);
+    cont_index::PathExtractor path_extractor(graph);
+    const auto &paths = path_extractor.ExtractPaths(vertex_results);
+    path_extractor.PrintPaths(paths, fs::append_path(output_path, "contigs.paths"), id_mapper);
 }
 
 
