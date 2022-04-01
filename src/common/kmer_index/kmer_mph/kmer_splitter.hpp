@@ -78,8 +78,10 @@ protected:
         // Determine the set of output files
         RawKMers out;
         auto tmp_prefix = this->work_dir_->tmp_file("kmers_raw");
-        for (unsigned i = 0; i < num_files_; ++i)
+        for (unsigned i = 0; i < num_files_; ++i) {
             out.emplace_back(tmp_prefix->CreateDep(std::to_string(i)));
+            fclose(fopen(out.back()->file().c_str(), "ab"));
+        }
 
         size_t file_limit = num_files_ + 2*nthreads;
         size_t res = utils::limit_file(file_limit);

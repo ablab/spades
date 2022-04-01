@@ -323,10 +323,10 @@ public:
         }
     }
     INFO("K-mer counting done. There are " << kmers << " kmers in total. ");
-    if (!kmers) {
+    /*if (!kmers) {
       FATAL_ERROR("No kmers were extracted from reads. Check the read lengths and k-mer length settings");
       exit(-1);
-    }
+    }*/
 
     return res;
   }
