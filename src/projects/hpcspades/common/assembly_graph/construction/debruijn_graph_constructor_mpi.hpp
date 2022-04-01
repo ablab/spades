@@ -55,11 +55,6 @@ class DeBruijnGraphExtentionConstructorTask {
 
         UnbranchingPathExtractor extractor(index, g.k());
         auto seqs = extractor.ExtractUnbranchingPaths(local_iters);
-        {
-            TIME_TRACE_SCOPE("RemoveSequences");
-            index.RemoveSequences(seqs);
-        }
-        partask::allreduce(index.raw_data(), index.raw_size(), MPI_BAND);
         io::binary::BinWrite(os, partask::fast_local_transfer(seqs));
     }
 
@@ -73,6 +68,11 @@ class DeBruijnGraphExtentionConstructorTask {
                 seqs.insert(seqs.end(),
                             std::make_move_iterator(local_seqs.begin()), std::make_move_iterator(local_seqs.end()));
             }
+        }
+
+        {
+            TIME_TRACE_SCOPE("RemoveSequences");
+            index.RemoveSequences(seqs);
         }
 
         if (collect_loops_) {
