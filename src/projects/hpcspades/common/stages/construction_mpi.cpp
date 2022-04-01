@@ -441,7 +441,6 @@ public:
         size_t kpo_mers_removed = process_iner(index, local_iters);
 
         INFO("K+1-mers removed: " << kpo_mers_removed);
-        partask::allreduce(index.raw_data(), index.raw_size(), MPI_BAND);
         io::binary::BinWrite(os, kpo_mers_removed);
     }
 
@@ -451,6 +450,10 @@ public:
             kpo_mers_removed += io::binary::BinRead<size_t>(*pis);
         }
         return kpo_mers_removed;
+    }
+
+    void sync(Index &index) {
+        partask::allreduce(index.raw_data(), index.raw_size(), MPI_BAND);
     }
 
 private:
