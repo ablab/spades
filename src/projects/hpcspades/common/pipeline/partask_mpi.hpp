@@ -119,6 +119,13 @@ inline void barrier() {
 
 const size_t MPI_MAX_COUNT = 1 << 30; // Should be <= MAX_INT
 
+inline size_t get_block_size(size_t count) {
+    //BLOCK_SIZE * NNODES sould be <= MAX_INT
+    //bug fix in openMPI: https://github.com/open-mpi/ompi/commit/fe07940cfd5507871ce2a747a6c88149cc8096af
+    size_t nodes = world_size();
+    return std::min(count, MPI_MAX_COUNT/nodes);
+}
+
 inline void membroadcast(void *p, size_t count, int root = 0) {
     ASSERT_MAIN_THREAD;
     TIME_TRACE_SCOPE("partask::membroadcast");
@@ -128,7 +135,7 @@ inline void membroadcast(void *p, size_t count, int root = 0) {
 
     char *cp = reinterpret_cast<char*>(p);
     while (count) {
-        size_t block_size = std::min(count, MPI_MAX_COUNT);
+        size_t block_size = get_block_size(count);
         int ret = MPI_Bcast(cp, static_cast<int>(block_size), MPI_BYTE, root, MPI_COMM_WORLD);
         VERIFY(ret == MPI_SUCCESS);
         cp += block_size;
@@ -141,7 +148,7 @@ inline void memsend(const void *p, size_t count, int rank, int tag = 0) {
     TIME_TRACE_SCOPE("partask::memsend");
     char *cp = reinterpret_cast<char*>(const_cast<void*>(p));
     while (count) {
-        size_t block_size = std::min(count, MPI_MAX_COUNT);
+        size_t block_size = get_block_size(count);
         int ret = MPI_Send(cp, static_cast<int>(block_size), MPI_BYTE, rank, tag, MPI_COMM_WORLD);
         VERIFY(ret == MPI_SUCCESS);
         cp += block_size;
@@ -154,7 +161,7 @@ inline void memrecv(void *p, size_t count, int rank, int tag = MPI_ANY_TAG) {
     TIME_TRACE_SCOPE("partask::memrecv");
     char *cp = reinterpret_cast<char*>(p);
     while (count) {
-        size_t block_size = std::min(count, MPI_MAX_COUNT);
+        size_t block_size = get_block_size(count);
         int ret = MPI_Recv(cp, static_cast<int>(block_size), MPI_BYTE, rank, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         VERIFY(ret == MPI_SUCCESS);
         cp += block_size;
@@ -282,7 +289,7 @@ void allreduce(T *recvbuf, size_t count, MPI_Op op) {
     using NoneVoidT = std::conditional_t<std::is_void<T>::value, char, T>;
     NoneVoidT *crecvbuf = reinterpret_cast<NoneVoidT*>(recvbuf);
     while (count) {
-        size_t block_size = std::min(count, MPI_MAX_COUNT);
+        size_t block_size = get_block_size(count);
         int ret = MPI_Allreduce(MPI_IN_PLACE, crecvbuf, static_cast<int>(block_size), mpi_datatype<T>(), op, MPI_COMM_WORLD);
         VERIFY(ret == MPI_SUCCESS);
         crecvbuf += block_size;
