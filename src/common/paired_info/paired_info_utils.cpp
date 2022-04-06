@@ -140,7 +140,7 @@ bool CollectLibInformation(const Graph &graph, const MapLibBase &process_libs,
     return !data.insert_size_distribution.empty();
 }
 
-void FillPairedIndex(const Graph &graph,
+void FillPairedIndex(const Graph &graph, const MapLibBase &process_lib,
                      const SequenceMapperNotifier::SequenceMapperT &mapper,
                      SequencingLib &reads,
                      PairedIndex &index,
@@ -148,7 +148,6 @@ void FillPairedIndex(const Graph &graph,
                      unsigned round_thr, bool use_binary) {
     const auto &data = reads.data();
 
-    SequenceMapperNotifier notifier;
     INFO("Left insert size quantile " << data.insert_size_left_quantile <<
          ", right insert size quantile " << data.insert_size_right_quantile <<
          ", filtering threshold " << filter_threshold <<
@@ -168,16 +167,17 @@ void FillPairedIndex(const Graph &graph,
     }
 
     LatePairedIndexFiller pif(graph, weight, round_thr, index);
-    notifier.Subscribe(&pif);
+    std::vector<SequenceMapperListener *> listeners;
+    listeners.push_back(&pif);
 
     if (use_binary) {
         auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, (size_t) data.mean_insert_size,
                                                     /*include merged*/true);
-        notifier.ProcessLibrary(paired_streams, mapper);
+        process_lib(listeners, mapper, paired_streams);
     } else {
         auto paired_streams = paired_easy_readers(reads, /*followed by rc*/false,
                                                   (size_t)data.mean_insert_size, /*use_orientation*/false);
-        notifier.ProcessLibrary(paired_streams, mapper);
+        process_lib(listeners, mapper, paired_streams);
     }
 }
 
