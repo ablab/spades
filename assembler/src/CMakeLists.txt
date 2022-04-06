@@ -105,6 +105,8 @@ add_subdirectory(common)
 add_subdirectory(projects)
 add_subdirectory(spades_pipeline)
 
+add_subdirectory(examples)
+
 
 # Main pipeline script
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../spades.py"
