@@ -76,11 +76,25 @@ class EdgePairCounterFiller : public SequenceMapperListener {
         }
     }
 
+    void Serialize(std::ostream &os) const override {
+        io::binary::BinWrite(os, counter_);
+    }
+
+    void Deserialize(std::istream &is) override {
+        io::binary::BinRead(is, counter_);
+    }
+
+    void MergeFromStream(std::istream &is) override {
+        EdgePairCounterFiller remote(*this);
+        remote.Deserialize(is);
+        counter_.merge(remote.counter_);
+    }
+
     std::vector<EdgePairCounter> buf_;
     EdgePairCounter counter_;
 };
 
-bool CollectLibInformation(const Graph &graph,
+bool CollectLibInformation(const Graph &graph, const MapLibBase &process_libs,
                            const SequenceMapperNotifier::SequenceMapperT &mapper,
                            size_t &edgepairs, SequencingLib &reads,
                            size_t edge_length_threshold) {
@@ -88,15 +102,15 @@ bool CollectLibInformation(const Graph &graph,
     InsertSizeCounter hist_counter(graph, edge_length_threshold);
     EdgePairCounterFiller pcounter(omp_get_max_threads());
 
-    SequenceMapperNotifier notifier;
-    notifier.Subscribe(&hist_counter);
-    notifier.Subscribe(&pcounter);
+    std::vector<SequenceMapperListener *> listeners;
+    listeners.push_back(&hist_counter);
+    listeners.push_back(&pcounter);
 
     auto &data = reads.data();
     auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, /*insert_size*/0,
                                                 /*include_merged*/true);
+    process_libs(listeners, mapper, paired_streams);
 
-    notifier.ProcessLibrary(paired_streams, mapper);
     //Check read length after lib processing since mate pairs a not used until this step
     VERIFY(reads.data().unmerged_read_length != 0);
 

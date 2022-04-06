@@ -179,7 +179,7 @@ void PairInfoCountBase::execute(graph_pack::GraphPack &gp, const char *,
                 size_t k = cfg::get().K;
 
                 size_t edgepairs = 0;
-                if (!paired_info::CollectLibInformation(graph, *ChooseProperMapper(gp, lib),
+                if (!paired_info::CollectLibInformation(graph, map_lib_func, *ChooseProperMapper(gp, lib),
                                                         edgepairs, lib, edge_length_threshold)) {
                     cfg::get_writable().ds.reads[i].data().mean_insert_size = 0.0;
                     WARN("Unable to estimate insert size for paired library #" << i);

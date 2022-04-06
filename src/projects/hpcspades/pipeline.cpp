@@ -139,9 +139,9 @@ static void AddPreliminarySimplificationStages(spades::StageManager &SPAdes) {
         SPAdes.add<debruijn_graph::GapClosingMPI>("prelim_gapcloser");
 
     if (cfg::get().use_intermediate_contigs) {
-        SPAdes.add<debruijn_graph::PairInfoCountMPI>(true);
-        SPAdes.add<debruijn_graph::DistanceEstimationMPI>(true);
-        SPAdes.add<debruijn_graph::RepeatResolution>(true);
+        SPAdes.add<debruijn_graph::PairInfoCountMPI>(true)
+              .add<debruijn_graph::DistanceEstimationMPI>(true)
+              .add<debruijn_graph::RepeatResolution>(true);
 
         if (cfg::get().hm)
             SPAdes.add<debruijn_graph::ExtractDomains>();
