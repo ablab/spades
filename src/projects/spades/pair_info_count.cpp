@@ -224,7 +224,7 @@ void PairInfoCountBase::execute(graph_pack::GraphPack &gp, const char *,
                         round_thr = unsigned(std::min(cfg::get().de.max_distance_coeff * lib.data().insert_size_deviation * cfg::get().de.rounding_coeff,
                                                       cfg::get().de.rounding_thr));
 
-                    paired_info::FillPairedIndex(graph, *ChooseProperMapper(gp, lib),
+                    paired_info::FillPairedIndex(graph, map_lib_func,*ChooseProperMapper(gp, lib),
                                                  lib, gp.get_mutable<Indices>()[i],
                                                  std::move(filter), filter_threshold, round_thr);
                 }

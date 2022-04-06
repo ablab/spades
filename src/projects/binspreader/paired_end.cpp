@@ -13,6 +13,7 @@
 
 #include "paired_info/paired_info_utils.hpp"
 #include "alignment/kmer_sequence_mapper.hpp"
+#include "alignment/sequence_mapper_notifier.hpp"
 
 #include "io/binary/paired_index.hpp"
 #include "io/dataset_support/read_converter.hpp"
@@ -40,7 +41,7 @@ void FillPairedEndLinks(LinkIndex &pe_links,
     if (!bin_load) {
         alignment::ShortKMerReadMapper mapper(graph, workdir);
 
-        paired_info::FillPairedIndex(graph,
+        paired_info::FillPairedIndex(graph, MapLibFunc(),
                                      mapper,
                                      lib, index, { }, 0, std::numeric_limits<unsigned>::max());
 
