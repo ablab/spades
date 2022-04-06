@@ -33,7 +33,7 @@ bool CollectLibInformation(const debruijn_graph::Graph &gp, const debruijn_graph
                            size_t &edgepairs, SequencingLib &reads,
                            size_t edge_length_threshold);
 
-void FillPairedIndex(const debruijn_graph::Graph &gp,
+void FillPairedIndex(const debruijn_graph::Graph &gp, const debruijn_graph::MapLibBase &process_libs,
                      const debruijn_graph::SequenceMapper<debruijn_graph::Graph> &mapper,
                      SequencingLib &reads,
                      PairedIndex &index,
