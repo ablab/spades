@@ -18,6 +18,7 @@
 #include "llvm/Support/YAMLTraits.h"
 #include "llvm/Support/FileSystem.h"
 
+#include <optional>
 #include <string>
 #include <vector>
 

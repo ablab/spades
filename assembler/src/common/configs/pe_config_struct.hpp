@@ -14,9 +14,10 @@
 #include <boost/property_tree/ptree_fwd.hpp>
 
 #include <filesystem>
+#include <map>
+#include <optional>
 #include <string>
 #include <vector>
-#include <map>
 
 namespace path_extend {
 

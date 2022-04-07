@@ -4,6 +4,8 @@
 #include "utils/logger/logger.hpp"
 #include "utils/verify.hpp"
 
+#include <optional>
+
 namespace io {
 class SingleRead;
 class SingleReadSeq;
