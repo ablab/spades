@@ -3,4 +3,5 @@ project(${PROJECT_NAME})
 
 add_executable(${PROJECT_NAME} gap_closer_example.cpp)
 
-target_link_libraries(gap_closer_example utils common_modules pipeline spades-stages)
+target_link_libraries(gap_closer_example
+        utils common_modules pipeline spades-stages assembly_graph teamcity_gtest gtest)
