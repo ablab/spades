@@ -12,6 +12,8 @@
 
 #include "utils/perf/perfcounter.hpp"
 
+#include "config.hpp"
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -155,10 +157,10 @@ void detach_logger();
 # define TRACE(message)                     LOG_MSG(logging::L_TRACE, message)
 # define TRACE_EXPR(expr)                   LOG_EXPR(logging::L_TRACE, expr)
 #else
-# define DEBUG(message)                     /* No trace */
-# define DEBUG_EXPR(expr)                   /* No trace */
-# define TRACE(message)                     /* No trace */
-# define TRACE_EXPR(expr)                   /* No trace */
+# define DEBUG(message)                     do { /* No trace */ } while(0);
+# define DEBUG_EXPR(expr)                   do { /* No trace */ } while(0);
+# define TRACE(message)                     do { /* No trace */ } while(0);
+# define TRACE_EXPR(expr)                   do { /* No trace */ } while(0);
 #endif
 #define INFO(message)                       LOG_MSG(logging::L_INFO , message)
 #define START_BANNER(description)                                       \
