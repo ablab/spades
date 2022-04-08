@@ -10,14 +10,21 @@
 #include <gtest/gtest.h>
 
 void AssertEdges(const debruijn_graph::Graph& g1, const debruijn_graph::Graph& g2) {
+    /*
+     * Edges of de Bruijn graph present k-1 mers in a form of std::string. Thus, edges of the graph
+     * can be compared as a set of std::string.
+     *
+     * There are several iterators to go through edges in debruijn_graph::Graph. They are declared in
+     * common/assembly_graph/core/observable_graph.hpp file.
+     */
+
     INFO("Asserting edges");
     std::unordered_set<std::string> edges1;
-    //constiterator, и вообще посмотреть разные итераторы
-    for (auto it = g1.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = g1.ConstEdgeBegin(); !it.IsEnd(); ++it) {
         edges1.insert(g1.EdgeNucls(*it).str());
     }
     std::unordered_set<std::string> edges2;
-    for (auto it = g2.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = g2.ConstEdgeBegin(); !it.IsEnd(); ++it) {
         edges2.insert(g2.EdgeNucls(*it).str());
     }
 
@@ -28,6 +35,12 @@ void AssertEdges(const debruijn_graph::Graph& g1, const debruijn_graph::Graph& g
 }
 
 void load_and_save_graph_pack() {
+    /*
+     * This example shows how to use one of the SPAdes stages (in this case it is Gap Closer stage)
+     * separately from the SPAdes pipeline.
+     *
+     *
+     */
     //пути локальные убрать, чтобы универсально было
     //инструкцию писать из расчета на то, что я хотела бы прочитать, когда начинала это всё
     std::filesystem::path load_from = "/Bmo/aberdichevskaya/algorithmic-biology/assembler/tmp/K55/saves";
@@ -36,6 +49,18 @@ void load_and_save_graph_pack() {
 
     std::filesystem::path output_dir = "/Bmo/aberdichevskaya/algorithmic-biology/assembler/src/examples/gap_closer/tmp";
 
+    /*
+     * GraphPack is a data structure, which stores information about assembly de Bruijn graph. It is declared
+     * in common/pipeline/graph_pack.hpp file.
+     *
+     * Data storage is organized in a such way, that only one instance of GraphPack may exist during the runtime.
+     *
+     * Access to information about the graph is carried out via get<T>() and get_mutable<T>() functions,
+     * where T is a name of data structure in which this information is stored.
+     *
+     * GraphPack has 3 obligatory arguments: size_t k - the length of reads, std::filesystem::path work_dir -
+     * some directory, which GraphPack uses during the runtime, and size_t lib_count (which is what?).
+     */
     graph_pack::GraphPack gp(55, work_dir, 1); //std::vector<std::string>(0), 55, 0, 0, true);
     INFO("created graph pack");
 
@@ -79,7 +104,19 @@ void load_and_save_graph() {
     //сделать ещё загрузку не через stage, а просто граф
 }
 
-void create_console_logger(std::filesystem::path const& log_fn) {
+void create_console_logger(std::filesystem::path const& log_fn = "") {
+/*
+ * To track the process of program execution it is useful to create a console logger.
+ * In SPAdes logger is declared in common/utils/logger/logger.hpp file and logger writer is declared
+ * in common/utils/logger/log_writters.hpp. To use logger in the project common/utils/logger/log_writters.hpp
+ * should be included (in this case common/utils/logger/logger.hpp is including transitive) and link
+ * utils library in CMake file.
+ *
+ * Logs will be written in log_fn file. (а собственно где этот файл?). In case if log_fn is an empty path,
+ * (а что собственно случится тогда?).
+ *
+ * After logger creation it is convenient to use TRACE, DEBUG, INFO, WARN and ERROR macro.
+ */
     using namespace logging;
     logger *lg = create_logger(exists(log_fn) ? log_fn : "");
     lg->add_writer(std::make_shared<console_writer>());
