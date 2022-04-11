@@ -97,7 +97,8 @@ class EdgePairCounterFiller : public SequenceMapperListener {
 bool CollectLibInformation(const Graph &graph, const MapLibBase &process_libs,
                            const SequenceMapperNotifier::SequenceMapperT &mapper,
                            size_t &edgepairs, SequencingLib &reads,
-                           size_t edge_length_threshold) {
+                           size_t edge_length_threshold,
+                           size_t num_readers) {
     INFO("Estimating insert size (takes a while)");
     InsertSizeCounter hist_counter(graph, edge_length_threshold);
     EdgePairCounterFiller pcounter(omp_get_max_threads());
@@ -108,7 +109,7 @@ bool CollectLibInformation(const Graph &graph, const MapLibBase &process_libs,
 
     auto &data = reads.data();
     auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, /*insert_size*/0,
-                                                /*include_merged*/true);
+                                                /*include_merged*/true, num_readers);
     process_libs(listeners, mapper, paired_streams);
 
     //Check read length after lib processing since mate pairs a not used until this step
@@ -145,7 +146,7 @@ void FillPairedIndex(const Graph &graph, const MapLibBase &process_lib,
                      SequencingLib &reads,
                      PairedIndex &index,
                      std::unique_ptr<PairedInfoFilter> filter, unsigned filter_threshold,
-                     unsigned round_thr, bool use_binary) {
+                     unsigned round_thr, bool use_binary, size_t num_readers) {
     const auto &data = reads.data();
 
     INFO("Left insert size quantile " << data.insert_size_left_quantile <<
@@ -172,7 +173,7 @@ void FillPairedIndex(const Graph &graph, const MapLibBase &process_lib,
 
     if (use_binary) {
         auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, (size_t) data.mean_insert_size,
-                                                    /*include merged*/true);
+                                                    /*include merged*/true, num_readers);
         process_lib(listeners, mapper, paired_streams);
     } else {
         auto paired_streams = paired_easy_readers(reads, /*followed by rc*/false,

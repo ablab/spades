@@ -430,7 +430,7 @@ namespace mismatches {
                 continue;
 
             auto &reads = dataset.reads[i];
-            auto single_streams = single_binary_readers(reads, /*followed by rc */true, /*binary*/true);
+            auto single_streams = single_binary_readers(reads, /*followed by rc */true, /*binary*/true, num_readers_);
 
             proccess_lib_func_(&statistics, *mapper, single_streams);
         }
