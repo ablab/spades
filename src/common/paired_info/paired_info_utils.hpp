@@ -31,14 +31,15 @@ typedef std::function<void(debruijn_graph::SequenceMapperListener *,
 bool CollectLibInformation(const debruijn_graph::Graph &gp, const debruijn_graph::MapLibBase &process_libs,
                            const debruijn_graph::SequenceMapper<debruijn_graph::Graph> &mapper,
                            size_t &edgepairs, SequencingLib &reads,
-                           size_t edge_length_threshold);
+                           size_t edge_length_threshold,
+                           size_t num_readers = 0);
 
 void FillPairedIndex(const debruijn_graph::Graph &gp, const debruijn_graph::MapLibBase &process_libs,
                      const debruijn_graph::SequenceMapper<debruijn_graph::Graph> &mapper,
                      SequencingLib &reads,
                      PairedIndex &index,
                      std::unique_ptr<PairedInfoFilter> filter, unsigned filter_threshold,
-                     unsigned round_thr = 0, bool use_binary = true);
+                     unsigned round_thr = 0, bool use_binary = true, size_t num_readers = 0);
 
 std::unique_ptr<PairedInfoFilter> FillEdgePairFilter(const debruijn_graph::Graph &gp,
                                                      const debruijn_graph::SequenceMapper<debruijn_graph::Graph> &mapper,
