@@ -96,6 +96,7 @@ VertexResults VertexResolver::ResolveVertices() {
 }
 std::string VertexResolver::VertexResultString(const debruijn_graph::VertexId &vertex,
                                                const VertexResult &vertex_result,
+                                               size_t covered_edges,
                                                io::IdMapper<std::string> *id_mapper) const {
     std::string result_string;
     switch (vertex_result.state) {
@@ -127,11 +128,10 @@ std::string VertexResolver::VertexResultString(const debruijn_graph::VertexId &v
     out_edge_string = out_edge_string.substr(0, out_edge_string.size() - 1);
     answer_string = answer_string.substr(0, answer_string.size() - 1);
     std::string vertex_string;
-    vertex_string += std::to_string(vertex.int_id()) + "\t" + std::to_string(graph_.IncomingEdgeCount(vertex)) + "\t";
-    vertex_string += std::to_string(graph_.OutgoingEdgeCount(vertex)) + "\t" + out_edge_string + "\t" + result_string + "\t";
+    vertex_string += std::to_string(vertex.int_id()) + "\t" + std::to_string(graph_.IncomingEdgeCount(vertex)) + "\t" + in_edge_string + "\t";
+    vertex_string += std::to_string(graph_.OutgoingEdgeCount(vertex)) + "\t" + out_edge_string + "\t" + std::to_string(covered_edges) + "\t" + result_string + "\t";
     vertex_string += std::to_string(vertex_result.supported_pairs.size()) + "\t" + std::to_string(vertex_result.total_links);
-    vertex_string += "\t" + std::to_string(vertex_result.total_links) + "\t" + std::to_string(vertex_result.supporting_links);
-    vertex_string += "\t" + answer_string;
+    vertex_string += "\t" + std::to_string(vertex_result.supporting_links) + "\t" + answer_string;
 //    ver_stream << vertex.int_id() << "\t" << graph_.IncomingEdgeCount(vertex) << "\t" << in_edge_string << "\t"
 //               << graph.OutgoingEdgeCount(vertex) << "\t" << out_edge_string << "\t" << vertex_result << "\t"
 //               << supported_paths << "\t" << total_links << "\t" << answer_links << "\t" << answer_string << std::endl;
@@ -139,10 +139,43 @@ std::string VertexResolver::VertexResultString(const debruijn_graph::VertexId &v
 }
 void VertexResolver::PrintVertexResults(const VertexResults &results,
                                         const string &output_path,
+                                        const string &tmp_path,
                                         io::IdMapper<std::string> *id_mapper) const {
+
+    std::unordered_map<EdgeId, size_t> unique_kmer_counter;
+    using EdgeIndex = debruijn_graph::EdgeIndex<debruijn_graph::Graph>;
+    INFO("Constructing index");
+    size_t k = 31;
+    std::unique_ptr<EdgeIndex> index;
+
+    const std::string index_output = fs::append_path(tmp_path, "tmp_index");
+    fs::make_dir(index_output);
+    index.reset(new debruijn_graph::EdgeIndex<debruijn_graph::Graph>(graph_, index_output));
+    index->Refill(k);
+    size_t total_kmers = 0;
+    size_t unique_kmers = 0;
+    for (const EdgeId &edge: graph_.canonical_edges()) {
+        const auto &sequence = graph_.EdgeNucls(edge);
+        EdgeIndex::KMer kmer = sequence.start<RtSeq>(k) >> 'A';
+        for (size_t j = k - 1; j < sequence.size(); ++j) {
+            ++total_kmers;
+            uint8_t inchar = sequence[j];
+            kmer <<= inchar;
+
+            auto pos = index->get(kmer);
+            if (pos.second == EdgeIndex::NOT_FOUND)
+                continue;
+
+            ++unique_kmer_counter[edge];
+            ++unique_kmers;
+        }
+    }
+    INFO("Constructed unique kmer counter")
+    INFO("Unique kmers: " << unique_kmers << ", total: " << total_kmers);
+
     std::ofstream ver_stream(output_path);
     ver_stream <<
-        "Vertex Id\tInDegree\tInEdges\tOutDegree\tOutEdges\tVertex result\tSupported paths\tTotal links\tAnswer links\tAnswer\n";
+        "Vertex Id\tInDegree\tInEdges\tOutDegree\tOutEdges\tCovered edges\tVertex result\tSupported paths\tTotal links\tAnswer links\tAnswer\n";
     size_t uncovered = 0;
     size_t ambiguous = 0;
     size_t partially = 0;
@@ -163,7 +196,18 @@ void VertexResolver::PrintVertexResults(const VertexResults &results,
                 ++completely;
                 break;
         }
-        ver_stream << VertexResultString(entry.first, vertex_results, id_mapper);
+        size_t covered_edges = 0;
+        for (const EdgeId &edge: graph_.IncomingEdges(entry.first)) {
+            if (unique_kmer_counter[edge] != 0 or unique_kmer_counter[graph_.conjugate(edge)] != 0) {
+                ++covered_edges;
+            }
+        }
+        for (const EdgeId &edge: graph_.OutgoingEdges(entry.first)) {
+            if (unique_kmer_counter[edge] != 0 or unique_kmer_counter[graph_.conjugate(edge)] != 0) {
+                ++covered_edges;
+            }
+        }
+        ver_stream << VertexResultString(entry.first, vertex_results, covered_edges, id_mapper) << std::endl;
     }
     INFO(uncovered << " uncovered vertices");
     INFO(ambiguous << " ambiguous vertices");
@@ -237,31 +281,33 @@ std::vector<PathExtractor::SimplePath> PathExtractor::ExtractPaths(const VertexR
         for (const auto &edge: path) {
             path_string += std::to_string(edge.int_id()) + ",";
         }
-        INFO(path_string);
+//        INFO(path_string);
     }
     if (canonical) {
         size_t no_conj = 0;
         size_t conj_incorrect = 0;
         std::vector<SimplePath> canonical_paths;
+        size_t total_canonical_size = 0;
         for (const auto &path: resulting_paths) {
             const auto &conj_start = graph_.conjugate(path[0]);
             if (path[0] < conj_start) {
-                INFO(conj_start);
+//                INFO(conj_start);
                 auto conj_path_it = end_to_path_idx.find(conj_start);
                 if (conj_path_it == end_to_path_idx.end()) {
                     ++no_conj;
-                    INFO("Conjugate path for edge " << path[0] << " was not found!");
+//                    INFO("Conjugate path for edge " << path[0] << " was not found!");
                     continue;
                 }
                 const auto &conj_path = resulting_paths[conj_path_it->second];
                 if (not IsConjugatePair(path, conj_path)) {
                     ++conj_incorrect;
-                    INFO("Pair is not conjugate!");
+//                    INFO("Pair is not conjugate!");
                 }
                 canonical_paths.push_back(path);
+                total_canonical_size += path.size();
             }
         }
-        INFO(canonical_paths.size() << " canoninal paths");
+        INFO(canonical_paths.size() << " canoninal paths, total length: " << total_canonical_size);
         INFO(no_conj << " paths with no conjugates");
         INFO(conj_incorrect << " paths with incorrect conjugates");
         return canonical_paths;
@@ -271,7 +317,7 @@ std::vector<PathExtractor::SimplePath> PathExtractor::ExtractPaths(const VertexR
 bool PathExtractor::IsConjugatePair(const PathExtractor::SimplePath &first,
                                     const PathExtractor::SimplePath &second) const {
     if (first.size() != second.size()) {
-        INFO("Different lengths");
+//        INFO("Different lengths");
         return false;
     }
     for (auto it1 = first.begin(), it2 = second.end(); it1 != first.end(); ++it1) {

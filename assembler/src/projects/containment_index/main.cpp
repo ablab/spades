@@ -372,13 +372,14 @@ void AnalyzeVertices(debruijn_graph::Graph &graph,
                      size_t threads,
                      double score_threshold,
                      io::IdMapper<std::string> *id_mapper,
-                     const std::string &output_path) {
+                     const std::string &output_path,
+                     const std::string &tmp_path) {
     cont_index::VertexResolver vertex_resolver
         (graph, barcode_extractor_ptr, count_threshold, tail_threshold, length_threshold, threads, score_threshold,
          output_path);
     const auto &vertex_results = vertex_resolver.ResolveVertices();
     std::string vertex_output_path = fs::append_path(output_path, "vertex_stats.tsv");
-    vertex_resolver.PrintVertexResults(vertex_results, output_path, id_mapper);
+    vertex_resolver.PrintVertexResults(vertex_results, vertex_output_path, tmp_path, id_mapper);
     cont_index::PathExtractor path_extractor(graph);
     const auto &paths = path_extractor.ExtractPaths(vertex_results);
     path_extractor.PrintPaths(paths, fs::append_path(output_path, "contigs.paths"), id_mapper);
@@ -459,9 +460,6 @@ int main(int argc, char** argv) {
 
         TIME_TRACE_SCOPE("Containment index");
 
-//        GFAGraphConstructor gfa_graph_constructor(graph, gfa, id_mapper.get());
-//        auto hifi_graph = gfa_graph_constructor.ConstructGraphFromDBG();
-
         auto &lib = dataset[cfg.libindex];
         if (lib.type() == io::LibraryType::Clouds10x) {
             cont_index::ConstructBarcodeIndex(barcode_index,
@@ -478,7 +476,7 @@ int main(int argc, char** argv) {
         }
 
         AnalyzeVertices(graph, barcode_extractor_ptr, count_threshold, tail_threshold, length_threshold, cfg.nthreads,
-                        2.0, id_mapper.get(), cfg.output_dir);
+                        2.0, id_mapper.get(), cfg.output_dir, cfg.tmpdir);
 
 
 //        GetLongEdgeStatistics(graph, barcode_index, training_length_threshold, training_length_offset,

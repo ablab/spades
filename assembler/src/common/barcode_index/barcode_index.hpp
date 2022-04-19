@@ -218,6 +218,20 @@ public:
         }
     }
 
+    void MoveUpdate(ConcurrentBarcodeIndexBuffer<Graph, EdgeEntryT> &from) {
+        auto locked_table = from.lock_table();
+        for (auto &kvpair: locked_table) {
+            this->edge_to_entry_[kvpair.first].MoveUpdate(kvpair.second);
+        }
+    }
+
+    void Update(ConcurrentBarcodeIndexBuffer<Graph, EdgeEntryT> &from) {
+        auto locked_table = from.lock_table();
+        for (const auto &kvpair: locked_table) {
+            this->edge_to_entry_[kvpair.first].Update(kvpair.second);
+        }
+    }
+
     void SetNumberOfBarcodes(size_t number_of_barcodes) {
         number_of_barcodes_ = number_of_barcodes;
     }
@@ -725,6 +739,17 @@ protected:
         barcode_distribution_.at(barcode).Update(count, left_frame, right_frame);
     }
 
+    void MoveUpdate(FrameEdgeEntry<Graph> &other) {
+        for (auto it = other.begin(); it != other.end(); ++it) {
+            barcode_distribution_[it->first] = std::move(it->second);
+        }
+    }
+
+    void Update(const FrameEdgeEntry<Graph> &other) {
+        for (auto it = other.begin(); it != other.end(); ++it) {
+            barcode_distribution_[it->first] = it->second;
+        }
+    }
 
     bool IsFarFromEdgeHead(size_t gap_threshold, const FrameBarcodeInfo& info) {
         return info.GetLeftMost() > gap_threshold / frame_size_;

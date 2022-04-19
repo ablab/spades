@@ -30,14 +30,15 @@ class ConcurrentBufferFiller {
 
     class BarcodeEncoder {
       public:
-        BarcodeEncoder():
-            codes_()
+        BarcodeEncoder(size_t start):
+            codes_(),
+            start_(start)
         { }
 
         BarcodeId add(const std::string &barcode) {
             std::unique_lock<std::shared_timed_mutex> lock(mutex_);
             size_t encoder_size = codes_.size();
-            codes_[barcode] = encoder_size;
+            codes_[barcode] = encoder_size + start_;
             return encoder_size;
         }
 
@@ -58,16 +59,18 @@ class ConcurrentBufferFiller {
       private:
         std::unordered_map <std::string, BarcodeId> codes_;
         std::shared_timed_mutex mutex_;
+        const size_t start_;
     };
 
     ConcurrentBufferFiller(const Graph &g,
                            FrameConcurrentBuffer &buf,
                            const SequenceMapper &mapper,
-                           const std::vector<std::string> &barcode_prefices) : g_(g),
-                                                                               buf_(buf),
-                                                                               mapper_(mapper),
-                                                                               barcode_prefices_(barcode_prefices),
-                                                                               encoder_() { Init(); }
+                           const std::vector<std::string> &barcode_prefices,
+                           size_t starting_barcode) : g_(g),
+                                                      buf_(buf),
+                                                      mapper_(mapper),
+                                                      barcode_prefices_(barcode_prefices),
+                                                      encoder_(starting_barcode) { Init(); }
 
     bool operator()(std::unique_ptr<io::PairedRead> r) {
         const Sequence& read1 = r->first().sequence();
@@ -163,22 +166,42 @@ class FrameBarcodeIndexBuilder {
   public:
     using EdgeId = debruijn_graph::EdgeId;
     using Graph = debruijn_graph::Graph;
+    using SequenceMapper = debruijn_graph::SequenceMapper<Graph>;
 
-    FrameBarcodeIndexBuilder(ConcurrentBufferFiller &buffer_filler, size_t num_threads) : buffer_filler_(buffer_filler),
-                                                                                          num_threads_(num_threads) {}
+    FrameBarcodeIndexBuilder(const Graph &g,
+                             const SequenceMapper &mapper,
+                             const std::vector<std::string> &barcode_prefices,
+                             size_t frame_size,
+                             size_t num_threads) :
+        g_(g),
+        mapper_(mapper),
+        barcode_prefices_(barcode_prefices),
+        frame_size_(frame_size),
+        num_threads_(num_threads) {}
 
     void ConstructBarcodeIndex(FrameBarcodeIndex<Graph> &barcode_index, const io::SequencingLibraryBase &lib) {
         auto read_streams = io::paired_easy_readers(lib, false, 0);
+        size_t starting_barcode = 0;
+        size_t counter = 0;
+        barcode_index.SetFrameSize(frame_size_);
+        barcode_index.InitialFillMap();
         for (auto &stream: read_streams) {
+            INFO("Processing stream " << counter << " , currently " << starting_barcode << " barcodes");
+            FrameConcurrentBarcodeIndexBuffer<debruijn_graph::Graph> buffer(g_, frame_size_);
+            ConcurrentBufferFiller buffer_filler(g_, buffer, mapper_, barcode_prefices_, starting_barcode);
             hammer::ReadProcessor read_processor(static_cast<unsigned int>(num_threads_));
-            read_processor.Run(stream, buffer_filler_);
-            auto &buffer = buffer_filler_.GetBuffer();
-            barcode_index.SetFrameSize(buffer.GetFrameSize());
-            barcode_index.MoveAssign(buffer);
+            read_processor.Run(stream, buffer_filler);
+            starting_barcode += buffer_filler.GetNumberOfBarcodes();
+            INFO("Update");
+            barcode_index.Update(buffer);
+            INFO("Finished update");
         }
     }
   private:
-    ConcurrentBufferFiller &buffer_filler_;
+    const Graph& g_;
+    const SequenceMapper &mapper_;
+    const std::vector<std::string> barcode_prefices_;
+    size_t frame_size_;
     size_t num_threads_;
 };
 } //namespace barcode index
