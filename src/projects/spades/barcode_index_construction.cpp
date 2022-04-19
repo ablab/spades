@@ -43,8 +43,8 @@ namespace debruijn_graph {
             if (lib.type() == io::LibraryType::Clouds10x) {
                 gp.EnsureBasicMapping();
                 FrameConcurrentBarcodeIndexBuffer<Graph> buffer(gp.get<Graph>(), frame_size);
-                ConcurrentBufferFiller buffer_filler(gp.get<Graph>(), buffer, *MapperInstance(gp), barcode_prefices);
-                FrameBarcodeIndexBuilder barcode_index_builder(buffer_filler, num_threads);
+                ConcurrentBufferFiller buffer_filler(gp.get<Graph>(), buffer, *MapperInstance(gp), barcode_prefices, 0);
+                FrameBarcodeIndexBuilder barcode_index_builder(gp.get<Graph>(), *MapperInstance(gp), barcode_prefices, frame_size, num_threads);
                 auto &barcode_mapper = gp.get_mutable<barcode_index::FrameBarcodeIndex<Graph>>();
                 barcode_index_builder.ConstructBarcodeIndex(barcode_mapper, lib);
                 INFO("Barcode index construction finished.");
