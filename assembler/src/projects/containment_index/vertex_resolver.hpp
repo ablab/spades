@@ -72,9 +72,11 @@ class VertexResolver {
 
     void PrintVertexResults(const VertexResults &results,
                             const std::string &output_path,
+                            const std::string &tmp_path,
                             io::IdMapper<std::string> *id_mapper) const;
     std::string VertexResultString(const debruijn_graph::VertexId &vertex,
                                    const VertexResult &vertex_result,
+                                   size_t covered_edges,
                                    io::IdMapper<std::string> *id_mapper) const;
   private:
     VertexState GetState(const std::unordered_map<EdgeId, EdgeId> &in_to_out,
