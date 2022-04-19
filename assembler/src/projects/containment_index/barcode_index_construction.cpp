@@ -4,7 +4,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include <modules/alignment/kmer_sequence_mapper.hpp>
+#include "modules/alignment/kmer_sequence_mapper.hpp"
 #include "barcode_index_construction.hpp"
 
 #include "barcode_index/barcode_index_builder.hpp"
@@ -29,8 +29,8 @@ void ConstructBarcodeIndex(barcode_index::FrameBarcodeIndex<debruijn_graph::Grap
         const unsigned min_occ = 2;
         alignment::ShortKMerReadMapper mapper(graph, workdir, mapping_k, min_occ);
         FrameConcurrentBarcodeIndexBuffer<debruijn_graph::Graph> buffer(graph, frame_size);
-        ConcurrentBufferFiller buffer_filler(graph, buffer, mapper, barcode_prefices);
-        FrameBarcodeIndexBuilder barcode_index_builder(buffer_filler, nthreads);
+//        ConcurrentBufferFiller buffer_filler(graph, buffer, mapper, barcode_prefices);
+        FrameBarcodeIndexBuilder barcode_index_builder(graph, mapper, barcode_prefices, frame_size, nthreads);
         barcode_index_builder.ConstructBarcodeIndex(barcode_index, lib);
         INFO("Barcode index construction finished.");
 
