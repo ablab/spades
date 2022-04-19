@@ -7,14 +7,17 @@
 
 #pragma once
 
+#include "paired_info_buffer.hpp"
+
 #include "adt/iterator_range.hpp"
 #include "assembly_graph/core/action_handlers.hpp"
 #include "utils/parallel/openmp_wrapper.h"
-#include "paired_info_buffer.hpp"
+
 #include <type_traits>
+#include <set>
+
 #include <boost/iterator/iterator_facade.hpp>
 #include <btree/safe_btree_map.h>
-#include <set>
 
 namespace omnigraph {
 

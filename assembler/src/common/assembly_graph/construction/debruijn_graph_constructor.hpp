@@ -6,11 +6,12 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/core/construction_helper.hpp"
+#include "assembly_graph/core/graph.hpp"
 #include "kmer_index/extension_index/kmer_extension_index.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/parallel/parallel_wrapper.hpp"
+
 #include <numeric>
 
 namespace debruijn_graph {

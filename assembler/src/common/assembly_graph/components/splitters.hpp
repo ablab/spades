@@ -1,5 +1,3 @@
-#pragma once
-
 //***************************************************************************
 //* Copyright (c) 2015 Saint Petersburg State University
 //* Copyright (c) 2011-2014 Saint Petersburg Academic University
@@ -7,17 +5,18 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "graph_component.hpp"
-#include "assembly_graph/dijkstra/dijkstra_helper.hpp"
+#pragma once
+
 #include "component_filters.hpp"
+#include "graph_component.hpp"
+
+#include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 
 namespace omnigraph {
-
 
 template<typename Element>
 class JSIterator {
 public:
-
     virtual Element Next() = 0;
 
     virtual bool HasNext() = 0;
@@ -27,7 +26,7 @@ public:
 };
 
 template<class Graph>
-class GraphSplitter : public JSIterator<GraphComponent<Graph>>{
+class GraphSplitter : public JSIterator<GraphComponent<Graph>> {
 private:
     const Graph& graph_;
 public:
@@ -443,7 +442,7 @@ public:
     const size_t max_size_;
 
     ReliableNeighbourhoodFinder(const Graph &graph, size_t edge_length_bound =
-                                        DEFAULT_EDGE_LENGTH_BOUND,
+                                DEFAULT_EDGE_LENGTH_BOUND,
                                 size_t max_size = DEFAULT_MAX_SIZE)
             : AbstractNeighbourhoodFinder<Graph>(graph),
               edge_length_bound_(edge_length_bound),
@@ -452,7 +451,7 @@ public:
 
     GraphComponent<Graph> Find(typename Graph::VertexId v) const {
         auto cd = DijkstraHelper<Graph>::CreateCountingDijkstra(this->graph(), max_size_,
-                edge_length_bound_);
+                                                                edge_length_bound_);
         cd.Run(v);
         auto result_vector = cd.ReachedVertices();
         std::set<VertexId> result(result_vector.begin(), result_vector.end());
@@ -600,7 +599,7 @@ public:
         for (auto entry : cd.reached()) {
             if (entry.second > 0)
                 continue;
-            
+
             short_vertices.insert(entry.first);
         }
         return GraphComponent<Graph>::FromVertices(this->graph(), short_vertices);
@@ -674,8 +673,8 @@ public:
 
     GraphComponent<Graph> Next() {
         if (!HasNext()) {
-           VERIFY(false);
-           return omnigraph::GraphComponent<Graph>::Empty(this->graph());
+            VERIFY(false);
+            return omnigraph::GraphComponent<Graph>::Empty(this->graph());
         } else {
             if (next_) {
                 return this->GetValueAndReset(next_);

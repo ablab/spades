@@ -7,11 +7,13 @@
 
 #pragma once
 
-#include "adt/queue_iterator.hpp"
-#include "adt/iterator_range.hpp"
-#include "func/pred.hpp"
 #include "action_handlers.hpp"
+
+#include "adt/iterator_range.hpp"
+#include "adt/queue_iterator.hpp"
+#include "func/pred.hpp"
 #include "utils/stl_utils.hpp"
+
 #include <boost/iterator/iterator_facade.hpp>
 
 namespace omnigraph {

@@ -9,11 +9,13 @@
 #pragma once
 
 #include "kmer_index/extension_index/kmer_extension_index.hpp"
-#include "kmer_index/ph_map/perfect_hash_map.hpp"
 #include "kmer_index/kmer_mph/kmer_index.hpp"
-#include "math/xmath.h"
+#include "kmer_index/ph_map/perfect_hash_map.hpp"
+
 #include <array>
 #include <numeric>
+
+#include "math/xmath.h"
 
 namespace debruijn_graph {
 

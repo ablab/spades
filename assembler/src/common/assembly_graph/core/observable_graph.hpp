@@ -7,12 +7,14 @@
 
 #pragma once
 
-#include "utils/logger/logger.hpp"
 #include "graph_core.hpp"
 #include "graph_iterators.hpp"
 
-#include <vector>
+#include "utils/logger/logger.hpp"
+
 #include <set>
+#include <vector>
+
 #include <cstring>
 
 namespace omnigraph {

@@ -1,41 +1,18 @@
+//***************************************************************************
+//* Copyright (c) 2022 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
+#include "examples/utils/edge_comparation.hpp"
+#include "examples/utils/gfa_io.hpp"
+
 #include "common/assembly_graph/core/graph.hpp"
 #include "common/pipeline/graph_pack.hpp"
 #include "common/utils/logger/log_writers.hpp"
 #include "projects/spades/gap_closer.hpp"
 
-#include <filesystem>
-#include <string>
-#include <unordered_set>
-
 #include <clipp/clipp.h>
-#include <gtest/gtest.h>
-
-//namespace examples {
-
-void AssertEdges(const debruijn_graph::Graph& g1, const debruijn_graph::Graph& g2) {
-    /*
-     * Edges of de Bruijn graph present as reads of k-1 length in a form of std::string. Thus, edges of the graph
-     * can be compared as a set of std::string.
-     *
-     * There are several iterators to go through edges in debruijn_graph::Graph. They are declared in
-     * common/assembly_graph/core/observable_graph.hpp file.
-     */
-
-    INFO("Asserting edges");
-    std::unordered_set<std::string> edges1;
-    for (auto it = g1.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-        edges1.insert(g1.EdgeNucls(*it).str());
-    }
-    std::unordered_set<std::string> edges2;
-    for (auto it = g2.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-        edges2.insert(g2.EdgeNucls(*it).str());
-    }
-
-    ASSERT_EQ(edges1.size(), edges2.size());
-    for (auto it = edges1.begin(); it != edges1.end(); ++it) {
-        ASSERT_TRUE(edges2.count(*it) > 0);
-    }
-}
 
 void GraphPackBasedExample(const std::filesystem::path& saves, const std::filesystem::path& work_dir,
                               const std::filesystem::path& output_dir) {
@@ -80,22 +57,30 @@ void GraphPackBasedExample(const std::filesystem::path& saves, const std::filesy
     create_directories(output_dir);
 
     gapClosingStage.save(gp, output_dir, "gap_closer");
-    INFO("Graph is saved to " << output_dir / "gap_closer");
+    INFO("Graph pack is saved to " << output_dir / "gap_closer");
 
     const auto& g1 = gp.get<debruijn_graph::Graph>();
+    spades_example::SaveToGFA(g1, "temp.gfa");
+    debruijn_graph::Graph g(55);
+    spades_example::ReadFromGFA(g, "temp.gfa");
+    remove("temp.gfa");
+    /*
+     * This action with saving and loading the graph caused by a necessity to compare 2 graphs g1 and g2.
+     * Both of them stored in a GraphPack instance, and after loading the reference graph both g1 and g2
+     * refer to the same Graph instance. Due to the fact that debruijn_graph::Graph is an uncopyable class,
+     * the only way to compare graphs is to save g1 and then load it in a new instance.
+     */
 
     gapClosingStage.load(gp, load_from, "early_gapcloser");
     const auto& g2 = gp.get<debruijn_graph::Graph>();
     INFO("The reference graph is loaded");
 
-    AssertEdges(g1, g2);
-    INFO("Edges of the graphs are equal");
+    spades_example::CompareEdges(g, g2);
 
     remove_all(work_dir);
 }
-// TODO: GraphBasedExample - load and save the graph itself (from .grseq file)
 
-//} // namespace examples
+// TODO: GraphBasedExample - load and save the graph itself (from .grseq file)
 
 void CreateConsoleLogger(const std::filesystem::path& log_fn="") {
    /*
