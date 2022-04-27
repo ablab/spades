@@ -21,6 +21,9 @@ void ReadConversion::load(graph_pack::GraphPack &,
     INFO("Loading current state from " << p);
 
     debruijn_graph::config::load_lib_data(p);
+
+    io::ConvertIfNeeded(cfg::get_writable().ds.reads,
+                        cfg::get().max_threads);
 }
 
 void ReadConversion::save(const graph_pack::GraphPack &,
