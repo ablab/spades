@@ -6,9 +6,10 @@
 
 #pragma once
 
-#include <string>
-#include "sequence.hpp"
 #include "nucl.hpp"
+#include "sequence.hpp"
+
+#include <string>
 
 struct Chromosome {
     std::string name, sequence;

@@ -4,13 +4,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "common/assembly_graph/core/graph.hpp"
-#include "common/io/graph/gfa_reader.hpp"
-#include "common/io/graph/gfa_writer.hpp"
-
-#include <filesystem>
-
-namespace spades_example {
+#include "gfa_io.hpp"
 
 /*
  * GFA (Graphical Fragment Assembly) is a file format for fragment assembly. It represents deBruijn graph
@@ -18,11 +12,13 @@ namespace spades_example {
  * stores information about segments.
  */
 
+namespace spades_example {
+
 void SaveToGFA(const debruijn_graph::Graph& g, const std::filesystem::path& save_to="saved_graph.gfa") {
     /*
      * GFAWriter is declared in common/io/graph/gfa_writer.hpp file. To utilize it user should include this
      * file and link graphio library to the project.
-     * 
+     *
      * An instance of GFAWriter class should be initialised by 2 fields: a reference to the graph which will be
      * saved in GFA format, and an ostream instance, in which graph will be written. In this example we write
      * graph to a file, hence we transmit an ofstream instance.
@@ -49,5 +45,4 @@ void ReadFromGFA(debruijn_graph::Graph& g, const std::filesystem::path& read_fro
      */
     reader.to_graph(g);
 }
-
-}
+} // spades_example

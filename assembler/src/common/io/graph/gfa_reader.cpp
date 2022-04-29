@@ -13,10 +13,10 @@
 
 #include "gfa1/gfa.h"
 
-#include <string>
 #include <memory>
-#include <vector>
+#include <string>
 #include <unordered_set>
+#include <vector>
 
 using namespace debruijn_graph;
 

@@ -26,16 +26,18 @@
 #ifndef SEQ_HPP_
 #define SEQ_HPP_
 
-#include <string>
-#include <array>
-#include <algorithm>
-#include <cstring>
-#include <iostream>
-
-#include "utils/verify.hpp"
 #include "nucl.hpp"
-#include "math/log.hpp"
 #include "seq_common.hpp"
+
+#include "math/log.hpp"
+#include "utils/verify.hpp"
+
+#include <algorithm>
+#include <array>
+#include <iostream>
+#include <string>
+
+#include <cstring>
 
 #define XXH_INLINE_ALL
 #include "xxh/xxhash.h"

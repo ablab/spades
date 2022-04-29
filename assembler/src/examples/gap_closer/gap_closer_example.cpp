@@ -4,8 +4,8 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "examples/utils/edge_comparation.hpp"
-#include "examples/utils/gfa_io.hpp"
+#include "examples/examples_utils/edge_comparation.hpp"
+#include "examples/graph_io/gfa_io.hpp"
 
 #include "common/assembly_graph/core/graph.hpp"
 #include "common/pipeline/graph_pack.hpp"

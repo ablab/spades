@@ -12,6 +12,7 @@
 #include "kmer_index/ph_map/storing_traits.hpp"
 #include "sequence/rtseq.hpp"
 #include "utils/stl_utils.hpp"
+
 #include <bitset>
 
 namespace kmers {

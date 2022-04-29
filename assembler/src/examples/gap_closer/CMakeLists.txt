@@ -9,5 +9,5 @@ target_link_libraries(${PROJECT_NAME}
                         pipeline
                         spades-stages
                         assembly_graph
-                        graphio
+                        examples_graph_io
                         teamcity_gtest gtest)

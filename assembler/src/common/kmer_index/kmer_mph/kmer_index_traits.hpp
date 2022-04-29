@@ -1,9 +1,10 @@
-#pragma once
 //***************************************************************************
 //* Copyright (c) 2016 Saint Petersburg State University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
+
+#pragma once
 
 #include "io/kmers/mmapped_reader.hpp"
 #include "utils/filesystem/temporary.hpp"

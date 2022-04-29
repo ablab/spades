@@ -7,9 +7,10 @@
 
 #pragma once
 
+#include "utils/stl_utils.hpp"
+
 #include <string>
 #include <vector>
-#include "utils/stl_utils.hpp"
 
 /*
  * Little modified copy-paste from http://www.merriampark.com/ldcpp.htm

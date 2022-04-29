@@ -8,13 +8,13 @@
 #ifndef SEQUENCE_TOOLS_HPP_
 #define SEQUENCE_TOOLS_HPP_
 
+#include "levenshtein.hpp"
+#include "nucl.hpp"
+#include "sequence.hpp"
+
 #include <sstream>
 #include <string>
 #include <vector>
-
-#include "nucl.hpp"
-#include "sequence.hpp"
-#include "levenshtein.hpp"
 
 inline std::string Reverse(const std::string &s) {
     return std::string(s.rbegin(), s.rend());

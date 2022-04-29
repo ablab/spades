@@ -65,6 +65,7 @@ KMerFiles ConstructGraphUsingExtensionIndex(const config::debruijn_config::const
 template<class Streams>
 KMerFiles ConstructGraph(const config::debruijn_config::construction &params,
                          fs::TmpDir workdir, Streams& streams, Graph& g) {
+    std::cout << "modules\n";
     return ConstructGraphUsingExtensionIndex(params, workdir, streams, g);
 }
 

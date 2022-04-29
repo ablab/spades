@@ -21,6 +21,7 @@ public:
     typedef qf::cqf ValueStorage;
 
     KeyWithHash ConstructKWH(const KeyType &key) const {
+        std::cout << "cqt hash map\n";
         return KeyWithHash(key, *index_ptr_);
     }
 

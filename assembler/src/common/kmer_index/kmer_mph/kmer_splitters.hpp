@@ -8,8 +8,9 @@
 #pragma once
 
 #include "kmer_splitter.hpp"
-#include "io/reads/io_helper.hpp"
+
 #include "adt/iterator_range.hpp"
+#include "io/reads/io_helper.hpp"
 
 namespace kmers {
 

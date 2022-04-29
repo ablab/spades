@@ -1,10 +1,11 @@
-#pragma once
 //***************************************************************************
 //* Copyright (c) 2015 Saint Petersburg State University
 //* Copyright (c) 2011-2014 Saint Petersburg Academic University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
+
+#pragma once
 
 #include "assembly_graph/core/construction_helper.hpp"
 #include "assembly_graph/core/graph.hpp"
@@ -160,6 +161,7 @@ public:
 
     void ConstructGraph(size_t queueMinSize, size_t queueMaxSize,
                         double queueGrowthRate) {
+        std::cout << "assembly graph 164\n";
         kmer_iterator it = origin_.kmer_begin();
         kmer_iterator end = origin_.kmer_end();
         size_t queueSize = queueMinSize;
@@ -477,9 +479,11 @@ private:
 
     void CollectLinkRecords(typename Graph::HelperT &helper, const Graph &graph,
                             std::vector<LinkRecord> &records, const std::vector<Sequence> &sequences) const {
+        std::cout << "1\n";
         size_t size = sequences.size();
         uint64_t min_id = graph.min_id();
         records.resize(size * 2, LinkRecord(0, EdgeId(), false, false));
+
 #       pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < size; ++i) {
             size_t j = i << 1;
@@ -509,6 +513,7 @@ public:
             : kmer_size_(k), origin_(origin) {}
 
     void ConstructGraph(Graph &graph, const std::vector<Sequence> &sequences) const {
+        std::cout << "assembly graph 515\n";
         typename Graph::HelperT helper = graph.GetConstructionHelper();
 
         std::vector<LinkRecord> records;
@@ -576,6 +581,7 @@ public:
     }
 
     void ConstructGraph(bool keep_perfect_loops) {
+        std::cout << "assembly graph 583\n";
         std::vector<Sequence> edge_sequences;
         unsigned nchunks = 16 * omp_get_max_threads();
         if (keep_perfect_loops)

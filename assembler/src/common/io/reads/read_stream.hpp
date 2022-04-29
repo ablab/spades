@@ -9,6 +9,7 @@
 #include "utils/verify.hpp"
 
 #include <boost/noncopyable.hpp>
+
 #include <istream>
 #include <memory>
 #include <typeinfo>

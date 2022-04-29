@@ -34,7 +34,14 @@ private:
 public:
 
     SimpleKeyWithHash(Key key, const HashFunction &hash)
-            : hash_(hash), key_(key), idx_(0), ready_(false) {}
+              {
+       // zstd::cout << "key with hash 38 \n";
+        hash_ = hash;
+        key_ = key;
+        idx_ =0;
+        ready_ =false;
+       // std::cout << "key with hash 42\n";
+    }
 
     Key key() const {
         return key_;
@@ -127,10 +134,16 @@ private:
     }
 
     InvertableKeyWithHash(Key key, const HashFunction &hash, bool is_minimal,
-                          size_t idx, bool ready)
-            : hash_(hash), key_(key), idx_(idx),
-              is_minimal_(is_minimal), ready_(ready) {
-    }
+                          size_t idx, bool ready) : hash_(hash)
+            {
+       // std::cout << "key_with hash 133\n";
+
+                key_ = key;
+                idx_ = idx;
+                is_minimal_ = is_minimal;
+                ready_ = ready;
+             //   std::cout << "key with hash 138\n";
+            }
   public:
 
     InvertableKeyWithHash(Key key, const HashFunction &hash)

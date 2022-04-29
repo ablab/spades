@@ -10,9 +10,10 @@
 #include "io/binary/binary_fwd.hpp"
 
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
+
+#include <atomic>
 #include <filesystem>
 #include <string>
-#include <atomic>
 
 namespace fs {
 namespace impl {

@@ -180,20 +180,20 @@ class CoverageFilter: public Construction::Phase {
 
         using KmerFilter = kmers::StoringTypeFilter<storing_type>;
 
-        unsigned kplusone = index.k() + 1;
-        rolling_hash::SymmetricCyclicHash<rolling_hash::NDNASeqHash> hasher(kplusone);
+        unsigned k_plus_one = index.k() + 1;
+        rolling_hash::SymmetricCyclicHash<rolling_hash::NDNASeqHash> hasher(k_plus_one);
 
         INFO("Estimating k-mers cardinality");
-        size_t kmers = EstimateCardinalityUpperBound(kplusone, read_streams, hasher, KmerFilter());
+        size_t kmers = EstimateCardinalityUpperBound(k_plus_one, read_streams, hasher, KmerFilter());
 
         // Create main CQF using # of slots derived from estimated # of k-mers
         storage().cqf.reset(new qf::cqf(kmers));
 
         INFO("Building k-mer coverage histogram");
-        FillCoverageHistogram(*storage().cqf, kplusone, hasher, read_streams, rthr, KmerFilter());
+        FillCoverageHistogram(*storage().cqf, k_plus_one, hasher, read_streams, rthr, KmerFilter());
 
         // Replace input streams with wrapper ones
-        storage().read_streams = io::CovFilteringWrap(std::move(read_streams), kplusone, hasher, *storage().cqf, rthr);
+        storage().read_streams = io::CovFilteringWrap(std::move(read_streams), k_plus_one, hasher, *storage().cqf, rthr);
     }
 
     void load(graph_pack::GraphPack&,

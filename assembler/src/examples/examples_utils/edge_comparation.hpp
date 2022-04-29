@@ -4,6 +4,8 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#pragma once
+
 #include "common/assembly_graph/core/graph.hpp"
 
 #include <string>
