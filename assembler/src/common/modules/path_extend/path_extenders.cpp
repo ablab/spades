@@ -128,6 +128,9 @@ bool LoopDetectingPathExtender::TryToResolveHairpin(BidirectionalPath& path) {
         return false;
     DEBUG("Hairpin is here");
 
+    if (g_.OutgoingEdgeCount(g_.EdgeEnd(bridge1)) != 2)
+        return false;
+
     for (auto e : g_.OutgoingEdges(g_.EdgeEnd(bridge1))) {
         if (e == g_.conjugate(entrance))
             continue;
