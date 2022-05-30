@@ -120,7 +120,7 @@ class GapFiller {
                     MappingPoint p, PathRange &range, bool forward, GraphPosition &old_start_pos) const;
 
     const debruijn_graph::Graph &g_;
-    const GAlignerConfig &cfg_;
+    const GAlignerConfig cfg_;
 };
 
 
