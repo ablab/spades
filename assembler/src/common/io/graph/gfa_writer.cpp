@@ -26,6 +26,7 @@ static void WriteSegment(const std::string& edge_id, const Sequence &seq,
 
 static void WriteLink(EdgeId e1, EdgeId e2, size_t overlap_size,
                       std::ostream &os, io::CanonicalEdgeHelper<Graph> &namer) {
+    std::cout << "write link\n";
     os << "L\t"
        << namer.EdgeOrientationString(e1, "\t") << '\t'
        << namer.EdgeOrientationString(e2, "\t") << '\t'
@@ -41,7 +42,10 @@ void GFAWriter::WriteSegments() {
 }
 
 void GFAWriter::WriteLinks() {
+    std::cout << "write linkS\n";
     for (VertexId v : graph_.canonical_vertices()) {
+       // std::cout << "v\n";
+        //std::cout << graph_.OutgoingEdgeCount(v) << " " << graph_.IncomingEdgeCount(v) << "\n";
         for (auto inc_edge : graph_.IncomingEdges(v)) {
             for (auto out_edge : graph_.OutgoingEdges(v)) {
                 WriteLink(inc_edge, out_edge, graph_.k(),

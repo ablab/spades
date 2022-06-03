@@ -7,8 +7,6 @@
 #pragma once
 
 #include "common/assembly_graph/core/graph.hpp"
-#include "common/io/graph/gfa_reader.hpp"
-#include "common/io/graph/gfa_writer.hpp"
 
 #include <filesystem>
 //TODO: add logging

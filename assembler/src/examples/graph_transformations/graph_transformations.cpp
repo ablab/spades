@@ -9,7 +9,6 @@
 #include "common/utils/logger/log_writers.hpp"
 #include "examples/graph_io/gfa_io.hpp"
 
-#include <random>
 #include <unordered_map>
 
 #include <clipp/clipp.h>
@@ -114,6 +113,7 @@ void ReplaceBamboo(debruijn_graph::Graph& g) {
      * Vertex iterators return a pointer to debruijn_graph::VertexId.
      */
     for (auto it = g.SmartVertexBegin(); !it.IsEnd(); ++it) {
+        //std::cout << 'hi\n';
         /*
          * Methods g.OutgoingEdgeCount(v) and g.IncomingEdgeCount(v) return number of outgoing and
          * incoming edges of the vertex with debruijn_graph::VertexId v respectively. These methods are declared
@@ -183,10 +183,9 @@ void ReplaceBamboo(debruijn_graph::Graph& g) {
 
 // TODO: clip tips, remove one of the bubble arcs
 
-void DeleteEdgesWithSomeFeature(debruijn_graph::Graph& g, double coverage_threshold) {
+void FilterEdgesByCoverageAndHomomorphism(debruijn_graph::Graph& g, double coverage_threshold) {
     /*
-     * This function demonstrates the deletion of edges with some particular features from the graph.
-     * In a case of this example edges with coverage lower than threshold and with the number of
+     * This function demonstrates the deletion of edges with coverage lower than threshold and with the number of
      * some nucleotide higher, then the half of the edge length are deleted.
 
      * There are several iterators to go through edges in debruijn_graph::Graph. They are declared in
@@ -207,6 +206,35 @@ void DeleteEdgesWithSomeFeature(debruijn_graph::Graph& g, double coverage_thresh
              * This method is declared in assembly_graph/core/observable_graph.hpp.
              */
              g.DeleteEdge(*it);
+        }
+    }
+    // uncomment it to check if all edges were filtered
+    /*
+    for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+        std::cout << *it << " " << g.EdgeNucls(*it).str() << " " << g.coverage(*it) << "\n";
+    }
+    */
+}
+
+
+void DeleteEdgesWithSomeFeature(debruijn_graph::Graph& g,
+                                bool (*predicate)(const debruijn_graph::Graph& g,
+                                        const debruijn_graph::EdgeId& e)) {
+    /*
+     * This function demonstrates the deletion of edges for which the given predicate returns true.
+
+     * There are several iterators to go through edges in debruijn_graph::Graph. They are declared in
+     * common/assembly_graph/core/observable_graph.hpp file.
+     *
+     * Edge iterators return a pointer to debruijn_graph::EdgeId.
+     */
+    for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+        if (predicate(g, *it)) {
+            /*
+             * Method g.DeleteEdge(e) deletes edge with debruijn_graph::EdgeId e from the graph g.
+             * This method is declared in assembly_graph/core/observable_graph.hpp.
+             */
+            g.DeleteEdge(*it);
         }
     }
     // uncomment it to check if all edges were filtered
@@ -251,7 +279,7 @@ int main(int argc, char *argv[]) {
 
     AddBamboo(g); // FIXME: how to call bamboo properly?
     ReplaceBamboo(g);
-    DeleteEdgesWithSomeFeature(g, coverage_threshold);
+    FilterEdgesByCoverageAndHomomorphism(g, coverage_threshold);
 
     INFO("Graph transformation example is finished");
     return 0;

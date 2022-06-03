@@ -6,6 +6,9 @@
 
 #include "gfa_io.hpp"
 
+#include "common/io/graph/gfa_reader.hpp"
+#include "common/io/graph/gfa_writer.hpp"
+
 /*
  * GFA (Graphical Fragment Assembly) is a file format for fragment assembly. It represents deBruijn graph
  * as a set of segments (edges) and links between segments (vertexes). Each segment has a unique label. File also

@@ -10,6 +10,8 @@
 
 #include "sequence/sequence.hpp"
 
+#include "paired_read.hpp"
+
 #include "adt/cqf.hpp"
 #include "adt/cyclichash.hpp"
 #include "kmer_index/kmer_counting.hpp"
