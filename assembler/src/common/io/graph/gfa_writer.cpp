@@ -44,7 +44,7 @@ void GFAWriter::WriteLinks() {
     for (VertexId v : graph_.canonical_vertices()) {
         for (auto inc_edge : graph_.IncomingEdges(v)) {
             for (auto out_edge : graph_.OutgoingEdges(v)) {
-                WriteLink(inc_edge, out_edge, graph_.k(),
+                WriteLink(inc_edge, out_edge, graph_.length(v),
                           os_, edge_namer_);
             }
         }
