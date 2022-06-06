@@ -1,0 +1,13 @@
+---
+title: Download
+layout: single
+menu:
+  main:
+    name: "Download"
+    weight: 4
+---
+
+For build instructions, read link:{{< ref "learn/build" >}}[the tutorial].
+
+{{% download_list %}}
+
