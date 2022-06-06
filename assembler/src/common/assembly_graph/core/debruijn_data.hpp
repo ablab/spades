@@ -20,9 +20,18 @@ class DeBruijnDataMaster;
 
 class DeBruijnVertexData {
     friend class DeBruijnDataMaster;
-public:
-    DeBruijnVertexData() {
+    uint32_t overlap_;
 
+public:
+    DeBruijnVertexData(unsigned overlap = 0)
+            : overlap_(overlap) {}
+
+    void set_overlap(unsigned overlap) {
+        overlap_ = overlap;
+    }
+
+    unsigned overlap() const {
+        return overlap_;
     }
 };
 
@@ -119,16 +128,17 @@ public:
         return EdgeData(!(data.nucls()));
     }
 
-    VertexData conjugate(const VertexData & /*data*/) const {
-        return VertexData();
+    VertexData conjugate(const VertexData &data) const {
+        return data;
     }
 
     size_t length(const EdgeData& data) const {
         return data.nucls().size() - k_;
     }
 
-    size_t length(const VertexData& ) const {
-        return k_;
+    // FIXME: make use of it!
+    size_t length(const VertexData &data) const {
+        return data.overlap();
     }
 
     unsigned k() const {
@@ -150,6 +160,7 @@ inline const DeBruijnEdgeData DeBruijnDataMaster::MergeData(const std::vector<co
     for (auto it = to_merge.begin(); it != to_merge.end(); ++it) {
         ss.push_back((*it)->nucls());
     }
+    // FIXME: Take into account overlaps
     return EdgeData(MergeOverlappingSequences(ss, k_, safe_merging));
 }
 

@@ -108,26 +108,29 @@ static unsigned HandleLink(const gfa::link &record,
     if (record.rhs_revcomp)
         std::swap(e2, ce2);
 
-    // We need to be careful here: we cannot use EdgeStart since it's
-    // essentially conjugate(EdgeEnd(conjugate(e))) and EdgEend might be empty.
-    // So, instead we're checking two "edge tips" (ends of e1 and e2')
-    VertexId v1 = g.EdgeEnd(e1), cv2 = g.EdgeEnd(ce2);
-    if (v1 == VertexId() && cv2 == VertexId()) {
-        v1 = helper.CreateVertex(DeBruijnVertexData());
-        helper.LinkIncomingEdge(v1, e1);
-    }
-
-    if (v1 != VertexId())
-        helper.LinkOutgoingEdge(v1, e2);
-    else if (cv2 != VertexId())
-        helper.LinkIncomingEdge(g.conjugate(cv2), e1);
-
     const auto &overlap = record.overlap;
     unsigned ovl = -1U;
     if (overlap.size() > 1 ||
         (overlap.size() == 1 && overlap.front().op != 'M')) {
     } else if (overlap.size() == 1) {
         ovl= overlap.front().count;
+    }
+
+    // We need to be careful here: we cannot use EdgeStart since it's
+    // essentially conjugate(EdgeEnd(conjugate(e))) and EdgEend might be empty.
+    // So, instead we're checking two "edge tips" (ends of e1 and e2')
+    VertexId v1 = g.EdgeEnd(e1), cv2 = g.EdgeEnd(ce2);
+    if (v1 == VertexId() && cv2 == VertexId()) {
+        v1 = helper.CreateVertex(DeBruijnVertexData(ovl));
+        helper.LinkIncomingEdge(v1, e1);
+    }
+
+    if (v1 != VertexId()) {
+        VERIFY(ovl == g.length(v1));
+        helper.LinkOutgoingEdge(v1, e2);
+    } else if (cv2 != VertexId()) {
+        VERIFY(ovl == g.length(cv2));
+        helper.LinkIncomingEdge(g.conjugate(cv2), e1);
     }
 
     return ovl;
