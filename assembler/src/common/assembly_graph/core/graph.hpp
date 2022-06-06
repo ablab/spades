@@ -30,7 +30,7 @@ private:
     CoverageIndex<DeBruijnGraph> coverage_index_;
 
 public:
-    DeBruijnGraph(size_t k) :
+    DeBruijnGraph(unsigned k) :
             base(k), coverage_index_(*this) {
     }
 
@@ -65,7 +65,7 @@ public:
         return AddEdge(from, to, EdgeData(nucls));
     }
 
-    size_t k() const {
+    unsigned k() const {
         return master().k();
     }
 

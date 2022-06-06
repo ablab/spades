@@ -17,21 +17,21 @@ namespace graph_pack {
 
 class GraphPack: public adt::pack, private boost::noncopyable {
 public:
-    GraphPack(size_t k_,
-               const std::filesystem::path &workdir_, size_t lib_count,
-               const std::vector<std::string> &genome = std::vector<std::string>(0),
-               size_t flanking_range = 50,
-               size_t max_mapping_gap = 0,
-               size_t max_gap_diff = 0,
-               bool detach_indices = true);
+    GraphPack(unsigned k,
+              const std::filesystem::path &workdir_, size_t lib_count,
+              const std::vector<std::string> &genome = std::vector<std::string>(0),
+              size_t flanking_range = 50,
+              size_t max_mapping_gap = 0,
+              size_t max_gap_diff = 0,
+              bool detach_indices = true);
 
-    size_t k() const { return k_; }
+    unsigned k() const { return k_; }
     const std::filesystem::path &workdir() const { return workdir_; }
 
     void DetachAll();
 
 private:
-    size_t k_;
+    unsigned k_;
     std::filesystem::path workdir_;
 };
 

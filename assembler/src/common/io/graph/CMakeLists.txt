@@ -9,6 +9,6 @@ project(graphio CXX)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(graphio STATIC
-            gfa_reader.cpp gfa_writer.cpp
+            gfa.cpp gfa_reader.cpp gfa_writer.cpp
             fastg_writer.cpp)
-target_link_libraries(graphio gfa1)
+target_link_libraries(graphio foonathan::lexy zlibstatic)

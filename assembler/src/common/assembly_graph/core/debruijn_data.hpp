@@ -96,15 +96,14 @@ public:
 
 class DeBruijnDataMaster {
 private:
-    const size_t k_;
+    unsigned k_;
 
 public:
     typedef DeBruijnVertexData VertexData;
     typedef DeBruijnEdgeData EdgeData;
 
-    DeBruijnDataMaster(size_t k) :
-            k_(k) {
-    }
+    DeBruijnDataMaster(unsigned k)
+            : k_(k) {}
 
     const EdgeData MergeData(const std::vector<const EdgeData*>& to_merge, bool safe_merging = true) const;
 
@@ -132,10 +131,13 @@ public:
         return k_;
     }
 
-    size_t k() const {
+    unsigned k() const {
         return k_;
     }
 
+    void set_k(unsigned k) {
+        k_ = k;
+    }
 };
 
 //typedef DeBruijnVertexData VertexData;

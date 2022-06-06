@@ -44,6 +44,9 @@ public:
         return graph_;
     }
 
+    const DataMaster& master() const noexcept { return graph_.master_; }
+    DataMaster& master() noexcept { return graph_.master_; }
+
     Graph clone() const {
         return component(graph_.e_begin(), graph_.e_end());
     }
