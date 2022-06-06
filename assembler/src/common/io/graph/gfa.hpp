@@ -10,6 +10,7 @@
 #include <variant>
 #include <vector>
 #include <ostream>
+#include <algorithm>
 
 #include <cstdio>
 #include <cstdlib>
