@@ -101,14 +101,16 @@ int main(int argc, char** argv) {
 
       {
           gfa::GFAReader gfa(cfg.graph);
+
+          graph.reset(new ConjugateDeBruijnGraph(0));
+
+          unsigned k = gfa.to_graph(*graph, id_mapper.get());
+
           INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: " << gfa.num_paths());
-          INFO("Detected k: " << gfa.k());
-          VERIFY_MSG(gfa.k() != -1U, "Failed to determine k-mer length");
-          VERIFY_MSG(gfa.k() == 0 || gfa.k() % 2 == 1, "k-mer length must be odd");
+          INFO("Detected k: " << k);
+          VERIFY_MSG(k != -1U, "Failed to determine k-mer length");
+          VERIFY_MSG(k == 0 || k % 2 == 1, "k-mer length must be odd");
 
-          graph.reset(new ConjugateDeBruijnGraph(gfa.k()));
-
-          gfa.to_graph(*graph, id_mapper.get());
           paths.insert(paths.end(),
                        std::make_move_iterator(gfa.path_begin()),
                        std::make_move_iterator(gfa.path_end()));
