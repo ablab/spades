@@ -90,6 +90,11 @@ GapFillerResult GapFiller::BestScoredPathBruteForce(const string &seq_string,
     omnigraph::PathStorageCallback<debruijn_graph::Graph> callback(g_);
     GapFillerResult bf_res;
     bf_res.return_code.no_path = true;
+    if (seq_string.length() > cfg_.pb.max_contigs_gap_length) {
+        DEBUG("need to find best scored path between " << start_v.int_id() << " and " << end_v.int_id() <<  ", seq_len " << seq_string.length());
+        DEBUG("Gap is too large");
+        return bf_res;
+    }
     int return_code = ProcessPaths(g_,
                                    path_min_length, path_max_length,
                                    start_v, end_v,
@@ -99,13 +104,8 @@ GapFillerResult GapFiller::BestScoredPathBruteForce(const string &seq_string,
     size_t best_path_ind = paths.size();
     int best_score = numeric_limits<int>::max();
     if (paths.size() == 0) {
-        DEBUG("need to find best scored path between " << paths.size() << " , seq_len " << seq_string.length());
+        DEBUG("need to find best scored path between " << start_v.int_id() << " and " << end_v.int_id() << " , seq_len " << seq_string.length());
         DEBUG ("no paths");
-        return bf_res;
-    }
-    if (seq_string.length() > cfg_.pb.max_contigs_gap_length) {
-        DEBUG("need to find best scored path between " << paths.size() << " , seq_len " << seq_string.length());
-        DEBUG("Gap is too large");
         return bf_res;
     }
     string s_add = g_.EdgeNucls(start_pos.edgeid).
