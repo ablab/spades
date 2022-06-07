@@ -377,7 +377,7 @@ void AnalyzeVertices(debruijn_graph::Graph &graph,
     cont_index::VertexResolver vertex_resolver
         (graph, barcode_extractor_ptr, count_threshold, tail_threshold, length_threshold, threads, score_threshold,
          output_path);
-    const auto &vertex_results = vertex_resolver.ResolveVertices();
+    const auto &vertex_results = vertex_resolver.ResolveVertices() ;
     std::string vertex_output_path = fs::append_path(output_path, "vertex_stats.tsv");
     vertex_resolver.PrintVertexResults(vertex_results, vertex_output_path, tmp_path, id_mapper);
     cont_index::PathExtractor path_extractor(graph);
@@ -435,7 +435,7 @@ int main(int argc, char** argv) {
 
         //graph construction
         const double graph_score_threshold = 1.99;
-        const size_t tail_threshold = 70000;
+        const size_t tail_threshold = 200000;
         const size_t length_threshold = 0;
         const size_t count_threshold = 1;
 
