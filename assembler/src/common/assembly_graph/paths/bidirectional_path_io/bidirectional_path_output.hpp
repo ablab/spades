@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include "io/utils/edge_namer.hpp"
-#include "io/graph/gfa_writer.hpp"
 #include "io/graph/fastg_writer.hpp"
+#include "io/graph/gfa_writer.hpp"
+#include "io/utils/edge_namer.hpp"
 #include "io_support.hpp"
 
 namespace path_extend {

@@ -6,11 +6,9 @@
 
 #pragma once
 
-#include "assembly_graph/paths/bidirectional_path_container.hpp"
-#include "assembly_graph/graph_support/contig_output.hpp"
 #include "assembly_graph/components/connected_component.hpp"
-
-// FIXME: layering violation!
+#include "assembly_graph/graph_support/contig_output.hpp"
+#include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "configs/config_struct.hpp"
 #include "pipeline/graph_pack.hpp"
 

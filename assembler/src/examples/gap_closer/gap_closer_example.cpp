@@ -63,7 +63,7 @@ void GraphPackBasedExample(const std::filesystem::path& saves, const std::filesy
     spades_example::SaveToGFA(g1, "temp.gfa");
     debruijn_graph::Graph g(55);
     spades_example::ReadFromGFA(g, "temp.gfa");
-    remove("temp.gfa");
+    //remove("temp.gfa");
     /*
      * This action with saving and loading the graph caused by a necessity to compare 2 graphs g1 and g2.
      * Both of them stored in a GraphPack instance, and after loading the reference graph both g1 and g2
