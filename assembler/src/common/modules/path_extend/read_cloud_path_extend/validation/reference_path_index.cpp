@@ -7,7 +7,7 @@
 #include "reference_path_index.hpp"
 
 #include "assembly_graph/core/graph.hpp"
-#include "assembly_graph/graph_support/scaff_supplementary.hpp"
+#include "modules/path_extend/scaff_supplementary.hpp"
 
 namespace path_extend {
 namespace read_cloud {

@@ -4,11 +4,11 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "modules/alignment/kmer_sequence_mapper.hpp"
+#include "alignment/kmer_sequence_mapper.hpp"
 #include "barcode_index_construction.hpp"
 
 #include "barcode_index/barcode_index_builder.hpp"
-#include "modules/alignment/bwa_sequence_mapper.hpp"
+#include "alignment/bwa_sequence_mapper.hpp"
 
 namespace cont_index {
 
@@ -17,7 +17,7 @@ using namespace barcode_index;
 void ConstructBarcodeIndex(barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> &barcode_index,
                            paired_info::SequencingLib &lib,
                            const debruijn_graph::Graph &graph,
-                           const std::string &workdir,
+                           const std::filesystem::path &workdir,
                            unsigned nthreads,
                            size_t frame_size,
                            unsigned mapping_k,
@@ -36,11 +36,11 @@ void ConstructBarcodeIndex(barcode_index::FrameBarcodeIndex<debruijn_graph::Grap
 
         if (bin_save) {
             INFO("Saving barcode index");
-            io::binary::Save(fs::append_path(workdir, "barcode_index"), barcode_index);
+            io::binary::Save((workdir / "barcode_index").string(), barcode_index);
         }
     } else {
         INFO("Loading barcode index");
-        io::binary::Load(fs::append_path(workdir, "barcode_index"), barcode_index);
+        io::binary::Load((workdir / "barcode_index").string(), barcode_index);
     }
     INFO("Barcode index size: " << barcode_index.size());
     using BarcodeExtractor = barcode_index::FrameBarcodeIndexInfoExtractor;

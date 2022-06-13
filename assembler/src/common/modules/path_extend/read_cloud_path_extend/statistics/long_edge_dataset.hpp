@@ -46,7 +46,7 @@ struct LongEdgePairDataset {
     explicit LongEdgePairDataset(const std::vector<LongEdgePairEntry> &dataset_) :
         dataset_(dataset_) {}
 
-    void Serialize(const string &path);
+    void Serialize(const std::filesystem::path &path);
 
   private:
     std::vector<LongEdgePairEntry> dataset_;
@@ -67,8 +67,8 @@ class LongEdgePairDatasetExtractor {
                                  size_t max_threads);
     LongEdgePairDataset GetLongEdgeDataset(const validation::UniqueReferencePaths &reference_paths) const;
     LongEdgePairDataset GetLongEdgeDataset(const ScaffoldingUniqueEdgeStorage &unique_storage,
-                                           const string &path_to_reference) const;
-    void ConstructAndSerialize(const string &path_to_reference, const string &output_path) const;
+                                           const std::filesystem::path &path_to_reference) const;
+    void ConstructAndSerialize(const std::filesystem::path &path_to_reference, const std::filesystem::path &output_path) const;
 
   private:
     std::shared_ptr<BarcodeExtractor> ConstructLongEdgeExtractor() const;

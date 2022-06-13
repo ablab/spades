@@ -7,7 +7,7 @@
 #include "kmer_sequence_mapper.hpp"
 
 #include "assembly_graph/core/graph.hpp"
-#include "modules/alignment/edge_index.hpp"
+#include "alignment/edge_index.hpp"
 
 #include <parallel_hashmap/phmap.h>
 #include <string>

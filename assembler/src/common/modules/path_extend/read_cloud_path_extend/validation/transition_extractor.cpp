@@ -8,8 +8,8 @@
 
 #include "io/reads/file_reader.hpp"
 #include "io/reads/rc_reader_wrapper.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
-#include "modules/alignment/long_read_mapper.hpp"
+#include "alignment/sequence_mapper.hpp"
+#include "alignment/long_read_mapper.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -110,7 +110,7 @@ std::vector<PathWithMappingInfo> GappedPathExtractor::FindReadPathWithGaps(Mappi
 
 //duplication end
 
-std::vector<NamedSimplePath> ContigPathBuilder::GetContigPaths(const string &path_to_contigs) const {
+std::vector<NamedSimplePath> ContigPathBuilder::GetContigPaths(const std::filesystem::path &path_to_contigs) const {
     auto raw_contig_paths = GetRawPaths(path_to_contigs);
     DEBUG(raw_contig_paths.size() << " raw paths");
     std::vector<NamedSimplePath> fixed_paths = FixMappingPaths(raw_contig_paths);
@@ -125,7 +125,7 @@ std::vector<std::vector<EdgeWithMapping>> ContigPathBuilder::StripNames(
     }
     return result;
 }
-std::vector<NamedPath> ContigPathBuilder::GetRawPaths(const string &contig_path) const {
+std::vector<NamedPath> ContigPathBuilder::GetRawPaths(const std::filesystem::path &contig_path) const {
     std::vector<NamedPath> contig_paths;
     io::FileReadStream contig_stream(contig_path);
     auto rc_contig_stream_ptr = std::make_shared<io::RCWrapper<io::SingleRead>>(std::move(contig_stream));
@@ -377,7 +377,7 @@ std::vector<ClusterTransitionExtractor::Transition> ClusterTransitionExtractor::
     return result;
 }
 UniqueReferencePaths FilteredReferencePathHelper::GetFilteredReferencePathsFromUnique(
-    const string &path_to_reference,
+    const std::filesystem::path &path_to_reference,
     const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage) const {
     validation::ContigPathBuilder contig_path_builder(g_, index_, kmer_mapper_, unique_storage.min_length());
     auto named_reference_paths = contig_path_builder.GetContigPaths(path_to_reference);

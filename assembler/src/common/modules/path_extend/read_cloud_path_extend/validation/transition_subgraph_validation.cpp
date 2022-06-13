@@ -63,7 +63,7 @@ SimpleTransitionGraphValidator SimpleTransitionGraphValidatorConstructor::GetVal
     return transition_graph_validator;
 }
 SimpleTransitionGraphValidatorConstructor::SimpleTransitionGraphValidatorConstructor(
-        const GraphPack &gp,
+        const graph_pack::GraphPack &gp,
         size_t length_threshold) :
     gp_(gp),
     g_(gp_.get<Graph>()),

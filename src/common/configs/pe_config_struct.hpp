@@ -277,10 +277,10 @@ struct pe_config {
     path_searching path_search;
 
     struct stats {
-      std::string genome_path;
-      std::string base_contigs_path;
-      std::string cloud_contigs_path;
-      std::string scaffold_graph_statistics;
+      std::filesystem::path genome_path;
+      std::filesystem::path base_contigs_path;
+      std::filesystem::path cloud_contigs_path;
+      std::filesystem::path scaffold_graph_statistics;
     };
 
     stats statistics;
