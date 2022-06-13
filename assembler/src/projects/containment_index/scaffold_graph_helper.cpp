@@ -5,7 +5,7 @@
 //***************************************************************************
 
 #include "barcode_index/scaffold_vertex_index_builder.hpp"
-#include "gfa1/gfa.h"
+//#include "gfa1/gfa.h"
 #include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
 #include "scaffold_graph_helper.hpp"
@@ -109,54 +109,54 @@ LinkIndexGraphConstructor::BarcodeScoreFunctionPtr LinkIndexGraphConstructor::Co
                                                                                count_threshold_, tail_threshold_);
     return score_function;
 }
-scaffold_graph::ScaffoldGraph GFAGraphConstructor::ConstructGraphFromLinks() const {
-    scaffold_graph::ScaffoldGraph scaffold_graph(g_);
-    for (const EdgeId &edge: g_.canonical_edges()) {
-        scaffold_graph.AddVertex(edge);
-    }
-    std::unordered_map<std::string, EdgeId> seg_to_edge;
-    for (const EdgeId &edge: g_.canonical_edges()) {
-        seg_to_edge.emplace((*id_mapper_)[edge.int_id()], edge);
-    }
-    auto gfa_ptr = gfa_.get();
-    for (uint32_t i = 0; i < gfa_ptr->n_seg; ++i) {
-        gfa_seg_t *seg = gfa_ptr->seg + i;
-        EdgeId e1 = seg_to_edge.at(seg->name);
-        // Process direct links
-        {
-            uint32_t vv = i << 1 | 0;
-            gfa_arc_t *av = gfa_arc_a(gfa_ptr, vv);
-            for (size_t j = 0; j < gfa_arc_n(gfa_ptr, vv); ++j) {
-                EdgeId e2 = seg_to_edge.at((gfa_ptr->seg + (av[j].w >> 1))->name);
-                if (av[j].w & 1)
-                    e2 = g_.conjugate(e2);
-                const gfa_aux_t *aux = &gfa_ptr->arc_aux[av[j].link_id];
-
-                uint8_t *rc = gfa_aux_get(aux->l_aux, aux->aux, "RC");
-                unsigned links = 0;
-                if (rc && rc[0] == 'i')
-                    links = *(int32_t*)(rc+1);
-                scaffold_graph::ScaffoldGraph::ScaffoldEdge scedge(e1, e2, 0, static_cast<double>(links), 0);
-                scaffold_graph.AddEdge(scedge);
-            }
-        }
-
-        // Process rc links
-        {
-            e1 = g_.conjugate(e1);
-            uint32_t vv = i << 1 | 1;
-            gfa_arc_t *av = gfa_arc_a(gfa_ptr, vv);
-            for (size_t j = 0; j < gfa_arc_n(gfa_ptr, vv); ++j) {
-                EdgeId e2 = seg_to_edge.at((gfa_ptr->seg + (av[j].w >> 1))->name);
-                if (av[j].w & 1)
-                    e2 = g_.conjugate(e2);
-                scaffold_graph::ScaffoldGraph::ScaffoldEdge scedge(e1, e2);
-                scaffold_graph.AddEdge(scedge);
-            }
-        }
-    }
-    return scaffold_graph;
-}
+//scaffold_graph::ScaffoldGraph GFAGraphConstructor::ConstructGraphFromLinks() const {
+//    scaffold_graph::ScaffoldGraph scaffold_graph(g_);
+//    for (const EdgeId &edge: g_.canonical_edges()) {
+//        scaffold_graph.AddVertex(edge);
+//    }
+//    std::unordered_map<std::string, EdgeId> seg_to_edge;
+//    for (const EdgeId &edge: g_.canonical_edges()) {
+//        seg_to_edge.emplace((*id_mapper_)[edge.int_id()], edge);
+//    }
+//    auto gfa_ptr = gfa_.get();
+//    for (uint32_t i = 0; i < gfa_ptr->n_seg; ++i) {
+//        gfa_seg_t *seg = gfa_ptr->seg + i;
+//        EdgeId e1 = seg_to_edge.at(seg->name);
+//        // Process direct links
+//        {
+//            uint32_t vv = i << 1 | 0;
+//            gfa_arc_t *av = gfa_arc_a(gfa_ptr, vv);
+//            for (size_t j = 0; j < gfa_arc_n(gfa_ptr, vv); ++j) {
+//                EdgeId e2 = seg_to_edge.at((gfa_ptr->seg + (av[j].w >> 1))->name);
+//                if (av[j].w & 1)
+//                    e2 = g_.conjugate(e2);
+//                const gfa_aux_t *aux = &gfa_ptr->arc_aux[av[j].link_id];
+//
+//                uint8_t *rc = gfa_aux_get(aux->l_aux, aux->aux, "RC");
+//                unsigned links = 0;
+//                if (rc && rc[0] == 'i')
+//                    links = *(int32_t*)(rc+1);
+//                scaffold_graph::ScaffoldGraph::ScaffoldEdge scedge(e1, e2, 0, static_cast<double>(links), 0);
+//                scaffold_graph.AddEdge(scedge);
+//            }
+//        }
+//
+//        // Process rc links
+//        {
+//            e1 = g_.conjugate(e1);
+//            uint32_t vv = i << 1 | 1;
+//            gfa_arc_t *av = gfa_arc_a(gfa_ptr, vv);
+//            for (size_t j = 0; j < gfa_arc_n(gfa_ptr, vv); ++j) {
+//                EdgeId e2 = seg_to_edge.at((gfa_ptr->seg + (av[j].w >> 1))->name);
+//                if (av[j].w & 1)
+//                    e2 = g_.conjugate(e2);
+//                scaffold_graph::ScaffoldGraph::ScaffoldEdge scedge(e1, e2);
+//                scaffold_graph.AddEdge(scedge);
+//            }
+//        }
+//    }
+//    return scaffold_graph;
+//}
 GFAGraphConstructor::GFAGraphConstructor(const debruijn_graph::Graph &g,
                                          const gfa::GFAReader &gfa,
                                          io::IdMapper<std::string> *id_mapper) :
@@ -272,11 +272,11 @@ scaffold_graph::ScaffoldGraph GetTellSeqScaffoldGraph(const debruijn_graph::Grap
                                                       size_t max_threads,
                                                       bool bin_load,
                                                       bool debug,
-                                                      const std::string &output_dir,
+                                                      const std::filesystem::path &output_dir,
                                                       io::IdMapper<std::string> *id_mapper) {
-    std::string path_to_scaffold_graph = fs::append_path(output_dir, "tellseq_links.scg");
+    auto path_to_scaffold_graph = output_dir / "tellseq_links.scg";
     scaffold_graph::ScaffoldGraph scaffold_graph(g);
-    if (!bin_load or !fs::FileExists(path_to_scaffold_graph)) {
+    if (!bin_load or !std::filesystem::exists(path_to_scaffold_graph)) {
         LinkIndexGraphConstructor link_index_constructor(g,
                                                          barcode_extractor,
                                                          score_threshold,

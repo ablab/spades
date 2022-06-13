@@ -8,21 +8,15 @@
 #ifndef EXTENSION_HPP_
 #define EXTENSION_HPP_
 
-#include "bounded_dijkstra.hpp"
 #include "pe_utils.hpp"
 #include "weight_counter.hpp"
 #include "alignment/rna/ss_coverage.hpp"
 #include "assembly_graph/components/graph_component.hpp"
-#include "assembly_graph/dijkstra/read_cloud_dijkstra/read_cloud_dijkstras.hpp"
-#include "assembly_graph/graph_support/scaff_supplementary.hpp"
+#include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 #include "barcode_index/barcode_info_extractor.hpp"
-#include "barcode_index/barcode_mapper.hpp"
-#include "barcode_index/barcode_info_extractor.hpp"
-#include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_vertex_predicates.hpp"
-#include "read_cloud_path_extend/extender_support/entry_collectors.hpp"
 #include "read_cloud_path_extend/extender_support/candidate_selectors.hpp"
-#include "read_cloud_path_extend/paired_dijkstra.hpp"
-#include "read_cloud_path_extend/read_cloud_dijkstras.hpp"
+#include "read_cloud_path_extend/extender_support/entry_collectors.hpp"
+#include "read_cloud_path_extend/scaffold_graph_construction/read_cloud_dijkstras.hpp"
 #include "scaffolder2015/scaffold_vertex_predicates.hpp"
 
 #include <cfloat>

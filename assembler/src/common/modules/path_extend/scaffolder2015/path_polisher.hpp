@@ -8,7 +8,6 @@
 
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
-#include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 #include "assembly_graph/paths/path_utils.hpp"
 #include "assembly_graph/paths/bidirectional_path.hpp"
@@ -16,6 +15,7 @@
 #include "barcode_index/scaffold_vertex_index_builder.hpp"
 #include "modules/path_extend/paired_library.hpp"
 #include "modules/path_extend/path_extender.hpp"
+#include "modules/path_extend/scaff_supplementary.hpp"
 #include "pipeline/graph_pack.hpp"
 
 namespace path_extend {
@@ -148,7 +148,7 @@ public:
 
 class SimpleExtenderFactory : public GapExtenderFactory {
 public:
-    typedef debruijn_graph::GraphPack GraphPack;
+    typedef graph_pack::GraphPack GraphPack;
 
     SimpleExtenderFactory(const GraphPack &gp,
                           const GraphCoverageMap &cover_map,

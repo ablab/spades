@@ -9,7 +9,9 @@
 #define __HAMMER_READ_PROCESSOR_HPP__
 
 #include "io/reads/mpmc_bounded.hpp"
+#include "utils/logger/logger.hpp"
 #include "utils/parallel/openmp_wrapper.h"
+#include "utils/verify.hpp"
 
 #include <memory>
 #include <sched.h>
@@ -102,7 +104,7 @@ public:
 #         pragma omp atomic
                     read_ += 1;
                     if (read_ % 1000000 == 0) {
-                        INFO("Processed " << read_ << " reads");
+                        INFO("Processed " << std::to_string(read_) << " reads");
                     }
 
                     while (!in_queue.enqueue(std::move(r)))

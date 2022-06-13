@@ -9,9 +9,9 @@
 #include "scaffold_graph_construction_pipeline.hpp"
 #include "extender_searcher.hpp"
 #include "scaffold_graph_storage.hpp"
-#include "modules/alignment/edge_index.hpp"
-#include "modules/alignment/kmer_mapper.hpp"
-#include "modules/path_extend/pe_config_struct.hpp"
+#include "alignment/edge_index.hpp"
+#include "alignment/kmer_mapper.hpp"
+#include "configs/pe_config_struct.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -31,7 +31,7 @@ class ScaffoldGraphStorageConstructor {
                                     const ReadCloudConfigsT &configs,
                                     const ReadCloudSearchParameterPack &search_params,
                                     const std::string &scaffold_graph_path,
-                                    const debruijn_graph::GraphPack &gp);
+                                    const graph_pack::GraphPack &gp);
 
     ScaffoldGraphStorage ConstructStorage() const;
 
@@ -47,7 +47,7 @@ class ScaffoldGraphStorageConstructor {
     const ReadCloudConfigsT configs_;
     const ReadCloudSearchParameterPack search_params_;
     const std::string scaffold_graph_path_;
-    const debruijn_graph::GraphPack &gp_;
+    const graph_pack::GraphPack &gp_;
 };
 
 class ScaffoldGraphPolisherHelper {
@@ -91,7 +91,7 @@ class CloudScaffoldGraphConstructor {
     typedef barcode_index::FrameBarcodeIndexInfoExtractor BarcodeExtractorT;
 
     CloudScaffoldGraphConstructor(size_t max_threads_,
-                                  const debruijn_graph::GraphPack &gp,
+                                  const graph_pack::GraphPack &gp,
                                   const ScaffoldingUniqueEdgeStorage &unique_storage,
                                   const LibraryT &lib,
                                   const ReadCloudConfigsT &configs,
@@ -111,7 +111,7 @@ class CloudScaffoldGraphConstructor {
 
   private:
     const size_t max_threads_;
-    const debruijn_graph::GraphPack &gp_;
+    const graph_pack::GraphPack &gp_;
     const ScaffoldingUniqueEdgeStorage &unique_storage_;
     const LibraryT lib_;
     const ReadCloudConfigsT &configs_;

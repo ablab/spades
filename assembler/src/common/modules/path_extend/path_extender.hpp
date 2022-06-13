@@ -14,7 +14,6 @@
 #include "assembly_graph/paths/bidirectional_path.hpp"
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "assembly_graph/graph_support/detail_coverage.hpp"
-#include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "read_cloud_path_extend/extender_support/candidate_selectors.hpp"
 #include "read_cloud_path_extend/extender_support/entry_collectors.hpp"
 #include "read_cloud_path_extend/scaffold_graph_construction/read_cloud_dijkstras.hpp"
@@ -582,7 +581,7 @@ private:
 //todo use custom path predicate instead of length bound
 //class SearchingMultiExtender: public SimpleExtender {
 // public:
-//    typedef debruijn_graph::GraphPack GraphPack;
+//    typedef graph_pack::GraphPack GraphPack;
 //
 //    SearchingMultiExtender(const GraphPack &gp,
 //                           const GraphCoverageMap &cov_map,
@@ -804,7 +803,7 @@ class ReadCloudExtender : public SimpleExtender { //Traverse forward to find lon
     std::shared_ptr<read_cloud::CloudReachableEdgesSelectorFactory> edge_selector_factory_;
     size_t min_path_length_;
   public:
-    ReadCloudExtender(const debruijn_graph::GraphPack &gp,
+    ReadCloudExtender(const graph_pack::GraphPack &gp,
                       const GraphCoverageMap &cov_map,
                       UsedUniqueStorage &unique,
                       std::shared_ptr<ExtensionChooser> ec,

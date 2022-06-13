@@ -12,7 +12,7 @@ add_executable(cont-index
                main.cpp barcode_index_construction.cpp long_edge_statistics.cpp reference_path_checker.cpp
                scaffold_graph_helper.cpp multiplex_gfa_reader.cpp vertex_info_getter.cpp vertex_resolver.cpp)
 
-target_link_libraries(cont-index spades-stages graphio common_modules ${COMMON_LIBRARIES})
+target_link_libraries(cont-index spades-stages graphio toolchain common_modules ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
     set_target_properties(cont-index PROPERTIES LINK_SEARCH_END_STATIC 1)
