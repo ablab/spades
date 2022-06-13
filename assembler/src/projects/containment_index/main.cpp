@@ -40,12 +40,12 @@ enum class GraphType {
 struct gcfg {
   size_t k = 55;
   unsigned mapping_k = 31;
-  std::string graph;
-  std::string output_dir;
-  std::string refpath;
+  std::filesystem::path graph;
+  std::filesystem::path output_dir;
+  std::filesystem::path refpath;
   unsigned nthreads = (omp_get_max_threads() / 2 + 1);
-  std::string file = "";
-  std::string tmpdir = "saves";
+  std::filesystem::path file = "";
+  std::filesystem::path tmpdir = "saves";
   unsigned libindex = -1u;
   double score_threshold = 3.0;
   bool bin_load = false;
@@ -56,21 +56,27 @@ struct gcfg {
 static void process_cmdline(int argc, char** argv, gcfg& cfg) {
     using namespace clipp;
 
+    std::string graph;
+    std::string output_dir;
+    std::string refpath;
+    std::string file;
+    std::string tmpdir;
+
     auto cli = (
-        cfg.graph << value("graph (in binary or GFA)"),
-            cfg.output_dir << value("path to output directory"),
-            (option("--dataset") & value("yaml", cfg.file)) % "dataset description (in YAML)",
-            (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
-            (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
-            (option("--mapping-k") & integer("value", cfg.mapping_k)) % "k for read mapping",
-            (option("--tmp-dir") & value("tmp", cfg.tmpdir)) % "scratch directory to use",
-            (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
-            (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)",
-            (option("--score") & value("score", cfg.score_threshold)) % "Score threshold for link index",
-            (option("--ref") & value("reference", cfg.refpath)) % "Reference path",
-            (with_prefix("-G",
-                         option("lja").set(cfg.graph_type, GraphType::Multiplexed) |
-                         option("blunt").set(cfg.graph_type, GraphType::Blunted)) % "assembly graph type")
+        graph << value("graph (in binary or GFA)"),
+        output_dir << value("path to output directory"),
+        (option("--dataset") & value("yaml", file)) % "dataset description (in YAML)",
+        (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
+        (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
+        (option("--mapping-k") & integer("value", cfg.mapping_k)) % "k for read mapping",
+        (option("--tmp-dir") & value("tmp", tmpdir)) % "scratch directory to use",
+        (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
+        (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)",
+        (option("--score") & value("score", cfg.score_threshold)) % "Score threshold for link index",
+        (option("--ref") & value("reference", refpath)) % "Reference path",
+        (with_prefix("-G",
+                     option("lja").set(cfg.graph_type, GraphType::Multiplexed) |
+                     option("blunt").set(cfg.graph_type, GraphType::Blunted)) % "assembly graph type")
     );
 
     auto result = parse(argc, argv, cli);
@@ -78,6 +84,11 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
         std::cout << make_man_page(cli, argv[0]);
         exit(1);
     }
+    cfg.graph = graph;
+    cfg.output_dir = output_dir;
+    cfg.refpath = refpath;
+    cfg.file = file;
+    cfg.tmpdir = tmpdir;
 }
 
 struct TimeTracerRAII {
@@ -110,7 +121,7 @@ void GetLongEdgeStatistics(const Graph &graph,
                            size_t read_count_threshold,
                            size_t read_linkage_distance,
                            size_t max_threads,
-                           const std::string &base_output_path) {
+                           const std::filesystem::path &base_output_path) {
     cont_index::LongEdgeStatisticsCounter long_edge_counter(graph, barcode_index, training_edge_length,
                                                             training_edge_offset,
                                                             read_count_threshold, read_linkage_distance, max_threads,
@@ -129,7 +140,7 @@ void GetPathClusters(const Graph &graph,
                      size_t max_threads,
                      io::IdMapper<std::string> *id_mapper,
                      bool lja,
-                     const std::string &output_dir) {
+                     const std::filesystem::path &output_dir) {
     INFO("Constructing initial cluster storage");
     path_extend::read_cloud::PathExtractionParams path_extraction_params(read_linkage_distance,
                                                                          relative_score_threshold,
@@ -160,7 +171,7 @@ void GetPathClusters(const Graph &graph,
     for (const auto &cluster: all_clusters) {
         size_hist[cluster.Size()]++;
     }
-    std::ofstream sizes(fs::append_path(output_dir, "cluster_sizes.tsv"));
+    std::ofstream sizes(output_dir / "cluster_sizes.tsv");
     for (const auto &entry: size_hist) {
         sizes << entry.first << "\t" << entry.second << std::endl;
     }
@@ -170,7 +181,7 @@ void GetPathClusters(const Graph &graph,
     for (const auto &cluster: path_clusters) {
         size_hist[cluster.Size()]++;
     }
-    std::ofstream path_sizes(fs::append_path(output_dir, "path_sizes.tsv"));
+    std::ofstream path_sizes(output_dir / "path_sizes.tsv");
     for (const auto &entry: size_hist) {
         path_sizes << entry.first << "\t" << entry.second << std::endl;
     }
@@ -184,7 +195,7 @@ void GetPathClusters(const Graph &graph,
             }
         }
 
-//        std::ofstream link_stream(fs::append_path(output_dir, "lja_links.tsv"));
+//        std::ofstream link_stream(output_dir / "lja_links.tsv");
 //        for (const auto &entry: link_to_weight) {
 //            link_stream << entry.first.first << "\t" << entry.first.second << "\t" << entry.second << std::endl;
 //        }
@@ -263,7 +274,7 @@ void NormalizeTellseqLinks(const scaffold_graph::ScaffoldGraph &tellseq_graph,
                            size_t count_threshold,
                            size_t tail_threshold,
                            io::IdMapper<std::string> *id_mapper,
-                           const std::string &output_path) {
+                           const std::filesystem::path &output_path) {
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     const auto &assembly_graph = tellseq_graph.AssemblyGraph();
     std::map<std::pair<ScaffoldVertex, ScaffoldVertex>, double> score_map;
@@ -294,7 +305,7 @@ void NormalizeTellseqLinks(const scaffold_graph::ScaffoldGraph &tellseq_graph,
         vertex_to_head_barcodes[vertex] = barcode_extractor_ptr->GetBarcodesFromHead(vertex.GetFirstEdge(), count_threshold, tail_threshold).size();
     }
 
-    std::ofstream os(fs::append_path(output_path, "normalized_tellseq_links.tsv"));
+    std::ofstream os(output_path / "normalized_tellseq_links.tsv");
     os << "First\tSecond\tTotal links\tJaccard Index" << "\n";
     for (const auto &entry: score_map) {
         const auto &first_vertex = entry.first.first;
@@ -319,7 +330,7 @@ void ConstructCloudOnlyLinks(const Graph &graph,
                              size_t threads,
                              bool bin_load,
                              bool debug,
-                             const std::string &output_dir,
+                             const std::filesystem::path &output_dir,
                              io::IdMapper<std::string> *id_mapper) {
     auto tellseq_graph = cont_index::GetTellSeqScaffoldGraph(graph, barcode_extractor_ptr, graph_score_threshold,
                                                              length_threshold, tail_threshold, count_threshold,
@@ -330,7 +341,7 @@ void ConstructCloudOnlyLinks(const Graph &graph,
 //    auto score_function = link_index_constructor.ConstructScoreFunction();
 //    NormalizeTellseqLinks(tellseq_graph, length_threshold, barcode_extractor_ptr, count_threshold,
 //                          tail_threshold, id_mapper, output_dir);
-//    auto compare_output_path = fs::append_path(output_dir, "hifi_tellseq_scores.tsv");
+//    auto compare_output_path = output_dir / "hifi_tellseq_scores.tsv";
 //    CompareLinks(hifi_graph, tellseq_graph, score_function, id_mapper.get(), compare_output_path);
 
 }
@@ -372,17 +383,16 @@ void AnalyzeVertices(debruijn_graph::Graph &graph,
                      size_t threads,
                      double score_threshold,
                      io::IdMapper<std::string> *id_mapper,
-                     const std::string &output_path,
-                     const std::string &tmp_path) {
+                     const std::filesystem::path &output_path,
+                     const std::filesystem::path &tmp_path) {
     cont_index::VertexResolver vertex_resolver
-        (graph, barcode_extractor_ptr, count_threshold, tail_threshold, length_threshold, threads, score_threshold,
-         output_path);
+        (graph, barcode_extractor_ptr, count_threshold, tail_threshold, length_threshold, threads, score_threshold);
     const auto &vertex_results = vertex_resolver.ResolveVertices() ;
-    std::string vertex_output_path = fs::append_path(output_path, "vertex_stats.tsv");
+    std::filesystem::path vertex_output_path = output_path / "vertex_stats.tsv";
     vertex_resolver.PrintVertexResults(vertex_results, vertex_output_path, tmp_path, id_mapper);
     cont_index::PathExtractor path_extractor(graph);
     const auto &paths = path_extractor.ExtractPaths(vertex_results);
-    path_extractor.PrintPaths(paths, fs::append_path(output_path, "contigs.paths"), id_mapper);
+    path_extractor.PrintPaths(paths, output_path / "contigs.paths", id_mapper);
 }
 
 
@@ -401,8 +411,8 @@ int main(int argc, char** argv) {
     cfg.nthreads = spades_set_omp_threads(cfg.nthreads);
     INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg.nthreads);
 
-    fs::make_dir(cfg.output_dir);
-    fs::make_dir(cfg.tmpdir);
+    std::filesystem::create_directory(cfg.output_dir);
+    std::filesystem::create_directory(cfg.tmpdir);
 
     INFO("Loading graph");
     std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
@@ -411,7 +421,7 @@ int main(int argc, char** argv) {
     ReadGraph(cfg, graph, id_mapper.get());
     INFO("Graph loaded. Total vertices: " << graph.size() << ", total edges: " << graph.e_size());
 
-    std::ofstream graph_out(fs::append_path(cfg.output_dir, "assembly_graph.gfa"));
+    std::ofstream graph_out(cfg.output_dir / "assembly_graph.gfa");
     gfa::GFAWriter gfa_writer(graph, graph_out);
     gfa_writer.WriteSegmentsAndLinks();
 

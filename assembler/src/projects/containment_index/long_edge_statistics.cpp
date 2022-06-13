@@ -66,7 +66,7 @@ void LongEdgeStatisticsCounter::CountDoubleCoverageDistribution() const {
 //            INFO("Processed edge " << edge.int_id() << " , length " << graph.length(edge));
         }
     }
-    std::string dc_output_path = fs::append_path(base_output_path_, "double_coverage_distribution.tsv");
+    std::string dc_output_path = base_output_path_ / "double_coverage_distribution.tsv";
     std::ofstream dc_stream(dc_output_path);
     dc_stream << "Gap\tFragments\tValue\n";
     for (const auto &gap_and_distr: double_cov_distribution) {
@@ -90,7 +90,7 @@ LongEdgeStatisticsCounter::LongEdgeStatisticsCounter(const debruijn_graph::Graph
                                                      const size_t &read_count_threshold,
                                                      const size_t &read_linkage_distance,
                                                      const size_t &max_threads,
-                                                     const std::string &base_output_path) :
+                                                     const std::filesystem::path &base_output_path) :
     graph_(graph),
     barcode_index_(barcode_index),
     training_edge_length_(training_edge_length),
@@ -124,7 +124,7 @@ void LongEdgeStatisticsCounter::CountClusterStatistics() const {
     DistributionExtractor distribution_extractor(graph_, barcode_index_, read_count_threshold_, training_edge_length_,
                                                  training_edge_offset_, max_threads_);
     auto distribution_pack = distribution_extractor.GetDistributionsForStorage(initial_cluster_storage.get_cluster_storage());
-    std::string length_output_path = fs::append_path(base_output_path_, "long_edge_fragment_lengths.tsv");
+    std::string length_output_path = base_output_path_ / "long_edge_fragment_lengths.tsv";
     std::ofstream length_stream(length_output_path);
     length_stream << "Length\tNumber\n";
     size_t total_long_edge_clusters = 0;
@@ -133,13 +133,13 @@ void LongEdgeStatisticsCounter::CountClusterStatistics() const {
         total_long_edge_clusters += entry.second;
     }
     INFO("Total long edge clusters: " << total_long_edge_clusters);
-    std::string coverage_output_path = fs::append_path(base_output_path_, "long_edge_fragment_coverages.tsv");
+    std::string coverage_output_path = base_output_path_ / "long_edge_fragment_coverages.tsv";
     std::ofstream coverage_stream(coverage_output_path);
     coverage_stream << "Coverage\tNumber\n";
     for (const auto &entry: distribution_pack.coverage_distribution_) {
         coverage_stream << entry.first << "\t" << entry.second << std::endl;
     }
-    std::string number_of_reads_output_path = fs::append_path(base_output_path_, "long_edge_fragment_reads.tsv");
+    std::string number_of_reads_output_path = base_output_path_ / "long_edge_fragment_reads.tsv";
     std::ofstream read_stream(number_of_reads_output_path);
     read_stream << "Number of reads\tNumber\n";
     for (const auto &entry: distribution_pack.num_reads_distribution_) {
