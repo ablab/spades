@@ -15,7 +15,7 @@ namespace debruijn_graph {
                 AssemblyStage("Barcode map construction", "barcode_map_construction") {
         }
 
-        void run(debruijn_graph::GraphPack &gp, const char *);
+        void run(graph_pack::GraphPack &gp, const char *);
         DECL_LOGGER("BarcodeMapConstrusctionStage")
     };
 

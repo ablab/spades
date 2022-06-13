@@ -1,10 +1,12 @@
 #include "barcode_index_construction.hpp"
 
+#include "alignment/sequence_mapper.hpp"
+#include "alignment/sequence_mapper_notifier.hpp"
 #include "barcode_index/barcode_info_extractor.hpp"
 #include "io/dataset_support/dataset_readers.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
-#include "modules/alignment/sequence_mapper_notifier.hpp"
 #include "modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor_helper.hpp"
+#include "pipeline/graph_pack_helpers.h"
+#include "pipeline/sequence_mapper_gp_api.hpp"
 
 #include <vector>
 
@@ -21,7 +23,7 @@ namespace debruijn_graph {
         return result;
     }
 
-    void BarcodeMapConstructionStage::run(debruijn_graph::GraphPack &gp, const char *) {
+    void BarcodeMapConstructionStage::run(graph_pack::GraphPack &gp, const char *) {
         using path_extend::read_cloud::fragment_statistics::ClusterStatisticsExtractorHelper;
 
         INFO("Barcode index construction started...");
@@ -41,7 +43,7 @@ namespace debruijn_graph {
         for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
             auto &lib = cfg::get_writable().ds.reads[i];
             if (lib.type() == io::LibraryType::Clouds10x) {
-                gp.EnsureBasicMapping();
+                graph_pack::EnsureBasicMapping(gp);
                 FrameConcurrentBarcodeIndexBuffer<Graph> buffer(gp.get<Graph>(), frame_size);
                 ConcurrentBufferFiller buffer_filler(gp.get<Graph>(), buffer, *MapperInstance(gp), barcode_prefices, 0);
                 FrameBarcodeIndexBuilder barcode_index_builder(gp.get<Graph>(), *MapperInstance(gp), barcode_prefices, frame_size, num_threads);

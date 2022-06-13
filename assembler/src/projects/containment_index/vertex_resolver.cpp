@@ -138,8 +138,8 @@ std::string VertexResolver::VertexResultString(const debruijn_graph::VertexId &v
     return vertex_string;
 }
 void VertexResolver::PrintVertexResults(const VertexResults &results,
-                                        const string &output_path,
-                                        const string &tmp_path,
+                                        const std::filesystem::path &output_path,
+                                        const std::filesystem::path &tmp_path,
                                         io::IdMapper<std::string> *id_mapper) const {
 
     std::unordered_map<EdgeId, size_t> unique_kmer_counter;
@@ -148,8 +148,8 @@ void VertexResolver::PrintVertexResults(const VertexResults &results,
     size_t k = 31;
     std::unique_ptr<EdgeIndex> index;
 
-    const std::string index_output = fs::append_path(tmp_path, "tmp_index");
-    fs::make_dir(index_output);
+    const std::string index_output = tmp_path / "tmp_index";
+    std::filesystem::create_directory(index_output);
     index.reset(new debruijn_graph::EdgeIndex<debruijn_graph::Graph>(graph_, index_output));
     index->Refill(k);
     size_t total_kmers = 0;
@@ -220,15 +220,13 @@ VertexResolver::VertexResolver(debruijn_graph::Graph &graph,
                                size_t tail_threshold,
                                size_t length_threshold,
                                size_t threads,
-                               double score_threshold,
-                               const string &output_path) : graph_(graph),
-                                                            barcode_extractor_ptr_(barcode_extractor_ptr),
-                                                            count_threshold_(count_threshold),
-                                                            tail_threshold_(tail_threshold),
-                                                            length_threshold_(length_threshold),
-                                                            threads_(threads),
-                                                            score_threshold_(score_threshold),
-                                                            output_path_(output_path) {}
+                               double score_threshold) : graph_(graph),
+                                                         barcode_extractor_ptr_(barcode_extractor_ptr),
+                                                         count_threshold_(count_threshold),
+                                                         tail_threshold_(tail_threshold),
+                                                         length_threshold_(length_threshold),
+                                                         threads_(threads),
+                                                         score_threshold_(score_threshold) {}
 std::vector<PathExtractor::SimplePath> PathExtractor::ExtractPaths(const VertexResults &vertex_results, bool canonical) const {
     std::vector<SimplePath> resulting_paths;
     std::unordered_map<debruijn_graph::EdgeId, debruijn_graph::EdgeId> in_to_out;
@@ -329,7 +327,7 @@ bool PathExtractor::IsConjugatePair(const PathExtractor::SimplePath &first,
     return true;
 }
 void PathExtractor::PrintPaths(const std::vector<SimplePath> &paths,
-                               const string &output_path,
+                               const std::filesystem::path &output_path,
                                io::IdMapper<std::string> *id_mapper) const {
     std::ofstream out_stream(output_path);
     for (const auto &path: paths) {

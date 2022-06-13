@@ -44,7 +44,7 @@ class PathExtractor {
 
     std::vector<SimplePath> ExtractPaths(const VertexResults &vertex_results, bool canonical = true) const;
     void PrintPaths(const std::vector<SimplePath> &paths,
-                    const std::string &output_path,
+                    const std::filesystem::path &output_path,
                     io::IdMapper<std::string> *id_mapper) const;
   private:
     bool IsConjugatePair(const SimplePath &first, const SimplePath &second) const;
@@ -63,16 +63,15 @@ class VertexResolver {
                    size_t tail_threshold,
                    size_t length_threshold,
                    size_t threads,
-                   double score_threshold,
-                   const string &output_path);
+                   double score_threshold);
 
     VertexResults ResolveVertices();
     VertexResult ResolveVertex(const debruijn_graph::VertexId &vertex,
                                LinkIndexGraphConstructor::BarcodeScoreFunctionPtr score_function) const;
 
     void PrintVertexResults(const VertexResults &results,
-                            const std::string &output_path,
-                            const std::string &tmp_path,
+                            const std::filesystem::path &output_path,
+                            const std::filesystem::path &tmp_path,
                             io::IdMapper<std::string> *id_mapper) const;
     std::string VertexResultString(const debruijn_graph::VertexId &vertex,
                                    const VertexResult &vertex_result,
@@ -91,7 +90,6 @@ class VertexResolver {
     size_t length_threshold_;
     size_t threads_;
     double score_threshold_;
-    const std::string &output_path_;
 };
 
 }

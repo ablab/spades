@@ -19,7 +19,7 @@ void SplitStatistics::Serialize(const std::string &path) {
         fout << entry.split_index_ << "," << entry.status_ << "\n";
     }
 }
-SplitStatistics SplitStatisticsExtractor::GetSplitStatistics(const std::string &path_to_reference,
+SplitStatistics SplitStatisticsExtractor::GetSplitStatistics(const std::filesystem::path &path_to_reference,
                                                              size_t length_threshold) const {
     validation::FilteredReferencePathHelper path_helper(g_, index_, kmer_mapper_);
     ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, length_threshold, 5000.0);
@@ -123,14 +123,14 @@ double SplitStatisticsExtractor::GetSplitIndex(
     }
     return split_index;
 }
-void SplitStatisticsExtractor::ConstructAndSerialize(const std::string &path_to_reference,
-                                                     const std::string &output_base,
+void SplitStatisticsExtractor::ConstructAndSerialize(const std::filesystem::path &path_to_reference,
+                                                     const std::filesystem::path &output_base,
                                                      size_t length_threshold) const {
     auto split_statistics = GetSplitStatistics(path_to_reference, length_threshold);
-    const std::string output_path = fs::append_path(output_base, "split_statistics.csv");
+    const std::string output_path = output_base / "split_statistics.csv";
     split_statistics.Serialize(output_path);
 }
-SplitStatisticsExtractor::SplitStatisticsExtractor(const GraphPack &gp,
+SplitStatisticsExtractor::SplitStatisticsExtractor(const graph_pack::GraphPack &gp,
                                                    size_t max_threads) :
     gp_(gp),
     g_(gp_.get<Graph>()),

@@ -15,8 +15,6 @@
 #include "modules/path_extend/path_extender.hpp"
 #include "modules/path_extend/path_scaffolder.hpp"
 #include "modules/path_extend/path_visualizer.hpp"
-#include "modules/path_extend/read_cloud_path_extend/extension_chooser_checker.hpp"
-#include "modules/path_extend/read_cloud_path_extend/path_scaffolder.hpp"
 #include "modules/path_extend/scaff_supplementary.hpp"
 #include "modules/path_extend/scaffolder2015/extension_chooser2015.hpp"
 #include "modules/path_extend/scaffolder2015/path_polisher.hpp"
@@ -110,11 +108,11 @@ std::shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructPath
     read_cloud::SearchingExtenderParams empty_searching_extender_params(empty_storage);
     read_cloud::ReadCloudSearchParameterPack empty_pack{empty_chooser_params, empty_search_params,
                                                         empty_searching_extender_params};
-    std::string base_stats_path = fs::append_path(params_.etc_dir,
-                                                  params_.pe_cfg.read_cloud.statistics.scaffold_graph_statistics);
-    std::string scaffold_graph_stats_path = fs::append_path(base_stats_path, "path_graph");
-    fs::remove_if_exists(scaffold_graph_stats_path);
-    fs::make_dir(scaffold_graph_stats_path);
+    std::filesystem::path base_stats_path = params_.etc_dir /
+                                                  params_.pe_cfg.read_cloud.statistics.scaffold_graph_statistics;
+    std::string scaffold_graph_stats_path = base_stats_path / "path_graph";
+    std::filesystem::remove(scaffold_graph_stats_path);
+    std::filesystem::create_directory(scaffold_graph_stats_path);
     read_cloud::CloudScaffoldGraphConstructor constructor(num_threads, gp_, unique_storage, cloud_lib,
                                                           params_.pe_cfg.read_cloud, empty_pack,
                                                           scaffold_graph_stats_path, extractor);
@@ -128,7 +126,7 @@ std::shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructPath
 void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph &scaffold_graph,
                                             const std::set<EdgeId> &main_edge_set,
                                             const debruijn_graph::GenomeConsistenceChecker &genome_checker,
-                                            const string &filename) const {
+                                            const std::filesystem::path &filename) const {
     using namespace scaffolder;
     using namespace scaffold_graph;
 

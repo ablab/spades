@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "pe_config_struct.hpp"
 #include "assembly_graph/paths/bidirectional_path_container.hpp"
 #include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
+#include "configs/pe_config_struct.hpp"
 
 namespace path_extend {
 

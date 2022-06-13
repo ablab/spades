@@ -34,18 +34,18 @@ class SplitStatisticsExtractor {
     typedef barcode_index::SimpleScaffoldVertexIndexInfoExtractor BarcodeExtractor;
     typedef validation::GeneralTransitionStorageBuilder TransitionBuilder;
 
-    SplitStatisticsExtractor(const GraphPack& gp,
+    SplitStatisticsExtractor(const graph_pack::GraphPack& gp,
                              size_t max_threads);
 
-    SplitStatistics GetSplitStatistics(const std::string &path_to_reference, size_t length_threshold) const;
-    void ConstructAndSerialize(const std::string &path_to_reference,
-                               const std::string &output_base,
+    SplitStatistics GetSplitStatistics(const std::filesystem::path &path_to_reference, size_t length_threshold) const;
+    void ConstructAndSerialize(const std::filesystem::path &path_to_reference,
+                               const std::filesystem::path &output_base,
                                size_t length_threshold) const;
 
   private:
     double GetSplitIndex(const Transition &transition, std::shared_ptr<BarcodeExtractor> barcode_extractor) const;
 
-    const GraphPack &gp_;
+    const graph_pack::GraphPack &gp_;
     const Graph &g_;
     const debruijn_graph::EdgeIndex<Graph> &index_;
     const debruijn_graph::KmerMapper<Graph> &kmer_mapper_;

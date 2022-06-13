@@ -44,7 +44,7 @@ class ScaffolderParamsConstructor {
 
 class ScaffoldGraphConstructionPipeline {
   public:
-    typedef debruijn_graph::GraphPack GraphPack;
+    typedef graph_pack::GraphPack GraphPack;
     typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef std::shared_ptr<scaffolder::ScaffoldGraphConstructor> ConstructorPtr;
     typedef std::pair<std::shared_ptr<scaffold_graph::ScaffoldGraph>, string> ResultT;
@@ -69,7 +69,7 @@ class ScaffoldGraphConstructionPipeline {
 
 class ScaffoldGraphPipelineConstructor {
   public:
-    typedef debruijn_graph::GraphPack GraphPack;
+    typedef graph_pack::GraphPack GraphPack;
     typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
     typedef ScaffoldGraph::ScaffoldGraphVertex ScaffoldVertex;
     typedef std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> BarcodeIndexPtr;

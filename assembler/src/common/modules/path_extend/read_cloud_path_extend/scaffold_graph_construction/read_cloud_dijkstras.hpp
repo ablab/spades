@@ -8,7 +8,7 @@
 
 #include "assembly_graph/dijkstra/dijkstra_settings.hpp"
 #include "assembly_graph/dijkstra/dijkstra_algorithm.hpp"
-#include "assembly_graph/graph_support/scaff_supplementary.hpp"
+#include "modules/path_extend//scaff_supplementary.hpp"
 #include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/pair_entry_processors.hpp"
 
 namespace path_extend {

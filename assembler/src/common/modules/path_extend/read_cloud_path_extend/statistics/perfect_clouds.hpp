@@ -17,18 +17,18 @@ class PerfectClustersAnalyzer {
     typedef cluster_storage::Cluster Cluster;
     typedef std::set<scaffold_graph::ScaffoldVertex> VertexSet;
     typedef std::map<VertexSet, size_t> SetDistribution;
-    PerfectClustersAnalyzer(const GraphPack &gp,
-                            const std::string &output_dir,
+    PerfectClustersAnalyzer(const graph_pack::GraphPack &gp,
+                            const std::filesystem::path &output_dir,
                             size_t max_threads);
 
-    void AnalyzePerfectClouds(const std::string &path_to_reference, size_t min_length) const;
+    void AnalyzePerfectClouds(const std::filesystem::path &path_to_reference, size_t min_length) const;
 
   private:
     SetDistribution ConstructPerfectClusters(const scaffold_graph::ScaffoldGraph &perfect_graph) const;
     double GetMeanEdgeNumber(const SetDistribution &clusters, size_t length_threshold, const Graph &g) const;
 
-    const GraphPack &gp_;
-    const std::string output_dir_;
+    const graph_pack::GraphPack &gp_;
+    const std::filesystem::path output_dir_;
     const size_t max_threads_;
 };
 }

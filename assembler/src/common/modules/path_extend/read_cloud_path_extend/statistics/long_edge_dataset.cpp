@@ -14,7 +14,7 @@
 namespace path_extend {
 namespace read_cloud {
 
-void LongEdgePairDataset::Serialize(const string &path) {
+void LongEdgePairDataset::Serialize(const std::filesystem::path &path) {
     std::ofstream fout(path);
     fout <<
          "LeftId,LeftLength,LeftCov,LeftSize,RightId,RightLength,RightCov,RightSize,Intersection,Distance,Genome,Correct"
@@ -190,24 +190,23 @@ LongEdgePairDatasetExtractor::LongEdgePairDatasetExtractor(const Graph &g,
     scaffold_graph_storage_(scaffold_graph_storage),
     max_threads_(max_threads) {}
 LongEdgePairDataset LongEdgePairDatasetExtractor::GetLongEdgeDataset(const ScaffoldingUniqueEdgeStorage &unique_storage,
-                                                                     const std::string &path_to_reference) const {
+                                                                     const std::filesystem::path &path_to_reference) const {
     validation::FilteredReferencePathHelper path_helper(g_, index_, kmer_mapper_);
     auto reference_paths = path_helper.GetFilteredReferencePathsFromUnique(path_to_reference, unique_storage);
     return GetLongEdgeDataset(reference_paths);
 }
-void LongEdgePairDatasetExtractor::ConstructAndSerialize(const std::string &path_to_reference,
-                                                         const std::string &output_base) const {
-    const std::string reference_path = path_to_reference;
+void LongEdgePairDatasetExtractor::ConstructAndSerialize(const std::filesystem::path &path_to_reference,
+                                                         const std::filesystem::path &output_base) const {
     size_t long_threshold = scaffold_graph_storage_.GetSmallLengthThreshold();
     size_t ultralong_threshold = scaffold_graph_storage_.GetLargeLengthThreshold();
     INFO(scaffold_graph_storage_.GetSmallScaffoldGraph().VertexCount() << " long edges");
-    auto long_edge_dataset = GetLongEdgeDataset(scaffold_graph_storage_.GetSmallUniqueStorage(), reference_path);
+    auto long_edge_dataset = GetLongEdgeDataset(scaffold_graph_storage_.GetSmallUniqueStorage(), path_to_reference);
     INFO(scaffold_graph_storage_.GetLargeScaffoldGraph().VertexCount() << " ultralong edges");
-    auto ultralong_edge_dataset = GetLongEdgeDataset(scaffold_graph_storage_.GetLargeUniqueStorage(), reference_path);
-    const std::string output_name = "long_edge_dataset_";
-    const std::string long_output_path = fs::append_path(output_base, output_name + std::to_string(long_threshold));
-    const string ultralong_output_path = fs::append_path(output_base, output_name +
-        std::to_string(ultralong_threshold));
+    auto ultralong_edge_dataset = GetLongEdgeDataset(scaffold_graph_storage_.GetLargeUniqueStorage(), path_to_reference);
+    const std::filesystem::path long_suffix = "long_edge_dataset_" + std::to_string(long_threshold);
+    const std::filesystem::path ultralong_suffix = "long_edge_dataset_" + std::to_string(ultralong_threshold);
+    const std::filesystem::path long_output_path = output_base / long_suffix;
+    const auto ultralong_output_path = output_base / ultralong_suffix;
     long_edge_dataset.Serialize(long_output_path);
     ultralong_edge_dataset.Serialize(ultralong_output_path);
 }

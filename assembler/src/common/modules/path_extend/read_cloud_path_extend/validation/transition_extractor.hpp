@@ -9,10 +9,10 @@
 #include "modules/path_extend/extension_chooser.hpp"
 #include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_extractor.hpp"
 #include "modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
-#include "modules/alignment/edge_index.hpp"
-#include "modules/alignment/kmer_mapper.hpp"
-#include "modules/alignment/long_read_mapper.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
+#include "alignment/edge_index.hpp"
+#include "alignment/kmer_mapper.hpp"
+#include "alignment/long_read_mapper.hpp"
+#include "alignment/sequence_mapper.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -156,9 +156,9 @@ class ContigPathBuilder {
         kmer_mapper_(kmer_mapper),
         path_length_threshold_(path_length_threshold) {}
 
-    std::vector<NamedSimplePath> GetContigPaths(const string &path_to_contigs) const;
+    std::vector<NamedSimplePath> GetContigPaths(const std::filesystem::path &path_to_contigs) const;
 
-    std::vector<NamedPath> GetRawPaths(const string &contig_path) const;
+    std::vector<NamedPath> GetRawPaths(const std::filesystem::path &contig_path) const;
 
     std::vector<std::vector<EdgeWithMapping>> StripNames(const std::vector<NamedSimplePath> &named_paths) const;
 
@@ -211,7 +211,7 @@ class FilteredReferencePathHelper {
         index_(index),
         kmer_mapper_(kmer_mapper) {};
 
-    UniqueReferencePaths GetFilteredReferencePathsFromUnique(const string &path_to_reference,
+    UniqueReferencePaths GetFilteredReferencePathsFromUnique(const std::filesystem::path &path_to_reference,
                                                              const ScaffoldingUniqueEdgeStorage &unique_storage) const;
 
   private:

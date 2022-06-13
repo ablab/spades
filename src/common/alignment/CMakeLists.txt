@@ -11,6 +11,7 @@ project(alignment CXX)
 add_library(alignment STATIC
             gap_info.cpp
             bwa_index.cpp
+            kmer_sequence_mapper.cpp
             long_read_mapper.cpp
             sequence_mapper_notifier.cpp
             kmer_sequence_mapper.cpp

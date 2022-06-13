@@ -10,11 +10,11 @@
 #include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 #include "barcode_index/barcode_index_builder.hpp"
 #include "barcode_index/barcode_info_extractor.hpp"
+#include "library/library.hpp"
+#include "library/library_data.hpp"
 #include "io/graph/gfa_reader.hpp"
 #include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
-#include "pipeline/library.hpp"
-#include "pipeline/library_data.hpp"
 
 namespace cont_index {
 
@@ -91,7 +91,7 @@ class GFAGraphConstructor {
                         const gfa::GFAReader &gfa,
                         io::IdMapper<std::string> *id_mapper);
 
-    scaffold_graph::ScaffoldGraph ConstructGraphFromLinks() const;
+//    scaffold_graph::ScaffoldGraph ConstructGraphFromLinks() const;
     scaffold_graph::ScaffoldGraph ConstructGraphFromDBG() const;
 
   private:
@@ -110,6 +110,6 @@ scaffold_graph::ScaffoldGraph GetTellSeqScaffoldGraph(const debruijn_graph::Grap
                                                       size_t max_threads,
                                                       bool bin_load,
                                                       bool debug,
-                                                      const std::string &output_dir,
+                                                      const std::filesystem::path &output_dir,
                                                       io::IdMapper<std::string> *id_mapper);
 }

@@ -17,13 +17,13 @@ class ScaffoldGraphPipelineValidator {
     typedef ScaffoldGraphConstructionPipeline Pipeline;
     ScaffoldGraphPipelineValidator(const string &path_to_reference,
                                    const ScaffoldingUniqueEdgeStorage &unique_storage,
-                                   const GraphPack &gp);
+                                   const graph_pack::GraphPack &gp);
 
-    void ValidateStagesResults(const Pipeline &pipeline, const std::string &output_path) const;
+    void ValidateStagesResults(const Pipeline &pipeline, const std::filesystem::path &output_path) const;
   private:
     const std::string path_to_reference_;
     const ScaffoldingUniqueEdgeStorage &unique_storage_;
-    const GraphPack &gp_;
+    const graph_pack::GraphPack &gp_;
 
     DECL_LOGGER("ScaffoldGraphPipelineValidator");
 };

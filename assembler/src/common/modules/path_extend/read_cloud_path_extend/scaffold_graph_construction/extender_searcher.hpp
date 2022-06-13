@@ -67,7 +67,7 @@ struct ReadCloudSearchParameterPack {
 
 class DefaultExtenderParamsConstructor {
   public:
-    using GraphPack = debruijn_graph::GraphPack;
+    using GraphPack = graph_pack::GraphPack;
 
     DefaultExtenderParamsConstructor(const GraphPack &gp,
                                      const config::dataset &dataset_info,

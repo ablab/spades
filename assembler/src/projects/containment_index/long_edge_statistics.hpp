@@ -17,7 +17,7 @@ class LongEdgeStatisticsCounter {
                               const size_t &read_count_threshold,
                               const size_t &read_linkage_distance,
                               const size_t &max_threads,
-                              const std::string &base_output_path);
+                              const std::filesystem::path &base_output_path);
 
     void CountDoubleCoverageDistribution() const;
     void CountClusterStatistics() const;
@@ -29,7 +29,7 @@ class LongEdgeStatisticsCounter {
     size_t read_count_threshold_;
     size_t read_linkage_distance_;
     size_t max_threads_;
-    std::string base_output_path_;
+    std::filesystem::path base_output_path_;
 };
 
 }

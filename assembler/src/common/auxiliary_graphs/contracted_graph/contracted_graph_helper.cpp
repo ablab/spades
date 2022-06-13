@@ -8,15 +8,15 @@
 
 namespace contracted_graph {
 
-std::shared_ptr<ContractedGraph> ContractedGraphFactoryHelper::ConstructFromUniqueStorage(
-        const UniqueStorage &unique_storage) const {
-    std::function<bool(debruijn_graph::EdgeId)> edge_predicate = [&unique_storage](debruijn_graph::EdgeId edge) {
-      return unique_storage.IsUnique(edge);
-    };
-    DBGContractedGraphFactory factory(g_, edge_predicate);
-    factory.Construct();
-    return factory.GetGraph();
-}
+//std::shared_ptr<ContractedGraph> ContractedGraphFactoryHelper::ConstructFromUniqueStorage(
+//        const UniqueStorage &unique_storage) const {
+//    std::function<bool(debruijn_graph::EdgeId)> edge_predicate = [&unique_storage](debruijn_graph::EdgeId edge) {
+//      return unique_storage.IsUnique(edge);
+//    };
+//    DBGContractedGraphFactory factory(g_, edge_predicate);
+//    factory.Construct();
+//    return factory.GetGraph();
+//}
 std::shared_ptr<ContractedGraph> ContractedGraphFactoryHelper::ExtractContractedSubgraph(
         const ContractedGraph &other,
         const std::unordered_set<VertexId> &vertices) const {

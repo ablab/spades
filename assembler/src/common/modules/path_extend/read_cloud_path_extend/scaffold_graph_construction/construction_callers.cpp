@@ -8,10 +8,10 @@
 
 #include "scaffold_graph_construction_pipeline.hpp"
 #include "containment_index_threshold_finder.hpp"
-#include "assembly_graph/graph_support/scaff_supplementary.hpp"
 #include "barcode_index/scaffold_vertex_index_builder.hpp"
 #include "modules/path_extend/read_cloud_path_extend/scaffold_graph_extractor.hpp"
 #include "modules/path_extend/pipeline/launcher.hpp"
+#include "modules/path_extend/scaff_supplementary.hpp"
 
 namespace path_extend {
 namespace read_cloud {
@@ -127,7 +127,7 @@ BarcodeConnectionConstructorCaller::GraphConstructor BarcodeConnectionConstructo
 //    return constructor;
 //}
 //CompositeConnectionConstructorCaller::CompositeConnectionConstructorCaller(
-//        const debruijn_graph::GraphPack &gp,
+//        const graph_pack::GraphPack &gp,
 //        MainBarcodeIndexPtr main_extractor,
 //        ScaffoldBarcodeIndexPtr barcode_extractor,
 //        const path_extend::ScaffoldingUniqueEdgeStorage &unique_storage,

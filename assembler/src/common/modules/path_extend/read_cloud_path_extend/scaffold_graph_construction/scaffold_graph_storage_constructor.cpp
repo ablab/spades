@@ -49,7 +49,7 @@ ScaffoldGraphStorageConstructor::ScaffoldGraphStorageConstructor(const Scaffoldi
                                                                  const ReadCloudConfigsT &configs,
                                                                  const ReadCloudSearchParameterPack &search_params,
                                                                  const std::string &scaffold_graph_path,
-                                                                 const GraphPack &gp) :
+                                                                 const graph_pack::GraphPack &gp) :
     small_length_storage_(small_length_storage), large_length_storage_(large_length_storage),
     small_length_threshold_(small_length_threshold), large_length_threshold_(large_length_threshold),
     max_threads_(max_threads),lib_(lib), configs_(configs), search_params_(search_params),
@@ -98,7 +98,6 @@ void ScaffoldGraphPolisherHelper::PrintScaffoldGraphReferenceInfo(const scaffold
                                                                   const ScaffoldingUniqueEdgeStorage &unique_storage,
                                                                   const std::string &path_to_reference) const {
     DEBUG("Path to reference: " << path_to_reference);
-    DEBUG("Path exists: " << fs::check_existence(path_to_reference));
     validation::ScaffoldGraphValidator scaffold_graph_validator(g_);
     validation::FilteredReferencePathHelper path_helper(g_, index_, kmer_mapper_);
     auto reference_paths = path_helper.GetFilteredReferencePathsFromUnique(path_to_reference, unique_storage);
@@ -167,7 +166,7 @@ ScaffoldGraphPolisherHelper::ScaffoldGraph ScaffoldGraphPolisherHelper::ApplyRel
 }
 
 CloudScaffoldGraphConstructor::CloudScaffoldGraphConstructor(const size_t max_threads_,
-                                                             const debruijn_graph::GraphPack &gp,
+                                                             const graph_pack::GraphPack &gp,
                                                              const ScaffoldingUniqueEdgeStorage &unique_storage,
                                                              const LibraryT &lib,
                                                              const ReadCloudConfigsT &configs,
@@ -258,9 +257,10 @@ CloudScaffoldGraphConstructor::ScaffoldGraph CloudScaffoldGraphConstructor::Cons
         validation::ScaffoldGraphPipelineValidator pipeline_validator(configs_.statistics.genome_path,
                                                                       unique_storage,
                                                                       gp_);
-        std::string stats_output_path = fs::append_path(debug_output_path_, std::to_string(min_length));
-        fs::remove_if_exists(stats_output_path);
-        fs::make_dir(stats_output_path);
+        std::filesystem::path len_path(std::to_string(min_length));
+        std::filesystem::path stats_output_path = debug_output_path_ / len_path;
+        std::filesystem::remove(stats_output_path);
+        std::filesystem::create_directory(stats_output_path);
         pipeline_validator.ValidateStagesResults(pipeline, stats_output_path);
         const auto intermediate_results = pipeline.GetIntermediateResults();
     }

@@ -30,12 +30,12 @@ class SimpleTransitionGraphValidator {
 
 class SimpleTransitionGraphValidatorConstructor {
   public:
-    SimpleTransitionGraphValidatorConstructor(const GraphPack &gp,
+    SimpleTransitionGraphValidatorConstructor(const graph_pack::GraphPack &gp,
                                               size_t length_threshold);
     SimpleTransitionGraphValidator GetValidator(const string &path_to_reference) const;
 
   private:
-    const GraphPack &gp_;
+    const graph_pack::GraphPack &gp_;
     const Graph &g_;
     const debruijn_graph::EdgeIndex<Graph> &index_;
     const debruijn_graph::KmerMapper<Graph> &kmer_mapper_;

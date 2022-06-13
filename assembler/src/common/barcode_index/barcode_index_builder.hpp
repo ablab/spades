@@ -10,8 +10,8 @@
 
 #include "io/dataset_support/dataset_readers.hpp"
 #include "io/reads/read_processor.hpp"
-#include "modules/alignment/sequence_mapper_notifier.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
+#include "alignment/sequence_mapper_notifier.hpp"
+#include "alignment/sequence_mapper.hpp"
 
 #include <mutex>
 #include <shared_mutex>
