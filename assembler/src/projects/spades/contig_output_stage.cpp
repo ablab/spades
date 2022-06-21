@@ -11,6 +11,7 @@
 #include "assembly_graph/paths/bidirectional_path.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 #include "io/dataset_support/read_converter.hpp"
+#include "assembly_graph/handlers/used_edge_handler.hpp"
 #include "modules/path_extend/pe_resolver.hpp"
 #include "modules/path_extend/pe_utils.hpp"
 
@@ -18,10 +19,11 @@
 
 namespace {
 using namespace debruijn_graph;
+using UsedEdges = omnigraph::UsedEdgeHandler<Graph>;
 
 static constexpr double LARGE_FRACTION = 0.8;
 
-bool CheckUsedPath(const path_extend::BidirectionalPath &path, std::unordered_set<EdgeId> &used_edges) {
+bool CheckUsedPath(const path_extend::BidirectionalPath &path, UsedEdges &used_edges) {
     const Graph& g = path.g();
     size_t used_len = 0;
     size_t total_len = 0;
@@ -29,22 +31,20 @@ bool CheckUsedPath(const path_extend::BidirectionalPath &path, std::unordered_se
     for (size_t i = 0; i < path_len; i++) {
         size_t cur_len = g.length(path.At(i));
         total_len += cur_len;
-        if (used_edges.count(path.At(i))) {
-            used_len += cur_len;
-        }
+        used_len += used_edges.GetUsedLength(path.At(i));
     }
 
     for (size_t i = 0; i < path_len; i++) {
-        used_edges.insert(path.At(i));
-        used_edges.insert(g.conjugate(path.At(i)));
+        used_edges.AddUsed(path.At(i));
+        used_edges.AddUsed(g.conjugate(path.At(i)));
     }
 //FIXME: constant
     return (math::ge((double)used_len, (double)total_len * LARGE_FRACTION));
 }
 
-path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer &sc_storage, std::unordered_set<EdgeId> &used_edges, size_t min_circular_length) {
+path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer &sc_storage, UsedEdges &used_edges, size_t min_circular_length) {
     path_extend::PathContainer res;
-    INFO("Banned " << used_edges.size() <<" used edges");
+    INFO("Banned " << used_edges.size() <<" used bases");
     for (const auto &entry : sc_storage) {
         const path_extend::BidirectionalPath &path = *entry.first;
 
@@ -60,7 +60,7 @@ path_extend::PathContainer GetCircularScaffolds(const path_extend::PathContainer
     return res;
 }
 
-path_extend::PathContainer GetTipScaffolds(const path_extend::PathContainer &sc_storage, const std::unordered_set<VertexId> &forbidden_vertices, std::unordered_set<EdgeId> &used_edges, size_t min_linear_length) {
+path_extend::PathContainer GetTipScaffolds(const path_extend::PathContainer &sc_storage, const std::unordered_set<VertexId> &forbidden_vertices, UsedEdges &used_edges, size_t min_linear_length) {
     path_extend::PathContainer res;
     for (const auto &entry : sc_storage) {
         const path_extend::BidirectionalPath &path = *entry.first;
@@ -210,9 +210,9 @@ void ContigOutput::run(graph_pack::GraphPack &gp, const char*) {
                                                       fastg_writer));
 
             if (outputs_.count(Kind::PlasmidContigs)) {
-                using UsedEdges = omnigraph::SmartContainer<std::unordered_set<EdgeId>, Graph>;
-                if (!gp.count<UsedEdges>("used_edges"))
+                if (!gp.count<UsedEdges>("used_edges")) {
                     gp.add("used_edges", UsedEdges(graph));
+                }
                 PathContainer circulars = GetCircularScaffolds(broken_scaffolds, gp.get_mutable<UsedEdges>("used_edges"), cfg::get().pd->min_circular_length);
                 writer.OutputPaths(circulars,
                                    CreatePathsWriters(output_dir / (outputs_[Kind::PlasmidContigs] + ".circular"),
