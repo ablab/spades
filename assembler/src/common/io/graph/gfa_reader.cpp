@@ -117,18 +117,21 @@ static unsigned HandleLink(const gfa::link &record,
     }
 
     // We need to be careful here: we cannot use EdgeStart since it's
-    // essentially conjugate(EdgeEnd(conjugate(e))) and EdgEend might be empty.
+    // essentially conjugate(EdgeEnd(conjugate(e))) and EdgeEend might be empty.
     // So, instead we're checking two "edge tips" (ends of e1 and e2')
     VertexId v1 = g.EdgeEnd(e1), cv2 = g.EdgeEnd(ce2);
-    if (v1 == VertexId() && cv2 == VertexId()) {
+    if (!v1 && !cv2) {
         v1 = helper.CreateVertex(DeBruijnVertexData(ovl));
         helper.LinkIncomingEdge(v1, e1);
     }
 
-    if (v1 != VertexId()) {
+    if (v1) {
         VERIFY(ovl == g.length(v1));
+        if (cv2 && v1 == g.conjugate(cv2))
+            return ovl;
+
         helper.LinkOutgoingEdge(v1, e2);
-    } else if (cv2 != VertexId()) {
+    } else if (cv2) {
         VERIFY(ovl == g.length(cv2));
         helper.LinkIncomingEdge(g.conjugate(cv2), e1);
     }
@@ -201,7 +204,7 @@ unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
 
     // Add "point tips" of edges
     for (EdgeId e : g.edges()) {
-        if (g.EdgeEnd(e) != VertexId())
+        if (g.EdgeEnd(e))
             continue;
 
         helper.LinkIncomingEdge(helper.CreateVertex(DeBruijnVertexData()),
