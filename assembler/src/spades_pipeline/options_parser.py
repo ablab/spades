@@ -1046,10 +1046,19 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
         if args.careful:
             support.error("you cannot specify --careful in RNA-Seq mode!", log)
 
-    modes_count =  [args.meta, args.large_genome, args.truseq_mode, args.rna, args.plasmid, args.single_cell, args.isolate, args.rnaviral].count(True)
-    if modes_count > 1 and ([args.meta, args.plasmid].count(True) < 2 and [args.meta, args.bio].count(True) < 2 and [args.meta, args.rnaviral].count(True) < 2):
-        support.error("you cannot simultaneously use more than one mode out of "
-                      "Isolate, Metagenomic, Large genome, Illumina TruSeq, RNA-Seq, Plasmid, and Single-cell (except combining Metagenomic and Plasmid)!", log)
+    modes_count =  [args.large_genome, args.rna, args.plasmid, args.meta, args.single_cell, args.isolate, args.rnaviral,
+                    args.corona, args.metaviral, args.metaplasmid, args.bio].count(True)
+    is_metaplasmid = modes_count == 3 and [args.meta, args.plasmid, args.metaplasmid].count(True) == 3
+    is_bgc = modes_count == 2 and [args.meta, args.bio].count(True) == 2
+    is_metaviral = modes_count == 3 and [args.meta, args.plasmid, args.metaviral].count(True) == 3
+    is_rnaviral = modes_count == 2 and [args.meta, args.rnaviral].count(True) == 2
+    is_corona = modes_count == 3 and [args.meta, args.rnaviral, args.corona].count(True) == 3
+    if not (modes_count <= 1 or is_metaplasmid or is_bgc or is_metaviral or is_rnaviral or is_corona):
+        # correct cases:
+        # - either there is 1 or 0 modes specified
+        # - or there is 1 of 5 allowed combinations
+        # everything else is forbidden
+        support.error("Specified mode combination is not supported! Check out user manual for available modes.", log)
     elif modes_count == 0:
         support.warning("No assembly mode was specified! If you intend to assemble high-coverage multi-cell/isolate data, use '--isolate' option.")
 
