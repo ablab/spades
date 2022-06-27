@@ -391,8 +391,20 @@ void AnalyzeVertices(debruijn_graph::Graph &graph,
     std::filesystem::path vertex_output_path = output_path / "vertex_stats.tsv";
     vertex_resolver.PrintVertexResults(vertex_results, vertex_output_path, tmp_path, id_mapper);
     cont_index::PathExtractor path_extractor(graph);
-    const auto &paths = path_extractor.ExtractPaths(vertex_results);
-    path_extractor.PrintPaths(paths, output_path / "contigs.paths", id_mapper);
+    path_extend::PathContainer paths;
+    path_extractor.ExtractPaths(paths, vertex_results);
+    auto name_generator = std::make_shared<path_extend::DefaultContigNameGenerator>();
+    path_extend::ContigWriter writer(graph, name_generator);
+//    path_extractor.PrintPaths(paths, output_path / "contigs.paths", id_mapper);
+
+    std::vector<path_extend::PathsWriterT> path_writers;
+    path_writers.push_back([&](const path_extend::ScaffoldStorage &scaffold_storage) {
+      auto fn = output_path / ("contigs.fasta");
+      INFO("Outputting contigs to " << fn);
+      path_extend::ContigWriter::WriteScaffolds(scaffold_storage, fn);
+    });
+
+    writer.OutputPaths(paths, path_writers);
 }
 
 
