@@ -227,8 +227,9 @@ VertexResolver::VertexResolver(debruijn_graph::Graph &graph,
                                                          length_threshold_(length_threshold),
                                                          threads_(threads),
                                                          score_threshold_(score_threshold) {}
-std::vector<PathExtractor::SimplePath> PathExtractor::ExtractPaths(const VertexResults &vertex_results, bool canonical) const {
-    std::vector<SimplePath> resulting_paths;
+void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
+                                 const VertexResults &vertex_results,
+                                 bool canonical) const {
     std::unordered_map<debruijn_graph::EdgeId, debruijn_graph::EdgeId> in_to_out;
     std::unordered_map<debruijn_graph::EdgeId, size_t> in_degrees;
     std::unordered_map<debruijn_graph::EdgeId, size_t> out_degrees;
@@ -255,62 +256,59 @@ std::vector<PathExtractor::SimplePath> PathExtractor::ExtractPaths(const VertexR
     for (const auto &entry: out_degrees) {
         if (in_degrees.find(entry.first) == in_degrees.end()) {
             if (visited.find(entry.first) == visited.end()) {
-                SimplePath path;
-                path.push_back(entry.first);
-                visited.insert(entry.first);
+                auto &path = paths.Create(graph_, entry.first);
                 debruijn_graph::EdgeId current_edge = entry.first;
                 while (out_degrees.find(current_edge) != out_degrees.end()) {
                     const auto &next_edge = in_to_out.at(current_edge);
                     if (visited.find(next_edge) != visited.end()) {
                         VERIFY_MSG(false, "Edge is visited!");
                     }
-                    path.push_back(next_edge);
+                    path.PushBack(next_edge);
                     current_edge = next_edge;
                 }
-                resulting_paths.push_back(path);
-                end_to_path_idx[path.back()] = resulting_paths.size() - 1;
+//                end_to_path_idx[path.back()] = resulting_paths.size() - 1;
             } else {
                 VERIFY_MSG(false, "Path start is visited!");
             }
         }
     }
-    for (const auto &path: resulting_paths) {
-        std::string path_string;
-        for (const auto &edge: path) {
-            path_string += std::to_string(edge.int_id()) + ",";
-        }
+//    for (const auto &path: resulting_paths) {
+//        std::string path_string;
+//        for (const auto &edge: path) {
+//            path_string += std::to_string(edge.int_id()) + ",";
+//        }
 //        INFO(path_string);
-    }
-    if (canonical) {
-        size_t no_conj = 0;
-        size_t conj_incorrect = 0;
-        std::vector<SimplePath> canonical_paths;
-        size_t total_canonical_size = 0;
-        for (const auto &path: resulting_paths) {
-            const auto &conj_start = graph_.conjugate(path[0]);
-            if (path[0] < conj_start) {
-//                INFO(conj_start);
-                auto conj_path_it = end_to_path_idx.find(conj_start);
-                if (conj_path_it == end_to_path_idx.end()) {
-                    ++no_conj;
-//                    INFO("Conjugate path for edge " << path[0] << " was not found!");
-                    continue;
-                }
-                const auto &conj_path = resulting_paths[conj_path_it->second];
-                if (not IsConjugatePair(path, conj_path)) {
-                    ++conj_incorrect;
-//                    INFO("Pair is not conjugate!");
-                }
-                canonical_paths.push_back(path);
-                total_canonical_size += path.size();
-            }
-        }
-        INFO(canonical_paths.size() << " canoninal paths, total length: " << total_canonical_size);
-        INFO(no_conj << " paths with no conjugates");
-        INFO(conj_incorrect << " paths with incorrect conjugates");
-        return canonical_paths;
-    }
-    return resulting_paths;
+//    }
+//    if (canonical) {
+//        size_t no_conj = 0;
+//        size_t conj_incorrect = 0;
+//        std::vector<SimplePath> canonical_paths;
+//        size_t total_canonical_size = 0;
+//        for (const auto &path: resulting_paths) {
+//            const auto &conj_start = graph_.conjugate(path[0]);
+//            if (path[0] < conj_start) {
+////                INFO(conj_start);
+//                auto conj_path_it = end_to_path_idx.find(conj_start);
+//                if (conj_path_it == end_to_path_idx.end()) {
+//                    ++no_conj;
+////                    INFO("Conjugate path for edge " << path[0] << " was not found!");
+//                    continue;
+//                }
+//                const auto &conj_path = resulting_paths[conj_path_it->second];
+//                if (not IsConjugatePair(path, conj_path)) {
+//                    ++conj_incorrect;
+////                    INFO("Pair is not conjugate!");
+//                }
+//                canonical_paths.push_back(path);
+//                total_canonical_size += path.size();
+//            }
+//        }
+//        INFO(canonical_paths.size() << " canoninal paths, total length: " << total_canonical_size);
+//        INFO(no_conj << " paths with no conjugates");
+//        INFO(conj_incorrect << " paths with incorrect conjugates");
+//        return canonical_paths;
+//    }
+//    return resulting_paths;
 }
 bool PathExtractor::IsConjugatePair(const PathExtractor::SimplePath &first,
                                     const PathExtractor::SimplePath &second) const {
@@ -326,15 +324,15 @@ bool PathExtractor::IsConjugatePair(const PathExtractor::SimplePath &first,
     }
     return true;
 }
-void PathExtractor::PrintPaths(const std::vector<SimplePath> &paths,
-                               const std::filesystem::path &output_path,
-                               io::IdMapper<std::string> *id_mapper) const {
-    std::ofstream out_stream(output_path);
-    for (const auto &path: paths) {
-        for (const auto &edge: path) {
-            out_stream << (*id_mapper)[edge.int_id()] << "\t";
-        }
-        out_stream << std::endl;
-    }
-}
+//void PathExtractor::PrintPaths(const std::vector<SimplePath> &paths,
+//                               const std::filesystem::path &output_path,
+//                               io::IdMapper<std::string> *id_mapper) const {
+//    std::ofstream out_stream(output_path);
+//    for (const auto &path: paths) {
+//        for (const auto &edge: path) {
+//            out_stream << (*id_mapper)[edge.int_id()] << "\t";
+//        }
+//        out_stream << std::endl;
+//    }
+//}
 }

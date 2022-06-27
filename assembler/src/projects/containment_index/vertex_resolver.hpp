@@ -1,8 +1,10 @@
 #pragma once
 
+#include "assembly_graph/paths/bidirectional_path_container.hpp"
+#include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 #include "barcode_index/barcode_info_extractor.hpp"
-
 #include "io/graph/gfa_reader.hpp"
+
 #include "scaffold_graph_helper.hpp"
 
 namespace cont_index {
@@ -42,10 +44,10 @@ class PathExtractor {
   public:
     PathExtractor(const debruijn_graph::Graph &graph) : graph_(graph) {}
 
-    std::vector<SimplePath> ExtractPaths(const VertexResults &vertex_results, bool canonical = true) const;
-    void PrintPaths(const std::vector<SimplePath> &paths,
-                    const std::filesystem::path &output_path,
-                    io::IdMapper<std::string> *id_mapper) const;
+    void ExtractPaths(path_extend::PathContainer &paths, const VertexResults &vertex_results, bool canonical = true) const;
+//    void PrintPaths(const path_extend::PathContainer &paths,
+//                    const std::filesystem::path &output_path,
+//                    io::IdMapper<std::string> *id_mapper) const;
   private:
     bool IsConjugatePair(const SimplePath &first, const SimplePath &second) const;
 
