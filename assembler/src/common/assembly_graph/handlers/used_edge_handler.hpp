@@ -20,9 +20,7 @@ namespace omnigraph {
 
     public:
         UsedEdgeHandler(const Graph &g) :
-                omnigraph::GraphActionHandler<Graph>(g, "UsedEdgeHandler"), storage_() {
-{}
-        }
+                omnigraph::GraphActionHandler<Graph>(g, "UsedEdgeHandler"), storage_() { }
 
         void HandleAdd(EdgeId e) override {
             storage_.emplace(e, 0);
