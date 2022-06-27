@@ -932,7 +932,9 @@ def add_to_cfg(cfg, log, bin_home, spades_home, args):
         hmms = ""
         is_hmmfile= lambda hmmfile: os.path.isfile(hmmfile) \
             and (hmmfile.endswith("hmm") or hmmfile.endswith("hmm.gz") or \
-                 hmmfile.endswith("aa") or hmmfile.endswith("aa.gz"))
+                 hmmfile.endswith("aa") or hmmfile.endswith("aa.gz") or \
+                 hmmfile.endswith("fa") or hmmfile.endswith("fa.gz") or \
+                 hmmfile.endswith("fna") or hmmfile.endswith("fna.gz"))
         if os.path.isdir(hmms_path):
             hmms = ",".join([os.path.join(hmms_path, hmmfile)
                              for hmmfile in os.listdir(hmms_path)

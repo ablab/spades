@@ -25,14 +25,20 @@ extern "C" {
 
 namespace nrps {
 
-static void match_contigs_internal(hmmer::HMMMatcher &matcher, const path_extend::BidirectionalPath &path,
-                                   const std::filesystem::path &path_string,
-                                   const std::string &type, const std::string &desc,
-                                   ContigAlnInfo &res, io::OFastaReadStream &oss_contig, size_t model_length) {
-    for (size_t shift = 0; shift < 3; ++shift) {
-        std::string ref_shift = std::to_string(path.GetId()) + "_" + std::to_string(shift);
-        std::string seq_aas = aa::translate(path_string.c_str() + shift);
-        matcher.match(ref_shift.c_str(), seq_aas.c_str());
+static void MatchContigsInternal(hmmer::HMMMatcher &matcher, const path_extend::BidirectionalPath &path,
+                                 const std::string &path_string,
+                                 const std::string &type, const std::string &desc,
+                                 ContigAlnInfo &res, io::OFastaReadStream &oss_contig, size_t model_length,
+                                 bool isAA = true) {
+    if (isAA) {
+        for (size_t shift = 0; shift < 3; ++shift) {
+            std::string ref_shift = std::to_string(path.GetId()) + "_" + std::to_string(shift);
+            std::string seq_aas = aa::translate(path_string.c_str() + shift);
+            matcher.match(ref_shift.c_str(), seq_aas.c_str());
+        }
+    } else {
+            std::string ref_shift = std::to_string(path.GetId()) + "_0";
+            matcher.match(ref_shift.c_str(), path_string.c_str());
     }
     matcher.summarize();
 
@@ -50,8 +56,8 @@ static void match_contigs_internal(hmmer::HMMMatcher &matcher, const path_extend
                 continue;
             }
             int shift = hit.name()[strlen(hit.name()) - 1] - '0';
-            seqpos.first = seqpos.first * 3  + shift;
-            seqpos.second = seqpos.second * 3  + shift;
+            seqpos.first = seqpos.first * (isAA ? 3 : 1)  + shift;
+            seqpos.second = seqpos.second * (isAA ? 3 : 1)  + shift;
 
             std::string name(hit.name());
 #pragma omp critical
@@ -68,30 +74,31 @@ static void match_contigs_internal(hmmer::HMMMatcher &matcher, const path_extend
     matcher.reset_top_hits();
 }
 
-static void match_contigs(const path_extend::PathContainer &contig_paths, const path_extend::ScaffoldSequenceMaker &scaffold_maker,
-                          const hmmer::HMM &hmm, const hmmer::hmmer_cfg &cfg,
-                          ContigAlnInfo &res, io::OFastaReadStream &oss_contig) {
+static void MatchContigs(const path_extend::PathContainer &contig_paths, const path_extend::ScaffoldSequenceMaker &scaffold_maker,
+                         const hmmer::HMM &hmm, const hmmer::hmmer_cfg &cfg,
+                         ContigAlnInfo &res, io::OFastaReadStream &oss_contig) {
     DEBUG("Total contigs: " << contig_paths.size());
     DEBUG("Model length - " << hmm.length());
     hmmer::HMMMatcher matcher(hmm, cfg);
+    bool isAA = hmm.abc()->type == eslAMINO;
     for (auto iter = contig_paths.begin(); iter != contig_paths.end(); ++iter) {
         const path_extend::BidirectionalPath &path = iter.get();
         if (path.Length() <= 0)
             continue;
 
         std::string path_string = scaffold_maker.MakeSequence(path);
-        match_contigs_internal(matcher, path, path_string,
-                               hmm.name(), hmm.desc() ? hmm.desc() : "",
-                               res, oss_contig, hmm.length());
+        MatchContigsInternal(matcher, path, path_string,
+                             hmm.name(), hmm.desc() ? hmm.desc() : "",
+                             res, oss_contig, hmm.length(), isAA);
 
         const path_extend::BidirectionalPath& conj_path = iter.getConjugate();
         if (conj_path.Length() <= 0)
             continue;
 
         std::string path_string_conj = scaffold_maker.MakeSequence(conj_path);
-        match_contigs_internal(matcher, conj_path, path_string_conj,
-                               hmm.name(), hmm.desc() ? hmm.desc() : "",
-                               res, oss_contig, hmm.length());
+        MatchContigsInternal(matcher, conj_path, path_string_conj,
+                             hmm.name(), hmm.desc() ? hmm.desc() : "",
+                             res, oss_contig, hmm.length(), isAA);
     }
 }
 
@@ -109,10 +116,12 @@ static void ParseHMMFile(std::vector<hmmer::HMM> &hmms, const std::filesystem::p
     }
 }
 
-static void ParseFASTAFile(std::vector<hmmer::HMM> &hmms, const std::filesystem::path &filename) {
-    hmmer::HMMSequenceBuilder builder(hmmer::Alphabet::AMINO, hmmer::ScoreSystem::Default);
+static void ParseFASTAFile(std::vector<hmmer::HMM> &hmms,
+                           const std::filesystem::path &filename, bool useAA = true) {
+    hmmer::HMMSequenceBuilder builder(useAA ? hmmer::Alphabet::AMINO : hmmer::Alphabet::DNA,
+                                      hmmer::ScoreSystem::Default);
 
-    ESL_ALPHABET   *abc  = esl_alphabet_Create(eslAMINO);
+    ESL_ALPHABET   *abc  = esl_alphabet_Create(useAA ? eslAMINO : eslDNA);
     ESL_SQ         *qsq  = esl_sq_CreateDigital(abc);
     ESL_SQFILE     *qfp  = NULL;
     const char *qfile = filename.c_str();
@@ -131,7 +140,7 @@ static void ParseFASTAFile(std::vector<hmmer::HMM> &hmms, const std::filesystem:
 
     // For each sequence, build a model and save it.
     while ((status = esl_sqio_Read(qfp, qsq)) == eslOK) {
-        INFO("Converting " << qsq->name << ", len: " << qsq->n);
+        INFO("Converting " << (useAA ? "AA" : "DNA") << " sequence " << qsq->name << ", len: " << qsq->n);
         hmms.push_back(builder.from_string(qsq));
         esl_sq_Reuse(qsq);
     }
@@ -167,14 +176,19 @@ ContigAlnInfo DomainMatcher::MatchDomains(graph_pack::GraphPack &gp,
     std::vector<hmmer::HMM> hmms;
     for (const auto &f : hmm_files) {
         if (utils::ends_with(f, ".aa") || utils::ends_with(f, ".aa.gz")) {
-            ParseFASTAFile(hmms, f);
+            ParseFASTAFile(hmms, f, true);
+            hcfg.E = hcfg.domE = 0.01;
+        } else if (utils::ends_with(f, ".fa") || utils::ends_with(f, ".fa.gz") |
+                   utils::ends_with(f, ".fna") || utils::ends_with(f, ".fna.gz")) {
+            ParseFASTAFile(hmms, f, false);
             hcfg.E = hcfg.domE = 0.01;
         } else {
             ParseHMMFile(hmms, f);
         }
     }
 
-    // Setup E-value search space size
+    // Setup E-value search space size.  We always use larger size (AA-based),
+    // so it will be a bit conservative for nucleotide HMMs / sequences
     hcfg.Z = 3 * broken_scaffolds.size();
 
 #   pragma omp parallel for
@@ -186,9 +200,9 @@ ContigAlnInfo DomainMatcher::MatchDomains(graph_pack::GraphPack &gp,
             INFO("Matching contigs with " << name);
         }
 
-        match_contigs(broken_scaffolds, scaffold_maker,
-                      hmms[i], hcfg,
-                      local_res, oss_contig);
+        MatchContigs(broken_scaffolds, scaffold_maker,
+                     hmms[i], hcfg,
+                     local_res, oss_contig);
 
 #       pragma omp critical
         {
