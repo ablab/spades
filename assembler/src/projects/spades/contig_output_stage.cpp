@@ -211,9 +211,8 @@ void ContigOutput::run(GraphPack &gp, const char*) {
                                                       fastg_writer));
 
             if (outputs_.count(Kind::PlasmidContigs)) {
-                if (!gp.count<UsedEdges>("used_edges")) {
+                if (!gp.count<UsedEdges>("used_edges"))
                     gp.add("used_edges", UsedEdges(graph));
-                }
                 PathContainer circulars = GetCircularScaffolds(broken_scaffolds, gp.get_mutable<UsedEdges>("used_edges"), cfg::get().pd->min_circular_length);
                 writer.OutputPaths(circulars,
                                    CreatePathsWriters(fs::append_path(output_dir, outputs_[Kind::PlasmidContigs] + ".circular"),
