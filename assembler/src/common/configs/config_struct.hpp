@@ -6,18 +6,19 @@
 //***************************************************************************
 #pragma once
 
-#include <variant>
-
 #include "config_singl.hpp"
 
-#include "library/library.hpp"
-#include "library/library_data.hpp"
 #include "configs/aligner_config.hpp"
 #include "configs/distance_estimation.hpp"
 #include "configs/pe_config_struct.hpp"
+#include "library/library.hpp"
+#include "library/library_data.hpp"
 #include "math/xmath.h"
-#include "utils/verify.hpp"
 #include "utils/logger/logger.hpp"
+#include "utils/verify.hpp"
+
+#include <optional>
+#include <variant>
 
 namespace debruijn_graph {
 namespace config {

@@ -1,29 +1,19 @@
+//***************************************************************************
+//* Copyright (c) 2022 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "stats.hpp"
 
 #include "common/io/graph/gfa_reader.hpp"
-#include "common/utils/logger/log_writers.hpp"
-
-#include <filesystem>
-#include <string>
-#include <unordered_map>
+#include "common/toolchain/utils.hpp"
 
 #include <clipp/clipp.h>
 
-
-void ReadGraph(debruijn_graph::Graph& g, const std::filesystem::path& read_from) {
-    gfa::GFAReader reader(read_from);
-    reader.to_graph(g);
-}
-
-void CreateConsoleLogger(const std::filesystem::path& log_fn="") {
-    using namespace logging;
-    logger *lg = create_logger(exists(log_fn) ? log_fn : "");
-    lg->add_writer(std::make_shared<console_writer>());
-    attach_logger(lg);
-}
-
 int main(int argc, char *argv[]) {
-    CreateConsoleLogger();
+    toolchain::create_console_logger();
+
     std::string command;
     std::string graph_path_;
     std::string yaml_output_path_;
@@ -46,14 +36,15 @@ int main(int argc, char *argv[]) {
     std::filesystem::path graph_path = graph_path_;
     std::filesystem::path yaml_output_path = yaml_output_path_;
 
-    debruijn_graph::Graph g(55); //это ок, что я не знаю k, но создать граф без него не могу?
-    ReadGraph(g, graph_path);
+    gfa::GFAReader reader(graph_path);
+    debruijn_graph::Graph g(reader.k());
+    reader.to_graph(g);
 
     if (command == "stat") {
         std::sort(n_percentiles.begin(), n_percentiles.end());
         std::sort(median_length_percentiles.begin(), median_length_percentiles.end());
         std::sort(sequences_coverage_percentiles.begin(), sequences_coverage_percentiles.end());
-        CalculateStat(g, n_percentiles, median_length_percentiles, sequences_coverage_percentiles, yaml_output_path);
+        gfa_tools::CalculateStat(g, n_percentiles, median_length_percentiles, sequences_coverage_percentiles, yaml_output_path);
     }
 
     return 0;
