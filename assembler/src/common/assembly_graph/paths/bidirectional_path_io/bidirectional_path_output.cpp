@@ -5,10 +5,201 @@
 //***************************************************************************
 
 #include "bidirectional_path_output.hpp"
+#include "assembly_graph/core/graph.hpp"
+#include "io/graph/gfa_writer.hpp"
+
+#include <unordered_set>
 
 namespace path_extend {
 
-void path_extend::ContigWriter::OutputPaths(const PathContainer &paths, const std::vector<PathsWriterT> &writers) const {
+std::string PathWriter::ToPathString(const BidirectionalPath &path) const {
+    if (path.Empty())
+        return "";
+
+    std::string res = short_namer_.EdgeOrientationString(path.Front());
+    for (size_t i = 1; i < path.Size(); ++i) {
+        if (graph_.EdgeEnd(path[i - 1]) != graph_.EdgeStart(path[i]) || path.GapAt(i).gap > 0) {
+            res += ";\n" + short_namer_.EdgeOrientationString(path[i]);
+        } else {
+            res += "," + short_namer_.EdgeOrientationString(path[i]);
+        }
+    }
+    return res;
+}
+
+void FastgPathWriter::WritePaths(const ScaffoldStorage &scaffold_storage, const std::filesystem::path &fn) const {
+    std::ofstream os(fn);
+    for (const auto& scaffold_info : scaffold_storage) {
+        os << scaffold_info.name << "\n"
+           << path_writer_.ToPathString(*scaffold_info.path) << "\n"
+           << scaffold_info.name << "'" << "\n"
+           << path_writer_.ToPathString(*scaffold_info.path->GetConjPath()) << "\n";
+    }
+}
+
+void GFAPathWriter::WritePath(const std::string &name, size_t segment_id,
+                              const std::vector<std::string> &edge_strs,
+                              const std::string &flags) {
+    os_ << 'P' << '\t' ;
+    os_ << name << '_' << segment_id << '\t';
+    std::string delimeter = "";
+    for (const auto& e : edge_strs) {
+        os_ << delimeter << e;
+        delimeter = ',';
+    }
+    os_ << "\t*";
+    if (flags.length())
+        os_ << '\t' << flags;
+    os_ << '\n';
+}
+
+GFAPathWriter::GFAPathWriter(const Graph &graph, std::ostream &os,
+                             io::EdgeNamingF<Graph> naming_f,
+                             Version version)
+        : gfa::GFAWriter(graph, os, naming_f),
+          version_(version) {}
+
+void GFAPathWriter::WritePaths11(const std::vector<EdgeId> &edges,
+                                 const std::string &name,
+                                 const std::string &flags) {
+    std::vector<std::string> segmented_path;
+    size_t segment_id = 1;
+    for (size_t i = 0; i < edges.size() - 1; ++i) {
+        EdgeId e = edges[i];
+        segmented_path.push_back(edge_namer_.EdgeOrientationString(e));
+        if (graph_.EdgeEnd(e) != graph_.EdgeStart(edges[i+1])) {
+            WritePath(name, segment_id, segmented_path, flags);
+            segment_id++;
+            segmented_path.clear();
+        }
+    }
+
+    segmented_path.push_back(edge_namer_.EdgeOrientationString(edges.back()));
+    WritePath(name, segment_id, segmented_path, flags);
+}
+
+void GFAPathWriter::WriteJumpLinks(const JumpLinks &jump_links) {
+    for (auto &link : jump_links) {
+        os_ << 'J' << '\t'
+            << edge_namer_.EdgeOrientationString(link.first, "\t") << '\t'
+            << edge_namer_.EdgeOrientationString(link.second, "\t") << '\t'
+            << "*" << '\t'
+            << "SC:i:1"
+            << '\n';
+    }
+}
+
+
+void GFAPathWriter::WritePaths12(const std::vector<EdgeId> &edges,
+                                 const std::string &name,
+                                 const std::string &flags) {
+    JumpLinks jump_links;
+
+    // First, determine the set of jump links to emit
+    for (size_t i = 0; i < edges.size() - 1; ++i) {
+        EdgeId e = edges[i];
+        if (graph_.EdgeEnd(e) != graph_.EdgeStart(edges[i+1]))
+            jump_links.emplace(edges[i], edges[i+1]);
+    }
+
+    // Emit jump links
+    WriteJumpLinks(jump_links);
+
+    // Emit path. We cannot use function above as we're single-segmented
+    os_ << 'P' << '\t'
+        << name << '\t';
+    std::string delimiter = "";
+    for (size_t i = 0; i < edges.size() - 1; ++i) {
+        EdgeId e = edges[i];
+        os_ << delimiter << edge_namer_.EdgeOrientationString(e);
+        delimiter = (graph_.EdgeEnd(e) == graph_.EdgeStart(edges[i+1]) ? "," : ";");
+    }
+    os_ << delimiter << edge_namer_.EdgeOrientationString(edges.back());
+
+    os_ << "\t*";
+    if (flags.length())
+        os_ << '\t' << flags;
+    os_ << '\n';
+}
+
+void GFAPathWriter::WritePaths(const std::vector<EdgeId> &edges,
+                               const std::string &name,
+                               const std::string &flags) {
+    if (version_ == Version::GFAv11)
+        WritePaths11(edges, name, flags);
+    else
+        WritePaths12(edges, name, flags);;
+}
+
+
+void GFAPathWriter::WritePaths(const ScaffoldStorage &scaffold_storage) {
+    if (version_ == Version::GFAv11)
+        WritePaths11(scaffold_storage);
+    else
+        WritePaths12(scaffold_storage);
+}
+
+void GFAPathWriter::WritePaths12(const ScaffoldStorage &scaffold_storage) {
+    JumpLinks jump_links;
+
+    for (const auto& scaffold_info : scaffold_storage) {
+        const path_extend::BidirectionalPath &p = *scaffold_info.path;
+        if (p.Size() == 0)
+            continue;
+
+        for (size_t i = 0; i < p.Size() - 1; ++i) {
+            EdgeId e = p[i];
+            if (graph_.EdgeEnd(e) != graph_.EdgeStart(p[i+1]) || p.GapAt(i+1).gap > 0)
+                jump_links.emplace(e, p[i+1]);
+        }
+    }
+
+    WriteJumpLinks(jump_links);
+
+    for (const auto& scaffold_info : scaffold_storage) {
+        const path_extend::BidirectionalPath &p = *scaffold_info.path;
+        if (p.Size() == 0)
+            continue;
+
+        os_ << 'P' << '\t'
+            << scaffold_info.name << '\t';
+        std::string delimiter = "";
+        for (size_t i = 0; i < p.Size() - 1; ++i) {
+            EdgeId e = p[i];
+            os_ << delimiter << edge_namer_.EdgeOrientationString(e);
+            delimiter = (graph_.EdgeEnd(e) == graph_.EdgeStart(p[i+1]) ? "," : ";");
+        }
+        os_ << delimiter << edge_namer_.EdgeOrientationString(p.Back())
+            << '\t' << '*' << '\n';
+    }
+}
+
+void GFAPathWriter::WritePaths11(const ScaffoldStorage &scaffold_storage) {
+    for (const auto& scaffold_info : scaffold_storage) {
+        const path_extend::BidirectionalPath &p = *scaffold_info.path;
+        if (p.Size() == 0)
+            continue;
+
+        std::vector<std::string> segmented_path;
+        // size_t id = p.GetId();
+        size_t segment_id = 1;
+        for (size_t i = 0; i < p.Size() - 1; ++i) {
+            EdgeId e = p[i];
+            segmented_path.push_back(edge_namer_.EdgeOrientationString(e));
+            if (graph_.EdgeEnd(e) != graph_.EdgeStart(p[i+1]) || p.GapAt(i+1).gap > 0) {
+                WritePath(scaffold_info.name, segment_id, segmented_path);
+                segment_id++;
+                segmented_path.clear();
+            }
+        }
+
+        segmented_path.push_back(edge_namer_.EdgeOrientationString(p.Back()));
+        WritePath(scaffold_info.name, segment_id, segmented_path);
+    }
+}
+
+
+void ContigWriter::OutputPaths(const PathContainer &paths, const std::vector<PathsWriterT> &writers) const {
     ScaffoldStorage storage;
 
     ScaffoldSequenceMaker scaffold_maker(g_);
