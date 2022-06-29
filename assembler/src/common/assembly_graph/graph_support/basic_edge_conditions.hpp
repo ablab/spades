@@ -150,4 +150,43 @@ private:
 };
 
 
+template<class Graph>
+class CoverageUpperLimit : public EdgeCondition<Graph> {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef EdgeCondition<Graph> base;
+    const double coverage_upper_limit_;
+
+public:
+
+    CoverageUpperLimit(const Graph &g, double coverage_upper_limit)
+            : base(g),
+              coverage_upper_limit_(coverage_upper_limit) {
+    }
+
+    bool Check(EdgeId e) const {
+        return std::isgreater(this->g().coverage(e), coverage_upper_limit_);
+    }
+
+};
+
+template<class Graph>
+class LengthUpperLimit : public EdgeCondition<Graph> {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef EdgeCondition<Graph> base;
+
+    const size_t length_upper_limit_;
+
+public:
+
+    LengthUpperLimit(const Graph &g, size_t length_upper_limit)
+            : base(g),
+              length_upper_limit_(length_upper_limit) {
+    }
+
+    bool Check(EdgeId e) const {
+        return this->g().length(e) > length_upper_limit_;
+    }
+
+};
+
 }

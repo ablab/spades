@@ -33,7 +33,7 @@ void CountEstimatedGenomeLength(const debruijn_graph::Graph& g, StatInfo& info);
 void CountSequencesDegreeInfo(const debruijn_graph::Graph& g, StatInfo& info);
 
 void CalculateStat(const debruijn_graph::Graph& g, const std::vector<double>& n_percentiles,
-               const std::vector<double>& median_length_percentiles,
+               const std::vector<double>& length_percentiles,
                const std::vector<double>& sequences_coverage_percentiles,
                const std::filesystem::path& yaml_output_path);
 }
