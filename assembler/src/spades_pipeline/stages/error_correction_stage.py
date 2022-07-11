@@ -10,7 +10,6 @@
 import os
 import shutil
 import sys
-from distutils import dir_util
 from site import addsitedir
 
 import commands_parser
@@ -63,10 +62,10 @@ class ECRunningToolStage(stage.Stage):
         if os.path.isdir(dst_configs):
             shutil.rmtree(dst_configs)
         if cfg.iontorrent:
-            dir_util.copy_tree(os.path.join(self.tmp_configs_dir, "ionhammer"), dst_configs, preserve_times=False)
+            support.copy_tree(os.path.join(self.tmp_configs_dir, "ionhammer"), dst_configs, preserve_times=False)
             cfg_file_name = os.path.join(dst_configs, "ionhammer.cfg")
         else:
-            dir_util.copy_tree(os.path.join(self.tmp_configs_dir, "hammer"), dst_configs, preserve_times=False)
+            support.copy_tree(os.path.join(self.tmp_configs_dir, "hammer"), dst_configs, preserve_times=False)
             cfg_file_name = os.path.join(dst_configs, "config.info")
 
         cfg.tmp_dir = support.get_tmp_dir(prefix="hammer_")

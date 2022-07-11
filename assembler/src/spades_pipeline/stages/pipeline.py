@@ -9,8 +9,8 @@
 
 import os
 import shutil
-from distutils import dir_util
 
+import support
 import options_storage
 
 class Pipeline(object):
@@ -22,10 +22,10 @@ class Pipeline(object):
             shutil.rmtree(tmp_configs_dir)
         if not os.path.isdir(tmp_configs_dir):
             if options_storage.args.configs_dir:
-                dir_util.copy_tree(options_storage.args.configs_dir, tmp_configs_dir, preserve_times=False,
+                support.copy_tree(options_storage.args.configs_dir, tmp_configs_dir, preserve_times=False,
                                    preserve_mode=False)
             else:
-                dir_util.copy_tree(os.path.join(spades_home, "configs"), tmp_configs_dir, preserve_times=False,
+                support.copy_tree(os.path.join(spades_home, "configs"), tmp_configs_dir, preserve_times=False,
                                    preserve_mode=False)
 
     def add(self, stage):

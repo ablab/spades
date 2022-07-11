@@ -10,7 +10,6 @@
 import os
 import shutil
 import sys
-from distutils import dir_util
 from site import addsitedir
 
 from stages import stage
@@ -71,7 +70,7 @@ class CorrectionIterationStage(stage.Stage):
         dst_configs = os.path.join(self.cfg.output_dir, "configs")
         if os.path.isdir(dst_configs):
             shutil.rmtree(dst_configs)
-        dir_util.copy_tree(os.path.join(self.tmp_configs_dir, "corrector"), dst_configs, preserve_times=False)
+        support.copy_tree(os.path.join(self.tmp_configs_dir, "corrector"), dst_configs, preserve_times=False)
         cfg_file_name = os.path.join(dst_configs, "corrector.info")
 
         self.cfg.tmp_dir = support.get_tmp_dir(prefix="corrector_")

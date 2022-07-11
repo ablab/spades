@@ -9,11 +9,11 @@
 
 import os
 import shutil
-from distutils import dir_util
 
 import commands_parser
 import options_storage
 from stages import stage
+import support
 import process_cfg
 from process_cfg import bool_to_str
 
@@ -139,9 +139,7 @@ class IterationStage(stage.Stage):
         if self.get_stage(self.short_name) == options_storage.BASE_STAGE:
             if not os.path.isdir(data_dir):
                 os.makedirs(data_dir)
-
-            dir_util._path_created = {}  # see http://stackoverflow.com/questions/9160227/dir-util-copy-tree-fails-after-shutil-rmtree
-            dir_util.copy_tree(os.path.join(self.tmp_configs_dir, "debruijn"), dst_configs, preserve_times=False)
+            support.copy_tree(os.path.join(self.tmp_configs_dir, "debruijn"), dst_configs, preserve_times=False)
 
         if self.prev_K:
             additional_contigs_dname = os.path.join(cfg.output_dir, "K%d" % self.prev_K, "simplified_contigs")
