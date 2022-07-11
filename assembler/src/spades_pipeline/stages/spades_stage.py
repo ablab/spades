@@ -15,7 +15,6 @@ from site import addsitedir
 import commands_parser
 import options_storage
 from stages import stage
-from stages import scaffold_correction_stage
 from stages import spades_iteration_stage
 import support
 from process_cfg import merge_configs
@@ -325,16 +324,6 @@ class SpadesStage(stage.Stage):
             if last_one:
                 break
 
-        if self.cfg.correct_scaffolds:
-            self.stages.append(scaffold_correction_stage.ScaffoldCorrectionStage(self.latest,
-                                                                                 "scc",
-                                                                                 self.output_files,
-                                                                                 self.tmp_configs_dir,
-                                                                                 self.dataset_data, self.log,
-                                                                                 self.bin_home,
-                                                                                 self.ext_python_modules_home,
-                                                                                 self.python_modules_home))
-            self.latest = os.path.join(os.path.join(self.cfg.output_dir, "SCC"), "K21")
         if options_storage.args.plasmid and options_storage.args.meta:
             self.stages.append(PlasmidGlueFileStage(self.latest, "plasmid_copy_files", 
                                                     self.output_files,
