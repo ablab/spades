@@ -1,7 +1,5 @@
 #pragma once
 
-#include "assembly_graph/paths/bidirectional_path_container.hpp"
-#include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 #include "barcode_index/barcode_info_extractor.hpp"
 #include "io/graph/gfa_reader.hpp"
 
@@ -39,21 +37,6 @@ struct VertexResults {
   std::unordered_map<debruijn_graph::VertexId, VertexResult> vertex_to_result;
 };
 
-class PathExtractor {
-    typedef std::vector<debruijn_graph::EdgeId> SimplePath;
-  public:
-    PathExtractor(const debruijn_graph::Graph &graph) : graph_(graph) {}
-
-    void ExtractPaths(path_extend::PathContainer &paths, const VertexResults &vertex_results, bool canonical = true) const;
-//    void PrintPaths(const path_extend::PathContainer &paths,
-//                    const std::filesystem::path &output_path,
-//                    io::IdMapper<std::string> *id_mapper) const;
-  private:
-    bool IsConjugatePair(const SimplePath &first, const SimplePath &second) const;
-
-    const debruijn_graph::Graph &graph_;
-};
-
 class VertexResolver {
   public:
     typedef std::unordered_map<debruijn_graph::EdgeId, VertexState> ResolutionResults;
@@ -74,6 +57,7 @@ class VertexResolver {
     void PrintVertexResults(const VertexResults &results,
                             const std::filesystem::path &output_path,
                             const std::filesystem::path &tmp_path,
+                            bool count_unique_kmers,
                             io::IdMapper<std::string> *id_mapper) const;
     std::string VertexResultString(const debruijn_graph::VertexId &vertex,
                                    const VertexResult &vertex_result,
