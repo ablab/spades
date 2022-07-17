@@ -7,6 +7,7 @@
 #include "barcode_index_construction.hpp"
 #include "long_edge_statistics.hpp"
 #include "multiplex_gfa_reader.hpp"
+#include "path_extractor.hpp"
 #include "reference_path_checker.hpp"
 #include "scaffold_graph_helper.hpp"
 #include "vertex_info_getter.hpp"
@@ -50,7 +51,7 @@ struct gcfg {
   double score_threshold = 3.0;
   bool bin_load = false;
   bool debug = false;
-  GraphType graph_type = GraphType::Blunted;
+  GraphType graph_type = GraphType::Multiplexed;
 };
 
 static void process_cmdline(int argc, char** argv, gcfg& cfg) {
@@ -353,24 +354,12 @@ void ReadGraph(const gcfg &cfg,
     switch (cfg.graph_type) {
         default:
             FATAL_ERROR("Unknown graph representation type");
-        case GraphType::Blunted: {
+        case GraphType::Multiplexed: {
             gfa::GFAReader gfa(cfg.graph);
             INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: "
                                   << gfa.num_paths());
             gfa.to_graph(graph, id_mapper);
             return;
-        }
-        case GraphType::Multiplexed: {
-//            cont_index::MultiplexGFAReader demulti_gfa(cfg.graph);
-//            gfa::GFAReader gfa(cfg.graph);
-//            INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: " << gfa.num_paths());
-//            VERIFY_MSG(demulti_gfa.k() != -1U, "Failed to determine k-mer length");
-//            INFO(demulti_gfa.k());
-//            debruijn_graph::Graph struct_graph(demulti_gfa.k());
-//            gfa.to_graph(struct_graph, struct_id_mapper.get());
-//            debruijn_graph::Graph graph(demulti_gfa.k());
-//            demulti_gfa.to_graph(struct_graph, struct_id_mapper.get(), graph, id_mapper.get());
-            FATAL_ERROR("Multiplexed graphs are currently not supported");
         }
     }
 }
@@ -384,12 +373,14 @@ void AnalyzeVertices(debruijn_graph::Graph &graph,
                      double score_threshold,
                      io::IdMapper<std::string> *id_mapper,
                      const std::filesystem::path &output_path,
-                     const std::filesystem::path &tmp_path) {
+                     const std::filesystem::path &tmp_path,
+                     path_extend::GFAPathWriter gfa_writer) {
     cont_index::VertexResolver vertex_resolver
         (graph, barcode_extractor_ptr, count_threshold, tail_threshold, length_threshold, threads, score_threshold);
     const auto &vertex_results = vertex_resolver.ResolveVertices() ;
     std::filesystem::path vertex_output_path = output_path / "vertex_stats.tsv";
-    vertex_resolver.PrintVertexResults(vertex_results, vertex_output_path, tmp_path, id_mapper);
+    bool unique_kmer_count = false;
+    vertex_resolver.PrintVertexResults(vertex_results, vertex_output_path, tmp_path, unique_kmer_count, id_mapper);
     cont_index::PathExtractor path_extractor(graph);
     path_extend::PathContainer paths;
     path_extractor.ExtractPaths(paths, vertex_results);
@@ -403,8 +394,33 @@ void AnalyzeVertices(debruijn_graph::Graph &graph,
       INFO("Outputting contigs to " << fn);
       path_extend::ContigWriter::WriteScaffolds(scaffold_storage, fn);
     });
+    path_writers.push_back([&](const path_extend::ScaffoldStorage &storage) {
+      INFO("Populating GFA with scaffold paths");
+      gfa_writer.WritePaths(storage);
+    });
 
     writer.OutputPaths(paths, path_writers);
+//    std::unordered_map<
+
+//    INFO("Split vertices");
+//    auto helper = graph.GetConstructionHelper();
+//
+//    for (const auto &vertex_entry: vertex_results.vertex_to_result) {
+//        const auto &vertex = vertex_entry.first;
+//        uint32_t overlap = graph.data(vertex).overlap();
+//        const auto &vertex_result = vertex_entry.second;
+//        if (vertex_result.state == VertexState::Completely) {
+//            for (const auto &entry: vertex_result.supported_pairs) {
+//                EdgeId in_edge = entry.first;
+//                EdgeId out_edge = entry.second;
+//                helper.DeleteLink(vertex, out_edge);
+//                helper.DeleteLink(graph.conjugate(in_edge), graph.conjugate(vertex));
+//                v1 = helper.CreateVertex(DeBruijnVertexData(ovl));
+//                helper.
+//            }
+//            graph.DeleteVertex(vertex_entry.first);
+//        }
+//    }
 }
 
 
@@ -434,7 +450,8 @@ int main(int argc, char** argv) {
     INFO("Graph loaded. Total vertices: " << graph.size() << ", total edges: " << graph.e_size());
 
     std::ofstream graph_out(cfg.output_dir / "assembly_graph.gfa");
-    gfa::GFAWriter gfa_writer(graph, graph_out);
+    path_extend::GFAPathWriter gfa_writer(graph, graph_out,
+                                          io::MapNamingF<debruijn_graph::ConjugateDeBruijnGraph>(*id_mapper));
     gfa_writer.WriteSegmentsAndLinks();
 
     INFO("Building barcode index");
@@ -498,7 +515,7 @@ int main(int argc, char** argv) {
         }
 
         AnalyzeVertices(graph, barcode_extractor_ptr, count_threshold, tail_threshold, length_threshold, cfg.nthreads,
-                        2.0, id_mapper.get(), cfg.output_dir, cfg.tmpdir);
+                        2.0, id_mapper.get(), cfg.output_dir, cfg.tmpdir, gfa_writer);
 
 
 //        GetLongEdgeStatistics(graph, barcode_index, training_length_threshold, training_length_offset,
@@ -508,10 +525,5 @@ int main(int argc, char** argv) {
 //            cont_index::ReferencePathChecker ref_path_checker(graph, id_mapper.get());
 //            ref_path_checker.CheckAssemblyGraph(cfg.refpath);
 //        }
-        bool lja = true;
-//        GetPathClusters(graph, barcode_extractor_ptr, hifi_graph, read_linkage_distance, relative_score_threshold,
-//                        min_read_threshold, length_threshold, cfg.nthreads, id_mapper.get(), lja, cfg.output_dir);
-//        ConstructCloudOnlyLinks(graph, barcode_extractor_ptr, graph_score_threshold, length_threshold, tail_threshold,
-//                                count_threshold, cfg.nthreads, cfg.bin_load, cfg.debug, cfg.output_dir, id_mapper.get());
     }
 }

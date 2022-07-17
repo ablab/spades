@@ -140,38 +140,46 @@ std::string VertexResolver::VertexResultString(const debruijn_graph::VertexId &v
 void VertexResolver::PrintVertexResults(const VertexResults &results,
                                         const std::filesystem::path &output_path,
                                         const std::filesystem::path &tmp_path,
+                                        bool count_unique_kmers,
                                         io::IdMapper<std::string> *id_mapper) const {
 
     std::unordered_map<EdgeId, size_t> unique_kmer_counter;
-    using EdgeIndex = debruijn_graph::EdgeIndex<debruijn_graph::Graph>;
-    INFO("Constructing index");
-    size_t k = 31;
-    std::unique_ptr<EdgeIndex> index;
-
-    const std::string index_output = tmp_path / "tmp_index";
-    std::filesystem::create_directory(index_output);
-    index.reset(new debruijn_graph::EdgeIndex<debruijn_graph::Graph>(graph_, index_output));
-    index->Refill(k);
-    size_t total_kmers = 0;
-    size_t unique_kmers = 0;
     for (const EdgeId &edge: graph_.canonical_edges()) {
-        const auto &sequence = graph_.EdgeNucls(edge);
-        EdgeIndex::KMer kmer = sequence.start<RtSeq>(k) >> 'A';
-        for (size_t j = k - 1; j < sequence.size(); ++j) {
-            ++total_kmers;
-            uint8_t inchar = sequence[j];
-            kmer <<= inchar;
-
-            auto pos = index->get(kmer);
-            if (pos.second == EdgeIndex::NOT_FOUND)
-                continue;
-
-            ++unique_kmer_counter[edge];
-            ++unique_kmers;
-        }
+        unique_kmer_counter[edge] = 0;
     }
-    INFO("Constructed unique kmer counter")
-    INFO("Unique kmers: " << unique_kmers << ", total: " << total_kmers);
+
+    if (count_unique_kmers) {
+        using EdgeIndex = debruijn_graph::EdgeIndex<debruijn_graph::Graph>;
+        INFO("Constructing index");
+        size_t k = 31;
+        std::unique_ptr<EdgeIndex> index;
+
+        const std::string index_output = tmp_path / "tmp_index";
+        std::filesystem::create_directory(index_output);
+        index.reset(new debruijn_graph::EdgeIndex<debruijn_graph::Graph>(graph_, index_output));
+        index->Refill(k);
+        size_t total_kmers = 0;
+        size_t unique_kmers = 0;
+        for (const EdgeId &edge: graph_.canonical_edges()) {
+            unique_kmer_counter[edge] = 0;
+            const auto &sequence = graph_.EdgeNucls(edge);
+            EdgeIndex::KMer kmer = sequence.start<RtSeq>(k) >> 'A';
+            for (size_t j = k - 1; j < sequence.size(); ++j) {
+                ++total_kmers;
+                uint8_t inchar = sequence[j];
+                kmer <<= inchar;
+
+                auto pos = index->get(kmer);
+                if (pos.second == EdgeIndex::NOT_FOUND)
+                    continue;
+
+                ++unique_kmer_counter[edge];
+                ++unique_kmers;
+            }
+        }
+        INFO("Constructed unique kmer counter")
+        INFO("Unique kmers: " << unique_kmers << ", total: " << total_kmers);
+    }
 
     std::ofstream ver_stream(output_path);
     ver_stream <<
@@ -227,112 +235,5 @@ VertexResolver::VertexResolver(debruijn_graph::Graph &graph,
                                                          length_threshold_(length_threshold),
                                                          threads_(threads),
                                                          score_threshold_(score_threshold) {}
-void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
-                                 const VertexResults &vertex_results,
-                                 bool canonical) const {
-    std::unordered_map<debruijn_graph::EdgeId, debruijn_graph::EdgeId> in_to_out;
-    std::unordered_map<debruijn_graph::EdgeId, size_t> in_degrees;
-    std::unordered_map<debruijn_graph::EdgeId, size_t> out_degrees;
-    for (const auto &vertex_entry: vertex_results.vertex_to_result) {
-        const auto &vertex_result = vertex_entry.second;
-        for (const auto &entry: vertex_result.supported_pairs) {
-            if (vertex_result.state == VertexState::Completely or vertex_result.state == VertexState::Partially) {
-                if (in_to_out.find(entry.first) == in_to_out.end()) {
-                    in_to_out[entry.first] = entry.second;
-                    in_degrees[entry.second]++;
-                    out_degrees[entry.first]++;
-                }
-            }
-        }
-    }
-    for (const auto &entry: in_degrees) {
-        VERIFY_MSG(entry.second < 2, "In degree " << entry.second << ", " << entry.first);
-    }
-    for (const auto &entry: out_degrees) {
-        VERIFY_MSG(entry.second < 2, "Out degree " << entry.second << ", " << entry.first);
-    }
-    std::unordered_set<debruijn_graph::EdgeId> visited;
-    std::unordered_map<debruijn_graph::EdgeId, size_t> end_to_path_idx;
-    for (const auto &entry: out_degrees) {
-        if (in_degrees.find(entry.first) == in_degrees.end()) {
-            if (visited.find(entry.first) == visited.end()) {
-                auto &path = paths.Create(graph_, entry.first);
-                debruijn_graph::EdgeId current_edge = entry.first;
-                while (out_degrees.find(current_edge) != out_degrees.end()) {
-                    const auto &next_edge = in_to_out.at(current_edge);
-                    if (visited.find(next_edge) != visited.end()) {
-                        VERIFY_MSG(false, "Edge is visited!");
-                    }
-                    path.PushBack(next_edge);
-                    current_edge = next_edge;
-                }
-//                end_to_path_idx[path.back()] = resulting_paths.size() - 1;
-            } else {
-                VERIFY_MSG(false, "Path start is visited!");
-            }
-        }
-    }
-//    for (const auto &path: resulting_paths) {
-//        std::string path_string;
-//        for (const auto &edge: path) {
-//            path_string += std::to_string(edge.int_id()) + ",";
-//        }
-//        INFO(path_string);
-//    }
-//    if (canonical) {
-//        size_t no_conj = 0;
-//        size_t conj_incorrect = 0;
-//        std::vector<SimplePath> canonical_paths;
-//        size_t total_canonical_size = 0;
-//        for (const auto &path: resulting_paths) {
-//            const auto &conj_start = graph_.conjugate(path[0]);
-//            if (path[0] < conj_start) {
-////                INFO(conj_start);
-//                auto conj_path_it = end_to_path_idx.find(conj_start);
-//                if (conj_path_it == end_to_path_idx.end()) {
-//                    ++no_conj;
-////                    INFO("Conjugate path for edge " << path[0] << " was not found!");
-//                    continue;
-//                }
-//                const auto &conj_path = resulting_paths[conj_path_it->second];
-//                if (not IsConjugatePair(path, conj_path)) {
-//                    ++conj_incorrect;
-////                    INFO("Pair is not conjugate!");
-//                }
-//                canonical_paths.push_back(path);
-//                total_canonical_size += path.size();
-//            }
-//        }
-//        INFO(canonical_paths.size() << " canoninal paths, total length: " << total_canonical_size);
-//        INFO(no_conj << " paths with no conjugates");
-//        INFO(conj_incorrect << " paths with incorrect conjugates");
-//        return canonical_paths;
-//    }
-//    return resulting_paths;
-}
-bool PathExtractor::IsConjugatePair(const PathExtractor::SimplePath &first,
-                                    const PathExtractor::SimplePath &second) const {
-    if (first.size() != second.size()) {
-//        INFO("Different lengths");
-        return false;
-    }
-    for (auto it1 = first.begin(), it2 = second.end(); it1 != first.end(); ++it1) {
-        --it2;
-        if (*it1 != graph_.conjugate(*it2)) {
-            return false;
-        }
-    }
-    return true;
-}
-//void PathExtractor::PrintPaths(const std::vector<SimplePath> &paths,
-//                               const std::filesystem::path &output_path,
-//                               io::IdMapper<std::string> *id_mapper) const {
-//    std::ofstream out_stream(output_path);
-//    for (const auto &path: paths) {
-//        for (const auto &edge: path) {
-//            out_stream << (*id_mapper)[edge.int_id()] << "\t";
-//        }
-//        out_stream << std::endl;
-//    }
-//}
+
 }
