@@ -1,6 +1,6 @@
 set(PROJECT_NAME gfa_tools)
 project(${PROJECT_NAME})
 
-add_executable(${PROJECT_NAME} main.cpp stats.cpp parser.cpp reduce.cpp)
+add_executable(${PROJECT_NAME} main.cpp stats.cpp parser.cpp reduce.cpp find_scope.cpp)
 
 target_link_libraries(${PROJECT_NAME} assembly_graph toolchain graphio common_modules)

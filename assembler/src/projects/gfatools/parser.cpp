@@ -37,7 +37,9 @@ CommandLineArguments::CommandLineArguments(int argc, char *argv[]) {
             option("--maxlen").set(is_maximal_length_threshold) & value("maximal sequence length", maximal_length_threshold_),
             option("--minlen").set(is_minimal_length_threshold) & value("minimal sequence length", minimal_length_threshold_),
             option("--del_isolated").set(delete_isolated_edges),
-            option("--output_graph") & value("path to output graph", graph_output_path_)
+            option("--output_graph") & value("path to output graph", graph_output_path_),
+            option("--sequence_scope") & value("name of a sequence to find a scope around", sequence_name_to_find_scope),
+            option("--scope_depth") & value("depth of a scope", scope_depth)
     );
     parse(argc, argv, cli);
     graph_path = graph_path_;

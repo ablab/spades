@@ -23,6 +23,8 @@ class CommandLineArguments {
     const std::optional<size_t> GetMaximalLengthThreshold() const {return maximal_length_threshold;}
     const bool GetDeleteIsolatedEdges() const {return delete_isolated_edges;}
     const std::filesystem::path GetGraphOutputPath() const {return graph_output_path;}
+    const std::string GetSequenceNameToFindScope() const {return sequence_name_to_find_scope;}
+    const size_t GetScopeDepth() const {return scope_depth;}
 
  private:
     std::string command;
@@ -38,6 +40,9 @@ class CommandLineArguments {
     std::optional<size_t> maximal_length_threshold;
     std::optional<size_t> minimal_length_threshold;
     bool delete_isolated_edges = false;
+
+    std::string sequence_name_to_find_scope;
+    size_t scope_depth;
 
     std::filesystem::path graph_output_path;
 };
