@@ -40,6 +40,14 @@ public:
         return id_map_.size();
     }
 
+    bool contains(size_t id) const {
+        return id_map_.count(id) != 0;
+    }
+
+    bool contains(const IdType &id) const {
+        return back_map_.count(id) != 0;
+    }
+
 private:
     std::unordered_map<size_t, IdType> id_map_;
     std::unordered_map<IdType, size_t> back_map_;

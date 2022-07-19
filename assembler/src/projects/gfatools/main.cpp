@@ -41,16 +41,20 @@ int main(int argc, char *argv[]) {
     }
 
     if (command_line_arguments.GetCommand() == "around_sequence_scope") {
-            std::string sequence_name = command_line_arguments.GetSequenceNameToFindScope();
-            debruijn_graph::EdgeId edge_id((*id_mapper)[sequence_name]);
-            size_t scope_depth = command_line_arguments.GetScopeDepth();
-            omnigraph::GraphComponent<debruijn_graph::Graph> scope = 
-                                gfa_tools::FindAroundSequenceScope(g, edge_id, scope_depth);
-            std::filesystem::path output = command_line_arguments.GetGraphOutputPath();
-            std::ofstream os(output);
-            gfa::GFAComponentWriter writer(scope, os, io::MapNamingF<debruijn_graph::Graph>(*id_mapper));
-            writer.WriteSegmentsAndLinks();
-            INFO("Scope around sequence " << sequence_name << " is saved to " << output);
+        std::string sequence_name = command_line_arguments.GetSequenceNameToFindScope();
+        if (!id_mapper->contains(sequence_name)) {
+            ERROR("There is no sequence " << sequence_name << " in the graph");
+            return 0;
+        }
+        debruijn_graph::EdgeId edge_id((*id_mapper)[sequence_name]);
+        size_t scope_depth = command_line_arguments.GetScopeDepth();
+        omnigraph::GraphComponent<debruijn_graph::Graph> scope = 
+                            gfa_tools::FindAroundSequenceScope(g, edge_id, scope_depth);
+        std::filesystem::path output = command_line_arguments.GetGraphOutputPath();
+        std::ofstream os(output);
+        gfa::GFAComponentWriter writer(scope, os, io::MapNamingF<debruijn_graph::Graph>(*id_mapper));
+        writer.WriteSegmentsAndLinks();
+        INFO("Scope around sequence " << sequence_name << " is saved to " << output);
     }
     return 0;  
 }
