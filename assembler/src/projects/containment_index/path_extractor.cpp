@@ -15,7 +15,7 @@ void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
         total_length += graph_.length(edge);
         ++total_edges;
     }
-    for (const debruijn_graph::VertexId &vertex: graph_.vertices()) {
+    for (const debruijn_graph::VertexId &vertex: graph_.canonical_vertices()) {
         total_overlap += graph_.data(vertex).overlap();
     }
 

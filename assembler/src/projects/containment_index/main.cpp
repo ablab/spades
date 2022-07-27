@@ -14,6 +14,7 @@
 #include "vertex_resolver.hpp"
 #include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 
+#include "assembly_graph/core/construction_helper.hpp"
 #include "io/binary/read_cloud.hpp"
 #include "io/graph/gfa_writer.hpp"
 #include "modules/path_extend/read_cloud_path_extend/cluster_storage/edge_cluster_extractor.hpp"
@@ -400,26 +401,30 @@ void AnalyzeVertices(debruijn_graph::Graph &graph,
     });
 
     writer.OutputPaths(paths, path_writers);
-//    std::unordered_map<
 
-//    INFO("Split vertices");
-//    auto helper = graph.GetConstructionHelper();
+    std::unordered_map<VertexId, VertexId> new_to_old;
+    INFO("Split vertices");
+    auto helper = graph.GetConstructionHelper();
+
+    for (const auto &vertex_entry: vertex_results.vertex_to_result) {
+        const VertexId &vertex = vertex_entry.first;
+        uint32_t overlap = graph.data(vertex).overlap();
+        const auto &vertex_result = vertex_entry.second;
+        if (vertex_result.state == VertexState::Completely) {
+            for (const auto &entry: vertex_result.supported_pairs) {
+                EdgeId in_edge = entry.first;
+                EdgeId out_edge = entry.second;
+                helper.DeleteLink(vertex, out_edge);
+                helper.DeleteLink(graph.conjugate(vertex), graph.conjugate(in_edge));
+                new_vertex = helper.CreateVertex(DeBruijnVertexData(overlap));
+                new_to_old[new_vertex] = vertex
+            }
+            graph.DeleteVertex(vertex_entry.first);
+        }
+    }
+
+//    for (const auto &path: paths) {
 //
-//    for (const auto &vertex_entry: vertex_results.vertex_to_result) {
-//        const auto &vertex = vertex_entry.first;
-//        uint32_t overlap = graph.data(vertex).overlap();
-//        const auto &vertex_result = vertex_entry.second;
-//        if (vertex_result.state == VertexState::Completely) {
-//            for (const auto &entry: vertex_result.supported_pairs) {
-//                EdgeId in_edge = entry.first;
-//                EdgeId out_edge = entry.second;
-//                helper.DeleteLink(vertex, out_edge);
-//                helper.DeleteLink(graph.conjugate(in_edge), graph.conjugate(vertex));
-//                v1 = helper.CreateVertex(DeBruijnVertexData(ovl));
-//                helper.
-//            }
-//            graph.DeleteVertex(vertex_entry.first);
-//        }
 //    }
 }
 
