@@ -75,7 +75,7 @@ VertexState VertexResolver::GetState(const std::unordered_map<EdgeId, EdgeId> &i
 }
 VertexResults VertexResolver::ResolveVertices() {
     std::unordered_set<debruijn_graph::VertexId> interesting_vertices;
-    for (const auto &vertex: graph_.vertices()) {
+    for (const auto &vertex: graph_.canonical_vertices()) {
         //todo use predicate iterator
         if (graph_.OutgoingEdgeCount(vertex) >= 2 and graph_.IncomingEdgeCount(vertex) >= 2) {
             interesting_vertices.insert(vertex);
