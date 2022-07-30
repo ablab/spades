@@ -15,6 +15,7 @@
 #include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 
 #include "assembly_graph/core/construction_helper.hpp"
+#include "assembly_graph/core/observable_graph.hpp"
 #include "io/binary/read_cloud.hpp"
 #include "io/graph/gfa_writer.hpp"
 #include "modules/path_extend/read_cloud_path_extend/cluster_storage/edge_cluster_extractor.hpp"
@@ -408,24 +409,38 @@ void AnalyzeVertices(debruijn_graph::Graph &graph,
 
     for (const auto &vertex_entry: vertex_results.vertex_to_result) {
         const VertexId &vertex = vertex_entry.first;
+        INFO("Conjugate: " << graph.conjugate(vertex).int_id());
         uint32_t overlap = graph.data(vertex).overlap();
         const auto &vertex_result = vertex_entry.second;
         if (vertex_result.state == VertexState::Completely) {
             for (const auto &entry: vertex_result.supported_pairs) {
                 EdgeId in_edge = entry.first;
                 EdgeId out_edge = entry.second;
+                INFO("In edge: " << in_edge.int_id() << ", out edge: " << out_edge.int_id() << ", vertex: " << vertex.int_id());
                 helper.DeleteLink(vertex, out_edge);
                 helper.DeleteLink(graph.conjugate(vertex), graph.conjugate(in_edge));
-                new_vertex = helper.CreateVertex(DeBruijnVertexData(overlap));
-                new_to_old[new_vertex] = vertex
+                VertexId new_vertex = helper.CreateVertex(DeBruijnVertexData(overlap));
+                new_to_old[new_vertex] = vertex;
+                helper.LinkIncomingEdge(new_vertex, in_edge);
+                helper.LinkOutgoingEdge(new_vertex, out_edge);
             }
             graph.DeleteVertex(vertex_entry.first);
         }
     }
-
-//    for (const auto &path: paths) {
-//
-//    }
+    
+    for (const auto &path: paths) {
+        if (path.first->Size() < 2) {
+            continue;
+        }
+        std::vector<EdgeId> simple_path;
+        for (const auto &edge: *(path.first)) {
+            simple_path.push_back(edge);
+        }
+        graph.MergePath(simple_path, true);
+    }
+    auto resolved_graph_out = std::ofstream(output_path / ("resolved_graph.gfa"));
+    path_extend::GFAPathWriter resolved_graph_writer(graph, resolved_graph_out);
+    resolved_graph_writer.WriteSegmentsAndLinks();
 }
 
 
