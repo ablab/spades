@@ -29,7 +29,7 @@ struct StatInfo {
         double average_length;
         size_t longest_sequence;
         size_t shortest_sequence;
-        std::map<double, uint64_t> percentile_length;
+        std::map<double, size_t> percentile_length;
     };
 
     struct GraphConnectivityInfo {
@@ -146,7 +146,7 @@ void CountDeadEndsInfo(const debruijn_graph::Graph& g, StatInfo& info) {
 
 std::map<double, size_t> GetPercentile(const std::vector<size_t>& v, const std::vector<double>& percentiles) {
     VERIFY(std::is_sorted(v.begin(), v.end()));
-    std::map<double, uint64_t> result;
+    std::map<double, size_t> result;
     if (v.size() > 0) {
         for (double perc: percentiles) {
             if (perc < 0 || perc > 100) {
