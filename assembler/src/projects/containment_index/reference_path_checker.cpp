@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2021-2022 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "reference_path_checker.hpp"
 
 namespace cont_index {

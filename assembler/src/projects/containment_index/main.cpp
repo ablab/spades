@@ -1,27 +1,23 @@
 //***************************************************************************
-//* Copyright (c) 2021 Saint Petersburg State University
+//* Copyright (c) 2021-2022 Saint Petersburg State University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
 
 #include "barcode_index_construction.hpp"
+#include "cloud_only_links.hpp"
+#include "graph_resolver.hpp"
+#include "graph_resolver_io.hpp"
 #include "long_edge_statistics.hpp"
-#include "multiplex_gfa_reader.hpp"
+#include "path_cluster_extractor.hpp"
 #include "path_extractor.hpp"
 #include "reference_path_checker.hpp"
 #include "scaffold_graph_helper.hpp"
 #include "vertex_info_getter.hpp"
 #include "vertex_resolver.hpp"
-#include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 
-#include "assembly_graph/core/construction_helper.hpp"
-#include "assembly_graph/core/observable_graph.hpp"
 #include "io/binary/read_cloud.hpp"
 #include "io/graph/gfa_writer.hpp"
-#include "modules/path_extend/read_cloud_path_extend/cluster_storage/edge_cluster_extractor.hpp"
-#include "modules/path_extend/read_cloud_path_extend/cluster_storage/initial_cluster_storage_builder.hpp"
-#include "modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor_helper.hpp"
-#include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
 #include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/path_cluster_helper.hpp"
 #include "toolchain/utils.hpp"
 #include "utils/filesystem/path_helper.hpp"
@@ -41,7 +37,7 @@ enum class GraphType {
 };
 
 struct gcfg {
-  size_t k = 55;
+  unsigned k = 55;
   unsigned mapping_k = 31;
   std::filesystem::path graph;
   std::filesystem::path output_dir;
@@ -50,10 +46,30 @@ struct gcfg {
   std::filesystem::path file = "";
   std::filesystem::path tmpdir = "saves";
   unsigned libindex = -1u;
-  double score_threshold = 3.0;
+  GraphType graph_type = GraphType::Multiplexed;
   bool bin_load = false;
   bool debug = false;
-  GraphType graph_type = GraphType::Multiplexed;
+  bool statistics = false;
+
+  //barcode_index_construction
+  size_t frame_size = 40000;
+  size_t read_linkage_distance = 40000;
+
+  //graph construction
+  double graph_score_threshold = 2.0;
+  size_t tail_threshold = 200000;
+  size_t length_threshold = 0;
+  size_t count_threshold = 1;
+
+  //path cluster extraction
+  double relative_score_threshold = 10.0;
+  size_t min_read_threshold = 2;
+
+  //Long edge clusters
+  size_t training_length_threshold = 500000;
+  size_t training_length_offset = 50000;
+  size_t training_min_read_threshold = 6;
+  size_t training_linkage_distance = 30000;
 };
 
 static void process_cmdline(int argc, char** argv, gcfg& cfg) {
@@ -73,13 +89,28 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
         (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
         (option("--mapping-k") & integer("value", cfg.mapping_k)) % "k for read mapping",
         (option("--tmp-dir") & value("tmp", tmpdir)) % "scratch directory to use",
+        (option("--ref") & value("reference", refpath)) % "Reference path",
         (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
         (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)",
-        (option("--score") & value("score", cfg.score_threshold)) % "Score threshold for link index",
-        (option("--ref") & value("reference", refpath)) % "Reference path",
+        (option("--statistics").set(cfg.statistics)) % "produce additional read cloud library statistics (developer option)",
         (with_prefix("-G",
                      option("lja").set(cfg.graph_type, GraphType::Multiplexed) |
-                     option("blunt").set(cfg.graph_type, GraphType::Blunted)) % "assembly graph type")
+                     option("blunt").set(cfg.graph_type, GraphType::Blunted)) % "assembly graph type"),
+
+        (option("--frame-size") & value("frame-size", cfg.frame_size)) % "Resolution of barcode index",
+        (option("--linkage-distance") & value("read-linkage-distance", cfg.read_linkage_distance)) %
+            "Reads are assigned to the same fragment based on linkage distance",
+        (option("--score") & value("score", cfg.graph_score_threshold)) % "Score threshold for link index",
+        (option("--tail-threshold") & value("tail-threshold", cfg.tail_threshold)) %
+            "Barcodes are assigned to the first and last <tail_threshold> nucleotides of the edge",
+        (option("--length-threshold") & value("length-threshold", cfg.length_threshold))
+            % "Minimum scaffold graph edge length",
+        (option("--count-threshold") & value("count-threshold", cfg.count_threshold))
+            % "Minimum number of reads for barcode index",
+        (option("--relative-score-threshold") & value("relative-score-threshold", cfg.relative_score_threshold))
+            % "Relative score threshold for path cluster extraction",
+        (option("--min-read-threshold") & value("min-read-threshold", cfg.min_read_threshold))
+            % "Minimum number of reads for path cluster extraction"
     );
 
     auto result = parse(argc, argv, cli);
@@ -117,239 +148,6 @@ struct TimeTracerRAII {
   std::string time_trace_file_;
 };
 
-void GetLongEdgeStatistics(const Graph &graph,
-                           const barcode_index::FrameBarcodeIndex<Graph> &barcode_index,
-                           size_t training_edge_length,
-                           size_t training_edge_offset,
-                           size_t read_count_threshold,
-                           size_t read_linkage_distance,
-                           size_t max_threads,
-                           const std::filesystem::path &base_output_path) {
-    cont_index::LongEdgeStatisticsCounter long_edge_counter(graph, barcode_index, training_edge_length,
-                                                            training_edge_offset,
-                                                            read_count_threshold, read_linkage_distance, max_threads,
-                                                            base_output_path);
-    long_edge_counter.CountClusterStatistics();
-    long_edge_counter.CountDoubleCoverageDistribution();
-}
-
-void GetPathClusters(const Graph &graph,
-                     std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr,
-                     const scaffold_graph::ScaffoldGraph &scaffold_graph,
-                     size_t read_linkage_distance,
-                     double relative_score_threshold,
-                     size_t min_read_threshold,
-                     size_t length_threshold,
-                     size_t max_threads,
-                     io::IdMapper<std::string> *id_mapper,
-                     bool lja,
-                     const std::filesystem::path &output_dir) {
-    INFO("Constructing initial cluster storage");
-    path_extend::read_cloud::PathExtractionParams path_extraction_params(read_linkage_distance,
-                                                                         relative_score_threshold,
-                                                                         min_read_threshold,
-                                                                         length_threshold);
-    std::set<scaffold_graph::ScaffoldVertex> target_edges;
-    std::copy(scaffold_graph.vbegin(), scaffold_graph.vend(), std::inserter(target_edges, target_edges.begin()));
-    auto edge_cluster_extractor =
-        std::make_shared<cluster_storage::AccurateEdgeClusterExtractor>(graph, barcode_extractor_ptr,
-                                                                        read_linkage_distance, min_read_threshold);
-    auto storage_builder =
-        std::make_shared<cluster_storage::EdgeInitialClusterStorageBuilder>(graph, edge_cluster_extractor,
-                                                                            target_edges, read_linkage_distance,
-                                                                            min_read_threshold, max_threads);
-    auto storage =
-        std::make_shared<cluster_storage::InitialClusterStorage>(storage_builder->ConstructInitialClusterStorage());
-    path_extend::read_cloud::ScaffoldGraphPathClusterHelper path_extractor_helper(graph,
-                                                                                  barcode_extractor_ptr,
-                                                                                  storage,
-                                                                                  read_linkage_distance,
-                                                                                  max_threads);
-    INFO(scaffold_graph.VertexCount() << " vertices and " << scaffold_graph.EdgeCount() << " edges in scaffold graph");
-
-    INFO(storage->get_cluster_storage().Size() << " initial clusters");
-    auto all_clusters = path_extractor_helper.GetAllClusters(scaffold_graph);
-    INFO(all_clusters.size() << " total clusters");
-    std::map<size_t, size_t> size_hist;
-    for (const auto &cluster: all_clusters) {
-        size_hist[cluster.Size()]++;
-    }
-    std::ofstream sizes(output_dir / "cluster_sizes.tsv");
-    for (const auto &entry: size_hist) {
-        sizes << entry.first << "\t" << entry.second << std::endl;
-    }
-    auto path_clusters = path_extractor_helper.GetPathClusters(all_clusters);
-    INFO(path_clusters.size() << " path clusters");
-    size_hist.clear();
-    for (const auto &cluster: path_clusters) {
-        size_hist[cluster.Size()]++;
-    }
-    std::ofstream path_sizes(output_dir / "path_sizes.tsv");
-    for (const auto &entry: size_hist) {
-        path_sizes << entry.first << "\t" << entry.second << std::endl;
-    }
-
-    //extract paths traversing complex vertices
-    if (lja) {
-        std::unordered_set<scaffold_graph::ScaffoldVertex> uncompressed_vertices;
-        for (const auto &vertex: scaffold_graph.vertices()) {
-            if (not id_mapper->count(vertex.int_id())) {
-                uncompressed_vertices.insert(vertex);
-            }
-        }
-
-//        std::ofstream link_stream(output_dir / "lja_links.tsv");
-//        for (const auto &entry: link_to_weight) {
-//            link_stream << entry.first.first << "\t" << entry.first.second << "\t" << entry.second << std::endl;
-//        }
-    }
-
-}
-
-struct ScoreEntry {
-  ScoreEntry(const scaffold_graph::ScaffoldVertex &first,
-             const scaffold_graph::ScaffoldVertex &second,
-             double hifi_score,
-             double tellseq_score) : first_(first),
-                                     second_(second),
-                                     hifi_score_(hifi_score),
-                                     tellseq_score_(tellseq_score) {}
-
-  scaffold_graph::ScaffoldVertex first_;
-  scaffold_graph::ScaffoldVertex second_;
-  double hifi_score_;
-  double tellseq_score_;
-};
-
-void CompareLinks(const scaffold_graph::ScaffoldGraph &hifi_graph,
-                  const scaffold_graph::ScaffoldGraph &tellseq_graph,
-                  cont_index::LinkIndexGraphConstructor::BarcodeScoreFunctionPtr score_function,
-                  io::IdMapper<std::string> *id_mapper,
-                  const std::string &output_path) {
-
-    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
-    std::set<std::pair<ScaffoldVertex, ScaffoldVertex>> hifi_links;
-    std::map<std::pair<ScaffoldVertex, ScaffoldVertex>, double> hifi_score_map;
-    double score_threshold = 5.0;
-    INFO(hifi_graph.EdgeCount() << " edges in hifi graph");
-    INFO(tellseq_graph.EdgeCount() << " edges in tellseq graph");
-    for (const auto &edge: hifi_graph.edges()) {
-        std::pair<ScaffoldVertex, ScaffoldVertex> vertex_pair(edge.getStart(), edge.getEnd());
-        hifi_links.emplace(edge.getStart(), edge.getEnd());
-        hifi_score_map.emplace(vertex_pair, edge.getWeight());
-    }
-
-    std::vector<ScoreEntry> score_entries;
-
-    if (tellseq_graph.VertexCount() != 0) {
-        size_t new_tellseq_links = 0;
-        for (const auto &edge: tellseq_graph.edges()) {
-            if (math::ge(edge.getWeight(), score_threshold)) {
-                std::pair<ScaffoldVertex, ScaffoldVertex> link(edge.getStart(), edge.getEnd());
-                if (hifi_links.find(link) == hifi_links.end()) {
-                    new_tellseq_links++;
-                } else {
-                    score_entries.emplace_back(edge.getStart(), edge.getEnd(), hifi_score_map.at(link), edge.getWeight());
-                }
-            }
-        }
-        INFO("Found " << new_tellseq_links << " new tellseq links");
-    } else {
-        for (const auto &edge: hifi_graph.edges()) {
-            double tellseq_score = score_function->GetScore(edge);
-            if (math::ge(tellseq_score, score_threshold)) {
-                score_entries.emplace_back(edge.getStart(), edge.getEnd(), edge.getWeight(), tellseq_score);
-            }
-        }
-    }
-    INFO(score_entries.size() << " common links in hifi and tellseq graphs");
-    std::ofstream os(output_path);
-    os << "First\tSecond\tHiFi links\tTellSeq links" << "\n";
-    for (const auto &entry: score_entries) {
-        os << (*id_mapper)[entry.first_.int_id()] << "\t" << (*id_mapper)[entry.second_.int_id()]
-           << "\t" << entry.hifi_score_ << "\t" << entry.tellseq_score_ << "\n";
-    }
-}
-
-void NormalizeTellseqLinks(const scaffold_graph::ScaffoldGraph &tellseq_graph,
-                           size_t min_length,
-                           std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr,
-                           size_t count_threshold,
-                           size_t tail_threshold,
-                           io::IdMapper<std::string> *id_mapper,
-                           const std::filesystem::path &output_path) {
-    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
-    const auto &assembly_graph = tellseq_graph.AssemblyGraph();
-    std::map<std::pair<ScaffoldVertex, ScaffoldVertex>, double> score_map;
-    double score_threshold = 2.0;
-    if (tellseq_graph.VertexCount() != 0) {
-        for (const auto &edge: tellseq_graph.edges()) {
-            const auto &first_vertex = edge.getStart();
-            const auto &first_conj = first_vertex.GetConjugateFromGraph(assembly_graph);
-            const auto &second_vertex = edge.getEnd();
-            const auto &second_conj = second_vertex.GetConjugateFromGraph(assembly_graph);
-            size_t first_len = first_vertex.GetLengthFromGraph(assembly_graph);
-            size_t second_len = second_vertex.GetLengthFromGraph(assembly_graph);
-            double num_barcodes = edge.getWeight();
-            if (first_len >= min_length and second_len >= min_length and math::ge(num_barcodes, score_threshold)) {
-                std::pair<ScaffoldVertex, ScaffoldVertex> link(first_vertex, second_vertex);
-                std::pair<ScaffoldVertex, ScaffoldVertex> rc_rc_link(second_conj, first_conj);
-                if (first_vertex != second_vertex and first_vertex != second_conj) {
-                    score_map[link] += num_barcodes / 2;
-                    score_map[rc_rc_link] += num_barcodes / 2;
-                }
-            }
-        }
-    }
-    INFO(score_map.size() << " filtered tellseq links");
-
-    std::unordered_map<ScaffoldVertex, size_t> vertex_to_head_barcodes;
-    for (const auto &vertex: tellseq_graph.vertices()) {
-        vertex_to_head_barcodes[vertex] = barcode_extractor_ptr->GetBarcodesFromHead(vertex.GetFirstEdge(), count_threshold, tail_threshold).size();
-    }
-
-    std::ofstream os(output_path / "normalized_tellseq_links.tsv");
-    os << "First\tSecond\tTotal links\tJaccard Index" << "\n";
-    for (const auto &entry: score_map) {
-        const auto &first_vertex = entry.first.first;
-        const auto &first_conj = first_vertex.GetConjugateFromGraph(assembly_graph);
-        const auto &second_vertex = entry.first.second;
-        double shared_barcodes = entry.second;
-        auto first_tail_barcodes = vertex_to_head_barcodes[first_conj];
-        auto second_head_barcodes = vertex_to_head_barcodes[second_vertex];
-        auto union_size = static_cast<double>(first_tail_barcodes + second_head_barcodes) - shared_barcodes;
-        double jaccard_index = shared_barcodes / union_size;
-        os << (*id_mapper)[first_vertex.int_id()] << "\t" << (*id_mapper)[second_vertex.int_id()]
-           << "\t" << shared_barcodes << "\t" << jaccard_index << "\n";
-    }
-}
-
-void ConstructCloudOnlyLinks(const Graph &graph,
-                             std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr,
-                             double graph_score_threshold,
-                             size_t length_threshold,
-                             size_t tail_threshold,
-                             size_t count_threshold,
-                             size_t threads,
-                             bool bin_load,
-                             bool debug,
-                             const std::filesystem::path &output_dir,
-                             io::IdMapper<std::string> *id_mapper) {
-    auto tellseq_graph = cont_index::GetTellSeqScaffoldGraph(graph, barcode_extractor_ptr, graph_score_threshold,
-                                                             length_threshold, tail_threshold, count_threshold,
-                                                             threads, bin_load, debug, output_dir, id_mapper);
-
-//    LinkIndexGraphConstructor link_index_constructor(graph, barcode_extractor_ptr, graph_score_threshold,
-//                                                     tail_threshold, length_threshold, count_threshold, threads);
-//    auto score_function = link_index_constructor.ConstructScoreFunction();
-//    NormalizeTellseqLinks(tellseq_graph, length_threshold, barcode_extractor_ptr, count_threshold,
-//                          tail_threshold, id_mapper, output_dir);
-//    auto compare_output_path = output_dir / "hifi_tellseq_scores.tsv";
-//    CompareLinks(hifi_graph, tellseq_graph, score_function, id_mapper.get(), compare_output_path);
-
-}
-
-
 void ReadGraph(const gcfg &cfg,
                debruijn_graph::Graph &graph,
                io::IdMapper<std::string> *id_mapper) {
@@ -366,33 +164,48 @@ void ReadGraph(const gcfg &cfg,
     }
 }
 
-void AnalyzeVertices(debruijn_graph::Graph &graph,
-                     std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr,
-                     size_t count_threshold,
-                     size_t tail_threshold,
-                     size_t length_threshold,
-                     size_t threads,
-                     double score_threshold,
-                     io::IdMapper<std::string> *id_mapper,
-                     const std::filesystem::path &output_path,
-                     const std::filesystem::path &tmp_path,
-                     path_extend::GFAPathWriter gfa_writer) {
+void CountStatistics(const gcfg &cfg,
+                     debruijn_graph::Graph &graph,
+                     const barcode_index::FrameBarcodeIndex<Graph> &barcode_index,
+                     const std::filesystem::path &base_output_path) {
+    cont_index::LongEdgeStatisticsCounter long_edge_counter(graph, barcode_index, cfg.training_length_threshold,
+                                                            cfg.training_length_offset,
+                                                            cfg.training_min_read_threshold, cfg.read_linkage_distance,
+                                                            cfg.nthreads,
+                                                            base_output_path);
+    long_edge_counter.CountClusterStatistics();
+    long_edge_counter.CountDoubleCoverageDistribution();
+
+    auto barcode_extractor_ptr = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(barcode_index, graph);
+    cont_index::PathClusterExtractor path_cluster_extractor(barcode_extractor_ptr,
+                                                            cfg.read_linkage_distance,
+                                                            cfg.relative_score_threshold,
+                                                            cfg.min_read_threshold,
+                                                            cfg.length_threshold,
+                                                            cfg.nthreads);
+}
+
+void ResolveComplexVertices(const gcfg &cfg,
+                            debruijn_graph::Graph &graph,
+                            std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr,
+                            io::IdMapper<std::string> *id_mapper,
+                            path_extend::GFAPathWriter gfa_writer) {
     cont_index::VertexResolver vertex_resolver
-        (graph, barcode_extractor_ptr, count_threshold, tail_threshold, length_threshold, threads, score_threshold);
+        (graph, barcode_extractor_ptr, cfg.count_threshold, cfg.tail_threshold, cfg.length_threshold, cfg.nthreads,
+         cfg.graph_score_threshold);
     const auto &vertex_results = vertex_resolver.ResolveVertices() ;
-    std::filesystem::path vertex_output_path = output_path / "vertex_stats.tsv";
+    std::filesystem::path vertex_output_path = cfg.output_dir / "vertex_stats.tsv";
     bool unique_kmer_count = false;
-    vertex_resolver.PrintVertexResults(vertex_results, vertex_output_path, tmp_path, unique_kmer_count, id_mapper);
+    vertex_resolver.PrintVertexResults(vertex_results, vertex_output_path, cfg.tmpdir, unique_kmer_count, id_mapper);
     cont_index::PathExtractor path_extractor(graph);
     path_extend::PathContainer paths;
     path_extractor.ExtractPaths(paths, vertex_results);
+
     auto name_generator = std::make_shared<path_extend::DefaultContigNameGenerator>();
     path_extend::ContigWriter writer(graph, name_generator);
-//    path_extractor.PrintPaths(paths, output_path / "contigs.paths", id_mapper);
-
     std::vector<path_extend::PathsWriterT> path_writers;
     path_writers.push_back([&](const path_extend::ScaffoldStorage &scaffold_storage) {
-      auto fn = output_path / ("contigs.fasta");
+      auto fn = cfg.output_dir / ("contigs.fasta");
       INFO("Outputting contigs to " << fn);
       path_extend::ContigWriter::WriteScaffolds(scaffold_storage, fn);
     });
@@ -400,49 +213,13 @@ void AnalyzeVertices(debruijn_graph::Graph &graph,
       INFO("Populating GFA with scaffold paths");
       gfa_writer.WritePaths(storage);
     });
-
     writer.OutputPaths(paths, path_writers);
 
-    std::unordered_map<VertexId, VertexId> new_to_old;
-    INFO("Split vertices");
-    auto helper = graph.GetConstructionHelper();
-
-    for (const auto &vertex_entry: vertex_results.vertex_to_result) {
-        const VertexId &vertex = vertex_entry.first;
-        INFO("Conjugate: " << graph.conjugate(vertex).int_id());
-        uint32_t overlap = graph.data(vertex).overlap();
-        const auto &vertex_result = vertex_entry.second;
-        if (vertex_result.state == VertexState::Completely) {
-            for (const auto &entry: vertex_result.supported_pairs) {
-                EdgeId in_edge = entry.first;
-                EdgeId out_edge = entry.second;
-                INFO("In edge: " << in_edge.int_id() << ", out edge: " << out_edge.int_id() << ", vertex: " << vertex.int_id());
-                helper.DeleteLink(vertex, out_edge);
-                helper.DeleteLink(graph.conjugate(vertex), graph.conjugate(in_edge));
-                VertexId new_vertex = helper.CreateVertex(DeBruijnVertexData(overlap));
-                new_to_old[new_vertex] = vertex;
-                helper.LinkIncomingEdge(new_vertex, in_edge);
-                helper.LinkOutgoingEdge(new_vertex, out_edge);
-            }
-            graph.DeleteVertex(vertex_entry.first);
-        }
-    }
-    
-    for (const auto &path: paths) {
-        if (path.first->Size() < 2) {
-            continue;
-        }
-        std::vector<EdgeId> simple_path;
-        for (const auto &edge: *(path.first)) {
-            simple_path.push_back(edge);
-        }
-        graph.MergePath(simple_path, true);
-    }
-    auto resolved_graph_out = std::ofstream(output_path / ("resolved_graph.gfa"));
-    path_extend::GFAPathWriter resolved_graph_writer(graph, resolved_graph_out);
-    resolved_graph_writer.WriteSegmentsAndLinks();
+    cont_index::GraphResolver graph_resolver;
+    auto graph_resolver_info = graph_resolver.TransformGraph(graph, paths, vertex_results);
+    TransformedGraphIO graph_output(id_mapper);
+    graph_output.PrintGraph(graph, graph_resolver_info, cfg.output_dir);
 }
-
 
 int main(int argc, char** argv) {
     utils::segfault_handler sh;
@@ -477,39 +254,16 @@ int main(int argc, char** argv) {
     INFO("Building barcode index");
     if (cfg.libindex != -1u) {
         INFO("Processing paired-end reads");
-
         DataSet dataset;
         if (cfg.file != "") {
             dataset.load(cfg.file);
-
             if (cfg.libindex == -1u)
                 cfg.libindex = 0;
             CHECK_FATAL_ERROR(cfg.libindex < dataset.lib_count(), "invalid library index");
         }
 
-        //fixme configs
-        //index construction
-        const size_t frame_size = 2000;
-        const size_t read_linkage_distance = 40000;
-
-        //graph construction
-        const double graph_score_threshold = 1.99;
-        const size_t tail_threshold = 200000;
-        const size_t length_threshold = 0;
-        const size_t count_threshold = 1;
-
-        //path cluster extraction
-        const double relative_score_threshold = 10.0;
-        const size_t min_read_threshold = 2;
-
-        //Long edge clusters
-        const size_t training_length_threshold = 500000;
-        const size_t training_length_offset = 50000;
-        const size_t training_min_read_threshold = 6;
-        const size_t training_linkage_distance = 30000;
-
         debruijn_graph::config::init_libs(dataset, cfg.nthreads, cfg.tmpdir);
-        barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> barcode_index(graph, read_linkage_distance);
+        barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> barcode_index(graph, cfg.frame_size);
         using BarcodeExtractor = barcode_index::FrameBarcodeIndexInfoExtractor;
         auto barcode_extractor_ptr = std::make_shared<BarcodeExtractor>(barcode_index, graph);
 
@@ -521,29 +275,21 @@ int main(int argc, char** argv) {
 
         auto &lib = dataset[cfg.libindex];
         if (lib.type() == io::LibraryType::Clouds10x) {
-            cont_index::ConstructBarcodeIndex(barcode_index,
-                                              lib,
-                                              graph,
-                                              cfg.tmpdir,
-                                              cfg.nthreads,
-                                              frame_size,
-                                              cfg.mapping_k,
-                                              cfg.bin_load,
-                                              cfg.debug);
+            cont_index::ConstructBarcodeIndex(barcode_index, lib, graph, cfg.tmpdir, cfg.nthreads, cfg.frame_size,
+                                              cfg.mapping_k, cfg.bin_load, cfg.debug);
         } else {
             WARN("Only read cloud libraries with barcode tags are supported for links");
         }
 
-        AnalyzeVertices(graph, barcode_extractor_ptr, count_threshold, tail_threshold, length_threshold, cfg.nthreads,
-                        2.0, id_mapper.get(), cfg.output_dir, cfg.tmpdir, gfa_writer);
+        ResolveComplexVertices(cfg, graph, barcode_extractor_ptr, id_mapper.get(), gfa_writer);
 
+        if (cfg.statistics) {
+            CountStatistics(cfg, graph, barcode_index, cfg.output_dir);
+        }
 
-//        GetLongEdgeStatistics(graph, barcode_index, training_length_threshold, training_length_offset,
-//                              training_min_read_threshold, training_linkage_distance, cfg.nthreads, cfg.output_dir);
-
-//        if (not cfg.refpath.empty()) {
-//            cont_index::ReferencePathChecker ref_path_checker(graph, id_mapper.get());
-//            ref_path_checker.CheckAssemblyGraph(cfg.refpath);
-//        }
+        if (not cfg.refpath.empty()) {
+            cont_index::ReferencePathChecker ref_path_checker(graph, id_mapper.get());
+            ref_path_checker.CheckAssemblyGraph(cfg.refpath);
+        }
     }
 }
