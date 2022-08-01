@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2021-2022 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
 #include "modules/path_extend/read_cloud_path_extend/cluster_storage/edge_cluster_extractor.hpp"
