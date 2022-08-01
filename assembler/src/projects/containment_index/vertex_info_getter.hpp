@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2021-2022 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
 #include "barcode_index/barcode_info_extractor.hpp"

@@ -186,15 +186,15 @@ class FrameBarcodeIndexBuilder {
         barcode_index.SetFrameSize(frame_size_);
         barcode_index.InitialFillMap();
         for (auto &stream: read_streams) {
-            INFO("Processing stream " << counter << " , currently " << starting_barcode << " barcodes");
+            DEBUG("Processing stream " << counter << " , currently " << starting_barcode << " barcodes");
             FrameConcurrentBarcodeIndexBuffer<debruijn_graph::Graph> buffer(g_, frame_size_);
             ConcurrentBufferFiller buffer_filler(g_, buffer, mapper_, barcode_prefices_, starting_barcode);
             hammer::ReadProcessor read_processor(static_cast<unsigned int>(num_threads_));
             read_processor.Run(stream, buffer_filler);
             starting_barcode += buffer_filler.GetNumberOfBarcodes();
-            INFO("Update");
+            DEBUG("Update");
             barcode_index.Update(buffer);
-            INFO("Finished update");
+            DEBUG("Finished update");
         }
     }
   private:

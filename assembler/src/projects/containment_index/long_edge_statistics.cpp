@@ -1,3 +1,9 @@
+//***************************************************************************
+//* Copyright (c) 2021-2022 Saint Petersburg State University
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "long_edge_statistics.hpp"
 
 #include "utils/filesystem/path_helper.hpp"
