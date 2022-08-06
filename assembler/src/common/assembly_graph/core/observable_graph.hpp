@@ -458,10 +458,16 @@ typename ObservableGraph<DataMaster>::EdgeId
     VertexId v1 = base::EdgeStart(corrected_path[0]);
     VertexId v2 = base::EdgeEnd(corrected_path[corrected_path.size() - 1]);
     std::vector<const EdgeData *> to_merge;
-    for (auto it = corrected_path.begin(); it != corrected_path.end(); ++it) {
-        to_merge.push_back(&(base::data(*it)));
+    std::vector<uint32_t> overlaps;
+    for (auto it1 = corrected_path.begin(), it2 = std::next(it1); it2 != corrected_path.end(); ++it1, ++it2) {
+        to_merge.push_back(&(base::data(*it1)));
+        VertexId end = base::EdgeEnd(*it1);
+        VERIFY(end == base::EdgeStart(*it2));
+        uint32_t overlap = base::data(end).overlap();
+        overlaps.push_back(overlap);
     }
-    EdgeId new_edge = base::HiddenAddEdge(v1, v2, base::master().MergeData(to_merge, safe_merging));
+    to_merge.push_back(&(base::data(corrected_path.back())));
+    EdgeId new_edge = base::HiddenAddEdge(v1, v2, base::master().MergeData(to_merge, overlaps, safe_merging));
     FireMerge(corrected_path, new_edge);
     auto edges_to_delete = EdgesToDelete(corrected_path);
     auto vertices_to_delete = VerticesToDelete(corrected_path);

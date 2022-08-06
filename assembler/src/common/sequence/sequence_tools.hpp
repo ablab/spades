@@ -34,20 +34,25 @@ void SHWDistanceExtended(const std::string &target, const std::string &query, in
 int SHWDistance(const std::string &a, const std::string &b, int max_score, int &end_pos);
 
 inline Sequence MergeOverlappingSequences(const std::vector<Sequence>& ss,
-        size_t overlap, bool safe_merging = true) {
+                                          const std::vector<uint32_t> &overlaps, bool safe_merging = true) {
     if (ss.empty()) {
         return Sequence();
     }
+    VERIFY(ss.size() >= 2);
     SequenceBuilder sb;
-    Sequence prev_end = ss.front().Subseq(0, overlap);
-    sb.append(prev_end);
-    for (auto it = ss.begin(); it != ss.end(); ++it) {
+    sb.append(ss.front());
+    Sequence prev_end = ss.front().Subseq(ss.front().size() - overlaps.front());
+    for (size_t i = 1; i + 1 < ss.size(); ++i) {
         if (safe_merging) {
-            VERIFY(prev_end == it->Subseq(0, overlap));
-            prev_end = it->Subseq(it->size() - overlap);
+            VERIFY(prev_end == ss[i].Subseq(0, overlaps[i - 1]));
+            prev_end = ss[i].Subseq(ss[i].size() - overlaps[i]);
         }
-        sb.append(it->Subseq(overlap));
+        sb.append(ss[i].Subseq(overlaps[i - 1]));
     }
+    if (safe_merging) {
+        VERIFY(prev_end == ss.back().Subseq(0, overlaps[ss.size() - 2]));
+    }
+    sb.append(ss.back().Subseq(overlaps[ss.size() - 2]));
     return sb.BuildSequence();
 }
 

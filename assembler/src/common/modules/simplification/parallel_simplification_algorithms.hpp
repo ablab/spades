@@ -474,10 +474,14 @@ class ParallelCompressor {
 
     EdgeData MergedData(const std::vector<EdgeId> &edges) const {
         std::vector<const EdgeData *> to_merge;
-        for (EdgeId e : edges) {
-            to_merge.push_back(&(g_.data(e)));
+        std::vector<uint32_t> overlaps;
+        for (auto it1 = edges.begin(), it2 = std::next(edges); it2 != edges.end(); ++it1, ++it2) {
+            to_merge.push_back(&(g_.data(*it1)));
+            uint32_t overlap = g_.data(g_.EdgeEnd(*it1));
+            overlaps.push_back(overlap);
         }
-        return g_.master().MergeData(to_merge);
+        to_merge.push_back(&(g_.data(edges.back())));
+        return g_.master().MergeData(to_merge, overlaps);
     }
 
     EdgeId SyncAddEdge(VertexId v1, VertexId v2, const EdgeData& data, restricted::IdDistributor& id_distributor) {
