@@ -114,7 +114,8 @@ public:
     DeBruijnDataMaster(unsigned k)
             : k_(k) {}
 
-    const EdgeData MergeData(const std::vector<const EdgeData*>& to_merge, bool safe_merging = true) const;
+    const EdgeData MergeData(const std::vector<const EdgeData *> &to_merge, const std::vector<uint32_t> &overlaps,
+                             bool safe_merging = true) const;
 
     std::pair<VertexData, std::pair<EdgeData, EdgeData>> SplitData(const EdgeData& edge, size_t position, bool is_self_conj = false) const;
 
@@ -154,14 +155,15 @@ public:
 //typedef DeBruijnEdgeData EdgeData;
 //typedef DeBruijnDataMaster DataMaster;
 
-inline const DeBruijnEdgeData DeBruijnDataMaster::MergeData(const std::vector<const DeBruijnEdgeData*>& to_merge, bool safe_merging) const {
+inline const DeBruijnEdgeData DeBruijnDataMaster::MergeData(const std::vector<const EdgeData *> &to_merge,
+                                                            const std::vector<uint32_t> &overlaps,
+                                                            bool safe_merging) const {
     std::vector<Sequence> ss;
     ss.reserve(to_merge.size());
     for (auto it = to_merge.begin(); it != to_merge.end(); ++it) {
         ss.push_back((*it)->nucls());
     }
-    // FIXME: Take into account overlaps
-    return EdgeData(MergeOverlappingSequences(ss, k_, safe_merging));
+    return EdgeData(MergeOverlappingSequences(ss, overlaps, safe_merging));
 }
 
 inline std::pair<DeBruijnVertexData, std::pair<DeBruijnEdgeData, DeBruijnEdgeData>> DeBruijnDataMaster::SplitData(const EdgeData& edge,

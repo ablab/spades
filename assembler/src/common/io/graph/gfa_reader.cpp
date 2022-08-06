@@ -16,6 +16,7 @@
 
 #include <string>
 #include <memory>
+#include <numeric>
 #include <string_view>
 #include <vector>
 #include <unordered_set>
@@ -112,8 +113,11 @@ static unsigned HandleLink(const gfa::link &record,
     unsigned ovl = -1U;
     if (overlap.size() > 1 ||
         (overlap.size() == 1 && overlap.front().op != 'M')) {
+        ovl = std::accumulate(overlap.begin(), overlap.end(), 0, [](size_t sum, const auto &cigar) {
+          return sum + cigar.count;
+        });
     } else if (overlap.size() == 1) {
-        ovl= overlap.front().count;
+        ovl = overlap.front().count;
     }
 
     // We need to be careful here: we cannot use EdgeStart since it's
