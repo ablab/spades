@@ -25,14 +25,20 @@ class DeBruijnVertexData {
     friend class DeBruijnDataMaster;
 
 
-    enum OverlapKinds {
+    enum OverlapKind {
         ComplexOverlap,
         ExplicitOverlap
     };
 
+    struct OverlapStorage {
+        // Store links
+        // Store overlaps
+        uint32_t overlap_ = 0;
+    };
+
     typedef llvm::PointerEmbeddedInt<uint32_t, 32> SimpleOverlap;
-    typedef llvm::PointerSumType<OverlapKinds,
-                                 llvm::PointerSumTypeMember<ComplexOverlap, void*>,
+    typedef llvm::PointerSumType<OverlapKind,
+                                 llvm::PointerSumTypeMember<ComplexOverlap, OverlapStorage*>,
                                  llvm::PointerSumTypeMember<ExplicitOverlap, SimpleOverlap>> Overlap;
 
     Overlap overlap_;
@@ -41,12 +47,25 @@ public:
     DeBruijnVertexData(unsigned overlap = 0)
             : overlap_(Overlap::create<ExplicitOverlap>(overlap)) {}
 
+    ~DeBruijnVertexData() {
+        if (has_complex_overlap())
+            delete complex_overlap();
+    }
+
     void set_overlap(unsigned overlap) {
         overlap_.set<ExplicitOverlap>(overlap);
     }
 
     unsigned overlap() const {
         return overlap_.get<ExplicitOverlap>();
+    }
+
+    bool has_complex_overlap() const {
+        return overlap_.is<ComplexOverlap>();
+    }
+
+    OverlapStorage *complex_overlap() {
+        return overlap_.get<ComplexOverlap>();
     }
 };
 
