@@ -10,6 +10,9 @@
 #include "utils/logger/logger.hpp"
 #include "sequence/sequence_tools.hpp"
 
+#include <llvm/ADT/PointerSumType.h>
+#include <llvm/ADT/PointerEmbeddedInt.h>
+
 #include <vector>
 #include <set>
 #include <cstring>
@@ -20,18 +23,30 @@ class DeBruijnDataMaster;
 
 class DeBruijnVertexData {
     friend class DeBruijnDataMaster;
-    uint32_t overlap_;
+
+
+    enum OverlapKinds {
+        ComplexOverlap,
+        ExplicitOverlap
+    };
+
+    typedef llvm::PointerEmbeddedInt<uint32_t, 32> SimpleOverlap;
+    typedef llvm::PointerSumType<OverlapKinds,
+                                 llvm::PointerSumTypeMember<ComplexOverlap, void*>,
+                                 llvm::PointerSumTypeMember<ExplicitOverlap, SimpleOverlap>> Overlap;
+
+    Overlap overlap_;
 
 public:
     DeBruijnVertexData(unsigned overlap = 0)
-            : overlap_(overlap) {}
+            : overlap_(Overlap::create<ExplicitOverlap>(overlap)) {}
 
     void set_overlap(unsigned overlap) {
-        overlap_ = overlap;
+        overlap_.set<ExplicitOverlap>(overlap);
     }
 
     unsigned overlap() const {
-        return overlap_;
+        return overlap_.get<ExplicitOverlap>();
     }
 };
 
