@@ -95,10 +95,10 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       (option("--tall-multi").call([&] { cfg.out_options |= OutputOptions::TallMulti; }) % "use tall table for multiple binning result"),
       (option("--bin-dist").set(cfg.bin_dist) % "estimate pairwise bin distance (could be slow on large graphs!)"),
       (option("-la") & value("labeled alpha", cfg.labeled_alpha)) % "labels correction alpha for labeled data",
-      "Alpha propagation options:" % (
-          (option("--alpha-propagation").set(cfg.alpha_propagation)) % "Gradually reduce alpha from binned to unbinned edges",
+      "Sparse propagation options:" % (
+          (option("--sparse-propagation").set(cfg.alpha_propagation)) % "Gradually reduce alpha from binned to unbinned edges",
           (option("--no-unbinned-bin").set(cfg.no_unbinned_bin)) % "Do not create a special bin for unbinned contigs",
-          (option("-ma") & value("--metaalpha", cfg.metaalpha)) % "Labels correction alpha for alpha propagation procedure",
+          (option("-ma") & value("--metaalpha", cfg.metaalpha)) % "Labels correction alpha for sparse propagation procedure",
           (option("-lt") & value("--length-threshold", cfg.length_threshold)) % "Binning will not be propagated to edges longer than threshold",
           (option("-db") & value("--distance-bound", cfg.distance_bound)) % "Binning will not be propagated further than bound"
       ),
