@@ -6,12 +6,13 @@
 
 #pragma once
 
-#include <parallel_hashmap/phmap.h>
-#include <vector>
-
-#include "common/utils/verify.hpp"
 
 #include "fees.hpp"
+
+#include "utils/verify.hpp"
+
+#include <parallel_hashmap/phmap.h>
+#include <vector>
 
 template <typename Cursor>
 auto vertex_cursors(const std::vector<Cursor> &cursors, typename Cursor::Context context) {
@@ -80,7 +81,7 @@ auto ultra_compression(const phmap::flat_hash_set<Cursor> &vertices, typename Cu
         double emission_fee(const hmm::DigitalCodind &code, const std::vector<double> &emission_fees) const {  // TODO get rid of code!
             double fee = 0;
             for (const auto &letter_n : letters) {
-                fee += letter_n.second * emission_fees[code(letter_n.first)];
+                fee += double(letter_n.second) * emission_fees[code(letter_n.first)];
             }
             return fee;
         }

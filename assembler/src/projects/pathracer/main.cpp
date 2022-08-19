@@ -16,7 +16,6 @@
 #include "fasta_reader.hpp"
 
 #include "stack_limit.hpp"
-#include <unistd.h>  // getpid()
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
@@ -24,7 +23,6 @@
 
 #include "sequence/aa.hpp"
 
-#include "utils/filesystem/path_helper.hpp"
 #include "visualization/visualization.hpp"
 #include "io/graph/gfa_reader.hpp"
 #include "io/reads/io_helper.hpp"
@@ -39,22 +37,24 @@
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/segfault_handler.hpp"
 #include "utils/memory_limit.hpp"
+#include "utils/filesystem/path_helper.hpp"
+#include "utils/verify.hpp"
 
 #include "version.hpp"
-#include "common/utils/verify.hpp"
 
 #include <clipp/clipp.h>
 #include <debug_assert/debug_assert.hpp>
+#include <cereal/archives/binary.hpp>
 
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <filesystem>
 #include <string>
 #include <functional>
 
-#include <llvm/ADT/iterator_range.h>
 #include <type_traits>
 
-#include <cereal/archives/binary.hpp>
+#include <unistd.h>  // getpid()
+#include <sys/types.h>
+#include <sys/stat.h>
 
 extern "C" {
     #include "easel.h"
@@ -83,7 +83,7 @@ enum class SeedMode {
 struct PathracerConfig {
     std::string load_from = "";
     std::string hmmfile = "";
-    std::string output_dir = "";
+    std::filesystem::path output_dir = "";
     enum Mode mode = Mode::hmm;
     enum SeedMode seed_mode = SeedMode::edges_scaffolds;
     int threads = 16;
@@ -130,10 +130,11 @@ extern "C" {
 void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
   using namespace clipp;
 
+  std::string output_dir;
   auto cli = (
       cfg.hmmfile    << value("input file (HMM or sequence)"),
       cfg.load_from  << value("load from"),
-      required("--output", "-o") & value("output directory", cfg.output_dir)    % "output directory",
+      required("--output", "-o") & value("output directory", output_dir)    % "output directory",
       (option("--global").set(cfg.local, false) % "perform global-local (aka glocal) HMM matching [default]") |
       (cfg.local << option("--local") % "perform local-local HMM matching"),
       (option("--length", "-l") & value("value", cfg.minimal_match_length)) % "minimal length of resultant matched sequence; if <=1 then to be multiplied on the length of the pHMM [default: 0.9]",
@@ -205,6 +206,8 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
     std::cout << make_man_page(cli, argv[0]);
     exit(1);
   }
+
+  cfg.output_dir = output_dir;
 }
 
 void DrawComponent(const omnigraph::GraphComponent<debruijn_graph::ConjugateDeBruijnGraph> &component,
@@ -603,11 +606,10 @@ void SaveResults(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph & /* graph 
 
 #pragma omp critical(save_results)
     {
-        std::ofstream o_seqs(cfg.output_dir + std::string("/") + p7hmm->name + ".seqs.fa", std::ios::out);
+        std::ofstream o_seqs(cfg.output_dir / (std::string{p7hmm->name} + ".seqs.fa"), std::ios::out);
         std::ofstream o_nucs;
-        if (hmm_in_aas) {
-            o_nucs.open(cfg.output_dir + std::string("/") + p7hmm->name + ".nucs.fa", std::ios::out);
-        }
+        if (hmm_in_aas)
+            o_nucs.open(cfg.output_dir / (std::string{p7hmm->name} + ".nucs.fa"), std::ios::out);
 
         for (const auto &result : results) {
             if (result.seq.size() == 0)
@@ -670,7 +672,7 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
     // TODO export paths along with their best score
 #pragma omp critical(export_edges)
     ExportEdges(to_rescore_ordered, graph, scaffold_paths,
-                fs::append_path(cfg.output_dir, std::string(p7hmm->name) + ".edges.fa"),
+                cfg.output_dir / (std::string(p7hmm->name) + ".edges.fa"),
                 mapping_f);
 
     std::vector<std::string> seqs_to_rescore;
@@ -686,9 +688,9 @@ void Rescore(const hmmer::HMM &hmm, const ConjugateDeBruijnGraph &graph,
         INFO("Edges rescored, output");
 #pragma omp critical(rescore)
         {
-            OutputMatches(hmm, matcher, fs::append_path(cfg.output_dir, std::string(p7hmm->name) + ".tblout"), "tblout");
-            OutputMatches(hmm, matcher, fs::append_path(cfg.output_dir, std::string(p7hmm->name) + ".domtblout"), "domtblout");
-            OutputMatches(hmm, matcher, fs::append_path(cfg.output_dir, std::string(p7hmm->name) + ".pfamtblout"), "pfamtblout");
+            OutputMatches(hmm, matcher, cfg.output_dir / (std::string(p7hmm->name) + ".tblout"), "tblout");
+            OutputMatches(hmm, matcher, cfg.output_dir / (std::string(p7hmm->name) + ".domtblout"), "domtblout");
+            OutputMatches(hmm, matcher, cfg.output_dir / (std::string(p7hmm->name) + ".pfamtblout"), "pfamtblout");
         }
     }
 }
@@ -922,10 +924,11 @@ void TraceHMM(const hmmer::HMM &hmm,
         }
 
         if (cfg.export_event_graph) {
-            std::ofstream of(cfg.output_dir + "/event_graph_" + p7hmm->name +
-                             "_component_" + int_to_hex(hash_value(cursors)) +
-                             "_size_" + std::to_string(cursors.size()) +
-                             ".cereal");
+            std::ofstream of(cfg.output_dir /
+                             (std::string{"event_graph_"} + p7hmm->name +
+                              "_component_" + int_to_hex(hash_value(cursors)) +
+                              "_size_" + std::to_string(cursors.size()) +
+                              ".cereal"));
             cereal::BinaryOutputArchive oarchive(of);
             oarchive(cursors, result);
             INFO("Event graph exported");
@@ -1060,12 +1063,12 @@ void TraceHMM(const hmmer::HMM &hmm,
             auto component = omnigraph::GraphComponent<ConjugateDeBruijnGraph>::FromEdges(graph, edges, true, component_name_with_hash);
 
             INFO("Writing component " << component_name_with_hash);
-            DrawComponent(component, graph, cfg.output_dir + "/" + component_name_with_hash, match_edges);
+            DrawComponent(component, graph, cfg.output_dir / component_name_with_hash, match_edges);
 
             size_t idx = 0;
             for (const auto &path : paths) {
                 INFO("Writing component around path " << idx);
-                DrawComponent(component, graph, cfg.output_dir + "/" + component_name_with_hash + "_" + std::to_string(idx), path);
+                DrawComponent(component, graph, cfg.output_dir / (component_name_with_hash + "_" + std::to_string(idx)), path);
                 ++idx;
             }
         }
@@ -1142,7 +1145,7 @@ int pathracer_main(int argc, char* argv[]) {
     process_cmdline(argc, argv, cfg);
 
     int status = mkdir(cfg.output_dir.c_str(), 0775);
-    create_console_logger(cfg.output_dir + "/pathracer.log", cfg.quiet);
+    create_console_logger(cfg.output_dir / "pathracer.log", cfg.quiet);
 
     if (status != 0) {
         if (errno == EEXIST) {
@@ -1219,12 +1222,12 @@ int pathracer_main(int argc, char* argv[]) {
     if (cfg.rescore) {
         INFO("Total " << to_rescore.size() << " paths to rescore");
         ExportEdges(to_rescore, graph, scaffold_paths,
-                    fs::append_path(cfg.output_dir, "all.edges.fa"),
+                    cfg.output_dir / "all.edges.fa",
                     mapping_f);
     }
 
     if (cfg.annotate_graph) {
-        std::string fname = fs::append_path(cfg.output_dir, "graph_with_hmm_paths.gfa");
+        std::string fname = cfg.output_dir / "graph_with_hmm_paths.gfa";
         INFO("Saving annotated graph to " << fname)
         std::ofstream os(fname);
         path_extend::GFAPathWriter gfa_writer(graph, os,
@@ -1578,9 +1581,9 @@ int aling_fs(int argc, char* argv[]) {
                 float bitscore = max_bitscore(seq_without_gaps, matcher);
 
                 double cutoff = cfg.cutoff <= 1.0 ? cfg.cutoff * p7hmm->cutoff[cfg.local ? p7_GA2 : p7_GA1] : cfg.cutoff;  // FIXME check global and local
-                int nindels = subseqs.size() - 1;
+                int nindels = int(subseqs.size()) - 1;
                 VERIFY(nindels >= 0);
-                if (nindels > cfg.max_fs)
+                if (nindels > int(cfg.max_fs))
                     continue;
 
                 if (cfg.cutoff == -1.0) {  // Auto cutoff

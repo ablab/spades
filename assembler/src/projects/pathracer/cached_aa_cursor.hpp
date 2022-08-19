@@ -26,7 +26,7 @@ class CachedAACursor {
 public:
     using Context = const CachedAACursorContext *;
     CachedAACursor(size_t index, unsigned char mask = 0b111) : index_{index}, mask_{mask} {}
-    CachedAACursor() : index_{size_t(-1)}, mask_{0b000} {}
+    CachedAACursor() : index_{0b1111111111111111111111111111111111111111111111111111111111111}, mask_{0b000} {}
     bool is_empty() const { return mask_ == 0b000; }
     bool operator==(const CachedAACursor &other) const { return to_size_t() == other.to_size_t(); }
     const std::vector<CachedAACursor> &next(Context context) const;
