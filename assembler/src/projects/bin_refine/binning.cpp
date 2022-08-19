@@ -8,9 +8,11 @@
 
 #include "io/utils/id_mapper.hpp"
 #include "io/reads/io_helper.hpp"
-
-#include "utils/filesystem/path_helper.hpp"
 #include "utils/stl_utils.hpp"
+
+#include "csv/csv.h"
+#include <blaze/math/dense/DynamicVector.h>
+#include <filesystem>
 
 #include <blaze/math/dense/DynamicVector.h>
 #include <csv/csv.h>
@@ -100,90 +102,89 @@ void Binning::ScaffoldsToEdges() {
   }
 }
 
-void Binning::LoadBinning(const std::string &binning_file,
-                          bool cami,
-                          bool add_unbinned_bin) {
-  fs::CheckFileExistenceFATAL(binning_file);
+void Binning::LoadBinning(const std::filesystem::path &binning_file,
+                          bool cami, bool add_unbinned_bin) {
+    scaffolds_binning_.clear();
+    bins_.clear();
+    std::ifstream binning_reader(binning_file);
 
-  scaffolds_binning_.clear();
-  bins_.clear();
-  std::ifstream binning_reader(binning_file);
+    io::CSVReader<2,
+                  io::trim_chars<' '>, io::no_quote_escape<'\t'>,
+                  io::throw_on_overflow, io::single_and_empty_line_comment<'#'>>
+            reader(binning_file);
 
-  io::CSVReader<2,
-                io::trim_chars<' '>, io::no_quote_escape<'\t'>,
-                io::throw_on_overflow, io::single_and_empty_line_comment<'#'>>
-          reader(binning_file);
+    // Read the input in CAMI bioboxes format
+    // Parse the header
+    if (cami) {
+        while (char *cline = reader.next_line()) {
+            std::string line(cline);
+            if (utils::starts_with(line, "#"))
+                continue;
 
-  // Read the input in CAMI bioboxes format
-  // Parse the header
-  if (cami) {
-      while (char *cline = reader.next_line()) {
-          std::string line(cline);
-          if (utils::starts_with(line, "#"))
-              continue;
-          if (utils::starts_with(utils::str_tolower(line), "@sampleid:")) // SampleID
-              sample_id_ = line.substr(strlen("@SAMPLEID:"));
-          else if (utils::starts_with(line, "@@")) { // Actual header
-              reader.set_header("@@SEQUENCEID", "BINID");
-              reader.parse_header_line(io::ignore_extra_column, cline);
-              break;
-          } else if (!utils::starts_with(line, "@")) {
-              FATAL_ERROR("Invalid CAMI bioboxies input format!");
-          }
-      }
-      if (sample_id_.empty())
-          FATAL_ERROR("Invalid sample ID!");
+            if (utils::starts_with(utils::str_tolower(line), "@sampleid:")) // SampleID
+                sample_id_ = line.substr(strlen("@SAMPLEID:"));
+            else if (utils::starts_with(line, "@@")) { // Actual header
+                reader.set_header("@@SEQUENCEID", "BINID");
+                reader.parse_header_line(io::ignore_extra_column, cline);
+                break;
+            } else if (!utils::starts_with(line, "@")) {
+                FATAL_ERROR("Invalid CAMI bioboxies input format!");
+            }
+        }
+        if (sample_id_.empty())
+            FATAL_ERROR("Invalid sample ID!");
 
-      INFO("Sample ID: " << sample_id_);
-  } else {
-      reader.set_header("@@SEQUENCEID", "BINID");
-  }
+        INFO("Sample ID: " << sample_id_);
+    } else {
+        reader.set_header("@@SEQUENCEID", "BINID");
+    }
 
-  std::string scaffold_name;
-  BinLabel bin_label;
-  BinId max_bin_id = 0;
-  BinId unbinned = UNBINNED;
-  if (add_unbinned_bin) {
-      unbinned = SPECIAL_UNBINNED;
-      max_bin_id = 1;
-  }
-  while (reader.read_row(scaffold_name, bin_label)) {
-      BinId cbin_id;
-      if (bin_label == UNBINNED_ID) // unbinned scaffold
-          cbin_id = unbinned;
-      else {
-          auto entry = bins_.find(bin_label);
-          if (entry == bins_.end()) { // new bin label
-              cbin_id = max_bin_id++;
-              bin_labels_.emplace(cbin_id, bin_label);
-              bins_.emplace(bin_label, cbin_id);
-          } else {
-              cbin_id = entry->second;
-          }
-      }
+    std::string scaffold_name;
+    BinLabel bin_label;
+    BinId max_bin_id = 0;
+    BinId unbinned = UNBINNED;
+    if (add_unbinned_bin) {
+        unbinned = SPECIAL_UNBINNED;
+        max_bin_id = 1;
+    }
+    while (reader.read_row(scaffold_name, bin_label)) {
+        BinId cbin_id;
+        if (bin_label == UNBINNED_ID) // unbinned scaffold
+            cbin_id = unbinned;
+        else {
+            auto entry = bins_.find(bin_label);
+            if (entry == bins_.end()) { // new bin label
+                cbin_id = max_bin_id++;
+                bin_labels_.emplace(cbin_id, bin_label);
+                bins_.emplace(bin_label, cbin_id);
+            } else {
+                cbin_id = entry->second;
+            }
+        }
 
-      auto scaffold_entry = scaffolds_.find(scaffold_name);
-      if (scaffold_entry == scaffolds_.end()) {
-          INFO("Unknown scaffold: " << scaffold_name);
-          continue;
-      }
+        auto scaffold_entry = scaffolds_.find(scaffold_name);
+        if (scaffold_entry == scaffolds_.end()) {
+            INFO("Unknown scaffold: " << scaffold_name);
+            continue;
+        }
 
-      scaffolds_binning_[scaffold_entry->second] = cbin_id;
-  }
-  if (add_unbinned_bin) {
-      bins_.insert({UNBINNED_ID, unbinned});
-      bin_labels_.insert({unbinned, UNBINNED_ID});
-  }
-  ScaffoldsToEdges();
+        scaffolds_binning_[scaffold_entry->second] = cbin_id;
+    }
+
+    if (add_unbinned_bin) {
+        bins_.insert({UNBINNED_ID, unbinned});
+        bin_labels_.insert({unbinned, UNBINNED_ID});
+    }
+    ScaffoldsToEdges();
 }
 
-void Binning::WriteToBinningFile(const std::string& prefix, uint64_t output_options,
+void Binning::WriteToBinningFile(const std::filesystem::path& prefix, uint64_t output_options,
                                  const SoftBinsAssignment &soft_edge_labels, const BinningAssignmentStrategy& assignment_strategy,
                                  const io::IdMapper<std::string> &edge_mapper) {
-    std::ofstream out_tsv(fs::append_path(prefix, "binning.tsv"));
-    std::ofstream out_bins(fs::append_path(prefix, "bin_stats.tsv"));
-    std::ofstream out_weights(fs::append_path(prefix, "bin_weights.tsv"));
-    std::ofstream out_edges(fs::append_path(prefix, "edge_weights.tsv"));
+    std::ofstream out_tsv(prefix / "binning.tsv");
+    std::ofstream out_bins(prefix / "bin_stats.tsv");
+    std::ofstream out_weights(prefix / "bin_weights.tsv");
+    std::ofstream out_edges(prefix / "edge_weights.tsv");
 
     auto weight_sorter = [] (const auto &lhs, const auto &rhs) {
         if (math::eq(rhs.second, lhs.second))

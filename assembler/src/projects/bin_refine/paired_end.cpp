@@ -11,7 +11,7 @@
 #include "assembly_graph/core/graph.hpp"
 
 #include "paired_info/paired_info_utils.hpp"
-#include "modules/alignment/kmer_sequence_mapper.hpp"
+#include "alignment/kmer_sequence_mapper.hpp"
 
 #include "io/binary/paired_index.hpp"
 #include "io/dataset_support/read_converter.hpp"
@@ -25,7 +25,7 @@ namespace binning {
 void FillPairedEndLinks(LinkIndex &pe_links,
                         SequencingLib &lib,
                         const debruijn_graph::Graph &graph,
-                        const std::string &workdir,
+                        const std::filesystem::path &workdir,
                         unsigned nthreads,
                         bool bin_load, bool bin_save) {
     if (!bin_load || !io::ReadConverter::LoadLibIfExists(lib)) {
@@ -45,11 +45,11 @@ void FillPairedEndLinks(LinkIndex &pe_links,
 
         if (bin_save) {
             INFO("Saving paired-end information");
-            io::binary::Save(fs::append_path(workdir, "paired_index"), index);
+            io::binary::Save(workdir / "paired_index", index);
         }
     } else {
         INFO("Loading paired-end information");
-        io::binary::Load(fs::append_path(workdir, "paired_index"), index);
+        io::binary::Load(workdir / "paired_index", index);
     }
               
     for (EdgeId e1 : graph.edges()) {

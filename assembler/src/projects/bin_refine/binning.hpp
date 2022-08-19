@@ -12,6 +12,7 @@
 #include "assembly_graph/core/graph.hpp"
 
 #include <blaze/math/CompressedVector.h>
+#include <filesystem>
 #include <unordered_set>
 #include <unordered_map>
 #include <set>
@@ -101,13 +102,13 @@ class Binning {
     }
 
     /// binning file in .tsv format (NODE_{scaffold_id}_* -> bin_id); scaffolds_file in .fasta format
-    void LoadBinning(const std::string& binning_file, bool cami, bool add_unbinned_bin);
+    void LoadBinning(const std::filesystem::path &binning_file, bool cami, bool add_unbinned_bin);
     void AssignBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy);
 
     blaze::DynamicMatrix<double> BinDistance(const SoftBinsAssignment& soft_bins_assignment,
                                              bool edges = false);
 
-    void WriteToBinningFile(const std::string& binning_file, uint64_t output_options,
+    void WriteToBinningFile(const std::filesystem::path& binning_file, uint64_t output_options,
                             const SoftBinsAssignment &edge_soft_labels, const BinningAssignmentStrategy& assignment_strategy,
                             const io::IdMapper<std::string> &edge_mapper);
     void AssignEdgeBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy);

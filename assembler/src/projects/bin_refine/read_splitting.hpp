@@ -10,8 +10,8 @@
 
 #include "assembly_graph/core/graph.hpp"
 
-#include "pipeline/library.hpp"
-#include "pipeline/library_data.hpp"
+#include "library/library.hpp"
+#include "library/library_data.hpp"
 
 typedef io::DataSet<debruijn_graph::config::LibraryData> DataSet;
 typedef io::SequencingLibrary<debruijn_graph::config::LibraryData> SequencingLib;
@@ -23,8 +23,8 @@ void SplitAndWriteReads(const debruijn_graph::Graph &graph,
                         const bin_stats::Binning &binning,
                         const bin_stats::SoftBinsAssignment& edge_soft_labels,
                         const bin_stats::BinningAssignmentStrategy& assignment_strategy,
-                        const std::string &work_dir,
-                        const std::string &prefix,
+                        const std::filesystem::path &work_dir,
+                        const std::filesystem::path &prefix,
                         unsigned nthreads,
                         const double bin_weight_threshold);
 

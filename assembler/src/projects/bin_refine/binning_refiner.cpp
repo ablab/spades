@@ -14,10 +14,11 @@
 #include "read_splitting.hpp"
 
 #include "assembly_graph/core/graph.hpp"
-#include "pipeline/config_struct.hpp"
+#include "configs/config_struct.hpp"
 #include "toolchain/utils.hpp"
 #include "io/graph/gfa_reader.hpp"
 #include "utils/filesystem/path_helper.hpp"
+#include "utils/logger/logger.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/segfault_handler.hpp"
 #include "utils/stl_utils.hpp"
@@ -25,7 +26,7 @@
 
 #include <clipp/clipp.h>
 #include <cstdint>
-#include <string>
+#include <filesystem>
 
 using namespace debruijn_graph;
 using namespace bin_stats;
@@ -43,13 +44,13 @@ enum class RefinerType {
 
 struct gcfg {
     size_t k = 55;
-    std::string graph;
-    std::string binning_file;
-    std::string prefix;
-    std::string path_file;
+    std::filesystem::path graph;
+    std::filesystem::path binning_file;
+    std::filesystem::path prefix;
+    std::filesystem::path path_file;
     unsigned nthreads = (omp_get_max_threads() / 2 + 1);
     std::string file = "";
-    std::string tmpdir = "tmp";
+    std::filesystem::path tmpdir = "tmp";
     unsigned libindex = -1u;
     AssignStrategy assignment_strategy = AssignStrategy::MaxLikelihood;
     double eps = 1e-5;
@@ -73,11 +74,12 @@ struct gcfg {
 static void process_cmdline(int argc, char** argv, gcfg& cfg) {
   using namespace clipp;
 
+  std::string path_file, graph, binning_file, prefix, tmpdir = "tmp";
   auto cli = (
-      cfg.graph << value("graph (in binary or GFA)"),
-      cfg.binning_file << value("file with binning from binner in .tsv format"),
-      cfg.prefix << value("output path to write binning results after propagation"),
-      (option("--paths") & value("contig.paths", cfg.path_file)) % "use contig paths from file",
+      graph << value("graph (in binary or GFA)"),
+      binning_file << value("file with binning from binner in .tsv format"),
+      prefix << value("output path to write binning results after propagation"),
+      (option("--paths") & value("contig.paths", path_file)) % "use contig paths from file",
       (option("--dataset") & value("yaml", cfg.file)) % "dataset description (in YAML)",
       (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
@@ -109,7 +111,7 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       "Developer options:" % (
           (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir",
           (option("--debug").set(cfg.debug)) % "produce lots of debug data",
-          (option("--tmp-dir") & value("dir", cfg.tmpdir)) % "scratch directory to use"
+          (option("--tmp-dir") & value("dir", tmpdir)) % "scratch directory to use"
       )
   );
 
@@ -118,6 +120,12 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
       std::cout << make_man_page(cli, argv[0]);
       exit(1);
   }
+
+  cfg.prefix = prefix;
+  cfg.graph = graph;
+  cfg.path_file = path_file;
+  cfg.binning_file = binning_file;
+  cfg.tmpdir = tmpdir;
 }
 
 std::unique_ptr<BinningAssignmentStrategy> get_strategy(const gcfg &cfg) {
@@ -146,7 +154,7 @@ std::unique_ptr<AlphaAssigner> get_alpha_assigner(const gcfg &cfg,
 
             auto alpha_mask = AlphaPropagator(graph, links, cfg.metaalpha, cfg.eps, cfg.niter,
                                               cfg.length_threshold, cfg.distance_bound,
-                                              fs::append_path(cfg.prefix, "alpha_stats.tsv")).GetAlphaMask(binning);
+                                              cfg.prefix / "alpha_stats.tsv").GetAlphaMask(binning);
             return std::make_unique<bin_stats::CorrectionAssigner>(graph, alpha_mask, cfg.labeled_alpha);
     }
 }
@@ -167,10 +175,14 @@ int main(int argc, char** argv) {
   cfg.nthreads = spades_set_omp_threads(cfg.nthreads);
   INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg.nthreads);
 
-  fs::CheckFileExistenceFATAL(cfg.graph);
-  fs::CheckFileExistenceFATAL(cfg.binning_file);
+  if (!std::filesystem::exists(cfg.graph))
+      FATAL_ERROR("Graph file: " << cfg.graph << " does not exist");
 
-  fs::make_dir(cfg.tmpdir);
+  if (!std::filesystem::exists(cfg.binning_file))
+      FATAL_ERROR("Input binning file " << cfg.binning_file << " does not exist");
+  
+  if (!std::filesystem::create_directories(cfg.tmpdir))
+      FATAL_ERROR("Failed to create temporary directory: " << cfg.tmpdir);
 
   try {
       auto assignment_strategy = get_strategy(cfg);
@@ -206,7 +218,7 @@ int main(int argc, char** argv) {
           std::vector<Binning::Scaffold> scaffolds_paths;
           size_t slinks = 0;
 
-          if (fs::FileExists(cfg.path_file)) {
+          if (std::filesystem::exists(cfg.path_file)) {
               INFO("Using contig paths from " << cfg.path_file);
               std::ifstream pathfile_reader(cfg.path_file);
               const std::string numeric = "0123456789";
@@ -335,7 +347,8 @@ int main(int argc, char** argv) {
       binning.AssignBins(soft_edge_labels, *assignment_strategy);
       INFO("Final binning:\n" << binning);
 
-      fs::make_dir(cfg.prefix);
+      if (!std::filesystem::create_directories(cfg.prefix))
+          FATAL_ERROR("Failed to create output dir: " << cfg.prefix);
 
       INFO("Writing final binning");
       binning.WriteToBinningFile(cfg.prefix, cfg.out_options,
@@ -347,7 +360,7 @@ int main(int argc, char** argv) {
           auto dist = binning.BinDistance(soft_edge_labels);
           size_t nbins = binning.bins().size();
 
-          std::ofstream out_dist(fs::append_path(cfg.prefix, "bin_dist.tsv"));
+          std::ofstream out_dist(cfg.prefix / ".bin_dist.tsv");
           for (size_t i = 0; i < nbins; ++i)
               out_dist << '\t' << binning.bin_labels().at(i);
           out_dist << std::endl;
@@ -361,8 +374,8 @@ int main(int argc, char** argv) {
 
       if (cfg.debug) {
           INFO("Dumping links");
-          pe_links.dump(fs::append_path(cfg.prefix, "pe_links.tsv"), *id_mapper);
-          links.dump(fs::append_path(cfg.prefix, "graph_links.tsv"), *id_mapper);
+          pe_links.dump(cfg.prefix / "pe_links.tsv", *id_mapper);
+          links.dump(cfg.prefix / "graph_links.tsv", *id_mapper);
       }
 
       if (cfg.split_reads) {
@@ -382,7 +395,8 @@ int main(int argc, char** argv) {
       }
 
       if (!cfg.debug)
-          fs::remove_dir(cfg.tmpdir);
+          if (!std::filesystem::remove_all(cfg.tmpdir))
+              FATAL_ERROR("Failed to empty temporary directory: " << cfg.tmpdir);
   } catch (const std::string& s) {
       std::cerr << s << std::endl;
       return EINTR;

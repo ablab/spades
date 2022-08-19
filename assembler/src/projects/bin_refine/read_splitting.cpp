@@ -7,14 +7,15 @@
 #include "read_splitting.hpp"
 #include "binning.hpp"
 
-#include "modules/alignment/sequence_mapper_notifier.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
-#include "modules/alignment/kmer_sequence_mapper.hpp"
+#include "alignment/sequence_mapper_notifier.hpp"
+#include "alignment/sequence_mapper.hpp"
+#include "alignment/kmer_sequence_mapper.hpp"
 
 #include "io/reads/osequencestream.hpp"
 #include "io/reads/io_helper.hpp"
 #include "io/dataset_support/read_converter.hpp"
 
+#include <filesystem>
 #include <threadpool/threadpool.hpp>
 
 #include <vector>
@@ -111,8 +112,8 @@ void SplitAndWriteReads(const debruijn_graph::Graph &graph,
                         const Binning &binning,
                         const SoftBinsAssignment& edge_soft_labels,
                         const BinningAssignmentStrategy& assignment_strategy,
-                        const std::string &work_dir,
-                        const std::string &prefix,
+                        const std::filesystem::path &work_dir,
+                        const std::filesystem::path &prefix,
                         unsigned nthreads,
                         const double bin_weight_threshold) {
     if (!io::ReadConverter::LoadLibIfExists(lib)) {
@@ -122,8 +123,8 @@ void SplitAndWriteReads(const debruijn_graph::Graph &graph,
         io::ReadConverter::ConvertToBinary(lib, pool.get());
     }
 
-    io::OFastqPairedStream unbinned_reads_ostream(fs::append_path(prefix, "unbinned_1.fastq"),
-                                                  fs::append_path(prefix, "unbinned_2.fastq"),
+    io::OFastqPairedStream unbinned_reads_ostream(prefix / "unbinned_1.fastq",
+                                                  prefix / "unbinned_2.fastq",
                                                   lib.orientation());
 
     std::vector<io::OFastqPairedStream> binned_reads_ostreams;
@@ -131,8 +132,8 @@ void SplitAndWriteReads(const debruijn_graph::Graph &graph,
         auto bin_label = binning.bin_labels().at(bin_id);
         std::replace(bin_label.begin(), bin_label.end(), '/', '_');
         const std::pair<std::string, std::string> cur_part_paired_reads_filenames
-                {fs::append_path(prefix, bin_label + "_1.fastq"),
-                 fs::append_path(prefix, bin_label + "_2.fastq")};
+                {prefix / (bin_label + "_1.fastq"),
+                 prefix / (bin_label + "_2.fastq")};
         binned_reads_ostreams.emplace_back(cur_part_paired_reads_filenames.first,
                                            cur_part_paired_reads_filenames.second,
                                            lib.orientation());

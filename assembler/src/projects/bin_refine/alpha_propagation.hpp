@@ -10,6 +10,8 @@
 #include "binning.hpp"
 #include "link_index.hpp"
 
+#include <filesystem>
+
 namespace bin_stats {
 
 class AlphaPropagator {
@@ -27,7 +29,7 @@ class AlphaPropagator {
                     double eps, unsigned niter,
                     size_t length_threshold,
                     size_t distance_threshold,
-                    const std::string &debug_path)
+                    const std::filesystem::path &debug_path)
         : g_(g),
           links_(links),
           metaalpha_(metaalpha),
@@ -48,7 +50,7 @@ class AlphaPropagator {
     unsigned niter_;
     size_t length_threshold_;
     size_t distance_bound_;
-    std::string debug_path_;
+    std::filesystem::path debug_path_;
 };
 
 }

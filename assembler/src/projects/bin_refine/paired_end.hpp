@@ -8,8 +8,10 @@
 
 #include "assembly_graph/core/graph.hpp"
 
-#include "pipeline/library.hpp"
-#include "pipeline/library_data.hpp"
+#include "library/library.hpp"
+#include "library/library_data.hpp"
+
+#include <filesystem>
 
 typedef io::DataSet<debruijn_graph::config::LibraryData> DataSet;
 typedef io::SequencingLibrary<debruijn_graph::config::LibraryData> SequencingLib;
@@ -20,7 +22,7 @@ class LinkIndex;
 void FillPairedEndLinks(LinkIndex &pe_links,
                         SequencingLib &lib,
                         const debruijn_graph::Graph &graph,
-                        const std::string &workdir,
+                        const std::filesystem::path &workdir,
                         unsigned nthreads,
                         bool bin_load, bool bin_save);
 };
