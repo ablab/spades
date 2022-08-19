@@ -10,6 +10,8 @@
 #include "assembly_graph/core/graph.hpp"
 #include "io/reads/osequencestream.hpp"
 
+#include <string>
+
 namespace debruijn_graph {
 
 inline void OutputEdgeSequences(const Graph &g, const std::string &contigs_output) {

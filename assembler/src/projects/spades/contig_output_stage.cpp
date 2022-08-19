@@ -10,10 +10,13 @@
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/paths/bidirectional_path.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
-#include "io/dataset_support/read_converter.hpp"
 #include "assembly_graph/handlers/used_edge_handler.hpp"
+#include "assembly_graph/graph_support/contig_output.hpp"
+#include "modules/path_extend/pipeline/launch_support.hpp"
 #include "modules/path_extend/pe_resolver.hpp"
 #include "modules/path_extend/pe_utils.hpp"
+
+#include "io/dataset_support/read_converter.hpp"
 
 #include <unordered_set>
 

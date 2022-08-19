@@ -5,7 +5,7 @@
 //***************************************************************************
 
 #include "domain_graph.hpp"
-
+#include "modules/path_extend/pipeline/launch_support.hpp"
 
 namespace nrps {
     void DomainGraph::SetVisited(VertexId v) {

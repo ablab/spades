@@ -1,7 +1,3 @@
-//
-// Created by andrey on 14.11.16.
-//
-
 #ifndef PROJECT_LAUNCHER_H
 #define PROJECT_LAUNCHER_H
 

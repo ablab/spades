@@ -7,10 +7,11 @@
 
 #pragma once
 
+#include "io_support.hpp"
 #include "io/utils/edge_namer.hpp"
 #include "io/graph/gfa_writer.hpp"
 #include "io/graph/fastg_writer.hpp"
-#include "io_support.hpp"
+#include "io/reads/osequencestream.hpp"
 
 #include <unordered_set>
 
