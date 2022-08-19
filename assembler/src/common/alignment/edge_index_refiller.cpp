@@ -6,9 +6,9 @@
 #include "edge_index_refiller.hpp"
 
 #include "assembly_graph/core/graph.hpp"
-#include "assembly_graph/core/kmer_iterator.hpp"
 #include "assembly_graph/index/edge_index_builders.hpp"
-#include "utils/filesystem/temporary.hpp"
+
+#include <vector>
 
 namespace debruijn_graph {
 
@@ -21,41 +21,54 @@ EdgeIndexRefiller::EdgeIndexRefiller(const std::filesystem::path &workdir)
 {}
 
 template<class EdgeIndex>
-void EdgeIndexRefiller::Refill(EdgeIndex &index, const Graph &g) {
+void EdgeIndexRefiller::Refill(EdgeIndex &index, const Graph &g,
+                               bool count) {
     typedef GraphPositionFillingIndexBuilder<EdgeIndex> IndexBuilder;
-    IndexBuilder().BuildIndexFromGraph(index, g);
+    if (count) {
+        IndexBuilder().BuildIndexFromGraph(index, g, fs::tmp::make_temp_dir(workdir_, "edge_index"));
+    } else {
+        IndexBuilder().BuildIndexFromGraph(index, g);
+    }
 }
 
 template
-void EdgeIndexRefiller::Refill(EdgeIndex &index, const Graph &g);
+void EdgeIndexRefiller::Refill(EdgeIndex &index, const Graph &g, bool);
 
 template
-void EdgeIndexRefiller::Refill(EdgeIndex64 &index, const Graph &g);
+void EdgeIndexRefiller::Refill(EdgeIndex64 &index, const Graph &g, bool);
 
 template
-void EdgeIndexRefiller::Refill(EdgeIndex32 &index, const Graph &g);
+void EdgeIndexRefiller::Refill(EdgeIndex32 &index, const Graph &g, bool);
 
 
 template<class EdgeIndex>
 void EdgeIndexRefiller::Refill(EdgeIndex &index,
                                const Graph &g,
-                               const std::vector<EdgeId> &edges) {
+                               const std::vector<EdgeId> &edges,
+                               bool count) {
     typedef GraphPositionFillingIndexBuilder<EdgeIndex> IndexBuilder;
-    IndexBuilder().BuildIndexFromGraph(index, g, edges);
+    if (count) {
+        IndexBuilder().BuildIndexFromGraph(index, g, edges, fs::tmp::make_temp_dir(workdir_, "edge_index"));
+    } else {
+        IndexBuilder().BuildIndexFromGraph(index, g, edges);
+    }
 }
 
 template
 void EdgeIndexRefiller::Refill(EdgeIndex &index,
                                const Graph &g,
-                               const std::vector<typename ConjugateDeBruijnGraph::EdgeId> &edges);
+                               const std::vector<typename ConjugateDeBruijnGraph::EdgeId> &edges,
+                               bool);
 
 template
 void EdgeIndexRefiller::Refill(EdgeIndex64 &index,
                                const ConjugateDeBruijnGraph &g,
-                               const std::vector<typename ConjugateDeBruijnGraph::EdgeId> &edges);
+                               const std::vector<typename ConjugateDeBruijnGraph::EdgeId> &edges,
+                               bool);
 
 template
 void EdgeIndexRefiller::Refill(EdgeIndex32 &index,
                                const ConjugateDeBruijnGraph &g,
-                               const std::vector<typename ConjugateDeBruijnGraph::EdgeId> &edges);
+                               const std::vector<typename ConjugateDeBruijnGraph::EdgeId> &edges,
+                               bool);
 }
