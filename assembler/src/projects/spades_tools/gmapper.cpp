@@ -8,17 +8,21 @@
 #include "alignment/bwa_sequence_mapper.hpp"
 #include "alignment/long_read_mapper.hpp"
 #include "alignment/sequence_mapper_notifier.hpp"
+
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
-#include "configs/aligner_config.hpp"
-#include "io/binary/graph.hpp"
-#include "io/dataset_support/dataset_readers.hpp"
-#include "io/dataset_support/read_converter.hpp"
+
 #include "io/graph/gfa_reader.hpp"
+#include "io/dataset_support/read_converter.hpp"
+#include "io/dataset_support/dataset_readers.hpp"
+#include "io/binary/graph.hpp"
+
+#include "configs/aligner_config.hpp"
 #include "paired_info/index_point.hpp"
 #include "paired_info/paired_info_utils.hpp"
 #include "projects/spades/hybrid_aligning.hpp"
 #include "projects/spades/hybrid_gap_closer.hpp"
+
 #include "threadpool/threadpool.hpp"
 #include "utils/filesystem/temporary.hpp"
 #include "utils/logger/log_writers.hpp"
@@ -254,7 +258,7 @@ int main(int argc, char* argv[]) {
 
             std::ofstream os(cfg.outfile);
             if (cfg.hic) {
-                for (EdgeId e1 : graph.canonical_edges()) {
+                for (EdgeId e1 : graph.edges()) {
                     for (auto entry : index.GetHalf(e1)) {
                         EdgeId e2 = entry.first, ce2 = graph.conjugate(e2);
                         VERIFY(entry.second.size() == 1);
