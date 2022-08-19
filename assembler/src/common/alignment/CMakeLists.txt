@@ -12,6 +12,7 @@ add_library(alignment STATIC
             bwa_index.cpp
             long_read_mapper.cpp
             sequence_mapper_notifier.cpp
+            kmer_sequence_mapper.cpp
             pacbio/gap_filler.cpp
             pacbio/gap_dijkstra.cpp
             pacbio/g_aligner.cpp
