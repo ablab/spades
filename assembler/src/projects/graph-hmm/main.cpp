@@ -52,11 +52,14 @@ extern "C" {
 struct main_assert : debug_assert::default_handler,
                      debug_assert::set_level<1> {};
 
-void create_console_logger() {
+void create_console_logger(const std::string &filename = "") {
     using namespace logging;
 
     logger *lg = create_logger("");
     lg->add_writer(std::make_shared<mutex_writer>(std::make_shared<console_writer>()));
+    if (filename != "") {
+        lg->add_writer(std::make_shared<mutex_writer>(std::make_shared<file_writer>(filename)));
+    }
     attach_logger(lg);
 }
 
@@ -559,7 +562,6 @@ void TraceHMM(const hmmer::HMM &hmm,
         int loverhang = (kv.second.first + 10) * aa_coef; // TODO unify overhangs processing
         int roverhang = (kv.second.second + 10) * aa_coef;
 
-        std::vector<GraphCursor> neib_cursors;
         if (loverhang > 0) {
             for (const auto &start : GraphCursor::get_cursors(graph, e, 0)) {
                 left_queries.push_back({start, loverhang * 2});
@@ -763,7 +765,7 @@ int main(int argc, char* argv[]) {
     cfg cfg;
     process_cmdline(argc, argv, cfg);
 
-    create_console_logger();
+    create_console_logger(cfg.output_dir + "/pathracer.log");
 
     int status = mkdir(cfg.output_dir.c_str(), 0775);
     if (status != 0) {

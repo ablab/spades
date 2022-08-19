@@ -17,6 +17,17 @@ struct console_writer : public writer {
                    const char *source, const char *msg);
 };
 
+class file_writer : public writer {
+public:
+    file_writer(const std::string &filename) : fout(filename) {}
+
+    void write_msg(double time, size_t cmem, size_t max_rss, level l, const std::filesystem::path& file, size_t line_num,
+                   const char *source, const char *msg);
+
+private:
+    std::ofstream fout;
+};
+
 class mutex_writer : public writer {
     std::mutex writer_mutex_;
     std::shared_ptr<writer> writer_;
