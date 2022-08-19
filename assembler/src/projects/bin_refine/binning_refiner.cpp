@@ -11,6 +11,7 @@
 #include "majority_length_strategy.hpp"
 #include "max_likelihood_strategy.hpp"
 #include "paired_end.hpp"
+#include "read_splitting.hpp"
 
 #include "assembly_graph/core/graph.hpp"
 #include "pipeline/config_struct.hpp"
@@ -65,6 +66,8 @@ struct gcfg {
     bool debug = false;
     bool bin_dist = false;
     uint64_t out_options = 0;
+    bool split_reads = false;
+    double bin_weight_threshold = 0.1;
 };
 
 static void process_cmdline(int argc, char** argv, gcfg& cfg) {
@@ -98,6 +101,10 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
           (option("-ma") & value("--metaalpha", cfg.metaalpha)) % "Labels correction alpha for alpha propagation procedure",
           (option("-lt") & value("--length-threshold", cfg.length_threshold)) % "Binning will not be propagated to edges longer than threshold",
           (option("-db") & value("--distance-bound", cfg.distance_bound)) % "Binning will not be propagated further than bound"
+      ),
+      "Read splitting options:" % (
+          (option("-r", "--reads").set(cfg.split_reads) % "split reads according to binning"),
+          (option("-b", "--bin-weight") & value("threshold", cfg.bin_weight_threshold)) % "reads bin weight threshold"
       ),
       "Developer options:" % (
           (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir",
@@ -275,10 +282,11 @@ int main(int argc, char** argv) {
       }
 
       binning::LinkIndex pe_links(graph);
-      if (cfg.libindex != -1u) {
-          INFO("Processing paired-end reads");
+      if (cfg.libindex != -1u || cfg.split_reads)
           debruijn_graph::config::init_libs(dataset, cfg.nthreads, cfg.tmpdir);
 
+      if (cfg.libindex != -1u) {
+          INFO("Processing paired-end reads");
           auto &lib = dataset[cfg.libindex];
           if (lib.is_paired()) {
               binning::FillPairedEndLinks(pe_links, lib, graph,
@@ -355,6 +363,22 @@ int main(int argc, char** argv) {
           INFO("Dumping links");
           pe_links.dump(fs::append_path(cfg.prefix, "pe_links.tsv"), *id_mapper);
           links.dump(fs::append_path(cfg.prefix, "graph_links.tsv"), *id_mapper);
+      }
+
+      if (cfg.split_reads) {
+          auto &lib = dataset[0];
+
+          INFO("Splitting reads started");
+          binning::SplitAndWriteReads(graph,
+                                      lib,
+                                      binning,
+                                      soft_edge_labels,
+                                      *assignment_strategy,
+                                      cfg.tmpdir,
+                                      cfg.prefix,
+                                      cfg.nthreads,
+                                      cfg.bin_weight_threshold);
+          INFO("Splitting reads ended");
       }
 
       if (!cfg.debug)

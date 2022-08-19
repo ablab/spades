@@ -110,6 +110,7 @@ class Binning {
     void WriteToBinningFile(const std::string& binning_file, uint64_t output_options,
                             const SoftBinsAssignment &edge_soft_labels, const BinningAssignmentStrategy& assignment_strategy,
                             const io::IdMapper<std::string> &edge_mapper);
+    void AssignEdgeBins(const SoftBinsAssignment& soft_bins_assignment, const BinningAssignmentStrategy& assignment_strategy);
 
     const debruijn_graph::Graph& graph() const { return graph_;  }
 
