@@ -12,14 +12,13 @@ namespace debruijn_graph {
 
 double CoverageUniformityAnalyzer::CountMedianCoverage() const{
     std::vector<std::pair<double, size_t>> coverages;
-    size_t total_len = 0, short_len = 0;
-    for (auto iter = g_.ConstEdgeBegin(); ! iter.IsEnd(); ++iter){
-        if (g_.length(*iter) > length_bound_) {
-            coverages.emplace_back(g_.coverage(*iter), g_.length(*iter));
-            total_len += g_.length(*iter);
-        } else {
-            short_len += g_.length(*iter);
-        }
+    size_t total_len = 0;
+    for (EdgeId e : g_.edges()) {
+        if (g_.length(e) <= length_bound_)
+            continue;
+
+        coverages.emplace_back(g_.coverage(e), g_.length(e));
+        total_len += g_.length(e);
     }
     double res = CountMedianCoverage(coverages, total_len);
     INFO ("genomic coverage is "<< res << " calculated of length " << size_t (double(total_len) * 0.5));
@@ -44,13 +43,13 @@ double CoverageUniformityAnalyzer::CountMedianCoverage(std::vector<std::pair<dou
 
 std::pair<size_t, size_t> CoverageUniformityAnalyzer::TotalLengthsNearMedian(double allowed_variation, double median_coverage) const{
     std::pair<size_t, size_t> res(0,0);
-    for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-        if (g_.length(*iter) > length_bound_) {
-            if (g_.coverage(*iter) < median_coverage * (1 + allowed_variation) &&
-                g_.coverage(*iter) > median_coverage * (1 - allowed_variation)) {
-                res.first += g_.length(*iter);
+    for (EdgeId e: g_.edges()) {
+        if (g_.length(e) > length_bound_) {
+            if (g_.coverage(e) < median_coverage * (1 + allowed_variation) &&
+                g_.coverage(e) > median_coverage * (1 - allowed_variation)) {
+                res.first += g_.length(e);
             } else {
-                res.second += g_.length(*iter);
+                res.second += g_.length(e);
             }
         }
     }
@@ -59,9 +58,9 @@ std::pair<size_t, size_t> CoverageUniformityAnalyzer::TotalLengthsNearMedian(dou
 
 size_t CoverageUniformityAnalyzer::TotalLongEdgeLength() const {
     size_t res = 0;
-    for (auto iter = g_.ConstEdgeBegin(); ! iter.IsEnd(); ++iter){
-        if (g_.length(*iter) > length_bound_) {
-            res += g_.length(*iter);
+    for (EdgeId e: g_.edges()) {
+        if (g_.length(e) > length_bound_) {
+            res += g_.length(e);
         }
     }
     return res;

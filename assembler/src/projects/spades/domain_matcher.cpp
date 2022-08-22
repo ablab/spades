@@ -178,7 +178,7 @@ ContigAlnInfo DomainMatcher::MatchDomains(graph_pack::GraphPack &gp,
         if (utils::ends_with(f, ".aa") || utils::ends_with(f, ".aa.gz")) {
             ParseFASTAFile(hmms, f, true);
             hcfg.E = hcfg.domE = 0.01;
-        } else if (utils::ends_with(f, ".fa") || utils::ends_with(f, ".fa.gz") |
+        } else if (utils::ends_with(f, ".fa") || utils::ends_with(f, ".fa.gz") ||
                    utils::ends_with(f, ".fna") || utils::ends_with(f, ".fna.gz")) {
             ParseFASTAFile(hmms, f, false);
             hcfg.E = hcfg.domE = 0.01;

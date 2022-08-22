@@ -19,17 +19,14 @@ ScaffoldingUniqueEdgeAnalyzer::ScaffoldingUniqueEdgeAnalyzer(const graph_pack::G
 
 void ScaffoldingUniqueEdgeAnalyzer::SetCoverageBasedCutoff() {
     std::vector<std::pair<double, size_t>> coverages;
-    std::map<EdgeId, size_t> long_component;
-    size_t total_len = 0, short_len = 0, cur_len = 0;
+    size_t total_len = 0, cur_len = 0;
 
-    for (auto iter = graph_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-        if (graph_.length(*iter) > length_cutoff_) {
-            coverages.push_back(make_pair(graph_.coverage(*iter), graph_.length(*iter)));
-            total_len += graph_.length(*iter);
-            long_component[*iter] = 0;
-        } else {
-            short_len += graph_.length(*iter);
-        }
+    for (EdgeId e : graph_.edges()) {
+        if (graph_.length(e) <= length_cutoff_)
+            continue;
+
+        coverages.push_back(make_pair(graph_.coverage(e), graph_.length(e)));
+        total_len += graph_.length(e);
     }
     if (total_len == 0) {
         WARN("not enough edges longer than "<< length_cutoff_);
@@ -52,26 +49,31 @@ void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgeStorage(ScaffoldingUniqueEdgeS
     size_t unique_num = 0;
     storage.set_min_length(length_cutoff_);
 
-    for (auto iter = graph_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-        size_t tlen = graph_.length(*iter);
+    for (EdgeId e : graph_.edges()) {
+        size_t tlen = graph_.length(e);
         total_len += tlen;
-        if (graph_.length(*iter) >= length_cutoff_ && graph_.coverage(*iter) > median_coverage_ * (1 - relative_coverage_variation_)
-                && graph_.coverage(*iter) < median_coverage_ * (1 + relative_coverage_variation_) ) {
-            storage.unique_edges_.insert(*iter);
+        if (graph_.length(e) >= length_cutoff_ &&
+            graph_.coverage(e) > median_coverage_ * (1 - relative_coverage_variation_) &&
+            graph_.coverage(e) < median_coverage_ * (1 + relative_coverage_variation_) ) {
+            storage.unique_edges_.insert(e);
             unique_len += tlen;
             unique_num ++;
         }
     }
-    for (auto iter = storage.begin(); iter != storage.end(); ++iter) {
-        DEBUG (graph_.int_id(*iter) << " " << graph_.coverage(*iter) << " " << graph_.length(*iter) );
-    }
-    INFO ("With length cutoff: " << length_cutoff_ <<", median long edge coverage: " << median_coverage_ << ", and maximal unique coverage: " <<
-                                                                                                            relative_coverage_variation_);
-    INFO("Unique edges quantity: " << unique_num << ", unique edges length " << unique_len <<", total edges length " << total_len);
-    if (unique_len * 2 < total_len) {
-        WARN("Less than half of genome in unique edges!");
-    }
+    DEBUG_EXPR(
+        for (EdgeId e : storage) {
+            DEBUG(graph_.int_id(e) << " " << graph_.coverage(e) << " " << graph_.length(e) );
+        }
+    );
 
+    INFO("With length cutoff: " << length_cutoff_ <<
+         ", median long edge coverage: " << median_coverage_ <<
+         ", and maximal unique coverage: " << relative_coverage_variation_);
+    INFO("Unique edges quantity: " << unique_num <<
+         ", unique edges length " << unique_len <<
+         ", total edges length " << total_len);
+    if (unique_len * 2 < total_len)
+        WARN("Less than half of genome in unique edges!");
 }
 
 bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByLength(EdgeId e) {
@@ -121,7 +123,7 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e, const GraphCov
             return false;
         else
             DEBUG (graph_.int_id(e) << " loop/nonloop weight " << loop_weight << " " << nonloop_weight);
-            
+
     EdgeId prev_unique = e;
     while (active_paths.size() > 0) {
         size_t alt = 0;

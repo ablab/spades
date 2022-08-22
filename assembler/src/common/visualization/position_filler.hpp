@@ -46,12 +46,10 @@ public:
     MappingPath Process(const io::SingleRead &read) const {
         MappingPath path = mapper_->MapRead(read);
         const auto &name = read.name();
-        int cur_pos = 0;
         TRACE("Contig " << name << " mapped on " << path.size() << " fragments.");
         for (size_t i = 0; i < path.size(); i++) {
             EdgeId ei = path[i].first;
             omnigraph::MappingRange mr = path[i].second;
-            int len = (int) (mr.mapped_range.end_pos - mr.mapped_range.start_pos);
             if (i > 0 &&
                 path[i - 1].first != ei &&
                 g_.EdgeStart(ei) != g_.EdgeEnd(path[i - 1].first)) {
@@ -69,7 +67,6 @@ public:
                                       mr.initial_range.end_pos,
                                       mr.mapped_range.start_pos,
                                       mr.mapped_range.end_pos);
-            cur_pos += len;
         }
         return path;
     }

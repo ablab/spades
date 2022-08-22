@@ -511,8 +511,9 @@ public:
         typename Graph::HelperT helper = graph.GetConstructionHelper();
 
         std::vector<LinkRecord> records;
-        INFO("Total " << 2*sequences.size() << " edges to create");
-        graph.ereserve(size_t(2.01*sequences.size()));
+        size_t seq_size = sequences.size();
+        INFO("Total " << 2*seq_size << " edges to create");
+        graph.ereserve(2*seq_size + seq_size / 100);
 
         INFO("Collecting link records")
         CollectLinkRecords(helper, graph, records, sequences);
@@ -538,7 +539,7 @@ public:
         INFO("LinkRecords sorted");
         size_t size = unique_record_indices.size();
         INFO("Total " << size << " vertices to create");
-        graph.vreserve(size_t(2.01 * size));
+        graph.vreserve(2 * size + size / 100);
 
         INFO("Connecting the graph");
         uint64_t min_id = graph.min_id();
