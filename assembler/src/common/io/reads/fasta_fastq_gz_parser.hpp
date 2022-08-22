@@ -66,10 +66,19 @@ public:
             return *this;
 
         if (seq_->qual.s && flags_.use_name && flags_.use_quality) {
-            read = SingleRead(seq_->name.s, seq_->seq.s, seq_->qual.s, flags_.offset,
+            read = SingleRead(seq_->name.s ? seq_->name.s : "",
+                              seq_->comment.s ? seq_->comment.s : "",
+                              seq_->seq.s, seq_->qual.s,
+                              flags_.offset,
                               0, 0, flags_.validate);
-        } else if (flags_.use_name) {
-            read = SingleRead(seq_->name.s, seq_->seq.s,
+        } else if (flags_.use_name && seq_->name.s) {
+            read = SingleRead(seq_->name.s,
+                              seq_->comment.s ? seq_->comment.s : "",
+                              seq_->seq.s,
+                              0, 0, flags_.validate);
+        } else if (flags_.use_comment && seq_->comment.s) {
+            read = SingleRead("", seq_->comment.s,
+                              seq_->seq.s,
                               0, 0, flags_.validate);
         } else
             read = SingleRead(seq_->seq.s,

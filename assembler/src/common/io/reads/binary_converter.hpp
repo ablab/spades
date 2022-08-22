@@ -22,6 +22,9 @@ class ThreadPool;
 
 namespace io {
 
+template<class Read>
+using ReadTagger = std::function<uint64_t(const Read&)>;
+
 class BinaryWriter {
     const std::string file_name_prefix_;
     std::unique_ptr<std::ofstream> file_ds_, offset_ds_;
@@ -29,6 +32,16 @@ class BinaryWriter {
     template<class Writer, class Read>
     ReadStreamStat ToBinary(const Writer &writer, io::ReadStream<Read> &stream,
                             ThreadPool::ThreadPool *pool = nullptr);
+
+    template<class Read>
+    struct TrivialTagger {
+        uint64_t operator()(const Read &) const { return 0; }
+    };
+
+    template<class Read>
+    struct IdempotentTagger {
+        uint64_t operator()(const Read &r) const { return r.tag(); }
+    };
 
 public:
     typedef size_t CountType;
@@ -40,15 +53,15 @@ public:
     ~BinaryWriter() = default;
 
     ReadStreamStat ToBinary(io::ReadStream<io::SingleReadSeq>& stream,
-                            ThreadPool::ThreadPool *pool = nullptr);
+                            ThreadPool::ThreadPool *pool = nullptr,
+                            ReadTagger<io::SingleReadSeq> tagger = IdempotentTagger<io::SingleReadSeq>());
     ReadStreamStat ToBinary(io::ReadStream<io::SingleRead>& stream,
-                            ThreadPool::ThreadPool *pool = nullptr);
-    ReadStreamStat ToBinary(io::ReadStream<io::PairedReadSeq>& stream,
-                            LibraryOrientation orientation = LibraryOrientation::Undefined,
-                            ThreadPool::ThreadPool *pool = nullptr);
+                            ThreadPool::ThreadPool *pool = nullptr,
+                            ReadTagger<io::SingleRead> tagger = TrivialTagger<io::SingleRead>());
     ReadStreamStat ToBinary(io::ReadStream<io::PairedRead>& stream,
                             LibraryOrientation orientation = LibraryOrientation::Undefined,
-                            ThreadPool::ThreadPool *pool = nullptr);
+                            ThreadPool::ThreadPool *pool = nullptr,
+                            ReadTagger<io::SingleRead> tagger = TrivialTagger<io::SingleRead>());
 };
 
 }

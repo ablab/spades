@@ -26,13 +26,17 @@ typedef uint16_t SequenceOffsetT;
 class SingleRead {
 public:
     SingleRead()
-            : name_(), seq_(), qual_(), left_offset_(0), right_offset_(0), valid_(false) { }
+            : name_{}, comment_{},
+              seq_{}, qual_{},
+              left_offset_(0), right_offset_(0), valid_(false) { }
 
-    SingleRead(std::string name, std::string seq,
+    SingleRead(std::string name, std::string comment,
+               std::string seq,
                std::string qual, OffsetType offset,
                SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0,
                bool validate = true)
-            : name_{std::move(name)}, seq_{std::move(seq)}, qual_{std::move(qual)},
+            : name_{std::move(name)}, comment_{std::move(comment)},
+              seq_{std::move(seq)}, qual_{std::move(qual)},
               left_offset_(left_offset), right_offset_(right_offset),
               valid_(false) {
         Init(validate);
@@ -41,19 +45,33 @@ public:
         }
     }
 
-    SingleRead(std::string name, std::string seq,
+    SingleRead(std::string name, std::string comment,
+               std::string seq,
                std::string qual,
                SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0,
                bool validate = true)
-            : name_{std::move(name)}, seq_{std::move(seq)}, qual_{std::move(qual)},
+            : name_{std::move(name)}, comment_{std::move(comment)},
+              seq_{std::move(seq)}, qual_{std::move(qual)},
               left_offset_(left_offset), right_offset_(right_offset), valid_(false) {
         Init(validate);
     }
 
-    SingleRead(std::string name, std::string seq,
+    SingleRead(std::string name, std::string comment,
+               std::string seq,
                SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0,
                bool validate = true)
-            : name_{std::move(name)}, seq_{std::move(seq)}, qual_{},
+            : name_{std::move(name)}, comment_{std::move(comment)},
+              seq_{std::move(seq)}, qual_{},
+              left_offset_(left_offset), right_offset_(right_offset), valid_(false) {
+        Init(validate);
+    }
+
+    SingleRead(std::string name,
+               std::string seq,
+               SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0,
+               bool validate = true)
+            : name_{std::move(name)}, comment_{},
+              seq_{std::move(seq)}, qual_{},
               left_offset_(left_offset), right_offset_(right_offset), valid_(false) {
         Init(validate);
     }
@@ -61,7 +79,8 @@ public:
     SingleRead(std::string seq,
                SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0,
                bool validate = true)
-            : name_{}, seq_{std::move(seq)}, qual_{},
+            : name_{}, comment_{},
+              seq_{std::move(seq)}, qual_{},
               left_offset_(left_offset), right_offset_(right_offset), valid_(false) {
         Init(validate);
     }
@@ -87,6 +106,10 @@ public:
 
     const std::string &name() const {
         return name_;
+    }
+
+    const std::string &comment() const {
+        return comment_;
     }
 
     size_t size() const {
@@ -140,9 +163,9 @@ public:
 
         // Decide on ctor to call
         if (qual_.size())
-            return SingleRead(new_name, ReverseComplement(seq_), Reverse(qual_), right_offset_, left_offset_);
+            return SingleRead(new_name, comment_, ReverseComplement(seq_), Reverse(qual_), right_offset_, left_offset_);
         else if (new_name.size())
-            return SingleRead(new_name, ReverseComplement(seq_), right_offset_, left_offset_);
+            return SingleRead(new_name, comment_, ReverseComplement(seq_), right_offset_, left_offset_);
         else
             return SingleRead(ReverseComplement(seq_), right_offset_, left_offset_);
     }
@@ -184,10 +207,9 @@ public:
         return right_offset_;
     }
 
-    bool BinWrite(std::ostream &file, bool rc = false) const {
+    bool BinWrite(std::ostream &file, bool rc = false, uint64_t tag = 0) const {
         sequence(rc).BinWrite(file);
         SequenceOffsetT left_offset = left_offset_, right_offset = right_offset_;
-        uint64_t tag = 0;
         if (rc) {
             file.write((const char *) &right_offset, sizeof(right_offset));
             file.write((const char *) &left_offset, sizeof(left_offset));
@@ -210,6 +232,11 @@ private:
      * @variable The name of SingleRead in input file.
      */
     std::string name_;
+
+    /*
+     * @variable The comment of SingleRead in input file.
+     */
+    std::string comment_;
     /*
      * @variable The sequence of nucleotides.
      */
@@ -222,7 +249,7 @@ private:
      * @variable The flag of SingleRead correctness.
      */
 
-    //Left and right offsets with respect to original sequence
+    // Left and right offsets with respect to original sequence
     SequenceOffsetT left_offset_  : 15;
     SequenceOffsetT right_offset_ : 15;
     bool valid_                   : 1;
@@ -245,12 +272,12 @@ private:
         }
 
         if (qual_.length())
-            return SingleRead(new_name, seq_.substr(from, len), qual_.substr(from, len),
+            return SingleRead(new_name, comment_, seq_.substr(from, len), qual_.substr(from, len),
                               SequenceOffsetT(from + (size_t) left_offset_),
                               SequenceOffsetT(size() - to + (size_t) right_offset_),
                               validate);
         else if (new_name.length())
-            return SingleRead(new_name, seq_.substr(from, len),
+            return SingleRead(new_name, comment_, seq_.substr(from, len),
                               SequenceOffsetT(from + (size_t) left_offset_),
                               SequenceOffsetT(size() - to + (size_t) right_offset_),
                               validate);
@@ -263,7 +290,9 @@ private:
 };
 
 inline std::ostream &operator<<(std::ostream &os, const SingleRead &read) {
-    os << "Single read name=" << (read.name().length() ? read.name() : "(empty)") << " sequence=" << read.GetSequenceString() << std::endl;
+    os << "Single read name=" << (read.name().length() ? read.name() : "(empty)")
+       << " comment= " << (read.comment().length() ? read.comment() : "(empty)")    
+       << " sequence=" << read.GetSequenceString() << std::endl;
     return os;
 }
 
@@ -271,11 +300,11 @@ class SingleReadSeq {
 public:
     explicit SingleReadSeq(const Sequence &s,
                            SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0,
-                           uint64_t tag = 0)
+                           uint64_t tag = -1ULL)
             : seq_(s), left_offset_(left_offset), right_offset_(right_offset), tag_(tag) {  }
 
     SingleReadSeq()
-            : seq_(), left_offset_(0), right_offset_(0), tag_(0) {}
+            : seq_(), left_offset_(0), right_offset_(0), tag_(-1ULL) {}
 
     bool BinRead(std::istream &file) {
         seq_.BinRead(file);
@@ -300,6 +329,21 @@ public:
         return !file.fail();
     }
 
+    bool BinWrite(std::ostream &file, bool rc, uint64_t tag) const {
+        if (rc) {
+            (!seq_).BinWrite(file);
+            file.write((const char *) &right_offset_, sizeof(right_offset_));
+            file.write((const char *) &left_offset_, sizeof(left_offset_));
+            file.write((const char *) &tag, sizeof(tag));
+        } else {
+            seq_.BinWrite(file);
+            file.write((const char *) &left_offset_, sizeof(left_offset_));
+            file.write((const char *) &right_offset_, sizeof(right_offset_));
+            file.write((const char *) &tag, sizeof(tag));
+        }
+        return !file.fail();
+    }
+
     bool operator==(const SingleReadSeq &singleread) const {
         return seq_ == singleread.seq_;
     }
@@ -316,6 +360,10 @@ public:
         return size();
     }
 
+    uint64_t tag() const {
+        return tag_;
+    }
+    
     SingleReadSeq operator!() const {
         return SingleReadSeq(!seq_, right_offset_, left_offset_);
     }
@@ -334,6 +382,8 @@ private:
     // Left and right offsets with respect to original sequence
     SequenceOffsetT left_offset_;
     SequenceOffsetT right_offset_;
+
+    uint64_t tag_;
 };
 
 inline std::ostream &operator<<(std::ostream &os, const SingleReadSeq &read) {

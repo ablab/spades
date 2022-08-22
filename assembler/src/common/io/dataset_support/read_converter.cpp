@@ -8,6 +8,7 @@
 
 #include "assembly_graph/core/graph.hpp"
 #include "io/reads/binary_streams.hpp"
+#include "io/reads/file_read_flags.hpp"
 #include "io/reads/rc_reader_wrapper.hpp"
 #include "io/reads/multifile_reader.hpp"
 #include "io/reads/converting_reader_wrapper.hpp"
@@ -62,7 +63,9 @@ bool ReadConverter::LoadLibIfExists(SequencingLibraryT& lib) {
 }
 
 void ReadConverter::ConvertToBinary(SequencingLibraryT& lib,
-                                    ThreadPool::ThreadPool *pool) {
+                                    ThreadPool::ThreadPool *pool,
+                                    FileReadFlags flags,
+                                    ReadTagger<io::SingleRead> tagger) {
     auto& data = lib.data();
     std::ofstream info;
     info.open(data.binary_reads_info.bin_reads_info_file, std::ios_base::out);
@@ -73,26 +76,26 @@ void ReadConverter::ConvertToBinary(SequencingLibraryT& lib,
     INFO("Converting paired reads");
     BinaryWriter paired_converter(data.binary_reads_info.paired_read_prefix);
 
-    FileReadFlags flags{ PhredOffset, /* use name */ false, /* use quality */ false, /* validate */ false };
     PairedStream paired_reader = paired_easy_reader(lib,
                                                     false, /* followed_by_rc */
-                                                    0, /* insert_size */
+                                                    0,     /* insert_size */
                                                     false, /* use orientation */
-                                                    true, /* handle Ns */
+                                                    true,  /* handle Ns */
                                                     flags, pool);
-    ReadStreamStat read_stat = paired_converter.ToBinary(paired_reader, lib.orientation(), pool);
+    ReadStreamStat read_stat = paired_converter.ToBinary(paired_reader, lib.orientation(),
+                                                         pool, tagger);
     read_stat.read_count *= 2;
 
     INFO("Converting single reads");
     BinaryWriter single_converter(data.binary_reads_info.single_read_prefix);
     SingleStream single_reader = single_easy_reader(lib, false, false, true, flags, pool);
-    read_stat.merge(single_converter.ToBinary(single_reader, pool));
+    read_stat.merge(single_converter.ToBinary(single_reader, pool, tagger));
 
     data.unmerged_read_length = read_stat.max_len;
     INFO("Converting merged reads");
     BinaryWriter merged_converter(data.binary_reads_info.merged_read_prefix);
     SingleStream merged_reader = merged_easy_reader(lib, false, true, flags, pool);
-    auto merged_stats = merged_converter.ToBinary(merged_reader, pool);
+    auto merged_stats = merged_converter.ToBinary(merged_reader, pool, tagger);
 
     data.merged_read_length = merged_stats.max_len;
     read_stat.merge(merged_stats);
@@ -137,15 +140,17 @@ void ReadConverter::WriteBinaryInfo(const std::filesystem::path &filename, Libra
     data.binary_reads_info.binary_converted = true;
 }
 
-void ConvertIfNeeded(DataSet<LibraryData> &data, unsigned nthreads) {
+void ConvertIfNeeded(DataSet<LibraryData> &data, unsigned nthreads,
+                     FileReadFlags flags,
+                     ReadTagger<io::SingleRead> tagger) {
     std::unique_ptr<ThreadPool::ThreadPool> pool;
 
-    if (nthreads > 1)
+    if (nthreads && nthreads > 1)
         pool = std::make_unique<ThreadPool::ThreadPool>(nthreads);
 
     for (auto &lib : data) {
         if (!ReadConverter::LoadLibIfExists(lib))
-            ReadConverter::ConvertToBinary(lib, pool.get());
+            ReadConverter::ConvertToBinary(lib, pool.get(), flags, tagger);
     }
 }
 

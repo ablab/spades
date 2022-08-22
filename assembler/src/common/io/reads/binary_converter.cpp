@@ -21,30 +21,40 @@ namespace io {
 
 template<class Read>
 class ReadBinaryWriter {
-    bool rc_;
-
 public:
-    ReadBinaryWriter(bool rc = false)
-            : rc_(rc) {}
+    using Tagger = ReadTagger<Read>;
+
+    ReadBinaryWriter(Tagger tagger, bool rc = false)
+            : rc_(rc), tagger_{std::move(tagger)} {}
 
     bool Write(std::ostream& file, const Read& r) const {
-        return r.BinWrite(file, rc_);
+        return r.BinWrite(file, rc_, tagger_(r));
     }
+
+private:
+    bool rc_;
+    Tagger tagger_;
 };
 
 template<class Read>
 class PairedReadBinaryWriter {
-    bool rc1_;
-    bool rc2_;
-
 public:
-    PairedReadBinaryWriter(LibraryOrientation orientation = LibraryOrientation::Undefined) {
+    using Tagger = ReadTagger<typename Read::SingleReadT>;
+
+    PairedReadBinaryWriter(Tagger tagger, LibraryOrientation orientation = LibraryOrientation::Undefined)
+            : tagger_{std::move(tagger)}  {
         std::tie(rc1_, rc2_) = GetRCFlags(orientation);
     }
 
     bool Write(std::ostream& file, const Read& r) const {
-        return r.BinWrite(file, rc1_, rc2_);
+        return r.BinWrite(file,
+                          rc1_, rc2_,
+                          tagger_(r.first()), tagger_(r.second()));
     }
+private:
+    bool rc1_;
+    bool rc2_;
+    Tagger tagger_;
 };
 
 template<class Writer, class Read>
@@ -118,28 +128,24 @@ BinaryWriter::BinaryWriter(const std::string &file_name_prefix)
 {}
 
 ReadStreamStat BinaryWriter::ToBinary(io::ReadStream<io::SingleReadSeq>& stream,
-                                      ThreadPool::ThreadPool *pool) {
-    ReadBinaryWriter<io::SingleReadSeq> read_writer;
+                                      ThreadPool::ThreadPool *pool,
+                                      ReadTagger<io::SingleReadSeq> tagger) {
+    ReadBinaryWriter<io::SingleReadSeq> read_writer(tagger);
     return ToBinary(read_writer, stream, pool);
 }
 
 ReadStreamStat BinaryWriter::ToBinary(io::ReadStream<io::SingleRead>& stream,
-                                      ThreadPool::ThreadPool *pool) {
-    ReadBinaryWriter<io::SingleRead> read_writer;
-    return ToBinary(read_writer, stream, pool);
-}
-
-ReadStreamStat BinaryWriter::ToBinary(io::ReadStream<io::PairedReadSeq>& stream,
-                                      LibraryOrientation orientation,
-                                      ThreadPool::ThreadPool *pool) {
-    PairedReadBinaryWriter<io::PairedReadSeq> read_writer(orientation);
+                                      ThreadPool::ThreadPool *pool,
+                                      ReadTagger<io::SingleRead> tagger) {
+    ReadBinaryWriter<io::SingleRead> read_writer(tagger);
     return ToBinary(read_writer, stream, pool);
 }
 
 ReadStreamStat BinaryWriter::ToBinary(io::ReadStream<io::PairedRead>& stream,
                                       LibraryOrientation orientation,
-                                      ThreadPool::ThreadPool *pool) {
-    PairedReadBinaryWriter<io::PairedRead> read_writer(orientation);
+                                      ThreadPool::ThreadPool *pool,
+                                      ReadTagger<io::SingleRead> tagger) {
+    PairedReadBinaryWriter<io::PairedRead> read_writer(tagger, orientation);
     return ToBinary(read_writer, stream, pool);
 }
 

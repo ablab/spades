@@ -97,9 +97,10 @@ public:
         return !file.fail();
     }
 
-    bool BinWrite(std::ostream &file, bool rc1 = false, bool rc2 = false) const {
-        first_.BinWrite(file, rc1);
-        second_.BinWrite(file, rc2);
+    bool BinWrite(std::ostream &file, bool rc1 = false, bool rc2 = false,
+                  uint64_t tag1 = 0, uint64_t tag2 = 0) const {
+        first_.BinWrite(file, rc1, tag1);
+        second_.BinWrite(file, rc2, tag2);
 
         return !file.fail();
     }

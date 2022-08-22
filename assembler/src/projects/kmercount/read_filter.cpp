@@ -187,7 +187,7 @@ int main(int argc, char* argv[]) {
 
             INFO("Filtering library " << i);
             dataset[i].set_orientation(io::LibraryOrientation::Undefined);
-            io::FileReadFlags flags(io::PhredOffset, !args.drop_names, !args.drop_quality, false);
+            io::FileReadFlags flags(io::PhredOffset, !args.drop_names, !args.drop_names, !args.drop_quality, false);
             if (dataset[i].has_paired()) {
                 io::PairedStream paired_reads_stream =
                         io::paired_easy_reader(dataset[i], /*followed by rc*/false, /*insert size*/0, false /* use orientation */, false /* handle Ns */,

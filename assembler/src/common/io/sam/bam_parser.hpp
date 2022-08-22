@@ -37,10 +37,10 @@ public:
             return *this;
 
         if (flags_.use_name && flags_.use_quality)
-            read = SingleRead(seq_.Name, seq_.QueryBases, seq_.Qualities, flags_.offset,
+            read = SingleRead(seq_.Name, "", seq_.QueryBases, seq_.Qualities, flags_.offset,
                               0, 0, flags_.validate);
         else if (flags_.use_name)
-            read = SingleRead(seq_.Name, seq_.QueryBases,
+            read = SingleRead(seq_.Name, "", seq_.QueryBases,
                               0, 0, flags_.validate);
         else
             read = SingleRead(seq_.QueryBases,

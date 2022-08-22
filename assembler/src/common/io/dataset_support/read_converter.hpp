@@ -7,10 +7,15 @@
 
 #pragma once
 
-#include "configs/config_struct.hpp"
+#include "dataset_readers.hpp"
+
+#include "io/reads/single_read.hpp"
 #include "io/reads/binary_converter.hpp"
 #include "io/reads/io_helper.hpp"
-#include "dataset_readers.hpp"
+
+#include "configs/config_struct.hpp"
+
+#include <functional>
 
 namespace debruijn_graph {
 class DeBruijnGraph;
@@ -28,15 +33,23 @@ class ReadConverter {
     static bool CheckBinaryReadsExist(SequencingLibraryT& lib);
     static void WriteBinaryInfo(const std::filesystem::path& filename, LibraryData& data);
 public:
+    struct TrivialTagger {
+        uint64_t operator()(const io::SingleRead &) const { return 0; }
+    };
+    
     static bool LoadLibIfExists(SequencingLibraryT& lib);
     static void ConvertToBinary(SequencingLibraryT& lib,
-                                ThreadPool::ThreadPool *pool = nullptr);
+                                ThreadPool::ThreadPool *pool = nullptr,
+                                FileReadFlags flags = FileReadFlags::empty(),
+                                ReadTagger<io::SingleRead> tagger = TrivialTagger());
 
     static void ConvertEdgeSequencesToBinary(const debruijn_graph::Graph &g, const std::filesystem::path &contigs_output_dir,
                                              unsigned nthreads);
 };
 
-void ConvertIfNeeded(DataSet<LibraryData> &data, unsigned nthreads);
+void ConvertIfNeeded(DataSet<LibraryData> &data, unsigned nthreads = 1,
+                     FileReadFlags flags = FileReadFlags::empty(),
+                     ReadTagger<io::SingleRead> tagger = ReadConverter::TrivialTagger());
 
 BinaryPairedStreams paired_binary_readers(SequencingLibraryT &lib,
                                           bool followed_by_rc,
