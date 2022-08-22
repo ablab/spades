@@ -4,7 +4,6 @@
 
 #include "assembly_graph/core/graph.hpp"
 
-#include <cereal/archives/binary.hpp>
 #include <vector>
 
 struct IdHolder {
@@ -38,8 +37,8 @@ struct IdHolder {
     };
 
     template <class Archive>
-    void serialize(Archive &archive) {
-        archive(cereal_as_pod(*this));
+    void BinArchive(Archive &ar) {
+        ar(id_, pos_);
     }
 };
 
@@ -69,9 +68,10 @@ public:
         return nucl2(g(context).EdgeNucls(edge())[position()]); }
 
     template <class Archive>
-    void serialize(Archive &archive) {
-        archive(holder_);
+    void BinArchive(Archive &ar) {
+        ar(holder_);
     }
+
     // bool is_convergent(Context context) const {
     //     const debruijn_graph::ConjugateDeBruijnGraph &g = this->g(context);
     //

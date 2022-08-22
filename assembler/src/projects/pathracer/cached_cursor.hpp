@@ -6,18 +6,15 @@
 
 #pragma once
 
+// Serialization
+#include "io/binary/binary.hpp"
+
+#include "utils/verify.hpp"
+
 #include <cstdint>
 #include <limits>
 #include <unordered_map>
 #include <vector>
-
-#include "common/utils/verify.hpp"
-
-
-// Serialization
-#include <cereal/types/unordered_map.hpp>
-#include <cereal/types/vector.hpp>
-#include <cereal/types/common.hpp>
 
 class CachedCursorContext;
 
@@ -35,8 +32,8 @@ public:
     Index index() const { return index_; }
 
     template <class Archive>
-    void serialize(Archive &archive) {
-        archive(index_);
+    void BinArchive(Archive &ar) {
+        ar(index_);
     }
 private:
     Index index_;
@@ -113,8 +110,8 @@ public:
     friend class CachedCursor;
 
     template <class Archive>
-    void serialize(Archive &archive) {
-        archive(letters_, nexts_, prevs_);
+    void BinArchive(Archive &ar) {
+        ar(letters_, nexts_, prevs_);
     }
 private:
     std::vector<char> letters_;

@@ -5,6 +5,7 @@
 //***************************************************************************
 
 #include "assembly_graph/core/graph.hpp"
+#include "io/binary/binary.hpp"
 #include "io/graph/gfa_reader.hpp"
 
 #include <fstream>
@@ -16,7 +17,6 @@
 #include "utils/logger/log_writers.hpp"
 #include "utils/logger/log_writers_thread.hpp"
 
-#include <cereal/archives/binary.hpp>
 #include <fstream>
 #include "io/reads/osequencestream.hpp"
 
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
     using namespace clipp;
     auto cli =
         (
-         cereal_file << value("cerealized event graph"),
+         cereal_file << value("serialized event graph"),
          graph_file << value("graph file in GFA"),
          k << integer("k-mer size"),
          required("--output", "-o") & value("output file", output_file)    % "output file",
@@ -80,8 +80,9 @@ int main(int argc, char *argv[]) {
         CachedCursorContext ccc(cursors, &graph);
         PathSet<CachedCursor> result(nullptr);
         std::ifstream ifs(cereal_file);
-        cereal::BinaryInputArchive iarchive(ifs);
-        iarchive(cursors, ccc, result);
+        // FIXME: We cannot load cursors as we need to have some kind of context
+        // to serialize / deserialize shared pointers
+        io::binary::BinRead(ifs, cursors, ccc /*, results */);
 
         INFO("Check collapsing");
         auto plinks = result.pathlink()->collect_const();

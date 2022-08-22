@@ -6,12 +6,10 @@
 
 #pragma once
 
-#include "common/utils/verify.hpp"
+#include "utils/verify.hpp"
 
 // Serialization
-#include <cereal/types/common.hpp>
-#include <cereal/types/unordered_map.hpp>
-#include <cereal/types/vector.hpp>
+#include "io/binary/binary.hpp"
 
 #include <cstdint>
 #include <limits>
@@ -49,10 +47,10 @@ public:
     bool operator<(const CachedAACursor &other) const { return to_size_t() < other.to_size_t(); }
 
     template <class Archive>
-    void serialize(Archive &archive) {
-        archive(cereal_as_pod(*this));
+    void BinArchive(Archive &ar) {
+        ar(index_, mask_);
     }
-
+    
 private:
     size_t index_ : 61;
     unsigned char mask_ : 3;
@@ -171,8 +169,8 @@ public:
     friend class CachedAACursor;
 
     template <class Archive>
-    void serialize(Archive &archive) {
-        archive(triplets_, letters_, nexts_, prevs_, nexts_frame_shift_);
+    void BinArchive(Archive &ar) {
+        ar(triplets_, letters_, nexts_, prevs_, nexts_frame_shift_);
     }
 
 private:

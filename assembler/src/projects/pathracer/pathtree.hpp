@@ -5,6 +5,7 @@
 #include "object_counter.hpp"
 
 #include "utils/logger/logger.hpp"
+#include "io/binary/binary.hpp"
 
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
 #include <debug_assert/debug_assert.hpp>
@@ -19,12 +20,6 @@
 
 #include "fees.hpp"
 #include "utils.hpp"
-
-// Serialization
-#include <cereal/types/vector.hpp>
-#include <cereal/types/common.hpp>
-#include <cereal/types/utility.hpp>
-#include "cereal_llvm_intrusive_ptr.hpp"
 
 #include "aa_cursor.hpp"
 #include "cached_aa_cursor.hpp"
@@ -106,10 +101,10 @@ struct Event {
   static const uint32_t m_mask = uint32_t(-1) >> 2;
 
   template <class Archive>
-  void serialize(Archive &archive) {
-    archive(cereal_as_pod(*this));
+  void BinArchive(Archive &ar) {
+    ar(m, type);
   }
-
+  
   Event(size_t m = 0, EventType type = EventType::NONE) : m{static_cast<unsigned>(m & Event::m_mask)}, type{type} {};
 };
 static_assert(sizeof(Event) == sizeof(uint32_t), "Invalid Event structure size");
@@ -199,7 +194,6 @@ class PathLink : public llvm::RefCountedBase<PathLink<GraphCursor>>,
   void* operator new (size_t sz) {
       return ::operator new(sz);
   }
-  friend class cereal::access;
 
 public:
   double score() const {
@@ -568,8 +562,8 @@ public:
   }
 
   template <class Archive>
-  void serialize(Archive &archive) {
-    archive(scores_, score_, event_, cursor_, max_prefix_size_);
+  void BinArchive(Archive &ar) {
+    ar(scores_, score_, event_, cursor_, max_prefix_size_);
   }
 
 private:
@@ -654,9 +648,10 @@ class PathSet {
   }
 
   template <class Archive>
-  void serialize(Archive &archive) {
-    archive(pathlink_);
+  void BinArchive(Archive &ar) {
+    ar(pathlink_);
   }
+  
  private:
   PathLinkRef<GraphCursor> pathlink_;
 };

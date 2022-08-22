@@ -68,7 +68,7 @@ Debug output control:
 
 - `--debug`: enable extensive debug console output
 - `--draw`: draw pictures around the interesting edges
-- `--export-event-graph`: export Event Graph in .cereal format
+- `--export-event-graph`: export Event Graph in binary format
 
 _In addition:_ Some other developer options that are not supposed to be tuned by the end-user. Could be removed in further releases.
 
@@ -79,7 +79,7 @@ For each input pHMM (gene model) `pathracer` reports:
 - **&lt;gene\_name&gt;.nucls.fa**: _(for amino acids pHHMs only)_ the same sequences in nucleotides
 - **&lt;gene\_name&gt;.edges.fa**: unique graph edge paths sequences corresponding to best scored paths
 - **&lt;gene\_name&gt;.{domtblout, pfamtblout, tblout}**: _(optional)_ edge paths realignment by **HMMer** in various default output formats
-- **event\_graph\_&lt;gene\_name&gt;\_component\_&lt;component\_id&gt;\_size\_&lt;component\_size&gt;.cereal**: _(optional, debug output)_ connected components of the event graph graph
+- **event\_graph\_&lt;gene\_name&gt;\_component\_&lt;component\_id&gt;\_size\_&lt;component\_size&gt;.bin**: _(optional, debug output)_ connected components of the event graph graph
 - **&lt;component\_id&gt;.dot**: _(optional, plot)_ connected component of matched neighborhood subgraph
 - **&lt;component\_id&gt;\_&lt;path\_index&gt;.dot**: _(optional, plot)_ neighborhood of the found path
 

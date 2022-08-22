@@ -9,6 +9,7 @@
 #include "debruijn_graph_cursor.hpp"
 #include "cursor_neighborhood.hpp"
 #include "cursor_conn_comps.hpp"
+#include "io/binary/binary.hpp"
 #include "path_utils.hpp"
 #include "cached_cursor.hpp"
 #include "superpath_index.hpp"
@@ -44,7 +45,6 @@
 
 #include <clipp/clipp.h>
 #include <debug_assert/debug_assert.hpp>
-#include <cereal/archives/binary.hpp>
 
 #include <filesystem>
 #include <string>
@@ -198,7 +198,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
           option("--no-fast-forward").set(cfg.use_experimental_i_loop_processing, 0) % "disable fast forward in I-loops processing [default: false]",
           // cfg.disable_depth_filter << option("--disable-depth-filter") % "disable depth filter",  // TODO restore this option
           (option("--known-sequences") & value("filename", cfg.known_sequences)) % "FASTA file with known sequnces that should be definitely found",
-          cfg.export_event_graph << option("--export-event-graph") % "export event graph in cereal format"
+          cfg.export_event_graph << option("--export-event-graph") % "export event graph in binary format"
       )
   );
 
@@ -928,9 +928,9 @@ void TraceHMM(const hmmer::HMM &hmm,
                              (std::string{"event_graph_"} + p7hmm->name +
                               "_component_" + int_to_hex(hash_value(cursors)) +
                               "_size_" + std::to_string(cursors.size()) +
-                              ".cereal"));
-            cereal::BinaryOutputArchive oarchive(of);
-            oarchive(cursors, result);
+                              ".bin"));
+            // FIXME: We cannot save cursors as we need to have some kind of context to serialize / deserialize shared pointers
+            io::binary::BinWrite(of, cursors, cached_context /*, result */);
             INFO("Event graph exported");
         }
 
