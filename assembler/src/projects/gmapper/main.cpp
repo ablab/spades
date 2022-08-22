@@ -17,7 +17,6 @@
 #include "io/graph/gfa_reader.hpp"
 #include "paired_info/index_point.hpp"
 #include "paired_info/paired_info_utils.hpp"
-#include "pipeline/graph_pack.hpp"
 #include "projects/spades/hybrid_aligning.hpp"
 #include "projects/spades/hybrid_gap_closer.hpp"
 #include "threadpool/threadpool.hpp"
@@ -109,6 +108,14 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
   cfg.graph = graph;
   cfg.tmpdir = tmpdir.empty() ? "tmp" : tmpdir;
   cfg.outfile = outfile.empty() ? "-" : outfile;
+
+  if (cfg.hic) {
+      if (cfg.mode == alignment::BWAIndex::AlignmentMode::Default)
+          cfg.mode = alignment::BWAIndex::AlignmentMode::HiC;
+      
+      if (cfg.retain == alignment::BWAIndex::RetainAlignments::Default)
+          cfg.retain = alignment::BWAIndex::RetainAlignments::QualityPrimary;
+  }
 }
 
 typedef io::DataSet<debruijn_graph::config::LibraryData> DataSet;
@@ -149,14 +156,6 @@ int main(int argc, char* argv[]) {
     srandom(42);
 
     process_cmdline(argc, argv, cfg);
-    // Enforce HiC alignment mode by default
-    if (cfg.hic) {
-        if (cfg.mode == alignment::BWAIndex::AlignmentMode::Default)
-            cfg.mode = alignment::BWAIndex::AlignmentMode::HiC;
-
-        if (cfg.retain == alignment::BWAIndex::RetainAlignments::Default)
-            cfg.retain = alignment::BWAIndex::RetainAlignments::QualityPrimary;
-    }
 
     create_console_logger();
 
@@ -190,13 +189,11 @@ int main(int argc, char* argv[]) {
         } else if (cfg.k == -1U)
             FATAL_ERROR("k-mer length should be specified");
 
-        graph_pack::GraphPack gp(k, tmpdir, dataset.lib_count());
-
-        const auto &graph = gp.get<Graph>();
+        Graph graph(k);
         if (gfa) {
-            gfa->to_graph(gp.get_mutable<Graph>(), id_mapper.get());
+            gfa->to_graph(graph, id_mapper.get());
         } else {
-            io::binary::Load(cfg.graph, gp.get_mutable<Graph>());
+            io::binary::Load(cfg.graph, graph);
         }
         INFO("Graph loaded. Total vertices: " << graph.size() << ", total edges: " << graph.e_size());
 
@@ -205,10 +202,11 @@ int main(int argc, char* argv[]) {
         auto &lib = dataset[cfg.libindex];
 
         if (lib.is_contig_lib() || lib.is_long_read_lib() || lib.is_single()) {
-            auto& path_storage = gp.get_mutable<LongReadContainer<Graph>>()[cfg.libindex];
-            auto& trusted_paths = gp.get_mutable<path_extend::TrustedPathsContainer>()[cfg.libindex];
+            PathStorage<Graph> path_storage(graph);
 
             if (lib.is_contig_lib() || lib.is_single()) {
+                path_extend::GappedPathStorage trusted_paths;
+
                 INFO("Mapping sequencing library #" << cfg.libindex);
                 ProcessContigs(graph, cfg.mode, cfg.retain,
                                lib,
@@ -234,7 +232,8 @@ int main(int argc, char* argv[]) {
             size_t idx = 0;
             for (const auto& entry : paths) {
                 idx += 1;
-                gfa_writer.WritePaths(entry.path(), std::string("PATH_") + std::to_string(idx) + "_length_" + std::to_string(entry.path().size()) + "_weigth_" + std::to_string(entry.weight()),
+                gfa_writer.WritePaths(entry.path(),
+                                      std::string("PATH_") + std::to_string(idx) + "_length_" + std::to_string(entry.path().size()) + "_weigth_" + std::to_string(entry.weight()),
                                       "Z:W:" + std::to_string(entry.weight()));
             }
         } else if (lib.is_paired()) {
