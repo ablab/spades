@@ -52,7 +52,7 @@ ReadStreamStat BinaryWriter::ToBinary(const Writer &writer, io::ReadStream<Read>
                                       ThreadPool::ThreadPool *pool) {
     std::vector<Read> buf, flush_buf;
     DEBUG("Reserving a buffer for " << BUF_SIZE << " reads");
-    buf.reserve(BUF_SIZE); flush_buf.reserve(BUF_SIZE);
+    buf.resize(BUF_SIZE); flush_buf.resize(BUF_SIZE);
 
     // Reserve space for stats
     ReadStreamStat read_stats;
@@ -60,16 +60,16 @@ ReadStreamStat BinaryWriter::ToBinary(const Writer &writer, io::ReadStream<Read>
 
     size_t rest = 1;
     std::future<void> flush_task;
-    auto flush_buffer = [&]() {
+    auto flush_buffer = [&](size_t sz) {
         // Wait for completion of the current flush task
         if (flush_task.valid())
             flush_task.wait();
 
         std::swap(buf, flush_buf);
-        VERIFY(buf.size() == 0);
 
-        auto flush_job = [&] {
-            for (const Read &read : flush_buf) {
+        auto flush_job = [&, sz] {
+            for (size_t i = 0; i < sz; ++i) {
+                const Read &read = flush_buf[i];
                 if (!--rest) {
                     auto offset = (size_t)file_ds_->tellp();
                     offset_ds_->write(reinterpret_cast<const char*>(&offset), sizeof(offset));
@@ -77,7 +77,6 @@ ReadStreamStat BinaryWriter::ToBinary(const Writer &writer, io::ReadStream<Read>
                 }
                 writer.Write(*file_ds_, read);
             }
-            flush_buf.clear();
         };
 
         if (pool)
@@ -86,23 +85,23 @@ ReadStreamStat BinaryWriter::ToBinary(const Writer &writer, io::ReadStream<Read>
             flush_job();
     };
 
-    size_t read_count = 0;
+    size_t read_count = 0, buf_size = 0;
     Read read;
     while (!stream.eof()) {
-        stream >> read;
-        read_stats.increase(read);
-        buf.push_back(read);
+        stream >> buf[buf_size];
+        read_stats.increase(buf[buf_size]);
 
         VERBOSE_POWER(++read_count, " reads processed");
 
-        if (buf.size() == buf.capacity())
-            flush_buffer();
+        if (++buf_size == BUF_SIZE) {
+            flush_buffer(buf_size);
+            buf_size = 0;
+        }
     }
-    flush_buffer(); //Write leftovers
+    flush_buffer(buf_size); // Write leftovers
     // Wait for completion of the current final task
     if (flush_task.valid())
         flush_task.wait();
-    VERIFY(flush_buf.size() == 0);
 
     // Rewrite the reserved space with actual stats
     file_ds_->seekp(0);

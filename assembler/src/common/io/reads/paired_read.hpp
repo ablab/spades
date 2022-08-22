@@ -106,10 +106,11 @@ public:
 
     UniversalPairedRead() : first_(), second_(), insert_size_(0) { }
 
-    UniversalPairedRead(const SingleReadT &first,
-                        const SingleReadT &second,
+    UniversalPairedRead(SingleReadT first,
+                        SingleReadT second,
                         size_t insert_size)
-            : first_(first), second_(second), insert_size_(insert_size) { }
+            : first_{std::move(first)}, second_{std::move(second)},
+              insert_size_(insert_size) { }
 
 
 private:

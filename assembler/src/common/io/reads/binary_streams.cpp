@@ -32,22 +32,22 @@ PairedReadSeq BinaryUnmergingPairedStream::Convert(const SingleReadSeq &read) co
     if (read.GetLeftOffset() >= read_length_ ||
         read.GetRightOffset() >= read_length_) {
         return PairedReadSeq();
-        }
+    }
 //        VERIFY(read_length_ >= read.GetLeftOffset() &&
 //                       read_length_ >= read.GetRightOffset());
 
-    const size_t left_length = std::min(read.size(), read_length_ - read.GetLeftOffset());
-    const size_t right_length = std::min(read.size(), read_length_ - read.GetRightOffset());
-    SingleReadSeq left(read.sequence().Subseq(0, left_length), read.GetLeftOffset(), 0);
-    SingleReadSeq right(read.sequence().Subseq(read.size() - right_length), 0, read.GetRightOffset());
-    return PairedReadSeq(left, right, insert_size_);
+    size_t left_length = std::min(read.size(), read_length_ - read.GetLeftOffset());
+    size_t right_length = std::min(read.size(), read_length_ - read.GetRightOffset());
+    return PairedReadSeq(SingleReadSeq(read.sequence().Subseq(0, left_length), read.GetLeftOffset(), 0),
+                         SingleReadSeq(read.sequence().Subseq(read.size() - right_length), 0, read.GetRightOffset()),
+                         insert_size_);
 }
 
 BinaryUnmergingPairedStream::BinaryUnmergingPairedStream(const std::filesystem::path& file_name_prefix, size_t insert_size, size_t read_length,
-                                                         size_t portion_count, size_t portion_num) :
-        stream_(file_name_prefix, portion_count, portion_num),
-        insert_size_(insert_size),
-        read_length_(read_length) {}
+                                                         size_t portion_count, size_t portion_num)
+        : stream_(file_name_prefix, portion_count, portion_num),
+          insert_size_(insert_size),
+          read_length_(read_length) {}
 
 BinaryUnmergingPairedStream& BinaryUnmergingPairedStream::operator>>(PairedReadSeq& read) {
     SingleReadSeq single_read;
