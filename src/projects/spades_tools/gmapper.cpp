@@ -142,6 +142,7 @@ static void ProcessContigs(const Graph &graph,
 }
 
 int main(int argc, char* argv[]) {
+    std::cout << "kek";
     utils::segfault_handler sh;
     gcfg cfg;
 
