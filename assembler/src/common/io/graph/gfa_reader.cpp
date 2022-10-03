@@ -95,12 +95,19 @@ static void HandleSegment(const gfa::segment &record,
         DEBUG("Map ids: " << ce.int_id() << ":" << name << "'");
         mapper.map(name + '\'', ce.int_id());
     }
+    VertexId v1 = helper.CreateVertex(DeBruijnVertexData());
+    helper.LinkIncomingEdge(v1, e);
+
+    if (e != ce) {
+        VertexId v2 = helper.CreateVertex(DeBruijnVertexData());
+        helper.LinkIncomingEdge(v2, ce);
+    }
 }
 
-static unsigned HandleLink(const gfa::link &record,
-                           io::IdMapper<std::string> &mapper,
-                           ConjugateDeBruijnGraph &g,
-                           ConjugateDeBruijnGraph::HelperT &helper) {
+unsigned GFAReader::HandleLink(const link &record,
+                               io::IdMapper<std::string> &mapper,
+                               ConjugateDeBruijnGraph &g,
+                               omnigraph::ObservableGraph<DeBruijnDataMaster>::HelperT &helper) {
     EdgeId e1 = mapper[std::string(record.lhs)], ce1 = g.conjugate(e1);
     if (record.lhs_revcomp)
         std::swap(e1, ce1);
@@ -120,26 +127,33 @@ static unsigned HandleLink(const gfa::link &record,
         ovl = overlap.front().count;
     }
 
+    VertexId v1 = g.EdgeEnd(e1);
+    VertexId v2 = g.EdgeStart(e2);
+    std::pair<EdgeId, EdgeId> edge_pair(e1, e2);
+    Link current_link(edge_pair, ovl);
+//    link_storage_.push_back(current_link);
+    g.data(v1).add_link(current_link);
+    g.data(v1).add_links(g.data(v2).move_links());
+    helper.LinkEdges(e1, e2);
+
     // We need to be careful here: we cannot use EdgeStart since it's
     // essentially conjugate(EdgeEnd(conjugate(e))) and EdgeEend might be empty.
     // So, instead we're checking two "edge tips" (ends of e1 and e2')
-    VertexId v1 = g.EdgeEnd(e1), cv2 = g.EdgeEnd(ce2);
-    if (!v1 && !cv2) {
-        v1 = helper.CreateVertex(DeBruijnVertexData(ovl));
-        helper.LinkIncomingEdge(v1, e1);
-    }
-
-    if (v1) {
-        VERIFY(ovl == g.length(v1));
-        if (cv2 && v1 == g.conjugate(cv2))
-            return ovl;
-
-        helper.LinkOutgoingEdge(v1, e2);
-    } else if (cv2) {
-        VERIFY(ovl == g.length(cv2));
-        helper.LinkIncomingEdge(g.conjugate(cv2), e1);
-    }
-
+//    VertexId v1 = g.EdgeEnd(e1), cv2 = g.EdgeEnd(ce2);
+//    if (!v1 && !cv2) {
+//        v1 = helper.CreateVertex(DeBruijnVertexData(ovl));
+//        helper.LinkIncomingEdge(v1, e1);
+//    }
+//
+//    if (v1) {
+//        VERIFY(ovl == g.length(v1));
+//        if (cv2 && v1 == g.conjugate(cv2))
+//            return ovl;
+//
+//        helper.LinkOutgoingEdge(v1, e2);
+//    } else if (cv2) {
+//        VERIFY(ovl == g.length(cv2));
+//        helper.LinkIncomingEdge(g.conjugate(cv2), e1);
     return ovl;
 }
 
@@ -162,11 +176,6 @@ unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
                              io::IdMapper<std::string> *id_mapper) {
     num_links_ = num_edges_ = 0; paths_.clear();
 
-    std::unique_ptr<std::remove_pointer<gzFile>::type, decltype(&gzclose)>
-            fp(gzopen(filename_.c_str(), "r"), gzclose);
-    if (!fp)
-        FATAL_ERROR("Failed to open file: " << filename_);
-
     auto helper = g.GetConstructionHelper();
     std::unique_ptr<io::IdMapper<std::string>> local_mapper;
     if (id_mapper == nullptr) {
@@ -174,10 +183,18 @@ unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
         id_mapper = local_mapper.get();
     }
 
+    ProcessSegments(g, id_mapper);
+
+    std::unique_ptr<std::remove_pointer<gzFile>::type, decltype(&gzclose)>
+        fp(gzopen(filename_.c_str(), "r"), gzclose);
+    if (!fp)
+        FATAL_ERROR("Failed to open file: " << filename_);
+
     char *line = nullptr;
     size_t len = 0;
     ssize_t read;
     unsigned k = -1U;
+
     while ((read = gzgetline(&line, &len, fp.get())) != -1) {
         if (read <= 1)
             continue; // skip empty lines
@@ -188,10 +205,7 @@ unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
 
         std::visit([&](const auto &record) {
             using T = std::decay_t<decltype(record)>;
-            if constexpr (std::is_same_v<T, gfa::segment>) {
-                num_edges_ += 1;
-                HandleSegment(record, *id_mapper, g, helper);
-            } else if constexpr (std::is_same_v<T, gfa::link>) {
+            if constexpr (std::is_same_v<T, gfa::link>) {
                 num_links_ += 1;
                 unsigned ovl = HandleLink(record, *id_mapper, g, helper);
                 if (k == -1U)
@@ -221,6 +235,35 @@ unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
         helper.master().set_k(k);
 
     return k;
+}
+void GFAReader::ProcessSegments(DeBruijnGraph &g, io::IdMapper<std::string> *id_mapper) {
+    auto helper = g.GetConstructionHelper();
+
+    std::unique_ptr<std::remove_pointer<gzFile>::type, decltype(&gzclose)>
+        fp(gzopen(filename_.c_str(), "r"), gzclose);
+    if (!fp)
+        FATAL_ERROR("Failed to open file: " << filename_);
+
+    char *line = nullptr;
+    size_t len = 0;
+    ssize_t read;
+    while ((read = gzgetline(&line, &len, fp.get())) != -1) {
+        if (read <= 1)
+            continue; // skip empty lines
+
+        auto result = gfa::parse_record(line, read - 1);
+        if (!result)
+            continue;
+
+        std::visit([&](const auto &record) {
+                     using T = std::decay_t<decltype(record)>;
+                     if constexpr (std::is_same_v<T, gfa::segment>) {
+                         num_edges_ += 1;
+                         HandleSegment(record, *id_mapper, g, helper);
+                     }
+                   },
+                   *result);
+    }
 }
 
 }
