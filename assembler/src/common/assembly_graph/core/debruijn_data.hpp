@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "graph_core.hpp"
 #include "utils/verify.hpp"
 #include "utils/logger/logger.hpp"
 #include "sequence/sequence_tools.hpp"
@@ -13,6 +14,7 @@
 #include <llvm/ADT/PointerSumType.h>
 #include <llvm/ADT/PointerEmbeddedInt.h>
 
+#include <utility>
 #include <vector>
 #include <set>
 #include <cstring>
@@ -20,6 +22,14 @@
 
 namespace debruijn_graph {
 class DeBruijnDataMaster;
+
+struct Link {
+  typedef omnigraph::impl::EdgeId EdgeId;
+  Link(const std::pair<EdgeId, EdgeId> &link, unsigned overlap) : link(link), overlap(overlap) {}
+
+  std::pair<EdgeId, EdgeId> link;
+  unsigned overlap;
+};
 
 class DeBruijnVertexData {
     friend class DeBruijnDataMaster;
@@ -31,9 +41,32 @@ class DeBruijnVertexData {
     };
 
     struct OverlapStorage {
-        // Store links
+      OverlapStorage(const std::vector<Link> &links) : links(links) {}
+
+      void AddLinks(const std::vector<Link> &added_links) {
+          //overlaps_.insert(overlaps_.end(), std::make_move_iterator(overlaps.begin()), std::make_move_iterator(overlaps.end()));
+          links.insert(links.end(), added_links.begin(), added_links.end());
+      }
+
+      void AddLink(const Link &added_link) {
+          links.push_back(added_link);
+      }
+
+      std::vector<Link> GetLinks() const {
+          return links;
+      }
+
+      std::vector<Link> MoveLinks() {
+          //fixme use actual move
+          auto links_copy = links;
+          links.clear();
+          return links_copy;
+
+      }
+      // Store links
         // Store overlaps
-        uint32_t overlap_ = 0;
+        std::vector<Link> links;
+//        uint32_t overlap_ = 0;
     };
 
     typedef llvm::PointerEmbeddedInt<uint32_t, 32> SimpleOverlap;
@@ -44,7 +77,9 @@ class DeBruijnVertexData {
     Overlap overlap_;
 
 public:
-    DeBruijnVertexData(unsigned overlap = 0)
+    DeBruijnVertexData(std::vector<Link> links = {})
+            : overlap_(Overlap::create<ComplexOverlap>(new OverlapStorage(links))) {}
+    explicit DeBruijnVertexData(unsigned overlap)
             : overlap_(Overlap::create<ExplicitOverlap>(overlap)) {}
 
     ~DeBruijnVertexData() {
@@ -58,6 +93,22 @@ public:
 
     unsigned overlap() const {
         return overlap_.get<ExplicitOverlap>();
+    }
+
+    std::vector<Link> get_links() {
+        return overlap_.get<ComplexOverlap>()->GetLinks();
+    }
+
+    std::vector<Link> move_links() {
+        return overlap_.get<ComplexOverlap>()->MoveLinks();
+    }
+
+    void add_link(const Link &link) {
+        overlap_.get<ComplexOverlap>()->AddLink(link);
+    }
+
+    void add_links(const std::vector<Link> &links) {
+        overlap_.get<ComplexOverlap>()->AddLinks(links);
     }
 
     bool has_complex_overlap() const {

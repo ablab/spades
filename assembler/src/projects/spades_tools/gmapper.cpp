@@ -153,6 +153,7 @@ void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::filesys
 }
 
 int main(int argc, char* argv[]) {
+    std::cout << "kek";
     utils::segfault_handler sh;
     gcfg cfg;
 
