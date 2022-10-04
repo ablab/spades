@@ -2,6 +2,7 @@
  */
 #ifndef eslGENCODE_INCLUDED
 #define eslGENCODE_INCLUDED
+#include "esl_config.h"
 
 #include "easel.h"
 #include "esl_alphabet.h"
@@ -83,6 +84,3 @@ extern int esl_gencode_ProcessEnd(ESL_GENCODE_WORKSTATE *wrk, ESL_SQ *sq);
 
 
 #endif	/*eslGENCODE_INCLUDED*/
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

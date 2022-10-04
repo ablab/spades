@@ -17,23 +17,23 @@
 #include "esl_sqio.h"
 #include "esl_stopwatch.h"
 
-#ifdef HAVE_MPI
+#ifdef HMMER_MPI
 #include "mpi.h"
 #include "esl_mpi.h"
-#endif /*HAVE_MPI*/
+#endif
 
 #ifdef HMMER_THREADS
 #include <unistd.h>
 #include "esl_threads.h"
 #include "esl_workqueue.h"
-#endif /*HMMER_THREADS*/
+#endif
 
 #include "hmmer.h"
 
 typedef struct {
 #ifdef HMMER_THREADS
   ESL_WORK_QUEUE   *queue;
-#endif /*HMMER_THREADS*/
+#endif
   P7_BG            *bg;
   P7_PIPELINE      *pli;
   P7_TOPHITS       *th;
@@ -46,18 +46,12 @@ typedef struct {
 #define INCDOMOPTS  "--incdomE,--incdomT,--cut_ga,--cut_nc,--cut_tc"
 #define THRESHOPTS  "-E,-T,--domE,--domT,--incE,--incT,--incdomE,--incdomT,--cut_ga,--cut_nc,--cut_tc"
 
-#if defined (HMMER_THREADS) && defined (HAVE_MPI)
+#if defined (HMMER_THREADS) && defined (HMMER_MPI)
 #define CPUOPTS     "--mpi"
 #define MPIOPTS     "--cpu"
 #else
 #define CPUOPTS     NULL
 #define MPIOPTS     NULL
-#endif
-
-#ifdef HAVE_MPI
-#define DAEMONOPTS  "-o,-A,--tblout,--domtblout,--pfamtblout,--mpi,--stall"
-#else
-#define DAEMONOPTS  "-o,-A,--tblout,--domtblout,--pfamtblout"
 #endif
 
 static ESL_OPTIONS options[] = {
@@ -113,12 +107,10 @@ static ESL_OPTIONS options[] = {
   { "--seed",       eslARG_INT,         "42",  NULL, "n>=0",    NULL,  NULL,  NULL,              "set RNG seed to <n> (if 0: one-time arbitrary seed)",         12 },
   { "--qformat",    eslARG_STRING,      NULL, NULL, NULL,      NULL,  NULL,  NULL,              "assert query <seqfile> is in format <s>: no autodetection",   12 },
   { "--tformat",    eslARG_STRING,      NULL, NULL, NULL,      NULL,  NULL,  NULL,              "assert target <seqdb> is in format <s>>: no autodetection",   12 },
-  { "--daemon",     eslARG_NONE,        NULL, NULL, NULL,      NULL,  NULL,  DAEMONOPTS,        "run program as a daemon",                                     12 },
-
 #ifdef HMMER_THREADS
-  { "--cpu",        eslARG_INT,  NULL,"HMMER_NCPU", "n>=0",NULL,  NULL,  CPUOPTS,           "number of parallel CPU workers to use for multithreads",      12 },
+  { "--cpu",        eslARG_INT,  p7_NCPU,"HMMER_NCPU", "n>=0",NULL,  NULL,  CPUOPTS,            "number of parallel CPU workers to use for multithreads",      12 },
 #endif
-#ifdef HAVE_MPI
+#ifdef HMMER_MPI
   { "--stall",      eslARG_NONE,   FALSE, NULL, NULL,      NULL,"--mpi", NULL,              "arrest after start: for debugging MPI under gdb",             12 },  
   { "--mpi",        eslARG_NONE,   FALSE, NULL, NULL,      NULL,  NULL,  MPIOPTS,           "run as an MPI parallel program",                              12 },
 #endif
@@ -156,17 +148,18 @@ struct cfg_s {
 
 static int  serial_master(ESL_GETOPTS *go, struct cfg_s *cfg);
 static int  serial_loop  (WORKER_INFO *info, ESL_SQFILE *dbfp, int n_targetseqs);
+
 #ifdef HMMER_THREADS
 #define BLOCK_SIZE 1000
 
 static int  thread_loop(ESL_THREADS *obj, ESL_WORK_QUEUE *queue, ESL_SQFILE *dbfp, int n_targetseqs);
 static void pipeline_thread(void *arg);
-#endif /*HMMER_THREADS*/
+#endif 
 
-#ifdef HAVE_MPI
+#ifdef HMMER_MPI
 static int  mpi_master   (ESL_GETOPTS *go, struct cfg_s *cfg);
 static int  mpi_worker   (ESL_GETOPTS *go, struct cfg_s *cfg);
-#endif /*HAVE_MPI*/
+#endif 
 
 /* process_commandline()
  * Take argc, argv, and options; parse the command line;
@@ -294,11 +287,10 @@ output_header(FILE *ofp, ESL_GETOPTS *go, char *qfile, char *dbfile)
   }
   if (esl_opt_IsUsed(go, "--qformat")   && fprintf(ofp, "# query <seqfile> format asserted: %s\n",            esl_opt_GetString(go, "--qformat"))    < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
   if (esl_opt_IsUsed(go, "--tformat")   && fprintf(ofp, "# target <seqdb> format asserted:  %s\n",            esl_opt_GetString(go, "--tformat"))    < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
-  if (esl_opt_IsUsed(go, "--daemon")    && fprintf(ofp, "run as a daemon process\n")                                                                 < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
 #ifdef HMMER_THREADS
   if (esl_opt_IsUsed(go, "--cpu")       && fprintf(ofp, "# number of worker threads:        %d\n",            esl_opt_GetInteger(go, "--cpu"))       < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");  
 #endif
-#ifdef HAVE_MPI
+#ifdef HMMER_MPI
   if (esl_opt_IsUsed(go, "--mpi")       && fprintf(ofp, "# MPI:                             on\n")                                                   < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
 #endif
   if (fprintf(ofp, "# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n\n")                                                  < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
@@ -334,10 +326,6 @@ main(int argc, char **argv)
 
 
   /* is the range restricted? */
-#ifndef eslAUGMENT_SSI
-  if (esl_opt_IsUsed(go, "--restrictdb_stkey") || esl_opt_IsUsed(go, "--restrictdb_n")  || esl_opt_IsUsed(go, "--ssifile")  )
-    p7_Fail("Unable to use range-control options unless an SSI index file is available. See 'esl_sfetch --index'\n");
-#else
   if (esl_opt_IsUsed(go, "--restrictdb_stkey") )
     if ((cfg.firstseq_key = esl_opt_GetString(go, "--restrictdb_stkey")) == NULL)  p7_Fail("Failure capturing --restrictdb_stkey\n");
 
@@ -346,13 +334,11 @@ main(int argc, char **argv)
 
   if ( cfg.n_targetseq != -1 && cfg.n_targetseq < 1 )
     p7_Fail("--restrictdb_n must be >= 1\n");
-#endif
-
 
   /* Figure out who we are, and send control there: 
    * we might be an MPI master, an MPI worker, or a serial program.
    */
-#ifdef HAVE_MPI
+#ifdef HMMER_MPI
   /* pause the execution of the programs execution until the user has a
    * chance to attach with a debugger and send a signal to resume execution
    * i.e. (gdb) signal SIGCONT
@@ -372,7 +358,7 @@ main(int argc, char **argv)
       MPI_Finalize();
     }
   else
-#endif /*HAVE_MPI*/
+#endif /*HMMER_MPI*/
     {
       status = serial_master(go, &cfg);
     }
@@ -439,17 +425,6 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
     if (dbformat == eslSQFILE_UNKNOWN) p7_Fail("%s is not a recognized sequence database file format\n", esl_opt_GetString(go, "--tformat"));
   }
 
-  /* validate options if running as a daemon */
-  if (esl_opt_IsOn(go, "--daemon")) 
-    {
-      /* running as a daemon, the input format must be type daemon */
-      if (qformat != eslSQFILE_UNKNOWN && qformat != eslSQFILE_DAEMON) 
-	p7_Fail("Input format %s not supported.  Must be daemon\n", esl_opt_GetString(go, "--qformat"));
-      qformat = eslSQFILE_DAEMON;
-      
-      if (strcmp(cfg->qfile, "-") != 0) p7_Fail("Query sequence file must be '-', in daemon mode\n");
-    }
-
   /* Initialize a default builder configuration,
    * then set only the options we need for single sequence search
    */
@@ -505,9 +480,7 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
 
 #ifdef HMMER_THREADS
   /* initialize thread data */
-  if (esl_opt_IsOn(go, "--cpu")) ncpus = esl_opt_GetInteger(go, "--cpu");
-  else                           esl_threads_CPUCount(&ncpus);
-
+  ncpus = ESL_MIN( esl_opt_GetInteger(go, "--cpu"), esl_threads_GetCPUCount());
   if (ncpus > 0)
     {
       threadObj = esl_threads_Create(&pipeline_thread);
@@ -515,8 +488,8 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
     }
 #endif
 
-  infocnt = (ncpus == 0) ? 1 : ncpus;
-  ESL_ALLOC(info, sizeof(*info) * infocnt);
+  infocnt = (ncpus <= 0) ? 1 : ncpus;       // ncpus == 0 is better. ncpus can't be < 0, esl_getopts already validated args.
+  ESL_ALLOC(info, sizeof(*info) * infocnt); // but in some circumstances, an apparent bug in gcc 8.3.x throws overzealous warning here (iss#219)
 
   /* Show header output */
   output_header(ofp, go, cfg->qfile, cfg->dbfile);
@@ -649,6 +622,11 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
 
 	if ( p7_tophits_Alignment(info->th, abc, NULL, NULL, 0, p7_ALL_CONSENSUS_COLS, &msa) == eslOK) 
 	  {
+	    esl_msa_SetName     (msa, om->name, -1);   // don't use qsq->name; it's optional in a ESL_SQ, and SingleBuilder took care of naming model.
+	    if (qsq->acc[0]  != '\0') esl_msa_SetAccession(msa, qsq->acc,  -1);
+	    if (qsq->desc[0] != '\0') esl_msa_SetDesc     (msa, qsq->desc, -1);
+	    esl_msa_FormatAuthor(msa, "phmmer (HMMER %s)", HMMER_VERSION);
+
 	    if (textw > 0) esl_msafile_Write(afp, msa, eslMSAFILE_STOCKHOLM);
 	    else           esl_msafile_Write(afp, msa, eslMSAFILE_PFAM);
 
@@ -714,7 +692,7 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
   return status;
 }
 
-#ifdef HAVE_MPI
+#ifdef HMMER_MPI
 
 /* Define common tags used by the MPI master/slave processes */
 #define HMMER_ERROR_TAG          1
@@ -1156,6 +1134,13 @@ mpi_master(ESL_GETOPTS *go, struct cfg_s *cfg)
 
 	if ( p7_tophits_Alignment(th, abc, NULL, NULL, 0, p7_ALL_CONSENSUS_COLS, &msa) == eslOK) 
 	  {
+	    esl_msa_SetName     (msa, om->name, -1);   // don't use qsq->name; it's optional in a ESL_SQ, and SingleBuilder took care of naming model.
+	    if (qsq->acc[0]  != '\0') esl_msa_SetAccession(msa, qsq->acc,  -1);
+	    if (qsq->desc[0] != '\0') esl_msa_SetDesc     (msa, qsq->desc, -1);
+	    esl_msa_FormatAuthor(msa, "phmmer (HMMER %s)", HMMER_VERSION);
+
+	    esl_msa_FormatAuthor(msa, "phmmer (HMMER %s)", HMMER_VERSION);
+
 	    if (textw > 0) esl_msafile_Write(afp, msa, eslMSAFILE_STOCKHOLM);
 	    else           esl_msafile_Write(afp, msa, eslMSAFILE_PFAM);
 
@@ -1402,7 +1387,7 @@ mpi_worker(ESL_GETOPTS *go, struct cfg_s *cfg)
   esl_alphabet_Destroy(abc);
   return eslOK;
 }
-#endif /*HAVE_MPI*/
+#endif /*HMMER_MPI*/
 
 
 static int
@@ -1462,7 +1447,7 @@ thread_loop(ESL_THREADS *obj, ESL_WORK_QUEUE *queue, ESL_SQFILE *dbfp, int n_tar
         block->count = 0;
         sstatus = eslEOF;
       } else {
-        sstatus = esl_sqio_ReadBlock(dbfp, block, -1, n_targetseqs, FALSE);
+        sstatus = esl_sqio_ReadBlock(dbfp, block, -1, n_targetseqs, /*max_init_window=*/FALSE, FALSE);
         n_targetseqs -= block->count;
       }
 
@@ -1547,6 +1532,3 @@ pipeline_thread(void *arg)
 #endif   /* HMMER_THREADS */
 
 
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

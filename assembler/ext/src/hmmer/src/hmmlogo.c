@@ -3,10 +3,7 @@
  * Contents:
  *   1. logo value functions
  *   2. hmmlogo application
- *   3. Copyright and license information
- *
  */
-
 #include "hmmer.h"
 
 /*****************************************************************
@@ -327,8 +324,5 @@ main(int argc, char **argv)
 
 /*---------------- end, hmmlogo application ----------------------*/
 
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
 
 

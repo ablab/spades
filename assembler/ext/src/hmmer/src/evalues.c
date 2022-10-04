@@ -5,10 +5,8 @@
  *   2. Determination of individual E-value parameters
  *   3. Statistics and specific experiment drivers
  *   4. Benchmark driver
- *   5. Copyright and license information
  * 
  * SRE, Mon Aug  6 13:00:06 2007
- * SVN $Id$
  */
 #include "p7_config.h"
 
@@ -244,9 +242,7 @@ p7_MSVMu(ESL_RANDOMNESS *r, P7_OPROFILE *om, P7_BG *bg, int L, int N, double lam
   double  *xv      = NULL;
   int      i;
   float    sc, nullsc;
-#ifndef p7_IMPL_DUMMY
   float    maxsc   = (255 - om->base_b) / om->scale_b; /* if score overflows, use this */
-#endif
   int      status;
 
   if (ox == NULL) { status = eslEMEM; goto ERROR; }
@@ -262,9 +258,7 @@ p7_MSVMu(ESL_RANDOMNESS *r, P7_OPROFILE *om, P7_BG *bg, int L, int N, double lam
       if ((status = p7_bg_NullOne(bg, dsq, L, &nullsc))          != eslOK) goto ERROR;   
 
       status = p7_MSVFilter(dsq, L, om, ox, &sc); 
-#ifndef p7_IMPL_DUMMY
       if (status == eslERANGE) { sc = maxsc; status = eslOK; }
-#endif
       if (status != eslOK)     goto ERROR;
 
       xv[i] = (sc - nullsc) / eslCONST_LOG2;
@@ -317,9 +311,7 @@ p7_ViterbiMu(ESL_RANDOMNESS *r, P7_OPROFILE *om, P7_BG *bg, int L, int N, double
   double  *xv      = NULL;
   int      i;
   float    sc, nullsc;
-#ifndef p7_IMPL_DUMMY
   float    maxsc   = (32767.0 - om->base_w) / om->scale_w; /* if score overflows, use this [J4/139] */
-#endif
   int      status;
 
   if (ox == NULL) { status = eslEMEM; goto ERROR; }
@@ -335,9 +327,7 @@ p7_ViterbiMu(ESL_RANDOMNESS *r, P7_OPROFILE *om, P7_BG *bg, int L, int N, double
       if ((status = p7_bg_NullOne(bg, dsq, L, &nullsc))          != eslOK) goto ERROR;   
 
       status = p7_ViterbiFilter(dsq, L, om, ox, &sc); 
-#ifndef p7_IMPL_DUMMY
       if (status == eslERANGE) { sc = maxsc; status = eslOK; }
-#endif
       if (status != eslOK)     goto ERROR;
 
       xv[i] = (sc - nullsc) / eslCONST_LOG2;
@@ -649,7 +639,3 @@ main(int argc, char **argv)
 #endif /*p7EVALUES_BENCHMARK*/
 
 
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

@@ -31,6 +31,7 @@ fm_alphabetCreate (FM_METADATA *meta, uint8_t *alph_bits) {
 	int i = 0;
 	int status;
 
+
 	if ( meta->alph_type ==  fm_DNA) {
       meta->alph_size = 4;
       if (alph_bits) *alph_bits = 2;
@@ -51,7 +52,8 @@ fm_alphabetCreate (FM_METADATA *meta, uint8_t *alph_bits) {
 
 	if ( meta->alph_type ==  fm_DNA /*|| meta->alph_type ==  fm_DNA_full*/)
 	  ESL_ALLOC(meta->compl_alph, (1+meta->alph_size)*sizeof(int));
-
+	else
+	  meta->compl_alph = NULL;
 
 
 	if ( meta->alph_type ==  fm_DNA) {
@@ -121,6 +123,7 @@ fm_alphabetDestroy (FM_METADATA *meta) {
     if (meta->inv_alph != NULL)   free (meta->inv_alph);
     if (meta->compl_alph != NULL) free (meta->compl_alph);
   }
+
   return eslOK;
 }
 

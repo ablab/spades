@@ -8,8 +8,6 @@
  *   5. Unit tests
  *   6. Test driver
  *   7. Examples
- *   8. Copyright and license
- * 
  */
 #include "esl_config.h"
 
@@ -1133,9 +1131,3 @@ main(int argc, char **argv)
 #endif /*eslRECORDER_EXAMPLE2*/
 /*------------------ end, example main() ------------------------*/
 
-/*****************************************************************
- * @LICENSE@
- * 
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/

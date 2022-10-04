@@ -3,6 +3,7 @@
  */
 #ifndef eslKEYHASH_INCLUDED
 #define eslKEYHASH_INCLUDED
+#include "esl_config.h"
 
 #include <stdio.h>		/* for FILE */
 
@@ -59,6 +60,4 @@ extern int  esl_keyhash_Lookup(const ESL_KEYHASH *kh, const char *key, esl_pos_t
 
 
 #endif /* eslKEYHASH_INCLUDED */
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
+

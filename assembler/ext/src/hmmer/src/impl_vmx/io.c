@@ -18,7 +18,6 @@
  *    5. Unit tests.
  *    6. Test driver.
  *    7. Example.
- *    8. Copyright and license information.
  *    
  * TODO:
  *    - crossplatform binary compatibility (endedness and off_t)
@@ -242,7 +241,7 @@ p7_oprofile_ReadMSV(P7_HMMFILE *hfp, ESL_ALPHABET **byp_abc, P7_OPROFILE **ret_o
   int           alphatype;
   int           status;
 
-  if (hfp->errbuf != NULL) hfp->errbuf[0] = '\0';
+  hfp->errbuf[0] = '\0';
   if (hfp->ffp == NULL) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "no MSV profile file; hmmpress probably wasn't run");
   if (feof(hfp->ffp))   { status = eslEOF; goto ERROR; }	/* normal EOF: no more profiles */
   
@@ -359,7 +358,7 @@ p7_oprofile_ReadInfoMSV(P7_HMMFILE *hfp, ESL_ALPHABET **byp_abc, P7_OPROFILE **r
   int           alphatype;
   int           status;
 
-  if (hfp->errbuf != NULL) hfp->errbuf[0] = '\0';
+  hfp->errbuf[0] = '\0';
   if (hfp->ffp == NULL) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "no MSV profile file; hmmpress probably wasn't run");
   if (feof(hfp->ffp))   { status = eslEOF; goto ERROR; }	/* normal EOF: no more profiles */
   
@@ -503,7 +502,7 @@ p7_oprofile_ReadRest(P7_HMMFILE *hfp, P7_OPROFILE *om)
     }
 #endif
 
-  if (hfp->errbuf != NULL) hfp->errbuf[0] = '\0';
+  hfp->errbuf[0] = '\0';
   if (hfp->pfp == NULL) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "no MSV profile file; hmmpress probably wasn't run");
  
   /* Position the <hfp->pfp> using offset stored in <om> */
@@ -1015,9 +1014,4 @@ main(int argc, char **argv)
 }
 #endif /*IO_EXAMPLE*/
 
-/*****************************************************************
- * @LICENSE@
- * 
- * SVN $URL$
- * SVN $Id$
- *****************************************************************/
+

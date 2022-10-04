@@ -19,9 +19,7 @@
  *    3. Unit tests.
  *    4. Test driver.
  *    5. Example.
- *    6. Copyright and license.
  */
-
 #include "p7_config.h"
 
 #include <string.h>
@@ -63,7 +61,7 @@ static int annotate_model(P7_HMM *hmm, int *matassign, ESL_MSA *msa);
  *           no consensus columns, a <eslENORESULT> error is returned.
  *           
  * Args:     msa     - multiple sequence alignment
- *           bld       - holds information on regions requiring masking, optionally NULL -> no masking
+ *           bld     - holds information on regions requiring masking, optionally NULL -> no masking
  *           ret_hmm - RETURN: counts-form HMM
  *           opt_tr  - optRETURN: array of tracebacks for aseq's
  *           
@@ -231,13 +229,8 @@ do_modelmask( ESL_MSA *msa)
   for (i = 1; i <= msa->alen; i++) {
     for (j = 0; j < msa->nseq; j++) {
       if (msa->mm[i-1] == 'm') {
-#ifdef eslAUGMENT_ALPHABET
         if (msa->ax[j][i] != msa->abc->K && msa->ax[j][i] != msa->abc->Kp-1) // if not gap
           msa->ax[j][i] = msa->abc->Kp-3; //that's the degenerate "any character" (N for DNA, X for protein)
-#else
-        if (msa->aseq[j][i] != '-' && msa->aseq[j][i] != '.') // if not gap
-          msa->aseq[j][i] = 'N';
-#endif
       }
     }
   }
@@ -481,7 +474,7 @@ utest_fragments(void)
    *
    * The X->Dk and Dk->X cases should never happen, but we don't
    * prohibit them. They can only arise in an input file, because
-   * esl_msa_MarkFragments() converts everything before/after
+   * esl_msa_MarkFragments_old() converts everything before/after
    * first/last residue to ~, and won't leave a gap character in
    * between.
    *
@@ -588,7 +581,6 @@ main(int argc, char **argv)
   ESL_GETOPTS  *go        = p7_CreateDefaultApp(options, 1, argc, argv, banner, usage);
   char         *msafile   = esl_opt_GetArg(go, 1);
   int           fmt       = eslMSAFILE_UNKNOWN;
-  int           alphatype = eslUNKNOWN;
   ESL_ALPHABET *abc       = NULL;
   ESL_MSAFILE  *afp       = NULL;
   ESL_MSA      *msa       = NULL;
@@ -602,9 +594,9 @@ main(int argc, char **argv)
   int           status;
   
   /* Standard idioms for opening and reading a digital MSA. (See esl_msa.c example). */
-  if      (esl_opt_GetBoolean(go, "--rna"))   alphatype = eslRNA;
-  else if (esl_opt_GetBoolean(go, "--dna"))   alphatype = eslDNA;
-  else if (esl_opt_GetBoolean(go, "--amino")) alphatype = eslAMINO;
+  if      (esl_opt_GetBoolean(go, "--rna"))   abc = esl_alphabet_Create(eslRNA);
+  else if (esl_opt_GetBoolean(go, "--dna"))   abc = esl_alphabet_Create(eslDNA);
+  else if (esl_opt_GetBoolean(go, "--amino")) abc = esl_alphabet_Create(eslAMINO);
 
   if ((status = esl_msafile_Open(&abc, msafile, NULL, fmt, NULL, &afp)) != eslOK)
     esl_msafile_OpenFailure(afp, status);
@@ -671,11 +663,5 @@ main(int argc, char **argv)
 
 #endif /*p7BUILD_EXAMPLE*/
 
-
-
-
-/************************************************************
- * @LICENSE@
- ************************************************************/
 
 

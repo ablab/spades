@@ -6,7 +6,6 @@
  *    4. Unit tests.
  *    5. Test driver.
  *    6. Examples.
- *    7. Copyright notice and license.
  */
 #include "esl_config.h"
 
@@ -19,6 +18,8 @@
 #endif
 
 #include "easel.h"
+#include "esl_mem.h"
+
 #include "esl_alphabet.h"
 
 
@@ -1009,8 +1010,8 @@ esl_abc_dsqlen(const ESL_DSQ *dsq)
  * Synopsis:  Returns the number of residues in a digital seq.
  *
  * Purpose:   Returns the unaligned length of digitized sequence
- *            <dsq>, in residues, not counting any gaps or
- *            missing data symbols. 
+ *            <dsq>, in residues, not counting any gaps, nonresidues,
+ *            or missing data symbols. 
  */
 int64_t
 esl_abc_dsqrlen(const ESL_ALPHABET *abc, const ESL_DSQ *dsq)
@@ -1608,6 +1609,9 @@ esl_abc_DExpectScVec(const ESL_ALPHABET *a, double *sc, const double *p)
  *            not 0..K-1. If <x> is a missing data symbol, or a nonresidue
  *            data symbol, nothing is done.
  *            
+ *            A negative <wt> causes subtraction of the count, instead of
+ *            addition.
+ *
  *            <esl_abc_DCount()> does the same, but for double-precision
  *            count vectors and weights.
  *
@@ -1667,6 +1671,27 @@ esl_abc_EncodeType(char *type)
   else if (strcasecmp(type, "custom")== 0) return eslNONSTANDARD;
   else                                     return eslUNKNOWN;
 }
+
+/* Function:  esl_abc_EncodeTypeMem()
+ * Synopsis:  Convert memory chunk to alphabet type code
+ * Incept:    SRE, Thu 02 Aug 2018 
+ *
+ * Purpose:   Same as <esl_abc_EncodeType()>, but for a
+ *            non-NUL terminated memory chunk <type> of
+ *            length <n>.
+ */
+int
+esl_abc_EncodeTypeMem(char *type, int n)
+{
+  if      (esl_memstrcmp_case(type, n, "amino"))  return eslAMINO;
+  else if (esl_memstrcmp_case(type, n, "rna"))    return eslRNA;
+  else if (esl_memstrcmp_case(type, n, "dna"))    return eslDNA;
+  else if (esl_memstrcmp_case(type, n, "coins"))  return eslCOINS;
+  else if (esl_memstrcmp_case(type, n, "dice"))   return eslDICE;
+  else if (esl_memstrcmp_case(type, n, "custom")) return eslNONSTANDARD;
+  else                                            return eslUNKNOWN;
+}
+
 
 /* Function:  esl_abc_DecodeType()
  * Synopsis:  Returns descriptive string for alphabet type code.

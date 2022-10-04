@@ -5,7 +5,6 @@
  *   2. Unit tests.
  *   3. Test driver.
  *   4. Examples.
- *   5. License and copyright.
  */
 #include "esl_config.h"
 
@@ -15,12 +14,11 @@
 #include <ctype.h>
 
 #include "easel.h"
-#ifdef eslAUGMENT_ALPHABET
 #include "esl_alphabet.h"
-#endif
 #include "esl_mem.h"
 #include "esl_msa.h"
 #include "esl_msafile.h"
+
 #include "esl_msafile_afa.h"
 
 /*****************************************************************
@@ -43,14 +41,13 @@ esl_msafile_afa_SetInmap(ESL_MSAFILE *afp)
 {
   int sym;
 
-#ifdef eslAUGMENT_ALPHABET
   if (afp->abc)
     {
       for (sym = 0; sym < 128; sym++) 
 	afp->inmap[sym] = afp->abc->inmap[sym];
       afp->inmap[0] = esl_abc_XGetUnknown(afp->abc);
     }
-#endif
+
   if (! afp->abc)
     {
       for (sym = 1; sym < 128; sym++) 
@@ -196,9 +193,7 @@ esl_msafile_afa_Read(ESL_MSAFILE *afp, ESL_MSA **ret_msa)
 
   afp->errmsg[0] = '\0';	                                  /* Blank the error message. */
 
-#ifdef eslAUGMENT_ALPHABET
   if (afp->abc   &&  (msa = esl_msa_CreateDigital(afp->abc, 16, -1)) == NULL) { status = eslEMEM; goto ERROR; }
-#endif
   if (! afp->abc &&  (msa = esl_msa_Create(                 16, -1)) == NULL) { status = eslEMEM; goto ERROR; }
   
   /* skip leading blank lines in file */
@@ -232,9 +227,7 @@ esl_msafile_afa_Read(ESL_MSAFILE *afp, ESL_MSA **ret_msa)
       if (n  == 0)   continue;	       /* tolerate and skip blank lines */
       if (*p == '>') break;
 
-#ifdef eslAUGMENT_ALPHABET
       if (msa->abc)   { status = esl_abc_dsqcat(afp->inmap, &(msa->ax[idx]),   &this_alen, p, n); }
-#endif
       if (! msa->abc) { status = esl_strmapcat (afp->inmap, &(msa->aseq[idx]), &this_alen, p, n); }
       if (status == eslEINVAL)   ESL_XFAIL(eslEFORMAT, afp->errmsg, "one or more invalid sequence characters");
       else if (status != eslOK)  goto ERROR;
@@ -298,9 +291,8 @@ esl_msafile_afa_Write(FILE *fp, const ESL_MSA *msa)
       while (pos < msa->alen)
 	{
 	  acpl = (msa->alen - pos > 60)? 60 : msa->alen - pos;
-#ifdef eslAUGMENT_ALPHABET
+
 	  if (msa->abc)   esl_abc_TextizeN(msa->abc, msa->ax[i] + pos + 1, acpl, buf);
-#endif
 	  if (! msa->abc) strncpy(buf, msa->aseq[i] + pos, acpl);
 
 	  buf[acpl] = '\0';
@@ -723,10 +715,3 @@ main(int argc, char **argv)
 /*::cexcerpt::msafile_afa_example2::end::*/
 #endif /*eslMSAFILE_AFA_EXAMPLE2*/
 /*--------------------- end of examples -------------------------*/
-
-
-
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

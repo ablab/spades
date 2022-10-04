@@ -1,18 +1,12 @@
 /* Hyperexponential (mixture exponential) distributions.
- * 
  */
 #ifndef eslHYPEREXP_INCLUDED
 #define eslHYPEREXP_INCLUDED
+#include "esl_config.h"
 
-#ifdef eslAUGMENT_RANDOM
-#include <esl_random.h>
-#endif
-#ifdef eslAUGMENT_HISTOGRAM
-#include <esl_histogram.h>
-#endif
-#ifdef eslAUGMENT_FILEPARSER
-#include <esl_fileparser.h>
-#endif
+#include "esl_fileparser.h"
+#include "esl_histogram.h"
+#include "esl_random.h"
 
 typedef struct {
   double *q;			/* mixture coefficients   [0..K-1]*/
@@ -32,10 +26,10 @@ extern int           esl_hyperexp_FixedUniformMixture(ESL_HYPEREXP *h);
 extern int           esl_hyperexp_SortComponents(ESL_HYPEREXP *h);
 extern int           esl_hyperexp_Write(FILE *fp, ESL_HYPEREXP *hxp);
 extern int           esl_hyperexp_Dump(FILE *fp, ESL_HYPEREXP *hxp);
-#ifdef eslAUGMENT_FILEPARSER
+
 extern int           esl_hyperexp_Read(ESL_FILEPARSER *ef, ESL_HYPEREXP **ret_hxp);
 extern int           esl_hyperexp_ReadFile(char *filename, ESL_HYPEREXP **ret_hxp);
-#endif
+
 
 extern double  esl_hxp_pdf    (double x, ESL_HYPEREXP *h);
 extern double  esl_hxp_logpdf (double x, ESL_HYPEREXP *h);
@@ -54,22 +48,15 @@ extern int esl_hxp_Plot(FILE *fp, ESL_HYPEREXP *h,
 			double (*func)(double x, ESL_HYPEREXP *h), 
 			double xmin, double xmax, double xstep);
 
-#ifdef eslAUGMENT_RANDOM
+
 extern double esl_hxp_Sample(ESL_RANDOMNESS *r, ESL_HYPEREXP *h);
-#endif
-#ifdef eslAUGMENT_MINIMIZER
+
 extern int esl_hxp_FitGuess   (double *x, int n, ESL_HYPEREXP *h);
 extern int esl_hxp_FitComplete(double *x, int n, ESL_HYPEREXP *h);
-#ifdef eslAUGMENT_HISTOGRAM
+
 extern int esl_hxp_FitGuessBinned   (ESL_HISTOGRAM *g, ESL_HYPEREXP *h);
 extern int esl_hxp_FitCompleteBinned(ESL_HISTOGRAM *g, ESL_HYPEREXP *h);
-#endif
-#endif
+
 
 #endif /*eslHYPEREXP_INCLUDED*/
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
+

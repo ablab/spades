@@ -1,11 +1,10 @@
 /* General hidden Markov models (discrete; of alphabetic strings)
  * 
  * SRE, Fri Jul 18 08:54:41 2008 [Janelia] 
- * SVN $Id$
- * SVN $URL$
  */
 #ifndef eslHMM_INCLUDED
 #define eslHMM_INCLUDED
+#include "esl_config.h"
 
 #include "esl_alphabet.h"
 #include "esl_random.h"
@@ -53,6 +52,3 @@ extern int      esl_hmm_Backward(const ESL_DSQ *dsq, int L, const ESL_HMM *hmm, 
 
 
 #endif /*eslHMM_INCLUDED*/
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

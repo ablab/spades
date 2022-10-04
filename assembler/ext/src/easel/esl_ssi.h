@@ -4,7 +4,7 @@
  */
 #ifndef eslSSI_INCLUDED
 #define eslSSI_INCLUDED
-#ifdef eslAUGMENT_SSI
+#include "esl_config.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -152,12 +152,5 @@ extern int      esl_fwrite_i32(FILE *fp, int32_t  n);
 extern int      esl_fwrite_i64(FILE *fp, int64_t  n);
 extern int	esl_fread_offset(FILE *fp, int mode, off_t *ret_offset);
 extern int      esl_fwrite_offset(FILE *fp, off_t offset);
-#endif /* eslAUGMENT_SSI*/
-#ifndef eslAUGMENT_SSI
-typedef void ESL_SSI;
-typedef void ESL_NEWSSI;
-#endif
+
 #endif /* eslSSI_INCLUDED */
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

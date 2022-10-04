@@ -7,10 +7,6 @@
  *    4. Unit tests
  *    5. Test driver
  *    6. Example
- *    7. Copyright and license.
- * 
- *  Augmentations:
- *    eslAUGMENT_ALPHABET:  adds support for digital MSAs
  *  
  * (Wondering why isn't this just part of the cluster or MSA modules?
  * esl_cluster itself is a core module, dependent only on easel. MSA
@@ -21,12 +17,11 @@
 #include "esl_config.h"
 
 #include "easel.h"
+#include "esl_alphabet.h"
 #include "esl_cluster.h"
 #include "esl_distance.h"
 #include "esl_msa.h"
-#ifdef eslAUGMENT_ALPHABET
-#include "esl_alphabet.h"
-#endif
+
 #include "esl_msacluster.h"
 
 /* These functions are going to get defined in an internal regression 
@@ -35,28 +30,22 @@
 #if defined(eslMSACLUSTER_REGRESSION) || defined(eslMSAWEIGHT_REGRESSION)
 #include <ctype.h>
 static double squid_distance(char *s1, char *s2);
-#ifdef eslAUGMENT_ALPHABET
 static double squid_xdistance(ESL_ALPHABET *a, ESL_DSQ *x1, ESL_DSQ *x2);
-#endif
 #endif
 
 /* These functions will define linkage between a pair of text or
  *  digital aseq's: 
  */
 static int msacluster_clinkage(const void *v1, const void *v2, const void *p, int *ret_link);
-#ifdef eslAUGMENT_ALPHABET
 static int msacluster_xlinkage(const void *v1, const void *v2, const void *p, int *ret_link);
-#endif
 
 /* In digital mode, we'll need to pass the clustering routine two parameters -
  * %id threshold and alphabet ptr - so make a structure that bundles them.
  */
-#ifdef eslAUGMENT_ALPHABET
 struct msa_param_s {
   double        maxid;
   ESL_ALPHABET *abc;
 };
-#endif
 
 
 /*****************************************************************
@@ -127,20 +116,31 @@ esl_msacluster_SingleLinkage(const ESL_MSA *msa, double maxid,
   int  *nin        = NULL;
   int   nc;
   int   i;
-#ifdef eslAUGMENT_ALPHABET
   struct msa_param_s param;
-#endif
-
+  int free_assignment = 0;
+  int allocated_assignment = 0;
   /* Allocations */
   ESL_ALLOC(workspace,  sizeof(int) * msa->nseq * 2);
-  ESL_ALLOC(assignment, sizeof(int) * msa->nseq);
+  if(opt_c != NULL && *opt_c !=NULL){ // opt_c exists, and already has memory allocated
+    assignment = *opt_c;
+  }
+  else{ // need to allocate space for assignment
+    ESL_ALLOC(assignment, sizeof(int) * msa->nseq);
+    allocated_assignment = 1;
+    if(opt_c != NULL){ // opt_c exists, but had no memory allocated
+      *opt_c = assignment;
+    }
+    else{ // opt_c doesn't exist, so need to clean up assignment memory
+      free_assignment = 1;
+    }
+  }
+
 
   /* call to SLC API: */
   if (! (msa->flags & eslMSA_DIGITAL))
     status = esl_cluster_SingleLinkage((void *) msa->aseq, (size_t) msa->nseq, sizeof(char *),
 				       msacluster_clinkage, (void *) &maxid, 
 				       workspace, assignment, &nc);
-#ifdef eslAUGMENT_ALPHABET
   else {
     param.maxid = maxid;
     param.abc   = msa->abc;
@@ -148,28 +148,35 @@ esl_msacluster_SingleLinkage(const ESL_MSA *msa, double maxid,
 				       msacluster_xlinkage, (void *) &param, 
 				       workspace, assignment, &nc);
   }
-#endif
   if (status != eslOK) goto ERROR;
 
 
   if (opt_nin != NULL) 
     {
-      ESL_ALLOC(nin, sizeof(int) * nc);
+      if(*opt_nin == NULL){ // Need to allocate backing storage
+        ESL_ALLOC(nin, sizeof(int) * nc);
+        *opt_nin = nin;
+      }
+      else{ //use the storage that's already there
+        nin = *opt_nin;
+      }
       for (i = 0; i < nc; i++) nin[i] = 0;
       for (i = 0; i < msa->nseq; i++)
-	nin[assignment[i]]++;
-      *opt_nin = nin;
+	    nin[assignment[i]]++;
+
     }
 
   /* cleanup and return */
   free(workspace);
-  if (opt_c  != NULL) *opt_c  = assignment; else free(assignment);
+  if(free_assignment){
+    free(assignment); 
+  }
   if (opt_nc != NULL) *opt_nc = nc;
   return eslOK;
 
  ERROR:
   if (workspace  != NULL) free(workspace);
-  if (assignment != NULL) free(assignment);
+  if (allocated_assignment) free(assignment);
   if (nin        != NULL) free(nin);
   if (opt_c  != NULL) *opt_c  = NULL;
   if (opt_nc != NULL) *opt_nc = 0;
@@ -205,7 +212,6 @@ msacluster_clinkage(const void *v1, const void *v2, const void *p, int *ret_link
 }
   
 /* Definition of % id linkage in digital aligned seqs (>= maxid) */
-#ifdef eslAUGMENT_ALPHABET
 static int
 msacluster_xlinkage(const void *v1, const void *v2, const void *p, int *ret_link)
 {
@@ -224,9 +230,6 @@ msacluster_xlinkage(const void *v1, const void *v2, const void *p, int *ret_link
   *ret_link = (pid >= param->maxid ? TRUE : FALSE); 
   return status;
 }
-#endif
-
-
 
 
 /*****************************************************************
@@ -252,7 +255,6 @@ squid_distance(char *s1, char *s2)
     }
   return (valid > 0 ? ((double) diff / (double) valid) : 0.0);
 }
-#ifdef eslAUGMENT_ALPHABET
 static double
 squid_xdistance(ESL_ALPHABET *a, ESL_DSQ *x1, ESL_DSQ *x2)
 {
@@ -267,7 +269,6 @@ squid_xdistance(ESL_ALPHABET *a, ESL_DSQ *x1, ESL_DSQ *x2)
     }
   return (valid > 0 ? ((double) diff / (double) valid) : 0.0);
 }
-#endif
 #endif /* eslMSACLUSTER_REGRESSION || eslMSAWEIGHT_REGRESSION */
 
 
@@ -324,6 +325,8 @@ main(int argc, char **argv)
 {
   ESL_GETOPTS    *go      = esl_getopts_CreateDefaultApp(options, 0, argc, argv, banner, usage);
   ESL_ALPHABET   *abc     = esl_alphabet_Create(eslAMINO);
+  char *msg = "esl_msacluster_utest failed";
+  int status;
   ESL_MSA        *msa     = esl_msa_CreateFromString("\
 # STOCKHOLM 1.0\n\
 \n\
@@ -352,10 +355,43 @@ seq11 MMMMMMMMMM\n\
   utest_SingleLinkage(go, msa, 0.5,  6,  5);    /* at 50% id, seq0-seq6 cluster       */
   utest_SingleLinkage(go, msa, 0.0,  1,  0);    /* at 0% id, everything clusters      */
 
+
+  // test handling of the three possible cases for the assignment input/output
+  int  *nin        = NULL;
+  int   nc;
+  // Passing NULL as assignment should cause allocate + free within 
+  //msacluster_SingleLinkage
+  if (esl_msacluster_SingleLinkage(msa, 0.5, NULL, &nin, &nc) != eslOK) esl_fatal(msg);
+
+  int *assignment = NULL;
+
+  // Passing an assignment variable with no backing storage should cause //
+  // msacluster_SingleLinkage to allocate
+  if (esl_msacluster_SingleLinkage(msa, 0.5, &assignment, &nin, &nc) != eslOK) esl_fatal(msg);
+
+  if(assignment == NULL) esl_fatal(msg);
+  free(assignment);
+
+  ESL_ALLOC(assignment, 12*sizeof(int));
+  int *assignment2 = assignment;
+
+  // Passing an assignment variable with  backing storage should cause //
+  // msacluster_SingleLinkage to use the allocated storage
+  if (esl_msacluster_SingleLinkage(msa, 0.5, &assignment, &nin, &nc) != eslOK) esl_fatal(msg);
+
+  if(assignment != assignment2) esl_fatal(msg);
+  free(assignment);
+
+
+  free(nin);
+
   esl_msa_Destroy(msa);
   esl_alphabet_Destroy(abc);
   esl_getopts_Destroy(go);
   return 0;
+
+  ERROR:
+  return eslFAIL;
 }
 #endif /* eslMSACLUSTER_TESTDRIVE*/
 
@@ -420,11 +456,3 @@ main(int argc, char **argv)
 /*::cexcerpt::msacluster_example::end::*/
 #endif /*eslMSACLUSTER_EXAMPLE*/
 /*------------------------ end of example -----------------------*/
-
-
-
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
-

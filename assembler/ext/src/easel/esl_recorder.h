@@ -1,19 +1,16 @@
 /* Saving history in a line-based input stream.
  * 
  * SRE, Mon Dec 28 09:51:51 2009 [Zaragoza]
- * SVN $Id$
- * SVN $URL$
  */
 #ifndef eslRECORDER_INCLUDED
 #define eslRECORDER_INCLUDED
-
 #include "esl_config.h"
 
+#include <stdio.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
 
-#include <stdio.h>
 
 /* Object: ESL_RECORDER
  * 
@@ -79,10 +76,6 @@ extern int           esl_recorder_MarkBlock(ESL_RECORDER *rc, int markline);
 extern int           esl_recorder_UnmarkBlock(ESL_RECORDER *rc);
 extern int           esl_recorder_GetBlock(ESL_RECORDER *rc, char ***opt_lines, int **opt_lalloc, off_t **opt_offset, int *opt_nlines);
 
-
 #endif /*eslRECORDER_INCLUDED*/
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
 
 

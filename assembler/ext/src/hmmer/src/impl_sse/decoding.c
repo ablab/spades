@@ -5,11 +5,6 @@
  *   2. Benchmark driver.
  *   3. Unit tests.
  *   4. Test driver.
- *   5. Example.
- *   6. Copyright and license information.
- *   
- * SRE, Mon Aug 18 08:15:50 2008 [Janelia]
- * SVN $Id$
  */
 
 #include "p7_config.h"
@@ -17,8 +12,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#include <xmmintrin.h>		/* SSE  */
-#include <emmintrin.h>		/* SSE2 */
+#include <x86intrin.h>
 
 #include "easel.h"
 #include "esl_sse.h"
@@ -428,20 +422,4 @@ main(int argc, char **argv)
 #endif /*p7DECODING_TESTDRIVE*/
 /*-------------------- end, test driver -------------------------*/
 
-
-
-
-/*****************************************************************
- * 5. Example
- *****************************************************************/
-#ifdef p7DECODING_EXAMPLE
-
-#endif /*p7DECODING_EXAMPLE*/
-/*------------------------ example ------------------------------*/
-
-
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
 

@@ -4,15 +4,14 @@
  *   1. Routines for evaluating densities and distributions
  *   2. Generic API routines: for general interface w/ histogram module
  *   3. Dumping plots to files
- *   4. Sampling (augmentation: random module)
+ *   4. Sampling
  *   5. ML fitting to complete data
  *   6. ML fitting to censored data  (x_i >= phi; z known)
- *   7. ML fitting to truncated data (x_i >= phi; z unknown) (augmentation: minimizer)
+ *   7. ML fitting to truncated data (x_i >= phi; z unknown) 
  *   8. Stats driver
  *   9. Unit tests
  *  10. Test driver
  *  11. Example
- *  12. Copyright and license information
  * 
  * To-do:
  *   - ML fitting routines will be prone to over/underfitting 
@@ -29,15 +28,12 @@
 #include <float.h>
 
 #include "easel.h"
+#include "esl_minimizer.h"
+#include "esl_random.h"
 #include "esl_stats.h"
 #include "esl_vectorops.h"
+
 #include "esl_gumbel.h"
-#ifdef eslAUGMENT_RANDOM
-#include "esl_random.h"
-#endif
-#ifdef eslAUGMENT_MINIMIZER
-#include "esl_minimizer.h"
-#endif
 
 /*****************************************************************
  * 1. Routines for evaluating densities and distributions
@@ -298,10 +294,9 @@ esl_gumbel_Plot(FILE *fp, double mu, double lambda,
 
 
 /*****************************************************************
- * 4. Routines for sampling (requires augmentation w/ random module)
+ * 4. Routines for sampling
  *****************************************************************/ 
 
-#ifdef eslAUGMENT_RANDOM
 /* Function:  esl_gumbel_Sample()
  * Synopsis:  Return a Gumbel-distributed random sample $x$.
  *
@@ -315,8 +310,6 @@ esl_gumbel_Sample(ESL_RANDOMNESS *r, double mu, double lambda)
   p = esl_rnd_UniformPositive(r); 
   return esl_gumbel_invcdf(p, mu, lambda);
 } 
-#endif /*eslAUGMENT_RANDOM*/
-
 /*------------------------ end of sampling --------------------------------*/
 
 
@@ -550,7 +543,7 @@ esl_gumbel_FitCompleteLoc(double *x, int n, double lambda, double *ret_mu)
 }
 
 
-#if eslDEBUGLEVEL >=3
+#if 0
 /* direct_mv_fit()
  * SRE, Wed Jun 29 08:23:47 2005
  * 
@@ -807,9 +800,9 @@ esl_gumbel_FitCensoredLoc(double *x, int n, int z, double phi, double lambda,
 
 
 /*****************************************************************
- * 7. Maximum likelihood fitting to truncated data (x_i >= phi and z unknown) (requires minimizer augmentation)
+ * 7. Maximum likelihood fitting to truncated data (x_i >= phi and z unknown) 
  *****************************************************************/ 
-#ifdef eslAUGMENT_MINIMIZER
+
 /* Easel's conjugate gradient descent code allows a single void ptr to
  * point to any necessary fixed data, so we'll put everything into one
  * structure:
@@ -957,28 +950,35 @@ tevd_grad(double *p, int nparam, void *dptr, double *dp)
  *            returned as 0.0.
  *            These are "normal" (returned) errors because 
  *            the data might be provided directly by a user.
+ *            
+ * Throws:    <eslEMEM> on allocation error.           
  */
 int
 esl_gumbel_FitTruncated(double *x, int n, double phi, double *ret_mu, double *ret_lambda)
 {
+  ESL_MIN_CFG *cfg = NULL;      /* customization of the CG optimizer */
   struct tevd_data data;
-  double wrk[8];		/* workspace for CG: 4 tmp vectors of size 2 */
   double p[2];			/* mu, w;  lambda = e^w */
-  double u[2];			/* max initial step size for mu, lambda */
   double mean, variance;
   double mu, lambda;
   double fx;
   int    i;
   int    status;
   
+  /* customization of the optimizer */
+  if ((cfg = esl_min_cfg_Create(2)) == NULL) { status = eslEMEM; goto ERROR; }
+  cfg->u[0]    = 2.0;
+  cfg->u[1]    = 0.1;
+  cfg->cg_rtol = 1e-4;
+
   /* Can't fit to n<=1 */
-  if (n <= 1) { status = eslEINVAL; goto FAILURE; }
+  if (n <= 1) { status = eslEINVAL; goto ERROR; }
   
   /* Can fail on small <n>. One way is if x_i are all identical, so
    * ML lambda is undefined. 
    */
   for (i = 1; i < n; i++) if (x[i] != x[0]) break;
-  if  (i == n) { status = eslENORESULT; goto FAILURE; }
+  if  (i == n) { status = eslENORESULT; goto ERROR; }
 
   data.x   = x;
   data.n   = n;
@@ -999,27 +999,26 @@ esl_gumbel_FitTruncated(double *x, int n, double phi, double *ret_mu, double *re
   p[0] = mu;
   p[1] = log(lambda);		/* c.o.v. because lambda is constrained to >0 */
 
-  u[0] = 2.0;
-  u[1] = 0.1;
-
   /* Pass the problem to the optimizer. The work is done by the
    * equations in tevd_func() and tevd_grad().
    */
-  status = esl_min_ConjugateGradientDescent(p, u, 2, 
+  status = esl_min_ConjugateGradientDescent(cfg, p, 2, 
 					    &tevd_func, &tevd_grad,(void *)(&data),
-					    1e-4, wrk, &fx);
-  if (status != eslOK) { status = eslENORESULT; goto FAILURE; }
+					    &fx, NULL);
+  if      (status == eslENOHALT) { status = eslENORESULT; goto ERROR; }
+  else if (status != eslOK)      goto ERROR;
   
+  esl_min_cfg_Destroy(cfg);
   *ret_mu     = p[0];
   *ret_lambda = exp(p[1]);	/* reverse the c.o.v. */
   return status;
 
- FAILURE:
+ ERROR:
+  esl_min_cfg_Destroy(cfg);
   *ret_mu     = 0.0;
   *ret_lambda = 0.0;
   return status;
 }
-#endif /*eslAUGMENT_MINIMIZER*/
 /*------------------------ end of fitting --------------------------------*/
 
 /*****************************************************************
@@ -1119,7 +1118,6 @@ main(int argc, char **argv)
 
   /* Fitting to simulated truncated datasets
    */
-#ifdef eslAUGMENT_MINIMIZER
   if (do_truncated) {
     for (exp = 0; exp < nexps; exp++)
       {
@@ -1139,7 +1137,6 @@ main(int argc, char **argv)
 	printf("\n");
       }
   }
-#endif /*eslAUGMENT_MINIMIZER*/
 
   /* Fitting mu given lambda 
    */
@@ -1229,11 +1226,9 @@ utest_fitting(ESL_RANDOMNESS *rng)
   /* Truncated fitting.
    * Don't tolerate more than 5% error in mu, 8% in lambda.
    */
-#ifdef eslAUGMENT_MINIMIZER
   if ((status = esl_gumbel_FitTruncated(x, n, phi, &mu, &lambda)) != eslOK) esl_fatal(msg);
   if (fabs((mu     - pmu)    /pmu)     > 0.05) esl_fatal(msg);
   if (fabs((lambda - plambda)/plambda) > 0.08) esl_fatal(msg);
-#endif /*eslAUGMENT_MINIMIZER*/
   
   free(x);
   return;
@@ -1359,9 +1354,6 @@ main(int argc, char **argv)
  *****************************************************************/ 
 #ifdef eslGUMBEL_EXAMPLE
 /*::cexcerpt::gumbel_example::begin::*/
-/* compile: gcc -g -Wall -I. -o example -DeslGUMBEL_EXAMPLE -DeslAUGMENT_RANDOM esl_gumbel.c esl_random.c esl_vectorops.c easel.c -lm
- * run:     ./example
- */
 #include <stdio.h>
 #include "easel.h"
 #include "esl_random.h"
@@ -1411,10 +1403,3 @@ main(int argc, char **argv)
 
 
 
-
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/

@@ -2,6 +2,7 @@
  */
 #ifndef eslMSAFILE_PSIBLAST_INCLUDED
 #define eslMSAFILE_PSIBLAST_INCLUDED
+#include "esl_config.h"
 
 #include "esl_msa.h"
 #include "esl_msafile.h"
@@ -12,6 +13,4 @@ extern int esl_msafile_psiblast_Read         (ESL_MSAFILE *afp, ESL_MSA **ret_ms
 extern int esl_msafile_psiblast_Write        (FILE *fp, const ESL_MSA *msa);
 
 #endif /* eslMSAFILE_PSIBLAST_INCLUDED */
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
+

@@ -9,7 +9,6 @@
  * documentation.
  * 
  * SRE, Fri Jan 12 08:46:02 2007
- * SVN $Id$
  */
 
 #include "p7_config.h"
@@ -24,7 +23,7 @@
  * Incept:    SRE, Fri Jan 12 08:54:45 2007 [Janelia]
  */
 void
-p7_Die(const char *format, ...)
+p7_Die(char *format, ...)
 {
   va_list  argp;
                                 /* format the error mesg */
@@ -42,7 +41,7 @@ p7_Die(const char *format, ...)
  * Incept:    SRE, Fri Jan 12 08:54:45 2007 [Janelia]
  */
 void
-p7_Fail(const char *format, ...)
+p7_Fail(char *format, ...)
 {
   va_list  argp;
                                 /* format the error mesg */

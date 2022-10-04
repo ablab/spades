@@ -4,12 +4,11 @@
  *   1. Routines for evaluating densities and distributions.
  *   2. Generic API routines, for general interface w/ histogram module
  *   3. Dumping plots to files
- *   4. Sampling                    (augmentation: random)
- *   5. ML fitting to complete data (augmentation: minimizer)
- *   6. ML fitting to binned data   (augmentation: histogram, minimizer)
+ *   4. Sampling                    
+ *   5. ML fitting to complete data 
+ *   6. ML fitting to binned data   
  *   7. Test driver
  *   8. Example 
- *   9. Copyright and licence information.
  *   
  * To-do:
  *    - Fit*() functions should return eslEINVAL on n=0, eslENORESULT
@@ -22,19 +21,13 @@
 #include <math.h>
 
 #include "easel.h"
+#include "esl_histogram.h"
+#include "esl_minimizer.h"
+#include "esl_random.h"
 #include "esl_stats.h"
 #include "esl_vectorops.h"
-#include "esl_weibull.h"
 
-#ifdef eslAUGMENT_RANDOM
-#include "esl_random.h"
-#endif
-#ifdef eslAUGMENT_HISTOGRAM
-#include "esl_histogram.h"
-#endif
-#ifdef eslAUGMENT_MINIMIZER
-#include "esl_minimizer.h"
-#endif
+#include "esl_weibull.h"
 
 
 /****************************************************************************
@@ -279,9 +272,8 @@ esl_wei_Plot(FILE *fp, double mu, double lambda, double tau,
 
 
 /****************************************************************************
- * 4. Sampling (augmentation: random)
+ * 4. Sampling 
  ****************************************************************************/ 
-#ifdef eslAUGMENT_RANDOM
 
 /* Function:  esl_wei_Sample()
  *
@@ -295,14 +287,14 @@ esl_wei_Sample(ESL_RANDOMNESS *r, double mu, double lambda, double tau)
   p = esl_rnd_UniformPositive(r); 
   return esl_wei_invcdf(p, mu, lambda, tau);
 } 
-#endif /*eslAUGMENT_RANDOM*/
+
 /*--------------------------- end sampling ---------------------------------*/
 
 
 /****************************************************************************
- * 5. ML fitting to complete data (augmentation: minimizer)
+ * 5. ML fitting to complete data 
  ****************************************************************************/ 
-#ifdef eslAUGMENT_MINIMIZER
+
 /* Easel's conjugate gradient descent code allows a single void ptr to
  * point to any necessary fixed data, so we put everything into one
  * structure:
@@ -366,11 +358,8 @@ esl_wei_FitComplete(double *x, int n, double *ret_mu,
 {
   struct wei_data data;
   double p[2];			/* parameter vector                  */
-  double u[2];			/* max initial step size vector      */
-  double wrk[8];		/* 4 tmp vectors of length 2         */
   double mean;
   double mu, lambda, tau;      	/* initial param guesses             */
-  double tol = 1e-6;		/* convergence criterion for CG      */
   double fx;			/* f(x) at minimum; currently unused */
   int    status;
 
@@ -395,28 +384,22 @@ esl_wei_FitComplete(double *x, int n, double *ret_mu,
   p[0] = log(lambda);		
   p[1] = log(tau);
 
-  u[0] = 1.0;
-  u[1] = 1.0;
-
-  /* pass problem to the optimizer
-   */
-  status = esl_min_ConjugateGradientDescent(p, u, 2, 
+  /* pass problem to the optimizer  */
+  status = esl_min_ConjugateGradientDescent(NULL, p, 2, 
 					    &wei_func, NULL,
-					    (void *)(&data),
-					    tol, wrk, &fx);
+					    (void *)(&data), &fx, NULL);
   *ret_mu     = mu;
   *ret_lambda = exp(p[0]);
   *ret_tau    = exp(p[1]);
   return status;
 }
-#endif /*eslAUGMENT_MINIMIZER*/
+
 
 /*****************************************************************
- * 6. ML fitting to binned data (augmentation: histogram, minimizer)
+ * 6. ML fitting to binned data
  *****************************************************************/
 
-#ifdef eslAUGMENT_HISTOGRAM
-#ifdef eslAUGMENT_MINIMIZER
+
 struct wei_binned_data {
   ESL_HISTOGRAM *h;	/* contains the binned observed data        */
   double  mu;		/* mu is considered to be known, not fitted */
@@ -491,15 +474,12 @@ esl_wei_FitCompleteBinned(ESL_HISTOGRAM *h, double *ret_mu,
 {
   struct wei_binned_data data;
   double p[2];			/* parameter vector                  */
-  double u[2];			/* max initial step size vector      */
-  double wrk[8];		/* 4 tmp vectors of length 2         */
   double mean;
   double mu, lambda, tau;      	/* initial param guesses             */
-  double tol = 1e-6;		/* convergence criterion for CG      */
   double fx;			/* f(x) at minimum; currently unused */
-  int    status;
   int    i;
   double ai;
+  int    status;
 
   /* Set the fixed mu.
    * Make a good initial guess of lambda, based on exponential fit.
@@ -532,22 +512,17 @@ esl_wei_FitCompleteBinned(ESL_HISTOGRAM *h, double *ret_mu,
   p[0] = log(lambda);		
   p[1] = log(tau);
 
-  u[0] = 1.0;
-  u[1] = 1.0;
-
   /* pass problem to the optimizer
    */
-  status = esl_min_ConjugateGradientDescent(p, u, 2, 
+  status = esl_min_ConjugateGradientDescent(NULL, p, 2, 
 					    &wei_binned_func, NULL,
-					    (void *)(&data),
-					    tol, wrk, &fx);
+					    (void *)(&data), &fx, NULL);
   *ret_mu     = mu;
   *ret_lambda = exp(p[0]);
   *ret_tau    = exp(p[1]);
   return status;
 }
-#endif /*eslAUGMENT_HISTOGRAM*/
-#endif /*eslAUGMENT_MINIMIZER*/
+
 /*--------------------------- end fitting ----------------------------------*/
 
 
@@ -677,13 +652,6 @@ main(int argc, char **argv)
  ****************************************************************************/ 
 #ifdef eslWEIBULL_EXAMPLE
 /*::cexcerpt::wei_example::begin::*/
-/* compile: 
-     gcc -g -Wall -I. -o example -DeslWEIBULL_EXAMPLE\
-       -DeslAUGMENT_HISTOGRAM -DeslAUGMENT_RANDOM -DeslAUGMENT_MINIMIZER\
-       esl_weibull.c esl_histogram.c esl_random.c esl_minimizer.c\
-       esl_stats.c esl_vectorops.c easel.c -lm
- * run:     ./example
- */
 #include <stdio.h>
 #include "easel.h"
 #include "esl_random.h"
@@ -735,9 +703,4 @@ main(int argc, char **argv)
 #endif /*eslWEIBULL_EXAMPLE*/
 
 
-/*****************************************************************
- * @LICENSE@
- * 
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
+

@@ -1,12 +1,8 @@
-/* The Plan7 MSVDATA data structure, which holds a compact representation
+/* The Plan7 HMMWINDOW data structure, which holds a compact representation
  * of substitution scores and maximal extensions, used by nhmmer.
  *
  * Contents:
- *   1. The P7_MSVDATA object: allocation, initialization, destruction.
- *   2. Unit tests.
- *   3. Test driver.
- *   4. Copyright and license.
- *
+ *   1. The P7_HMMWINDOW object: allocation, initialization, destruction.
  */
 #include "p7_config.h"
 #include "hmmer.h"
@@ -77,27 +73,5 @@ p7_hmmwindow_new (P7_HMM_WINDOWLIST *list, uint32_t id, uint32_t pos, uint32_t f
 ERROR:
   return NULL;
 }
-
-
-
-
-/*****************************************************************
- * 2. Unit tests
- *****************************************************************/
-
-
-
-/*****************************************************************
- * 3. Test driver
- *****************************************************************/
-
-
-
-/************************************************************
- * @LICENSE@
- *
- * SVN $Id: p7_hmmwindow.c 3784 2011-12-07 21:51:25Z wheelert $
- * SVN $URL: https://svn.janelia.org/eddylab/eddys/src/hmmer/trunk/src/p7_hmmwindow.c $
- ************************************************************/
 
 

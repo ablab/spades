@@ -31,10 +31,9 @@ static ESL_OPTIONS cmdlineOpts[] = {
   { "--ccncts",     eslARG_INT,     "16",     NULL, "n>0",          NULL,  NULL,  "--worker",      "maximum number of client side connections to accept",         12 },
   { "--wcncts",     eslARG_INT,     "32",     NULL, "n>0",          NULL,  NULL,  "--worker",      "maximum number of worker side connections to accept",         12 },
   { "--pid",        eslARG_OUTFILE, NULL,     NULL, NULL,           NULL,  NULL,  NULL,            "file to write process id to",                                 12 },
-  { "--daemon",     eslARG_NONE,    NULL,     NULL, NULL,           NULL,  NULL,  NULL,            "run as a daemon using config file: /etc/hmmpgmd.conf",        12 },
   { "--seqdb",      eslARG_INFILE,  NULL,     NULL, NULL,           NULL,  NULL,  "--worker",      "protein database to cache for searches",                      12 },
   { "--hmmdb",      eslARG_INFILE,  NULL,     NULL, NULL,           NULL,  NULL,  "--worker",      "hmm database to cache for searches",                          12 },
-  { "--cpu",        eslARG_INT,     NULL,"HMMER_NCPU","n>0",        NULL,  NULL,  "--master",      "number of parallel CPU workers to use for multithreads",      12 },
+  { "--cpu",        eslARG_INT,  p7_NCPU,"HMMER_NCPU","n>0",        NULL,  NULL,  "--master",      "number of parallel CPU workers to use for multithreads",      12 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 
   };
@@ -219,11 +218,4 @@ main(int argc, char **argv)
  */
 
 #endif /*HMMER_THREADS*/
-
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
 

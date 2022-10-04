@@ -8,7 +8,6 @@
  *   3. The P7_GMXCHK data structure.
  *   4. Declarations for the p7_gmxchk API
  *   5. References. 
- *   6. Copyright and license.
  */
 #ifndef P7_GMXCHK_INCLUDED
 #define P7_GMXCHK_INCLUDED
@@ -147,7 +146,7 @@ typedef struct p7_gmxchk_s {
   int      validR;	/* # of rows pointing at DP memory; may be < allocR after a GrowTo() call   */ 
 
   /* Info for debugging mode (conditionally compiled)                              */
-#ifdef p7_DEBUGGING 
+#if eslDEBUGLEVEL > 0 
   int      do_debugging;	/* TRUE if we're in debugging mode                 */
   FILE    *dfp;			/* output stream for debugging diagnostics         */
   int      dbg_width;		/* cell values in diagnostic output are fprintf'ed */
@@ -180,12 +179,4 @@ extern int        p7_gmxchk_DumpRow(FILE *ofp, P7_GMXCHK *gxc, float *dpc, int i
  * References:
  *    SRE:J8/109-112, Oct 2011: Implementation plan
  */
-
-/*****************************************************************
- * @LICENSE@
- * 
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
-
 #endif /*P7_GMXCHK_INCLUDED*/

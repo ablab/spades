@@ -25,8 +25,8 @@
 /* Forward declarations of private functions. */
 static int set_option(ESL_GETOPTS *g, int opti, char *optarg, 
 		      int setby, int do_alloc);
-static int get_optidx_exactly(const ESL_GETOPTS *g, const char *optname, int *ret_opti);
-static int get_optidx_abbrev(ESL_GETOPTS *g, const char *optname, int n, 
+static int get_optidx_exactly(const ESL_GETOPTS *g, char *optname, int *ret_opti);
+static int get_optidx_abbrev(ESL_GETOPTS *g, char *optname, int n, 
 			     int *ret_opti);
 static int esl_getopts(ESL_GETOPTS *g, int *ret_opti, char **ret_optarg);
 static int process_longopt(ESL_GETOPTS *g, int *ret_opti, char **ret_optarg);
@@ -59,7 +59,7 @@ static int process_optlist(ESL_GETOPTS *g, char **ret_s, int *ret_opti);
  *            an invalid <ESL_OPTIONS> structure.
  */
 ESL_GETOPTS *
-esl_getopts_Create(ESL_OPTIONS *opt)
+esl_getopts_Create(const ESL_OPTIONS *opt)
 {
   ESL_GETOPTS *g = NULL;
   int status;
@@ -196,7 +196,7 @@ esl_getopts_Create(ESL_OPTIONS *opt)
  *
  */
 ESL_GETOPTS *
-esl_getopts_CreateDefaultApp(ESL_OPTIONS *options, int nargs, int argc, char **argv, char *banner, char *usage)
+esl_getopts_CreateDefaultApp(const ESL_OPTIONS *options, int nargs, int argc, char **argv, char *banner, char *usage)
 {
   ESL_GETOPTS *go = NULL;
 
@@ -793,7 +793,7 @@ esl_opt_SpoofCmdline(const ESL_GETOPTS *g, char **ret_cmdline)
  *            a configuration file.
  */
 int
-esl_opt_IsDefault(const ESL_GETOPTS *g, const char *optname)
+esl_opt_IsDefault(const ESL_GETOPTS *g, char *optname)
 {
   int opti;
 
@@ -825,7 +825,7 @@ esl_opt_IsDefault(const ESL_GETOPTS *g, const char *optname)
  * Xref:      J4/83.
  */
 int 
-esl_opt_IsOn(const ESL_GETOPTS *g, const char *optname)
+esl_opt_IsOn(const ESL_GETOPTS *g, char *optname)
 {
    int opti;
 
@@ -849,7 +849,7 @@ esl_opt_IsOn(const ESL_GETOPTS *g, const char *optname)
  * Xref:      J4/83
  */
 int
-esl_opt_IsUsed(const ESL_GETOPTS *g, const char *optname)
+esl_opt_IsUsed(const ESL_GETOPTS *g, char *optname)
 {
   int opti;
 
@@ -873,7 +873,7 @@ esl_opt_IsUsed(const ESL_GETOPTS *g, const char *optname)
  *            file number $=$ <code> - <eslARG_SETBY_CFGFILE> + 1.
  */
 int
-esl_opt_GetSetter(const ESL_GETOPTS *g, const char *optname)
+esl_opt_GetSetter(const ESL_GETOPTS *g, char *optname)
 {
   int opti;
 
@@ -889,7 +889,7 @@ esl_opt_GetSetter(const ESL_GETOPTS *g, const char *optname)
  *            from <g>.
  */
 int
-esl_opt_GetBoolean(const ESL_GETOPTS *g, const char *optname)
+esl_opt_GetBoolean(const ESL_GETOPTS *g, char *optname)
 {
   int opti;
 
@@ -909,7 +909,7 @@ esl_opt_GetBoolean(const ESL_GETOPTS *g, const char *optname)
  *            from <g>.
  */
 int
-esl_opt_GetInteger(const ESL_GETOPTS *g, const char *optname)
+esl_opt_GetInteger(const ESL_GETOPTS *g, char *optname)
 {
   int opti;
 
@@ -927,7 +927,7 @@ esl_opt_GetInteger(const ESL_GETOPTS *g, const char *optname)
  *            from <g>.
  */
 double
-esl_opt_GetReal(const ESL_GETOPTS *g, const char *optname)
+esl_opt_GetReal(const ESL_GETOPTS *g, char *optname)
 {
   int opti;
 
@@ -946,7 +946,7 @@ esl_opt_GetReal(const ESL_GETOPTS *g, const char *optname)
  *            from <g>.
  */
 char
-esl_opt_GetChar(const ESL_GETOPTS *g, const char *optname)
+esl_opt_GetChar(const ESL_GETOPTS *g, char *optname)
 {
   int opti;
 
@@ -969,7 +969,7 @@ esl_opt_GetChar(const ESL_GETOPTS *g, const char *optname)
  *            and <eslARG_OUTFILE>.
  */
 char *
-esl_opt_GetString(const ESL_GETOPTS *g, const char *optname)
+esl_opt_GetString(const ESL_GETOPTS *g, char *optname)
 {
   int opti;
 
@@ -1052,7 +1052,7 @@ esl_opt_GetArg(const ESL_GETOPTS *g, int which)
  *            <eslEWRITE> if a write fails.
  */
 int
-esl_opt_DisplayHelp(FILE *ofp, ESL_GETOPTS *go, int docgroup, int indent,
+esl_opt_DisplayHelp(FILE *ofp, const ESL_GETOPTS *go, int docgroup, int indent,
 		    int textwidth)
 {
   int optwidth     = 0;		/* maximum width for "-foo <n>" options */
@@ -1267,7 +1267,7 @@ set_option(ESL_GETOPTS *g, int opti, char *optarg, int setby, int do_alloc)
  * case <*ret_opti> is -1 (and caller should not use it!)
  */
 static int
-get_optidx_exactly(const ESL_GETOPTS *g, const char *optname, int *ret_opti)
+get_optidx_exactly(const ESL_GETOPTS *g, char *optname, int *ret_opti)
 {
   int i;
 
@@ -1291,7 +1291,7 @@ get_optidx_exactly(const ESL_GETOPTS *g, const char *optname, int *ret_opti)
  * return <eslEAMBIGUOUS>.
  */
 static int
-get_optidx_abbrev(ESL_GETOPTS *g, const char *optname, int n, int *ret_opti)
+get_optidx_abbrev(ESL_GETOPTS *g, char *optname, int n, int *ret_opti)
 {
   int nabbrev = 0;
   int nexact  = 0;
@@ -2068,15 +2068,15 @@ main(void)
 #include "esl_getopts.h"
 
 static ESL_OPTIONS options[] = {
-  /* name        type       def   env  range toggles reqs incomp help                       docgroup*/
-  { "-h",     eslARG_NONE,  FALSE, NULL, NULL, NULL, NULL, NULL, "show help and usage",            0},
-  { "-a",     eslARG_NONE,  FALSE, NULL, NULL, NULL, NULL, NULL, "a boolean switch",               0},
-  { "-b",     eslARG_NONE,"default",NULL,NULL, NULL, NULL, NULL, "another boolean switch",         0},
-  { "-n",     eslARG_INT,     "0", NULL, NULL, NULL, NULL, NULL, "an integer argument",            0},
-  { "-s",     eslARG_STRING,"hi!", NULL, NULL, NULL, NULL, NULL, "a string argument",              0},
-  { "-x",     eslARG_REAL,  "1.0", NULL, NULL, NULL, NULL, NULL, "a real-valued argument",         0},
-  { "--file", eslARG_STRING, NULL, NULL, NULL, NULL, NULL, NULL, "long option, with filename arg", 0},
-  { "--char", eslARG_CHAR,     "", NULL, NULL, NULL, NULL, NULL, "long option, with character arg",0},
+  /* name        type          def   env  range toggles reqs incomp help                       docgroup*/
+  { "-h",     eslARG_NONE,    FALSE, NULL, NULL, NULL, NULL, NULL, "show help and usage",       0},
+  { "-a",     eslARG_NONE,    FALSE, NULL, NULL, NULL, NULL, NULL, "a boolean switch",          0},
+  { "-b",     eslARG_NONE,"default", NULL, NULL, NULL, NULL, NULL, "another boolean switch",    0},
+  { "-n",     eslARG_INT,       "0", NULL, NULL, NULL, NULL, NULL, "an integer argument",       0},
+  { "-s",     eslARG_STRING,  "hi!", NULL, NULL, NULL, NULL, NULL, "a string argument",         0},
+  { "-x",     eslARG_REAL,    "1.0", NULL, NULL, NULL, NULL, NULL, "a real-valued argument",    0},
+  { "--file", eslARG_STRING,   NULL, NULL, NULL, NULL, NULL, NULL, "long option, filename arg", 0},
+  { "--char", eslARG_CHAR,       "", NULL, NULL, NULL, NULL, NULL, "long option, char arg",     0},
   { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, 
 };
 static char usage[] = "Usage: ./example [-options] <arg>";
@@ -2092,13 +2092,12 @@ main(int argc, char **argv)
   if (esl_opt_VerifyConfig(go)               != eslOK) esl_fatal("Failed to parse command line: %s\n", go->errbuf);
 
   if (esl_opt_GetBoolean(go, "-h") == TRUE) {
-    puts(usage); 
-    puts("\n  where options are:");
+    printf("%s\n  where options are:", usage);
     esl_opt_DisplayHelp(stdout, go, 0, 2, 80); /* 0=all docgroups; 2=indentation; 80=width */
     return 0;
   }
+
   if (esl_opt_ArgNumber(go) != 1) esl_fatal("Incorrect number of command line arguments.\n%s\n", usage);
-  
   arg = esl_opt_GetArg(go, 1);
 
   printf("Option -a:      %s\n", esl_opt_GetBoolean(go, "-a") ? "on" : "off");
@@ -2159,12 +2158,6 @@ main(int argc, char **argv)
 #endif /*eslGETOPTS_EXAMPLE2*/
 /*-------------- end of examples ---------------------*/
 
-/*****************************************************************  
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
 
 
 

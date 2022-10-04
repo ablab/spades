@@ -15,7 +15,6 @@
  *   3. Unit tests.
  *   4. Test driver.
  *   5. Example.
- *   6. Copyright and license information
  */
 #include "p7_config.h"
 
@@ -119,7 +118,7 @@ p7_ViterbiFilter(const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, P7_OMX *ox, f
   xC   = -32768;
   xE   = -32768;
 
-#if p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
   if (ox->debugging) p7_omx_DumpVFRow(ox, 0, xE, 0, xJ, xB, xC); /* first 0 is <rowi>: do header. second 0 is xN: always 0 here. */
 #endif
 
@@ -231,7 +230,7 @@ p7_ViterbiFilter(const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, P7_OMX *ox, f
 	  DMXo(0) = _mm_or_si128(dcv, negInfv);
 	}
 	  
-#if p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
       if (ox->debugging) p7_omx_DumpVFRow(ox, i, xE, 0, xJ, xB, xC);   
 #endif
     } /* end loop over sequence residues 1..L */
@@ -355,7 +354,7 @@ p7_ViterbiFilter_longtarget(const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, P7
   xC   = -32768;
   xE   = -32768;
 
-#if p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
   if (ox->debugging) p7_omx_DumpVFRow(ox, 0, xE, 0, xJ, xB, xC); /* first 0 is <rowi>: do header. second 0 is xN: always 0 here. */
 #endif
 
@@ -486,7 +485,7 @@ p7_ViterbiFilter_longtarget(const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, P7
           DMXo(0) = _mm_or_si128(dcv, negInfv);
         }
       }
-#if p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
       if (ox->debugging) p7_omx_DumpVFRow(ox, i, xE, 0, xJ, xB, xC);
 #endif
   } /* end loop over sequence residues 1..L */
@@ -913,11 +912,4 @@ main(int argc, char **argv)
 #endif /*p7VITFILTER_EXAMPLE*/
 /*-------------------- end, example -----------------------------*/
 
-
-/*****************************************************************
- * @LICENSE@
- * 
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
 

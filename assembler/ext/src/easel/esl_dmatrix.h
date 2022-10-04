@@ -1,11 +1,10 @@
 /* Double-precision two-dimensional matrices, and some linear algebra
  * 
  * SRE, Tue Jul 13 14:41:07 2004 [St. Louis]
- * SVN $Id$
- * SVN $URL$
  */
 #ifndef eslDMATRIX_INCLUDED
 #define eslDMATRIX_INCLUDED
+#include "esl_config.h"
 
 #include <stdio.h>
 
@@ -83,7 +82,3 @@ extern int esl_dmx_Diagonalize(const ESL_DMATRIX *A, double **ret_Er, double **r
 #endif
 
 #endif /*eslDMATRIX_INCLUDED*/
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
-

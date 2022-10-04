@@ -166,7 +166,7 @@ utest_pdf(void)
   /* One way to test the PDF is to integrate the CDF by quadrature, which should give us ~ 1. */
   for (cdf = 0., x = -40.; x < 40.; x += delta)
     cdf += esl_normal_pdf(x, mu, sigma) * delta;
-  if (esl_DCompare(cdf, 1.0, 1e-9) != eslOK)  esl_fatal(msg);
+  if (esl_DCompare_old(cdf, 1.0, 1e-9) != eslOK)  esl_fatal(msg);
 
   /* We also verify that we're using double-precision range */
   x = 0.;
@@ -198,14 +198,14 @@ utest_logpdf(void)
   /* One way to test the log PDF is to integrate the CDF by quadrature, which should give us ~ 1. */
   for (cdf = 0., x = -40.; x < 40.; x += delta)
     cdf += exp(esl_normal_logpdf(x, mu, sigma)) * delta;
-  if (esl_DCompare(cdf, 1.0, 1e-9) != eslOK) esl_fatal(msg);
+  if (esl_DCompare_old(cdf, 1.0, 1e-9) != eslOK) esl_fatal(msg);
 
   /* Another way is to compare exp(logpdf) to the PDF */
   for (x = -20.; x < 20.; x += delta)
     {
       old = esl_normal_pdf       (x, mu, sigma);
       new = exp(esl_normal_logpdf(x, mu, sigma));
-      if (esl_DCompare(old, new, 1e-9) != eslOK) esl_fatal(msg);
+      if (esl_DCompare_old(old, new, 1e-9) != eslOK) esl_fatal(msg);
     }
 
   return eslOK;
@@ -220,13 +220,13 @@ utest_cdf(void)
   double x;
 
   x = esl_normal_cdf(mu, mu, sigma);
-  if (esl_DCompare(x, 0.5, 1e-9) != eslOK) esl_fatal(msg);
+  if (esl_DCompare_old(x, 0.5, 1e-9) != eslOK) esl_fatal(msg);
 
   x = esl_normal_cdf(99., mu, sigma);
-  if (esl_DCompare(x, 1.0, 1e-9) != eslOK) esl_fatal(msg);
+  if (esl_DCompare_old(x, 1.0, 1e-9) != eslOK) esl_fatal(msg);
 
   x = esl_normal_cdf(-99., mu, sigma);
-  if (esl_DCompare(x, 0.0, 1e-9) != eslOK) esl_fatal(msg);
+  if (esl_DCompare_old(x, 0.0, 1e-9) != eslOK) esl_fatal(msg);
 
   x = esl_normal_cdf(-30., mu, sigma);
   if (x > 1e-100 || x == 0.) esl_fatal(msg);
@@ -244,13 +244,13 @@ utest_surv(void)
   double x;
 
   x = esl_normal_surv(mu, mu, sigma);
-  if (esl_DCompare(x, 0.5, 1e-9) != eslOK) esl_fatal(msg);
+  if (esl_DCompare_old(x, 0.5, 1e-9) != eslOK) esl_fatal(msg);
 
   x = esl_normal_surv(-99., mu, sigma);
-  if (esl_DCompare(x, 1.0, 1e-9) != eslOK) esl_fatal(msg);
+  if (esl_DCompare_old(x, 1.0, 1e-9) != eslOK) esl_fatal(msg);
 
   x = esl_normal_surv(99., mu, sigma);
-  if (esl_DCompare(x, 0.0, 1e-9) != eslOK) esl_fatal(msg);
+  if (esl_DCompare_old(x, 0.0, 1e-9) != eslOK) esl_fatal(msg);
 
   x = esl_normal_surv(30., mu, sigma);
   if (x > 1e-100 || x == 0.) esl_fatal(msg);
@@ -338,11 +338,3 @@ main(int argc, char **argv)
 }
 #endif /*eslNORMAL_EXAMPLE*/  
 
-
-
-/*****************************************************************
- * @LICENSE@
- * 
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/

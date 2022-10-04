@@ -8,7 +8,6 @@
  *    4. Internal functions.
  *    5. Unit tests.
  *    6. Test driver.
- *    7. Copyright and license.
  */
 #include "esl_config.h"
 
@@ -334,10 +333,3 @@ main(int argc, char **argv)
 }
 
 #endif /*eslHEAP_TESTDRIVE*/
-
-/*****************************************************************
- * @LICENSE@
- * 
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/

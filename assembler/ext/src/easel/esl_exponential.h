@@ -1,18 +1,14 @@
 /* Exponential distributions.
  * 
  * SRE, Wed Aug 10 08:32:45 2005 [St. Louis]
- * SVN $Id$
- * SVN $URL$
  */
 #ifndef eslEXPONENTIAL_INCLUDED
 #define eslEXPONENTIAL_INCLUDED
+#include "esl_config.h"
 
-#ifdef eslAUGMENT_RANDOM
-#include <esl_random.h>
-#endif
-#ifdef eslAUGMENT_HISTOGRAM
-#include <esl_histogram.h>
-#endif
+#include "esl_histogram.h"
+#include "esl_random.h"
+
 
 extern double esl_exp_pdf    (double x, double mu, double lambda);
 extern double esl_exp_logpdf (double x, double mu, double lambda);
@@ -33,20 +29,11 @@ extern int    esl_exp_Plot(FILE *fp, double mu, double lambda,
 			   double (*func)(double x, double mu, double lambda), 
 			   double xmin, double xmax, double xstep);
 
-#ifdef eslAUGMENT_RANDOM
 extern double esl_exp_Sample(ESL_RANDOMNESS *r, double mu, double lambda);
-#endif
 
 extern int esl_exp_FitComplete     (double *x, int n, double *ret_mu, double *ret_lambda);
 extern int esl_exp_FitCompleteScale(double *x, int n, double      mu, double *ret_lambda);
 
-#ifdef eslAUGMENT_HISTOGRAM
-extern int esl_exp_FitCompleteBinned(ESL_HISTOGRAM *h, 
-				     double *ret_mu, double *ret_lambda);
-#endif
-
+extern int esl_exp_FitCompleteBinned(ESL_HISTOGRAM *h, double *ret_mu, double *ret_lambda);
 
 #endif /*eslEXPONENTIAL_INCLUDED*/
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

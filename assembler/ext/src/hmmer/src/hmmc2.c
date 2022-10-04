@@ -1,6 +1,5 @@
-/* hmmd: hmmc2 deamon client.
+/* daemon client.
  */
-
 #include "p7_config.h"
 
 #ifdef HMMER_THREADS
@@ -176,8 +175,8 @@ usage(char *pgm)
 
 int main(int argc, char *argv[])
 {
-  int              i, j;
-  int              n;
+  int              i;
+  uint64_t         n;
   int              eod;
   int              size;
 
@@ -191,23 +190,25 @@ int main(int argc, char *argv[])
   char             buffer[MAX_READ_LEN];
 
   int              status  = eslOK;
-  char            *data    = NULL;
-  char            *ptr     = NULL;
 
   ESL_GETOPTS     *go      = NULL;
   ESL_STOPWATCH   *w       = NULL;
   P7_PIPELINE     *pli     = NULL;
   P7_TOPHITS      *th      = NULL;
-  P7_DOMAIN       *dcl     = NULL;
 
   HMMD_SEARCH_STATS   *stats;
   HMMD_SEARCH_STATUS   sstatus;
-
+  uint8_t *buf;
+  uint32_t buf_offset, hits_start;
+  char *ptr;
   int                  sock;
   char                 serv_ip[64];
   unsigned short       serv_port;
 
   struct sockaddr_in   serv_addr;
+
+  buf = NULL;
+  buf_offset = 0;
 
   /* set up defaults */
   strcpy(serv_ip, "127.0.0.1");
@@ -289,7 +290,6 @@ int main(int argc, char *argv[])
   seq[0] = 0;
   while (strncmp(seq, "//", 2) != 0) {
     int rem;
-    int total = 0;
 
     eod = 0;
     seq[0] = 0;
@@ -324,15 +324,22 @@ int main(int argc, char *argv[])
 
       /* Send the string to the server */ 
       n = strlen(seq);
-      printf ("Sending data %d:\n", n);
+      printf ("Sending data %" PRIu64 ":\n", n);
       if (writen(sock, seq, n) != n) {
-        fprintf(stderr, "[%s:%d] write (size %d) error %d - %s\n", __FILE__, __LINE__, n, errno, strerror(errno));
+        fprintf(stderr, "[%s:%d] write (size %" PRIu64 ") error %d - %s\n", __FILE__, __LINE__, n, errno, strerror(errno));
         exit(1);
       }
 
       n = sizeof(sstatus);
-      total += n;
       if ((size = readn(sock, &sstatus, n)) == -1) {
+        //printf("MY ERRNO IS %d\n", errno);
+        if(errno == ECONNRESET || errno == ESRCH || errno == EPERM || errno == 0) {
+          // when daemon is shut down normally, the readn() is expected to fail - but w/ various errors, depending on OS, etc. 
+          // our design for this should be rethought - I added the ESRCH test to hack around a unit test failure. [SRE 7/25/20]
+          //   ... and EPERM, ditto, for OS/X Big Sur with MPI [SRE 4/19/21, xref H10/106]
+          fprintf(stderr, "Daemon exited, shutting down\n");
+          exit(0);
+        }
         fprintf(stderr, "[%s:%d] read error %d - %s\n", __FILE__, __LINE__, errno, strerror(errno));
         exit(1);
       }
@@ -340,7 +347,6 @@ int main(int argc, char *argv[])
       if (sstatus.status != eslOK) {
         char *ebuf;
         n = sstatus.msg_size;
-        total += n; 
         ebuf = malloc(n);
         if ((size = readn(sock, ebuf, n)) == -1) {
           fprintf(stderr, "[%s:%d] read error %d - %s\n", __FILE__, __LINE__, errno, strerror(errno));
@@ -398,59 +404,38 @@ int main(int argc, char *argv[])
 
       status = eslOK;
       abc = esl_alphabet_Create(eslAMINO);
-#if 0
-      /* try to parse the input buffer as a sequence */
-      sq = esl_sq_CreateDigital(abc);
-      status = esl_sqio_Parse(ptr, strlen(ptr), sq, eslSQFILE_DAEMON);
-      if (status != eslOK) {
-        esl_sq_Destroy(sq);
-        sq = NULL;
-      }
-#endif
-#if 0
-      /* now try to parse the buffer as an hmm */
-      if (status != eslOK) {
-        status = p7_hmmfile_OpenBuffer(ptr, strlen(ptr), &hfp);
-        if (status == eslOK) {
-          status = p7_hmmfile_Read(hfp, &abc,  &hmm);
-          p7_hmmfile_Close(hfp);
-        }
-      }
-#endif
+
       if (status == eslOK) {
-        total = 0;
-#if 0
-        if (hmm == NULL) {
-          output_header(stdout, go, argv[0], banner_seq);
-          fprintf(stdout, "Query:       %s  [L=%ld]\n", sq->name, (long) sq->n);
-          if (sq->acc[0]  != '\0') fprintf(stdout, "Accession:   %s\n", sq->acc);
-          if (sq->desc[0] != '\0') fprintf(stdout, "Description: %s\n", sq->desc);  
-        } else {
-          output_header(stdout, go, argv[0], banner_hmm);
-          fprintf(stdout, "Query:       %s  [M=%d]\n", hmm->name, hmm->M);
-          if (hmm->acc)  fprintf(stdout, "Accession:   %s\n", hmm->acc);
-          if (hmm->desc) fprintf(stdout, "Description: %s\n", hmm->desc);
-        }
-#endif
         /* Send the string to the server */ 
         n = strlen(seq);
-        printf ("Sending data %d:\n", n);
+        printf ("Sending data %" PRIu64 ":\n", n);
         if (writen(sock, seq, n) != n) {
-          fprintf(stderr, "[%s:%d] write (size %d) error %d - %s\n", __FILE__, __LINE__, n, errno, strerror(errno));
+          fprintf(stderr, "[%s:%d] write (size %" PRIu64 ") error %d - %s\n", __FILE__, __LINE__, n, errno, strerror(errno));
           exit(1);
         }
 
-        n = sizeof(sstatus);
-        total += n;
-        if ((size = readn(sock, &sstatus, n)) == -1) {
+        // Get the status structure back from the server
+        buf = malloc(HMMD_SEARCH_STATUS_SERIAL_SIZE);
+        buf_offset = 0;
+        n = HMMD_SEARCH_STATUS_SERIAL_SIZE;
+        if(buf == NULL){
+          printf("Unable to allocate memory for search status structure\n");
+          exit(1);
+        }
+
+        if ((size = readn(sock, buf, n)) == -1) {
           fprintf(stderr, "[%s:%d] read error %d - %s\n", __FILE__, __LINE__, errno, strerror(errno));
+          exit(1);
+        }
+
+        if(hmmd_search_status_Deserialize(buf, &buf_offset, &sstatus) != eslOK){
+          printf("Unable to deserialize search status object \n");
           exit(1);
         }
 
         if (sstatus.status != eslOK) {
           char *ebuf;
           n = sstatus.msg_size;
-          total += n; 
           ebuf = malloc(n);
           if ((size = readn(sock, ebuf, n)) == -1) {
             fprintf(stderr, "[%s:%d] read error %d - %s\n", __FILE__, __LINE__, errno, strerror(errno));
@@ -461,18 +446,32 @@ int main(int argc, char *argv[])
           goto COMPLETE;
         }
 
+        free(buf); // clear this out 
+        buf_offset = 0; // reset to beginning for next serialized object
         n = sstatus.msg_size;
-        if ((data = malloc(n)) == NULL) {
+
+        if ((buf = malloc(n)) == NULL) {
           fprintf(stderr, "[%s:%d] malloc error %d - %s\n", __FILE__, __LINE__, errno, strerror(errno));
           exit(1);
         }
-        if ((size = readn(sock, data, n)) == -1) {
+        // Grab the serialized search results
+        if ((size = readn(sock, buf, n)) == -1) {
           fprintf(stderr, "[%s:%d] read error %d - %s\n", __FILE__, __LINE__, errno, strerror(errno));
           exit(1);
         }
 
+        if ((stats = malloc(sizeof(HMMD_SEARCH_STATS))) == NULL) {
+          fprintf(stderr, "[%s:%d] malloc error %d - %s\n", __FILE__, __LINE__, errno, strerror(errno));
+          exit(1);
+        }
+        stats->hit_offsets = NULL; // force allocation of memory for this in _Deserialize
+        if(p7_hmmd_search_stats_Deserialize(buf, &buf_offset, stats) != eslOK){
+          printf("Unable to deserialize search stats object \n");
+          exit(1);
+        }
+
+        // Create the structures we'll deserialize the hits into
         pli = p7_pipeline_Create(go, 100, 100, FALSE, (esl_opt_IsUsed(go, "--seqdb")) ? p7_SEARCH_SEQS : p7_SCAN_MODELS);
-        stats = (HMMD_SEARCH_STATS *)data;
 
         /* copy the search stats */
         w->elapsed       = stats->elapsed;
@@ -497,7 +496,10 @@ int main(int argc, char *argv[])
         free(th->hit);
 
         th->N         = stats->nhits;
-        th->unsrt     = (P7_HIT *)(data + sizeof(HMMD_SEARCH_STATS));
+        if ((th->unsrt = malloc(stats-> nhits *sizeof(P7_HIT))) == NULL) {
+          fprintf(stderr, "[%s:%d] malloc error %d - %s\n", __FILE__, __LINE__, errno, strerror(errno));
+          exit(1);
+        }
         th->nreported = stats->nreported;
         th->nincluded = stats->nincluded;
         th->is_sorted_by_seqidx  = FALSE;
@@ -507,68 +509,22 @@ int main(int argc, char *argv[])
           fprintf(stderr, "[%s:%d] malloc error %d - %s\n", __FILE__, __LINE__, errno, strerror(errno));
           exit(1);
         }
-        for (i = 0; i < stats->nhits; i++) th->hit[i] = th->unsrt + i;
-        
-        /* loop through the hit list adjusting the pointers */
+        hits_start = buf_offset;
+        // deserialize the hits
         for (i = 0; i < stats->nhits; ++i) {
-          char   *ptr;
-          char   *base;
-          P7_HIT *hit = th->unsrt + i;
-
-
-          /* Given the sequence header:
-           * >1 000101001 12343829483298 1234
-           * hmmpgmd hijacks the desc and acc fields to pass back domain
-           * architecture and taxonomy id information to the hmmer webserver.
-           * This means the fields are non-NULL, but don't point to real
-           * addresses, so will break any attempt to print non-NULL desc
-           * or acc fields. So we simply clear them out here
-           */
-          hit->desc = NULL;
-          hit->acc  = NULL;
-
-
-          hit->dcl = (P7_DOMAIN *)(data + ((char *)hit->dcl - (char *)NULL));
-
-          /* the hit string pointers contain the length of the string including
-           * the null terminator at the end.
-           */
-          if (hit->name != NULL) {
-            char *name = malloc(16);
-            sprintf(name, "%d", (int)(hit->name - (char *)NULL));
-            hit->name = name;
+          // set all internal pointers of the hit to NULL before deserializing into it
+          th->unsrt[i].name = NULL;
+          th->unsrt[i].acc = NULL;
+          th->unsrt[i].desc = NULL;
+          th->unsrt[i].dcl = NULL;
+          if((buf_offset -hits_start) != stats->hit_offsets[i]){
+            printf("Hit offset %d did not match expected.  Found %d, expected %" PRIu64 "\n", i, (buf_offset-hits_start), stats->hit_offsets[i]);
           }
-
-          /* send the domains for this hit */
-          dcl  = hit->dcl;
-          base = (char *)dcl;
-          ptr  = (char *)(dcl + hit->ndom);
-          for (j = 0; j < hit->ndom; ++j) {
-            P7_ALIDISPLAY *ad = (P7_ALIDISPLAY *)ptr;
-
-            dcl->ad  = ad;
-            ad->mem  = ptr + sizeof(P7_ALIDISPLAY);
-                        
-            /* readjust all the pointers to the new memory block */
-            if (ad->rfline  != NULL) ad->rfline  = base + (ad->rfline  - (char *)NULL);
-            if (ad->mmline  != NULL) ad->mmline  = base + (ad->mmline  - (char *)NULL);
-            if (ad->csline  != NULL) ad->csline  = base + (ad->csline  - (char *)NULL);
-            if (ad->model   != NULL) ad->model   = base + (ad->model   - (char *)NULL);
-            if (ad->mline   != NULL) ad->mline   = base + (ad->mline   - (char *)NULL);
-            if (ad->aseq    != NULL) ad->aseq    = base + (ad->aseq    - (char *)NULL);
-            if (ad->ntseq   != NULL) ad->ntseq   = base + (ad->ntseq   - (char *)NULL);
-            if (ad->ppline  != NULL) ad->ppline  = base + (ad->ppline  - (char *)NULL);
-            if (ad->hmmname != NULL) ad->hmmname = base + (ad->hmmname - (char *)NULL);
-            if (ad->hmmacc  != NULL) ad->hmmacc  = base + (ad->hmmacc  - (char *)NULL);
-            if (ad->hmmdesc != NULL) ad->hmmdesc = base + (ad->hmmdesc - (char *)NULL);
-            if (ad->sqname  != NULL) ad->sqname  = base + (ad->sqname  - (char *)NULL);
-            if (ad->sqacc   != NULL) ad->sqacc   = base + (ad->sqacc   - (char *)NULL);
-            if (ad->sqdesc  != NULL) ad->sqdesc  = base + (ad->sqdesc  - (char *)NULL);
-
-            ptr += sizeof(P7_ALIDISPLAY) + ad->memsize;
-            ++dcl;
-			
+          if(p7_hit_Deserialize(buf, &buf_offset, &(th->unsrt[i])) != eslOK){
+            printf("Unable to deserialize hit %d\n", i);
+            exit(0);
           }
+          th->hit[i] = &(th->unsrt[i]);  
         }
 
         /* adjust the reported and included hits */
@@ -576,14 +532,13 @@ int main(int argc, char *argv[])
         //p7_tophits_Sort(th);
 		
         /* Print the results.  */
-        if (scores) p7_tophits_Targets(stdout, th, pli, 120); fprintf(stdout, "\n\n");
-        if (ali)    p7_tophits_Domains(stdout, th, pli, 120); fprintf(stdout, "\n\n");
+        if (scores) { p7_tophits_Targets(stdout, th, pli, 120); fprintf(stdout, "\n\n"); }
+        if (ali)    { p7_tophits_Domains(stdout, th, pli, 120); fprintf(stdout, "\n\n"); }
         p7_pli_Statistics(stdout, pli, w);  
 
         p7_pipeline_Destroy(pli); 
-        free(th->hit);
-        free(data);
-        free(th);
+        p7_tophits_Destroy(th);
+        free(buf);
 
         fprintf(stdout, "//\n");  fflush(stdout);
 
@@ -610,11 +565,6 @@ int main(int argc, char *argv[])
 
 #endif /*HMMER_THREADS*/
 
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
+
 
 

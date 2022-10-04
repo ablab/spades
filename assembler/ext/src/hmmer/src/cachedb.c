@@ -1,10 +1,4 @@
 /* Sequence and profile caches, used by the hmmpgmd daemon.
- * 
- * Contents:
- *   2. P7_CACHEDB_SEQS: a daemon's cached sequence database
- *   x. Benchmark driver
- *   x. Unit tests
- *   x. License and copyright information.
  */
 #include "p7_config.h"
 
@@ -45,7 +39,7 @@ p7_seqcache_Open(char *seqfile, P7_SEQCACHE **ret_cache, char *errbuf)
   int                val;
   int                status;
 
-  int32_t            seq_cnt;
+  uint64_t            seq_cnt;
   int32_t            db_cnt;
   int32_t            db_inx[32];
   uint32_t           db_key;
@@ -55,7 +49,7 @@ p7_seqcache_Open(char *seqfile, P7_SEQCACHE **ret_cache, char *errbuf)
   uint64_t           hdr_size;
 
   char              *hdr_ptr;
-  char              *res_ptr;
+  ESL_DSQ           *res_ptr;
   char              *desc_ptr;
   char              *ptr;
   char               buffer[512];
@@ -215,7 +209,7 @@ p7_seqcache_Open(char *seqfile, P7_SEQCACHE **ret_cache, char *errbuf)
   }
   if (status != eslEOF) { printf("Unexpected error %d at %d\n", status, inx); return status; }
 
-  if (inx != seq_cnt) { printf("inx:: %d %d\n", inx, seq_cnt); return eslEFORMAT; }
+  if (inx != seq_cnt) { printf("inx:: %d %" PRIu64 "\n", inx, seq_cnt);  return eslEFORMAT; }
   if (hdr_size != 0)  { printf("inx:: %d hdr %d\n", inx, (int)hdr_size); return eslEFORMAT; }
   if (res_size != 1)  { printf("inx:: %d size %d %d\n", inx, (int)sq->n + 1, (int)res_size); return eslEFORMAT; }
 
@@ -656,10 +650,3 @@ main(int argc, char **argv)
 #endif /*CACHEDB_UTEST2*/
 
 
-
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $URL$
- * SVN $Id$
- *****************************************************************/

@@ -3,16 +3,11 @@
  * Contents:
  *   1. The <ESL_STACK> object.
  *   2. The main API, including pushing/popping.
- *   3. Shuffling stacks.                  [eslAUGMENT_RANDOM]
+ *   3. Shuffling stacks.                
  *   4. Using stacks for thread communication   [HAVE_PTHREAD]
  *   5. Unit tests.
  *   6. Test driver.
  *   7. Example.
- *   8. Copyright and license.
- *
- * Augmentations:
- *   eslAUGMENT_RANDOM  : adds function for shuffling a stack. 
- * 
  */ 
 #include "esl_config.h"
 
@@ -22,15 +17,15 @@
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
 #endif
-
-#include "easel.h"
-#include "esl_stack.h"
-#ifdef eslAUGMENT_RANDOM
-#include "esl_random.h"
-#endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>		/* usleep() in unit tests */
 #endif
+
+#include "easel.h"
+#include "esl_random.h"
+
+#include "esl_stack.h"
+
 
 /*****************************************************************
  *# 1. The <ESL_STACK> object.
@@ -597,9 +592,8 @@ esl_stack_DiscardSelected(ESL_STACK *s, int (*discard_func)(void *, void *), voi
 
 
 /*****************************************************************
- *# 3. Shuffling stacks [with <eslAUGMENT_RANDOM>]
+ *# 3. Shuffling stacks 
  *****************************************************************/
-#ifdef eslAUGMENT_RANDOM
 
 /* Function:  esl_stack_Shuffle()
  * Synopsis:  Randomly shuffle the elements in a stack.
@@ -634,7 +628,7 @@ esl_stack_Shuffle(ESL_RANDOMNESS *r, ESL_STACK *s)
 #endif
   return eslOK;
 }
-#endif /*eslAUGMENT_RANDOM*/
+
 
 
 /*****************************************************************
@@ -1159,12 +1153,3 @@ main(void)
 #endif /*eslSTACK_EXAMPLE*/
 /*------------------------ end of example -----------------------*/
 
-
-
-
-/*****************************************************************  
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/

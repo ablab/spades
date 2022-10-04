@@ -9,7 +9,6 @@
  *   6. Counting traces into new HMMs
  *   7. Unit tests
  *   8. Test driver
- *   9. Copyright and license information
  * 
  * Stylistic note: elements in a trace path are usually indexed by z.
  */
@@ -794,7 +793,7 @@ p7_trace_Dump(FILE *fp, const P7_TRACE *tr, const P7_PROFILE *gm, const ESL_DSQ 
  *            are identical, <eslFAIL> if not.
  *            
  *            If posterior probability annotation is present in 
- *            both traces, they are compared using <esl_FCompare()>
+ *            both traces, they are compared using <esl_FCompare_old()>
  *            and a relative tolerance of <pptol>.
  *            
  *            If domain indices are present in both traces,
@@ -823,7 +822,7 @@ p7_trace_Compare(P7_TRACE *tr1, P7_TRACE *tr2, float pptol)
       for (z = 0; z < tr1->N; z++)
 	if (tr1->i[z] != 0) 	/* an emission: has a nonzero posterior prob*/
 	  {
-	    if (esl_FCompare(tr1->pp[z], tr2->pp[z], pptol) != eslOK) esl_fatal("FAIL");
+	    if (esl_FCompare_old(tr1->pp[z], tr2->pp[z], pptol) != eslOK) esl_fatal("FAIL");
 	  }
 	else
 	  {
@@ -1454,12 +1453,42 @@ p7_trace_Doctor(P7_TRACE *tr, int *opt_ndi, int *opt_nid)
 int
 p7_trace_Count(P7_HMM *hmm, ESL_DSQ *dsq, float wt, P7_TRACE *tr)
 {
-  int z;                        /* position in tr         */
+  int z;			/* position index in trace */
   int i;			/* symbol position in seq */
   int st,st2;     		/* state type (cur, nxt)  */
   int k,k2,ktmp;		/* node index (cur, nxt)  */
+  int z1 = 0;			/* left bound - may get set to an M position for a left fragment */
+  int z2 = tr->N-1;		/* right bound, ditto for a right fragment. N-1 not N, because main loop accesses z,z+1 */
   
-  for (z = 0; z < tr->N-1; z++) 
+  /* If this is a core fragment trace (it has B->X and/or X->E) then
+   * set z1 and/or z2 bound on first and/or last M state, so we don't
+   * count incomplete flanking insertions. A fragment doesn't
+   * necessarily have X's on both sides because of the way they get
+   * set from ~'s in an input alignment.
+   * 
+   * A local alignment profile trace has B->X and X->E, and may have
+   * >1 domain, but is guaranteed to be B->X->Mk, Mk->X->E, so
+   * limiting trace counting to z1..z2 would have no effect... nonetheless,
+   * we check, differentiating core vs. profile trace by the lead B vs S.
+   * 
+   * It's possible for a core trace to have no M's at all, just
+   * B->(X)->III->(X)->E, as in bug #h82, so watch out for that; we don't
+   * count anything in such a trace, even the II transitions, because
+   * we don't get to see the complete length of the insertion (or the
+   * IM transition), so we don't want to be estimating the I-state
+   * geometric distribution from it.
+   * 
+   * We assume the core trace has already been through TraceDoctor(),
+   * so it has no DI or ID transitions.
+   */
+  if (tr->st[0] == p7T_B && tr->st[1] == p7T_X)
+    for (z = 2; z < tr->N-1; z++)
+      if (tr->st[z] == p7T_M) { z1 = z; break; }
+  if (tr->st[tr->N-1] == p7T_E && tr->st[tr->N-2] == p7T_X)
+    for (z = tr->N-3; z > 0; z--)
+      if (tr->st[z] == p7T_M) { z2 = z; break; }
+
+  for (z = z1; z < z2; z++) 
     {
       if (tr->st[z] == p7T_X) continue; /* skip missing data */
 
@@ -1634,10 +1663,4 @@ main(int argc, char **argv)
 /*--------------------- end, test driver ------------------------*/
 
 
-/************************************************************
- * @LICENSE@
- * 
- * SVN $URL$
- * SVN $Id: p7_trace.c 3474 2011-01-17 13:25:32Z eddys $
- ************************************************************/
 

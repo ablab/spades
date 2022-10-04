@@ -8,10 +8,8 @@
  *    4. Unit tests.
  *    5. Test driver.
  *    6. Example.
- *    7. Copyright and license information.
  *    
  * SRE, Fri Aug 15 08:02:43 2008 [Janelia]
- * SVN $Id$
  */   
 #include "p7_config.h"
 
@@ -283,7 +281,7 @@ select_e(ESL_RANDOMNESS *rng, const P7_OPROFILE *om, const P7_OMX *ox, int i, in
 	  if (roll < sum) { *ret_k = r*Q + q + 1; return p7T_D;}
 	}
       }
-    ESL_DASSERT1(sum > 0.99);
+    ESL_DASSERT1((sum > 0.99));
   }
   /*UNREACHED*/
   ESL_EXCEPTION(-1, "unreached code was reached. universe collapses.");
@@ -447,7 +445,7 @@ utest_stotrace(ESL_GETOPTS *go, ESL_RANDOMNESS *rng, ESL_ALPHABET *abc, P7_PROFI
       if (sc > vsc) esl_fatal("sampled trace has score > optimal Viterbi path; not possible");
       p7_trace_Reuse(tr);
     }
-  if (esl_FCompare(maxsc, vsc, 0.1) != eslOK) esl_fatal("stochastic trace failed to sample the Viterbi path");
+  if (esl_FCompare_old(maxsc, vsc, 0.1) != eslOK) esl_fatal("stochastic trace failed to sample the Viterbi path");
   
   p7_trace_Destroy(tr);
   p7_omx_Destroy(ox);
@@ -650,7 +648,3 @@ main(int argc, char **argv)
 #endif /*p7STOTRACE_EXAMPLE*/
 /*------------------------ end, example -------------------------*/
 
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

@@ -4,10 +4,8 @@
  *   1. Miscellaneous functions for H3
  *   2. Unit tests
  *   3. Test driver
- *   4. License and copyright 
  *
  * SRE, Fri Jan 12 13:19:38 2007 [Janelia] [Franz Ferdinand, eponymous]
- * SVN $Id$
  */
 
 #include "p7_config.h"
@@ -63,11 +61,11 @@
  * Returns:   (void)
  */
 void
-p7_banner(FILE *fp, char *progname, char *banner)
+p7_banner(FILE *fp, const char *progname, char *banner)
 {
   char *appname = NULL;
 
-  if (esl_FileTail(progname, FALSE, &appname) != eslOK) appname = progname;
+  if (esl_FileTail(progname, FALSE, &appname) != eslOK) esl_strdup(progname, -1, &appname);
 
   fprintf(fp, "# %s :: %s\n", appname, banner);
   fprintf(fp, "# HMMER %s (%s); %s\n", HMMER_VERSION, HMMER_DATE, HMMER_URL);
@@ -75,7 +73,7 @@ p7_banner(FILE *fp, char *progname, char *banner)
   fprintf(fp, "# %s\n", HMMER_LICENSE);
   fprintf(fp, "# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n");
 
-  if (appname != NULL) free(appname);
+  if (appname) free(appname);
   return;
 }
 
@@ -241,6 +239,4 @@ main(int argc, char **argv)
 
 
 
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
+

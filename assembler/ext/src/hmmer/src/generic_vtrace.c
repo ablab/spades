@@ -3,12 +3,9 @@
  * Contents:
  *   1. Viterbi traceback
  *   2. Example.
- *   3. Copyright and license information.
  *   
  * SRE, Fri Aug 15 09:17:11 2008 [Janelia]
- * SVN $Id$
  */
-
 #include "p7_config.h"
 
 #include "easel.h"
@@ -64,7 +61,7 @@ p7_GTrace(const ESL_DSQ *dsq, int L, const P7_PROFILE *gm, const P7_GMX *gx, P7_
   int     sprv, scur;		/* previous, current state in trace */
   int     status;
 
-#ifdef p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
   if (tr->N != 0) ESL_EXCEPTION(eslEINVAL, "trace isn't empty: forgot to Reuse()?");
 #endif
 
@@ -78,8 +75,8 @@ p7_GTrace(const ESL_DSQ *dsq, int L, const P7_PROFILE *gm, const P7_GMX *gx, P7_
     case p7T_C:		/* C(i) comes from C(i-1) or E(i) */
       if   (XMX(i,p7G_C) == -eslINFINITY) ESL_EXCEPTION(eslFAIL, "impossible C reached at i=%d", i);
 
-      if      (esl_FCompare(XMX(i, p7G_C), XMX(i-1, p7G_C) + gm->xsc[p7P_C][p7P_LOOP], tol) == eslOK)  scur = p7T_C; 
-      else if (esl_FCompare(XMX(i, p7G_C), XMX(i,   p7G_E) + gm->xsc[p7P_E][p7P_MOVE], tol) == eslOK)  scur = p7T_E; 
+      if      (esl_FCompare_old(XMX(i, p7G_C), XMX(i-1, p7G_C) + gm->xsc[p7P_C][p7P_LOOP], tol) == eslOK)  scur = p7T_C; 
+      else if (esl_FCompare_old(XMX(i, p7G_C), XMX(i,   p7G_E) + gm->xsc[p7P_E][p7P_MOVE], tol) == eslOK)  scur = p7T_E; 
       else ESL_EXCEPTION(eslFAIL, "C at i=%d couldn't be traced", i);
       break;
 
@@ -89,13 +86,13 @@ p7_GTrace(const ESL_DSQ *dsq, int L, const P7_PROFILE *gm, const P7_GMX *gx, P7_
       if (p7_profile_IsLocal(gm))
 	{
 	  scur = p7T_M;		/* can't come from D, in a *local* Viterbi trace. */
-	  for (k = M; k >= 1; k--) if (esl_FCompare(XMX(i, p7G_E), MMX(i,k), tol) == eslOK) break;
+	  for (k = M; k >= 1; k--) if (esl_FCompare_old(XMX(i, p7G_E), MMX(i,k), tol) == eslOK) break;
 	  if (k == 0) ESL_EXCEPTION(eslFAIL, "E at i=%d couldn't be traced", i);
 	}
       else 			/* glocal mode: we either come from D_M or M_M */
 	{
-	  if      (esl_FCompare(XMX(i, p7G_E), MMX(i,M), tol) == eslOK) { scur = p7T_M; k = M; }
-	  else if (esl_FCompare(XMX(i, p7G_E), DMX(i,M), tol) == eslOK) { scur = p7T_D; k = M; }
+	  if      (esl_FCompare_old(XMX(i, p7G_E), MMX(i,M), tol) == eslOK) { scur = p7T_M; k = M; }
+	  else if (esl_FCompare_old(XMX(i, p7G_E), DMX(i,M), tol) == eslOK) { scur = p7T_D; k = M; }
 	  else    ESL_EXCEPTION(eslFAIL, "E at i=%d couldn't be traced", i);
 	}
       break;      
@@ -103,10 +100,10 @@ p7_GTrace(const ESL_DSQ *dsq, int L, const P7_PROFILE *gm, const P7_GMX *gx, P7_
     case p7T_M:			/* M connects from i-1,k-1, or B */
       if (MMX(i,k) == -eslINFINITY) ESL_EXCEPTION(eslFAIL, "impossible M reached at k=%d,i=%d", k,i);
 
-      if      (esl_FCompare(MMX(i,k), XMX(i-1,p7G_B) + TSC(p7P_BM, k-1) + MSC(k), tol) == eslOK) scur = p7T_B;
-      else if (esl_FCompare(MMX(i,k), MMX(i-1,k-1)   + TSC(p7P_MM, k-1) + MSC(k), tol) == eslOK) scur = p7T_M;
-      else if (esl_FCompare(MMX(i,k), IMX(i-1,k-1)   + TSC(p7P_IM, k-1) + MSC(k), tol) == eslOK) scur = p7T_I;
-      else if (esl_FCompare(MMX(i,k), DMX(i-1,k-1)   + TSC(p7P_DM, k-1) + MSC(k), tol) == eslOK) scur = p7T_D;
+      if      (esl_FCompare_old(MMX(i,k), XMX(i-1,p7G_B) + TSC(p7P_BM, k-1) + MSC(k), tol) == eslOK) scur = p7T_B;
+      else if (esl_FCompare_old(MMX(i,k), MMX(i-1,k-1)   + TSC(p7P_MM, k-1) + MSC(k), tol) == eslOK) scur = p7T_M;
+      else if (esl_FCompare_old(MMX(i,k), IMX(i-1,k-1)   + TSC(p7P_IM, k-1) + MSC(k), tol) == eslOK) scur = p7T_I;
+      else if (esl_FCompare_old(MMX(i,k), DMX(i-1,k-1)   + TSC(p7P_DM, k-1) + MSC(k), tol) == eslOK) scur = p7T_D;
       else ESL_EXCEPTION(eslFAIL, "M at k=%d,i=%d couldn't be traced", k,i);
       k--; i--;
       break;
@@ -114,8 +111,8 @@ p7_GTrace(const ESL_DSQ *dsq, int L, const P7_PROFILE *gm, const P7_GMX *gx, P7_
     case p7T_D:			/* D connects from M,D at i,k-1 */
       if (DMX(i, k) == -eslINFINITY) ESL_EXCEPTION(eslFAIL, "impossible D reached at k=%d,i=%d", k,i);
 
-      if      (esl_FCompare(DMX(i,k), MMX(i, k-1) + TSC(p7P_MD, k-1), tol) == eslOK) scur = p7T_M;
-      else if (esl_FCompare(DMX(i,k), DMX(i, k-1) + TSC(p7P_DD, k-1), tol) == eslOK) scur = p7T_D;
+      if      (esl_FCompare_old(DMX(i,k), MMX(i, k-1) + TSC(p7P_MD, k-1), tol) == eslOK) scur = p7T_M;
+      else if (esl_FCompare_old(DMX(i,k), DMX(i, k-1) + TSC(p7P_DD, k-1), tol) == eslOK) scur = p7T_D;
       else ESL_EXCEPTION(eslFAIL, "D at k=%d,i=%d couldn't be traced", k,i);
       k--;
       break;
@@ -123,8 +120,8 @@ p7_GTrace(const ESL_DSQ *dsq, int L, const P7_PROFILE *gm, const P7_GMX *gx, P7_
     case p7T_I:			/* I connects from M,I at i-1,k*/
       if (IMX(i,k) == -eslINFINITY) ESL_EXCEPTION(eslFAIL, "impossible I reached at k=%d,i=%d", k,i);
 
-      if      (esl_FCompare(IMX(i,k), MMX(i-1,k) + TSC(p7P_MI, k) + ISC(k), tol) == eslOK) scur = p7T_M;
-      else if (esl_FCompare(IMX(i,k), IMX(i-1,k) + TSC(p7P_II, k) + ISC(k), tol) == eslOK) scur = p7T_I;
+      if      (esl_FCompare_old(IMX(i,k), MMX(i-1,k) + TSC(p7P_MI, k) + ISC(k), tol) == eslOK) scur = p7T_M;
+      else if (esl_FCompare_old(IMX(i,k), IMX(i-1,k) + TSC(p7P_II, k) + ISC(k), tol) == eslOK) scur = p7T_I;
       else ESL_EXCEPTION(eslFAIL, "I at k=%d,i=%d couldn't be traced", k,i);
       i--;
       break;
@@ -137,16 +134,16 @@ p7_GTrace(const ESL_DSQ *dsq, int L, const P7_PROFILE *gm, const P7_GMX *gx, P7_
     case p7T_B:			/* B connects from N, J */
       if (XMX(i,p7G_B) == -eslINFINITY) ESL_EXCEPTION(eslFAIL, "impossible B reached at i=%d", i);
 
-      if      (esl_FCompare(XMX(i,p7G_B), XMX(i, p7G_N) + gm->xsc[p7P_N][p7P_MOVE], tol) == eslOK) scur = p7T_N;
-      else if (esl_FCompare(XMX(i,p7G_B), XMX(i, p7G_J) + gm->xsc[p7P_J][p7P_MOVE], tol) == eslOK) scur = p7T_J;
+      if      (esl_FCompare_old(XMX(i,p7G_B), XMX(i, p7G_N) + gm->xsc[p7P_N][p7P_MOVE], tol) == eslOK) scur = p7T_N;
+      else if (esl_FCompare_old(XMX(i,p7G_B), XMX(i, p7G_J) + gm->xsc[p7P_J][p7P_MOVE], tol) == eslOK) scur = p7T_J;
       else  ESL_EXCEPTION(eslFAIL, "B at i=%d couldn't be traced", i);
       break;
 
     case p7T_J:			/* J connects from E(i) or J(i-1) */
       if (XMX(i,p7G_J) == -eslINFINITY) ESL_EXCEPTION(eslFAIL, "impossible J reached at i=%d", i);
 
-      if      (esl_FCompare(XMX(i,p7G_J), XMX(i-1,p7G_J) + gm->xsc[p7P_J][p7P_LOOP], tol) == eslOK) scur = p7T_J; 
-      else if (esl_FCompare(XMX(i,p7G_J), XMX(i,  p7G_E) + gm->xsc[p7P_E][p7P_LOOP], tol) == eslOK) scur = p7T_E; 
+      if      (esl_FCompare_old(XMX(i,p7G_J), XMX(i-1,p7G_J) + gm->xsc[p7P_J][p7P_LOOP], tol) == eslOK) scur = p7T_J; 
+      else if (esl_FCompare_old(XMX(i,p7G_J), XMX(i,  p7G_E) + gm->xsc[p7P_E][p7P_LOOP], tol) == eslOK) scur = p7T_E; 
       else  ESL_EXCEPTION(eslFAIL, "J at i=%d couldn't be traced", i);
       break;
 
@@ -269,6 +266,4 @@ main(int argc, char **argv)
 
 
 
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
+

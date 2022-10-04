@@ -9,10 +9,8 @@
  *     6. Unit tests.
  *     7. Test driver.
  *     8. Examples.
- *     9. Copyright and license.
  */
-
-#include "p7_config.h"		/* must be included first */
+#include "p7_config.h"
 
 #include <string.h>
 
@@ -295,7 +293,7 @@ p7_bg_Read(char *bgfile, P7_BG *bg, char *errbuf)
 
   if ( n != bg->abc->K) 
     ESL_XFAIL(eslEFORMAT, errbuf, "expected %d residue frequencies, but found %d in bgfile %s", bg->abc->K, n, bgfile);
-  if ( esl_FCompare(esl_vec_FSum(fq, bg->abc->K), 1.0, 0.001) != eslOK) 
+  if ( esl_FCompare_old(esl_vec_FSum(fq, bg->abc->K), 1.0, 0.001) != eslOK) 
     ESL_XFAIL(eslEFORMAT, errbuf, "residue frequencies do not sum to 1.0 in bgfile %s", bgfile);
   
   /* all checking complete. no more error cases. overwrite bg with the new frequencies */
@@ -412,7 +410,7 @@ p7_bg_NullOne(const P7_BG *bg, const ESL_DSQ *dsq, int L, float *ret_sc)
  *            fixed L=400 expectation, it's all wrong, it's not
  *            conditional on the target sequence length and length
  *            modeling's messed up!"), don't panic. It's set up as a
- *            conditional-on-L model that generates accordint to P(x |
+ *            conditional-on-L model that generates according to P(x |
  *            model, L) P(L); the P(L) term is added in
  *            p7_bg_FilterScore() below.
  *            
@@ -751,12 +749,7 @@ main(int argc, char **argv)
 }
 #endif /*p7BG_EXAMPLE2*/
 
-/*****************************************************************
- * @LICENSE@
- * 
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
+
 
 
   

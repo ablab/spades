@@ -27,13 +27,9 @@
  *   6. Unit tests.
  *   7. Test driver.
  *   8. Example.
- *   9. Copyright/license information.
- *
- *   
  *   
  * See also:
  *   paml   - i/o of rate matrices from/to data files in PAML format
- * 
  */
 #include "esl_config.h"
 
@@ -550,9 +546,6 @@ esl_rmx_ExpectedScore(ESL_DMATRIX *P, double *pi)
   with GSL:
   gcc -g -Wall -I. -L. -o benchmark -DeslRATEMATRIX_BENCHMARK -DHAVE_LIBGSL esl_dmatrix.c esl_ratematrix.c -leasel -lgsl -lgslcblas -lm
  */
-
-#include <esl_config.h>
-
 #ifdef HAVE_LIBGSL
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_linalg.h>
@@ -808,15 +801,3 @@ main(void)
 }
 #endif /*eslRATEMATRIX_TESTDRIVE*/
 
-/*****************************************************************
- * 8. Example driver
- *****************************************************************/
-
-
-
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/ 

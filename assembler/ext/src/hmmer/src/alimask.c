@@ -57,9 +57,9 @@ static ESL_OPTIONS options[] = {
 /* mask ranges */
   { "--modelrange", eslARG_STRING, NULL, NULL, NULL,  NULL,    NULL,     RANGEOPTS,  "range(s) for mask(s) in model coordinates", 5 },
   { "--alirange",   eslARG_STRING, NULL, NULL, NULL,  NULL,    NULL,     RANGEOPTS,  "range(s) for mask(s) in alignment coordinates", 5 },
-  { "--apendmask",    eslARG_NONE, NULL, NULL, NULL,  NULL,  WGTOPTS,         NULL,  "add to existing mask (default ignores to existing mask)",    5 },
-  { "--model2ali",  eslARG_STRING, NULL, NULL, NULL,  NULL,    NULL,     RANGEOPTS,  "given model ranges, print corresp. input alignment ranges", 5 },
-  { "--ali2model",  eslARG_STRING, NULL, NULL, NULL,  NULL,    NULL,     RANGEOPTS,  "given alignment ranges, print corresp. model ranges", 5 },
+  { "--appendmask",    eslARG_NONE, NULL, NULL, NULL,  NULL,  NULL,         NULL,  "add to existing mask (default ignores the existing mask)",    5 },
+  { "--model2ali",  eslARG_STRING, NULL, NULL, NULL,  NULL,    NULL,     RANGEOPTS,  "print msa column range for each input model range; no postmsa", 5 },
+  { "--ali2model",  eslARG_STRING, NULL, NULL, NULL,  NULL,    NULL,     RANGEOPTS,  "print model range for each input msa column range; no postmsa", 5 },
 
 /* Other options */
   { "--informat", eslARG_STRING,      NULL,    NULL, NULL,   NULL,   NULL,  NULL, "assert input alifile is in format <s> (no autodetect)", 8 },
@@ -70,7 +70,7 @@ static ESL_OPTIONS options[] = {
 
 
 static char usage[]  = "[-options] <msafile> <postmsafile>";
-static char banner[] = "appending modelmask line to a multiple sequence alignments";
+static char banner[] = "append modelmask line to a multiple sequence alignment";
 
 static int output_header(const ESL_GETOPTS *go, FILE *ofp, char *alifile, char *postmsafile);
 
@@ -150,7 +150,7 @@ output_header(const ESL_GETOPTS *go, FILE *ofp, char *alifile, char *postmsafile
 
   if (esl_opt_IsUsed(go, "--alirange")   && fprintf(ofp, "# alignment range:                  %s\n",        esl_opt_GetString(go, "--alirange"))  < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
   if (esl_opt_IsUsed(go, "--modelrange") && fprintf(ofp, "# model range:                      %s\n",        esl_opt_GetString(go, "--modelrange"))< 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
-  if (esl_opt_IsUsed(go, "--apendmask")  && fprintf(ofp, "# add to existing mask:             [on]\n"                                            )< 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+  if (esl_opt_IsUsed(go, "--appendmask")  && fprintf(ofp, "# add to existing mask:             [on]\n"                                            )< 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
 
   if (esl_opt_IsUsed(go, "--model2ali")   && fprintf(ofp, "# ali ranges for model range:      %s\n",        esl_opt_GetString(go, "--model2ali"))  < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
   if (esl_opt_IsUsed(go, "--ali2model")   && fprintf(ofp, "# model ranges for ali range:      %s\n",        esl_opt_GetString(go, "--ali2model"))  < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
@@ -188,13 +188,14 @@ output_header(const ESL_GETOPTS *go, FILE *ofp, char *alifile, char *postmsafile
  *            do_hand - TRUE when the model is to follow a hand-build RF line (which must be
  *                      part of the file.
  *            symfraq - if weighted occupancy exceeds this value, include the column in the model.
- *            map     - int array into which the map values will be stored. Calling function
- *                      must allocate (msa->alen+1) ints.
+ *            model2ali_map - int array into which we will store the values that map positions
+ *                            in the model back to the responsible map column.
+ *                            Calling function must allocate (msa->alen+1) ints.
  *
  * Returns:   The number of mapped model positions.
  */
 int
-p7_Alimask_MakeModel2AliMap(ESL_MSA *msa, int do_hand, float symfrac, int *map )
+p7_Alimask_MakeModel2AliMap(ESL_MSA *msa, int do_hand, float symfrac, int *model2ali_map)
 {
   int      i = 0;
   int      apos, idx;
@@ -207,7 +208,7 @@ p7_Alimask_MakeModel2AliMap(ESL_MSA *msa, int do_hand, float symfrac, int *map )
      /* Watch for off-by-one. rf is [0..alen-1]*/
      for (apos = 1; apos <= msa->alen; apos++) {
        if (!esl_abc_CIsGap(msa->abc, msa->rf[apos-1]) ) {
-         map[i] = apos;
+         model2ali_map[i] = apos;
          i++;
        }
      }
@@ -225,7 +226,7 @@ p7_Alimask_MakeModel2AliMap(ESL_MSA *msa, int do_hand, float symfrac, int *map )
         }
 
         if (r > 0. && r / totwgt >= symfrac) {
-          map[i] = apos;
+          model2ali_map[i] = apos;
           i++;
         }
     }
@@ -259,13 +260,17 @@ main(int argc, char **argv)
   int           mask_range_cnt = 0;
   uint32_t      mask_starts[100]; // over-the-top allocation.
   uint32_t      mask_ends[100];
+  uint32_t      min_mask_start = 0xFFFFFFFF;
+  uint32_t      max_mask_end   = 0;
+  int64_t       pos1, pos2;       // esl_regexp_ParseCoordString() works in int64_t coords now; this is a hackaround
 
   char         *rangestr;
+  char         *rangestr_ptr;
   char         *range;
 
 
-  int     *map = NULL; /* map[i]=j,  means model position i comes from column j of the alignment; 1..alen */
-
+  int    *model2ali_map = NULL; /* model2ali_map[i]=j,  means model position i comes from column j of the alignment; 1..alen */
+  int    model_len = 0;
   int    keep_mm;
 
   /* Set processor specific flags */
@@ -276,14 +281,14 @@ main(int argc, char **argv)
   /* Parse the command line
    */
   process_commandline(argc, argv, &go, &alifile, &postmsafile);
-  keep_mm = esl_opt_IsUsed(go, "--apendmask");
+  keep_mm = esl_opt_IsUsed(go, "--appendmask");
 
   /* Initialize what we can in the config structure (without knowing the alphabet yet).
    * Fields controlled by masters are set up in usual_master() or mpi_master()
    * Fields used by workers are set up in mpi_worker()
    */
   ofp         = NULL;
-  infmt         = eslMSAFILE_UNKNOWN;
+  infmt       = eslMSAFILE_UNKNOWN;
   afp         = NULL;
   abc         = NULL;
 
@@ -311,16 +316,23 @@ main(int argc, char **argv)
   } else {
     if (puts("Must specify mask range with --modelrange, --alirange, --model2ali, or --ali2model\n") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto ERROR;
   }
+  rangestr_ptr = rangestr;
 
   while ( (status = esl_strtok(&rangestr, ",", &range) ) == eslOK) {
-    status = esl_regexp_ParseCoordString(range, mask_starts + mask_range_cnt, mask_ends + mask_range_cnt );
-    if (status == eslESYNTAX) esl_fatal("range flags take coords <from>..<to>; %s not recognized", range);
+    status = esl_regexp_ParseCoordString(range, &pos1, &pos2);
+    if (status == eslESYNTAX) esl_fatal("Range flags take coords <from>..<to>; %s not recognized", range);
     if (status == eslFAIL)    esl_fatal("Failed to find <from> or <to> coord in %s", range);
+    if (pos1 > pos2)          esl_fatal("In range (%s) <from> can not be larger than <to>", range);
 
+    if (pos1<min_mask_start) min_mask_start = pos1;
+    if (pos2>max_mask_end)   max_mask_end   = pos2;
+
+    mask_starts[mask_range_cnt] = (uint32_t) pos1;
+    mask_ends[mask_range_cnt]   = (uint32_t) pos2;
     mask_range_cnt++;
   }
 
-
+  free(rangestr_ptr);
   /* Start timing. */
   esl_stopwatch_Start(w);
 
@@ -341,7 +353,7 @@ main(int argc, char **argv)
 
   if (esl_opt_IsUsed(go, "--alirange") || esl_opt_IsUsed(go, "--modelrange") ) {
     postmsafp = fopen(postmsafile, "w");
-    if (postmsafp == NULL) p7_Fail("Failed to MSA output file %s for writing", postmsafile);
+    if (postmsafp == NULL) p7_Fail("Failed to open MSA output file %s for writing", postmsafile);
   }
 
   if (esl_opt_IsUsed(go, "-o")) 
@@ -360,6 +372,11 @@ main(int argc, char **argv)
   /* read the alignment */
   if ((status = esl_msafile_Read(afp, &msa)) != eslOK)  esl_msafile_ReadFailure(afp, status);
 
+  if (min_mask_start <= 0)                        esl_fatal("Mask ranges can not start before position 1; start %d is invalid", min_mask_start);
+
+  if (esl_opt_IsUsed(go, "--alirange") || esl_opt_IsUsed(go, "--ali2model"))
+      if (max_mask_end > msa->alen)               esl_fatal("Maximum mask range %d exceeds alignment length %lld", max_mask_end, msa->alen);
+
 
   if (esl_opt_IsUsed(go, "--alirange") || esl_opt_IsUsed(go, "--modelrange") ) {
     /* add/modify mmline for the mask */
@@ -375,28 +392,35 @@ main(int argc, char **argv)
 
   // convert model coordinates to alignment coordinates, if necessary
   if (esl_opt_IsUsed(go, "--modelrange") || esl_opt_IsUsed(go, "--model2ali") || esl_opt_IsUsed(go, "--ali2model") ) {
+    ESL_MSAWEIGHT_CFG *cfg     = esl_msaweight_cfg_Create();
+    float              symfrac = esl_opt_GetReal(go, "--symfrac");
+    int                do_hand = esl_opt_IsOn(go, "--hand");
 
-    float symfrac = esl_opt_GetReal(go, "--symfrac");
-    int do_hand  =  esl_opt_IsOn(go, "--hand");
+    cfg->ignore_rf = (do_hand ? FALSE : TRUE);  // PB weights only use RF-marked consensus cols if --hand is on. [iss #180]
 
     //same as p7_builder relative_weights
     if      (esl_opt_IsOn(go, "--wnone")  )                  { esl_vec_DSet(msa->wgt, msa->nseq, 1.); }
     else if (esl_opt_IsOn(go, "--wgiven") )                  ;
-    else if (esl_opt_IsOn(go, "--wpb")    )                  status = esl_msaweight_PB(msa);
+    else if (esl_opt_IsOn(go, "--wpb")    )                  status = esl_msaweight_PB_adv(cfg, msa, /*ESL_MSAWEIGHT_DAT=*/ NULL);
     else if (esl_opt_IsOn(go, "--wgsc")   )                  status = esl_msaweight_GSC(msa);
     else if (esl_opt_IsOn(go, "--wblosum"))                  status = esl_msaweight_BLOSUM(msa, esl_opt_GetReal(go, "--wid"));
 
-    if ((status =  esl_msa_MarkFragments(msa, esl_opt_GetReal(go, "--fragthresh")))           != eslOK) goto ERROR;
+    esl_msaweight_cfg_Destroy(cfg);
+
+    if ((status =  esl_msa_MarkFragments_old(msa, esl_opt_GetReal(go, "--fragthresh")))           != eslOK) goto ERROR;
 
     //build a map of model mask coordinates to alignment coords
-    ESL_ALLOC(map, sizeof(int)     * (msa->alen+1));
-    p7_Alimask_MakeModel2AliMap(msa, do_hand, symfrac, map );  // Returns <L>, which we don't need.
+    ESL_ALLOC(model2ali_map, sizeof(int)     * (msa->alen+1));
+    model_len = p7_Alimask_MakeModel2AliMap(msa, do_hand, symfrac, model2ali_map );
+
+    if (esl_opt_IsUsed(go, "--modelrange") || esl_opt_IsUsed(go, "--model2ali"))
+        if (max_mask_end >model_len) esl_fatal("Maximum mask range %d exceeds computed model length %lld", max_mask_end, model_len);
 
     if ( esl_opt_IsUsed(go, "--model2ali") ) {
       //print mapping
       printf ("model coordinates     alignment coordinates\n");
       for (i=0; i<mask_range_cnt; i++)
-        printf ("%8d..%-8d -> %8d..%-8d\n", mask_starts[i], mask_ends[i], map[mask_starts[i]-1], map[mask_ends[i]-1]);
+        printf ("%8d..%-8d -> %8d..%-8d\n", mask_starts[i], mask_ends[i], model2ali_map[mask_starts[i]-1], model2ali_map[mask_ends[i]-1]);
       /* If I wanted to, I could print all the map values independently:
         printf("\n\n-----------\n");
         printf("Map\n");
@@ -405,25 +429,31 @@ main(int argc, char **argv)
           printf("%d -> %d\n", i+1, map[i]);
       */
     } else if ( esl_opt_IsUsed(go, "--ali2model") ) {
-      //print mapping  (requires scanning the inverted map
+      //print mapping  (requires scanning the inverted map)
       int alistart = 0;
       int aliend = 0;
       printf ("alignment coordinates     model coordinates\n");
       for (i=0; i<mask_range_cnt; i++) {
-        //find j for ali positions
-        while (map[alistart] < mask_starts[i] )
-          alistart++;
+        /* find j for ali positions, starting with the first ali position between <from> and <to> (inclusive)
+         * that maps to a model position, and ending with the final ali position in that range
+         * that maps to a model position
+         */
+        alistart=0;
+        while (model2ali_map[alistart] < mask_starts[i] )                    alistart++;
         aliend = alistart;
-        while (map[aliend] < mask_ends[i] )
-          aliend++;
+        while (aliend < model_len && model2ali_map[aliend] <= mask_ends[i])  aliend++;
+        aliend--;
 
-        printf ("   %8d..%-8d -> %8d..%-8d\n", map[alistart], map[aliend], alistart+1, aliend+1);
+        if (model2ali_map[alistart] > mask_ends[i])
+            printf("   %8d..%-8d ->       -..-  (no map)\n", mask_starts[i], mask_ends[i]);
+        else
+            printf ("   %8d..%-8d -> %8d..%-8d\n", model2ali_map[alistart], model2ali_map[aliend], alistart+1, aliend+1);
       }
     } else {
       //convert the mask coords based on map
       for (i=0; i<mask_range_cnt; i++) {
-          mask_starts[i] = map[mask_starts[i]-1]; //-1 because mmline is offset by one relative to the 1-base alignment
-          mask_ends[i]   = map[mask_ends[i]-1];
+          mask_starts[i] = model2ali_map[mask_starts[i]-1]; //-1 because mmline is offset by one relative to the 1-base alignment
+          mask_ends[i]   = model2ali_map[mask_ends[i]-1];
       }
     }
   }
@@ -442,7 +472,9 @@ main(int argc, char **argv)
   if (esl_opt_IsOn(go, "-o"))  fclose(ofp);
   if (postmsafp) fclose(postmsafp);
   if (afp)       esl_msafile_Close(afp);
+  if (msa)       esl_msa_Destroy(msa);
   if (abc)       esl_alphabet_Destroy(abc);
+  if (model2ali_map) free(model2ali_map);
 
   esl_getopts_Destroy(go);
   esl_stopwatch_Destroy(w);
@@ -453,8 +485,3 @@ main(int argc, char **argv)
    return eslFAIL;
 }
 
-
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

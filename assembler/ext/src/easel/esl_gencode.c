@@ -5,13 +5,17 @@
  *   2. ESL_GENCODE genetic code object
  *   3. Reading and writing genetic codes in NCBI format
  *   4. DNA->protein digital translation, allowing ambiguity chars
- *   5. Functions fo/////ting/destroying ESL_TRANS_WORKSTATE
+ *   5. Functions for creating/destroying ESL_GENCODE_WORKSTATE
  *   6. Functions for processing ORFs
  *   7. Debugging/development utilities
  *   8. Unit tests
  *   9. Test driver
  *   10. Examples
- *   11. Copyright and license
+ *   
+ * To do:  
+ *   - Remove dependency on ESL_GETOPTS. Use a configuration params _CFG   
+ *     structure instead. (See `msaweight` for example).
+ *     [xref SRE:2019/0415-easel-tech-tree-v3]
  */
 #include "esl_config.h"
 
@@ -22,7 +26,11 @@
 #include "easel.h"
 #include "esl_alphabet.h"
 #include "esl_fileparser.h"
+#include "esl_getopts.h"     // problematic. See TO DO note.
 #include "esl_regexp.h"
+#include "esl_sq.h"
+#include "esl_sqio.h"
+
 #include "esl_gencode.h"
 
 
@@ -722,7 +730,7 @@ esl_gencode_IsInitiator(const ESL_GENCODE *gcode, ESL_DSQ *dsqp)
 
 
 /*****************************************************************
- * 5. Functions for creating/destroying ESL_TRANS_WORKSTATE
+ * 5. Functions for creating/destroying ESL_GENCODE_WORKSTATE
  *****************************************************************/
 void
 esl_gencode_WorkstateDestroy(ESL_GENCODE_WORKSTATE *wrk)
@@ -792,9 +800,7 @@ esl_gencode_ProcessOrf(ESL_GENCODE_WORKSTATE *wrk, ESL_SQ *sq)
 
   int              status   = eslOK;
   ESL_SQ *psq = wrk->psq[wrk->frame];
-
   psq->end = (wrk->is_revcomp ? wrk->apos+1 : wrk->apos-1);
-
   if (wrk->in_orf[wrk->frame] && psq->n >= wrk->minlen)
     {
       wrk->orfcount++;
@@ -803,7 +809,7 @@ esl_gencode_ProcessOrf(ESL_GENCODE_WORKSTATE *wrk, ESL_SQ *sq)
       psq->dsq[1+psq->n] = eslDSQ_SENTINEL;
 
       esl_sq_FormatName(psq, "orf%d", wrk->orfcount);
-      esl_sq_FormatDesc(psq, "source=%s coords=%d..%d length=%d frame=%d  %s", psq->source, psq->start, psq->end, psq->n, wrk->frame + 1 + (wrk->is_revcomp ? 3 : 0), sq->desc);
+      esl_sq_FormatDesc(psq, "source=%s coords=%" PRId64 "..%" PRId64 " length=%" PRId64 " frame=%d desc=%s", psq->source, psq->start, psq->end, psq->n, wrk->frame + 1 + (wrk->is_revcomp ? 3 : 0), sq->desc);
       /* if we do not have a block to write ORFs to then write ORFs to file */
       if (wrk->orf_block == NULL)
       {
@@ -1173,10 +1179,3 @@ main(int argc, char **argv)
 }
 #endif /*eslGENCODE_EXAMPLE2*/
 
-
-/****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- ****************************************************************/

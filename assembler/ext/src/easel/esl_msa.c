@@ -1,21 +1,14 @@
-/* Multiple sequence alignment file i/o.
+/* Multiple sequence alignments.
  *    
  * Contents:   
  *    1. The <ESL_MSA> object
- *    2. Digital mode MSA's         (augmentation: alphabet)
+ *    2. Digital mode MSA's        
  *    3. Setting, checking data fields in an <ESL_MSA>
  *    4. Miscellaneous functions for manipulating MSAs
  *    5. Debugging, testing, development
  *    6. Unit tests
  *    7. Test driver
- *    8. Copyright and license information
- *   
- * Augmentations:
- *   alphabet:  adds support for digital MSAs
- *   keyhash:   speeds up Stockholm file input
- *   ssi:       enables indexed random access in a file of many MSAs
  */
-
 #include "esl_config.h"
 
 #include <stdio.h>
@@ -28,22 +21,19 @@
 #endif
 
 #include "easel.h"
-#include "esl_mem.h"
-#ifdef eslAUGMENT_KEYHASH
-#include "esl_keyhash.h"
-#endif
-#ifdef eslAUGMENT_ALPHABET
 #include "esl_alphabet.h"
-#endif
-#ifdef eslAUGMENT_SSI
+#include "esl_bitfield.h"
+#include "esl_arr2.h"
+#include "esl_arr3.h"
+#include "esl_keyhash.h"
+#include "esl_mem.h"
+#include "esl_random.h"
+#include "esl_randomseq.h"
 #include "esl_ssi.h"
-#endif
-#include "esl_msa.h"
-#include "esl_msafile.h"
 #include "esl_vectorops.h"
 #include "esl_wuss.h"
 
-
+#include "esl_msa.h"
 
 /******************************************************************************
  *# 1. The <ESL_MSA> object                                           
@@ -146,54 +136,51 @@ int
 esl_msa_Expand(ESL_MSA *msa)
 {
   int   status;
-  int   old, new;		/* old & new allocation sizes (max # seqs) */
+  int   old, new_size;		/* old & new allocation sizes (max # seqs) */
   int   i,j;
 
   if (msa->alen != -1) 
     ESL_EXCEPTION(eslEINVAL, "that MSA is not growable");
 
   old = msa->sqalloc;
-  new = 2*old;
+  new_size = 2*old;
 
   /* Normally either aseq (ascii) or ax (digitized) would be active, not both.
    * We could make sure that that's true, but that's checked elsewhere.           
    */
-  if (msa->aseq) ESL_REALLOC(msa->aseq, sizeof(char *)    * new);
-#ifdef eslAUGMENT_ALPHABET
-  if (msa->ax)   ESL_REALLOC(msa->ax,   sizeof(ESL_DSQ *) * new);
-#endif /*eslAUGMENT_ALPHABET*/
+  if (msa->aseq) ESL_REALLOC(msa->aseq, sizeof(char *)    * new_size);
+  if (msa->ax)   ESL_REALLOC(msa->ax,   sizeof(ESL_DSQ *) * new_size);
 
-  ESL_REALLOC(msa->sqname, sizeof(char *) * new);
-  ESL_REALLOC(msa->wgt,    sizeof(double) * new);
-  ESL_REALLOC(msa->sqlen,  sizeof(int64_t)* new);
+  ESL_REALLOC(msa->sqname, sizeof(char *) * new_size);
+  ESL_REALLOC(msa->wgt,    sizeof(double) * new_size);
+  ESL_REALLOC(msa->sqlen,  sizeof(int64_t)* new_size);
 
   if (msa->ss)
     {
-      ESL_REALLOC(msa->ss,    sizeof(char *)  * new);
-      ESL_REALLOC(msa->sslen, sizeof(int64_t) * new);
+      ESL_REALLOC(msa->ss,    sizeof(char *)  * new_size);
+      ESL_REALLOC(msa->sslen, sizeof(int64_t) * new_size);
     }
   
   if (msa->sa)
     {
-      ESL_REALLOC(msa->sa,    sizeof(char *)  * new);
-      ESL_REALLOC(msa->salen, sizeof(int64_t) * new);
+      ESL_REALLOC(msa->sa,    sizeof(char *)  * new_size);
+      ESL_REALLOC(msa->salen, sizeof(int64_t) * new_size);
     }
 
   if (msa->pp)
     {
-      ESL_REALLOC(msa->pp,    sizeof(char *)  * new);
-      ESL_REALLOC(msa->pplen, sizeof(int64_t) * new);
+      ESL_REALLOC(msa->pp,    sizeof(char *)  * new_size);
+      ESL_REALLOC(msa->pplen, sizeof(int64_t) * new_size);
     }
 
-  if (msa->sqacc)   ESL_REALLOC(msa->sqacc,  sizeof(char *) * new);
-  if (msa->sqdesc)  ESL_REALLOC(msa->sqdesc, sizeof(char *) * new);
+  if (msa->sqacc)   ESL_REALLOC(msa->sqacc,  sizeof(char *) * new_size);
+  if (msa->sqdesc)  ESL_REALLOC(msa->sqdesc, sizeof(char *) * new_size);
 
-  for (i = old; i < new; i++)
+  for (i = old; i < new_size; i++)
     {
       if (msa->aseq) msa->aseq[i] = NULL;
-#ifdef eslAUGMENT_ALPHABET
       if (msa->ax)   msa->ax[i]   = NULL;
-#endif /*eslAUGMENT_ALPHABET*/
+
       msa->sqname[i] = NULL;
       msa->wgt[i]    = -1.0;	/* -1.0 means "unset so far" */
       msa->sqlen[i]  = 0;
@@ -215,8 +202,8 @@ esl_msa_Expand(ESL_MSA *msa)
       {
 	if (msa->gs[i])
 	  {
-	    ESL_REALLOC(msa->gs[i], sizeof(char *) * new);
-	    for (j = old; j < new; j++)
+	    ESL_REALLOC(msa->gs[i], sizeof(char *) * new_size);
+	    for (j = old; j < new_size; j++)
 	      msa->gs[i][j] = NULL;
 	  }
       }
@@ -229,13 +216,13 @@ esl_msa_Expand(ESL_MSA *msa)
       {
 	if (msa->gr[i])
 	  {
-	    ESL_REALLOC(msa->gr[i], sizeof(char *) * new);
-	    for (j = old; j < new; j++)
+	    ESL_REALLOC(msa->gr[i], sizeof(char *) * new_size);
+	    for (j = old; j < new_size; j++)
 	      msa->gr[i][j] = NULL;
 	  }
       }
 
-  msa->sqalloc = new;
+  msa->sqalloc = new_size;
   return eslOK;
 
  ERROR:
@@ -245,30 +232,30 @@ esl_msa_Expand(ESL_MSA *msa)
 /* Function:  esl_msa_Copy()
  * Synopsis:  Copies an MSA.
  *
- * Purpose:   Makes a copy of <msa> in <new>. Caller has
- *            already allocated <new> to hold an MSA of
+ * Purpose:   Makes a copy of <msa> in <new_msa>. Caller has
+ *            already allocated <new_msa> to hold an MSA of
  *            at least <msa->nseq> sequences and <msa->alen>
  *            columns.
  *            
  * Note:      Because MSA's are not reusable, this function does a
  *            lot of internal allocation for optional fields, without
- *            checking <new> to see if space was already allocated. To
- *            reuse an MSA <new> and copy new data into it, we'll
+ *            checking <new_msa> to see if space was already allocated. To
+ *            reuse an MSA <new_msa> and copy new data into it, we'll
  *            eventually need a <esl_msa_Reuse()> function, and/or
  *            recode this to reuse or free any already-allocated
- *            optional memory it encounters in <new>. Until then, 
+ *            optional memory it encounters in <new_msa>. Until then, 
  *            it's unlikely that <esl_msa_Copy()> is useful on its own;
  *            the caller would be expected to call <esl_msa_Clone()> 
  *            instead.
  *
  * Returns:   <eslOK> on success.
  *
- * Throws:    <eslEMEM> on allocation failure. In this case, <new>
+ * Throws:    <eslEMEM> on allocation failure. In this case, <new_msa>
  *            was only partially constructed, and should be treated
  *            as corrupt.
  */
 int
-esl_msa_Copy(const ESL_MSA *msa, ESL_MSA *new)
+esl_msa_Copy(const ESL_MSA *msa, ESL_MSA *new_msa)
 {
   int i, x, j;
   int status;
@@ -279,133 +266,126 @@ esl_msa_Copy(const ESL_MSA *msa, ESL_MSA *new)
    */
   if (! (msa->flags & eslMSA_DIGITAL))
     for (i = 0; i < msa->nseq; i++)
-      strcpy(new->aseq[i], msa->aseq[i]);
-#ifdef eslAUGMENT_ALPHABET
+      strcpy(new_msa->aseq[i], msa->aseq[i]);
   else
     {
       for (i = 0; i < msa->nseq; i++)
-	memcpy(new->ax[i], msa->ax[i], (msa->alen+2) * sizeof(ESL_DSQ));
-      new->abc = msa->abc;
+	memcpy(new_msa->ax[i], msa->ax[i], (msa->alen+2) * sizeof(ESL_DSQ));
+      new_msa->abc = msa->abc;
     }
-#endif
   
   for (i = 0; i < msa->nseq; i++) {
-    esl_strdup(msa->sqname[i], -1, &(new->sqname[i]));
-    new->wgt[i] = msa->wgt[i];
+    esl_strdup(msa->sqname[i], -1, &(new_msa->sqname[i]));
+    new_msa->wgt[i] = msa->wgt[i];
   }
   /* alen, nseq were already set by Create() */
-  new->flags = msa->flags;
+  new_msa->flags = msa->flags;
 
-  esl_strdup(msa->name,    -1, &(new->name));
-  esl_strdup(msa->desc,    -1, &(new->desc));
-  esl_strdup(msa->acc,     -1, &(new->acc));
-  esl_strdup(msa->au,      -1, &(new->au));
-  esl_strdup(msa->ss_cons, -1, &(new->ss_cons));
-  esl_strdup(msa->sa_cons, -1, &(new->sa_cons));
-  esl_strdup(msa->pp_cons, -1, &(new->pp_cons));
-  esl_strdup(msa->rf,      -1, &(new->rf));
-  esl_strdup(msa->mm,      -1, &(new->mm));
+  esl_strdup(msa->name,    -1, &(new_msa->name));
+  esl_strdup(msa->desc,    -1, &(new_msa->desc));
+  esl_strdup(msa->acc,     -1, &(new_msa->acc));
+  esl_strdup(msa->au,      -1, &(new_msa->au));
+  esl_strdup(msa->ss_cons, -1, &(new_msa->ss_cons));
+  esl_strdup(msa->sa_cons, -1, &(new_msa->sa_cons));
+  esl_strdup(msa->pp_cons, -1, &(new_msa->pp_cons));
+  esl_strdup(msa->rf,      -1, &(new_msa->rf));
+  esl_strdup(msa->mm,      -1, &(new_msa->mm));
 
   if (msa->sqacc != NULL) {
-    ESL_ALLOC(new->sqacc, sizeof(char *) * new->sqalloc);
-    for (i = 0; i < msa->nseq;    i++) esl_strdup(msa->sqacc[i], -1, &(new->sqacc[i]));
-    for (     ; i < new->sqalloc; i++) new->sqacc[i] = NULL;
+    ESL_ALLOC(new_msa->sqacc, sizeof(char *) * new_msa->sqalloc);
+    for (i = 0; i < msa->nseq;    i++) esl_strdup(msa->sqacc[i], -1, &(new_msa->sqacc[i]));
+    for (     ; i < new_msa->sqalloc; i++) new_msa->sqacc[i] = NULL;
   }
   if (msa->sqdesc != NULL) {
-    ESL_ALLOC(new->sqdesc, sizeof(char *) * new->sqalloc);
-    for (i = 0; i < msa->nseq;    i++) esl_strdup(msa->sqdesc[i], -1, &(new->sqdesc[i]));
-    for (     ; i < new->sqalloc; i++) new->sqdesc[i] = NULL;
+    ESL_ALLOC(new_msa->sqdesc, sizeof(char *) * new_msa->sqalloc);
+    for (i = 0; i < msa->nseq;    i++) esl_strdup(msa->sqdesc[i], -1, &(new_msa->sqdesc[i]));
+    for (     ; i < new_msa->sqalloc; i++) new_msa->sqdesc[i] = NULL;
   }
   if (msa->ss != NULL) {
-    ESL_ALLOC(new->ss, sizeof(char *) * new->sqalloc);
-    for (i = 0; i < msa->nseq;    i++) esl_strdup(msa->ss[i], -1, &(new->ss[i]));
-    for (     ; i < new->sqalloc; i++) new->ss[i] = NULL;
+    ESL_ALLOC(new_msa->ss, sizeof(char *) * new_msa->sqalloc);
+    for (i = 0; i < msa->nseq;    i++) esl_strdup(msa->ss[i], -1, &(new_msa->ss[i]));
+    for (     ; i < new_msa->sqalloc; i++) new_msa->ss[i] = NULL;
   }
   if (msa->sa != NULL) {
-    ESL_ALLOC(new->sa, sizeof(char *) * msa->nseq);
-    for (i = 0; i < msa->nseq;    i++) esl_strdup(msa->sa[i], -1, &(new->sa[i]));
-    for (     ; i < new->sqalloc; i++) new->sa[i] = NULL;
+    ESL_ALLOC(new_msa->sa, sizeof(char *) * msa->nseq);
+    for (i = 0; i < msa->nseq;    i++) esl_strdup(msa->sa[i], -1, &(new_msa->sa[i]));
+    for (     ; i < new_msa->sqalloc; i++) new_msa->sa[i] = NULL;
   }
   if (msa->pp != NULL) {
-    ESL_ALLOC(new->pp, sizeof(char *) * msa->nseq);
-    for (i = 0; i < msa->nseq;    i++) esl_strdup(msa->pp[i], -1, &(new->pp[i]));
-    for (     ; i < new->sqalloc; i++) new->pp[i] = NULL;
+    ESL_ALLOC(new_msa->pp, sizeof(char *) * msa->nseq);
+    for (i = 0; i < msa->nseq;    i++) esl_strdup(msa->pp[i], -1, &(new_msa->pp[i]));
+    for (     ; i < new_msa->sqalloc; i++) new_msa->pp[i] = NULL;
   }
   
   for (x = 0; x < eslMSA_NCUTS; x++) {
-    new->cutoff[x] = msa->cutoff[x];
-    new->cutset[x] = msa->cutset[x];
+    new_msa->cutoff[x] = msa->cutoff[x];
+    new_msa->cutset[x] = msa->cutset[x];
   }
 
   if (msa->ncomment > 0) {
-    ESL_ALLOC(new->comment, sizeof(char *) * msa->ncomment);
-    new->ncomment       = msa->ncomment;
-    new->alloc_ncomment = msa->ncomment;
+    ESL_ALLOC(new_msa->comment, sizeof(char *) * msa->ncomment);
+    new_msa->ncomment       = msa->ncomment;
+    new_msa->alloc_ncomment = msa->ncomment;
     for (i = 0; i < msa->ncomment; i++)
-      esl_strdup(msa->comment[i], -1, &(new->comment[i]));
+      esl_strdup(msa->comment[i], -1, &(new_msa->comment[i]));
   }
 
   if (msa->ngf > 0) {
-    ESL_ALLOC(new->gf_tag, sizeof(char *) * msa->ngf);
-    ESL_ALLOC(new->gf,     sizeof(char *) * msa->ngf);
-    new->ngf       = msa->ngf;
-    new->alloc_ngf = msa->ngf;
+    ESL_ALLOC(new_msa->gf_tag, sizeof(char *) * msa->ngf);
+    ESL_ALLOC(new_msa->gf,     sizeof(char *) * msa->ngf);
+    new_msa->ngf       = msa->ngf;
+    new_msa->alloc_ngf = msa->ngf;
     for (i = 0; i < msa->ngf; i++) {
-      esl_strdup(msa->gf_tag[i], -1, &(new->gf_tag[i]));
-      esl_strdup(msa->gf[i],     -1, &(new->gf[i]));
+      esl_strdup(msa->gf_tag[i], -1, &(new_msa->gf_tag[i]));
+      esl_strdup(msa->gf[i],     -1, &(new_msa->gf[i]));
     }
   }
 
   if (msa->ngs > 0) {
-    ESL_ALLOC(new->gs_tag, sizeof(char *)  * msa->ngs);
-    ESL_ALLOC(new->gs,     sizeof(char **) * msa->ngs);
-    new->ngs       = msa->ngs;
+    ESL_ALLOC(new_msa->gs_tag, sizeof(char *)  * msa->ngs);
+    ESL_ALLOC(new_msa->gs,     sizeof(char **) * msa->ngs);
+    new_msa->ngs       = msa->ngs;
     for (i = 0; i < msa->ngs; i++) {
-      ESL_ALLOC(new->gs[i], sizeof(char *) * msa->nseq);
-      esl_strdup(msa->gs_tag[i], -1, &(new->gs_tag[i]));
+      ESL_ALLOC(new_msa->gs[i], sizeof(char *) * msa->nseq);
+      esl_strdup(msa->gs_tag[i], -1, &(new_msa->gs_tag[i]));
       for (j = 0; j < msa->nseq; j++)
-	esl_strdup(msa->gs[i][j],  -1, &(new->gs[i][j]));
+	esl_strdup(msa->gs[i][j],  -1, &(new_msa->gs[i][j]));
     }
   }
 
   if (msa->ngc > 0) {
-    ESL_ALLOC(new->gc_tag, sizeof(char *) * msa->ngc);
-    ESL_ALLOC(new->gc,     sizeof(char *) * msa->ngc);
-    new->ngc       = msa->ngc;
+    ESL_ALLOC(new_msa->gc_tag, sizeof(char *) * msa->ngc);
+    ESL_ALLOC(new_msa->gc,     sizeof(char *) * msa->ngc);
+    new_msa->ngc       = msa->ngc;
     for (i = 0; i < msa->ngc; i++) {
-      esl_strdup(msa->gc_tag[i], -1, &(new->gc_tag[i]));
-      esl_strdup(msa->gc[i],     -1, &(new->gc[i]));
+      esl_strdup(msa->gc_tag[i], -1, &(new_msa->gc_tag[i]));
+      esl_strdup(msa->gc[i],     -1, &(new_msa->gc[i]));
     }
   }
   
   if (msa->ngr > 0) {
-    ESL_ALLOC(new->gr_tag, sizeof(char *)  * msa->ngr);
-    ESL_ALLOC(new->gr,     sizeof(char **) * msa->ngr);
-    new->ngr       = msa->ngr;
+    ESL_ALLOC(new_msa->gr_tag, sizeof(char *)  * msa->ngr);
+    ESL_ALLOC(new_msa->gr,     sizeof(char **) * msa->ngr);
+    new_msa->ngr       = msa->ngr;
     for (i = 0; i < msa->ngr; i++) {
-      ESL_ALLOC(new->gr[i], sizeof(char *) * msa->nseq);
-      esl_strdup(msa->gr_tag[i], -1, &(new->gr_tag[i]));
+      ESL_ALLOC(new_msa->gr[i], sizeof(char *) * msa->nseq);
+      esl_strdup(msa->gr_tag[i], -1, &(new_msa->gr_tag[i]));
       for (j = 0; j < msa->nseq; j++)
-	esl_strdup(msa->gr[i][j],  -1, &(new->gr[i][j]));
+	esl_strdup(msa->gr[i][j],  -1, &(new_msa->gr[i][j]));
     }
   }
 
-#ifdef eslAUGMENT_KEYHASH
-  esl_keyhash_Destroy(new->index);  new->index  = NULL;
-  esl_keyhash_Destroy(new->gs_idx); new->gs_idx = NULL;
-  esl_keyhash_Destroy(new->gc_idx); new->gc_idx = NULL;
-  esl_keyhash_Destroy(new->gr_idx); new->gr_idx = NULL;
+  esl_keyhash_Destroy(new_msa->index);  new_msa->index  = NULL;
+  esl_keyhash_Destroy(new_msa->gs_idx); new_msa->gs_idx = NULL;
+  esl_keyhash_Destroy(new_msa->gc_idx); new_msa->gc_idx = NULL;
+  esl_keyhash_Destroy(new_msa->gr_idx); new_msa->gr_idx = NULL;
 
-  if (msa->index  != NULL) new->index  = esl_keyhash_Clone(msa->index);
-  if (msa->gs_idx != NULL) new->gs_idx = esl_keyhash_Clone(msa->gs_idx);
-  if (msa->gc_idx != NULL) new->gc_idx = esl_keyhash_Clone(msa->gc_idx);
-  if (msa->gr_idx != NULL) new->gr_idx = esl_keyhash_Clone(msa->gr_idx);
-#endif
+  if (msa->index  != NULL) new_msa->index  = esl_keyhash_Clone(msa->index);
+  if (msa->gs_idx != NULL) new_msa->gs_idx = esl_keyhash_Clone(msa->gs_idx);
+  if (msa->gc_idx != NULL) new_msa->gc_idx = esl_keyhash_Clone(msa->gc_idx);
+  if (msa->gr_idx != NULL) new_msa->gr_idx = esl_keyhash_Clone(msa->gr_idx);
 
-#ifdef eslAUGMENT_SSI
-  new->offset = msa->offset;
-#endif
-
+  new_msa->offset = msa->offset;
   return eslOK;
 
  ERROR:
@@ -429,12 +409,12 @@ esl_msa_Clone(const ESL_MSA *msa)
   ESL_MSA *nw = NULL;
   int      status;
 
-#ifdef eslAUGMENT_ALPHABET
-  if (msa->flags & eslMSA_DIGITAL) {
+  if (msa->flags & eslMSA_DIGITAL) 
+    {
       if ((nw = esl_msa_CreateDigital(msa->abc, msa->nseq, msa->alen)) == NULL)  return NULL;
-  } else
-#endif
-  if ((nw     = esl_msa_Create(msa->nseq, msa->alen)) == NULL)  return NULL;  
+    } 
+  else
+    if ((nw = esl_msa_Create(msa->nseq, msa->alen)) == NULL)  return NULL;  
 
   if ((status = esl_msa_Copy(msa, nw) )               != eslOK) goto ERROR;
   return nw;
@@ -442,6 +422,75 @@ esl_msa_Clone(const ESL_MSA *msa)
  ERROR:
   esl_msa_Destroy(nw);
   return NULL;
+}
+
+
+/* Function:  esl_msa_Sizeof()
+ * Synopsis:  Returns approximate size of an ESL_MSA, in bytes
+ * Incept:    SRE, Thu Nov  2 11:17:18 2017
+ *
+ * Purpose:   Returns the approximate size of an <ESL_MSA>, in
+ *            bytes. Approximate, because it counts used data size
+ *            (the size of the alignment) rather than alloced size
+ *            (the actual memory required by the structure),
+ *            and the structure may be overallocated (e.g.  by
+ *            <esl_msa_Expand()>.) That is, returns the minimum
+ *            size required to store the data.
+ *            
+ *            (We may want to distinguish between true allocated
+ *            size versus minimum size in the future.)
+ */
+size_t
+esl_msa_Sizeof(ESL_MSA *msa)
+{
+  size_t  n = 0;
+
+  n += sizeof(ESL_MSA);
+
+  n += esl_arr2_SSizeof(msa->sqname, msa->nseq);
+  n += sizeof(double) * msa->nseq;  // wgt
+  
+  if (msa->aseq)
+    n += esl_arr2_SSizeof(msa->aseq,   msa->nseq);
+  else if (msa->ax)
+    {
+      n += sizeof(ESL_DSQ *) * msa->nseq;  
+      n += sizeof(ESL_DSQ)   * msa->nseq * (msa->alen + 2);
+    }
+  
+  if (msa->name)    n += sizeof(char) * (1 + strlen(msa->name));
+  if (msa->desc)    n += sizeof(char) * (1 + strlen(msa->desc));
+  if (msa->acc)     n += sizeof(char) * (1 + strlen(msa->acc));
+  if (msa->au)      n += sizeof(char) * (1 + strlen(msa->au));
+
+  if (msa->ss_cons) n += sizeof(char) * msa->alen;
+  if (msa->sa_cons) n += sizeof(char) * msa->alen;
+  if (msa->pp_cons) n += sizeof(char) * msa->alen;
+  if (msa->rf)      n += sizeof(char) * msa->alen;
+  if (msa->mm)      n += sizeof(char) * msa->alen;
+
+  n += esl_arr2_SSizeof(msa->sqacc,  msa->nseq);
+  n += esl_arr2_SSizeof(msa->sqdesc, msa->nseq);
+  n += esl_arr2_SSizeof(msa->ss,     msa->nseq);
+  n += esl_arr2_SSizeof(msa->sa,     msa->nseq);
+  n += esl_arr2_SSizeof(msa->pp,     msa->nseq);
+
+  n += esl_arr2_SSizeof(msa->comment, msa->ncomment);
+  n += esl_arr2_SSizeof(msa->gf_tag,  msa->ngf);
+  n += esl_arr2_SSizeof(msa->gf,      msa->ngf);
+  n += esl_arr2_SSizeof(msa->gs_tag,  msa->ngs);
+  n += esl_arr3_SSizeof(msa->gs,      msa->ngs, msa->nseq);
+  n += esl_arr2_SSizeof(msa->gc_tag,  msa->ngc);
+  n += esl_arr2_SSizeof(msa->gc,      msa->ngc);
+  n += esl_arr2_SSizeof(msa->gr_tag,  msa->ngr);
+  n += esl_arr3_SSizeof(msa->gr,      msa->ngr, msa->nseq);
+  
+  n += esl_keyhash_Sizeof(msa->index);
+  n += esl_keyhash_Sizeof(msa->gs_idx);
+  n += esl_keyhash_Sizeof(msa->gc_idx);
+  n += esl_keyhash_Sizeof(msa->gr_idx);
+
+  return n;
 }
 
 
@@ -457,19 +506,15 @@ esl_msa_Destroy(ESL_MSA *msa)
 {
   if (msa == NULL) return;
 
-  if (msa->aseq != NULL) 
-    esl_Free2D((void **) msa->aseq, msa->nseq);
-#ifdef eslAUGMENT_ALPHABET
-  if (msa->ax != NULL) 
-    esl_Free2D((void **) msa->ax, msa->nseq);
-#endif /*eslAUGMENT_ALPHABET*/
+  esl_arr2_Destroy((void **) msa->aseq, msa->nseq);
+  esl_arr2_Destroy((void **) msa->ax, msa->nseq);
 
-  esl_Free2D((void **) msa->sqname, msa->nseq);
-  esl_Free2D((void **) msa->sqacc,  msa->nseq);
-  esl_Free2D((void **) msa->sqdesc, msa->nseq);
-  esl_Free2D((void **) msa->ss,     msa->nseq);
-  esl_Free2D((void **) msa->sa,     msa->nseq);
-  esl_Free2D((void **) msa->pp,     msa->nseq);
+  esl_arr2_Destroy((void **) msa->sqname, msa->nseq);
+  esl_arr2_Destroy((void **) msa->sqacc,  msa->nseq);
+  esl_arr2_Destroy((void **) msa->sqdesc, msa->nseq);
+  esl_arr2_Destroy((void **) msa->ss,     msa->nseq);
+  esl_arr2_Destroy((void **) msa->sa,     msa->nseq);
+  esl_arr2_Destroy((void **) msa->pp,     msa->nseq);
 
   if (msa->sqlen   != NULL) free(msa->sqlen);
   if (msa->wgt     != NULL) free(msa->wgt);
@@ -487,23 +532,21 @@ esl_msa_Destroy(ESL_MSA *msa)
   if (msa->salen   != NULL) free(msa->salen);
   if (msa->pplen   != NULL) free(msa->pplen);  
 
-  esl_Free2D((void **) msa->comment, msa->ncomment);
-  esl_Free2D((void **) msa->gf_tag,  msa->ngf);
-  esl_Free2D((void **) msa->gf,      msa->ngf);
+  esl_arr2_Destroy((void **) msa->comment, msa->ncomment);
+  esl_arr2_Destroy((void **) msa->gf_tag,  msa->ngf);
+  esl_arr2_Destroy((void **) msa->gf,      msa->ngf);
 
-  esl_Free2D((void **) msa->gs_tag,  msa->ngs);
-  esl_Free3D((void ***)msa->gs,      msa->ngs, msa->nseq);
-  esl_Free2D((void **) msa->gc_tag,  msa->ngc);
-  esl_Free2D((void **) msa->gc,      msa->ngc);
-  esl_Free2D((void **) msa->gr_tag,  msa->ngr);
-  esl_Free3D((void ***)msa->gr,      msa->ngr, msa->nseq);
+  esl_arr2_Destroy((void **) msa->gs_tag,  msa->ngs);
+  esl_arr3_Destroy((void ***)msa->gs,      msa->ngs, msa->nseq);
+  esl_arr2_Destroy((void **) msa->gc_tag,  msa->ngc);
+  esl_arr2_Destroy((void **) msa->gc,      msa->ngc);
+  esl_arr2_Destroy((void **) msa->gr_tag,  msa->ngr);
+  esl_arr3_Destroy((void ***)msa->gr,      msa->ngr, msa->nseq);
 
-#ifdef eslAUGMENT_KEYHASH
   esl_keyhash_Destroy(msa->index);
   esl_keyhash_Destroy(msa->gs_idx);
   esl_keyhash_Destroy(msa->gc_idx);
   esl_keyhash_Destroy(msa->gr_idx);
-#endif /* keyhash augmentation */  
 
   free(msa);
   return;
@@ -552,10 +595,8 @@ msa_create_mostly(int nseq, int64_t alen)
   msa->nseq    = 0;		/* our caller (text or digital allocation) sets this.  */
   msa->flags   = 0;
 
-#ifdef eslAUGMENT_ALPHABET
   msa->abc     = NULL;
   msa->ax      = NULL;
-#endif /*eslAUGMENT_ALPHABET*/
 
   msa->name    = NULL;
   msa->desc    = NULL;
@@ -583,7 +624,6 @@ msa_create_mostly(int nseq, int64_t alen)
   msa->lastidx = 0;
 
   /* Unparsed markup, including comments and Stockholm tags.
-   * GS, GC, and GR Stockholm tags require keyhash augmentation
    */
   msa->comment        = NULL;
   msa->ncomment       = 0;
@@ -606,16 +646,12 @@ msa_create_mostly(int nseq, int64_t alen)
   msa->gr             = NULL;
   msa->ngr            = 0;
 
-#ifdef eslAUGMENT_KEYHASH
   msa->index     = esl_keyhash_Create();
   msa->gs_idx    = NULL;
   msa->gc_idx    = NULL;
   msa->gr_idx    = NULL;
-#endif /*eslAUGMENT_KEYHASH*/
 
-#ifdef eslAUGMENT_SSI
   msa->offset    = 0;
-#endif
 
   /* Allocation, round 2.
    */
@@ -644,9 +680,8 @@ msa_create_mostly(int nseq, int64_t alen)
 
 
 /*****************************************************************
- *# 2. Digital mode MSA's (augmentation: alphabet)
+ *# 2. Digital mode MSA's
  *****************************************************************/
-#ifdef eslAUGMENT_ALPHABET
 
 /* Function:  esl_msa_GuessAlphabet()
  * Synopsis:  Guess alphabet of MSA.
@@ -965,8 +1000,6 @@ esl_msa_ConvertDegen2X(ESL_MSA *msa)
   return eslOK;
 }
 
-
-#endif /* eslAUGMENT_ALPHABET */
 /*---------------------- end of digital MSA functions -----------------------*/
 
 
@@ -1002,8 +1035,8 @@ int
 esl_msa_SetName(ESL_MSA *msa, const char *s, esl_pos_t n)
 {
   if (msa->name) free(msa->name); 
-  if (n > 0) return esl_memstrdup(s,  n, &(msa->name)); 
-  else       return esl_strdup(   s, -1, &(msa->name)); 
+  if (n >= 0) return esl_memstrdup(s,  n, &(msa->name)); 
+  else        return esl_strdup(   s, -1, &(msa->name)); 
 }
 
 
@@ -1030,8 +1063,8 @@ int
 esl_msa_SetDesc(ESL_MSA *msa, const char *s, esl_pos_t n)
 {
   if (msa->desc) free(msa->desc);
-  if (n > 0) return esl_memstrdup(s,  n, &(msa->desc)); 
-  else       return esl_strdup(   s, -1, &(msa->desc)); 
+  if (n >= 0) return esl_memstrdup(s,  n, &(msa->desc)); 
+  else        return esl_strdup(   s, -1, &(msa->desc)); 
 }
 
 /* Function:  esl_msa_SetAccession()
@@ -1057,8 +1090,8 @@ int
 esl_msa_SetAccession(ESL_MSA *msa, const char *s, esl_pos_t n)
 {
   if (msa->acc) free(msa->acc);
-  if (n > 0) return esl_memstrdup(s,  n, &(msa->acc)); 
-  else       return esl_strdup(   s, -1, &(msa->acc)); 
+  if (n >= 0) return esl_memstrdup(s,  n, &(msa->acc)); 
+  else        return esl_strdup(   s, -1, &(msa->acc)); 
 }
 
 
@@ -1085,8 +1118,8 @@ int
 esl_msa_SetAuthor(ESL_MSA *msa, const char *s, esl_pos_t n)
 {
   if (msa->au) free(msa->au);
-  if (n > 0) return esl_memstrdup(s,  n, &(msa->au)); 
-  else       return esl_strdup(   s, -1, &(msa->au)); 
+  if (n >= 0) return esl_memstrdup(s,  n, &(msa->au)); 
+  else        return esl_strdup(   s, -1, &(msa->au)); 
 }
 
 
@@ -1117,8 +1150,8 @@ esl_msa_SetSeqName(ESL_MSA *msa, int idx, const char *s, esl_pos_t n)
   if (s == NULL)            ESL_EXCEPTION(eslEINCONCEIVABLE, "seq names are mandatory; NULL is not a valid name");
 
   if (msa->sqname[idx]) free(msa->sqname[idx]);
-  if (n > 0) return esl_memstrdup(s,  n, &(msa->sqname[idx])); 
-  else       return esl_strdup(   s, -1, &(msa->sqname[idx])); 
+  if (n >= 0) return esl_memstrdup(s,  n, &(msa->sqname[idx])); 
+  else        return esl_strdup(   s, -1, &(msa->sqname[idx])); 
 }
 
 /* Function:  esl_msa_SetSeqAccession()
@@ -1164,8 +1197,8 @@ esl_msa_SetSeqAccession(ESL_MSA *msa, int idx, const char *s, esl_pos_t n)
     for (i = 0; i < msa->sqalloc; i++) msa->sqacc[i] = NULL;
   } 
 
-  if (n > 0) status = esl_memstrdup(s,  n, &(msa->sqacc[idx])); 
-  else       status = esl_strdup(   s, -1, &(msa->sqacc[idx])); 
+  if (n >= 0) status = esl_memstrdup(s,  n, &(msa->sqacc[idx])); 
+  else        status = esl_strdup(   s, -1, &(msa->sqacc[idx])); 
 
   return status;
   
@@ -1216,8 +1249,8 @@ esl_msa_SetSeqDescription(ESL_MSA *msa, int idx, const char *s, esl_pos_t n)
     for (i = 0; i < msa->sqalloc; i++) msa->sqdesc[i] = NULL;
   } 
 
-  if (n > 0) status = esl_memstrdup(s,  n, &(msa->sqdesc[idx])); 
-  else       status = esl_strdup(   s, -1, &(msa->sqdesc[idx])); 
+  if (n >= 0) status = esl_memstrdup(s,  n, &(msa->sqdesc[idx])); 
+  else        status = esl_strdup(   s, -1, &(msa->sqdesc[idx])); 
 
  ERROR:
   return status;
@@ -1609,14 +1642,11 @@ esl_msa_AddGS(ESL_MSA *msa, char *tag, esl_pos_t taglen, int sqidx, char *value,
   /* first GS tag? init&allocate  */
   if (msa->gs_tag == NULL)	
     {
-#ifdef eslAUGMENT_KEYHASH
       msa->gs_idx = esl_keyhash_Create();
       status = esl_keyhash_Store(msa->gs_idx, tag, taglen, &tagidx);
       if (status != eslOK && status != eslEDUP) return status;
       ESL_DASSERT1((tagidx == 0));
-#else
-      tagidx = 0;
-#endif
+
       ESL_ALLOC(msa->gs_tag, sizeof(char *));  /* one at a time. */
       ESL_ALLOC(msa->gs,     sizeof(char **));
       ESL_ALLOC(msa->gs[0],  sizeof(char *) * msa->sqalloc);
@@ -1629,13 +1659,9 @@ esl_msa_AddGS(ESL_MSA *msa, char *tag, esl_pos_t taglen, int sqidx, char *value,
        * tagidx < ngs; we already saw this tag;
        * tagidx == ngs; this is a new one.
        */
-#ifdef eslAUGMENT_KEYHASH
       status = esl_keyhash_Store(msa->gs_idx, tag, taglen, &tagidx);
       if (status != eslOK && status != eslEDUP) return status;
-#else
-      for (tagidx = 0; tagidx < msa->ngs; tagidx++)
-	if (esl_memstrcmp(tag, taglen, msa->gs_tag[tagidx])) break;
-#endif
+
       /* Reallocation (in blocks of 1) */
       if (tagidx == msa->ngs ) 
 	{
@@ -1710,14 +1736,11 @@ esl_msa_AppendGC(ESL_MSA *msa, char *tag, char *value)
    */
   if (msa->gc_tag == NULL)	/* first tag? init&allocate  */
     {
-#ifdef eslAUGMENT_KEYHASH
       msa->gc_idx = esl_keyhash_Create();
       status = esl_keyhash_Store(msa->gc_idx, tag, -1, &tagidx);      
       if (status != eslOK && status != eslEDUP) return status;
       ESL_DASSERT1((tagidx == 0));
-#else
-      tagidx = 0;
-#endif
+
       ESL_ALLOC(msa->gc_tag, sizeof(char *));
       ESL_ALLOC(msa->gc,     sizeof(char *));
       msa->gc[0]  = NULL;
@@ -1725,13 +1748,9 @@ esl_msa_AppendGC(ESL_MSA *msa, char *tag, char *value)
   else
     {			/* new tag? */
       /* get tagidx for this GC tag. existing tag: <ngc; new: == ngc. */
-#ifdef eslAUGMENT_KEYHASH
       status = esl_keyhash_Store(msa->gc_idx, tag, -1, &tagidx);
       if (status != eslOK && status != eslEDUP) goto ERROR;
-#else
-      for (tagidx = 0; tagidx < msa->ngc; tagidx++)
-	if (strcmp(msa->gc_tag[tagidx], tag) == 0) break;
-#endif
+
       /* Reallocate, in block of one tag at a time
        */
       if (tagidx == msa->ngc)
@@ -1783,14 +1802,11 @@ esl_msa_AppendGR(ESL_MSA *msa, char *tag, int sqidx, char *value)
 
   if (msa->gr_tag == NULL)	/* first tag? init&allocate  */
     {
-#ifdef eslAUGMENT_KEYHASH
       msa->gr_idx = esl_keyhash_Create();
       status = esl_keyhash_Store(msa->gr_idx, tag, -1, &tagidx);
       if (status != eslOK && status != eslEDUP) return status;
       ESL_DASSERT1((tagidx == 0));
-#else
-      tagidx = 0;
-#endif
+
       ESL_ALLOC(msa->gr_tag, sizeof(char *));
       ESL_ALLOC(msa->gr,     sizeof(char **));
       ESL_ALLOC(msa->gr[0],  sizeof(char *) * msa->sqalloc);
@@ -1801,13 +1817,9 @@ esl_msa_AppendGR(ESL_MSA *msa, char *tag, int sqidx, char *value)
     {
       /* get tagidx for this GR tag. existing<ngr; new=ngr.
        */
-#ifdef eslAUGMENT_KEYHASH
       status = esl_keyhash_Store(msa->gr_idx, tag, -1, &tagidx);
       if (status != eslOK && status != eslEDUP) return status;
-#else
-      for (tagidx = 0; tagidx < msa->ngr; tagidx++)
-	if (strcmp(msa->gr_tag[tagidx], tag) == 0) break;
-#endif
+
       /* if a new tag, realloc for it */      
       if (tagidx == msa->ngr)
 	{ 
@@ -2032,10 +2044,8 @@ esl_msa_ReasonableRF(ESL_MSA *msa, double symfrac, int useconsseq, char *rfline)
   if (useconsseq)
     ESL_ALLOC(counts, msa->abc->K * sizeof(float));
 
-#ifdef eslAUGMENT_ALPHABET
   if (msa->flags & eslMSA_DIGITAL)
-  {
-
+    {
       for (apos = 1; apos <= msa->alen; apos++) 
       {
         r = totwgt = 0.;
@@ -2058,7 +2068,7 @@ esl_msa_ReasonableRF(ESL_MSA *msa, double symfrac, int useconsseq, char *rfline)
 
       }
   }
-#endif
+
   if (! (msa->flags & eslMSA_DIGITAL))
   {
       for (apos = 0; apos < msa->alen; apos++) 
@@ -2092,6 +2102,79 @@ ERROR:
 
 
 /* Function:  esl_msa_MarkFragments()
+ * Synopsis:  Heuristic definition of sequence fragments in an alignment
+ * Incept:    SRE, Sun 14 Apr 2019 [DL4378 LHR-BOS]
+ *
+ * Purpose:   Heuristically define sequence fragments (as opposed to
+ *            full length sequences) in <msa>. Set bit <i> in <fragassign>
+ *            to <TRUE> if seq <i> is a fragment, else <FALSE>.
+ *            
+ *            The rule is to calculate the fractional "span" of each
+ *            aligned sequence: the aligned length from its first to
+ *            last residue, divided by the total number of aligned
+ *            columns; sequence is defined as a fragment if <aspan/alen
+ *            < fragthresh>.
+ *            
+ *            In a text mode <msa>, any alphanumeric character is
+ *            considered to be a residue, and any non-alphanumeric
+ *            char is considered to be a gap.
+ *
+ *            <fragassign> is allocated here; caller frees.
+ *
+ * Returns:   <eslOK> on success.
+ *
+ * Throws:    <eslEMEM> on allocation error.
+ *
+ * Xref:      Compare <esl_msaweight>, which uses the same fragment definition
+ *            rule without calling this function, because it's used a little
+ *            differently.
+ */
+int
+esl_msa_MarkFragments(const ESL_MSA *msa, float fragthresh, ESL_BITFIELD **ret_fragassign)
+{
+  ESL_BITFIELD *fragassign = NULL;
+  int           minspan    = (int) ceil(fragthresh * (float) msa->alen); // precalculated span length threshold using <fragthresh>
+  int           idx,lpos,rpos;
+  int           status;
+
+  if (( fragassign = esl_bitfield_Create(msa->nseq)) == NULL) { status = eslEMEM; goto ERROR; }
+
+  /* Digital mode */
+  if (msa->flags & eslMSA_DIGITAL)
+    {
+      for (idx = 0; idx < msa->nseq; idx++)
+	{
+	  for (lpos = 1;         lpos <= msa->alen; lpos++) if (esl_abc_XIsResidue(msa->abc, msa->ax[idx][lpos])) break;
+	  for (rpos = msa->alen; rpos >= 1;         rpos--) if (esl_abc_XIsResidue(msa->abc, msa->ax[idx][rpos])) break;
+	  /* L=0 sequence? lpos == msa->alen+1, rpos == 0; lpos > rpos. 
+	   * alen=0 alignment? lpos == 1, rpos == 0; lpos > rpos.
+	   * so alispan = rpos-lpos+1 could be <= 0 if lpos > rpos
+	   */
+	  if (rpos-lpos+1 < minspan) esl_bitfield_Set(fragassign, idx);
+	}
+    }
+  /* Text mode */
+  else
+    {
+      for (idx = 0; idx < msa->nseq; idx++)
+	{
+	  for (lpos = 0;           lpos < msa->alen; lpos++) if (isalpha(msa->aseq[idx][lpos])) break;
+	  for (rpos = msa->alen-1; rpos >= 0;        rpos--) if (isalpha(msa->aseq[idx][rpos])) break;
+	  if (rpos-lpos+1 < minspan) esl_bitfield_Set(fragassign, idx);
+	}
+    }
+  *ret_fragassign = fragassign;
+  return eslOK;
+
+ ERROR:
+  esl_bitfield_Destroy(fragassign);
+  *ret_fragassign = NULL;
+  return status;
+}
+
+
+
+/* Function:  esl_msa_MarkFragments_old()
  * Synopsis:  Heuristically define seq fragments in an alignment.
  *
  * Purpose:   Use a heuristic to define sequence fragments (as opposed
@@ -2119,7 +2202,7 @@ ERROR:
  * Returns:   <eslOK> on success.
  */
 int
-esl_msa_MarkFragments(ESL_MSA *msa, double fragthresh)
+esl_msa_MarkFragments_old(ESL_MSA *msa, double fragthresh)
 {
   int    i;
   int    pos;
@@ -2127,7 +2210,6 @@ esl_msa_MarkFragments(ESL_MSA *msa, double fragthresh)
   for (i = 0; i < msa->nseq; i++)
     if (msa_get_rlen(msa, i) <= fragthresh * msa->alen)
       {  
-#ifdef eslAUGMENT_ALPHABET
 	if (msa->flags & eslMSA_DIGITAL) {
 	  for (pos = 1; pos <= msa->alen; pos++) {
 	    if (esl_abc_XIsResidue(msa->abc, msa->ax[i][pos])) break;
@@ -2138,7 +2220,7 @@ esl_msa_MarkFragments(ESL_MSA *msa, double fragthresh)
 	    msa->ax[i][pos] = esl_abc_XGetMissing(msa->abc);
 	  }
 	}
-#endif
+
 	if (! (msa->flags & eslMSA_DIGITAL)) 
 	  {
 	    for (pos = 0; pos < msa->alen; pos++) {
@@ -2193,7 +2275,7 @@ esl_msa_MarkFragments(ESL_MSA *msa, double fragthresh)
 int
 esl_msa_SequenceSubset(const ESL_MSA *msa, const int *useme, ESL_MSA **ret_new)
 {
-  ESL_MSA *new = NULL;
+  ESL_MSA *new_msa = NULL;
   int  nnew;			/* number of seqs in the new MSA */
   int  oidx, nidx;		/* old, new indices */
   int  i;
@@ -2211,15 +2293,14 @@ esl_msa_SequenceSubset(const ESL_MSA *msa, const int *useme, ESL_MSA **ret_new)
   /* Note that the Create() calls allocate exact space for the sequences,
    * so we will strcpy()/memcpy() into them below.
    */
-#ifdef eslAUGMENT_ALPHABET
   if ((msa->flags & eslMSA_DIGITAL) &&
-      (new = esl_msa_CreateDigital(msa->abc, nnew, msa->alen)) == NULL)
+      (new_msa = esl_msa_CreateDigital(msa->abc, nnew, msa->alen)) == NULL)
     {status = eslEMEM; goto ERROR; }
-#endif
+
   if (! (msa->flags & eslMSA_DIGITAL) &&
-      (new = esl_msa_Create(nnew, msa->alen)) == NULL) 
+      (new_msa = esl_msa_Create(nnew, msa->alen)) == NULL) 
     {status = eslEMEM; goto ERROR; }
-  if (new == NULL) 
+  if (new_msa == NULL) 
     {status = eslEMEM; goto ERROR; }
   
 
@@ -2227,64 +2308,63 @@ esl_msa_SequenceSubset(const ESL_MSA *msa, const int *useme, ESL_MSA **ret_new)
   for (nidx = 0, oidx = 0; oidx < msa->nseq; oidx++)
     if (useme[oidx])
       {
-#ifdef eslAUGMENT_ALPHABET
 	if (msa->flags & eslMSA_DIGITAL)
-	  memcpy(new->ax[nidx], msa->ax[oidx], sizeof(ESL_DSQ) * (msa->alen+2));
-#endif
+	  memcpy(new_msa->ax[nidx], msa->ax[oidx], sizeof(ESL_DSQ) * (msa->alen+2));
+
 	if (! (msa->flags & eslMSA_DIGITAL))
-	  strcpy(new->aseq[nidx], msa->aseq[oidx]);
+	  strcpy(new_msa->aseq[nidx], msa->aseq[oidx]);
 
-	if ((status = esl_strdup(msa->sqname[oidx], -1, &(new->sqname[nidx])))    != eslOK) goto ERROR;
+	if ((status = esl_strdup(msa->sqname[oidx], -1, &(new_msa->sqname[nidx])))    != eslOK) goto ERROR;
 
-	new->wgt[nidx] = msa->wgt[oidx];
+	new_msa->wgt[nidx] = msa->wgt[oidx];
       
-	if (msa->sqacc  && msa->sqacc[oidx]  && (status = esl_msa_SetSeqAccession  (new, nidx, msa->sqacc[oidx],  -1)) != eslOK) goto ERROR;
-	if (msa->sqdesc && msa->sqdesc[oidx] && (status = esl_msa_SetSeqDescription(new, nidx, msa->sqdesc[oidx], -1)) != eslOK) goto ERROR;
-	if (msa->ss     && msa->ss[oidx]     && (status = msa_set_seq_ss           (new, nidx, msa->ss[oidx]))         != eslOK) goto ERROR;
-	if (msa->sa     && msa->sa[oidx]     && (status = msa_set_seq_sa           (new, nidx, msa->sa[oidx]))         != eslOK) goto ERROR;
-	if (msa->pp     && msa->pp[oidx]     && (status = msa_set_seq_pp           (new, nidx, msa->pp[oidx]))         != eslOK) goto ERROR;
+	if (msa->sqacc  && msa->sqacc[oidx]  && (status = esl_msa_SetSeqAccession  (new_msa, nidx, msa->sqacc[oidx],  -1)) != eslOK) goto ERROR;
+	if (msa->sqdesc && msa->sqdesc[oidx] && (status = esl_msa_SetSeqDescription(new_msa, nidx, msa->sqdesc[oidx], -1)) != eslOK) goto ERROR;
+	if (msa->ss     && msa->ss[oidx]     && (status = msa_set_seq_ss           (new_msa, nidx, msa->ss[oidx]))         != eslOK) goto ERROR;
+	if (msa->sa     && msa->sa[oidx]     && (status = msa_set_seq_sa           (new_msa, nidx, msa->sa[oidx]))         != eslOK) goto ERROR;
+	if (msa->pp     && msa->pp[oidx]     && (status = msa_set_seq_pp           (new_msa, nidx, msa->pp[oidx]))         != eslOK) goto ERROR;
 
 	/* unparsed annotation */
-	for(i = 0; i < msa->ngs; i++) { if (msa->gs[i] && msa->gs[i][oidx] && (status = esl_msa_AddGS   (new, msa->gs_tag[i], -1, nidx, msa->gs[i][oidx], -1)) != eslOK) goto ERROR; }
-	for(i = 0; i < msa->ngr; i++) { if (msa->gr[i] && msa->gr[i][oidx] && (status = esl_msa_AppendGR(new, msa->gr_tag[i],     nidx, msa->gr[i][oidx]))     != eslOK) goto ERROR; }
+	for(i = 0; i < msa->ngs; i++) { if (msa->gs[i] && msa->gs[i][oidx] && (status = esl_msa_AddGS   (new_msa, msa->gs_tag[i], -1, nidx, msa->gs[i][oidx], -1)) != eslOK) goto ERROR; }
+	for(i = 0; i < msa->ngr; i++) { if (msa->gr[i] && msa->gr[i][oidx] && (status = esl_msa_AppendGR(new_msa, msa->gr_tag[i],     nidx, msa->gr[i][oidx]))     != eslOK) goto ERROR; }
 
 	nidx++;
       }
 
-  new->flags = msa->flags;
+  new_msa->flags = msa->flags;
 
-  if ((status = esl_strdup(msa->name,           -1, &(new->name)))    != eslOK) goto ERROR;
-  if ((status = esl_strdup(msa->desc,           -1, &(new->desc)))    != eslOK) goto ERROR;
-  if ((status = esl_strdup(msa->acc,            -1, &(new->acc)))     != eslOK) goto ERROR;
-  if ((status = esl_strdup(msa->au,             -1, &(new->au)))      != eslOK) goto ERROR;
-  if ((status = esl_strdup(msa->ss_cons, msa->alen, &(new->ss_cons))) != eslOK) goto ERROR;
-  if ((status = esl_strdup(msa->sa_cons, msa->alen, &(new->sa_cons))) != eslOK) goto ERROR;
-  if ((status = esl_strdup(msa->pp_cons, msa->alen, &(new->pp_cons))) != eslOK) goto ERROR;
-  if ((status = esl_strdup(msa->rf,      msa->alen, &(new->rf)))      != eslOK) goto ERROR;
-  if ((status = esl_strdup(msa->mm,      msa->alen, &(new->mm)))      != eslOK) goto ERROR;
+  if ((status = esl_strdup(msa->name,           -1, &(new_msa->name)))    != eslOK) goto ERROR;
+  if ((status = esl_strdup(msa->desc,           -1, &(new_msa->desc)))    != eslOK) goto ERROR;
+  if ((status = esl_strdup(msa->acc,            -1, &(new_msa->acc)))     != eslOK) goto ERROR;
+  if ((status = esl_strdup(msa->au,             -1, &(new_msa->au)))      != eslOK) goto ERROR;
+  if ((status = esl_strdup(msa->ss_cons, msa->alen, &(new_msa->ss_cons))) != eslOK) goto ERROR;
+  if ((status = esl_strdup(msa->sa_cons, msa->alen, &(new_msa->sa_cons))) != eslOK) goto ERROR;
+  if ((status = esl_strdup(msa->pp_cons, msa->alen, &(new_msa->pp_cons))) != eslOK) goto ERROR;
+  if ((status = esl_strdup(msa->rf,      msa->alen, &(new_msa->rf)))      != eslOK) goto ERROR;
+  if ((status = esl_strdup(msa->mm,      msa->alen, &(new_msa->mm)))      != eslOK) goto ERROR;
 
   for (i = 0; i < eslMSA_NCUTS; i++) {
-    new->cutoff[i] = msa->cutoff[i];
-    new->cutset[i] = msa->cutset[i];
+    new_msa->cutoff[i] = msa->cutoff[i];
+    new_msa->cutset[i] = msa->cutset[i];
   }
   
-  new->nseq  = nnew;
-  new->sqalloc = nnew;
+  new_msa->nseq  = nnew;
+  new_msa->sqalloc = nnew;
 
   /* Since we have a fully constructed MSA, we don't need the
    * aux info used by parsers.
    */
-  if (new->sqlen != NULL) { free(new->sqlen);  new->sqlen = NULL; }
-  if (new->sslen != NULL) { free(new->sslen);  new->sslen = NULL; }
-  if (new->salen != NULL) { free(new->salen);  new->salen = NULL; }
-  if (new->pplen != NULL) { free(new->pplen);  new->pplen = NULL; }
-  new->lastidx = -1;
+  if (new_msa->sqlen != NULL) { free(new_msa->sqlen);  new_msa->sqlen = NULL; }
+  if (new_msa->sslen != NULL) { free(new_msa->sslen);  new_msa->sslen = NULL; }
+  if (new_msa->salen != NULL) { free(new_msa->salen);  new_msa->salen = NULL; }
+  if (new_msa->pplen != NULL) { free(new_msa->pplen);  new_msa->pplen = NULL; }
+  new_msa->lastidx = -1;
 
-  *ret_new = new;
+  *ret_new = new_msa;
   return eslOK;
 
  ERROR:
-  if (new != NULL) esl_msa_Destroy(new);
+  if (new_msa != NULL) esl_msa_Destroy(new_msa);
   *ret_new = NULL;
   return status;
 }
@@ -2338,14 +2418,10 @@ esl_msa_ColumnSubset(ESL_MSA *msa, char *errbuf, const int *useme)
 	  /* The alignment, and per-residue annotations */
 	  for (idx = 0; idx < msa->nseq; idx++)
 	    {
-#ifdef eslAUGMENT_ALPHABET
 	      if (msa->flags & eslMSA_DIGITAL) /* watch off-by-one in dsq indexing */
 		msa->ax[idx][npos+1] = msa->ax[idx][opos+1];
 	      else
 		msa->aseq[idx][npos] = msa->aseq[idx][opos];
-#else
-	      msa->aseq[idx][npos] = msa->aseq[idx][opos];
-#endif /*eslAUGMENT_ALPHABET*/
 	      if (msa->ss != NULL && msa->ss[idx] != NULL) msa->ss[idx][npos] = msa->ss[idx][opos];
 	      if (msa->sa != NULL && msa->sa[idx] != NULL) msa->sa[idx][npos] = msa->sa[idx][opos];
 	      if (msa->pp != NULL && msa->pp[idx] != NULL) msa->pp[idx][npos] = msa->pp[idx][opos];
@@ -2411,7 +2487,7 @@ esl_msa_MinimGaps(ESL_MSA *msa, char *errbuf, const char *gaps, int consider_rf)
   int     status;
   int     rf_is_nongap; /* TRUE if current position is not a gap in msa->rf OR msa->rf is NULL */
 
-#ifdef eslAUGMENT_ALPHABET	   /* digital mode case */
+
   if (msa->flags & eslMSA_DIGITAL) /* be careful of off-by-one: useme is 0..L-1 indexed */
     {
       ESL_ALLOC(useme, sizeof(int) * (msa->alen+1)); /* +1 is just to deal w/ alen=0 special case */
@@ -2435,7 +2511,7 @@ esl_msa_MinimGaps(ESL_MSA *msa, char *errbuf, const char *gaps, int consider_rf)
 	}
       if ((status = esl_msa_ColumnSubset(msa, errbuf, useme)) != eslOK) goto ERROR;
     }
-#endif
+
   if (! (msa->flags & eslMSA_DIGITAL)) /* text mode case */
     {
       if ( (status = esl_msa_MinimGapsText(msa, errbuf, gaps, consider_rf, FALSE)) != eslOK) goto ERROR;
@@ -2558,7 +2634,6 @@ esl_msa_NoGaps(ESL_MSA *msa, char *errbuf, const char *gaps)
   int     idx;		/* sequence index */
   int     status;
 
-#ifdef eslAUGMENT_ALPHABET	   /* digital mode case */
   if (msa->flags & eslMSA_DIGITAL) /* be careful of off-by-one: useme is 0..L-1 indexed */
     {
       ESL_ALLOC(useme, sizeof(int) * (msa->alen+1)); /* +1 is only to deal with alen=0 special case */
@@ -2574,7 +2649,7 @@ esl_msa_NoGaps(ESL_MSA *msa, char *errbuf, const char *gaps)
 
       if ((status = esl_msa_ColumnSubset(msa, errbuf, useme)) != eslOK) goto ERROR;
     }
-#endif
+
   if (! (msa->flags & eslMSA_DIGITAL)) /* text mode case */
     {
       if ((status = esl_msa_NoGapsText(msa, errbuf, gaps, FALSE)) != eslOK) goto ERROR;
@@ -2688,14 +2763,14 @@ esl_msa_SymConvert(ESL_MSA *msa, const char *oldsyms, const char *newsyms)
   int     special;
 
   if (msa->flags & eslMSA_DIGITAL)
-    ESL_EXCEPTION(eslEINVAL, "can't SymConvert on digital mode alignment");
+    ESL_EXCEPTION(eslEINVAL, "can't SymConvert a digital mode alignment");
   if ((strlen(oldsyms) != strlen(newsyms)) && strlen(newsyms) != 1)
     ESL_EXCEPTION(eslEINVAL, "invalid newsyms/oldsyms pair");
 
   special = (strlen(newsyms) == 1 ? TRUE : FALSE);
 
-  for (apos = 0; apos < msa->alen; apos++)
-    for (idx = 0; idx < msa->nseq; idx++)
+  for (idx = 0; idx < msa->nseq; idx++)
+    for (apos = 0; apos < msa->alen; apos++)
       if ((sptr = strchr(oldsyms, msa->aseq[idx][apos])) != NULL)
 	msa->aseq[idx][apos] = (special ? *newsyms : newsyms[sptr-oldsyms]);
   return eslOK;
@@ -2729,7 +2804,6 @@ esl_msa_Checksum(const ESL_MSA *msa, uint32_t *ret_checksum)
   uint32_t val = 0;
   int      i,pos;
 
-#ifdef eslAUGMENT_ALPHABET
   if (msa->flags & eslMSA_DIGITAL)
     {
       for (i = 0; i < msa->nseq; i++)
@@ -2740,7 +2814,7 @@ esl_msa_Checksum(const ESL_MSA *msa, uint32_t *ret_checksum)
 	    val ^= (val >>  6);
 	  }
     }
-#endif
+
   if (! (msa->flags & eslMSA_DIGITAL))
     {
       for (i = 0; i < msa->nseq; i++)
@@ -2873,9 +2947,9 @@ msa_get_rlen(const ESL_MSA *msa, int seqidx)
   int64_t rlen = 0;
   int     pos;
 
-#ifdef eslAUGMENT_ALPHABET
+
   if (msa->flags & eslMSA_DIGITAL) rlen = esl_abc_dsqrlen(msa->abc, msa->ax[seqidx]);
-#endif
+
   if (! (msa->flags & eslMSA_DIGITAL))
     {
       for (pos = 0; pos < msa->alen; pos++)
@@ -2953,7 +3027,6 @@ esl_msa_ReverseComplement(ESL_MSA *msa)
 
 
 
-#ifdef eslAUGMENT_KEYHASH
 /* Function:  esl_msa_Hash()
  * Synopsis:  Hash sequence names, internally, for faster access/lookup.
  *
@@ -2992,7 +3065,58 @@ esl_msa_Hash(ESL_MSA *msa)
   if (msa->index) { esl_keyhash_Destroy(msa->index); msa->index = NULL; }
   return status;
 }
-#endif /*eslAUGMENT_KEYHASH*/
+
+
+
+/* Function:  esl_msa_FlushLeftInserts()
+ * Synopsis:  Make all insertions flush left.
+ * Incept:    SRE, Tue Apr 25 17:04:47 2017 [Cambridge Dance Complex]
+ *
+ * Purpose:   Given an alignment <msa> with reference annotation
+ *            defining consensus (match) columns versus insertions,
+ *            make all the insertions flush left (i.e. in each
+ *            insertion position in the consensus, gaps follow
+ *            inserted residues).
+ *            
+ *            This makes profile multiple alignments unique w.r.t.
+ *            arbitrary gap ordering in insert regions, since profile
+ *            alignments don't specify any alignment of insertions.
+ *            A2M alignment format, for example, does not specify any
+ *            insert alignment.
+ *
+ * Returns:   <eslOK> on success. <msa> is altered, rearranging the
+ *            order of gaps and inserted residues.
+ *            
+ * Throws:    <eslEINVAL> if <msa> has no reference annotation.
+ *
+ * Note:      Written for <esl_msafile_a2m.c::utest_gibberish()>.
+ */
+int
+esl_msa_FlushLeftInserts(ESL_MSA *msa)
+{
+  int i, a, b;
+
+  ESL_DASSERT1(( msa->flags & eslMSA_DIGITAL ));
+  ESL_DASSERT1(( msa->abc != NULL ));
+  ESL_DASSERT1(( msa->ax  != NULL ));
+
+  if (! msa->rf) ESL_EXCEPTION(eslEINVAL, "msa has no reference annotation");
+
+  for (i = 0; i < msa->nseq; i++)
+    {
+      for (a = 1, b = 1; a <= msa->alen; a++)
+        {
+          if ( ! esl_abc_CIsGap(msa->abc, msa->rf[a-1]) )                      // if column[a] is consensus:
+            { for (; b < a; b++) msa->ax[i][b] = esl_abc_XGetGap(msa->abc); }  //   catch b up to a, adding gaps
+          else if (esl_abc_XIsGap(msa->abc, msa->ax[i][a]))                    // else if column[a] is nonconsensus, and ax[a] is a gap:
+            continue;                                                          //   do nothing, just advance to next a
+          msa->ax[i][b++] = msa->ax[i][a];                                     // copy a consensus position, or nonconsensus residue
+        }
+      for (; b <= msa->alen; b++) msa->ax[i][b] = esl_abc_XGetGap(msa->abc);   // finally, catch b up to end of alignment, adding gaps as needed.
+    }
+  return eslOK;
+}
+
 
 /*----------------- end of misc MSA functions -------------------*/
 
@@ -3031,13 +3155,13 @@ esl_msa_Validate(const ESL_MSA *msa, char *errmsg)
 
   for (idx = 0; idx < msa->nseq; idx++)
     {
-#ifdef eslAUGMENT_ALPHABET
+
       if (msa->flags & eslMSA_DIGITAL)
 	{
 	  if (! msa->ax || ! msa->ax[idx])               ESL_FAIL(eslFAIL, errmsg, "seq %d: no sequence", idx); 
 	  if (esl_abc_dsqlen(msa->ax[idx]) != msa->alen) ESL_FAIL(eslFAIL, errmsg, "seq %d: wrong length", idx);
 	}
-#endif
+
       if (! (msa->flags & eslMSA_DIGITAL))
 	{
 	  if (! msa->aseq || ! msa->aseq[idx])     ESL_FAIL(eslFAIL, errmsg, "seq %d: no sequence", idx); 
@@ -3064,42 +3188,6 @@ esl_msa_Validate(const ESL_MSA *msa, char *errmsg)
 }
 
 
-/* Function:  esl_msa_CreateFromString()
- * Synopsis:  Creates a small <ESL_MSA> from a test case string.
- *
- * Purpose:   A convenience for making small test cases in the test
- *            suites: given the contents of a complete multiple
- *            sequence alignment file as a single string <s> in
- *            alignment format <fmt>, convert it to an <ESL_MSA>.
- *            
- *            For example, 
- *            {\small\begin{verbatim}
- *            esl_msa_CreateFromString("# STOCKHOLM 1.0\n\nseq1 AAAAA\nseq2 AAAAA\n//\n", 
- *                                     eslMSAFILE_STOCKHOLM)
- *            \end{verbatim}}
- *            creates an ungapped alignment of two AAAAA sequences.
- *
- * Returns:   a pointer to the new <ESL_MSA> on success.
- *
- * Throws:    <NULL> if it fails to obtain, open, or read the temporary file
- *            that it puts the string <s> in.
- */
-ESL_MSA *
-esl_msa_CreateFromString(const char *s, int fmt)
-{
-  ESL_MSAFILE  *mfp  = NULL;
-  ESL_MSA      *msa  = NULL;
-
-  if (esl_msafile_OpenMem(NULL, s, -1, fmt, NULL, &mfp) != eslOK) goto ERROR;
-  if (esl_msafile_Read(mfp, &msa)                       != eslOK) goto ERROR;
-  esl_msafile_Close(mfp);
-  return msa;
-
- ERROR:
-  if (mfp) esl_msafile_Close(mfp);
-  if (msa) esl_msa_Destroy(msa);                        
-  return NULL;
-}
 
 
 /* Function:  esl_msa_Compare()
@@ -3143,12 +3231,12 @@ esl_msa_CompareMandatory(ESL_MSA *a1, ESL_MSA *a2)
   for (i = 0; i < a1->nseq; i++)
     {
       if (strcmp(a1->sqname[i], a2->sqname[i])        != 0)     return eslFAIL;
-      if (esl_DCompare(a1->wgt[i], a2->wgt[i], 0.001) != eslOK) return eslFAIL;
-#ifdef eslAUGMENT_ALPHABET
+      if (esl_DCompare_old(a1->wgt[i], a2->wgt[i], 0.001) != eslOK) return eslFAIL;
+
       if ((a1->flags & eslMSA_DIGITAL) &&
 	  memcmp(a1->ax[i], a2->ax[i], sizeof(ESL_DSQ) * (a1->alen+2)) != 0) 
 	return eslFAIL;
-#endif
+
       if (! (a1->flags & eslMSA_DIGITAL) && strcmp(a1->aseq[i], a2->aseq[i]) != 0) return eslFAIL;
     }
   return eslOK;
@@ -3201,10 +3289,99 @@ esl_msa_CompareOptional(ESL_MSA *a1, ESL_MSA *a2)
   for (i = 0; i < eslMSA_NCUTS; i++)
     {
       if (a1->cutset[i] && a2->cutset[i]) {
-	if (esl_FCompare(a1->cutoff[i], a2->cutoff[i], 0.01) != eslOK) return eslFAIL;
+	if (esl_FCompare_old(a1->cutoff[i], a2->cutoff[i], 0.01) != eslOK) return eslFAIL;
       } else if (a1->cutset[i] || a2->cutset[i]) return eslFAIL;
     }
   return eslOK;
+}
+
+
+/* Function:  esl_msa_Sample()
+ * Synopsis:  Sample a random, ugly <ESL_MSA> for test purposes.
+ * Incept:    SRE, Fri Apr 21 09:51:45 2017 [Culprit 1, Strings Outro]
+ *
+ * Purpose:   Sample a random digital MSA with a random depth 1..<max_nseq>
+ *            random sequences and a random alignment length
+ *            1..<alen>. Return the MSA via <*ret_msa>. Caller is 
+ *            responsible for free'ing it with <esl_msa_Destroy()>.
+ * 
+ *            Currently generates aligned sequences <ax>, names
+ *            <sqname> plus a randomly generated reference/consensus
+ *            annotation line. Sets mandatory weights to default all
+ *            1.0. 
+ *
+ * Returns:   <eslOK> on success, and <*ret_msa> is the sampled MSA.
+ *
+ * Throws:    <eslEMEM> on allocation failure, and <*ret_msa> is <NULL>.
+ * 
+ * Notes:     I wrote this for A2M format unit tests, which is why it's
+ *            not sampling random weights (A2M doesn't store weights),
+ *            and why it samples a reference annotation line (A2M
+ *            always implies one). If you extend this for other
+ *            purposes, make sure you don't break the A2M format
+ *            tests.  We may even want to pull this out into its own
+ *            module, so we can write something a bit for flexible for
+ *            passing options to it, to control what it does and
+ *            doesn't generate.
+ */
+int
+esl_msa_Sample(ESL_RANDOMNESS *rng, const ESL_ALPHABET *abc, int max_nseq, int max_alen, ESL_MSA **ret_msa)
+{
+  ESL_MSA *msa    = NULL;
+  int      nseq   = 1 + esl_rnd_Roll(rng, max_nseq); // 1..max_nseq
+  int      alen   = 1 + esl_rnd_Roll(rng, max_alen); // 1..max_alen
+  int      maxn   = 30;
+  double   pgap   = 0.1;  
+  double   pdegen = 0.02;
+  double   pcons  = 0.7;
+  char    *buf    = NULL;
+  int      n;
+  int      i,pos;
+  int      status;
+
+  if ((msa = esl_msa_CreateDigital(abc, nseq, alen)) == NULL) { status = eslEMEM; goto ERROR; }
+
+  /* Randomized digital sequence alignment */
+  for (i = 0; i < nseq; i++) 
+    {
+      msa->ax[i][0] = msa->ax[i][alen+1] = eslDSQ_SENTINEL;
+      for (pos = 1; pos <= alen; pos++)
+        {
+          if      (esl_random(rng) < pgap)   msa->ax[i][pos] = abc->K;
+          else if (esl_random(rng) < pdegen) msa->ax[i][pos] = (abc->K+1) + esl_rnd_Roll(rng, abc->Kp-abc->K-3);
+          else                               msa->ax[i][pos] = esl_rnd_Roll(rng, abc->K);
+        }
+    }
+    
+  /* Random names */
+  ESL_ALLOC(buf, sizeof(char) * (maxn+1));
+  for (i = 0; i < nseq; i++)
+    {
+      do {
+        n = 1 + esl_rnd_Roll(rng, maxn);                    // 1..maxn
+        esl_rsq_Sample(rng, eslRSQ_SAMPLE_GRAPH, n, &buf);  // one word, no space
+      } while (ispunct(buf[0]));                            // #, // are bad things for names to start with
+      esl_msa_SetSeqName(msa, i, buf, n);
+    }
+  
+  /* Random reference/consensus line */
+  ESL_ALLOC(msa->rf, sizeof(char) * (alen+1));
+  for (pos = 0; pos < alen; pos++)
+    msa->rf[pos] = (esl_random(rng) < pcons ? 'x' : '.'); 
+  msa->rf[alen] = '\0';
+
+  /* Set weights to default 1.0 */
+  esl_msa_SetDefaultWeights(msa);
+
+  free(buf);
+  *ret_msa = msa;
+  return eslOK;
+
+ ERROR:
+  if (buf) free(buf);
+  esl_msa_Destroy(msa);
+  *ret_msa = NULL;
+  return status;
 }
 /*---------------- end of debugging/development routines  -------------------*/
 
@@ -3213,6 +3390,7 @@ esl_msa_CompareOptional(ESL_MSA *a1, ESL_MSA *a2)
  * 15. Unit tests
  *****************************************************************************/
 #ifdef eslMSA_TESTDRIVE
+#include "esl_msafile.h"
 
 /* write_known_msa()
  * Write a known MSA to a tmpfile in Stockholm format.
@@ -3243,7 +3421,7 @@ compare_to_known(ESL_MSA *msa)
   if (msa->alen != 47)                     esl_fatal("bad alen");
   if (msa->nseq != 3)                      esl_fatal("bad nseq");
   if (strcmp(msa->sqname[1], "seq2") != 0) esl_fatal("bad sqname");
-#ifdef eslAUGMENT_ALPHABET
+
   if (msa->flags & eslMSA_DIGITAL)
     {
       if (! esl_abc_XIsGap(msa->abc, msa->ax[0][2]))      esl_fatal("no gap where expected");
@@ -3251,7 +3429,7 @@ compare_to_known(ESL_MSA *msa)
       if (msa->ax[1][1]  != 0)                            esl_fatal("spotcheck on ax failed"); /* 0=A */
       if (msa->ax[1][47] != 19)                           esl_fatal("spotcheck on ax failed"); /*19=Y */
     }
-#endif
+
   if (! (msa->flags & eslMSA_DIGITAL))
     {
       if (strcasecmp(msa->aseq[0], "--ACDEFGHIK~LMNPQRS-TVWYACDEFGHIKLMNPQRSTVWY~~~") != 0) esl_fatal("aseq 0 is bad");
@@ -3277,22 +3455,35 @@ utest_Create(void)
 }
 
 static void
+utest_Sizeof(ESL_RANDOMNESS *rng)
+{
+  const char    msg[] = "utest_Sizeof() failed";
+  ESL_ALPHABET *abc   = esl_alphabet_Create(eslAMINO);
+  ESL_MSA      *msa   = NULL;
+  int           nseq  = 100;
+  int           alen  = 200;
+  size_t        n     = 0;
+  
+  if (esl_msa_Sample(rng, abc, nseq, alen, &msa) != eslOK) esl_fatal(msg);
+  if ((n = esl_msa_Sizeof(msa))                  <= 0)     esl_fatal(msg);
+
+  esl_msa_Destroy(msa);
+  esl_alphabet_Destroy(abc);
+}
+
+static void
 utest_Destroy(void)
 {
-  ESL_MSA *msa = NULL;
-#ifdef eslAUGMENT_ALPHABET
-  ESL_ALPHABET *abc;
-#endif
+  ESL_ALPHABET *abc = NULL;
+  ESL_MSA      *msa = NULL;
 
   msa = esl_msa_Create(16, -1);	
   esl_msa_Destroy(msa);	 	  /* normal usage */
 
-#ifdef eslAUGMENT_ALPHABET
   abc = esl_alphabet_Create(eslRNA);
   msa = esl_msa_CreateDigital(abc, 16, 100);	
   esl_msa_Destroy(msa);	 	  /* normal usage, digital mode */
   esl_alphabet_Destroy(abc);
-#endif
 
   esl_msa_Destroy(NULL);	  /* should tolerate NULL argument */
   return;
@@ -3301,10 +3492,8 @@ utest_Destroy(void)
 static void
 utest_Expand(void)
 {
-  ESL_MSA *msa = NULL;
-#ifdef eslAUGMENT_ALPHABET
-  ESL_ALPHABET *abc;
-#endif
+  ESL_ALPHABET *abc = NULL;
+  ESL_MSA      *msa = NULL;
 
   msa = esl_msa_Create(16, -1);                	    /* growable */
   if (esl_msa_Expand(msa) != eslOK) esl_fatal("Expand failed"); /* expand by 2x in nseq */
@@ -3316,7 +3505,6 @@ utest_Expand(void)
 #endif
   esl_msa_Destroy(msa);
   
-#ifdef eslAUGMENT_ALPHABET
   abc = esl_alphabet_Create(eslDNA);
   msa = esl_msa_CreateDigital(abc, 16, -1);               /* growable */
   if (esl_msa_Expand(msa) != eslOK) esl_fatal("Expand failed"); /* expand by 2x in nseq */
@@ -3328,12 +3516,10 @@ utest_Expand(void)
 #endif /* eslTEST_THROWING*/
   esl_msa_Destroy(msa);
   esl_alphabet_Destroy(abc);
-#endif
   return;
 }
 
 
-#ifdef eslAUGMENT_ALPHABET
 static void
 utest_CreateDigital(ESL_ALPHABET *abc)
 {
@@ -3355,9 +3541,8 @@ utest_CreateDigital(ESL_ALPHABET *abc)
 
   return;
 }
-#endif /*eslAUGMENT_ALPHABET*/
 
-#ifdef eslAUGMENT_ALPHABET
+
 static void
 utest_Digitize(ESL_ALPHABET *abc, char *filename)
 {
@@ -3385,10 +3570,8 @@ utest_Digitize(ESL_ALPHABET *abc, char *filename)
   esl_msa_Destroy(msa);
   return;
 }
-#endif /*eslAUGMENT_ALPHABET*/
 
 
-#ifdef eslAUGMENT_ALPHABET
 static void
 utest_Textize(ESL_ALPHABET *abc, char *filename)
 {
@@ -3405,7 +3588,7 @@ utest_Textize(ESL_ALPHABET *abc, char *filename)
   esl_msa_Destroy(msa);
   return;
 }
-#endif /*eslAUGMENT_ALPHABET*/
+
 
 static void
 utest_SequenceSubset(ESL_MSA *m1)
@@ -3431,9 +3614,8 @@ utest_SequenceSubset(ESL_MSA *m1)
 	{
 	  if (strcmp(m1->sqname[i], m2->sqname[j]) != 0) esl_fatal(msg);
 	  if (! (m1->flags & eslMSA_DIGITAL) && (strcmp(m1->aseq[i],   m2->aseq[j])  != 0)) esl_fatal(msg);
-#ifdef eslAUGMENT_ALPHABET
+
 	  if (  (m1->flags & eslMSA_DIGITAL) && memcmp(m1->ax[i], m2->ax[j], sizeof(ESL_DSQ) * (m1->alen+2)) != 0) esl_fatal(msg);
-#endif
 	  j++;
 	}
     }  
@@ -3448,9 +3630,7 @@ utest_MinimGaps(char *tmpfile)
   char         *msg = "MinimGaps() unit test failure";
   ESL_MSAFILE  *mfp = NULL;
   ESL_MSA      *msa = NULL;
-#ifdef eslAUGMENT_ALPHABET
   ESL_ALPHABET *abc = NULL;
-#endif
 
   if (esl_msafile_Open(NULL, tmpfile, NULL, eslMSAFILE_STOCKHOLM, NULL, &mfp) != eslOK) esl_fatal(msg);
   if (esl_msafile_Read(mfp, &msa) != eslOK)                                             esl_fatal(msg);
@@ -3461,7 +3641,6 @@ utest_MinimGaps(char *tmpfile)
   if (msa->aseq[0][18] != 'T') esl_fatal(msg); /* T shifted from column 21->19 */
   esl_msa_Destroy(msa);
 
-#ifdef eslAUGMENT_ALPHABET
   if ((abc = esl_alphabet_Create(eslAMINO)) == NULL) esl_fatal(msg);
   if (esl_msafile_Open(&abc, tmpfile, NULL, eslMSAFILE_STOCKHOLM, NULL, &mfp) != eslOK) esl_fatal(msg);
   if (esl_msafile_Read(mfp, &msa) != eslOK) esl_fatal(msg);
@@ -3473,7 +3652,6 @@ utest_MinimGaps(char *tmpfile)
   if (msa->aseq[0][18] != 'T') esl_fatal(msg); /* T shifted from column 21->19 */
   esl_msa_Destroy(msa);
   esl_alphabet_Destroy(abc);
-#endif
   return;
 }  
 
@@ -3483,9 +3661,7 @@ utest_NoGaps(char *tmpfile)
   char         *msg = "NoGaps() unit test failure";
   ESL_MSAFILE  *mfp = NULL;
   ESL_MSA      *msa = NULL;
-#ifdef eslAUGMENT_ALPHABET
   ESL_ALPHABET *abc = NULL;
-#endif
 
   if (esl_msafile_Open(NULL, tmpfile, NULL, eslMSAFILE_STOCKHOLM, NULL, &mfp) != eslOK) esl_fatal(msg);
   if (esl_msafile_Read(mfp, &msa) != eslOK)                                             esl_fatal(msg);
@@ -3497,7 +3673,6 @@ utest_NoGaps(char *tmpfile)
   if (msa->aseq[0][39] != 'Y') esl_fatal(msg); /* Y shifted from column 47->40 */
   esl_msa_Destroy(msa);
 
-#ifdef eslAUGMENT_ALPHABET
   if ((abc = esl_alphabet_Create(eslAMINO)) == NULL) esl_fatal(msg);
   if (esl_msafile_Open(&abc, tmpfile, NULL, eslMSAFILE_STOCKHOLM, NULL, &mfp) != eslOK) esl_fatal(msg);
   if (esl_msafile_Read(mfp, &msa) != eslOK) esl_fatal(msg);
@@ -3510,9 +3685,57 @@ utest_NoGaps(char *tmpfile)
   if (msa->aseq[0][39] != 'Y') esl_fatal(msg); /* Y shifted from column 47->40 */
   esl_msa_Destroy(msa);
   esl_alphabet_Destroy(abc);
-#endif
   return;
 }  
+
+
+
+static void
+utest_MarkFragments(void)
+{
+  char          msg[]      = "esl_msa MarkFragments utest failed";
+  ESL_BITFIELD *fragassign = NULL;
+  ESL_ALPHABET *abc        = esl_alphabet_Create(eslRNA);
+  int i;
+  ESL_MSA *msa = esl_msa_CreateFromString("# STOCKHOLM 1.0\n"
+					  "seq1 AAAAAAAAAAAAAAAAAAAA\n"
+					  "seq2 .........AAAAAAAAAAA\n"
+					  "seq3 ..........AAAAAAAAAA\n"
+					  "seq4 ...........AAAAAAAAA\n"
+					  "//\n", eslMSAFILE_STOCKHOLM);
+
+  while (1)   // first pass: text mode. second pass: digital mode.
+    {
+      /* At fragthresh of 0.5, seqs with aspan/alen >= 10/20 cols are "full length"
+       * ... that's seq1, seq2, seq3.
+       */
+      if ( esl_msa_MarkFragments(msa, 0.5, &fragassign) != eslOK) esl_fatal(msg);
+      if ( esl_bitfield_IsSet(fragassign, 0))                     esl_fatal(msg);
+      if ( esl_bitfield_IsSet(fragassign, 1))                     esl_fatal(msg);
+      if ( esl_bitfield_IsSet(fragassign, 2))                     esl_fatal(msg);
+      if (!esl_bitfield_IsSet(fragassign, 3))                     esl_fatal(msg);
+      esl_bitfield_Destroy(fragassign);
+
+      /* At fragthresh of 0, all seqs are "full length" */
+      if ( esl_msa_MarkFragments(msa, 0., &fragassign) != eslOK) esl_fatal(msg);
+      for (i = 0; i < msa->nseq; i++)
+	if (esl_bitfield_IsSet(fragassign, i)) esl_fatal(msg);
+      esl_bitfield_Destroy(fragassign);
+
+      /* At fragthresh of 1, only seq1 is "full length" */
+      if ( esl_msa_MarkFragments(msa, 1.0, &fragassign) != eslOK) esl_fatal(msg);
+      if ( esl_bitfield_IsSet(fragassign, 0))                     esl_fatal(msg);
+      for (i = 1; i < msa->nseq; i++)
+	if (! esl_bitfield_IsSet(fragassign, i)) esl_fatal(msg);
+      esl_bitfield_Destroy(fragassign);
+
+      if (msa->flags & eslMSA_DIGITAL) break;
+      if ( esl_msa_Digitize(abc, msa, NULL) != eslOK) esl_fatal(msg);
+    }
+
+  esl_alphabet_Destroy(abc);
+  esl_msa_Destroy(msa);
+}
 
 static void
 utest_SymConvert(char *tmpfile)
@@ -3520,9 +3743,7 @@ utest_SymConvert(char *tmpfile)
   char         *msg = "SymConvert() unit test failure";
   ESL_MSAFILE  *mfp = NULL;
   ESL_MSA      *msa = NULL;
-#ifdef eslAUGMENT_ALPHABET
   ESL_ALPHABET *abc = NULL;
-#endif
 
   if (esl_msafile_Open(NULL, tmpfile, NULL, eslMSAFILE_STOCKHOLM, NULL, &mfp) != eslOK) esl_fatal(msg);
   if (esl_msafile_Read(mfp, &msa) != eslOK)                                             esl_fatal(msg);
@@ -3545,7 +3766,6 @@ utest_SymConvert(char *tmpfile)
 #endif
   esl_msa_Destroy(msa);
   
-#ifdef eslAUGMENT_ALPHABET
   if ((abc = esl_alphabet_Create(eslAMINO)) == NULL) esl_fatal(msg);
   if (esl_msafile_Open(&abc, tmpfile, NULL, eslMSAFILE_STOCKHOLM, NULL, &mfp) != eslOK) esl_fatal(msg);
   if (esl_msafile_Read(mfp, &msa) != eslOK) esl_fatal(msg);
@@ -3555,7 +3775,6 @@ utest_SymConvert(char *tmpfile)
 #endif
   esl_msa_Destroy(msa);
   esl_alphabet_Destroy(abc);
-#endif
   return;
 }
 
@@ -3571,6 +3790,7 @@ static void
 utest_ZeroLengthMSA(const char *tmpfile)
 {
   char         *msg      = "zero length msa unit test failed";
+  ESL_ALPHABET *abc      = NULL;
   ESL_MSAFILE  *mfp      = NULL;
   ESL_MSA      *z1       = NULL;
   ESL_MSA      *z2       = NULL;
@@ -3603,9 +3823,6 @@ utest_ZeroLengthMSA(const char *tmpfile)
   z1 = NULL;  // we may reuse z1 below.
   /* keep z2; we'll compare it to z3 in the end */
       
-#ifdef eslAUGMENT_ALPHABET
-  ESL_ALPHABET *abc;
-
   /* Now read the same alignment, in digital mode */
   if ((abc = esl_alphabet_Create(eslAMINO)) == NULL) esl_fatal(msg);
   if (esl_msafile_Open(&abc, tmpfile, NULL, eslMSAFILE_STOCKHOLM, NULL, &mfp) != eslOK) esl_fatal(msg);
@@ -3635,11 +3852,25 @@ utest_ZeroLengthMSA(const char *tmpfile)
   esl_alphabet_Destroy(abc);
   esl_msa_Destroy(z1);
   esl_msa_Destroy(z3);
-#endif /*eslAUGMENT_ALPHABET*/
 
   esl_msa_Destroy(z2);
   free(useme);
 }
+
+static void
+utest_Sample(ESL_RANDOMNESS *rng)
+{
+  char msg[] = "esl_msa sample unit test failed";
+  ESL_ALPHABET *abc = esl_alphabet_Create(eslAMINO);
+  ESL_MSA      *msa = NULL;
+  
+  if (esl_msa_Sample(rng, abc, 100, 100, &msa) != eslOK) esl_fatal(msg);
+  if (esl_msa_Validate(msa, NULL)              != eslOK) esl_fatal(msg);
+
+  esl_msa_Destroy(msa);
+  esl_alphabet_Destroy(abc);
+}
+
 
 #endif /*eslMSA_TESTDRIVE*/
 /*------------------------ end of unit tests --------------------------------*/
@@ -3649,43 +3880,40 @@ utest_ZeroLengthMSA(const char *tmpfile)
  * 7. Test driver
  *****************************************************************************/
 #ifdef eslMSA_TESTDRIVE
-/* 
- * gcc -g -Wall -o esl_msa_utest -I. -DeslMSA_TESTDRIVE -DAUGMENT_KEYHASH esl_msa.c esl_keyhash.c easel.c -lm
- * gcc -g -Wall -o esl_msa_utest -I. -DeslMSA_TESTDRIVE -DAUGMENT_ALPHABET esl_msa.c esl_alphabet.c easel.c -lm
- * gcc -g -Wall -o esl_msa_utest -I. -DeslMSA_TESTDRIVE -DAUGMENT_SSI esl_msa.c esl_ssi.c easel.c -lm
- * gcc -g -Wall -o esl_msa_utest -L. -I. -DeslMSA_TESTDRIVE esl_msa.c -leasel -lm
- * gcc -g -Wall -o esl_msa_utest -L. -I. -DeslTEST_THROWING -DeslMSA_TESTDRIVE esl_msa.c -leasel -lm
- * ./msa_utest
- */
 #include <stdlib.h>
 #include <stdio.h>
 
 #include "easel.h"
-#ifdef eslAUGMENT_ALPHABET
 #include "esl_alphabet.h"
-#endif
-#ifdef eslAUGMENT_KEYHASH
+#include "esl_getopts.h"
 #include "esl_keyhash.h"
-#endif
-#ifdef eslAUGMENT_RANDOM
 #include "esl_random.h"
-#endif
-#ifdef eslAUGMENT_SSI
+#include "esl_randomseq.h"
 #include "esl_ssi.h"
-#endif
 #include "esl_msa.h"
 
+static ESL_OPTIONS options[] = {
+   /* name  type         default  env   range togs  reqs  incomp  help                docgrp */
+  {"-h",  eslARG_NONE,    FALSE, NULL, NULL, NULL, NULL, NULL, "show help and usage",             0},
+  {"-s",  eslARG_INT,       "0", NULL, NULL, NULL, NULL, NULL, "set random number seed to <n>",   0},
+  { 0,0,0,0,0,0,0,0,0,0},
+};
+static char usage[]  = "[-options]";
+static char banner[] = "test driver for msa module";
 
 int
 main(int argc, char **argv)
 {
+  ESL_GETOPTS    *go           = esl_getopts_CreateDefaultApp(options, 0, argc, argv, banner, usage);
+  ESL_RANDOMNESS *rng          = esl_randomness_Create(esl_opt_GetInteger(go, "-s"));
   ESL_MSAFILE    *mfp          = NULL;
   ESL_MSA        *msa          = NULL;
   FILE           *fp           = NULL;
   char            tmpfile[16]  = "esltmpXXXXXX"; /* tmpfile template */
-#ifdef eslAUGMENT_ALPHABET
   ESL_ALPHABET   *abc          = NULL;
-#endif
+
+  fprintf(stderr, "## %s\n", argv[0]);
+  fprintf(stderr, "#  rng seed = %" PRIu32 "\n", esl_randomness_GetSeed(rng));
 
 #ifdef eslTEST_THROWING
   esl_exception_SetHandler(&esl_nonfatal_handler);
@@ -3706,16 +3934,19 @@ main(int argc, char **argv)
   /* Unit tests
    */
   utest_Create();
+  utest_Sizeof(rng);
   utest_Destroy();
   utest_Expand();
   utest_SequenceSubset(msa);
   utest_MinimGaps(tmpfile);
   utest_NoGaps(tmpfile);
+  utest_MarkFragments();
   utest_SymConvert(tmpfile);
-  utest_ZeroLengthMSA(tmpfile);	/* this tests in digital mode too if eslAUGMENT_ALPHABET */
+  utest_ZeroLengthMSA(tmpfile);	
+  utest_Sample(rng);
+
   esl_msa_Destroy(msa);
 
-#ifdef eslAUGMENT_ALPHABET
   if ((abc = esl_alphabet_Create(eslAMINO)) == NULL)                                     esl_fatal("alphabet creation failed");
   if (esl_msafile_Open(&abc, tmpfile, NULL, eslMSAFILE_STOCKHOLM, NULL, &mfp) != eslOK)  esl_fatal("MSA digital open failed");
   if (esl_msafile_Read(mfp, &msa) != eslOK)  esl_fatal("MSA digital read failed");
@@ -3725,16 +3956,15 @@ main(int argc, char **argv)
   utest_Digitize(abc, tmpfile);
   utest_Textize(abc, tmpfile);
 
-  esl_alphabet_Destroy(abc);
-  esl_msa_Destroy(msa);
-#endif
+  fprintf(stderr, "#  status = ok\n");
 
+  esl_msa_Destroy(msa);
+  esl_alphabet_Destroy(abc);
+  esl_randomness_Destroy(rng);
+  esl_getopts_Destroy(go);
   remove(tmpfile);
   exit(0);	/* success  */
 }
 #endif /*eslMSA_TESTDRIVE*/
 /*-------------------- end of test driver ---------------------*/
 
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

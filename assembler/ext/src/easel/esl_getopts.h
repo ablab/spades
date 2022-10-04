@@ -5,9 +5,11 @@
  */
 #ifndef eslGETOPTS_INCLUDED
 #define eslGETOPTS_INCLUDED
-
+#include "esl_config.h"
 #include "easel.h"
-
+#ifdef __cplusplus // magic to make C++ compilers happy
+extern "C" {
+#endif
 /* Object: ESL_OPTIONS
  * 
  * The application main.c defines an array of <ESL_OPTIONS> structures to
@@ -49,7 +51,7 @@ typedef struct {
  * variables.
  */
 typedef struct {
-  ESL_OPTIONS *opt;       /* array of app-defined options              */
+  const ESL_OPTIONS *opt; /* array of app-defined options              */
   int          nopts;     /* number of options                         */
 
   int    argc;		  /* argc from command line                    */
@@ -82,8 +84,8 @@ typedef struct {
 
 /* The visible API.
  */
-extern ESL_GETOPTS *esl_getopts_Create(ESL_OPTIONS *opt);
-extern ESL_GETOPTS *esl_getopts_CreateDefaultApp(ESL_OPTIONS *options, int nargs, int argc, char **argv, char *banner, char *usage);
+extern ESL_GETOPTS *esl_getopts_Create(const ESL_OPTIONS *opt);
+extern ESL_GETOPTS *esl_getopts_CreateDefaultApp(const ESL_OPTIONS *options, int nargs, int argc, char **argv, char *banner, char *usage);
 extern int          esl_getopts_Reuse  (ESL_GETOPTS *g);
 extern void         esl_getopts_Destroy(ESL_GETOPTS *g);
 extern void         esl_getopts_Dump(FILE *ofp, ESL_GETOPTS *g);
@@ -96,26 +98,21 @@ extern int esl_opt_VerifyConfig      (ESL_GETOPTS *g);
 extern int esl_opt_ArgNumber   (const ESL_GETOPTS *g);
 extern int esl_opt_SpoofCmdline(const ESL_GETOPTS *g, char **ret_cmdline);
 
-extern int esl_opt_GetSetter(const ESL_GETOPTS *g, const char *optname);
+extern int esl_opt_GetSetter(const ESL_GETOPTS *g, char *optname);
 
-extern int    esl_opt_IsDefault (const ESL_GETOPTS *g, const char *optname);
-extern int    esl_opt_IsOn      (const ESL_GETOPTS *g, const char *optname);
-extern int    esl_opt_IsUsed    (const ESL_GETOPTS *g, const char *optname);
+extern int    esl_opt_IsDefault (const ESL_GETOPTS *g, char *optname);
+extern int    esl_opt_IsOn      (const ESL_GETOPTS *g, char *optname);
+extern int    esl_opt_IsUsed    (const ESL_GETOPTS *g, char *optname);
 
-extern int    esl_opt_GetBoolean(const ESL_GETOPTS *g, const char *optname);
-extern int    esl_opt_GetInteger(const ESL_GETOPTS *g, const char *optname);
-extern double esl_opt_GetReal   (const ESL_GETOPTS *g, const char *optname);
-extern char   esl_opt_GetChar   (const ESL_GETOPTS *g, const char *optname);
-extern char  *esl_opt_GetString (const ESL_GETOPTS *g, const char *optname);
+extern int    esl_opt_GetBoolean(const ESL_GETOPTS *g, char *optname);
+extern int    esl_opt_GetInteger(const ESL_GETOPTS *g, char *optname);
+extern double esl_opt_GetReal   (const ESL_GETOPTS *g, char *optname);
+extern char   esl_opt_GetChar   (const ESL_GETOPTS *g, char *optname);
+extern char  *esl_opt_GetString (const ESL_GETOPTS *g, char *optname);
 extern char  *esl_opt_GetArg    (const ESL_GETOPTS *g, int which);
 
-extern int esl_opt_DisplayHelp(FILE *ofp, ESL_GETOPTS *go, int docgroup, int indent, int textwidth);
-
+extern int esl_opt_DisplayHelp(FILE *ofp, const ESL_GETOPTS *go, int docgroup, int indent, int textwidth);
+#ifdef __cplusplus // magic to make C++ compilers happy
+}
+#endif
 #endif /*eslGETOPTS_INCLUDED*/
-
-/*****************************************************************
- * @LICENSE@
- * 
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/

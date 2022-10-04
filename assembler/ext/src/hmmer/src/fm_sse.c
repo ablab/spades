@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-#if   defined (p7_IMPL_SSE)
+#if defined eslENABLE_SSE
 #include <xmmintrin.h>		/* SSE  */
 #include <emmintrin.h>		/* SSE2 */
 #endif
@@ -11,7 +11,7 @@
 #include "esl_getopts.h"
 #include "hmmer.h"
 
-#if   defined (p7_IMPL_SSE)
+#if defined eslENABLE_SSE
 int
 fm_getbits_m128 (__m128i in, char *buf, int reverse) 
 {
@@ -52,7 +52,7 @@ fm_print_m128_rev (__m128i in)
   fprintf (stderr, "%s\n", str);
   return eslOK;
 }
-#endif //#if   defined (p7_IMPL_SSE)
+#endif //#if   defined (eslENABLE_SSE)
 
 
 /* Function:  fm_initConfig()
@@ -61,13 +61,12 @@ fm_print_m128_rev (__m128i in)
 int
 fm_configInit( FM_CFG *cfg, ESL_GETOPTS *go )
 {
-  int status;
-  int i,j;
-  int trim_chunk_count;
-
   fm_initConfigGeneric(cfg, go);
 
-#if   defined (p7_IMPL_SSE)
+#if defined (eslENABLE_SSE)
+  int i,j;
+  int trim_chunk_count;
+  int status;
 
   cfg->fm_allones_v = _mm_set1_epi8(0xff);
   cfg->fm_neg128_v  = _mm_set1_epi8((int8_t) -128);
@@ -101,10 +100,10 @@ fm_configInit( FM_CFG *cfg, ESL_GETOPTS *go )
    * Incrementally chew off the 1s in chunks of 2 (for DNA) or 4 (for DNA_full)
    * from the right side, and stick each result into an element of a __m128 array
    */
-  //if (cfg->meta->alph_type == fm_DNA)
-   trim_chunk_count = 64; //2-bit steps
-//  else //(meta->alph_type == fm_DNA_full)
-//    trim_chunk_count = 16; //8-bit steps
+   if (cfg->meta->alph_type == fm_DNA)
+     trim_chunk_count = 64; //2-bit steps
+   else // then cfg->meta->alph_type == fm_AMINO, we suppose
+     trim_chunk_count = 16; //8-bit steps
 
   //chars_per_vector = 128/meta->charBits;
   cfg->fm_masks_v         = NULL;
@@ -147,7 +146,7 @@ fm_configInit( FM_CFG *cfg, ESL_GETOPTS *go )
 
     }
   }
-#endif //#if   defined (p7_IMPL_SSE)
+#endif // eslENABLE_SSE
 
 /*
   if (cfg->meta->alph_type == fm_DNA_full) {
@@ -157,15 +156,15 @@ fm_configInit( FM_CFG *cfg, ESL_GETOPTS *go )
 */
   return eslOK;
 
+#if defined (eslENABLE_SSE)
 ERROR:
-#if   defined (p7_IMPL_SSE)
   if (cfg->fm_chars_mem)         free(cfg->fm_chars_mem);
   if (cfg->fm_masks_mem)         free(cfg->fm_masks_mem);
   if (cfg->fm_reverse_masks_mem) free(cfg->fm_reverse_masks_mem);
-#endif
 
   esl_fatal("Error allocating memory in initGlobals\n");
   return eslFAIL;
+#endif
 }
 
 
@@ -189,18 +188,11 @@ ERROR:
  *            and certainly better space-utilization.
  */
 int
-fm_getOccCount (const FM_DATA *fm, const FM_CFG *cfg, int pos, uint8_t c) {
-
-  int i;
+fm_getOccCount (const FM_DATA *fm, const FM_CFG *cfg, int pos, uint8_t c)
+{
   FM_METADATA *meta = cfg->meta;
-
-  int cnt;
+  int cnt = 0;
   const int b_pos          = (pos+1) / meta->freq_cnt_b ; //floor(pos/b_size)   : the b count element preceding pos
-  const uint16_t * occCnts_b  = fm->occCnts_b;
-  const uint32_t * occCnts_sb = fm->occCnts_sb;
-  const int sb_pos         = (pos+1) / meta->freq_cnt_sb; //floor(pos/sb_size) : the sb count element preceding pos
-
-
   const int cnt_mod_mask_b = meta->freq_cnt_b - 1; //used to compute the mod function
   const int b_rel_pos      = (pos+1) & cnt_mod_mask_b; // pos % b_size      : how close is pos to the boundary corresponding to b_pos
   int up_b           = 2*b_rel_pos/meta->freq_cnt_b; //1 if pos is expected to be closer to the boundary of b_pos+1, 0 otherwise
@@ -211,7 +203,11 @@ fm_getOccCount (const FM_DATA *fm, const FM_CFG *cfg, int pos, uint8_t c) {
     landmark  = (b_pos*(meta->freq_cnt_b)) - 1 ;
   }
 
-#if   defined (p7_IMPL_SSE)
+#if defined (eslENABLE_SSE)
+  int i;
+  const uint16_t * occCnts_b  = fm->occCnts_b;
+  const uint32_t * occCnts_sb = fm->occCnts_sb;
+  const int sb_pos = (pos+1) / meta->freq_cnt_sb; //floor(pos/sb_size) : the sb count element preceding pos
 
 
   // get the cnt stored at the nearest checkpoint
@@ -312,6 +308,7 @@ fm_getOccCount (const FM_DATA *fm, const FM_CFG *cfg, int pos, uint8_t c) {
           counts_v = _mm_subs_epi8(counts_v, BWT_v); // adds 1 for each matching byte  (subtracting negative 1)
         }
         int remaining_cnt = pos + 1 -  i ;
+
         if (remaining_cnt > 0) {
           BWT_v    = *(__m128i*)(BWT+i);
           BWT_v    = _mm_cmpeq_epi8(BWT_v, c_v);
@@ -346,7 +343,7 @@ fm_getOccCount (const FM_DATA *fm, const FM_CFG *cfg, int pos, uint8_t c) {
     cnt--;
   }
 
-#endif //#if   defined (p7_IMPL_SSE)
+#endif //#if   defined (eslENABLE_SSE)
 
 
   return cnt ;
@@ -375,11 +372,10 @@ fm_getOccCount (const FM_DATA *fm, const FM_CFG *cfg, int pos, uint8_t c) {
  *
  */
 int
-fm_getOccCountLT (const FM_DATA *fm, const FM_CFG *cfg, int pos, uint8_t c, uint32_t *cnteq, uint32_t *cntlt) {
-
+fm_getOccCountLT (const FM_DATA *fm, const FM_CFG *cfg, int pos, uint8_t c, uint32_t *cnteq, uint32_t *cntlt)
+{
   FM_METADATA *meta = cfg->meta;
-
-  int i,j;
+  int i;
   const uint16_t * occCnts_b  = fm->occCnts_b;
   const uint32_t * occCnts_sb = fm->occCnts_sb;
   const int b_pos          = (pos+1) / meta->freq_cnt_b; //floor(pos/b_size)   : the b count element preceding pos
@@ -411,7 +407,8 @@ fm_getOccCountLT (const FM_DATA *fm, const FM_CFG *cfg, int pos, uint8_t c, uint
       *cntlt += FM_OCC_CNT(b, b_pos, i ) ;
   }
 
-#if   defined (p7_IMPL_SSE)
+#if   defined (eslENABLE_SSE)
+  int j;
 
   if ( landmark < fm->N - 1 || landmark == -1 ) {
 
@@ -617,13 +614,9 @@ fm_getOccCountLT (const FM_DATA *fm, const FM_CFG *cfg, int pos, uint8_t c, uint
     }
   }
 
-#endif //#if   defined (p7_IMPL_SSE)
+#endif //#if   defined (eslENABLE_SSE)
 
   return eslOK ;
 
 }
 
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

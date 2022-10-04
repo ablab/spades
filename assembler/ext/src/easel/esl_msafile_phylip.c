@@ -9,7 +9,6 @@
  *   6. Unit tests
  *   7. Test driver
  *   8. Example
- *   9. Copyright and license information.
  *
  * See: http://evolution.genetics.washington.edu/phylip/doc/sequence.html
  */
@@ -21,12 +20,11 @@
 #include <ctype.h>
 
 #include "easel.h"
-#ifdef eslAUGMENT_ALPHABET
 #include "esl_alphabet.h"
-#endif
 #include "esl_mem.h"
 #include "esl_msa.h"
 #include "esl_msafile.h"
+
 #include "esl_msafile_phylip.h"
 
 #define eslMSAFILE_PHYLIP_LEGALSYMS  "-ABCDEFGHIJKLMNOPQRSTUVWZYX*?."
@@ -87,7 +85,6 @@ esl_msafile_phylip_SetInmap(ESL_MSAFILE *afp)
 {
   int sym;
 
-#ifdef eslAUGMENT_ALPHABET
   if (afp->abc)
     {
       for (sym = 1;   sym < 128; sym++) afp->inmap[sym] = afp->abc->inmap[sym];
@@ -102,7 +99,7 @@ esl_msafile_phylip_SetInmap(ESL_MSAFILE *afp)
       if (afp->abc->type == eslDNA || afp->abc->type == eslRNA) 
 	afp->inmap['O'] = esl_abc_XGetGap(afp->abc);
     }
-#endif
+
   if (! afp->abc)
     {
       for (sym = 1; sym < 128; sym++)    afp->inmap[sym] = eslDSQ_ILLEGAL;
@@ -273,9 +270,7 @@ esl_msafile_phylip_Read(ESL_MSAFILE *afp, ESL_MSA **ret_msa)
 
   /* believe <nseq> and allocate accordingly */
   /* don't believe <alen_stated>; use it for validation, after we've parsed everything. */
-#ifdef eslAUGMENT_ALPHABET
   if (afp->abc   &&  (msa = esl_msa_CreateDigital(afp->abc, nseq, -1)) == NULL) { status = eslEMEM; goto ERROR; }
-#endif
   if (! afp->abc &&  (msa = esl_msa_Create(                 nseq, -1)) == NULL) { status = eslEMEM; goto ERROR; }
 
   /* load next line, skipping any blank ones (though there shouldn't be any) */
@@ -447,9 +442,7 @@ phylip_interleaved_Read(ESL_MSAFILE *afp, ESL_MSA *msa, int nseq, int32_t alen_s
       
       /* Append the sequence. */
       cur_alen = alen;
-#ifdef eslAUGMENT_ALPHABET
       if (msa->abc)    { status = esl_abc_dsqcat(afp->inmap, &(msa->ax[idx]),   &(cur_alen), p, n); }
-#endif
       if (! msa->abc)  { status = esl_strmapcat (afp->inmap, &(msa->aseq[idx]), &(cur_alen), p, n); }
       if      (status == eslEINVAL)    ESL_XFAIL(eslEFORMAT, afp->errmsg, "one or more invalid sequence characters");
       else if (status != eslOK)        goto ERROR;
@@ -516,13 +509,11 @@ phylip_interleaved_Write(FILE *fp, const ESL_MSA *msa, ESL_MSAFILE_FMTDATA *opt_
       if (fprintf(fp, "\n") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "interleaved phylip write failed");
       for (idx = 0; idx < msa->nseq; idx++)
 	{
-#ifdef eslAUGMENT_ALPHABET 
 	  if (msa->abc) 
 	    {
 	      esl_abc_TextizeN(msa->abc, msa->ax[idx]+apos+1, rpl, buf);
 	      phylip_rectify_output_seq_digital(buf);
 	    }
-#endif
 	  if (! msa->abc) 
 	    {
 	      strncpy(buf, msa->aseq[idx]+apos, rpl);
@@ -580,9 +571,7 @@ phylip_sequential_Read(ESL_MSAFILE *afp, ESL_MSA *msa, int nseq, int32_t alen_st
 	      n -= namewidth;
 	    }
 	  
-#ifdef eslAUGMENT_ALPHABET
 	  if (msa->abc)    { status = esl_abc_dsqcat(afp->inmap, &(msa->ax[idx]),   &alen, p, n); }
-#endif
 	  if (! msa->abc)  { status = esl_strmapcat (afp->inmap, &(msa->aseq[idx]), &alen, p, n); }
 	  if      (status == eslEINVAL)    ESL_XFAIL(eslEFORMAT, afp->errmsg, "one or more invalid sequence characters");
 	  else if (status != eslOK)        goto ERROR;
@@ -635,13 +624,11 @@ phylip_sequential_Write(FILE *fp, const ESL_MSA *msa, ESL_MSAFILE_FMTDATA *opt_f
     {
       for (apos = 0; apos < msa->alen; apos += rpl)
 	{
-#ifdef eslAUGMENT_ALPHABET 
 	  if (msa->abc) 
 	    {
 	      esl_abc_TextizeN(msa->abc, msa->ax[idx]+apos+1, rpl, buf);
 	      phylip_rectify_output_seq_digital(buf);
 	    }
-#endif
 	  if (! msa->abc) 
 	    {
 	      strncpy(buf, msa->aseq[idx]+apos, rpl);
@@ -1492,7 +1479,7 @@ utest_write_ambig1(FILE *ofp)
   fputs("YYYYYYYYY DDDDDDDDDD EEEEEEEEEE\n", ofp);
   fputs("YYYYYYYYY FFFFFFFFFF GGGGGGGGGG\n", ofp);
   fputs("HHHHHHHHH IIIIIIIIII KKKKKKKKKK\n", ofp);
-};
+}
 
 
 
@@ -1906,9 +1893,3 @@ main(int argc, char **argv)
 /*::cexcerpt::msafile_phylip_example::end::*/
 #endif /*eslMSAFILE_PHYLIP_EXAMPLE*/
 /*--------------------- end of examples -------------------------*/
-
-
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

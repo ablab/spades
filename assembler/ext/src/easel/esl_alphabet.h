@@ -2,10 +2,13 @@
  */
 #ifndef eslALPHABET_INCLUDED
 #define eslALPHABET_INCLUDED
+#include "esl_config.h"
 
 #include <ctype.h>		/* isascii() */
 #include "easel.h"
-
+#ifdef __cplusplus // magic to make C++ compilers happy
+extern "C" {
+#endif
 /* Flags for alphabet types.
  * Do not change, only add, because these codes are used in file formats.
  */
@@ -83,8 +86,9 @@ extern int    esl_abc_FExpectScVec(const ESL_ALPHABET *a, float  *sc, const floa
 extern int    esl_abc_DExpectScVec(const ESL_ALPHABET *a, double *sc, const double *p);
 extern int    esl_abc_FCount      (const ESL_ALPHABET *a, float  *ct, ESL_DSQ x, float  wt);
 extern int    esl_abc_DCount      (const ESL_ALPHABET *a, double *ct, ESL_DSQ x, double wt);
-extern int    esl_abc_EncodeType  (char *typestring);
-extern char  *esl_abc_DecodeType  (int type);
+extern int    esl_abc_EncodeType   (char *typestring);
+extern int    esl_abc_EncodeTypeMem(char *type, int n);
+extern char  *esl_abc_DecodeType   (int type);
 extern int    esl_abc_ValidateSeq(const ESL_ALPHABET *a, const char *seq, int64_t L, char *errbuf);
 
 /* In the tests below, remember the rules of order in internal alphabets:
@@ -118,12 +122,11 @@ extern int    esl_abc_ValidateSeq(const ESL_ALPHABET *a, const char *seq, int64_
 #define esl_abc_CIsUnknown(a, c)     ((a)->inmap[(int)c] == (a)->Kp-3)
 #define esl_abc_CIsNonresidue(a, c)  ((a)->inmap[(int)c] == (a)->Kp-2)
 #define esl_abc_CIsMissing(a, c)     ((a)->inmap[(int)c] == (a)->Kp-1)
-#define esl_abc_CGetGap(a)           ((a)->sym[(int)(a)->K])
-#define esl_abc_CGetUnknown(a)       ((a)->sym[(int)(a)->Kp-3])
-#define esl_abc_CGetNonresidue(a)    ((a)->sym[(int)(a)->Kp-2])
-#define esl_abc_CGetMissing(a)       ((a)->sym[(int)(a)->Kp-1])
-
+#define esl_abc_CGetGap(a)           ((a)->sym[(a)->K])
+#define esl_abc_CGetUnknown(a)       ((a)->sym[(a)->Kp-3])
+#define esl_abc_CGetNonresidue(a)    ((a)->sym[(a)->Kp-2])
+#define esl_abc_CGetMissing(a)       ((a)->sym[(a)->Kp-1])
+#ifdef __cplusplus // magic to make C++ compilers happy
+}
+#endif
 #endif /*eslALPHABET_INCLUDED*/
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

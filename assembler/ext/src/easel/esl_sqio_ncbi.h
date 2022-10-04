@@ -1,19 +1,16 @@
 /* Unaligned ncbi sequence file i/o.
- * 
- * SVN $Id$
- * SVN $URL$
  */
 #ifndef eslSQIO_NCBI_INCLUDED
 #define eslSQIO_NCBI_INCLUDED
+#include "esl_config.h"
 
 #include <stdio.h>
-#include "esl_sq.h"
-#include "esl_sqio.h"
-
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
 
+#include "esl_sq.h"
+#include "esl_sqio.h"
 
 /* forward declaration */
 struct esl_sqio_s;
@@ -103,8 +100,5 @@ typedef struct esl_sqncbi_s {
 
 extern int  esl_sqncbi_Open(char *seqfile, int format, struct esl_sqio_s *sqfp);
 
-
 #endif /*eslSQIO_NCBI_INCLUDED*/
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
+

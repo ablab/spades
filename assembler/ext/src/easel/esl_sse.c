@@ -1,15 +1,23 @@
-/* Vectorized routines for Intel/AMD, using Streaming SIMD Extensions (SSE).
+/* Vectorized routines for Intel/AMD processors, using Streaming SIMD Extensions (SSE).
  * 
- * Table of contents           
+ * Contents:           
  *     1. SIMD logf(), expf()
  *     2. Utilities for ps vectors (4 floats in a __m128)
- *     3. Utilities for epu8 vectors (16 uchars in a __m128i)
  *     3. Benchmark
  *     4. Unit tests
  *     5. Test driver
  *     6. Example
- *     7. Copyright and license
  *     
+ *****************************************************************
+ *
+ * This code is conditionally compiled, only when <eslENABLE_SSE> or
+ * <eslENABLE_SSE4> was set in <esl_config.h> by the configure script,
+ * and that will only happen on x86 platforms. When neither
+ * <eslENABLE_SSE> nor <eslENABLE_SSE4> are set, we include some dummy
+ * code to silence compiler and ranlib warnings about empty
+ * translation units and no symbols, and dummy drivers that do nothing
+ * but declare success.
+ *
  *****************************************************************
  * Credits:
  *
@@ -22,15 +30,14 @@
  * information is appended at the end of the file.
  */
 #include "esl_config.h"
-#ifdef HAVE_SSE2
+#if defined(eslENABLE_SSE) || defined(eslENABLE_SSE4)
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <float.h>
 
-#include <xmmintrin.h>		/* SSE  */
-#include <emmintrin.h>		/* SSE2 */
+#include <x86intrin.h>
 
 #include "easel.h"
 #include "esl_sse.h"
@@ -39,13 +46,6 @@
 /*****************************************************************
  * 1. SSE SIMD logf(), expf()
  *****************************************************************/ 
-
-/* As of Dec 2007, I am unaware of any plans for Intel/AMD to release
- * SSE intrinsics for logf(), expf(), or other special functions.
- *
- * I need them, and the code below should suffice. If you know of
- * better ways to compute these functions, please let me know.
- */
 
 /* Function:  esl_sse_logf()
  * Synopsis:  <r[z] = log x[z]>
@@ -255,8 +255,6 @@ esl_sse_dump_ps(FILE *fp, __m128 v)
  *****************************************************************/
 #ifdef eslSSE_BENCHMARK
 
-/* gcc -msse2 -O3 -o benchmark-sse -I ~/src/hmmer/easel -L ~/src/hmmer/easel -DeslSSE_BENCHMARK -DHAVE_SSE2 esl_sse.c -leasel -lm
- */
 #include "esl_config.h"
 
 #include <stdio.h>
@@ -467,7 +465,98 @@ utest_odds(ESL_GETOPTS *go, ESL_RANDOMNESS *r)
   if (avgerr2 > 1e-8) esl_fatal("average error on expf() is intolerable\n");
   if (maxerr2 > 1e-6) esl_fatal("maximum error on expf() is intolerable\n");
 }
+
+
+static void
+utest_hmax_epu8(ESL_RANDOMNESS *rng)
+{
+  union { __m128i v; uint8_t x[16]; } u;
+  uint8_t r1, r2;
+  int     i,z;
+
+  for (i = 0; i < 100; i++)
+    {
+      r1 = 0;
+      for (z = 0; z < 16; z++) 
+        {
+          u.x[z] = (uint8_t) (esl_rnd_Roll(rng, 256));  // 0..255
+          if (u.x[z] > r1) r1 = u.x[z];
+        }
+      r2 = esl_sse_hmax_epu8(u.v);
+      if (r1 != r2) esl_fatal("hmax_epu8 utest failed");
+    }
+}
+
+static void
+utest_hmax_epi8(ESL_RANDOMNESS *rng)
+{
+#ifdef eslENABLE_SSE4    // no-op if eslENABLE_SSE only
+  union { __m128i v; int8_t x[16]; } u;
+  int8_t r1, r2;
+  int    i,z;
+
+  for (i = 0; i < 100; i++)
+    {
+      r1 = -128;
+      for (z = 0; z < 16; z++) 
+        {
+          u.x[z] = (int8_t) (esl_rnd_Roll(rng, 256) - 128);  // -128..127
+          if (u.x[z] > r1) r1 = u.x[z];
+        }
+      r2 = esl_sse_hmax_epi8(u.v);
+      if (r1 != r2) esl_fatal("hmax_epi8 utest failed");
+    }
+#endif // eslENABLE_SSE4
+}
+
+static void
+utest_hmax_epi16(ESL_RANDOMNESS *rng)
+{
+  union { __m128i v; int16_t x[8]; } u;
+  int16_t r1, r2;
+  int     i,z;
+
+  for (i = 0; i < 100; i++)
+    {
+      r1 = -32768;
+      for (z = 0; z < 8; z++) 
+        {
+          u.x[z] = (int16_t) (esl_rnd_Roll(rng, 65536) - 32768);  // -32768..32767
+          if (u.x[z] > r1) r1 = u.x[z];
+        }
+      r2 = esl_sse_hmax_epi16(u.v);
+      if (r1 != r2) esl_fatal("hmax_epi16 utest failed: %d != %d", r1, r2);
+    }
+}
+
+static void
+utest_select_ps(ESL_RANDOMNESS *rng)
+{
+  union { __m128 v; float x[4]; } a, b, mask, res;
+  int i, z;
+
+  for (i = 0; i < 100; i++)
+    {
+      for (z = 0; z < 4; z++)
+        {
+          a.x[z]    = (float) esl_random(rng);
+          b.x[z]    = (float) esl_random(rng);
+          mask.x[z] = (float) (esl_random(rng) > 0.5 ? 1.0 : 0.0);
+        }
+      mask.v = _mm_cmpeq_ps(mask.v, _mm_setzero_ps());
+      res.v = esl_sse_select_ps(a.v, b.v, mask.v);
+      for (z = 0; z < 4; z++)
+        {
+          if (mask.x[z] == 0 && res.x[z] != a.x[z])
+             esl_fatal("select_ps utest failed: %d != %d", res.x[z], a.x[z]);
+          else if (mask.x[z] == 1 && res.x[z] != b.x[z])
+             esl_fatal("select_ps utest failed: %d != %d", res.x[z], b.x[z]);
+        }
+        esl_sse_dump_ps(stdout, a.v);
+    }
+}
 #endif /*eslSSE_TESTDRIVE*/
+
 
 
 
@@ -477,8 +566,7 @@ utest_odds(ESL_GETOPTS *go, ESL_RANDOMNESS *r)
  *****************************************************************/
 
 #ifdef eslSSE_TESTDRIVE
-/* gcc -msse2 -g -Wall -o test -I. -L. -DeslSSE_TESTDRIVE esl_sse.c -leasel -lm
- */
+
 #include "esl_config.h"
 
 #include <stdio.h>
@@ -493,7 +581,7 @@ static ESL_OPTIONS options[] = {
   /* name           type      default  env  range toggles reqs incomp  help                                       docgroup*/
   { "-h",        eslARG_NONE,   FALSE,  NULL, NULL,  NULL,  NULL, NULL, "show brief help on version and usage",             0 },
   { "-N",        eslARG_INT,  "10000",  NULL, NULL,  NULL,  NULL, NULL, "number of random test points",                     0 },
-  { "-s",        eslARG_INT,     "42",  NULL, NULL,  NULL,  NULL, NULL, "set random number seed to <n>",                    0 },
+  { "-s",        eslARG_INT,      "0",  NULL, NULL,  NULL,  NULL, NULL, "set random number seed to <n>",                    0 },
   { "-v",        eslARG_NONE,   FALSE,  NULL, NULL,  NULL,  NULL, NULL, "be verbose: show test report",                     0 },
   { "--vv",      eslARG_NONE,   FALSE,  NULL, NULL,  NULL,  NULL, NULL, "be very verbose: show individual test samples",    0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -504,14 +592,23 @@ static char banner[] = "test driver for sse module";
 int
 main(int argc, char **argv)
 {
-  ESL_GETOPTS    *go = esl_getopts_CreateDefaultApp(options, 0, argc, argv, banner, usage);
-  ESL_RANDOMNESS *r  = esl_randomness_Create(esl_opt_GetInteger(go, "-s"));;
+  ESL_GETOPTS    *go  = esl_getopts_CreateDefaultApp(options, 0, argc, argv, banner, usage);
+  ESL_RANDOMNESS *rng = esl_randomness_Create(esl_opt_GetInteger(go, "-s"));;
+
+  fprintf(stderr, "## %s\n", argv[0]);
+  fprintf(stderr, "#  rng seed = %" PRIu32 "\n", esl_randomness_GetSeed(rng));
 
   utest_logf(go);
   utest_expf(go);
-  utest_odds(go, r);
+  utest_odds(go, rng);
+  utest_hmax_epu8(rng);
+  utest_hmax_epi8(rng);
+  utest_hmax_epi16(rng);
+  utest_select_ps(rng);
 
-  esl_randomness_Destroy(r);
+  fprintf(stderr, "#  status   = ok\n");
+
+  esl_randomness_Destroy(rng);
   esl_getopts_Destroy(go);
   return 0;
 }
@@ -526,8 +623,6 @@ main(int argc, char **argv)
 
 #ifdef eslSSE_EXAMPLE
 /*::cexcerpt::sse_example::begin::*/
-/* gcc -msse2 -g -Wall -o example -I. -L. -DeslSSE_EXAMPLE esl_sse.c -leasel -lm
- */
 #include "esl_config.h"
 
 #include <stdio.h>
@@ -557,59 +652,59 @@ main(int argc, char **argv)
 #endif /*eslSSE_EXAMPLE*/
 
 
-#else /* ! HAVE_SSE2*/
 
-/* If we don't have SSE2 compiled in, provide some nothingness to:
+
+
+#else // ! (eslENABLE_SSE || eslENABLE_SSE4)
+
+/* If we don't have SSE compiled in, provide some nothingness to:
  *   a. prevent Mac OS/X ranlib from bitching about .o file that "has no symbols" 
  *   b. prevent compiler from bitching about "empty compilation unit"
- *   c. automatically pass the automated tests.
+ *   c. compile blank drivers and automatically pass the automated tests.
  */
-#include "easel.h"
-
-void esl_sse_DoAbsolutelyNothing(void) { return; }
+void esl_sse_silence_hack(void) { return; }
 #if defined eslSSE_TESTDRIVE || eslSSE_EXAMPLE || eslSSE_BENCHMARK
 int main(void) { return 0; }
 #endif
+#endif // (eslENABLE_SSE || eslENABLE_SSE4) or not
 
-#endif /* HAVE_SSE2 or not*/
+
+
 
 
 /*****************************************************************
- * @LICENSE@
- * 
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
-
-/* Additionally, esl_sse_logf() and esl_sse_expf() are 
+ * additional copyright and license information for this file    
+ *****************************************************************
+ * In addition to our own copyrights, esl_sse_logf() and esl_sse_expf() are also:
  *  Copyright (C) 2007 Julien Pommier
  *  Copyright (C) 1992 Stephen Moshier 
  *
  * These functions derived from zlib-licensed routines by
  * Julien Pommier, http://gruntthepeon.free.fr/ssemath/. The
  * zlib license:
- */
-
-/* Copyright (C) 2007  Julien Pommier
-
-  This software is provided 'as-is', without any express or implied
-  warranty.  In no event will the authors be held liable for any damages
-  arising from the use of this software.
-
-  Permission is granted to anyone to use this software for any purpose,
-  including commercial applications, and to alter it and redistribute it
-  freely, subject to the following restrictions:
-
-  1. The origin of this software must not be misrepresented; you must not
-     claim that you wrote the original software. If you use this software
-     in a product, an acknowledgment in the product documentation would be
-     appreciated but is not required.
-  2. Altered source versions must be plainly marked as such, and must not be
-     misrepresented as being the original software.
-  3. This notice may not be removed or altered from any source distribution.
-*/
-
-/* In turn, Pommier had derived the logf() and expf() functions from
+ *
+ *-------------------------------------------------------------------------
+ * Copyright (C) 2007  Julien Pommier
+ *
+ *  This software is provided 'as-is', without any express or implied
+ *  warranty.  In no event will the authors be held liable for any damages
+ *  arising from the use of this software.
+ *
+ *  Permission is granted to anyone to use this software for any purpose,
+ *  including commercial applications, and to alter it and redistribute it
+ *  freely, subject to the following restrictions:
+ *
+ *  1. The origin of this software must not be misrepresented; you must not
+ *     claim that you wrote the original software. If you use this software
+ *     in a product, an acknowledgment in the product documentation would be
+ *     appreciated but is not required.
+ *  2. Altered source versions must be plainly marked as such, and must not be
+ *     misrepresented as being the original software.
+ *  3. This notice may not be removed or altered from any source distribution.
+ *
+ *-------------------------------------------------------------------------
+ *
+ * In turn, Pommier had derived the logf() and expf() functions from
  * serial versions in the Cephes math library. According to its
  * readme, Cephes is "copyrighted by the author" and "may be used
  * freely but it comes with no support or guarantee."  Cephes is

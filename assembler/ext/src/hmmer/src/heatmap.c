@@ -2,7 +2,6 @@
  * evolving toward eventual inclusion in Easel
  * 
  * SRE, Thu Jan 25 09:51:18 2007 [Janelia] [Elgar, Enigma Variations]
- * SVN $Id$
  */
 #include "p7_config.h"
 

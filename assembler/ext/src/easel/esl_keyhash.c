@@ -9,8 +9,6 @@
  *    5. Unit tests.
  *    6. Test driver.
  *    7. Example.
- *    8. Copyright and license information.
- * 
  */
 #include "esl_config.h"
 
@@ -21,6 +19,7 @@
 
 #include "easel.h"
 #include "esl_mem.h"
+
 #include "esl_keyhash.h"
 
 static ESL_KEYHASH *keyhash_create(uint32_t hashsize, int init_key_alloc, int init_string_alloc);
@@ -146,10 +145,13 @@ esl_keyhash_Sizeof(const ESL_KEYHASH *kh)
 {
   size_t n = 0;
 
-  n += sizeof(ESL_KEYHASH);
-  n += sizeof(int)  * kh->hashsize;
-  n += sizeof(int)  * kh->kalloc * 2;
-  n += sizeof(char) * kh->salloc;
+  if (kh)
+    {
+      n += sizeof(ESL_KEYHASH);
+      n += sizeof(int)  * kh->hashsize;
+      n += sizeof(int)  * kh->kalloc * 2;
+      n += sizeof(char) * kh->salloc;
+    }
   return n;
 }
 
@@ -242,14 +244,17 @@ esl_keyhash_Dump(FILE *fp, const ESL_KEYHASH *kh)
 /* Function: esl_keyhash_Store()
  * Synopsis: Store a key and get a key index for it.
  *
- * Purpose:  Store a string <key> of length <n> in the key index hash table <kh>.
- *           Associate it with a unique key index, counting from
- *           0. It's this index that lets us map the hashed keys to
- *           integer-indexed C arrays, clumsily emulating Perl's
- *           hashes. Optionally returns the index through <opt_index>.
+ * Purpose:  Store a string (or mem) <key> of length <n> in the key
+ *           index hash table <kh>.  Associate it with a unique key
+ *           index, counting from 0. This index maps hashed keys to
+ *           integer-indexed C arrays, clumsily emulating hashes or
+ *           associative arrays. Optionally returns the index through
+ *           <opt_index>.
  *           
  *           <key>, <n> follow the standard idiom for strings and
- *           unterminated buffers.
+ *           unterminated buffers. If <key> is raw memory, <n> must
+ *           be provided; if <key> is a \0-terminated string, <n>
+ *           may be -1.
  *
  * Returns:  <eslOK> on success; stores <key> in <kh>; <opt_index> is 
  *           returned, set to the next higher index value.
@@ -271,7 +276,7 @@ esl_keyhash_Store(ESL_KEYHASH *kh, const char *key, esl_pos_t n, int *opt_index)
   for (idx = kh->hashtable[val]; idx != -1; idx = kh->nxt[idx])
     if (esl_memstrcmp(key, n, kh->smem + kh->key_offset[idx]))
       { 
-	if (opt_index != NULL) *opt_index = idx; 
+	if (opt_index) *opt_index = idx; 
 	return eslEDUP; 
       }
 
@@ -316,11 +321,13 @@ esl_keyhash_Store(ESL_KEYHASH *kh, const char *key, esl_pos_t n, int *opt_index)
 /* Function:  esl_keyhash_Lookup()
  * Synopsis:  Look up a key's array index.
  *
- * Purpose:   Look up a <key> in the hash table <kh>.
+ * Purpose:   Look up string or mem <key> of length <n> in hash table <kh>.
  *            If <key> is found, return <eslOK>, and optionally set <*opt_index>
  *            to its array index (0..nkeys-1).
  *            If <key> is not found, return <eslENOTFOUND>, and
  *            optionally set <*opt_index> to -1.
+ *            
+ *            If <key> is a \0-terminated string, <n> may be -1. 
  */
 int
 esl_keyhash_Lookup(const ESL_KEYHASH *kh, const char *key, esl_pos_t n, int *opt_index)
@@ -328,12 +335,24 @@ esl_keyhash_Lookup(const ESL_KEYHASH *kh, const char *key, esl_pos_t n, int *opt
   uint32_t val  = jenkins_hash(key, n, kh->hashsize);
   int      idx;
 
-  for (idx = kh->hashtable[val]; idx != -1; idx = kh->nxt[idx])
-    if (strcmp(key, kh->smem + kh->key_offset[idx]) == 0) 
-      { 
-	if (opt_index != NULL) *opt_index = idx;
-	return eslOK; 
-      }
+  if (n == -1) 
+    {
+      for (idx = kh->hashtable[val]; idx != -1; idx = kh->nxt[idx])
+	if (strcmp(key, kh->smem + kh->key_offset[idx]) == 0)
+	  { 
+	    if (opt_index) *opt_index = idx;
+	    return eslOK; 
+	  }
+    }
+  else
+    {
+      for (idx = kh->hashtable[val]; idx != -1; idx = kh->nxt[idx])
+	if (esl_memstrcmp(key, n, kh->smem + kh->key_offset[idx]))
+	  { 
+	    if (opt_index) *opt_index = idx;
+	    return eslOK; 
+	  }
+    }
 
   if (opt_index != NULL) *opt_index = -1;
   return eslENOTFOUND;
@@ -707,7 +726,120 @@ main(int argc, char **argv)
 /*****************************************************************
  * 5. Unit tests
  *****************************************************************/
+#ifdef eslKEYHASH_TESTDRIVE
+#include "esl_matrixops.h"
+#include "esl_random.h"
 
+/* utest_stringkeys()
+ * store a bunch of keys, look up a bunch of keys.
+ */
+static void
+utest_stringkeys(void)
+{
+  char            msg[]   = "keyhash stringkeys test failed";
+  ESL_RANDOMNESS *rng     = esl_randomness_Create(42);      // fixed RNG seed is deliberate. this test uses identical sample every time.
+  ESL_KEYHASH    *kh      = esl_keyhash_Create();
+  int             nstore  = 1200;
+  int             nlookup = 1200;
+  int             keylen  = 2;
+  char          **keys    = esl_mat_CCreate(nstore+nlookup, keylen+1);
+  int             nfound  = 0;
+  int             nmissed = 0;
+  int             nk;
+  int             i,j,h,h42;
+  int             status;
+
+  /* Generate 2400 random k=2 keys "aa".."zz", 26^2 = 676 possible.
+   * Store the first 1200, search on remaining 1200.
+   * At 1.775x saturation, expect Poisson P(0) = 17% miss rate,
+   * so we will exercise both hits and misses on lookup. With the
+   * fixed 42 seed, <nmissed> comes out to be 209 (17.4%).
+   */
+  for (i = 0; i < nstore+nlookup; i++)
+    {
+      for (j = 0; j < keylen; j++)
+	keys[i][j] = 'a' + esl_rnd_Roll(rng, 26);
+      keys[i][j] = '\0';
+    }
+  /* Spike a known one, "XX", at key 42. */
+  keys[42][0] = keys[42][1] = 'X';
+
+  /* Store the first 1200. */
+  nk = 0;
+  for (i = 0; i < nstore; i++)
+    {
+      status = esl_keyhash_Store(kh, keys[i], -1, &h);
+      if      (status == eslOK )  { if (h != nk) esl_fatal(msg); nk++; }
+      else if (status == eslEDUP) { if (h >= nk) esl_fatal(msg);       }
+      else esl_fatal(msg);
+
+      if (i == 42) { h42 = h; } // remember where key 42 "XX" went.
+    }
+
+  /* Lookups */
+  for (i = nstore; i < nstore+nlookup; i++)
+    {
+      status = esl_keyhash_Lookup(kh, keys[i], -1, &h);
+      if      (status == eslOK)        { nfound++;  if (h < 0 || h >= nk) esl_fatal(msg); }
+      else if (status == eslENOTFOUND) { nmissed++; if (h != -1)          esl_fatal(msg); }
+    }
+  if ( esl_keyhash_Lookup(kh, "XX", -1, &h) != eslOK || h != h42) esl_fatal(msg);
+
+  if (nmissed != 209) esl_fatal(msg);  // 209 is what you get with seed=42.
+
+  esl_mat_CDestroy(keys);
+  esl_keyhash_Destroy(kh);
+  esl_randomness_Destroy(rng);
+}
+
+
+/* utest_memkeys()
+ * Ditto, but now with arrays as keys (without \0-termination)
+ */
+static void
+utest_memkeys(void)
+{
+  char            msg[]   = "keyhash memkeys test failed";
+  ESL_RANDOMNESS *rng     = esl_randomness_Create(42);    
+  ESL_KEYHASH    *kh      = esl_keyhash_Create();
+  int             nstore  = 1200;
+  int             nlookup = 1200;
+  int             keylen  = 2;
+  char          **keys    = esl_mat_CCreate(nstore+nlookup, keylen);  
+  int             nfound  = 0;
+  int             nmissed = 0;
+  int             nk;
+  int             i,h,h42;
+  int             status;
+
+  for (i = 0; i < (nstore+nlookup)*keylen; i++)
+    keys[0][i] = 'a' + esl_rnd_Roll(rng, 26);   // chumminess with easel's 1D layout of a 2D array
+  keys[42][0] = keys[42][1] = 'X';
+
+  nk = 0;
+  for (i = 0; i < nstore; i++)
+    {
+      status = esl_keyhash_Store(kh, keys[i], keylen, &h);
+      if      (status == eslOK )  { if (h != nk) esl_fatal(msg); nk++; }
+      else if (status == eslEDUP) { if (h >= nk) esl_fatal(msg);       }
+      else esl_fatal(msg);
+      if (i == 42) { h42 = h; }
+    }
+
+  for (i = nstore; i < nstore+nlookup; i++)
+    {
+      status = esl_keyhash_Lookup(kh, keys[i], keylen, &h);
+      if      (status == eslOK)        { nfound++;  if (h < 0 || h >= nk) esl_fatal(msg); }
+      else if (status == eslENOTFOUND) { nmissed++; if (h != -1)          esl_fatal(msg); }
+    }
+  if ( esl_keyhash_Lookup(kh, keys[42], keylen, &h) != eslOK || h != h42) esl_fatal(msg);
+  if (nmissed != 209) esl_fatal(msg);  
+
+  esl_mat_CDestroy(keys);
+  esl_keyhash_Destroy(kh);
+  esl_randomness_Destroy(rng);
+}
+#endif /*esl_KEYHASH_TESTDRIVE*/
 
 /*---------------------- end, unit tests ------------------------*/
 
@@ -715,73 +847,37 @@ main(int argc, char **argv)
  * 6. Test driver
  *****************************************************************/
 #ifdef eslKEYHASH_TESTDRIVE
-/* gcc -g -Wall -o test -I. -DeslKEYHASH_TESTDRIVE keyhash.c easel.c 
- * ./test
- */
+#include "esl_config.h"
+
 #include <stdlib.h>
 #include <stdio.h>
-#include <assert.h>
-#include "easel.h"
-#include "esl_keyhash.h"
 
-#define NSTORE  1200
-#define NLOOKUP 1200
-#define KEYLEN  2
+#include "easel.h"
+#include "esl_getopts.h"
+
+
+static ESL_OPTIONS options[] = {
+  /* name  type         default  env   range togs  reqs  incomp  help                docgrp */
+  {"-h",  eslARG_NONE,    FALSE, NULL, NULL, NULL, NULL, NULL, "show help and usage",    0},
+  { 0,0,0,0,0,0,0,0,0,0},
+};
+static char usage[]  = "[-options]";
+static char banner[] = "test driver for keyhash module";
+
 
 int
 main(int argc, char **argv)
 {
-  ESL_KEYHASH *h;
-  char keys[NSTORE+NLOOKUP][KEYLEN+1]; 
-  int  i,j,nk,k42;
-  int  nmissed;
-  int  status;
+  ESL_GETOPTS *go = esl_getopts_CreateDefaultApp(options, 0, argc, argv, banner, usage);
 
-  /* Generate 2400 random k=2 keys. 26^2 = 676 possible.
-   * We'll store the first 1200 and search on the remaining
-   * 1200. We're ~1.775x saturated; expect Poisson P(0) = 17% miss
-   * rate on the searches, so we ought to exercise hits and
-   * misses on the lookups.
-   */
-  srand(31);
-  for (i = 0; i < NSTORE+NLOOKUP; i++)
-    {
-      for (j = 0; j < KEYLEN; j++)
-	keys[i][j] = 'a' + (rand() % 26); /* yeah, low-order bits; so sue me */
-      keys[i][j] = '\0';
-    }
-  /* spike a known one in (XX.. at key 42).
-   */
-  for (j = 0; j < KEYLEN; j++)
-    keys[42][j] = 'X';
+  fprintf(stderr, "## %s\n", argv[0]);
+  
+  utest_stringkeys();
+  utest_memkeys();
 
-  h = esl_keyhash_Create();
-  nk = 0;
-  for (i = 0; i < NSTORE; i++)
-    {
-      status = esl_keyhash_Store(h, keys[i], -1, &j);
-      if      (status == eslOK)   { assert(j==nk); nk++; }
-      else if (status == eslEDUP) { assert(j<nk); }
-      else esl_fatal("store failed.");
-
-      if (i == 42) { k42 = j;}	/* remember where key 42 went */
-    }
-  nmissed = 0;
-  for (i = NSTORE; i < NSTORE+NLOOKUP; i++)
-    {
-      if (esl_keyhash_Lookup(h, keys[i], -1, &j) != eslOK) nmissed++;
-    }
-  esl_keyhash_Lookup(h, keys[42], -1, &j);
-  assert(j==k42);
-
-  /* 
-  printf("missed %d/%d (%.1f%%)\n", nmissed, NLOOKUP, 
-	 100. * (float) nmissed / (float) NLOOKUP);
-  esl_keyhash_Dump(stdout, h);
-  */
-
-  esl_keyhash_Destroy(h);
-  exit (0);
+  fprintf(stderr, "#  status = ok\n");
+  esl_getopts_Destroy(go);
+  return eslOK;
 }
 #endif /*eslKEYHASH_TESTDRIVE*/
 
@@ -843,11 +939,3 @@ main(int argc, char **argv)
 /*::cexcerpt::keyhash_example::end::*/
 #endif /*eslKEYHASH_EXAMPLE*/
 /*----------------------- end, example --------------------------*/
-
-
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/

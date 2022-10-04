@@ -13,7 +13,7 @@
 
 #define FM_BLOCK_COUNT 100000 //max number of SQ objects in a block
 #define FM_BLOCK_OVERLAP 20000 //20 Kbases of overlap, at most, between adjascent FM-index blocks
-//#define ALPHOPTS "--amino,--dna,--rna"                         /* Exclusive options for alphabet choice */
+#define ALPHOPTS "--amino,--dna,--rna"                         /* Exclusive options for alphabet choice */
 
 
 static ESL_OPTIONS options[] = {
@@ -22,9 +22,9 @@ static ESL_OPTIONS options[] = {
 
   /* Selecting the alphabet rather than autoguessing it */
   //TODO: when I make the FM method work for amino acids, re-enable this selection
-//  { "--amino",   eslARG_NONE,   FALSE, NULL, NULL,   ALPHOPTS,    NULL,     NULL,       "input is protein sequence",                                 2 },
-//  { "--dna",     eslARG_NONE,   FALSE, NULL, NULL,   ALPHOPTS,    NULL,     NULL,       "input is DNA sequence",                                     2 },
-//  { "--rna",     eslARG_NONE,   FALSE, NULL, NULL,   ALPHOPTS,    NULL,     NULL,       "input is RNA sequence",                                     2 },
+  { "--amino",   eslARG_NONE,   FALSE, NULL, NULL,   ALPHOPTS,    NULL,     NULL,       "input is protein sequence",                                 2 },
+  { "--dna",     eslARG_NONE,   FALSE, NULL, NULL,   ALPHOPTS,    NULL,     NULL,       "input is DNA sequence",                                     2 },
+  { "--rna",     eslARG_NONE,   FALSE, NULL, NULL,   ALPHOPTS,    NULL,     NULL,       "input is RNA sequence",                                     2 },
 
   /* Other options */
   { "--informat",   eslARG_STRING,     FALSE, NULL, NULL,    NULL,  NULL,  NULL,        "specify that input file is in format <s>",                  3 },
@@ -105,9 +105,9 @@ output_header(FILE *ofp, const ESL_GETOPTS *go, char *seqfile, char *fmfile)
   if (fprintf(ofp, "# output binary-formatted HMMER database:  %s\n", fmfile)                                 < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
   if (fprintf(ofp, "# bin_length:                              %d\n", esl_opt_GetInteger(go, "--bin_length")) < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
   if (fprintf(ofp, "# suffix array sample rate:                %d\n", esl_opt_GetInteger(go, "--sa_freq"))    < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
-//  if (esl_opt_IsUsed(go, "--amino")      && fprintf(ofp, "# input is asserted to be:                 protein\n")                                        < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
-//  if (esl_opt_IsUsed(go, "--dna")        && fprintf(ofp, "# input is asserted to be:                 DNA\n")                                            < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
-//  if (esl_opt_IsUsed(go, "--rna")        && fprintf(ofp, "# input is asserted to be:                 RNA\n")                                            < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+  if (esl_opt_IsUsed(go, "--amino")      && fprintf(ofp, "# input is asserted to be:                 protein\n")                                        < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+  if (esl_opt_IsUsed(go, "--dna")        && fprintf(ofp, "# input is asserted to be:                 DNA\n")                                            < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+  if (esl_opt_IsUsed(go, "--rna")        && fprintf(ofp, "# input is asserted to be:                 RNA\n")                                            < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
   if (fprintf(ofp, "# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n\n")           < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
   return eslOK;
 }
@@ -169,7 +169,7 @@ int buildAndWriteFMIndex (FM_METADATA *meta, uint32_t seq_offset, uint32_t ambig
                         uint32_t seq_cnt, uint32_t ambig_cnt, uint32_t overlap,
                         FM_DATA *fm_data, uint32_t *SAsamp,
                         uint32_t *cnts_sb, uint16_t *cnts_b,
-                        uint64_t N, uint8_t *Tcompressed, FILE *fp
+                        uint64_t N, uint8_t **Tcompressed, FILE *fp
     ) {
 
 
@@ -188,10 +188,10 @@ int buildAndWriteFMIndex (FM_METADATA *meta, uint32_t seq_offset, uint32_t ambig
 
   int num_freq_cnts_b  = 1+ceil((double)N/(meta->freq_cnt_b));
   int num_freq_cnts_sb = 1+ceil((double)N/meta->freq_cnt_sb);
-  int num_SA_samples   = floor((double)N/meta->freq_SA);
+  int num_SA_samples   = 1+floor((double)N/meta->freq_SA);
 
   if (SAsamp != NULL) {
-    ESL_REALLOC (Tcompressed, compressed_bytes * sizeof(uint8_t));
+    ESL_REALLOC ((*Tcompressed), compressed_bytes * sizeof(uint8_t));
 
     // Reverse the text T, so the BWT will be on reversed T.  Only used for the 1st pass
     fm_reverseString ((char*)T, N-1);
@@ -221,8 +221,10 @@ int buildAndWriteFMIndex (FM_METADATA *meta, uint32_t seq_offset, uint32_t ambig
   cnts_sb[BWT[0]]++;
   cnts_b[BWT[0]]++;
 
-  if (SAsamp != NULL)
+  if (SAsamp != NULL) {
     SAsamp[0] = 0; // not used, since indexing is base-1. Set for the sake of consistency of output.
+    SAsamp[num_SA_samples-1] = 0; //this may sometimes not be filled below; set to avoid valgrind error in fwrite
+  }
 
   //Scan through SA to build the BWT and FM index structures
   for(j=1; j < N; ++j) {
@@ -277,14 +279,6 @@ int buildAndWriteFMIndex (FM_METADATA *meta, uint32_t seq_offset, uint32_t ambig
         BWT[i/4]           |=  BWT[i+1]<<4;
       if (i+2 <= N-1)
         BWT[i/4]           |=  BWT[i+2]<<2;
-/*
-  } else if (meta->alph_type == fm_DNA_full ) {
-    //2 chars per byte.  Counting will be done based on quadruples 0..3; 4..7; 8..11; etc.
-      for(i=0; i < N-1; i+=2)
-        BWT[i/2]           = BWT[i]<<4 | BWT[i+1];
-      if (i==N-1)
-        BWT[i/2]           =  BWT[i]<<4 ;
-*/
   }
 
 
@@ -292,29 +286,21 @@ int buildAndWriteFMIndex (FM_METADATA *meta, uint32_t seq_offset, uint32_t ambig
   //If this is the 1st (reversed text) BWT, de-reverse it, then compress it
   if (SAsamp != NULL) {
     fm_reverseString ((char*)T, N-1);
-    // Convert BWT and T to packed versions if appropriate.
+    // Convert T to packed versions if appropriate.
     if (meta->alph_type == fm_DNA ) {
        //4 chars per byte.  Counting will be done based on quadruples 0..3; 4..7; 8..11; etc.
       for(i=0; i < N-3; i+=4)
-        Tcompressed[i/4] =  T[i]<<6 |   T[i+1]<<4 |   T[i+2]<<2 | T[i+3];
+        (*Tcompressed)[i/4] =  T[i]<<6 |   T[i+1]<<4 |   T[i+2]<<2 | T[i+3];
 
       if (i <= N-1)
-        Tcompressed[i/4] =   T[i]<<6;
+        (*Tcompressed)[i/4] =   T[i]<<6;
       if (i+1 <= N-1)
-        Tcompressed[i/4] |=   T[i+1]<<4;
+        (*Tcompressed)[i/4] |=   T[i+1]<<4;
       if (i+2 <= N-1)
-        Tcompressed[i/4] |=   T[i+2]<<2;
-/*
-    } else if (meta->alph_type == fm_DNA_full) {
-      //2 chars per byte.  Counting will be done based on quadruples 0..3; 4..7; 8..11; etc.
-      for(i=0; i < N-1; i+=2)
-        Tcompressed[i/2] =   T[i]<<4 |   T[i+1];
-      if (i==N-1)
-        Tcompressed[i/2] =    T[i]<<4 ;
-*/
+        (*Tcompressed)[i/4] |=   T[i+2]<<2;
     } else {
-      for(i=0; i < N-1; i++)
-        Tcompressed[i] =    T[i];
+      for(i=0; i <= N-1; i++)
+        (*Tcompressed)[i] =    T[i];
     }
   }
 
@@ -342,7 +328,7 @@ int buildAndWriteFMIndex (FM_METADATA *meta, uint32_t seq_offset, uint32_t ambig
     esl_fatal( "buildAndWriteFMIndex: Error writing ambig_cnt in FM index.\n");
 
   // don't write Tcompressed or SAsamp if SAsamp == NULL
-  if(Tcompressed != NULL && fwrite(Tcompressed, sizeof(uint8_t), compressed_bytes, fp) != compressed_bytes)
+  if( SAsamp != NULL  && fwrite(*Tcompressed, sizeof(uint8_t), compressed_bytes, fp) != compressed_bytes)
     esl_fatal( "buildAndWriteFMIndex: Error writing T in FM index.\n");
   if(fwrite(BWT, sizeof(uint8_t), compressed_bytes, fp) != compressed_bytes)
     esl_fatal( "buildAndWriteFMIndex: Error writing BWT in FM index.\n");
@@ -352,6 +338,7 @@ int buildAndWriteFMIndex (FM_METADATA *meta, uint32_t seq_offset, uint32_t ambig
     esl_fatal( "buildAndWriteFMIndex: Error writing occCnts_b in FM index.\n");
   if(fwrite(occCnts_sb, sizeof(uint32_t)*(meta->alph_size), (size_t)num_freq_cnts_sb, fp) != (size_t)num_freq_cnts_sb)
     esl_fatal( "buildAndWriteFMIndex: Error writing occCnts_sb in FM index.\n");
+
 
   return eslOK;
 
@@ -428,20 +415,18 @@ main(int argc, char **argv)
   uint32_t overlap = 0;
   uint32_t seq_cnt;
   uint32_t ambig_cnt;
-
-  uint32_t prev_numseqs = 0;
-
   int compressed_bytes;
   uint32_t term_loc;
+  int alphaguess;
 
   ESL_GETOPTS     *go  = NULL;    /* command line processing                 */
 
   int            in_ambig_run = 0;
 
-  ESL_RANDOMNESS *r   = esl_randomness_CreateFast(42);
+  ESL_RANDOMNESS *r   = esl_randomness_Create(42);
 
 
-#if !defined (p7_IMPL_SSE)
+#if !defined (eslENABLE_SSE)
     p7_Fail("The hmmerfm sequence database file format is valid only on systems supporting SSE vector instructions\n");
 #endif
 
@@ -503,17 +488,17 @@ main(int argc, char **argv)
 
   meta->fwd_only = 0;
 
-/* TODO: when I make the FM method work for amino acids, re-enable this selection
+
   if ( esl_opt_IsUsed(go, "--amino")  ) {
     meta->alph_type = fm_AMINO;
     alphatype = eslAMINO;
     meta->fwd_only = 1;
   } else if (esl_opt_IsUsed(go, "--dna") || esl_opt_IsUsed(go, "--rna") ){
-  */
+
     //meta->alph = "dna"; //esl_opt_IsUsed(go, "--dna") ? "dna" || "rna";
     meta->alph_type = fm_DNA;
     alphatype = eslDNA;
-/*
+
   } else {
     esl_sqfile_GuessAlphabet(sqfp, &alphaguess);
 
@@ -528,7 +513,7 @@ main(int argc, char **argv)
       esl_fatal("Unable to guess alphabet. Try '--dna' or '--amino'\n%s", ""); //'dna_full'
     }
   }
-*/
+
 
   if (esl_opt_IsOn(go, "--fwd_only") )
     meta->fwd_only = 1;
@@ -537,7 +522,7 @@ main(int argc, char **argv)
   fm_alphabetCreate(meta, &(meta->charBits));
   chars_per_byte = 8/meta->charBits;
 
-    //shift inv_alph up one, to make space for '$' at 0
+  //shift inv_alph up one, to make space for '$' at 0
   for (i=0; i<256; i++)
     if ( meta->inv_alph[i] >= 0)
       meta->inv_alph[i]++;
@@ -550,44 +535,63 @@ main(int argc, char **argv)
   esl_sqfile_SetDigital(sqfp, abc);
   block = esl_sq_CreateDigitalBlock(FM_BLOCK_COUNT, abc);
   block->complete = FALSE;
-  max_block_size = FM_BLOCK_OVERLAP+block_size+1  + block_size*.05; // +1 for the '$',  +5% of block size because that's the slop allowed by readwindow
+  max_block_size = FM_BLOCK_OVERLAP+block_size+1  + ceil(block_size*.05); // first +1 for the '$',  +5% of block size because that's the slop allowed by readwindow
 
   /* Allocate BWT, Text, SA, and FM-index data structures, allowing storage of maximally large sequence*/
   ESL_ALLOC(fm_data, sizeof(FM_DATA) );
-
-  if (fm_data == NULL) {
-    esl_fatal( "%s: Cannot allocate memory.\n", argv[0]);
-  }
+  fm_data->T          = NULL;
+  fm_data->BWT_mem    = NULL;
+  fm_data->BWT        = NULL;
+  fm_data->SA         = NULL;
+  fm_data->C          = NULL;
+  fm_data->occCnts_sb = NULL;
+  fm_data->occCnts_b  = NULL;
 
   ESL_ALLOC (fm_data->T, max_block_size * sizeof(uint8_t));
   ESL_ALLOC (fm_data->BWT_mem, max_block_size * sizeof(uint8_t));
-     fm_data->BWT = fm_data->BWT_mem;  // in SSE code, used to align memory. Here, doesn't matter
+  fm_data->BWT = fm_data->BWT_mem;  // in SSE code, used to align memory. Here, doesn't matter
   ESL_ALLOC (fm_data->SA, max_block_size * sizeof(int));
-  ESL_ALLOC (SAsamp,     (floor((double)max_block_size/meta->freq_SA) ) * sizeof(uint32_t));
-
+  ESL_ALLOC (SAsamp,     (1 + floor((double)max_block_size/meta->freq_SA) ) * sizeof(uint32_t));
   ESL_ALLOC (fm_data->occCnts_sb, (1+ceil((double)max_block_size/meta->freq_cnt_sb)) *  meta->alph_size * sizeof(uint32_t)); // every freq_cnt_sb positions, store an array of ints
   ESL_ALLOC (fm_data->occCnts_b,  ( 1+ceil((double)max_block_size/meta->freq_cnt_b)) *  meta->alph_size * sizeof(uint16_t)); // every freq_cnt_b positions, store an array of 8-byte ints
   ESL_ALLOC (cnts_sb,    meta->alph_size * sizeof(uint32_t));
   ESL_ALLOC (cnts_b,     meta->alph_size * sizeof(uint16_t));
 
-  if((fm_data->T == NULL)  || (fm_data->BWT == NULL)  || (fm_data->SA==NULL) ||
-      (fm_data->occCnts_b==NULL)  || (fm_data->occCnts_sb==NULL) ||
-      (SAsamp==NULL) || (cnts_b==NULL) || (cnts_sb==NULL)  ) {
-    esl_fatal( "%s: Cannot allocate memory.\n", argv[0]);
-  }
-
-
   // Open a temporary file, to which FM-index data will be written
   if (esl_tmpfile(tmp_filename, &fptmp) != eslOK) esl_fatal("unable to open fm-index tmpfile");
 
-
   /* Main loop: */
   while (status == eslOK ) {
-
     //reset block as an empty vessel
-    for (i=0; i<block->count; i++)
-        esl_sq_Reuse(block->list + i);
+    for (i=0; i<block->count; i++){
+      esl_sq_Reuse(block->list + i);  
+    }
+    // Check how much space the block structure is using and re-allocate if it has grown to more than 20*block_size bytes
+    // this loop iterates from 0 to block->listsize rather than block->count because we want to count all of the
+    // block's sub-structures, not just the ones that contained sequence data after the last call to ReadBlock()    
+    // This doesn't check some of the less-common sub-structures in a sequence, but it should be good enough for
+    // our goal of keeping block size under control
+    uint64_t block_space = 0;
+    for(i=0; i<block->listSize; i++){
+      block_space += block->list[i].nalloc;
+      block_space += block->list[i].aalloc;   
+      block_space += block->list[i].dalloc;
+      block_space += block->list[i].srcalloc; 
+      block_space += block->list[i].salloc;
+      if (block->list[i].ss != NULL){ 
+        block_space += block->list[i].salloc; // ss field is not always presesnt, but takes salloc bytes if it is
+      }
+    }
 
+    if(block_space > 20*block_size){
+      ESL_SQ_BLOCK *new_block = esl_sq_CreateDigitalBlock(FM_BLOCK_COUNT, abc);
+      new_block->count = block->count; // copying this field shouldn't be necessary, but I can't guarantee that it isn't.
+      new_block->listSize = block->listSize;  
+      new_block->complete = block->complete;  
+      new_block->first_seqidx = block->first_seqidx;
+      esl_sq_DestroyBlock(block);   
+      block = new_block; 
+    }
     if (use_tmpsq) {
         esl_sq_Copy(tmpsq , block->list);
         block->complete = FALSE;  //this lets ReadBlock know that it needs to append to a small bit of previously-read seqeunce
@@ -597,7 +601,8 @@ main(int argc, char **argv)
         block->complete = TRUE;
     }
 
-    status = esl_sqio_ReadBlock(sqfp, block, block_size, -1, alphatype != eslAMINO);
+    
+    status = esl_sqio_ReadBlock(sqfp, block, block_size, -1, /*max_init_window=*/FALSE, alphatype != eslAMINO);
     if (status == eslEOF) continue;
     if (status != eslOK)  esl_fatal("Parse failed (sequence file %s): status:%d\n%s\n",
                                                   sqfp->filename, status, esl_sqfile_GetErrorBuf(sqfp));
@@ -647,6 +652,7 @@ main(int argc, char **argv)
       if (block->list[i].desc == NULL) meta->seq_data[numseqs].desc[0] = '\0';
           else  strcpy(meta->seq_data[numseqs].desc, block->list[i].desc );
 
+      meta->seq_data[numseqs].length = 0;
       for (j=1; j<=block->list[i].n; j++) {
         c = abc->sym[block->list[i].dsq[j]];
         if ( meta->alph_type == fm_DNA) {
@@ -686,17 +692,14 @@ main(int argc, char **argv)
 
     //build and write FM-index for T.  This will be a BWT on the reverse of the sequence, required for reverse-traversal of the BWT
     buildAndWriteFMIndex(meta, seq_offset, ambig_offset, seq_cnt, ambig_cnt, (uint32_t)block->list[0].C, fm_data,
-                         SAsamp, cnts_sb, cnts_b, block_length, Tcompressed, fptmp);
+                         SAsamp, cnts_sb, cnts_b, block_length, &Tcompressed, fptmp);
 
 
     if ( ! meta->fwd_only ) {
       //build and write FM-index for un-reversed T  (used to find reverse hits using forward traversal of the BWT
       buildAndWriteFMIndex(meta, seq_offset, ambig_offset, seq_cnt, ambig_cnt, 0, fm_data,
-                         NULL, cnts_sb, cnts_b, block_length, Tcompressed, fptmp);
+                         NULL, cnts_sb, cnts_b, block_length, &Tcompressed, fptmp);
     }
-
-    prev_numseqs = numseqs;
-
     numblocks++;
   }
 
@@ -736,6 +739,7 @@ main(int argc, char **argv)
 
 
   for (i=0; i<meta->seq_count; i++) {
+
     if( fwrite(&(meta->seq_data[i].target_id),    sizeof(meta->seq_data[i].target_id),          1, fp) != 1 ||
         fwrite(&(meta->seq_data[i].target_start), sizeof(meta->seq_data[i].target_start),       1, fp) != 1 ||
         fwrite(&(meta->seq_data[i].fm_start),     sizeof(meta->seq_data[i].fm_start),  1, fp) != 1 ||
@@ -751,8 +755,6 @@ main(int argc, char **argv)
     )
       esl_fatal( "%s: Error writing meta data for FM index.\n", argv[0]);
   }
-
-
   for (i=0; i<meta->ambig_list->count; i++) {
     if( fwrite(&(meta->ambig_list->ranges[i].lower), sizeof(meta->ambig_list->ranges[i].lower),       1, fp) != 1 ||
         fwrite(&(meta->ambig_list->ranges[i].upper), sizeof(meta->ambig_list->ranges[i].upper),       1, fp) != 1
@@ -786,7 +788,7 @@ main(int argc, char **argv)
     compressed_bytes =   ((chars_per_byte-1+block_length)/chars_per_byte);
     num_freq_cnts_b  = 1+ceil((double)block_length/meta->freq_cnt_b);
     num_freq_cnts_sb = 1+ceil((double)block_length/meta->freq_cnt_sb);
-    num_SA_samples   = floor((double)block_length/meta->freq_SA);
+    num_SA_samples   = 1+floor((double)block_length/meta->freq_SA);
 
 
     //j==0 test cause T and SA to be written only for forward sequence
@@ -837,16 +839,18 @@ main(int argc, char **argv)
   fclose(fp);
   fclose(fptmp);
 
+
   if (fm_data != NULL)
     fm_FM_destroy(fm_data, TRUE);
   free(fm_data);
   free(SAsamp);
+
   free(cnts_b);
   free(cnts_sb);
+
   free(Tcompressed);
 
   fm_metaDestroy(meta);
-
   esl_getopts_Destroy(go);
 
 

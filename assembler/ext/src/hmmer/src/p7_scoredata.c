@@ -5,8 +5,6 @@
  *   1. The P7_SCOREDATA object: allocation, initialization, destruction.
  *   2. Unit tests.
  *   3. Test driver.
- *   4. Copyright and license.
- *
  */
 #include "p7_config.h"
 
@@ -316,7 +314,7 @@ int
 p7_hmm_ScoreDataComputeRest(P7_OPROFILE *om, P7_SCOREDATA *data )
 {
   int    status;
-  int i;
+  int k;
   float sum;
   float *t_mis;
   float *t_iis;
@@ -327,33 +325,58 @@ p7_hmm_ScoreDataComputeRest(P7_OPROFILE *om, P7_SCOREDATA *data )
   //2D array, holding all the transition scores/costs
   ESL_ALLOC(data->fwd_transitions, sizeof(float*) * p7O_NTRANS);
 
-  for (i=0; i<p7O_NTRANS; i++) {
-    ESL_ALLOC(data->fwd_transitions[i], sizeof(float) * (om->M+1));
-    p7_oprofile_GetFwdTransitionArray(om, i, data->fwd_transitions[i] );
+  for (k=0; k<p7O_NTRANS; k++) {
+    ESL_ALLOC(data->fwd_transitions[k], sizeof(float) * (om->M+1));
+    p7_oprofile_GetFwdTransitionArray(om, k, data->fwd_transitions[k] );
   }
   t_mis = data->fwd_transitions[p7O_MI];
   t_iis = data->fwd_transitions[p7O_II];
 
+  /*
+   * Elsewhere, we compute the MAXL of a given model, which is the length L
+   * such that only a minute fraction (BETA = 1e-7) of emitted sequence are length > L.
+   *
+   * In the DNA search pipeline, when a high-scoring SSV alignment is identified,
+   * we extract a window around that seed. The length of the window is based on
+   * MAXL, but we need to figure out how much the window should precede the seed
+   * (the prefix of the window) and how much should follow the seed (the suffix).
+   *
+   * Our heuristic strategy is to estimate how much of that MAXL is likely to have
+   * come from each position.  Using these relative contributions of each position,
+   * we can compute the length of extracted window prior to the seed as
+   *    MAXL * (sum of the expected fractional contributions of preceding positions),
+   * and do the same for the extracted window following the seed (suffix sum). This
+   * code supports that process, by computing prefix-sum and suffix-sum values for
+   * these relative contributions.
+   *
+   * We estimate the relative contributions of a position k by computing for position
+   * k, the minimum length l_k at which the tail probability mass for sequences
+   * emitted by position k (match and insert states)  P(L>l_k) < BETA.
+   * These per-position lengths are summed, and the relative contribution of a
+   * position is it's l_k normalized by the sum of all lengths
+   */
   ESL_ALLOC(data->prefix_lengths, (om->M+1) * sizeof(float));
   ESL_ALLOC(data->suffix_lengths, (om->M+1) * sizeof(float));
 
-
   sum = 0;
-  for (i=1; i < om->M; i++) {
-    data->prefix_lengths[i] = 2 + (int)(log(p7_DEFAULT_WINDOW_BETA / t_mis[i] )/log(t_iis[i]));
-    sum += data->prefix_lengths[i];
+  for (k=1; k < om->M; k++) {
+    if (t_mis[k] == 0)
+      data->prefix_lengths[k] = 1;
+    else
+      data->prefix_lengths[k] = 1 + (int)(log(p7_DEFAULT_WINDOW_BETA / t_mis[k] )/log(t_iis[k]));
+
+    sum += data->prefix_lengths[k];
   }
   data->prefix_lengths[0] = data->prefix_lengths[om->M] = 0;
 
-
-  for (i=1; i < om->M; i++)
-    data->prefix_lengths[i] /=  sum;
+  for (k=1; k < om->M; k++)
+    data->prefix_lengths[k] /=  sum;
 
   data->suffix_lengths[om->M] = data->prefix_lengths[om->M-1];
-  for (i=om->M - 1; i >= 1; i--)
-    data->suffix_lengths[i] = data->suffix_lengths[i+1] + data->prefix_lengths[i-1];
-  for (i=2; i < om->M; i++)
-    data->prefix_lengths[i] += data->prefix_lengths[i-1];
+  for (k=om->M - 1; k >= 1; k--)
+    data->suffix_lengths[k] = data->suffix_lengths[k+1] + data->prefix_lengths[k-1];
+  for (k=2; k < om->M; k++)
+    data->prefix_lengths[k] += data->prefix_lengths[k-1];
 
   return eslOK;
 
@@ -371,17 +394,15 @@ p7_hmm_ScoreDataComputeRest(P7_OPROFILE *om, P7_SCOREDATA *data )
 static void
 utest_createScoreData(ESL_GETOPTS *go, ESL_RANDOMNESS *r )
 {
-  char          msg[]       = "create MSVData unit test failed";
+  char           msg[]      = "createScoreData unit test failed";
   P7_HMM        *hmm        = NULL;
   ESL_ALPHABET  *abc        = NULL;
   P7_PROFILE    *gm         = NULL;
   P7_OPROFILE   *om         = NULL;
-  P7_SCOREDATA  *scoredata    = NULL;
-
-  uint8_t scale = 3.0 / eslCONST_LOG2;                    /* scores in units of third-bits */
-  uint8_t bias;
-  int x;
-  float max = 0.0;
+  P7_SCOREDATA  *scoredata  = NULL;
+  uint8_t        scale      = 3.0 / eslCONST_LOG2;    /* scores in units of third-bits */
+  float          max        = 0.0;
+  int            x;
 
   if ( (abc = esl_alphabet_Create(eslDNA)) == NULL)  esl_fatal(msg);
 
@@ -392,8 +413,6 @@ utest_createScoreData(ESL_GETOPTS *go, ESL_RANDOMNESS *r )
   for (x = 0; x < gm->abc->K; x++)  max = ESL_MAX(max, esl_vec_FMax(gm->rsc[x], (gm->M+1)*2));
   //based on unbiased_byteify
   max  = -1.0f * roundf(scale * max);
-  bias   = (max > 255.) ? 255 : (uint8_t) max;
-
 
   if (  (scoredata = p7_hmm_ScoreDataCreate(om, FALSE))  == NULL ) esl_fatal(msg);
 
@@ -402,9 +421,8 @@ utest_createScoreData(ESL_GETOPTS *go, ESL_RANDOMNESS *r )
   p7_profile_Destroy(gm);
   p7_hmm_Destroy(hmm);
   esl_alphabet_Destroy(abc);
-
 }
-#endif /*p7BG_TESTDRIVE*/
+#endif /*p7SCOREDATA_TESTDRIVE*/
 
 
 /*****************************************************************
@@ -449,11 +467,6 @@ main(int argc, char **argv)
 }
 #endif /* p7BG_TESTDRIVE */
 
-/************************************************************
- * @LICENSE@
- *
- * SVN $Id: p7_scoredata.c 3784 2011-12-07 21:51:25Z wheelert $
- * SVN $URL: https://svn.janelia.org/eddylab/eddys/src/hmmer/trunk/src/p7_scoredata.c $
- ************************************************************/
+
 
 

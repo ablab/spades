@@ -10,7 +10,6 @@
  *   6. Unit tests.
  *   7. Test driver.
  *   8. Example.
- *   9. License and copyright.
  */
 #include "esl_config.h"
 
@@ -18,12 +17,11 @@
 #include <ctype.h>
 
 #include "easel.h"
-#ifdef eslAUGMENT_ALPHABET
 #include "esl_alphabet.h"
-#endif
 #include "esl_mem.h"
 #include "esl_msa.h"
 #include "esl_msafile.h"
+
 #include "esl_msafile_stockholm.h"
 
 /* Valid line types in an alignment block */
@@ -115,14 +113,13 @@ esl_msafile_stockholm_SetInmap(ESL_MSAFILE *afp)
 {
   int sym;
 
-#ifdef eslAUGMENT_ALPHABET
   if (afp->abc)
     {
       for (sym = 0; sym < 128; sym++) 
 	afp->inmap[sym] = afp->abc->inmap[sym];
       afp->inmap[0] = esl_abc_XGetUnknown(afp->abc);
     }
-#endif
+
   if (! afp->abc)
     {
       for (sym = 1; sym < 128; sym++) 
@@ -259,9 +256,7 @@ esl_msafile_stockholm_Read(ESL_MSAFILE *afp, ESL_MSA **ret_msa)
   afp->errmsg[0] = '\0';
 
   /* Allocate a growable MSA, and auxiliary parse data coupled to the MSA allocation */
-#ifdef eslAUGMENT_ALPHABET
   if (afp->abc   &&  (msa = esl_msa_CreateDigital(afp->abc, 16, -1)) == NULL) { status = eslEMEM; goto ERROR; }
-#endif
   if (! afp->abc &&  (msa = esl_msa_Create(                 16, -1)) == NULL) { status = eslEMEM; goto ERROR; }
   if ( (pd = stockholm_parsedata_Create(msa))                        == NULL) { status = eslEMEM; goto ERROR; }
 
@@ -899,13 +894,12 @@ stockholm_parse_sq(ESL_MSAFILE *afp, ESL_STOCKHOLM_PARSEDATA *pd, ESL_MSA *msa, 
 
   if ( pd->bi > 0 && pd->sqlen[seqidx] == pd->alen + pd->alen_b) ESL_FAIL(eslEFORMAT, afp->errmsg, "duplicate seq name %.*s", (int) seqnamelen, seqname);
 
-#ifdef eslAUGMENT_ALPHABET 
   if (  afp->abc ) {
     status = esl_abc_dsqcat(afp->inmap, &(msa->ax[seqidx]),   &(pd->sqlen[seqidx]), p, n);
     if      (status == eslEINVAL) ESL_FAIL(eslEFORMAT, afp->errmsg, "invalid sequence character(s) on line");
     else if (status != eslOK)     return status;
   }
-#endif
+
   if (! afp->abc) {
     status = esl_strmapcat (afp->inmap, &(msa->aseq[seqidx]), &(pd->sqlen[seqidx]), p, n);
     if      (status == eslEINVAL) ESL_FAIL(eslEFORMAT, afp->errmsg, "invalid sequence character(s) on line");
@@ -953,7 +947,6 @@ stockholm_parse_comment(ESL_MSA *msa, char *p, esl_pos_t n)
  * is assumed to be a new sequence name that we need to store.
  * seqidx is set to pdat->nseq, the MSA is Expand()'ed if necessary
  * to make room, the name is stored in msa->sqname[pdat->nseq],
- * (and in the hash table, if we're keyhash augmented)
  * and pdat->nseq is incremented.
  *
  * Returns:  <eslOK> on success, and the seqidx is 
@@ -971,18 +964,9 @@ stockholm_get_seqidx(ESL_MSA *msa, ESL_STOCKHOLM_PARSEDATA *pd, char *name, esl_
   int seqidx;
   int status;
   
-  /* if we're keyhash-augmented, try to find it in the hash.
-   * if we're not, try to find it the hard way.
-   */
-#ifdef eslAUGMENT_KEYHASH
   status = esl_keyhash_Store(msa->index, name, n, &seqidx);
   if (status == eslEDUP) { *ret_idx = seqidx; return eslOK; }
   if (status != eslOK)   goto ERROR;
-#else
-  for (seqidx = 0; seqidx < pd->nseq; seqidx++)
-    if (esl_memstrcmp(name, n, msa->sqname[seqidx])) 
-      { *ret_idx = seqidx; return eslOK; }
-#endif
   
   /* if we get here, this is a new name we're adding */
   if (seqidx >= msa->sqalloc) {
@@ -1010,16 +994,10 @@ stockholm_get_gr_tagidx(ESL_MSA *msa, ESL_STOCKHOLM_PARSEDATA *pd, char *tag, es
   int status;
 
   /* Find the tag, if we have it; else, add it, at tagidx = msa->ngr */
-#ifdef eslAUGMENT_KEYHASH
   if (!msa->gr_idx && (msa->gr_idx = esl_keyhash_CreateCustom(8,8,128)) == NULL) { status = eslEMEM; goto ERROR; }
   status = esl_keyhash_Store(msa->gr_idx, tag, taglen, &tagidx); 
   if      (status == eslEDUP) { *ret_tagidx = tagidx; return eslOK; }
   else if (status != eslOK)   goto ERROR;
-#else
-  for (tagidx = 0; tagidx < msa->ngr; tagidx++)
-    if (esl_memstrcmp(tag, taglen, msa->gr_tag[tagidx])) 
-      { *ret_tagidx = tagidx; return eslOK; }
-#endif
 
   /* if we get here, this is a new tag we're adding. */
   ESL_REALLOC(msa->gr_tag,       sizeof(char *)    * (msa->ngr+1)); /* +1, we're allocated one new tag at a time, as needed */
@@ -1052,16 +1030,11 @@ stockholm_get_gc_tagidx(ESL_MSA *msa, ESL_STOCKHOLM_PARSEDATA *pd, char *tag, es
   int status;
 
   /* Find the tag, if we have it; else, add it, at tagidx = msa->ngc */
-#ifdef eslAUGMENT_KEYHASH
   if (!msa->gc_idx && (msa->gc_idx = esl_keyhash_CreateCustom(8,8,128)) == NULL) { status = eslEMEM; goto ERROR; }
   status = esl_keyhash_Store(msa->gc_idx, tag, taglen, &tagidx); 
   if      (status == eslEDUP) { *ret_tagidx = tagidx; return eslOK; }
   else if (status != eslOK)   goto ERROR; /* eslEMEM */
-#else
-  for (tagidx = 0; tagidx < msa->ngc; tagidx++)
-    if (esl_memstrcmp(tag, taglen, msa->gc_tag[tagidx])) 
-      { *ret_tagidx = tagidx; return eslOK; }
-#endif
+
 
   /* if we get here, this is a new tag we're adding. */
   ESL_REALLOC(msa->gc_tag, sizeof(char *)  * (msa->ngc+1)); /* +1, we're allocated one new tag at a time, as needed */
@@ -1255,9 +1228,7 @@ stockholm_write(FILE *fp, const ESL_MSA *msa, int64_t cpl)
 
       for (i = 0; i < msa->nseq; i++)
 	{
-#ifdef eslAUGMENT_ALPHABET
 	  if (msa->abc)   esl_abc_TextizeN(msa->abc, msa->ax[i] + currpos + 1, acpl, buf);
-#endif
 	  if (! msa->abc) strncpy(buf, msa->aseq[i] + currpos, acpl);
 	  if (make_uniquenames) { if (fprintf(fp, "%0*d|%-*s %s\n", uniqwidth-1, i, margin-uniqwidth-1, msa->sqname[i], buf) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "stockholm msa write failed"); }
 	  else                  { if (fprintf(fp, "%-*s %s\n",                      margin-1,           msa->sqname[i], buf) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "stockholm msa write failed"); }
@@ -2742,8 +2713,3 @@ main(int argc, char **argv)
 /*::cexcerpt::msafile_stockholm_example2::end::*/
 #endif /*eslMSAFILE_STOCKHOLM_EXAMPLE2*/
 /*--------------------- end of example --------------------------*/
-
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

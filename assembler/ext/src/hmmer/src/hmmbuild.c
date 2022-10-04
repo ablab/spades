@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef HAVE_MPI
+#ifdef HMMER_MPI
 #include "mpi.h"
 #endif
 
@@ -69,16 +69,19 @@ static ESL_OPTIONS options[] = {
   { "-n",        eslARG_STRING,  NULL, NULL, NULL,      NULL,      NULL,    NULL, "name the HMM <s>",                                      1 },
   { "-o",        eslARG_OUTFILE,FALSE, NULL, NULL,      NULL,      NULL,    NULL, "direct summary output to file <f>, not stdout",         1 },
   { "-O",        eslARG_OUTFILE,FALSE, NULL, NULL,      NULL,      NULL,    NULL, "resave annotated, possibly modified MSA to file <f>",   1 },
-/* Selecting the alphabet rather than autoguessing it */
+ 
+  /* Selecting the alphabet rather than autoguessing it */
   { "--amino",   eslARG_NONE,   FALSE, NULL, NULL,   ALPHOPTS,    NULL,     NULL, "input alignment is protein sequence data",              2 },
   { "--dna",     eslARG_NONE,   FALSE, NULL, NULL,   ALPHOPTS,    NULL,     NULL, "input alignment is DNA sequence data",                  2 },
   { "--rna",     eslARG_NONE,   FALSE, NULL, NULL,   ALPHOPTS,    NULL,     NULL, "input alignment is RNA sequence data",                  2 },
-/* Alternate model construction strategies */
+
+  /* Alternate model construction strategies */
   { "--fast",    eslARG_NONE,"default",NULL, NULL,    CONOPTS,    NULL,     NULL, "assign cols w/ >= symfrac residues as consensus",       3 },
   { "--hand",    eslARG_NONE,   FALSE, NULL, NULL,    CONOPTS,    NULL,     NULL, "manual construction (requires reference annotation)",   3 },
   { "--symfrac", eslARG_REAL,   "0.5", NULL, "0<=x<=1", NULL,   "--fast",   NULL, "sets sym fraction controlling --fast construction",     3 },
   { "--fragthresh",eslARG_REAL, "0.5", NULL, "0<=x<=1", NULL,     NULL,     NULL, "if L <= x*alen, tag sequence as a fragment",            3 },
-/* Alternate relative sequence weighting strategies */
+
+  /* Alternate relative sequence weighting strategies */
   /* --wme not implemented in HMMER3 yet */
   { "--wpb",     eslARG_NONE,"default",NULL, NULL,    WGTOPTS,    NULL,      NULL, "Henikoff position-based weights",                      4 },
   { "--wgsc",    eslARG_NONE,   NULL,  NULL, NULL,    WGTOPTS,    NULL,      NULL, "Gerstein/Sonnhammer/Chothia tree weights",             4 },
@@ -86,37 +89,26 @@ static ESL_OPTIONS options[] = {
   { "--wnone",   eslARG_NONE,   NULL,  NULL, NULL,    WGTOPTS,    NULL,      NULL, "don't do any relative weighting; set all to 1",        4 },
   { "--wgiven",  eslARG_NONE,   NULL,  NULL, NULL,    WGTOPTS,    NULL,      NULL, "use weights as given in MSA file",                     4 },
   { "--wid",     eslARG_REAL, "0.62",  NULL,"0<=x<=1",   NULL,"--wblosum",   NULL, "for --wblosum: set identity cutoff",                   4 },
-/* Alternative effective sequence weighting strategies */
+
+  /* Alternative effective sequence weighting strategies */
   { "--eent",    eslARG_NONE,"default",NULL, NULL,    EFFOPTS,    NULL,      NULL, "adjust eff seq # to achieve relative entropy target",  5 },
-  { "--eentexp", eslARG_NONE,"default",NULL, NULL,    EFFOPTS,    NULL,      NULL, "adjust eff seq # to reach rel. ent. target using exp scaling",  5 },
   { "--eclust",  eslARG_NONE,  FALSE,  NULL, NULL,    EFFOPTS,    NULL,      NULL, "eff seq # is # of single linkage clusters",            5 },
   { "--enone",   eslARG_NONE,  FALSE,  NULL, NULL,    EFFOPTS,    NULL,      NULL, "no effective seq # weighting: just use nseq",          5 },
   { "--eset",    eslARG_REAL,   NULL,  NULL, NULL,    EFFOPTS,    NULL,      NULL, "set eff seq # for all models to <x>",                  5 },
-  { "--ere",     eslARG_REAL,   NULL,  NULL,"x>0",       NULL,    NULL,     NULL, "for --eent[exp]: set minimum rel entropy/position to <x>",  5 },
-  { "--esigma",  eslARG_REAL, "45.0",  NULL,"x>0",       NULL,    NULL,     NULL, "for --eent[exp]: set sigma param to <x>",                   5 },
+  { "--ere",     eslARG_REAL,   NULL,  NULL,"x>0",       NULL,    NULL,     NULL, "for --eent: set minimum rel entropy/position to <x>",  5 },
+  { "--esigma",  eslARG_REAL, "45.0",  NULL,"x>0",       NULL,    NULL,     NULL, "for --eent: set sigma param to <x>",                   5 },
   { "--eid",     eslARG_REAL, "0.62",  NULL,"0<=x<=1",   NULL,"--eclust",    NULL, "for --eclust: set fractional identity cutoff to <x>",  5 },
-/* Alternative prior strategies */
+
+  /* Alternative prior strategies */
   { "--pnone",   eslARG_NONE,  FALSE,  NULL, NULL,       NULL,  NULL,"--plaplace", "don't use any prior; parameters are frequencies",      9 },
   { "--plaplace",eslARG_NONE,  FALSE,  NULL, NULL,       NULL,  NULL,   "--pnone", "use a Laplace +1 prior",                               9 },
-  { "--popen",    eslARG_REAL,  NULL,  NULL,"0<=x<0.5",NULL, NULL,           "",   "force gap open prob. (w/ --singlemx, aa default 0.02, nt 0.031)",       9 },
-  { "--pextend",  eslARG_REAL,  NULL,  NULL, "0<=x<1", NULL, NULL,           "",   "force gap extend prob. (w/ --singlemx, aa default 0.4, nt 0.75)",      9 },
 
-  { "--tmm",  eslARG_REAL,"2.0", NULL, NULL,      NULL,      NULL,    NULL, "MM transition",   9 },
-  { "--tmi",  eslARG_REAL,"0.1", NULL, NULL,      NULL,      NULL,    NULL, "MI transition",   9 },
-  { "--tmd",  eslARG_REAL,"0.1", NULL, NULL,      NULL,      NULL,    NULL, "MD transition",   9 },
-
-  { "--tim",  eslARG_REAL,"0.12", NULL, NULL,      NULL,      NULL,    NULL, "IM transition",   9 },
-  { "--tii",  eslARG_REAL,"0.4", NULL, NULL,      NULL,      NULL,    NULL,  "II transition",   9 },
-
-  { "--tdm",  eslARG_REAL,"0.5", NULL, NULL,      NULL,      NULL,    NULL, "DM transition",   9 },
-  { "--tdd",  eslARG_REAL,"1.0", NULL, NULL,      NULL,      NULL,    NULL, "DD transition",   9 },
-
-
-
-/* Single sequence methods */
+  /* Single sequence methods */
   { "--singlemx", eslARG_NONE,   FALSE, NULL,   NULL,   NULL,  NULL,           "",   "use substitution score matrix for single-sequence inputs",     10 },
   { "--mx",     eslARG_STRING, "BLOSUM62", NULL, NULL,   NULL, NULL,   "--mxfile",   "substitution score matrix (built-in matrices, with --singlemx)", 10 },
   { "--mxfile", eslARG_INFILE,     NULL, NULL,   NULL,   NULL, NULL,       "--mx",   "read substitution score matrix from file <f> (with --singlemx)", 10 },
+  { "--popen",    eslARG_REAL,  NULL,  NULL,"0<=x<0.5",NULL, NULL,           "",   "force gap open prob. (w/ --singlemx, aa default 0.02, nt 0.031)",  10 },
+  { "--pextend",  eslARG_REAL,  NULL,  NULL, "0<=x<1", NULL, NULL,           "",   "force gap extend prob. (w/ --singlemx, aa default 0.4, nt 0.75)",  10 },
 
   /* Control of E-value calibration */
   { "--EmL",     eslARG_INT,    "200", NULL,"n>0",       NULL,    NULL,      NULL, "length of sequences for MSV Gumbel mu fit",            6 },   
@@ -127,12 +119,12 @@ static ESL_OPTIONS options[] = {
   { "--EfN",     eslARG_INT,    "200", NULL,"n>0",       NULL,    NULL,      NULL, "number of sequences for Forward exp tail tau fit",     6 },   
   { "--Eft",     eslARG_REAL,  "0.04", NULL,"0<x<1",     NULL,    NULL,      NULL, "tail mass for Forward exponential tail tau fit",       6 },   
 
-/* Other options */
+  /* Other options */
 #ifdef HMMER_THREADS 
-  { "--cpu",     eslARG_INT,    NULL,"HMMER_NCPU","n>=0",NULL,     NULL,  NULL,  "number of parallel CPU workers for multithreads",       8 },
+  { "--cpu",     eslARG_INT,    p7_NCPU,"HMMER_NCPU","n>=0",NULL,   NULL,    NULL, "number of parallel CPU workers for multithreads",       8 },
 #endif
-#ifdef HAVE_MPI
-  { "--mpi",     eslARG_NONE,   FALSE, NULL, NULL,      NULL,      NULL,  NULL,  "run as an MPI parallel program",                        8 },
+#ifdef HMMER_MPI
+  { "--mpi",     eslARG_NONE,   FALSE, NULL, NULL,       NULL,    NULL,      NULL, "run as an MPI parallel program",                        8 },
 #endif
   { "--stall",   eslARG_NONE,       FALSE, NULL, NULL,    NULL,     NULL,    NULL, "arrest after start: for attaching debugger to process", 8 },
   { "--informat", eslARG_STRING,     NULL, NULL, NULL,    NULL,     NULL,    NULL, "assert input alifile is in format <s> (no autodetect)", 8 },
@@ -141,11 +133,22 @@ static ESL_OPTIONS options[] = {
   { "--w_length", eslARG_INT,        NULL, NULL, NULL,    NULL,     NULL,    NULL, "window length ",                                        8 },
   { "--maxinsertlen",  eslARG_INT,   NULL, NULL, "n>=5",  NULL,     NULL,    NULL, "pretend all inserts are length <= <n>",   8 },
 
-  /* expert-only option (for now), hidden from view. May not keep. */
-  { "--seq_weights_r",  eslARG_OUTFILE,FALSE, NULL, NULL,      NULL,      NULL,    NULL, "write seq weights after relative seq weighting to file <f>",   99 },
-  { "--seq_weights_e",  eslARG_OUTFILE,FALSE, NULL, NULL,      NULL,      NULL,    NULL, "write seq weights after entropy weighting to file <f>",   99 },
+  /*Expert-only option, hidden from view. Likely to be removed in the future.
+    This is an experimental alternative method for weighting sequence counts.
+    It produces non-uniform scaling across columns -- columns with higher
+    counts are reduced to a greater extent than columns with low counts. It
+    has proven useful in reducing alignment overextension with Dfam models -
+    these are often based on MSAs reconstructed from heavily-fragmented
+    sequences, and thus may have wildly different per-column coverage levels.
+    Uniform scaling causes low-coverage regions to be scaled down to
+    essentially no (weighted) observations, leading to low local relative
+    entropy, which produces high overextension.
 
-
+    However, we don't recommend using this method in general, as it
+    may show odd behavior (or fail to even work) in the case of low
+    overall observed counts (e.g. an alignemnt of 2 or 4 sequences)
+    */
+    { "--eentexp", eslARG_NONE,"default",NULL, NULL,    EFFOPTS,    NULL,      NULL, "adjust eff seq # to reach rel. ent. target using exp scaling",  99 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 
@@ -170,12 +173,6 @@ struct cfg_s {
   char         *postmsafile;	/* optional file to resave annotated, modified MSAs to  */
   FILE         *postmsafp;	/* open <postmsafile>, or NULL */
 
-  char         *seqweights_r_file;  /* optional file to write sequence weights after relative seq weighting */
-  FILE         *seqweights_r_fp;  /* open <seqweights_r_file>, or NULL */
-
-  char         *seqweights_e_file;  /* optional file to write sequence weights after entropy weighting */
-  FILE         *seqweights_e_fp;  /* open <seqweights_e_file>, or NULL */
-
   int           nali;		/* which # alignment this is in file (only valid in serial mode)   */
   int           nnamed;		/* number of alignments that had their own names */
 
@@ -196,7 +193,7 @@ static void thread_loop(ESL_THREADS *obj, ESL_WORK_QUEUE *queue, struct cfg_s *c
 static void pipeline_thread(void *arg);
 #endif /*HMMER_THREADS*/
 
-#ifdef HAVE_MPI
+#ifdef HMMER_MPI
 static void  mpi_master    (const ESL_GETOPTS *go, struct cfg_s *cfg);
 static void  mpi_worker    (const ESL_GETOPTS *go, struct cfg_s *cfg);
 static void  mpi_init_open_failure(ESL_MSAFILE *afp, int status);
@@ -263,7 +260,7 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, char **ret_hmmf
   if (strcmp(*ret_alifile, "-") == 0 && ! esl_opt_IsOn(go, "--informat"))
     { if (puts("Must specify --informat to read <alifile> from stdin ('-')") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
 
-#ifdef HAVE_MPI
+#ifdef HMMER_MPI
   if (esl_opt_IsOn(go, "--mpi") && esl_opt_IsOn(go, "--cpu")) 
     {
       int mpisetby = esl_opt_GetSetter(go, "--mpi");
@@ -345,7 +342,7 @@ output_header(const ESL_GETOPTS *go, const struct cfg_s *cfg)
 #ifdef HMMER_THREADS
   if (esl_opt_IsUsed(go, "--cpu")        && fprintf(cfg->ofp, "# number of worker threads:         %d\n",        esl_opt_GetInteger(go, "--cpu"))     < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");  
 #endif
-#ifdef HAVE_MPI
+#ifdef HMMER_MPI
   if (esl_opt_IsUsed(go, "--mpi")        && fprintf(cfg->ofp, "# parallelization mode:             MPI\n")                                            < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
 #endif
   if (esl_opt_IsUsed(go, "--seed"))  {
@@ -419,12 +416,6 @@ main(int argc, char **argv)
   cfg.postmsafile = esl_opt_GetString(go, "-O"); /* NULL by default */
   cfg.postmsafp         = NULL;
 
-  cfg.seqweights_r_file = esl_opt_GetString(go, "--seq_weights_r"); /* NULL by default */
-  cfg.seqweights_r_fp   = NULL;
-
-  cfg.seqweights_e_file = esl_opt_GetString(go, "--seq_weights_e"); /* NULL by default */
-  cfg.seqweights_e_fp   = NULL;
-
   cfg.nali       = 0;		           /* this counter is incremented in masters */
   cfg.nnamed     = 0;		           /* 0 or 1 if a single MSA; == nali if multiple MSAs */
   cfg.do_mpi     = FALSE;	           /* this gets reset below, if we init MPI */
@@ -451,7 +442,7 @@ main(int argc, char **argv)
   /* Figure out who we are, and send control there: 
    * we might be an MPI master, an MPI worker, or a serial program.
    */
-#ifdef HAVE_MPI
+#ifdef HMMER_MPI
   if (esl_opt_GetBoolean(go, "--mpi")) 
     {
       cfg.do_mpi     = TRUE;
@@ -467,7 +458,7 @@ main(int argc, char **argv)
       MPI_Finalize();
     }
   else
-#endif /*HAVE_MPI*/
+#endif /*HMMER_MPI*/
     {
       usual_master(go, &cfg);
       esl_stopwatch_Stop(w);
@@ -510,6 +501,8 @@ usual_master(const ESL_GETOPTS *go, struct cfg_s *cfg)
   ESL_THREADS     *threadObj= NULL;
   ESL_WORK_QUEUE  *queue    = NULL;
 #endif
+  double           popen;
+  double           pextend;
   int              i;
   int              status;
 
@@ -556,36 +549,13 @@ usual_master(const ESL_GETOPTS *go, struct cfg_s *cfg)
 
 #ifdef HMMER_THREADS
   /* initialize thread data */
-  if (esl_opt_IsOn(go, "--cpu")) ncpus = esl_opt_GetInteger(go, "--cpu");
-  else                                   esl_threads_CPUCount(&ncpus);
-
+  ncpus = ESL_MIN(esl_opt_GetInteger(go, "--cpu"), esl_threads_GetCPUCount());
   if (ncpus > 0)
     {
       threadObj = esl_threads_Create(&pipeline_thread);
       queue = esl_workqueue_Create(ncpus * 2);
     }
 #endif
-
-
-  if (cfg->seqweights_r_file)
-  {
-      if (ncpus != 0)
-        p7_Fail("--seq_weights_r flag only valid with --cpu=0", NULL);
-      cfg->seqweights_r_fp = fopen(cfg->seqweights_r_file, "w");
-      if (cfg->seqweights_r_fp == NULL) p7_Fail("Failed to write sequence weight (W) file %s", cfg->seqweights_r_file);
-  }
-  else cfg->seqweights_r_fp = NULL;
-
-  if (cfg->seqweights_e_file)
-  {
-      if (ncpus != 0)
-        p7_Fail("--seq_weights_e flag only valid with --cpu=0", NULL);
-      cfg->seqweights_e_fp = fopen(cfg->seqweights_e_file, "w");
-      if (cfg->seqweights_e_fp == NULL) p7_Fail("Failed to write sequence weight (W) file %s", cfg->seqweights_e_file);
-  }
-  else cfg->seqweights_e_fp = NULL;
-
-
 
   infocnt = (ncpus == 0) ? 1 : ncpus;
   ESL_ALLOC(info, sizeof(*info) * infocnt);
@@ -597,38 +567,18 @@ usual_master(const ESL_GETOPTS *go, struct cfg_s *cfg)
 
       if (info[i].bld == NULL)  p7_Fail("p7_builder_Create failed");
 
-
-
       //do this here instead of in p7_builder_Create(), because it's an hmmbuild-specific option
 
       if ( esl_opt_IsOn(go, "--maxinsertlen") )
         info[i].bld->max_insert_len    = esl_opt_GetInteger(go, "--maxinsertlen");
 
-      if( !esl_opt_GetBoolean(go, "--pnone") && !esl_opt_GetBoolean(go, "--plaplace") )
-      {
-           if (esl_opt_IsUsed(go, "--tmm"))  info[i].bld->prior->tm->alpha[0][0] = esl_opt_GetReal(go, "--tmm"); // TMM
-           if (esl_opt_IsUsed(go, "--tmi"))  info[i].bld->prior->tm->alpha[0][1] = esl_opt_GetReal(go, "--tmi"); // TMM
-           if (esl_opt_IsUsed(go, "--tmd"))  info[i].bld->prior->tm->alpha[0][2] = esl_opt_GetReal(go, "--tmd"); // TMM
-
-           if (esl_opt_IsUsed(go, "--tim"))  info[i].bld->prior->ti->alpha[0][0] = esl_opt_GetReal(go, "--tim"); // TMM
-           if (esl_opt_IsUsed(go, "--tii"))  info[i].bld->prior->ti->alpha[0][1] = esl_opt_GetReal(go, "--tii"); // TMM
-
-           if (esl_opt_IsUsed(go, "--tdm"))  info[i].bld->prior->td->alpha[0][0] = esl_opt_GetReal(go, "--tdm"); // TMM
-           if (esl_opt_IsUsed(go, "--tdd"))  info[i].bld->prior->td->alpha[0][1] = esl_opt_GetReal(go, "--tdd"); // TMM
-
-      }
-
-
-
-      double popen;
-      double pextend;
       if ( cfg->abc->type == eslDNA || cfg->abc->type == eslRNA ) {
         //If user hasn't overridden defaults, assign the nucleotide defaults
-        popen   = esl_opt_IsUsed(go, "--popen")   ? esl_opt_GetReal(go, "--popen") : 0.03125;
+        popen   = esl_opt_IsUsed(go, "--popen")   ? esl_opt_GetReal(go, "--popen")   : 0.03125;
         pextend = esl_opt_IsUsed(go, "--pextend") ? esl_opt_GetReal(go, "--pextend") : 0.75;
       } else {
         //protein defaults
-        popen   = esl_opt_IsUsed(go, "--popen")   ? esl_opt_GetReal(go, "--popen") : 0.02;
+        popen   = esl_opt_IsUsed(go, "--popen")   ? esl_opt_GetReal(go, "--popen")   : 0.02;
         pextend = esl_opt_IsUsed(go, "--pextend") ? esl_opt_GetReal(go, "--pextend") : 0.4;
       }
 
@@ -711,7 +661,7 @@ usual_master(const ESL_GETOPTS *go, struct cfg_s *cfg)
   return eslFAIL;
 }
 
-#ifdef HAVE_MPI
+#ifdef HMMER_MPI
 /* mpi_master()
  * The MPI version of hmmbuild.
  * Follows standard pattern for a master/worker load-balanced MPI program (J1/78-79).
@@ -1015,7 +965,7 @@ mpi_worker(const ESL_GETOPTS *go, struct cfg_s *cfg)
         sq = NULL;
         hmm->eff_nseq = 1;
       } else {
-        if ((status = p7_Builder(bld, msa, bg, &hmm, NULL, NULL, NULL, postmsa_ptr, NULL, NULL)) != eslOK) { strcpy(errmsg, bld->errbuf); goto ERROR; }
+        if ((status = p7_Builder(bld, msa, bg, &hmm, NULL, NULL, NULL, postmsa_ptr)) != eslOK) { strcpy(errmsg, bld->errbuf); goto ERROR; }
       }
 
 
@@ -1023,9 +973,9 @@ mpi_worker(const ESL_GETOPTS *go, struct cfg_s *cfg)
 
       /* Calculate upper bound on size of sending status, HMM, and optional postmsa; make sure wbuf can hold it. */
       n = 0;
-      if (MPI_Pack_size(1,    MPI_INT, MPI_COMM_WORLD, &sz) != 0)     goto ERROR;   n += sz;
-      if (p7_hmm_MPIPackSize( hmm,     MPI_COMM_WORLD, &sz) != eslOK) goto ERROR;   n += sz;
-      if (esl_msa_MPIPackSize(postmsa, MPI_COMM_WORLD, &sz) != eslOK) goto ERROR;   n += sz;
+      if (MPI_Pack_size(1,    MPI_INT, MPI_COMM_WORLD, &sz) != 0)     goto ERROR; else n += sz;
+      if (p7_hmm_MPIPackSize( hmm,     MPI_COMM_WORLD, &sz) != eslOK) goto ERROR; else n += sz;
+      if (esl_msa_MPIPackSize(postmsa, MPI_COMM_WORLD, &sz) != eslOK) goto ERROR; else n += sz;
       if (n > wn) { ESL_RALLOC(wbuf, tmp, sizeof(char) * n); wn = n; }
       ESL_DPRINTF2(("worker %d: has calculated that HMM will pack into %d bytes\n", cfg->my_rank, n));
 
@@ -1058,7 +1008,7 @@ mpi_worker(const ESL_GETOPTS *go, struct cfg_s *cfg)
   if (bld  != NULL) p7_builder_Destroy(bld);
   return;
 }
-#endif /*HAVE_MPI*/
+#endif /*HMMER_MPI*/
 
 
 static void
@@ -1092,7 +1042,7 @@ serial_loop(WORKER_INFO *info, struct cfg_s *cfg, const ESL_GETOPTS *go)
         sq = NULL;
         hmm->eff_nseq = 1;
       } else {
-        if ((status = p7_Builder(info->bld, msa, info->bg, &hmm, NULL, NULL, NULL, postmsa_ptr, cfg->seqweights_r_fp,  cfg->seqweights_e_fp )) != eslOK) p7_Fail("build failed: %s", bld->errbuf);
+        if ((status = p7_Builder(info->bld, msa, info->bg, &hmm, NULL, NULL, NULL, postmsa_ptr )) != eslOK) p7_Fail("build failed: %s", bld->errbuf);
 
         //if not --singlemx, but the user set the popen/pextend flags, override the computed gap params now:
         if (info->bld->popen != -1 || info->bld->pextend != -1) {
@@ -1286,7 +1236,7 @@ pipeline_thread(void *arg)
         sq = NULL;
         item->hmm->eff_nseq = 1;
       } else {
-        status = p7_Builder(info->bld, item->msa, info->bg, &item->hmm, NULL, NULL, NULL, &item->postmsa, NULL, NULL);
+        status = p7_Builder(info->bld, item->msa, info->bg, &item->hmm, NULL, NULL, NULL, &item->postmsa);
         if (status != eslOK) p7_Fail("build failed: %s", info->bld->errbuf);
 
         //if not --singlemx, but the user set the popen/pextend flags, override the computed gap params now:
@@ -1437,6 +1387,4 @@ set_msa_name(struct cfg_s *cfg, char *errbuf, ESL_MSA *msa)
   return eslOK;
 }
 
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
+

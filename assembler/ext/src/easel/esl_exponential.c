@@ -4,13 +4,12 @@
  *   1. Routines for evaluating densities and distributions
  *   2. Generic API routines: for general interface w/ histogram module
  *   3. Routines for dumping plots for files
- *   4. Routines for sampling (requires random module)
+ *   4. Routines for sampling 
  *   5. Maximum likelihood fitting
  *   6. Stats driver
  *   7. Unit tests
  *   8. Test driver
  *   9. Example
- *  10. Copyright and license information
  *
  * xref STL9/138  
  * 
@@ -25,15 +24,12 @@
 #include <math.h>
 
 #include "easel.h"
+#include "esl_histogram.h"
+#include "esl_random.h"
 #include "esl_stats.h"
+
 #include "esl_exponential.h"
 
-#ifdef eslAUGMENT_RANDOM
-#include "esl_random.h"
-#endif
-#ifdef eslAUGMENT_HISTOGRAM
-#include "esl_histogram.h"
-#endif
 
 /****************************************************************************
  * 1. Routines for evaluating densities and distributions
@@ -266,9 +262,8 @@ esl_exp_Plot(FILE *fp, double mu, double lambda,
 
 
 /****************************************************************************
- * 4. Routines for sampling (requires augmentation w/ random module)
+ * 4. Routines for sampling 
  ****************************************************************************/ 
-#ifdef eslAUGMENT_RANDOM
 
 /* Function:  esl_exp_Sample()
  *
@@ -282,12 +277,10 @@ esl_exp_Sample(ESL_RANDOMNESS *r, double mu, double lambda)
   double p, x;
   p = esl_rnd_UniformPositive(r); 
 
-  x = mu - 1./lambda * log(p);	/* really log(1-p), but if p uniform on 0..1 
-				 * then so is 1-p. 
-                                 */
+  x = mu - 1./lambda * log(p);	// really log(1-p), but if p uniform on 0..1 
+				// then so is 1-p. 
   return x;
 } 
-#endif /*eslAUGMENT_RANDOM*/
 /*--------------------------- end sampling ---------------------------------*/
 
 
@@ -374,7 +367,6 @@ esl_exp_FitCompleteScale(double *x, int n, double mu, double *ret_lambda)
 }
 
 
-#ifdef eslAUGMENT_HISTOGRAM
 /* Function:  esl_exp_FitCompleteBinned()
  *
  * Purpose:   Fit a complete exponential distribution to the observed
@@ -449,7 +441,6 @@ esl_exp_FitCompleteBinned(ESL_HISTOGRAM *g, double *ret_mu, double *ret_lambda)
   *ret_lambda = 1/delta * (log(sb) - log(sa));
   return eslOK;
 }
-#endif /*eslAUGMENT_HISTOGRAM*/
 
 
 /****************************************************************************
@@ -636,11 +627,6 @@ main(int argc, char **argv)
  ****************************************************************************/ 
 #ifdef eslEXPONENTIAL_EXAMPLE
 /*::cexcerpt::exp_example::begin::*/
-/* compile:
-   gcc -g -Wall -I. -o example -DeslEXPONENTIAL_EXAMPLE\
-     -DeslAUGMENT_HISTOGRAM -DeslAUGMENT_RANDOM -DeslAUGMENT_STATS\
-     esl_exponential.c esl_histogram.c esl_random.c esl_stats.c easel.c -lm
- */
 #include <stdio.h>
 #include "easel.h"
 #include "esl_random.h"
@@ -690,10 +676,3 @@ main(int argc, char **argv)
 /*::cexcerpt::exp_example::end::*/
 #endif /*eslEXPONENTIAL_EXAMPLE*/
 
-
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/

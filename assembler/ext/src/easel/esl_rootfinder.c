@@ -6,8 +6,6 @@
  *   3. Unit tests.
  *   4. Test driver.
  *   5. Examples.
- *   6. Copyright and license information.
- * 
  */
 #include "esl_config.h"
 
@@ -531,12 +529,3 @@ int main(void)
 /*::cexcerpt::rootfinder_example2::end::*/
 #endif /*eslROOTFINDER_EXAMPLE2*/
 
-
-
-
-/*****************************************************************
- * @LICENSE@
- * 
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/

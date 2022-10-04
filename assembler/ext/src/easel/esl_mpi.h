@@ -1,9 +1,9 @@
 /* Support for MPI parallelization.
- * 
  */
-#if defined(HAVE_MPI) && defined(eslLIBRARY)
 #ifndef eslMPI_INCLUDED
 #define eslMPI_INCLUDED
+#include "esl_config.h"
+#if defined(HAVE_MPI) 
 #include <mpi.h>
 
 #include "esl_alphabet.h"
@@ -62,13 +62,5 @@ extern int esl_msa_MPIRecv(int source, int tag, MPI_Comm comm, const ESL_ALPHABE
 extern int esl_stopwatch_MPIReduce(ESL_STOPWATCH *w, int root, MPI_Comm comm);
 
 
+#endif /*HAVE_MPI*/
 #endif /*eslMPI_INCLUDED*/
-#endif /*HAVE_MPI && eslLIBRARY*/
-
-/*****************************************************************
- * @LICENSE@
- *
- * SRE, Sat Jun  2 09:07:25 2007 [Janelia]
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/

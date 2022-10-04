@@ -1,11 +1,12 @@
-/* sequence/subsequence indices: fast lookup in large sequence files by keyword.
+/* Sequence/subsequence indices: fast lookup in large sequence files by keyword.
  *
+ * Contents:
  *  1. Using (reading) an SSI index.
  *  2. Creating (writing) new SSI files.
  *  3. Portable binary i/o.
- *  4. Test driver.
- *  5. Example code.
- *  6. License and copyright information.
+ *  4. Unit tests.
+ *  5. Test driver.
+ *  6. Example code.
  */
 #include "esl_config.h"
 
@@ -740,7 +741,8 @@ esl_newssi_AddFile(ESL_NEWSSI *ns, const char *filename, int fmt, uint16_t *ret_
     ESL_REALLOC(ns->fileformat, sizeof(uint32_t) * (ns->nfiles+eslSSI_FCHUNK));
     ESL_REALLOC(ns->bpl,        sizeof(uint32_t) * (ns->nfiles+eslSSI_FCHUNK));
     ESL_REALLOC(ns->rpl,        sizeof(uint32_t) * (ns->nfiles+eslSSI_FCHUNK));
-  }
+  } 
+
   *ret_fh = fh;
   return eslOK;
 
@@ -968,21 +970,38 @@ esl_newssi_AddAlias(ESL_NEWSSI *ns, const char *alias, const char *key)
 /* Function:  esl_newssi_Write()
  * Synopsis:  Save a new index to an SSI file.
  *
- * Purpose:   Writes the complete index <ns> in SSI format to its file.
- *            
+ * Purpose:   Writes the complete index <ns> in SSI format to its file,
+ *            and closes the file.
+ *
  *            Handles all necessary overhead of sorting the primary and
  *            secondary keys, including any externally sorted tmpfiles that
  *            may have been needed for large indices.
  *            
+ *            You only <_Write()> once. The open SSI file is closed.
+ *            After calling <_Write()>, you should <_Close()> the
+ *            <ESL_NEWSSI>.
+ *            
+ *            Verifies that all primary and secondary keys are unique.
+ *            If not, returns <eslEDUP>.
+ *            
+ *            On any error, the SSI file <ns->ssifile> is deleted.
+ *            
  * Args:      <ns>  - new SSI index to write                   
  *            
  * Returns:   <eslOK>       on success;
+ *            <eslEDUP>     if primary or secondary keys aren't all unique
  *            <eslERANGE>   if index size exceeds system's maximum file size;
  *            <eslESYS>     if any of the steps of an external sort fail.
  *
- * Throws:    <eslEINVAL> on invalid argument, including too-long tmpfile names;
+ * Throws:    <eslEINVAL> on invalid argument, including too-long tmpfile names,
+ *                        or trying to _Write() the <ESL_NEWSSI> more than once;
  *            <eslEMEM>   on buffer allocation failure;
  *            <eslEWRITE> on any system write failure, including filled disk.  
+ *            
+ * Note:      It's O(1) memory to check for key duplications
+ *            here, after keys are sorted, compared to O(N) in
+ *            <esl_newssi_AddKey()>, where we would have to maintain a
+ *            hash of all previous N keys in memory.
  */
 int
 esl_newssi_Write(ESL_NEWSSI *ns)
@@ -1007,6 +1026,8 @@ esl_newssi_Write(ESL_NEWSSI *ns)
 
   if (ns->nsecondary > 0 && ns->slen == 0)
     ESL_EXCEPTION(eslEINVAL, "zero secondary key length: shouldn't happen");
+  if (ns->ssifp == NULL)
+    ESL_EXCEPTION(eslEINVAL, "SSI data were already written.");
 
   /* We need fixed-width buffers to get our keys fwrite()'ten in their
    * full binary lengths; pkey->key (for instance) is not guaranteed
@@ -1015,8 +1036,8 @@ esl_newssi_Write(ESL_NEWSSI *ns)
    * bytes as NUL's, and valgrind will flag you if you attempt to
    * write uninitialized bytes from these buffers.
    */
-  ESL_ALLOC(fk, sizeof(char) * ns->flen);
-  ESL_ALLOC(pk, sizeof(char) * ns->plen);
+  ESL_ALLOC(fk,   sizeof(char) * ns->flen);
+  ESL_ALLOC(pk,   ESL_MAX(1, sizeof(char) * ns->plen));
   if (ns->nsecondary > 0) ESL_ALLOC(sk, sizeof(char) * ns->slen);
 
   /* How big is the index? If it's going to be > 2GB, we better have
@@ -1124,11 +1145,13 @@ esl_newssi_Write(ESL_NEWSSI *ns)
    */
   if (ns->external) 
     {
+      if (ns->nprimary) strncpy(pk, "", ns->plen);
       for (i = 0; i < ns->nprimary; i++) 
 	{
 	  if (esl_fgets(&buf, &n, ns->ptmp)  != eslOK)    ESL_XFAIL(eslESYS, ns->errbuf, "read from sorted primary key tmpfile failed");
 	  if (parse_pkey(buf, &pkey)         != eslOK)    ESL_XFAIL(eslESYS, ns->errbuf, "parse failed for a line of sorted primary key tmpfile failed");
-	  strncpy(pk, pkey.key, ns->plen); /* note: strncpy pads w/ nulls */
+          if (strcmp(pk, pkey.key)           == 0)        ESL_XFAIL(eslEDUP, ns->errbuf, "primary keys not unique: '%s' occurs more than once", pkey.key);
+	  strncpy(pk, pkey.key, ns->plen);   // strncpy() pads w/ nulls, and we count on that behavior.
 
 	  if (fwrite(pk,sizeof(char),ns->plen,ns->ssifp) != ns->plen ||
 	      esl_fwrite_u16(   ns->ssifp, pkey.fnum)    != eslOK    ||
@@ -1140,8 +1163,10 @@ esl_newssi_Write(ESL_NEWSSI *ns)
     } 
   else 
     {
+      if (ns->nprimary) strncpy(pk, "", ns->plen);
       for (i = 0; i < ns->nprimary; i++)
 	{
+          if (strcmp(pk, ns->pkeys[i].key)  == 0)  ESL_XFAIL(eslEDUP, ns->errbuf, "primary keys not unique: '%s' occurs more than once", ns->pkeys[i].key);
 	  strncpy(pk, ns->pkeys[i].key, ns->plen);
 
 	  if (fwrite(pk,sizeof(char),ns->plen,ns->ssifp)       != ns->plen ||
@@ -1158,10 +1183,12 @@ esl_newssi_Write(ESL_NEWSSI *ns)
    */
   if (ns->external) 
     {
+      if (ns->nsecondary) strncpy(sk, "", ns->slen);
       for (i = 0; i < ns->nsecondary; i++)
 	{
 	  if (esl_fgets(&buf, &n, ns->stmp) != eslOK) ESL_XFAIL(eslESYS, ns->errbuf, "read from sorted secondary key tmpfile failed");
 	  if (parse_skey(buf, &skey)        != eslOK) ESL_XFAIL(eslESYS, ns->errbuf, "parse failed for a line of sorted secondary key tmpfile failed");
+          if (strcmp(sk, skey.key)          == 0)     ESL_XFAIL(eslEDUP, ns->errbuf, "secondary keys not unique: '%s' occurs more than once", skey.key);
 	  strncpy(sk, skey.key,  ns->slen);  // slen > 0 if there are any secondary keys.
 	  strncpy(pk, skey.pkey, ns->plen);
 
@@ -1173,8 +1200,10 @@ esl_newssi_Write(ESL_NEWSSI *ns)
   else 
     {
       /* if ns->nsecondary=0, ns->slen=0 and sk=NULL */
+      if (ns->nsecondary) strncpy(sk, "", ns->slen);
       for (i = 0; i < ns->nsecondary; i++)
 	{
+          if (strcmp(sk, ns->skeys[i].key) == 0) ESL_XFAIL(eslEDUP, ns->errbuf, "secondary keys not unique: '%s' occurs more than once", ns->skeys[i].key);
 	  strncpy(sk, ns->skeys[i].key,  ns->slen);
 	  strncpy(pk, ns->skeys[i].pkey, ns->plen);
 
@@ -1184,21 +1213,25 @@ esl_newssi_Write(ESL_NEWSSI *ns)
 	} 
     }
 
-  if (fk  != NULL)       free(fk);
-  if (pk  != NULL)       free(pk);
-  if (sk  != NULL)       free(sk);
-  if (buf != NULL)       free(buf);
-  if (ns->ptmp != NULL)  { fclose(ns->ptmp); ns->ptmp = NULL; }
-  if (ns->stmp != NULL)  { fclose(ns->stmp); ns->stmp = NULL; }
+  fclose(ns->ssifp);                // Closing <ssifp> makes it so we can only _Write() once.
+  ns->ssifp = NULL;
+  if (fk)       free(fk);
+  if (pk)       free(pk);
+  if (sk)       free(sk);
+  if (buf)      free(buf);
+  if (ns->ptmp) { fclose(ns->ptmp); ns->ptmp = NULL; }
+  if (ns->stmp) { fclose(ns->stmp); ns->stmp = NULL; }
   return eslOK;
 
  ERROR:
-  if (fk  != NULL)       free(fk);
-  if (pk  != NULL)       free(pk);
-  if (sk  != NULL)       free(sk);
-  if (buf != NULL)       free(buf);
-  if (ns->ptmp != NULL)  { fclose(ns->ptmp); ns->ptmp = NULL; }
-  if (ns->stmp != NULL)  { fclose(ns->stmp); ns->stmp = NULL; }
+  remove(ns->ssifile);               // Cleanup: delete failed <ssifile> on any error.
+  if (ns->ssifp) { fclose(ns->ssifp); ns->ssifp = NULL; }
+  if (fk)        free(fk);
+  if (pk)        free(pk);
+  if (sk)        free(sk);
+  if (buf)       free(buf);
+  if (ns->ptmp)  { fclose(ns->ptmp); ns->ptmp = NULL; }
+  if (ns->stmp)  { fclose(ns->stmp); ns->stmp = NULL; }
   return status;
 }
 
@@ -1244,15 +1277,15 @@ esl_newssi_Close(ESL_NEWSSI *ns)
       free(ns->filenames);
     }
 
-  if (ns->stmp        != NULL)     fclose(ns->stmp);
-  if (ns->stmpfile    != NULL)     free(ns->stmpfile);
-  if (ns->ptmp        != NULL)     fclose(ns->ptmp);
-  if (ns->ptmpfile    != NULL)     free(ns->ptmpfile);
-  if (ns->fileformat  != NULL)     free(ns->fileformat);
-  if (ns->bpl         != NULL)     free(ns->bpl);       
-  if (ns->rpl         != NULL)     free(ns->rpl);       
-  if (ns->ssifile     != NULL)     free(ns->ssifile);
-  if (ns->ssifp       != NULL)     fclose(ns->ssifp);
+  if (ns->stmp)       fclose(ns->stmp);
+  if (ns->stmpfile)   free(ns->stmpfile);
+  if (ns->ptmp)       fclose(ns->ptmp);
+  if (ns->ptmpfile)   free(ns->ptmpfile);
+  if (ns->fileformat) free(ns->fileformat);
+  if (ns->bpl)        free(ns->bpl);       
+  if (ns->rpl)        free(ns->rpl);       
+  if (ns->ssifile)    free(ns->ssifile);
+  if (ns->ssifp)      fclose(ns->ssifp);
   free(ns);
 }
 
@@ -1314,9 +1347,7 @@ activate_external_sort(ESL_NEWSSI *ns)
   if ((ns->ptmp = fopen(ns->ptmpfile, "w")) == NULL) ESL_XFAIL(eslENOTFOUND, ns->errbuf, "Failed to open primary key tmpfile for external sort");
   if ((ns->stmp = fopen(ns->stmpfile, "w")) == NULL) ESL_XFAIL(eslENOTFOUND, ns->errbuf, "Failed to open secondary key tmpfile for external sort");
 
-  /* Flush the current indices.
-   */
-  ESL_DPRINTF1(("Switching to external sort - flushing new ssi to disk...\n"));
+  /* Flush the current indices. */
   for (i = 0; i < ns->nprimary; i++) {
     if (sizeof(off_t) == 4) {
       if (fprintf(ns->ptmp, "%s\t%u\t%lu\t%lu\t%lu\n", 
@@ -1744,15 +1775,204 @@ esl_fwrite_offset(FILE *fp, off_t offset)
 }
 
 
+/*****************************************************************
+ * 5. Unit tests
+ *****************************************************************/
+#ifdef eslSSI_TESTDRIVE
+
+#include "esl_arr2.h"
+#include "esl_getopts.h"
+#include "esl_sq.h"
+#include "esl_sqio.h"
+#include "esl_random.h"
+#include "esl_randomseq.h"
+
+struct ssi_testdata {
+  int    nfiles;        // generate this many files...
+  int    nseq;          //  ... with this many sequences per file ...
+  int    maxL;          //  ... with sequence lengths 1..maxL.
+
+  char **sqfile;        // seq file names,   [0..nfiles-1]
+  char **seqname;       // seq names,        [0..nfiles*nseq-1] = "seq%d-file%d"
+  char **seqdesc;       // seq descriptions, [0..nfiles*nseq-1] = "desc%d-file%d", used as secondary keys
+  int   *seqlen;        // seq lengths,      [0..nfiles*nseq-1] 
+  char **seq;
+};
+
+static struct ssi_testdata *
+ssi_testdata_create(ESL_RANDOMNESS *rng, int max_nfiles, int max_nseq, int maxL, int do_dupname)
+{
+  char   msg[] = "esl_ssi test data creation failed";
+  struct ssi_testdata *td;
+  double  p[4] = { 0.25, 0.25, 0.25, 0.25 };   // composition of random generated DNA seqs 
+  FILE   *fp;
+  ESL_SQ *sq;
+  int     i,j;
+
+  if ( (td = malloc(sizeof(struct ssi_testdata))) == NULL) esl_fatal(msg);
+  td->nfiles        = 1 + esl_rnd_Roll(rng, max_nfiles); // 1..max_nfiles
+  td->nseq          = 2 + esl_rnd_Roll(rng, max_nseq-1); // 2..max_nseq   Need at least 2 for dup test to always be valid
+  td->maxL          = maxL;
+
+   /* Create <td->nfiles> sequence tmpfile names. */
+  if ( (td->sqfile = malloc(sizeof(char *) * td->nfiles)) == NULL) esl_fatal(msg);
+  for (j = 0; j < td->nfiles; j++)
+    if ( esl_sprintf(&(td->sqfile[j]), "esltmpXXXXXX"  ) != eslOK) esl_fatal(msg);
+
+  /* Create <td->nfiles*td->nseq> sequences with random lengths up to <maxL> */
+  if ( (td->seq     = malloc(sizeof(char *) * td->nseq * td->nfiles)) == NULL) esl_fatal(msg);
+  if ( (td->seqname = malloc(sizeof(char *) * td->nseq * td->nfiles)) == NULL) esl_fatal(msg);
+  if ( (td->seqlen  = malloc(sizeof(int)    * td->nseq * td->nfiles)) == NULL) esl_fatal(msg);
+  if ( (td->seqdesc = malloc(sizeof(char *) * td->nseq * td->nfiles)) == NULL) esl_fatal(msg); 
+  for (i = 0; i < td->nseq*td->nfiles; i++)
+    {
+      td->seqlen[i] = 1 + esl_rnd_Roll(rng, td->maxL); /* 1..maxL */
+      if ( (td->seq[i] = malloc(sizeof(char) * (td->seqlen[i]+1)))        == NULL)  esl_fatal(msg);
+      if ( esl_rsq_IID(rng, "ACGT", p, 4, td->seqlen[i], td->seq[i])      != eslOK) esl_fatal(msg);
+      if ( esl_sprintf(&(td->seqname[i]), "seq%d-file%d",  i, i/td->nseq) != eslOK) esl_fatal(msg);
+      if ( esl_sprintf(&(td->seqdesc[i]), "desc%d-file%d", i, i/td->nseq) != eslOK) esl_fatal(msg);
+    }
+
+  /* If we were asked to poison with a duplicate key, do it (randomly duplicating a primary or secondary key) */
+  if (do_dupname)
+    {
+      i = esl_rnd_Roll(rng, td->nseq * td->nfiles - 1);             // 0..n-2
+      j = i + 1 + esl_rnd_Roll(rng, td->nseq * td->nfiles - i - 1); // i+1..n-1
+      if (esl_rnd_Roll(rng, 2) == 0)  {
+        strcpy(td->seqname[i], "DUP");  // Allocated space is guaranteed to be enough,
+        strcpy(td->seqname[j], "DUP");  //   because the original name was "seq%d-file%d"
+      } else {
+        strcpy(td->seqdesc[i], "DUP");
+        strcpy(td->seqdesc[j], "DUP");
+      }
+    }
+
+  /* Save them to files. */
+  for (j = 0; j < td->nfiles; j++)
+    {
+      if (esl_tmpfile_named(td->sqfile[j], &fp) != eslOK) esl_fatal(msg);
+      for (i = j*td->nseq; i < (j+1)*td->nseq; i++)
+	{
+	  if ( (sq = esl_sq_CreateFrom(td->seqname[i], td->seq[i], td->seqdesc[i], NULL, NULL)) == NULL)  esl_fatal(msg);
+	  if ( esl_sqio_Write(fp, sq, eslSQFILE_FASTA, FALSE) != eslOK) esl_fatal(msg);
+	  esl_sq_Destroy(sq);
+	}
+      fclose(fp);
+    }
+
+  return td;
+}
+
+static void
+ssi_testdata_destroy(struct ssi_testdata *td)
+{
+  int j;
+  for (j = 0; j < td->nfiles; j++) remove(td->sqfile[j]);
+  esl_arr2_Destroy((void **) td->sqfile,  td->nfiles);
+  esl_arr2_Destroy((void **) td->seqname, td->nseq*td->nfiles);
+  esl_arr2_Destroy((void **) td->seqdesc, td->nseq*td->nfiles);
+  esl_arr2_Destroy((void **) td->seq,     td->nseq*td->nfiles);
+  free(td->seqlen);
+  free(td);
+}
+
+static void
+utest_enchilada(ESL_GETOPTS *go, ESL_RANDOMNESS *rng, int do_external, int do_dupkeys)
+{
+  char         msg[]      = "esl_ssi whole enchilada test failed";
+  struct ssi_testdata *td = NULL;
+  int          nq         = 10;      // number of SSI-based retrievals to test
+  char        *ssifile    = NULL;    // Index creation: ssifile to create.
+  ESL_NEWSSI  *ns         = NULL;    //   new SSI index data
+  ESL_SQFILE  *sqfp       = NULL;    //   open FASTA file that we're indexing
+  ESL_SQ      *sq         = NULL;    //   a sequence from <sqfp>
+  uint16_t     fh;                   //   handle on an indexed fasta file, from _AddFile, for _AddKey
+  ESL_SSI     *ssi        = NULL;    // Retrieval testing: open SSI index to use
+  char         query[32];            //   name of sequence to retrieve
+  char        *qfile;                //   retrieved name of file it's in
+  int          qfmt;                 //   retrieved format of that file (fasta)
+  off_t        roff;                 //   retrieved record offset of it
+  int          i,j;
+  int          status;
+  
+  td = ssi_testdata_create(rng, 
+                           esl_opt_GetInteger(go, "-F"),  // max # of seq files
+                           esl_opt_GetInteger(go, "-N"),  // max # of seqs per file
+                           esl_opt_GetInteger(go, "-L"),  // max seq length
+                           do_dupkeys);                   // if you poison w/ dup keys, _Write should fail.
+
+  /* Create an ssi index of all the FASTA files. */
+  if (esl_strdup(td->sqfile[0], -1, &ssifile) != eslOK) esl_fatal(msg);
+  if (esl_strcat(&ssifile,  -1, ".ssi", 4)    != eslOK) esl_fatal(msg);
+  if (esl_newssi_Open(ssifile, TRUE, &ns)     != eslOK) esl_fatal(msg);
+  if ((sq = esl_sq_Create())                  == NULL)  esl_fatal(msg);
+  if (do_external)
+    if (activate_external_sort(ns)            != eslOK) esl_fatal(msg);
+  for (j = 0; j < td->nfiles; j++)
+    {
+      if (esl_sqfile_Open(td->sqfile[j], eslSQFILE_UNKNOWN, NULL, &sqfp) != eslOK) esl_fatal(msg);
+      if (esl_newssi_AddFile(ns, td->sqfile[j], sqfp->format, &fh)       != eslOK) esl_fatal(msg);
+      while ((status = esl_sqio_Read(sqfp, sq)) == eslOK)
+	{
+	  if (esl_newssi_AddKey  (ns, sq->name, fh, sq->roff, sq->doff, sq->L) != eslOK) esl_fatal(msg);
+	  if (esl_newssi_AddAlias(ns, sq->desc, sq->name)                      != eslOK) esl_fatal(msg);
+	  esl_sq_Reuse(sq);
+	}
+      if (status != eslEOF) esl_fatal(msg);
+      esl_sqfile_Close(sqfp);
+    }
+  esl_sq_Destroy(sq);
+
+  /* Save the SSI index to a file. */
+  status = esl_newssi_Write(ns);
+  if (  do_dupkeys && status != eslEDUP) esl_fatal(msg);
+  if (! do_dupkeys && status != eslOK)   esl_fatal(msg);
+  esl_newssi_Close(ns);
+  
+  /* Open the SSI index - now we'll use it to retrieve <nq> random sequences. */
+  if (! do_dupkeys)
+    {
+      if (esl_ssi_Open(ssifile, &ssi) != eslOK) esl_fatal(msg);
+      sq = esl_sq_Create();
+      while (nq--)
+        {
+          /* Choose a seq and file */
+          i = esl_rnd_Roll(rng, td->nseq*td->nfiles);
+          j = i/td->nseq;
+          if (esl_rnd_Roll(rng, 2) == 0) sprintf(query, "seq%d-file%d",  i, j);  // by primary key
+          else                           sprintf(query, "desc%d-file%d", i, j);  // by secondary key
+
+          /* Retrieve it */
+          if ( esl_ssi_FindName(ssi, query, &fh, &roff, NULL, NULL) != eslOK) esl_fatal(msg);
+          if ( esl_ssi_FileInfo(ssi, fh, &qfile, &qfmt)             != eslOK) esl_fatal(msg);      
+          if ( esl_sqfile_Open(qfile, qfmt, NULL, &sqfp)            != eslOK) esl_fatal(msg);
+          if ( esl_sqfile_Position(sqfp, roff)                      != eslOK) esl_fatal(msg);
+          if ( esl_sqio_Read(sqfp, sq)                              != eslOK) esl_fatal(msg);
+
+          /* Check that it's the right one */
+          if (strcmp(sq->name, query) != 0 && strcmp(sq->desc, query) != 0) esl_fatal(msg);
+          if (sq->n != td->seqlen[i])            esl_fatal(msg);
+          if (strcmp(sq->seq, td->seq[i])  != 0) esl_fatal(msg);
+          if (strcmp(qfile, td->sqfile[j]) != 0) esl_fatal(msg);
+
+          esl_sq_Reuse(sq);
+          esl_sqfile_Close(sqfp);
+        }
+      remove(ssifile);  // in the dup keys test, ssifile is removed by _Write().
+      esl_sq_Destroy(sq);
+      esl_ssi_Close(ssi);
+    }
+
+  ssi_testdata_destroy(td);
+  free(ssifile);
+}
+#endif /*eslSSI_TESTDRIVE*/
 
 
 /*****************************************************************
- * 4. Test driver
+ * 5. Test driver
  *****************************************************************/ 
 
-/* gcc -g -Wall -o ssi_utest -L. -I. -DeslSSI_TESTDRIVE esl_ssi.c -leasel -lm 
- * ./ssi_utest
- */
 #ifdef eslSSI_TESTDRIVE
 #include "esl_config.h"
 
@@ -1771,12 +1991,10 @@ esl_fwrite_offset(FILE *fp, off_t offset)
 static ESL_OPTIONS options[] = {
   /* name           type      default  env  range toggles reqs incomp  help                                       docgroup*/
   { "-h",        eslARG_NONE,   FALSE,  NULL, NULL,  NULL,  NULL, NULL, "show brief help on version and usage",             0 },
-  { "-F",        eslARG_INT,      "3",  NULL, NULL,  NULL,  NULL, NULL, "number of test files",                             0 },
+  { "-F",        eslARG_INT,      "3",  NULL, NULL,  NULL,  NULL, NULL, "max number of test files",                         0 },
   { "-L",        eslARG_INT,   "1000",  NULL, NULL,  NULL,  NULL, NULL, "max length of test sequences",                     0 },
-  { "-N",        eslARG_INT,     "10",  NULL, NULL,  NULL,  NULL, NULL, "number of test sequences per file",                0 },
-  { "-Q",        eslARG_INT,     "10",  NULL, NULL,  NULL,  NULL, NULL, "number of random queries to retrieve",             0 },
-  { "-s",        eslARG_INT,     "42",  NULL, NULL,  NULL,  NULL, NULL, "set random number seed to <n>",                    0 },
-  { "-v",        eslARG_NONE,   NULL,   NULL, NULL,  NULL,  NULL, NULL, "be verbose",                                       0 },
+  { "-N",        eslARG_INT,     "10",  NULL, NULL,  NULL,  NULL, NULL, "max number of test sequences per file",            0 },
+  { "-s",        eslARG_INT,      "0",  NULL, NULL,  NULL,  NULL, NULL, "set random number seed to <n>",                    0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 static char usage[]  = "[-options]";
@@ -1785,147 +2003,23 @@ static char banner[] = "test driver for ssi module";
 int 
 main(int argc, char **argv)
 {
-  ESL_GETOPTS    *go         = esl_getopts_CreateDefaultApp(options, 0, argc, argv, banner, usage);
-  ESL_RANDOMNESS *r          = esl_randomness_Create(esl_opt_GetInteger(go, "-s"));
-  ESL_NEWSSI     *ns         = NULL;
-  ESL_SSI        *ssi        = NULL;
-  ESL_SQ         *sq         = NULL;
-  ESL_SQFILE     *sqfp       = NULL;
-  char           *ssifile    = NULL;
-  FILE           *fp         = NULL;
-  int             nfiles     = esl_opt_GetInteger(go, "-F");
-  int             maxL       = esl_opt_GetInteger(go, "-L");
-  int             nseq       = esl_opt_GetInteger(go, "-N");
-  int             nq         = esl_opt_GetInteger(go, "-Q");
-  int             be_verbose = esl_opt_GetBoolean(go, "-v");
-  uint16_t fh;
-  int    i,j;
-  char **sqfile  = NULL;
-  char **seqname = NULL;
-  char **seq     = NULL;
-  int   *seqlen  = NULL;
-  char   query[32];
-  char  *qfile;
-  int    qfmt;
-  off_t  roff;
-  double p[4] = { 0.25, 0.25, 0.25, 0.25 };
-  int    status;
-  
-  /* Create <nfiles> sequence file names. */
-  ESL_DASSERT1(( nfiles > 0 ));
-  ESL_ALLOC(sqfile, sizeof(char *) * nfiles);
-  for (j = 0; j < nfiles; j++)
-    {
-      ESL_ALLOC(sqfile[j], sizeof(char) * 32);
-      sprintf(sqfile[j], "esltmpXXXXXX");
-    } 
+  ESL_GETOPTS    *go  = esl_getopts_CreateDefaultApp(options, 0, argc, argv, banner, usage);
+  ESL_RANDOMNESS *rng = esl_randomness_Create(esl_opt_GetInteger(go, "-s"));
 
-  /* Create <nfiles*nseq> sequences with random 
-   * lengths up to 1000.
-   */
-  ESL_ALLOC(seq,    sizeof(char *) * nseq * nfiles);
-  ESL_ALLOC(seqname,sizeof(char *) * nseq * nfiles);
-  ESL_ALLOC(seqlen, sizeof(int)    * nseq * nfiles);
-  for (i = 0; i < nseq*nfiles; i++)
-    {
-      seqlen[i] = 1 + esl_rnd_Roll(r, maxL); /* 1..maxL */
-      ESL_ALLOC(seq[i], sizeof(char) * (seqlen[i]+1));
-      ESL_ALLOC(seqname[i],sizeof(char) * 64);
+  fprintf(stderr, "## %s\n", argv[0]);
+  fprintf(stderr, "#  rng seed = %" PRIu32 "\n", esl_randomness_GetSeed(rng));
 
-      esl_rsq_IID(r, "ACGT", p, 4, seqlen[i], seq[i]);
-      sprintf(seqname[i], "seq%d-file%d", i, i/nseq);
-    }
+  /*                       do_external  do_dupkeys */
+  utest_enchilada(go, rng, FALSE,       FALSE);
+  utest_enchilada(go, rng, TRUE,        FALSE);
+  utest_enchilada(go, rng, FALSE,       TRUE);
+  utest_enchilada(go, rng, TRUE,        TRUE);
 
-  /* Save them to FASTA files.
-   */
-  for (j = 0; j < nfiles; j++)
-    {
-      if (esl_tmpfile_named(sqfile[j], &fp) != eslOK) esl_fatal("failed to open %s", sqfile[j]);
-      for (i = j*nseq; i < (j+1)*nseq; i++)
-	{
-	  sq = esl_sq_CreateFrom(seqname[i], seq[i], NULL, NULL, NULL);
-	  esl_sqio_Write(fp, sq, eslSQFILE_FASTA, FALSE);
-	  esl_sq_Destroy(sq);
-	}
-      fclose(fp);
-    }
-
-  /* Create an ssi index of all the FASTA files. */
-  if (esl_strdup(sqfile[0], -1, &ssifile)   != eslOK) esl_fatal("esl_strdup() failed");
-  if (esl_strcat(&ssifile,  -1, ".ssi", 4)  != eslOK) esl_fatal("esl_strcat() failed");
-  if (esl_newssi_Open(ssifile, TRUE, &ns)   != eslOK) esl_fatal("new SSI index open failed");
-  if ((sq = esl_sq_Create())                == NULL)  esl_fatal("esl_sq_Create() failed");
-
-  for (j = 0; j < nfiles; j++)
-    {
-      if (esl_sqfile_Open(sqfile[j], eslSQFILE_UNKNOWN, NULL, &sqfp) != eslOK) esl_fatal("failed to open fasta file %s", sqfile[j]);
-      if (esl_newssi_AddFile(ns, sqfile[j], sqfp->format, &fh)       != eslOK) esl_fatal("esl_newssi_AddFile() failed");
-      while ((status = esl_sqio_Read(sqfp, sq)) == eslOK)
-	{
-	  if (be_verbose) printf("%16s  %ld  %ld  %" PRIi64 "\n", sq->name, (long) sq->roff, (long) sq->doff, sq->L);
-	  if (esl_newssi_AddKey(ns, sq->name, fh, sq->roff, sq->doff, sq->L) != eslOK) esl_fatal("esl_newssi_AddKey() failed");
-	  esl_sq_Reuse(sq);
-	}
-      if (status != eslEOF) esl_fatal("sequence read failure");
-      esl_sqfile_Close(sqfp);
-    }
-  esl_sq_Destroy(sq);
-
-  /* Save the SSI index to a file.
-   */
-  esl_newssi_Write(ns);
-  esl_newssi_Close(ns);
-  
-  /* Open the SSI index - now we'll use it to retrieve
-   * <nq> random sequences.
-   */
-  if (esl_ssi_Open(ssifile, &ssi) != eslOK) esl_fatal("failed to open ssi index");
-  sq = esl_sq_Create();
-  while (nq--)
-    {
-      /* Choose a seq and file */
-      i = esl_rnd_Roll(r, nseq*nfiles);
-      j = i/nseq;
-      sprintf(query, "seq%d-file%d", i, j);
-
-      /* Retrieve it */
-      status = esl_ssi_FindName(ssi, query, &fh, &roff, NULL, NULL);
-      if (status != eslOK) esl_fatal("didn't find %s in index", query);
-
-      status = esl_ssi_FileInfo(ssi, fh, &qfile, &qfmt);      
-      if (status != eslOK) esl_fatal("didn't locate file info for %s", query);
-
-      if (esl_sqfile_Open(qfile, qfmt, NULL, &sqfp) != eslOK)
-	esl_fatal("failed to open fasta file %s", qfile);
-      esl_sqfile_Position(sqfp, roff);
-      if (esl_sqio_Read(sqfp, sq) != eslOK) esl_fatal("failed to read seq %s", query);
-
-      /* Check that it's the right one */
-      if (strcmp(sq->name, query) != 0)  esl_fatal("sought %s, retrieved %s", query, sq->name);
-      if (sq->n != seqlen[i])            esl_fatal("wrong sequence length retrieved");
-      if (strcmp(sq->seq,  seq[i]) != 0) esl_fatal("unexpected sequence retrieved");
-      if (strcmp(qfile, sqfile[j]) != 0) esl_fatal("file names %s and %s differ", qfile, sqfile[j]);
-
-      esl_sq_Reuse(sq);
-      esl_sqfile_Close(sqfp);
-    }
-  
-  for (j = 0; j < nfiles; j++) remove(sqfile[j]);
-  remove(ssifile);
-  status = eslOK;
-
-  /* flowthrough is safe: garbage collection only below. */
- ERROR:
-  free(ssifile);
-  esl_sq_Destroy(sq);
-  esl_ssi_Close(ssi);
-  esl_randomness_Destroy(r);
-  if (seqlen) free(seqlen);
-  esl_Free2D((void **) seqname, nseq*nfiles);
-  esl_Free2D((void **) seq,     nseq*nfiles);
-  esl_Free2D((void **) sqfile, nfiles);
+  esl_randomness_Destroy(rng);
   esl_getopts_Destroy(go);
-  return status;
+
+  fprintf(stderr, "#  status = ok\n");
+  return eslOK;
 }
 #endif /*eslSSI_TESTDRIVE*/
 
@@ -1944,7 +2038,8 @@ main(int argc, char **argv)
 #include "easel.h"
 #include "esl_ssi.h"
 
-int main(int argc, char **argv)
+int 
+main(int argc, char **argv)
 {
   ESL_NEWSSI *ns;
   char    *fafile;              /* name of FASTA file                   */
@@ -1985,9 +2080,10 @@ int main(int argc, char **argv)
 
   /* Save the index to disk */
   status = esl_newssi_Write(ns);
-  if      (status == eslERANGE)   esl_fatal("SSI index file size exceeds maximum allowed by your filesystem");
-  else if (status == eslESYS)     esl_fatal("SSI index sort failed: %s", ns->errbuf);
-  else if (status != eslOK)       esl_fatal("SSI index save failed: %s", ns->errbuf);
+  if      (status == eslEDUP)     esl_fatal("SSI index construction failed:\n  %s", ns->errbuf);
+  else if (status == eslERANGE)   esl_fatal("SSI index file size exceeds maximum allowed by your filesystem");
+  else if (status == eslESYS)     esl_fatal("SSI index sort failed:\n  %s", ns->errbuf);
+  else if (status != eslOK)       esl_fatal("SSI indexing failed:\n  %s", ns->errbuf);
   esl_newssi_Close(ns);  
   free(ssifile);
   return 0;
@@ -2041,10 +2137,3 @@ int main(int argc, char **argv)
 /*::cexcerpt::ssi_example2::end::*/
 #endif /*eslSSI_EXAMPLE2*/
 
-
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/

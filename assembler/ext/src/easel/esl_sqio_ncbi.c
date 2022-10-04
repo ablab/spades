@@ -6,7 +6,6 @@
  *    3. Miscellaneous routines.
  *    4. Sequence reading (sequential).
  *    5. Parsing routines
- *    6. Copyright and license.
  */
 #include "esl_config.h"
 
@@ -24,11 +23,9 @@
 #endif
 
 #include "easel.h"
-#ifdef eslAUGMENT_ALPHABET
 #include "esl_alphabet.h"	/* alphabet aug adds digital sequences */
-#endif 
-#include "esl_sqio.h"
 #include "esl_sq.h"
+#include "esl_sqio.h"
 
 #ifndef htobe32
 #ifdef  WORDS_BIGENDIAN
@@ -49,7 +46,7 @@ static int   sqncbi_Read           (ESL_SQFILE *sqfp, ESL_SQ *sq);
 static int   sqncbi_ReadInfo       (ESL_SQFILE *sqfp, ESL_SQ *sq);
 static int   sqncbi_ReadSequence   (ESL_SQFILE *sqfp, ESL_SQ *sq);
 static int   sqncbi_ReadWindow     (ESL_SQFILE *sqfp, int C, int W, ESL_SQ *sq);
-static int   sqncbi_ReadBlock      (ESL_SQFILE *sqfp, ESL_SQ_BLOCK *sqBlock, int max_residues, int max_sequences, int long_target);
+static int   sqncbi_ReadBlock      (ESL_SQFILE *sqfp, ESL_SQ_BLOCK *sqBlock, int max_residues, int max_sequences, int max_init_window, int long_target);
 static int   sqncbi_Echo           (ESL_SQFILE *sqfp, const ESL_SQ *sq, FILE *ofp);
 
 static int   sqncbi_IsRewindable   (const ESL_SQFILE *sqfp);
@@ -140,7 +137,7 @@ esl_sqncbi_Open(char *filename, int format, ESL_SQFILE *sqfp)
   ncbi->title        = NULL;
   ncbi->timestamp    = NULL;
 
-  ncbi->index        = -1;
+  ncbi->index        = 0;
 
   ncbi->hdr_off      = -1;
   ncbi->seq_off      = -1;
@@ -221,7 +218,7 @@ sqncbi_ParseIndexFile(ESL_SQNCBI_DATA *ncbi, int dbtype)
   if (status != eslOK) goto ERROR;
   ncbi->version = htobe32(info[0]);
   ncbi->alphatype = (dbtype == NCBI_DNA_DB) ? eslDNA : eslAMINO;
-  ncbi->index = -1;
+  ncbi->index = 0;
 
   /* read the database title */
   len = htobe32(info[2]);
@@ -624,7 +621,7 @@ sqncbi_Close(ESL_SQFILE *sqfp)
   ncbi->title        = NULL;
   ncbi->timestamp    = NULL;
 
-  ncbi->index        = -1;
+  ncbi->index        = 0;
 
   ncbi->hdr_off      = -1;
   ncbi->seq_off      = -1;
@@ -649,7 +646,6 @@ sqncbi_Close(ESL_SQFILE *sqfp)
 /*****************************************************************
  *# 2. An <ESL_SQFILE> object, in digital mode [with <alphabet>]
  *****************************************************************/
-#ifdef eslAUGMENT_ALPHABET
 
 /* Function:  sqncbi_SetDigital()
  * Synopsis:  Set an open <ESL_SQFILE> to read in digital mode.
@@ -688,7 +684,7 @@ sqncbi_GuessAlphabet(ESL_SQFILE *sqfp, int *ret_type)
   *ret_type = sqfp->data.ncbi.alphatype;
   return eslOK;
 }
-#endif /*eslAUGMENT_ALPHABET*/
+
 /*-------------- end, digital mode SQNCBI -------------------*/
 
 
@@ -753,15 +749,15 @@ sqncbi_GetError(const ESL_SQFILE *sqfp)
 static int
 sqncbi_Read(ESL_SQFILE *sqfp, ESL_SQ *sq)
 {
-  int  index;
+  //int  index;
   int  status;
 
   ESL_SQNCBI_DATA *ncbi = &sqfp->data.ncbi;
 
-  index = ncbi->index + 1;
-  if (index >= ncbi->num_seq) return eslEOF;
+  //index = ncbi->index + 1;
+  if (ncbi->index >= ncbi->num_seq) return eslEOF;
 
-  if ((status = pos_sequence(ncbi, index)) != eslOK) return status;
+  if ((status = pos_sequence(ncbi, ncbi->index)) != eslOK) return status;
 
   /* Disk offset bookkeeping */
   sq->idx  = ncbi->index;
@@ -778,6 +774,8 @@ sqncbi_Read(ESL_SQFILE *sqfp, ESL_SQ *sq)
 
   /* read and parse the ncbi header */
   if ((status = parse_header(ncbi, sq)) != eslOK) return status;
+
+  (ncbi->index)++;
 
   return eslOK;
 }
@@ -802,15 +800,15 @@ sqncbi_Read(ESL_SQFILE *sqfp, ESL_SQ *sq)
 static int
 sqncbi_ReadInfo(ESL_SQFILE *sqfp, ESL_SQ *sq)
 {
-  int   index;
+  //int   index;
   int   status;
 
   ESL_SQNCBI_DATA *ncbi = &sqfp->data.ncbi;
 
-  index = ncbi->index + 1;
-  if (index >= ncbi->num_seq) return eslEOF;
+  //index = ncbi->index + 1;
+  if (ncbi->index >= ncbi->num_seq) return eslEOF;
 
-  if ((status = pos_sequence(ncbi, index)) != eslOK) return status;
+  if ((status = pos_sequence(ncbi, ncbi->index)) != eslOK) return status;
 
   /* Disk offset bookkeeping */
   sq->idx  = ncbi->index;
@@ -824,6 +822,8 @@ sqncbi_ReadInfo(ESL_SQFILE *sqfp, ESL_SQ *sq)
 
   /* read and parse the ncbi header */
   if ((status = parse_header(ncbi, sq)) != eslOK) return status;
+
+  (ncbi->index)++;
 
   return eslOK;
 }
@@ -851,15 +851,15 @@ sqncbi_ReadInfo(ESL_SQFILE *sqfp, ESL_SQ *sq)
 static int
 sqncbi_ReadSequence(ESL_SQFILE *sqfp, ESL_SQ *sq)
 {
-  int    index;
+  //int    index;
   int    status;
 
   ESL_SQNCBI_DATA *ncbi = &sqfp->data.ncbi;
 
-  index = ncbi->index + 1;
-  if (index >= ncbi->num_seq) return eslEOF;
+  //index = ncbi->index + 1;
+  if (ncbi->index >= ncbi->num_seq) return eslEOF;
 
-  if ((status = pos_sequence(ncbi, index)) != eslOK) return status;
+  if ((status = pos_sequence(ncbi, ncbi->index)) != eslOK) return status;
 
   /* Disk offset bookkeeping */
   sq->idx  = ncbi->index;
@@ -876,6 +876,7 @@ sqncbi_ReadSequence(ESL_SQFILE *sqfp, ESL_SQ *sq)
     status = read_dna(sqfp, sq);
   if (status != eslOK) return status;
 
+  (ncbi->index)++;
   return eslOK;
 }
 
@@ -979,8 +980,6 @@ static int
 sqncbi_ReadWindow(ESL_SQFILE *sqfp, int C, int W, ESL_SQ *sq)
 {
   uint64_t  nres;
-
-  int       index;
   int       status;
 
   ESL_SQNCBI_DATA *ncbi = &sqfp->data.ncbi;
@@ -1057,11 +1056,10 @@ sqncbi_ReadWindow(ESL_SQFILE *sqfp, int C, int W, ESL_SQ *sq)
        */
     if (sq->start == 0)
     {
-      index = ncbi->index + 1;
-      if (index >= ncbi->num_seq) return eslEOF;
+      if (ncbi->index >= ncbi->num_seq) return eslEOF;
 
       /* get the sequence and header offsets */
-      if ((status = pos_sequence(ncbi, index)) != eslOK) return status;
+      if ((status = pos_sequence(ncbi, ncbi->index)) != eslOK) return status;
 
       /* Disk offset bookkeeping */
       sq->idx  = ncbi->index;
@@ -1081,6 +1079,7 @@ sqncbi_ReadWindow(ESL_SQFILE *sqfp, int C, int W, ESL_SQ *sq)
       sq->L        = -1;	/* won't be known 'til EOD.                     */
       ncbi->seq_L  = -1;	/* init to 0, so we can count residues as we go */
       esl_sq_SetSource(sq, sq->name);
+
     }
     else
     { /* else we're reading a window other than first; slide context over. */
@@ -1104,6 +1103,7 @@ sqncbi_ReadWindow(ESL_SQFILE *sqfp, int C, int W, ESL_SQ *sq)
 
     if (status == eslEOD)
     {
+      (ncbi->index)++;
       sq->start  = 0;
       sq->end    = 0;
       sq->C      = 0;
@@ -1144,7 +1144,21 @@ sqncbi_ReadWindow(ESL_SQFILE *sqfp, int C, int W, ESL_SQ *sq)
  *            this function uses ReadWindow to read chunks of sequence no
  *            larger than <max_residues>, and must allow for the possibility that
  *            a request will be made to continue reading a partly-read
- *            sequence.
+ *            sequence. This case also respects the <max_sequences> limit.
+ * 
+ *            If <long_target> is true and <max_init_window> is TRUE,
+ *            the first window read from each sequence (of length L)
+ *            is always min(L, <max_residues>). If <max_init_window>
+ *            is FALSE, then the length of the first window read from
+ *            each sequence is calculated differently as 
+ *            max(<max_residues> - <size>, <max_residues> * .05);
+ *            where <size> is total number of residues already existing
+ *            in the block. <max_init_window> == TRUE mode was added
+ *            to ensure that the window boundaries read are not dependent
+ *            on the order of the sequence in the file, thus ensuring
+ *            reproducibility if (for example) a user extracts one
+ *            sequence from a file and reruns a program on it (and all
+ *            else remains equal).
  *
  * Returns:   <eslOK> on success; the new sequence is stored in <sqBlock>.
  * 
@@ -1158,7 +1172,7 @@ sqncbi_ReadWindow(ESL_SQFILE *sqfp, int C, int W, ESL_SQ *sq)
  *            <eslEINCONCEIVABLE> on internal error.
  */
 static int
-sqncbi_ReadBlock(ESL_SQFILE *sqfp, ESL_SQ_BLOCK *sqBlock, int max_residues, int max_sequences, int long_target)
+sqncbi_ReadBlock(ESL_SQFILE *sqfp, ESL_SQ_BLOCK *sqBlock, int max_residues, int max_sequences, int max_init_window, int long_target)
 {
 	  int     i = 0;
 	  int     size = 0;
@@ -1185,14 +1199,14 @@ sqncbi_ReadBlock(ESL_SQFILE *sqfp, ESL_SQ_BLOCK *sqBlock, int max_residues, int 
 	  else
 	  { /* DNA, not an alignment.  Might be really long sequences */
 
-      /*this variable is used instead of the MAX_RESIDUE_COUNT macro because impl_dummy may require shorter sequences to fit in memory*/
-      if (max_residues < 0)
-        max_residues = MAX_RESIDUE_COUNT;
+          /*this variable was used instead of the MAX_RESIDUE_COUNT macro because old H3 impl_dummy could've required shorter sequences to fit in memory*/
+          if (max_residues < 0)
+            max_residues = MAX_RESIDUE_COUNT;
 
-		  tmpsq = esl_sq_Create();
+          tmpsq = esl_sq_CreateDigital(sqBlock->list->abc);
 
 		  //if complete flag set to FALSE, then the prior block must have ended with a window that was a possibly
-		  //incomplete part of it's full sequence. Read another overlaping window.
+		  //incomplete part of it's full sequence. Read another overlapping window.
 		  if (! sqBlock->complete )
 		  {
 			  //overloading C as indicator of how big C should be for this window reading action
@@ -1255,11 +1269,12 @@ sqncbi_ReadBlock(ESL_SQFILE *sqfp, ESL_SQ_BLOCK *sqBlock, int max_residues, int 
 	       * which can result in a window with ~2*max_residues ... or we can end up with absurdly
 	       * short fragments at the end of blocks
 	       */
-		    int request_size = ESL_MAX(max_residues-size, max_residues * .05);
+		    int request_size = (max_init_window) ? max_residues : ESL_MAX(max_residues-size, max_residues * .05);
 
 			  esl_sq_Reuse(tmpsq);
 			  esl_sq_Reuse(sqBlock->list + i);
-			  status = sqncbi_ReadWindow(sqfp, 0, request_size, tmpsq);
+			  status = sqncbi_ReadWindow(sqfp, 0, request_size, tmpsq);  
+        esl_sq_Copy(tmpsq, sqBlock->list +i);
 			  if (status != eslOK) break; // end of sequences
 
 			  size += sqBlock->list[i].n - sqBlock->list[i].C;
@@ -1294,6 +1309,11 @@ sqncbi_ReadBlock(ESL_SQFILE *sqfp, ESL_SQ_BLOCK *sqBlock, int max_residues, int 
 				   */
 				  esl_sq_Reuse(tmpsq);
 				  tmpsq->start =  sqBlock->list[i].start ;
+				  tmpsq->end   =  sqBlock->list[i].end ;
+				  tmpsq->n     =  sqBlock->list[i].n ;
+				  //tmpsq->doff  =  sqBlock->list[i].doff ;
+				  tmpsq->idx   =  sqBlock->list[i].idx ;
+
 				  tmpsq->C = 0;
 				  status = sqncbi_ReadWindow(sqfp, 0, max_residues, tmpsq);
 		       if (status != eslEOD) {
@@ -1660,7 +1680,7 @@ read_dna(ESL_SQFILE *sqfp, ESL_SQ *sq)
   int      ssize;
   int      n;
 
-  char    *ptr;
+  unsigned char *ptr;
   void    *t;
 
   unsigned char c;
@@ -1690,10 +1710,10 @@ read_dna(ESL_SQFILE *sqfp, ESL_SQ *sq)
   /* figure out if the sequence is in digital mode or not */
   if (sq->dsq != NULL) {
     text = FALSE;
-    ptr = (char *)sq->dsq + 1;
+    ptr = (unsigned char *) sq->dsq + 1;
   } else {
     text = TRUE;
-    ptr = sq->seq;
+    ptr = (unsigned char *) sq->seq;
   }
 
   for (inx = 0; inx < ssize; ++inx) {
@@ -1737,7 +1757,7 @@ read_dna(ESL_SQFILE *sqfp, ESL_SQ *sq)
 
   /* skip past the count and start processing the abmiguity table */
   ssize = ncbi->seq_apos - sq->doff + 4;
-  ptr = (text) ? sq->seq : (char *)sq->dsq + 1;
+  ptr = (text) ? (unsigned char *)sq->seq : (unsigned char *)sq->dsq + 1;
 
   while (ssize < size) {
     /* get the ambiguity character */
@@ -1805,8 +1825,7 @@ read_nres_amino(ESL_SQFILE *sqfp, ESL_SQ *sq, int len, uint64_t *nres)
   int     off;
   int     size;
 
-  char   *ptr;
-
+  unsigned char   *ptr;
   ESL_SQNCBI_DATA *ncbi = &sqfp->data.ncbi;
 
   if (ncbi->index >= ncbi->num_seq) return eslEOF;
@@ -1822,7 +1841,7 @@ read_nres_amino(ESL_SQFILE *sqfp, ESL_SQ *sq, int len, uint64_t *nres)
   }
 
   /* figure out if the sequence is in digital mode or not */
-  ptr = (sq->dsq != NULL) ? (char *)sq->dsq + 1 : sq->seq;
+  ptr = (sq->dsq != NULL) ? (unsigned char *)sq->dsq + 1 : (unsigned char *) sq->seq;
   ptr += sq->n;
 
   /* calculate where to start reading from */
@@ -1976,7 +1995,7 @@ read_nres_dna(ESL_SQFILE *sqfp, ESL_SQ *sq, int len, uint64_t *nres)
   int     ssize;
   int     n;
 
-  char   *ptr;
+  unsigned char   *ptr;
   void   *t;
 
   unsigned char c;
@@ -2030,10 +2049,10 @@ read_nres_dna(ESL_SQFILE *sqfp, ESL_SQ *sq, int len, uint64_t *nres)
   /* figure out if the sequence is in digital mode or not */
   if (sq->dsq != NULL) {
     text = FALSE;
-    ptr = (char *)sq->dsq + 1;
+    ptr = (unsigned char *)sq->dsq + 1;
   } else {
     text = TRUE;
-    ptr = sq->seq;
+    ptr = (unsigned char *)sq->seq;
   }
   ptr += sq->n;
 
@@ -3285,11 +3304,3 @@ ignore_sequence_of_integer(ESL_SQNCBI_DATA *ncbi)
 
   return eslOK;
 }
-
-
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/

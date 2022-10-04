@@ -7,7 +7,6 @@
  *   4. Unit tests.
  *   5. Test driver.
  *   6. Examples.
- *   7. License and copyright.
  *   
  * Notes:
  *   In SELEX, a tricky and unusual issue is that spaces are allowed
@@ -33,12 +32,11 @@
 #include <ctype.h>
 
 #include "easel.h"
-#ifdef eslAUGMENT_ALPHABET
 #include "esl_alphabet.h"
-#endif
 #include "esl_mem.h"
 #include "esl_msa.h"
 #include "esl_msafile.h"
+
 #include "esl_msafile_selex.h"
 
 #define eslSELEX_LINE_SQ 1
@@ -101,7 +99,6 @@ esl_msafile_selex_SetInmap(ESL_MSAFILE *afp)
 {
   int sym;
 
-#ifdef eslAUGMENT_ALPHABET
   if (afp->abc)
     {
       for (sym = 0; sym < 128; sym++) 
@@ -109,7 +106,7 @@ esl_msafile_selex_SetInmap(ESL_MSAFILE *afp)
       afp->inmap[0]   = esl_abc_XGetUnknown(afp->abc);
       afp->inmap[' '] = esl_abc_XGetGap(afp->abc);
     }
-#endif
+
   if (! afp->abc)
     {
       for (sym = 1; sym < 128; sym++) 
@@ -317,9 +314,7 @@ esl_msafile_selex_Write(FILE *fp, const ESL_MSA *msa)
 
       for (i = 0; i < msa->nseq; i++)
 	{
-#ifdef eslAUGMENT_ALPHABET 
 	  if (msa->abc)   esl_abc_TextizeN(msa->abc, msa->ax[i]+apos+1, cpl, buf);
-#endif
 	  if (! msa->abc) strncpy(buf, msa->aseq[i]+apos, cpl);
 	  if (fprintf(fp, "%-*s %s\n", maxnamelen, msa->sqname[i], buf) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "selex msa write failed");
 
@@ -569,9 +564,7 @@ selex_first_block(ESL_MSAFILE *afp, ESL_SELEX_BLOCK *b, ESL_MSA **ret_msa)
       if (nsa > 1)      { selex_ErrorInBlock(afp, b, idx); ESL_XFAIL(eslEFORMAT, afp->errmsg, "Too many #=SA lines for seq");   }
     }
 
-#ifdef eslAUGMENT_ALPHABET
   if ( afp->abc && (msa = esl_msa_CreateDigital(afp->abc, nseq, -1)) == NULL) { status = eslEMEM; goto ERROR; } /* a growable MSA */
-#endif
   if (!afp->abc && (msa = esl_msa_Create(                 nseq, -1)) == NULL) { status = eslEMEM; goto ERROR; } 
   if (has_ss) {
     ESL_ALLOC(msa->ss, sizeof(char *) * nseq);
@@ -686,7 +679,6 @@ selex_append_block(ESL_MSAFILE *afp, ESL_SELEX_BLOCK *b, ESL_MSA *msa)
 
       if      (b->ltype[idx] == eslSELEX_LINE_SQ)
 	{
-#ifdef eslAUGMENT_ALPHABET
 	  if (msa->abc)
 	    {			/* digital sequence append - mapped, preallocated */
 	      ESL_REALLOC(msa->ax[seqi],   sizeof(ESL_DSQ) * (msa->alen + nadd + 2)); 
@@ -701,7 +693,7 @@ selex_append_block(ESL_MSAFILE *afp, ESL_SELEX_BLOCK *b, ESL_MSA *msa)
 	      for (; alen < msa->alen+nadd;   alen++) msa->ax[seqi][alen+1] = esl_abc_XGetGap(msa->abc);
 	      msa->ax[seqi][alen+1] = eslDSQ_SENTINEL;
 	    }
-#endif
+
 	  if (! msa->abc)
 	    {			/* text mode sequence append - mapped, preallocated */
 	      ESL_REALLOC(msa->aseq[seqi], sizeof(char)    * (msa->alen + nadd + 1)); 
@@ -1244,11 +1236,3 @@ main(int argc, char **argv)
 /*::cexcerpt::msafile_selex_example2::end::*/
 #endif /*eslMSAFILE_SELEX_EXAMPLE2*/
 /*--------------------- end of example --------------------------*/
-
-
-
-
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

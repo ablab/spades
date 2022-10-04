@@ -153,8 +153,7 @@ worker_process(ESL_GETOPTS *go)
   impl_Init();
   p7_FLogsumInit();      /* we're going to use table-driven Logsum() approximations at times */
 
-  if (esl_opt_IsOn(go, "--cpu")) env.ncpus = esl_opt_GetInteger(go, "--cpu");
-  else esl_threads_CPUCount(&env.ncpus);
+  env.ncpus = ESL_MIN(esl_opt_GetInteger(go, "--cpu"),  esl_threads_GetCPUCount());
 
   env.hmm_db = NULL;
   env.seq_db = NULL;
@@ -163,7 +162,6 @@ worker_process(ESL_GETOPTS *go)
   while (!shutdown) 
     {
       if ((status = read_Command(&cmd, &env)) != eslOK) break;
-
 
       switch (cmd->hdr.command) {
       case HMMD_CMD_INIT:      process_InitCmd  (cmd, &env);                break;
@@ -177,6 +175,7 @@ worker_process(ESL_GETOPTS *go)
       case HMMD_CMD_SEARCH:
 		   query = process_QueryCmd(cmd, &env);
 	     process_SearchCmd(cmd, &env, query);
+       free_QueueData(query);
          break;
       case HMMD_CMD_SHUTDOWN:  process_Shutdown (cmd, &env);  shutdown = 1; break;
       default: p7_syslog(LOG_ERR,"[%s:%d] - unknown command %d (%d)\n", __FILE__, __LINE__, cmd->hdr.command, cmd->hdr.length);
@@ -768,17 +767,22 @@ scan_thread(void *arg)
 
 
 static void
-send_results(int fd, ESL_STOPWATCH *w, P7_TOPHITS *th, P7_PIPELINE *pli)
-{
+send_results(int fd, ESL_STOPWATCH *w, P7_TOPHITS *th, P7_PIPELINE *pli){
   HMMD_SEARCH_STATS   stats;
   HMMD_SEARCH_STATUS  status;
-  P7_HIT             *hit;
-  P7_DOMAIN          *dcl;
-  int                 i, j, n;
-  esl_pos_t           offset;
-  char               *pEnd; /* pointer used by strtol to locate the taxonomy id on the description line. */
+  uint8_t **buf = NULL; // Buffer for the main results message
+  uint8_t **buf2 = NULL; // Buffer for the initial HMMD_SEARCH_STATUS message
+  uint8_t *buf_ptr = NULL; 
+  uint8_t *buf2_ptr = NULL;
+  uint32_t n = 0; // index within buffer of serialized data
+  uint32_t nalloc = 0; // Size of serialized buffer
+  int i;
+  // set up handles to buffers
+  buf = &buf_ptr;
+  buf2 = &buf2_ptr;
 
 
+  /* Start filling out the fixed-length structures to be sent */
   memset(&status, 0, sizeof(HMMD_SEARCH_STATUS)); /* silence valgrind errors - zero out entire structure including its padding */
   status.status     = eslOK;
   status.msg_size   = sizeof(stats);
@@ -803,120 +807,34 @@ send_results(int fd, ESL_STOPWATCH *w, P7_TOPHITS *th, P7_PIPELINE *pli)
   stats.nhits       = th->N;
   stats.nreported   = th->nreported;
   stats.nincluded   = th->nincluded;
+  stats.hit_offsets = NULL; // This field is only used when sending results back to the client
+  if(p7_hmmd_search_stats_Serialize(&stats, buf, &n, &nalloc) != eslOK){
+    LOG_FATAL_MSG("Serializing HMMD_SEARCH_STATS failed", errno);
+  }
 
-  n = sizeof(P7_HIT) * stats.nhits;
-
-  status.msg_size += n;
-  offset = status.msg_size;
-  if ((hit = malloc(n)) == NULL) LOG_FATAL_MSG("malloc", errno);
-
-  /* get the data in the right format before we send it */
-  for (i = 0; i < stats.nhits; ++i) {
-    P7_HIT *h1 = &hit[i];
-    P7_HIT *h2 = &th->unsrt[i];
-
-    memcpy(h1, h2, sizeof(P7_HIT));
-
-    /* the name will be an integer value of the sequence index */
-    h1->name = (char *) strtol(h2->name, NULL, 10);
-//    h1->acc  = NULL;
-
-    /* We want to override the sequence description as a container
-     * for the domain architecture.
-     * We have already assigned the architecture when generating
-     * the sequence database, and comparing it to the latest version
-     * of Pfam. Copying the example above, convert the string to
-     * a long and cast back to a char. Nasty hack, but at least
-     * then it gets written back out to the socket. rdf
-     */
-    //if(h2->desc != NULL) h1->desc = (char *) strtol(h2->desc, NULL, 10);
-    if (h2->desc != NULL) {
-      h1->desc = (char *) strtol(h2->desc, &pEnd, 10);
-      /* Given the sequence header:
-       * >1 000101001 12343829483298 1234
-       * This will grab the last value (1234) if present and place it in
-       * the acc entry as it is not being used by hmmpgmd. This is the same
-       * way that we hijacked the desc field to pass the architecture
-       * information back. Currently used to pass the taxonomy id to the
-       * hmmer website.
-       */
-       h1->acc  = (char *) strtol(pEnd, &pEnd, 10);
-    }
-
-
-    h1->offset = offset;
-
-    /* figure out how big the domains are and their offset */
-    dcl = h2->dcl;
-    for (j = 0; j < h1->ndom; ++j) {
-      n = sizeof(P7_DOMAIN) + sizeof(P7_ALIDISPLAY) + dcl->ad->memsize;
-      status.msg_size += n;
-      offset += n;
-
-      ++dcl;
+  // and then the hits
+  for(i =0; i< stats.nhits; i++){
+    if(p7_hit_Serialize(&(th->unsrt[i]), buf, &n, &nalloc) != eslOK){
+      LOG_FATAL_MSG("Serializing P7_HIT failed", errno);
     }
   }
 
-  /* send back a successful status message */
-  n = sizeof(status);
-  if (writen(fd, &status, n) != n) LOG_FATAL_MSG("write", errno);
+  status.msg_size = n; // n will have the number of bytes used to serialize the main data block
+  n = 0;
+  nalloc = 0; // reset these to serialize status object
 
-  /* send back that search stats */
-  n = sizeof(stats);
-  if (writen(fd, &stats, n) != n) LOG_FATAL_MSG("write", errno);
-
-  /* send all the hit data */
-  n = sizeof(P7_HIT) * stats.nhits;
-  if (writen(fd, hit, n) != n) LOG_FATAL_MSG("write", errno);
-
-  /* loop through the hit list sending the domains */
-  for (i = 0; i < stats.nhits; ++i) {
-    char *base;
-    P7_HIT *h2 = &th->unsrt[i];
-
-    dcl = h2->dcl;
-
-    n = sizeof(P7_DOMAIN) * h2->ndom;
-    if (writen(fd, dcl, n) != n) LOG_FATAL_MSG("write", errno);
-    base = (char *)NULL + n;
-
-    for (j = 0; j < h2->ndom; ++j) {
-      P7_ALIDISPLAY *ad = NULL;
-
-      /* save off the original mem pointer so all the pointers can be adjusted
-       * to the new block of memory.
-       */
-      base += sizeof(P7_ALIDISPLAY);
-
-      /* readjust all the pointers to the new memory block */
-      ad = dcl->ad;
-      if (ad->rfline  != NULL) ad->rfline  = base + (ad->rfline  - ad->mem);
-      if (ad->mmline  != NULL) ad->mmline  = base + (ad->mmline  - ad->mem);
-      if (ad->csline  != NULL) ad->csline  = base + (ad->csline  - ad->mem);
-      if (ad->model   != NULL) ad->model   = base + (ad->model   - ad->mem);
-      if (ad->mline   != NULL) ad->mline   = base + (ad->mline   - ad->mem);
-      if (ad->aseq    != NULL) ad->aseq    = base + (ad->aseq    - ad->mem);
-      if (ad->ntseq   != NULL) ad->ntseq   = base + (ad->ntseq   - ad->mem);
-      if (ad->ppline  != NULL) ad->ppline  = base + (ad->ppline  - ad->mem);
-      if (ad->hmmname != NULL) ad->hmmname = base + (ad->hmmname - ad->mem);
-      if (ad->hmmacc  != NULL) ad->hmmacc  = base + (ad->hmmacc  - ad->mem);
-      if (ad->hmmdesc != NULL) ad->hmmdesc = base + (ad->hmmdesc - ad->mem);
-      if (ad->sqname  != NULL) ad->sqname  = base + (ad->sqname  - ad->mem);
-      if (ad->sqacc   != NULL) ad->sqacc   = base + (ad->sqacc   - ad->mem);
-      if (ad->sqdesc  != NULL) ad->sqdesc  = base + (ad->sqdesc  - ad->mem);
-
-      n = sizeof(P7_ALIDISPLAY);
-      if (writen(fd, dcl->ad, n) != n) LOG_FATAL_MSG("write", errno);
-
-      n = dcl->ad->memsize;
-      if (writen(fd, dcl->ad->mem, n) != n) LOG_FATAL_MSG("write", errno);
-
-      base += ad->memsize;
-      ++dcl;
-    }
+  // Serialize the search_status object
+ if(hmmd_search_status_Serialize(&status, buf2, &n, &nalloc) != eslOK){
+    LOG_FATAL_MSG("Serializing HMMD_SEARCH_STATUS failed", errno);
   }
 
-  free(hit);
+  // Send the status object
+  if (writen(fd, buf2_ptr, n) != n) LOG_FATAL_MSG("write", errno);
+
+  // And the serialized data
+  if (writen(fd, buf_ptr, status.msg_size) != status.msg_size) LOG_FATAL_MSG("write", errno);
+  free(buf_ptr);
+  free(buf2_ptr);
   printf("Bytes: %" PRId64 "  hits: %" PRId64 "  sent on socket %d\n", status.msg_size, stats.nhits, fd);
   fflush(stdout);
 }
@@ -964,10 +882,5 @@ setup_masterside_comm(ESL_GETOPTS *opts)
 
 #endif /*HMMER_THREADS*/
 
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
+
 

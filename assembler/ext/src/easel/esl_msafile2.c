@@ -10,34 +10,32 @@
  *    3. Legacy Stockholm parsing tools
  *    4. Unit tests
  *    5. Test driver
- *    6. Copyright and license information.
  * 
  * to-do:
  *   :: add memory-efficient interface in ESL_MSAFILE
  *   :: add memory-efficient ESL_MSA w/ API
  *   :: add space-efficient MSA file format
  */
+#include "esl_config.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 
+#include "easel.h"
+#include "esl_alphabet.h"	/* digital alphabet                                                   */
+#include "esl_arr2.h"
+#include "esl_arr3.h"
+#include "esl_keyhash.h"	/* string hashes, for mapping unique seq names                        */
 #include "esl_msa.h"		/* ESL_MSA structure                                                  */
 #include "esl_msafile.h"	/* preferred msafile interface, inc. fmt codes shared w/ ESL_MSAFILE2 */
-#include "esl_msafile2.h"	/* legacy ESL_MSAFILE2 interface                                      */
+#include "esl_ssi.h"        	/* indexing large flatfiles on disk                                   */
 #include "esl_vectorops.h"
 #include "esl_wuss.h"
 
-#ifdef eslAUGMENT_ALPHABET
-#include "esl_alphabet.h"	/* digital alphabet                                                   */
-#endif
-#ifdef eslAUGMENT_KEYHASH
-#include "esl_keyhash.h"	/* string hashes, for mapping unique seq names                        */
-#endif
-#ifdef eslAUGMENT_SSI
-#include "esl_ssi.h"        	/* indexing large flatfiles on disk                                   */
-#endif
+#include "esl_msafile2.h"
+
 
 static int     msafile2_getline(ESL_MSAFILE2 *afp);
 static int     is_blankline(char *s);
@@ -63,7 +61,7 @@ static int msafile2_open(const char *filename, const char *env, ESL_MSAFILE2 **r
  *           <filename> is "-", then the alignment is read from
  *           <stdin>. If <filename> ends in ".gz", then the file is
  *           assumed to be compressed by gzip, and it is opened as a
- *           pipe from <gzip -dc>. (Auto-decompression of gzipp'ed files
+ *           pipe from <gzip -dc>. (Auto-decompression of gzip'ed files
  *           is only available on POSIX-compliant systems w/ popen(), when 
  *           <HAVE_POPEN> is defined at compile-time.)
  *          
@@ -106,19 +104,14 @@ esl_msafile2_Close(ESL_MSAFILE2 *afp)
   if (afp->do_gzip && afp->f != NULL)    pclose(afp->f);
 #endif
   if (!afp->do_gzip && ! afp->do_stdin && afp->f != NULL) fclose(afp->f);
-  if (afp->fname != NULL) free(afp->fname);
-  if (afp->buf  != NULL)  free(afp->buf);
-#ifdef eslAUGMENT_SSI
-  if (afp->ssi  != NULL)  esl_ssi_Close(afp->ssi); 
-#endif /* eslAUGMENT_SSI*/
-  if (afp->msa_cache != NULL) esl_msa_Destroy(afp->msa_cache);
+  if (afp->fname)     free(afp->fname);
+  if (afp->buf)       free(afp->buf);
+  if (afp->ssi)       esl_ssi_Close(afp->ssi); 
+  if (afp->msa_cache) esl_msa_Destroy(afp->msa_cache);
   free(afp);
 }
 
 
-
-
-#ifdef eslAUGMENT_ALPHABET
 /* Function:  esl_msafile2_OpenDigital()
  * Synopsis:  Open an msa file for digital input.
  *
@@ -164,7 +157,6 @@ esl_msafile2_OpenDigital(const ESL_ALPHABET *abc, const char *filename,
   *ret_msafp = msafp;
   return eslOK;
 }
-#endif /*eslAUGMENT_ALPHABET*/
 
 /* msafile2_open():
  * this is the routine that actually opens an ESL_MSAFILE2;
@@ -229,7 +221,6 @@ msafile2_open(const char *filename, const char *env, ESL_MSAFILE2 **ret_afp)
       /* When we open a file, it may be either in the current
        * directory, or in the directory indicated by the env
        * argument - and we construct an SSI filename accordingly.
-       * (Whether or not we're SSI augmented, in fact, for simplicity.)
        */
       if ((afp->f = fopen(filename, "r")) != NULL)
 	{
@@ -247,15 +238,12 @@ msafile2_open(const char *filename, const char *env, ESL_MSAFILE2 **ret_afp)
 	{ status = eslENOTFOUND; goto ERROR;}
     }
 
-#ifdef eslAUGMENT_SSI
-  /* If augmented by SSI indexing:
-   * Open the SSI index file. If it doesn't exist, or
+  /* Open the SSI index file. If it doesn't exist, or
    * it's corrupt, or some error happens, afp->ssi stays NULL.
    * We should warn, probably, or provide some way for caller to 
    * to know that we've opened the index successfully or not.
    */
   esl_ssi_Open(ssifile, &(afp->ssi));
-#endif
 
   if (envfile != NULL) free(envfile);
   if (ssifile != NULL) free(ssifile);
@@ -453,10 +441,8 @@ esl_msafile2_ReadInfoPfam(ESL_MSAFILE2 *afp, FILE *listfp, ESL_ALPHABET *abc, in
    * We won't store any sequence information, so initial blocksize is
    * 0 seqs of 0 length.
    */
-#ifdef eslAUGMENT_ALPHABET
   if (afp->do_digital == TRUE && (msa = esl_msa_CreateDigital(afp->abc, 16, -1))  == NULL) 
     { status = eslEMEM; goto ERROR; }
-#endif
   if (afp->do_digital == FALSE && (msa = esl_msa_Create(16, -1))  == NULL)
     { status = eslEMEM; goto ERROR; }
   if (msa == NULL)    
@@ -649,7 +635,7 @@ esl_msafile2_ReadInfoPfam(ESL_MSAFILE2 *afp, FILE *listfp, ESL_ALPHABET *abc, in
     if (msa->pp_cons != NULL)     maxgc = ESL_MAX(maxgc, 7); /* 7 == strlen("PP_cons") */
   }
   /* same as for maxgc, but now for maxgf */
-  if(ret_msa != NULL && opt_maxgf != NULL) { 
+  if(ret_msa  != NULL && opt_maxgf != NULL) { 
     for(i = 0; i < msa->ngf; i++) maxgf = ESL_MAX(maxgf, strlen(msa->gf_tag[i])); 
     if (msa->name != NULL) maxgf = ESL_MAX(maxgf, 2); /* 2 == strlen("ID") */
     if (msa->desc != NULL) maxgf = ESL_MAX(maxgf, 2); /* 2 == strlen("DE") */
@@ -663,7 +649,7 @@ esl_msafile2_ReadInfoPfam(ESL_MSAFILE2 *afp, FILE *listfp, ESL_ALPHABET *abc, in
   if (ss_nopseudo)   free(ss_nopseudo);
   if (a2rf_map)      free(a2rf_map);
 
-  if (ret_msa)       *ret_msa       = msa;       else if (msa)      esl_msa_Destroy(msa);
+  if (ret_msa)       *ret_msa       = msa;       else esl_msa_Destroy(msa);
   if (opt_nseq)      *opt_nseq      = nseq; 
   if (opt_alen)      *opt_alen      = alen;
   if (opt_ngs)       *opt_ngs       = ngs;
@@ -671,26 +657,26 @@ esl_msafile2_ReadInfoPfam(ESL_MSAFILE2 *afp, FILE *listfp, ESL_ALPHABET *abc, in
   if (opt_maxgf)     *opt_maxgf     = maxgf;
   if (opt_maxgc)     *opt_maxgc     = maxgc;
   if (opt_maxgr)     *opt_maxgr     = maxgr;
-  if (opt_abc_ct)    *opt_abc_ct    = abc_ct;    else if (abc_ct)    esl_Free2D((void **) abc_ct, alen);
-  if (opt_pp_ct)     *opt_pp_ct     = pp_ct;     else if (pp_ct)     esl_Free2D((void **) pp_ct, alen);
-  if (opt_bp_ct)     *opt_bp_ct     = bp_ct;     else if (bp_ct)     esl_Free3D((void ***) bp_ct, known_alen, abc->Kp);
-  if (opt_spos_ct)   *opt_spos_ct   = spos_ct;   else if (spos_ct)   free(spos_ct);
-  if (opt_epos_ct)   *opt_epos_ct   = epos_ct;   else if (epos_ct)   free(epos_ct);
+  if (opt_abc_ct)    *opt_abc_ct    = abc_ct;    else esl_arr2_Destroy((void **) abc_ct, alen);
+  if (opt_pp_ct)     *opt_pp_ct     = pp_ct;     else esl_arr2_Destroy((void **) pp_ct, alen);
+  if (opt_bp_ct)     *opt_bp_ct     = bp_ct;     else esl_arr3_Destroy((void ***) bp_ct, known_alen, abc ? abc->Kp : 0);
+  if (opt_spos_ct)   *opt_spos_ct   = spos_ct;   else esl_free(spos_ct);
+  if (opt_epos_ct)   *opt_epos_ct   = epos_ct;   else esl_free(epos_ct);
   return eslOK;
 
  ERROR:
-  if (first_seqname)  free(first_seqname);
-  if (tmp_dsq)        free(tmp_dsq);
-  if (ct)             free(ct);
-  if (ss_nopseudo)    free(ss_nopseudo);
-  if (a2rf_map)       free(a2rf_map);
+  esl_free(first_seqname);
+  esl_free(tmp_dsq);
+  esl_free(ct);
+  esl_free(ss_nopseudo);
+  esl_free(a2rf_map);
 
-  if (msa)            esl_msa_Destroy(msa);
-  if (pp_ct)          esl_Free2D((void **)  pp_ct,  alen);
-  if (abc_ct)         esl_Free2D((void **)  abc_ct, alen);
-  if (bp_ct)          esl_Free3D((void ***) bp_ct,  known_alen, abc->Kp);
-  if (spos_ct)        free(spos_ct);
-  if (epos_ct)        free(epos_ct);
+  esl_msa_Destroy(msa);
+  esl_arr2_Destroy((void **)  pp_ct,  alen);
+  esl_arr2_Destroy((void **)  abc_ct, alen);
+  esl_arr3_Destroy((void ***) bp_ct,  known_alen, abc ? abc->Kp : 0);
+  esl_free(spos_ct);
+  esl_free(epos_ct);
 
   if (ret_msa)       *ret_msa       = NULL;
   if (opt_nseq)      *opt_nseq      = 0;
@@ -708,7 +694,6 @@ esl_msafile2_ReadInfoPfam(ESL_MSAFILE2 *afp, FILE *listfp, ESL_ALPHABET *abc, in
   return status;
 }
 
-#ifdef eslAUGMENT_KEYHASH
 /* Function: esl_msafile2_RegurgitatePfam()
  * Synopsis: Read and write next Pfam formatted MSA without storing it.
  *
@@ -1045,7 +1030,6 @@ esl_msafile2_RegurgitatePfam(ESL_MSAFILE2 *afp, FILE *ofp, int maxname, int maxg
  ERROR:
   return status;
 }
-#endif
 
 /* get_pp_idx
  *                   
@@ -1473,9 +1457,3 @@ main(int argc, char **argv)
 }
 #endif /*eslMSAFILE2_TESTDRIVE*/
 /*----------------- end, test driver ----------------------------*/
-
-
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

@@ -5,14 +5,14 @@
  *    2. ESL_MSAFILE_FMTDATA: optional added constraints on formats.
  *    3. Guessing file formats.
  *    4. Guessing alphabets.
- *    5. Random MSA flatfile access. [augmentation: ssi]
+ *    5. Random MSA flatfile access. 
  *    6. Reading an MSA from an ESL_MSAFILE.
  *    7. Writing an MSA to a stream.
- *    8. Utilities used by specific format parsers.
- *    9. Unit tests.
- *   10. Test driver.
- *   11. Examples.
- *   12. Copyright and license.
+ *    8. MSA functions that depend on MSAFILE
+ *    9. Utilities used by specific format parsers.
+ *   10. Unit tests.
+ *   11. Test driver.
+ *   12. Examples.
  */
 #include "esl_config.h"
 
@@ -21,14 +21,13 @@
 #include <string.h>
 
 #include "easel.h"
-#include "esl_mem.h"
-#include "esl_msafile.h"
-#ifdef eslAUGMENT_ALPHABET
 #include "esl_alphabet.h"
-#endif
+#include "esl_buffer.h"
+#include "esl_mem.h"
+#include "esl_msa.h"
+#include "esl_ssi.h"
 
-
-
+#include "esl_msafile.h"
 
 /*****************************************************************
  *# 1. Opening/closing an ESL_MSAFILE
@@ -411,7 +410,7 @@ msafile_OpenBuffer(ESL_ALPHABET **byp_abc, ESL_BUFFER *bf, int format, ESL_MSAFI
 
   /* Determine the alphabet; set <abc>. (<abc> == NULL means text mode.)  */
   /* Note that GuessAlphabet() functions aren't allowed to use the inmap, because it isn't set yet */
-#ifdef eslAUGMENT_ALPHABET
+
   if (byp_abc && *byp_abc)	/* Digital mode, and caller provided the alphabet */
     { 
       abc       = *byp_abc;
@@ -424,9 +423,6 @@ msafile_OpenBuffer(ESL_ALPHABET **byp_abc, ESL_BUFFER *bf, int format, ESL_MSAFI
       else if (status != eslOK)          goto ERROR;
       if ( (abc = esl_alphabet_Create(alphatype))                == NULL) { status = eslEMEM; goto ERROR; }
     }    
-#endif
-  if (abc && ! byp_abc) ESL_EXCEPTION(eslEINCONCEIVABLE, "Your version of Easel does not include digital alphabet code."); 
-  /* ^^^^^^^^^^^^^^^^^  this test interacts tricksily with the #ifdef above */
   afp->abc = abc;	/* with afp->abc set, the inmap config functions know whether to do digital/text    */
 
   /* Configure the format-specific, digital or text mode character
@@ -658,7 +654,10 @@ esl_msafile_GuessFileFormat(ESL_BUFFER *bf, int *ret_fmtcode, ESL_MSAFILE_FMTDAT
   else // if we haven't guessed so far, try selex.
     {				/* selex parser can handle psiblast too */
       if      (fmt_bysuffix == eslMSAFILE_SELEX) *ret_fmtcode = eslMSAFILE_SELEX;
-      else if (msafile_check_selex(bf) == eslOK) *ret_fmtcode = eslMSAFILE_SELEX;
+      else if (msafile_check_selex(bf) == eslOK) {
+	if (fmt_bysuffix == eslMSAFILE_PSIBLAST) *ret_fmtcode = eslMSAFILE_PSIBLAST;
+	else                                     *ret_fmtcode = eslMSAFILE_SELEX;
+      }
       else    ESL_XFAIL(eslENOFORMAT, errbuf, "couldn't guess alignment input format - doesn't even look like selex");
     }
 
@@ -721,13 +720,13 @@ esl_msafile_EncodeFormat(char *fmtstring)
   if (strcasecmp(fmtstring, "stockholm")   == 0) return eslMSAFILE_STOCKHOLM;
   if (strcasecmp(fmtstring, "pfam")        == 0) return eslMSAFILE_PFAM;
   if (strcasecmp(fmtstring, "a2m")         == 0) return eslMSAFILE_A2M;
-  if (strcasecmp(fmtstring, "phylip")      == 0) return eslMSAFILE_PHYLIP;
-  if (strcasecmp(fmtstring, "phylips")     == 0) return eslMSAFILE_PHYLIPS;
   if (strcasecmp(fmtstring, "psiblast")    == 0) return eslMSAFILE_PSIBLAST;
   if (strcasecmp(fmtstring, "selex")       == 0) return eslMSAFILE_SELEX;
   if (strcasecmp(fmtstring, "afa")         == 0) return eslMSAFILE_AFA;
   if (strcasecmp(fmtstring, "clustal")     == 0) return eslMSAFILE_CLUSTAL;
   if (strcasecmp(fmtstring, "clustallike") == 0) return eslMSAFILE_CLUSTALLIKE;
+  if (strcasecmp(fmtstring, "phylip")      == 0) return eslMSAFILE_PHYLIP;
+  if (strcasecmp(fmtstring, "phylips")     == 0) return eslMSAFILE_PHYLIPS;
   return eslMSAFILE_UNKNOWN;
 }
 
@@ -868,7 +867,6 @@ msafile_check_selex(ESL_BUFFER *bf)
 /*****************************************************************
  *# 4. Guessing alphabet
  *****************************************************************/
-#ifdef eslAUGMENT_ALPHABET
 
 /* Function:  esl_msafile_GuessAlphabet()
  * Synopsis:  Guess what kind of sequences the MSA file contains.
@@ -910,14 +908,12 @@ esl_msafile_GuessAlphabet(ESL_MSAFILE *afp, int *ret_type)
   }
   return status;
 }
-#endif /*eslAUGMENT_ALPHABET*/
 /*----------- end, utilities for alphabets ----------------------*/
 
 
 /*****************************************************************
  *# 5. Random msa flatfile database access (with SSI)
  *****************************************************************/
-#ifdef eslAUGMENT_SSI
 
 /* Function:  esl_msafile_PositionByKey()
  * Synopsis:  Use SSI to reposition file to start of named MSA.
@@ -963,8 +959,8 @@ esl_msafile_PositionByKey(ESL_MSAFILE *afp, const char *key)
   afp->linenumber = -1; 
   return eslOK;
 }
-#endif /*eslAUGMENT_SSI*/
-/*------------- end of functions added by SSI augmentation -------------------*/
+
+/*--------------------- end SSI functions -----------------------*/
 
 
 /*****************************************************************
@@ -1002,9 +998,7 @@ esl_msafile_Read(ESL_MSAFILE *afp, ESL_MSA **ret_msa)
 {
   ESL_MSA  *msa    = NULL;
   int       status = eslOK;
-#ifdef eslAUGMENT_SSI
   esl_pos_t offset = esl_buffer_GetOffset(afp->bf);
-#endif
 
   switch (afp->format) {
   case eslMSAFILE_A2M:          if ((status = esl_msafile_a2m_Read      (afp, &msa)) != eslOK) goto ERROR; break;
@@ -1020,10 +1014,8 @@ esl_msafile_Read(ESL_MSAFILE *afp, ESL_MSA **ret_msa)
   default:                      ESL_EXCEPTION(eslEINCONCEIVABLE, "no such msa file format");
   }
   
-#ifdef eslAUGMENT_SSI
   msa->offset = offset;
-#endif
-  *ret_msa = msa;
+  *ret_msa    = msa;
   return eslOK;
 
  ERROR:
@@ -1129,7 +1121,55 @@ esl_msafile_Write(FILE *fp, ESL_MSA *msa, int fmt)
 
 
 /*****************************************************************
- *# 8. Utilities used by specific format parsers.
+ *# 8. MSA functions that depend on MSAFILE
+ *****************************************************************/
+
+/* Function:  esl_msa_CreateFromString()
+ * Synopsis:  Creates a small <ESL_MSA> from a test case string.
+ *
+ * Purpose:   A convenience for making small test cases in the test
+ *            suites: given the contents of a complete multiple
+ *            sequence alignment file as a single string <s> in
+ *            alignment format <fmt>, convert it to an <ESL_MSA>.
+ *            
+ *            For example, 
+ *            ```
+ *              esl_msa_CreateFromString("# STOCKHOLM 1.0\n"
+ *                                       "seq1 AAAAA\n"
+ *                                       "seq2 AAAAA\n"
+ *                                       "//\n", eslMSAFILE_STOCKHOLM);
+ *            ```
+ *            creates an ungapped alignment of two AAAAA sequences.
+ *            (Using string concatenation in C99 makes for a cleaner 
+ *            looking multi-line string.)
+ *            
+ *            The <msa> is in text mode. If you want it in digital
+ *            mode, use <esl_msa_Digitize()> on it.
+ *
+ * Returns:   a pointer to the new <ESL_MSA> on success.
+ *
+ * Throws:    <NULL> if it fails to obtain, open, or read the temporary file
+ *            that it puts the string <s> in.
+ */
+ESL_MSA *
+esl_msa_CreateFromString(const char *s, int fmt)
+{
+  ESL_MSAFILE  *mfp  = NULL;
+  ESL_MSA      *msa  = NULL;
+
+  if (esl_msafile_OpenMem(NULL, s, -1, fmt, NULL, &mfp) != eslOK) goto ERROR;
+  if (esl_msafile_Read(mfp, &msa)                       != eslOK) goto ERROR;
+  esl_msafile_Close(mfp);
+  return msa;
+
+ ERROR:
+  if (mfp) esl_msafile_Close(mfp);
+  if (msa) esl_msa_Destroy(msa);                        
+  return NULL;
+}
+
+/*****************************************************************
+ *# 9. Utilities used by specific format parsers.
  *****************************************************************/
 
 /* Function:  esl_msafile_GetLine()
@@ -1229,7 +1269,7 @@ esl_msafile_PutLine(ESL_MSAFILE *afp)
 
 
 /*****************************************************************
- * 9. Unit tests
+ * 10. Unit tests
  *****************************************************************/
 #ifdef eslMSAFILE_TESTDRIVE
 
@@ -1347,7 +1387,7 @@ seq2    ACDEFGHIKLMNPQRSTVWYacdefghiklmnpqrstvwyACDEFGHIKLMNPQRSTVWYacdefghiklmn
 
 
 /*****************************************************************
- * 10. Test driver
+ * 11. Test driver
  *****************************************************************/
 #ifdef eslMSAFILE_TESTDRIVE
 
@@ -1391,7 +1431,7 @@ main(int argc, char **argv)
 
 
 /*****************************************************************
- * 11. Examples.
+ * 12. Examples.
  *****************************************************************/
 
 #ifdef eslMSAFILE_EXAMPLE
@@ -1484,9 +1524,4 @@ main(int argc, char **argv)
 /*::cexcerpt::msafile_example::end::*/
 #endif /*eslMSAFILE_EXAMPLE*/
 /*------------------------ end of examples -----------------------*/
-      
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
 

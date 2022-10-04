@@ -5,8 +5,6 @@
  *   2. Benchmark driver.
  *   3. Unit tests.
  *   4. Test driver.
- *   5. Example.
- *   6. Copyright and license information.
  *
  * See p7_domaindef.c -- null3 correction of per-seq and per-domain
  * scores is embedded within p7_domaindef's logic; we split it out
@@ -15,8 +13,6 @@
  * Approach is based heavily on the null3 approach used in Infernal,
  * and described in its user guide, specifically based on
  * ScoreCorrectionNull3CompUnknown()
- *
- * SVN $Id: null3.c 3474 2011-02-17 13:25:32Z wheelert $
  */
 #include "p7_config.h"
 
@@ -339,18 +335,4 @@ main(int argc, char **argv)
 /*-------------------- end, test driver -------------------------*/
 
 
-
-/*****************************************************************
- * 5. Example
- *****************************************************************/
-#ifdef p7_NULL3_EXAMPLE
-
-#endif /*p7_NULL3_EXAMPLE*/
-/*------------------------ example ------------------------------*/
-
-
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
 

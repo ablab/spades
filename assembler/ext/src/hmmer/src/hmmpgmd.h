@@ -1,7 +1,3 @@
-/*
- * SVN $URL$
- * SVN $Id$
- */
 #ifndef P7_HMMPGMD_INCLUDED
 #define P7_HMMPGMD_INCLUDED
 
@@ -34,6 +30,10 @@ typedef struct {
   uint64_t   nhits;           	/* number of hits in list now               */
   uint64_t   nreported;       	/* number of hits that are reportable       */
   uint64_t   nincluded;       	/* number of hits that are includable       */
+  uint64_t   *hit_offsets;      /* either NULL or an array of nhits values that define the offset from the start of this 
+                                   search's array of serialized hits to each hit in the array.  I.e. hit_offsets[0] will always be 0
+                                   if the array exists, hit_offsets[1] will be the number of bytes between the start of the 
+                                   array of serialized hits to the start of the second hit, and so on */
 } HMMD_SEARCH_STATS;
 
 #define HMMD_SEQUENCE   101
@@ -44,7 +44,6 @@ typedef struct {
 #define HMMD_CMD_SCAN       10002
 #define HMMD_CMD_INIT       10003
 #define HMMD_CMD_SHUTDOWN   10004
-#define HMMD_CMD_RESET      10005
 
 #define MAX_INIT_DESC 32
 
@@ -94,6 +93,9 @@ typedef struct {
   };
 } HMMD_COMMAND;
 
+#define HMMD_SEARCH_STATUS_SERIAL_SIZE sizeof(uint32_t) + sizeof(uint64_t)
+#define HMMD_SEARCH_STATS_SERIAL_BASE (5 * sizeof(double)) + (9 * sizeof(uint64_t)) + 2
+// The 2 is two enums at one byte/enum as we serialize them
 #define MSG_SIZE(x) (sizeof(HMMD_HEADER) + ((HMMD_HEADER *)(x))->length)
 
 size_t writen(int fd, const void *vptr, size_t n);
@@ -133,13 +135,17 @@ extern int  process_searchopts(int fd, char *cmdstr, ESL_GETOPTS **ret_opts);
 extern void worker_process(ESL_GETOPTS *go);
 extern void master_process(ESL_GETOPTS *go);
 
+extern int p7_hmmd_search_stats_Serialize(const HMMD_SEARCH_STATS *obj, uint8_t **buf, uint32_t *n, uint32_t *nalloc);
+extern int p7_hmmd_search_stats_Deserialize(const uint8_t *buf, uint32_t *pos, HMMD_SEARCH_STATS *ret_obj);
+
 #define LOG_FATAL_MSG(str, err) {                                               \
     p7_syslog(LOG_CRIT,"[%s:%d] - %s error %d - %s\n", __FILE__, __LINE__, str, err, strerror(err)); \
     exit(0); \
   }
-
+  
+/* hmmd_search_status.c */
+extern int hmmd_search_status_Serialize(const HMMD_SEARCH_STATUS *obj, uint8_t **buf, uint32_t *n, uint32_t *nalloc);
+extern int hmmd_search_status_Deserialize(const uint8_t *buf, uint32_t *n, HMMD_SEARCH_STATUS *ret_obj);
+extern int hmmd_search_status_TestSample(ESL_RAND64 *rng, HMMD_SEARCH_STATUS **ret_obj);
+extern int hmmd_search_status_Compare(HMMD_SEARCH_STATUS *first, HMMD_SEARCH_STATUS *second);
 #endif /*P7_HMMPGMD_INCLUDED*/
-
-/************************************************************
- * @LICENSE@
- ************************************************************/

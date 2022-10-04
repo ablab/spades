@@ -6,14 +6,12 @@
  *   3. Unit tests.
  *   4. Test driver.
  *   5. Example.
- *   6. Copyright and license information.
  *
  * See p7_domaindef.c -- null2 correction of per-seq and per-domain
  * scores is embedded within p7_domaindef's logic; we split it out
  * to a separate file because it's so important.
  * 
  * SRE, Thu Feb 28 09:51:27 2008 [Janelia]
- * SVN $Id$
  */
 #include "p7_config.h"
 
@@ -433,17 +431,8 @@ main(int argc, char **argv)
 
 
 
-/*****************************************************************
- * 5. Example
- *****************************************************************/
-#ifdef p7GENERIC_NULL2_EXAMPLE
-
-#endif /*p7GENERIC_NULL2_EXAMPLE*/
-/*------------------------ example ------------------------------*/
 
 
 
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
+
 

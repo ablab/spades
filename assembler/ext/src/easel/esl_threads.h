@@ -1,10 +1,8 @@
 /* Simple master/worker data parallelization using POSIX threads.
- * 
- * SVN $Id$
- * SVN $URL$
  */
 #ifndef eslTHREADS_INCLUDED
 #define eslTHREADS_INCLUDED
+#include "esl_config.h"
 
 #include <pthread.h>
 
@@ -34,8 +32,6 @@ extern void *esl_threads_GetData (ESL_THREADS *obj, int workeridx);
 extern int   esl_threads_Finished(ESL_THREADS *obj, int workeridx);
 
 extern int esl_threads_CPUCount(int *ret_ncpu);
+extern int esl_threads_GetCPUCount(void);
 
 #endif /*eslTHREADS_INCLUDED*/
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

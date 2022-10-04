@@ -2,17 +2,16 @@
  * 
  * Contents:
  *    1. An <ESL_SQFILE> object, in text mode.
- *    2. An <ESL_SQFILE> object, in digital mode. [with <alphabet>]
+ *    2. An <ESL_SQFILE> object, in digital mode. 
  *    3. Miscellaneous routines.
  *    4. Sequence reading (sequential).
- *    5. Sequence/subsequence fetching, random access [with <ssi>]
+ *    5. Sequence/subsequence fetching, random access 
  *    6. Internal routines shared by parsers.
  *    7. Internal routines for EMBL format (including UniProt, TrEMBL)
  *    8. Internal routines for GenBank format
  *    9. Internal routines for FASTA format
- *   10. Internal routines for DAEMON format
+ *   10. Internal routines for daemon format
  *   11. Internal routines for HMMPGMD format
- *   12. Copyright and license.
  * 
  * This module shares remote evolutionary homology with Don Gilbert's
  * seminal, public domain ReadSeq package, though the last common
@@ -29,18 +28,12 @@
 #include <unistd.h>
 
 #include "easel.h"
-#ifdef eslAUGMENT_ALPHABET
-#include "esl_alphabet.h"/* alphabet aug adds digital sequences */
-#endif 
-#ifdef eslAUGMENT_MSA
-#include "esl_msa.h"/* msa aug adds ability to read MSAs as unaligned seqs  */
+#include "esl_alphabet.h"
+#include "esl_msa.h"
 #include "esl_msafile.h"
-#endif
-#ifdef eslAUGMENT_SSI
-#include "esl_ssi.h"/* ssi aug adds ability to randomly access sequences/subsequences */
-#endif
 #include "esl_sqio.h"
 #include "esl_sq.h"
+#include "esl_ssi.h"
 
 /* format specific routines */
 static int   sqascii_GuessFileFormat(ESL_SQFILE *sqfp, int *ret_fmt);
@@ -52,20 +45,18 @@ static int   sqascii_Read           (ESL_SQFILE *sqfp, ESL_SQ *sq);
 static int   sqascii_ReadInfo       (ESL_SQFILE *sqfp, ESL_SQ *sq);
 static int   sqascii_ReadSequence   (ESL_SQFILE *sqfp, ESL_SQ *sq);
 static int   sqascii_ReadWindow     (ESL_SQFILE *sqfp, int C, int W, ESL_SQ *sq);
-static int   sqascii_ReadBlock      (ESL_SQFILE *sqfp, ESL_SQ_BLOCK *sqBlock, int max_residues, int max_sequences, int long_target);
+static int   sqascii_ReadBlock      (ESL_SQFILE *sqfp, ESL_SQ_BLOCK *sqBlock, int max_residues, int max_sequences, int max_init_window, int long_target);
 static int   sqascii_Echo           (ESL_SQFILE *sqfp, const ESL_SQ *sq, FILE *ofp);
 
 static int   sqascii_IsRewindable   (const ESL_SQFILE *sqfp);
 static const char *sqascii_GetError (const ESL_SQFILE *sqfp);
 
-#ifdef eslAUGMENT_SSI
 static int   sqascii_OpenSSI         (ESL_SQFILE *sqfp, const char *ssifile_hint);
 static int   sqascii_PositionByKey   (ESL_SQFILE *sqfp, const char *key);
 static int   sqascii_PositionByNumber(ESL_SQFILE *sqfp, int which);
 static int   sqascii_Fetch           (ESL_SQFILE *sqfp, const char *key, ESL_SQ *sq);
 static int   sqascii_FetchInfo       (ESL_SQFILE *sqfp, const char *key, ESL_SQ *sq);
 static int   sqascii_FetchSubseq     (ESL_SQFILE *sqfp, const char *source, int64_t start, int64_t end, ESL_SQ *sq);
-#endif /*eslAUGMENT_SSI*/
 
 /* Internal routines shared by parsers. */
 static int  loadmem  (ESL_SQFILE *sqfp);
@@ -98,7 +89,7 @@ static int  header_fasta(ESL_SQFILE *sqfp, ESL_SQ *sq);
 static int  skip_fasta  (ESL_SQFILE *sqfp, ESL_SQ *sq);
 static int  end_fasta   (ESL_SQFILE *sqfp, ESL_SQ *sq);
 
-/* DAEMON format */
+/* daemon format */
 static void config_daemon(ESL_SQFILE *sqfp);
 static void inmap_daemon (ESL_SQFILE *sqfp, const ESL_DSQ *abc_inmap);
 static int  end_daemon   (ESL_SQFILE *sqfp, ESL_SQ *sq);
@@ -263,14 +254,12 @@ esl_sqascii_Open(char *filename, int format, ESL_SQFILE *sqfp)
    * Or, if format is still unknown, try to open the file as an MSA file,
    * using msafile autodetection. 
    */
-#ifdef eslAUGMENT_MSA
   if (format == eslSQFILE_UNKNOWN || esl_sqio_IsAlignment(format))
     {
       status = esl_msafile_Open(NULL, filename, NULL, format, NULL, &(ascii->afp));
       if (status != eslOK) { status = eslEFORMAT; goto ERROR; } /* This was our last attempt. Failure to open == failure to detect format */
       sqfp->format = format = ascii->afp->format;
     }
-#endif
   if (format == eslSQFILE_UNKNOWN) { status = eslEFORMAT; goto ERROR; }
 
 
@@ -330,7 +319,6 @@ esl_sqascii_Open(char *filename, int format, ESL_SQFILE *sqfp)
 
   sqfp->read_block        = &sqascii_ReadBlock;
 
-#ifdef eslAUGMENT_SSI
   sqfp->open_ssi          = &sqascii_OpenSSI;
   sqfp->pos_by_key        = &sqascii_PositionByKey;
   sqfp->pos_by_number     = &sqascii_PositionByNumber;
@@ -338,8 +326,6 @@ esl_sqascii_Open(char *filename, int format, ESL_SQFILE *sqfp)
   sqfp->fetch             = &sqascii_Fetch;
   sqfp->fetch_info        = &sqascii_FetchInfo;
   sqfp->fetch_subseq      = &sqascii_FetchSubseq;
-#endif
-
   sqfp->get_error         = &sqascii_GetError;
 
   return eslOK;
@@ -409,8 +395,8 @@ sqascii_GuessFileFormat(ESL_SQFILE *sqfp, int *ret_fmt)
    */
   
   /* Attempt to guess file format based on file name suffix. */
-  if      (strncmp(sfx, ".fa",  3) == 0)  { *ret_fmt = eslSQFILE_FASTA;      return eslOK; }
-  else if (strncmp(sfx, ".gb",  3) == 0)  { *ret_fmt = eslSQFILE_GENBANK;    return eslOK; }
+  if      (nsfx && strcmp(sfx, ".fa") == 0)  { *ret_fmt = eslSQFILE_FASTA;      return eslOK; }
+  else if (nsfx && strcmp(sfx, ".gb") == 0)  { *ret_fmt = eslSQFILE_GENBANK;    return eslOK; }
     
   /* If that didn't work, we'll have a peek at the stream; 
    * turn recording on, and set for line based input.
@@ -553,14 +539,10 @@ sqascii_Close(ESL_SQFILE *sqfp)
   if (ascii->ssifile  != NULL) free(ascii->ssifile);
   if (ascii->mem      != NULL) free(ascii->mem);
   if (ascii->balloc   > 0)     free(ascii->buf);
-#ifdef eslAUGMENT_SSI
   if (ascii->ssi      != NULL) esl_ssi_Close(ascii->ssi);
-#endif
 
-#ifdef eslAUGMENT_MSA
   if (ascii->afp      != NULL) esl_msafile_Close(ascii->afp);
   if (ascii->msa      != NULL) esl_msa_Destroy(ascii->msa);
-#endif /*eslAUGMENT_MSA*/
 
   ascii->do_gzip  = FALSE;
   ascii->do_stdin = FALSE;
@@ -586,7 +568,6 @@ sqascii_Close(ESL_SQFILE *sqfp)
 /*****************************************************************
  *# 2. An <ESL_SQFILE> object, in digital mode [with <alphabet>]
  *****************************************************************/
-#ifdef eslAUGMENT_ALPHABET
 
 /* Function:  sqascii_SetDigital()
  * Synopsis:  Set an open <ESL_SQFILE> to read in digital mode.
@@ -625,13 +606,7 @@ sqascii_SetDigital(ESL_SQFILE *sqfp, const ESL_ALPHABET *abc)
       }
     }
   else
-    {
-#ifdef eslAUGMENT_MSA
-      esl_msafile_SetDigital(ascii->afp, abc);
-#else
-      status = eslEFORMAT;
-#endif
-    }
+    esl_msafile_SetDigital(ascii->afp, abc);
 
   return status;
 }
@@ -674,9 +649,7 @@ sqascii_GuessAlphabet(ESL_SQFILE *sqfp, int *ret_type)
   ESL_SQASCII_DATA *ascii = &sqfp->data.ascii;
 
   /* Special case: for MSA files, hand this off to msafile_GuessAlphabet. */
-#ifdef eslAUGMENT_MSA
   if (esl_sqio_IsAlignment(sqfp->format)) return esl_msafile_GuessAlphabet(ascii->afp, ret_type);
-#endif
 
   /* set the sqfp to record; we'll rewind afterwards and use the recording */
   ascii->is_recording = TRUE;
@@ -685,7 +658,7 @@ sqascii_GuessAlphabet(ESL_SQFILE *sqfp, int *ret_type)
 
   status = sqascii_ReadWindow(sqfp, 0, 4000, sq);
   if      (status == eslEOF) { status = eslENODATA; goto ERROR; }
-  else if (status != eslOK)  goto ERROR; 
+  else if ((status != eslOK) && (status != eslEOD)) goto ERROR;
 
   if ((status = esl_sq_GuessAlphabet(sq, ret_type)) != eslOK) goto ERROR;
 
@@ -702,7 +675,6 @@ sqascii_GuessAlphabet(ESL_SQFILE *sqfp, int *ret_type)
   *ret_type      = eslUNKNOWN;
   return status;
 }
-#endif /*eslAUGMENT_ALPHABET*/
 /*-------------- end, digital mode ESL_SQFILE -------------------*/
 
 
@@ -774,7 +746,6 @@ sqascii_Read(ESL_SQFILE *sqfp, ESL_SQ *sq)
 
   ESL_SQASCII_DATA *ascii = &sqfp->data.ascii;
 
-#ifdef eslAUGMENT_MSA
   if (esl_sqio_IsAlignment(sqfp->format))
   {
       ESL_SQ *tmpsq = NULL;
@@ -807,7 +778,6 @@ sqascii_Read(ESL_SQFILE *sqfp, ESL_SQ *sq)
       sq->L     = sq->n;
       return eslOK;
     }
-#endif
 
   /* Main case: read next seq from sqfp's stream */
   if (ascii->nc == 0) return eslEOF;
@@ -871,7 +841,6 @@ sqascii_ReadInfo(ESL_SQFILE *sqfp, ESL_SQ *sq)
 
   ESL_SQASCII_DATA *ascii = &sqfp->data.ascii;
 
-#ifdef eslAUGMENT_MSA
   if (esl_sqio_IsAlignment(sqfp->format))
     {
       ESL_SQ *tmpsq = NULL;
@@ -909,7 +878,6 @@ sqascii_ReadInfo(ESL_SQFILE *sqfp, ESL_SQ *sq)
       sq->W     = 0;
       return eslOK;
     }
-#endif
 
   if (ascii->nc == 0) return eslEOF;
   if ((status = ascii->parse_header(sqfp, sq)) != eslOK) return status; /* EOF, EFORMAT */
@@ -976,7 +944,6 @@ sqascii_ReadSequence(ESL_SQFILE *sqfp, ESL_SQ *sq)
   int64_t n;
   int     status;
 
-#ifdef eslAUGMENT_MSA
   if (esl_sqio_IsAlignment(sqfp->format))
     {
       ESL_SQ *tmpsq = NULL;
@@ -1011,7 +978,6 @@ sqascii_ReadSequence(ESL_SQFILE *sqfp, ESL_SQ *sq)
       sq->L     = sq->n;
       return eslOK;
     }
-#endif
 
   /* Main case: read next seq from sqfp's stream */
   if (ascii->nc == 0) return eslEOF;
@@ -1155,7 +1121,6 @@ sqascii_ReadWindow(ESL_SQFILE *sqfp, int C, int W, ESL_SQ *sq)
 
   ESL_SQASCII_DATA *ascii = &sqfp->data.ascii;
 
-#ifdef eslAUGMENT_MSA
   if (esl_sqio_IsAlignment(sqfp->format))
   {
     /* special: if we're initializing a revcomp window read, back ascii->idx up one */
@@ -1256,85 +1221,88 @@ sqascii_ReadWindow(ESL_SQFILE *sqfp, int C, int W, ESL_SQ *sq)
     esl_sq_Destroy(tmpsq);
     return eslOK;
   }
-#endif /* we've completely handled the alignment file case above. */
 
   /* Now for the normal case: we're reading a normal unaligned seq file, not an alignment. */
-
   /* Negative W indicates reverse complement direction */
   if (W < 0)
   {
     if (sq->L == -1) ESL_EXCEPTION(eslESYNTAX, "Can't read reverse complement until you've read forward strand");
 
-    if (sq->end == 1)
-    { /* last end == 1 means last window was the final one on reverse strand,
-        * so we're EOD; jump back to last forward position.
-        */
-       if (ascii->bookmark_offset > 0) {
-         if (esl_sqfile_Position(sqfp, ascii->bookmark_offset) != eslOK)
-           ESL_EXCEPTION(eslECORRUPT, "Failed to reposition seq file at last forward bookmark");
-         ascii->linenumber = ascii->bookmark_linenum;
-       } else {
-         ascii->nc = 0;/* signals EOF */
-       }
-       ascii->bookmark_offset  = 0;
-       ascii->bookmark_linenum = 0;
+    if (sq->end == 1 || sq->L == 0)
+      { /* last end == 1 means last window was the final one on reverse strand,
+         * so we're EOD; jump back to last forward position.
+         *
+         * Also check for the unusual case of sq->L == 0, a completely empty sequence:
+         * in that case, immediately return eslEOD.
+         */
+        if (ascii->bookmark_offset > 0) 
+          {
+            if (esl_sqfile_Position(sqfp, ascii->bookmark_offset) != eslOK)
+              ESL_EXCEPTION(eslECORRUPT, "Failed to reposition seq file at last forward bookmark");
+            ascii->linenumber = ascii->bookmark_linenum;
+          } 
+        else 
+          ascii->nc = 0; /* signals EOF */
 
-       sq->start      = 0;
-       sq->end        = 0;
-       sq->C          = 0;
-       sq->W          = 0;
-       sq->n          = 0;
-       /* sq->L stays as it is */
-       if (sq->dsq != NULL) sq->dsq[1] = eslDSQ_SENTINEL;
-       else                 sq->seq[0] = '\0';
-       return eslEOD;
-    }
+        ascii->bookmark_offset  = 0;
+        ascii->bookmark_linenum = 0;
 
-    /* If s == 0, we haven't read any reverse windows yet;
+        sq->start      = 0;
+        sq->end        = 0;
+        sq->C          = 0;
+        sq->W          = 0;
+        sq->n          = 0;
+        /* sq->L stays as it is */
+        if (sq->dsq != NULL) sq->dsq[1] = eslDSQ_SENTINEL;
+        else                 sq->seq[0] = '\0';
+        return eslEOD;
+      }
+
+    /* If sq->start == 0, we haven't read any reverse windows yet;
      * init reading from sq->L
      */
     W = -W;
     if (sq->start == 0)
-    {
-      sq->start        = ESL_MAX(1, (sq->L - W + 1));
-      sq->end          = sq->L;
-      sq->C            = 0;
-      sq->W            = sq->end - sq->start + 1;
-      ascii->curbpl     = -1;
-      ascii->currpl     = -1;
-      ascii->prvbpl     = -1;
-      ascii->prvrpl     = -1;
-      ascii->linenumber = -1;
-      ascii->L          = -1;
-    }
+      {
+        sq->start        = ESL_MAX(1, (sq->L - W + 1));
+        sq->end          = sq->L;
+        sq->C            = 0;
+        sq->W            = sq->end - sq->start + 1;
+        ascii->curbpl     = -1;
+        ascii->currpl     = -1;
+        ascii->prvbpl     = -1;
+        ascii->prvrpl     = -1;
+        ascii->linenumber = -1;
+        ascii->L          = -1;
+      }
     else
-    { /* Else, we're continuing to next window; prv was <end>..<start> */
-       sq->C     = ESL_MIN(C, sq->L - sq->end + 1);  /* based on prev window's end */
-       sq->end   = sq->end + sq->C - 1;                /* also based on prev end     */
-       sq->start = ESL_MAX(1, (sq->end - W - sq->C + 1));
-       sq->W     = sq->end - sq->start + 1 - sq->C;
-    }
+      { /* Else, we're continuing to next window; prv was <end>..<start> */
+        sq->C     = ESL_MIN(C, sq->L - sq->end + 1);  /* based on prev window's end */
+        sq->end   = sq->end + sq->C - 1;                /* also based on prev end     */
+        sq->start = ESL_MAX(1, (sq->end - W - sq->C + 1));
+        sq->W     = sq->end - sq->start + 1 - sq->C;
+      }
 
     /* Now position for a subseq fetch of <start..end> on fwd strand, using SSI offset calc  */
-    if (sq->doff == 0) ESL_EXCEPTION(eslECORRUPT, "can't happen: sq didn't store data offset");
-
-    if (ascii->bpl == 0 || ascii->rpl == 0) /* no help; brute force resolution. */
-    {
-      offset       = sq->doff;
-      actual_start = 1;
-    }
+    ESL_DASSERT1(( sq->doff != 0 ));
+    if (ascii->bpl == 0 || ascii->rpl == 0)      /* no help; brute force resolution. */
+      {
+        offset       = sq->doff;
+        actual_start = 1;
+      }
     else if (ascii->bpl == ascii->rpl+1)         /* residue resolution */
-    {
-      line = (sq->start-1) / ascii->rpl; /* data line #0.. that <end> is on */
-      offset       = sq->doff + line * ascii->bpl + (sq->start-1)%ascii->rpl;
-      actual_start = sq->start;
-    }
-    else/* line resolution */
-    {
-       line         = (sq->start-1) / ascii->rpl; /* data line #0.. that <end> is on */
-       offset       = sq->doff + line * ascii->bpl;
-       actual_start = 1 + line * ascii->rpl;
-    }
+      {
+        line = (sq->start-1) / ascii->rpl; /* data line #0.. that <end> is on */
+        offset       = sq->doff + line * ascii->bpl + (sq->start-1)%ascii->rpl;
+        actual_start = sq->start;
+      }
+    else /* line resolution */
+      {
+        line         = (sq->start-1) / ascii->rpl; /* data line #0.. that <end> is on */
+        offset       = sq->doff + line * ascii->bpl;
+        actual_start = 1 + line * ascii->rpl;
+      }
+
     if (esl_sqfile_Position(sqfp, offset) != eslOK)
       ESL_EXCEPTION(eslECORRUPT, "Failed to reposition seq file for reverse window read");
 
@@ -1445,7 +1413,8 @@ sqascii_ReadWindow(ESL_SQFILE *sqfp, int C, int W, ESL_SQ *sq)
  *            expected to be protein - individual sequences won't be long
  *            so read them in one-whole-sequence at a time. If <max_sequences> is set
  *            to a number > 0 read <max_sequences> sequences, up to at most
- *            MAX_RESIDUE_COUNT residues.
+ *            MAX_RESIDUE_COUNT residues. <max_init_window> value is irrelevant
+ *            if <long_target> is false.
  *
  *            If <long_target> is true, the sequences are expected to be DNA.
  *            Because sequences in a DNA database can exceed MAX_RESIDUE_COUNT,
@@ -1453,6 +1422,20 @@ sqascii_ReadWindow(ESL_SQFILE *sqfp, int C, int W, ESL_SQ *sq)
  *            larger than <max_residues>, and must allow for the possibility that a
  *            request will be made to continue reading a partly-read
  *            sequence. This case also respects the <max_sequences> limit.
+ * 
+ *            If <long_target> is true and <max_init_window> is TRUE,
+ *            the first window read from each sequence (of length L)
+ *            is always min(L, <max_residues>). If <max_init_window>
+ *            is FALSE, then the length of the first window read from
+ *            each sequence is calculated differently as 
+ *            max(<max_residues> - <size>, <max_residues> * .05);
+ *            where <size> is total number of residues already existing
+ *            in the block. <max_init_window> == TRUE mode was added
+ *            to ensure that the window boundaries read are not dependent
+ *            on the order of the sequence in the file, thus ensuring
+ *            reproducibility if (for example) a user extracts one
+ *            sequence from a file and reruns a program on it (and all
+ *            else remains equal).
  *
  * Returns:   <eslOK> on success; the new sequence is stored in <sqBlock>.
  * 
@@ -1468,7 +1451,7 @@ sqascii_ReadWindow(ESL_SQFILE *sqfp, int C, int W, ESL_SQ *sq)
  *            <eslEINCONCEIVABLE> on internal error.
  */
 static int
-sqascii_ReadBlock(ESL_SQFILE *sqfp, ESL_SQ_BLOCK *sqBlock, int max_residues, int max_sequences, int long_target)
+sqascii_ReadBlock(ESL_SQFILE *sqfp, ESL_SQ_BLOCK *sqBlock, int max_residues, int max_sequences, int max_init_window, int long_target)
 {
   int     i = 0;
   int     size = 0;
@@ -1499,8 +1482,7 @@ sqascii_ReadBlock(ESL_SQFILE *sqfp, ESL_SQ_BLOCK *sqBlock, int max_residues, int
     if (max_residues < 1)
       max_residues = MAX_RESIDUE_COUNT;
 
-    tmpsq = esl_sq_Create();
-
+    tmpsq = esl_sq_CreateDigital(sqBlock->list->abc);
     //if complete flag is set to FALSE, then the prior block must have ended with a window that was a possibly
     //incomplete part of it's full sequence. Read another overlapping window.
     if (! sqBlock->complete )
@@ -1556,13 +1538,16 @@ sqascii_ReadBlock(ESL_SQFILE *sqfp, ESL_SQ_BLOCK *sqBlock, int max_residues, int
        * which can result in a window with ~2*max_residues ... or we can end up with absurdly
        * short fragments at the end of blocks
        */
-      int request_size = ESL_MAX(max_residues-size, max_residues * .05);
+      int request_size = (max_init_window) ? max_residues : ESL_MAX(max_residues-size, max_residues * .05);
 
       esl_sq_Reuse(tmpsq);
       esl_sq_Reuse(sqBlock->list + i);
 
-      status = sqascii_ReadWindow(sqfp, 0, request_size , sqBlock->list + i);
-      if (status != eslOK && status != eslEOD) break; /* end of sequences (eslEOF), or we read an empty seq (eslEOD) or error (other)  */
+      status = sqascii_ReadWindow(sqfp, 0, request_size , tmpsq); 
+      esl_sq_Copy(tmpsq, sqBlock->list +i);
+      if (status != eslOK && status != eslEOD){
+        break;
+        } /* end of sequences (eslEOF), or we read an empty seq (eslEOD) or error (other)  */
       size += sqBlock->list[i].n - sqBlock->list[i].C;
       sqBlock->list[i].L = sqfp->data.ascii.L;
       ++(sqBlock->count);
@@ -1706,7 +1691,6 @@ sqascii_Echo(ESL_SQFILE *sqfp, const ESL_SQ *sq, FILE *ofp)
 /*****************************************************************
  *# 5. Sequence/subsequence fetching, random access [with <ssi>]
  *****************************************************************/
-#ifdef eslAUGMENT_SSI
 
 /* Function:  sqascii_OpenSSI()
  * Synopsis:  Opens an SSI index associated with a sequence file.
@@ -2022,11 +2006,10 @@ sqascii_FetchSubseq(ESL_SQFILE *sqfp, const char *source, int64_t start, int64_t
   sq->C     = 0;
   sq->W     = sq->n;
   sq->L     = (L > 0 ? L : -1);
-  esl_sq_FormatName(sq, "%s/%d-%d", source, start, end);
+  esl_sq_FormatName(sq, "%s/%" PRId64 "-%" PRId64, source, start, end);
   esl_sq_SetSource (sq, source);
   return eslOK;
 }  
-#endif /*eslAUGMENT_SSI*/
 /*------------- end, random sequence access with SSI -------------------*/
 
 
@@ -2148,7 +2131,7 @@ loadbuf(ESL_SQFILE *sqfp)
       ascii->balloc = 0;
       ascii->bpos   = 0;
       ascii->nc     = ascii->mn - ascii->mpos;
-      ascii->mpos  += ascii->mn;
+      ascii->mpos  += ascii->nc;
   }
   else
   { /* Copy next line from <mem> into <buf>. Might require new load(s) into <mem>. */
@@ -2291,13 +2274,15 @@ seebuf(ESL_SQFILE *sqfp, int64_t maxn, int64_t *opt_nres, int64_t *opt_endpos)
          if (ascii->currpl != -1) ascii->currpl += nres - nres2;
          nres2        += nres - nres2;
 
-         if (ascii->rpl != 0 && ascii->prvrpl != -1) { /* need to ignore counts on last line in record, hence cur/prv */
-           if      (ascii->rpl    == -1)        ascii->rpl = ascii->prvrpl; /* init */
-           else if (ascii->prvrpl != ascii->rpl) ascii->rpl = 0;           /* inval*/
+         if (ascii->rpl != 0 && ascii->prvrpl != -1) { /* need to treat counts on last line in record differently (can be shorter but not longer), hence cur/prv */
+           if      (ascii->rpl    == -1)         ascii->rpl = ascii->prvrpl; /* init  */
+           else if (ascii->prvrpl != ascii->rpl) ascii->rpl = 0;             /* inval */
+           else if (ascii->currpl  > ascii->rpl) ascii->rpl = 0;             /* inval, this covers case when final line is longer */
          }
          if (ascii->bpl != 0 && ascii->prvbpl != -1) {
-           if      (ascii->bpl    == -1)        ascii->bpl = ascii->prvbpl; /* init  */
-           else if (ascii->prvbpl != ascii->bpl) ascii->bpl = 0;            /* inval */
+           if      (ascii->bpl    == -1)         ascii->bpl = ascii->prvbpl; /* init  */
+           else if (ascii->prvbpl != ascii->bpl) ascii->bpl = 0;             /* inval */
+           else if (ascii->curbpl  > ascii->bpl) ascii->bpl = 0;             /* inval, this covers case when final line is longer */
          }
 
          ascii->prvbpl  = ascii->curbpl;
@@ -2553,6 +2538,7 @@ inmap_embl(ESL_SQFILE *sqfp, const ESL_DSQ *abc_inmap)
 
   if (abc_inmap != NULL) {
     for (x = 0; x < 128; x++) sqfp->inmap[x] = abc_inmap[x];
+    sqfp->inmap['-']  = eslDSQ_ILLEGAL;                      // don't let the abc_inmap map the gap char; this is an ungapped file format
   } else {
     for (x =  0;  x < 128;  x++) sqfp->inmap[x] = eslDSQ_ILLEGAL;
     for (x = 'A'; x <= 'Z'; x++) sqfp->inmap[x] = x;
@@ -2560,11 +2546,11 @@ inmap_embl(ESL_SQFILE *sqfp, const ESL_DSQ *abc_inmap)
   }
   for (x = '0'; x <= '9'; x++)
     sqfp->inmap[x] = eslDSQ_IGNORED;    /* EMBL DNA sequence format puts coordinates after each line */
-  sqfp->inmap['*']  = '*';         /* accept * as a nonresidue/stop codon character */
+  sqfp->inmap['*']  = '*';              /* accept * as a nonresidue/stop codon character */
   sqfp->inmap[' ']  = eslDSQ_IGNORED;
   sqfp->inmap['\t'] = eslDSQ_IGNORED;
   sqfp->inmap['\n'] = eslDSQ_IGNORED;
-  sqfp->inmap['\r'] = eslDSQ_IGNORED;/* DOS eol compatibility */
+  sqfp->inmap['\r'] = eslDSQ_IGNORED;  /* DOS eol compatibility */
   sqfp->inmap['/']  = eslDSQ_EOD;
 }
 
@@ -2801,6 +2787,7 @@ inmap_genbank(ESL_SQFILE *sqfp, const ESL_DSQ *abc_inmap)
 
   if (abc_inmap != NULL) {
     for (x = 0; x < 128; x++) sqfp->inmap[x] = abc_inmap[x];
+    sqfp->inmap['-']  = eslDSQ_ILLEGAL;                      // don't let the abc_inmap map the gap char; this is an ungapped file format
   } else {
     for (x =  0;  x < 128;  x++) sqfp->inmap[x] = eslDSQ_ILLEGAL;
     for (x = 'A'; x <= 'Z'; x++) sqfp->inmap[x] = x;
@@ -2866,7 +2853,7 @@ header_genbank(ESL_SQFILE *sqfp, ESL_SQ *sq)
     if (strncmp(ascii->buf, "VERSION   ", 10) == 0)
     {
       s = ascii->buf+12;
-      if ((status = esl_strtok(&s, " ", &tok)) != eslOK)
+      if ((status = esl_strtok(&s, " \t\n", &tok)) != eslOK)
         ESL_FAIL(eslEFORMAT, ascii->errbuf, "Line %" PRId64 ": failed to parse VERSION line", ascii->linenumber);
       if ((status = esl_sq_SetAccession(sq, tok)) != eslOK) return status;
     }
@@ -2974,6 +2961,7 @@ inmap_fasta(ESL_SQFILE *sqfp, const ESL_DSQ *abc_inmap)
 
   if (abc_inmap != NULL) {
     for (x = 0; x < 128; x++) sqfp->inmap[x] = abc_inmap[x];
+    sqfp->inmap['-']  = eslDSQ_ILLEGAL;                      // don't let the abc_inmap map the gap char; this is an ungapped file format
   } else {
     for (x =  0;  x < 128;  x++) sqfp->inmap[x] = eslDSQ_ILLEGAL;
     for (x = 'A'; x <= 'Z'; x++) sqfp->inmap[x] = x;
@@ -3186,7 +3174,7 @@ esl_sqascii_WriteFasta(FILE *fp, ESL_SQ *sq, int save_offsets)
 /*------------------- end of FASTA i/o ---------------------------*/
 
 /*****************************************************************
- *#  10. Internal routines for DAEMON format
+ *#  10. Internal routines for daemon format
  *****************************************************************/
 
 /* Special case FASTA format where each sequence is terminated with "//".
@@ -3217,6 +3205,7 @@ inmap_daemon(ESL_SQFILE *sqfp, const ESL_DSQ *abc_inmap)
 
   if (abc_inmap != NULL) {
     for (x = 0; x < 128; x++) sqfp->inmap[x] = abc_inmap[x];
+    sqfp->inmap['-']  = eslDSQ_ILLEGAL;                      // don't let the abc_inmap map the gap char; this is an ungapped file format
   } else {
     for (x =  0;  x < 128;  x++) sqfp->inmap[x] = eslDSQ_ILLEGAL;
     for (x = 'A'; x <= 'Z'; x++) sqfp->inmap[x] = x;
@@ -3246,7 +3235,7 @@ end_daemon(ESL_SQFILE *sqfp, ESL_SQ *sq)
 
   ESL_SQASCII_DATA *ascii = &sqfp->data.ascii;
 
-  if (ascii->nc < 3) ESL_FAIL(eslEFORMAT, ascii->errbuf, "Whoops, DAEMON input stream is corrupted");
+  if (ascii->nc < 3) ESL_FAIL(eslEFORMAT, ascii->errbuf, "Whoops, daemon input stream is corrupted");
 
   c =  ascii->buf[ascii->bpos++];
   if (c != '/') ESL_FAIL(eslEFORMAT, ascii->errbuf, "Line %" PRId64 ": did not find // terminator at end of seq record", ascii->linenumber);
@@ -3372,7 +3361,7 @@ esl_sqascii_Parse(char *buf, int size, ESL_SQ *sq, int format)
 
   return eslOK;
 }
-/*-------------------- end of DAEMON ----------------------------*/
+/*-------------------- end of daemon ----------------------------*/
 
 /*****************************************************************
  *# 11. Internal routines for HMMPGMD format
@@ -3402,10 +3391,5 @@ fileheader_hmmpgmd(ESL_SQFILE *sqfp)
   return eslOK;
 }
 /*-------------------- end of HMMPGMD ---------------------------*/
-
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
 
 

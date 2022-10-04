@@ -12,7 +12,6 @@
  *    9. Unit tests.
  *   10. Test driver.
  *   11. Examples. 
- *   12. Copyright and license. 
  */
 #include "esl_config.h"
 
@@ -20,6 +19,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <errno.h>
+#include <limits.h>
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
@@ -37,7 +37,7 @@
 #endif
 
 #include "easel.h"
-
+#include <syslog.h>
 
 /*****************************************************************
  * 1. Exception and fatal error handling.
@@ -65,12 +65,22 @@ static esl_exception_handler_f esl_exception_handler = NULL;
 void
 esl_fail(char *errbuf, const char *format, ...)
 {
-  if (format) {
-    va_list ap;
-    va_start(ap, format);
-    if (errbuf) vsnprintf(errbuf, eslERRBUFSIZE, format, ap);
-    va_end(ap);
-  }
+  if (format)
+    {
+      va_list ap;
+      /* Check whether we are running as a daemon so we can do the
+       * right thing about logging instead of printing errors 
+       */
+      if (getppid() != 1)
+	{ // we aren't running as a daemon, so print the error normally
+	  va_start(ap, format);
+	  if (errbuf) vsnprintf(errbuf, eslERRBUFSIZE, format, ap);
+	  va_end(ap);
+	}
+      else vsyslog(LOG_ERR, format, ap); // SRE: TODO: check this.
+                                         // looks wrong. I think it needs va_start(), va_end().
+                                         // also see two more occurrences, below.
+    }
 }
 
 
@@ -117,7 +127,7 @@ esl_fail(char *errbuf, const char *format, ...)
  * Throws:    No abnormal error conditions. (Who watches the watchers?)
  */
 void
-esl_exception(int errcode, int use_errno, const char *sourcefile, int sourceline, const char *format, ...)
+esl_exception(int errcode, int use_errno, char *sourcefile, int sourceline, char *format, ...)
 {
   va_list argp;
 #ifdef HAVE_MPI
@@ -125,7 +135,8 @@ esl_exception(int errcode, int use_errno, const char *sourcefile, int sourceline
 #endif
 
   if (esl_exception_handler != NULL) 
-    {
+    { // If the custom exception handler tries to print to stderr/stdout, the error may get eaten if we're running as a daemon
+      // Not sure how to prevent that, since we can't control what custom handlers get written.
       va_start(argp, format);
       (*esl_exception_handler)(errcode, use_errno, sourcefile, sourceline, format, argp);
       va_end(argp);
@@ -133,13 +144,19 @@ esl_exception(int errcode, int use_errno, const char *sourcefile, int sourceline
     } 
   else 
     {
-      fprintf(stderr, "Fatal exception (source file %s, line %d):\n", sourcefile, sourceline);
-      va_start(argp, format);
-      vfprintf(stderr, format, argp);
-      va_end(argp);
-      fprintf(stderr, "\n");
-      if (use_errno && errno) perror("system error");
-      fflush(stderr);
+      /* Check whether we are running as a daemon so we can do the right thing about logging instead of printing errors */
+      if (getppid() != 1)
+	{ // we're not running as a daemon, so print the error normally
+	  fprintf(stderr, "Fatal exception (source file %s, line %d):\n", sourcefile, sourceline);
+	  va_start(argp, format);
+	  vfprintf(stderr, format, argp);
+	  va_end(argp);
+	  fprintf(stderr, "\n");
+	  if (use_errno && errno) perror("system error");
+	  fflush(stderr);
+	}  
+      else vsyslog(LOG_ERR, format, argp);
+
 #ifdef HAVE_MPI
       MPI_Initialized(&mpiflag);                 /* we're assuming we can do this, even in a corrupted, dying process...? */
       if (mpiflag) MPI_Abort(MPI_COMM_WORLD, 1);
@@ -180,7 +197,7 @@ esl_exception(int errcode, int use_errno, const char *sourcefile, int sourceline
  * Throws:    (no abnormal error conditions)
  */
 void
-esl_exception_SetHandler(void (*handler)(int errcode, int use_errno, const char *sourcefile, int sourceline, const char *format, va_list argp))
+esl_exception_SetHandler(void (*handler)(int errcode, int use_errno, char *sourcefile, int sourceline, char *format, va_list argp))
 { 
   esl_exception_handler = handler; 
 }
@@ -236,7 +253,7 @@ esl_exception_ResetDefaultHandler(void)
  * Throws:    (no abnormal error conditions)
  */
 void
-esl_nonfatal_handler(int errcode, int use_errno, const char *sourcefile, int sourceline, const char *format, va_list argp)
+esl_nonfatal_handler(int errcode, int use_errno, char *sourcefile, int sourceline, char *format, va_list argp)
 {
   return; 
 }
@@ -280,12 +297,16 @@ esl_fatal(const char *format, ...)
 #ifdef HAVE_MPI
   int mpiflag;
 #endif
-
-  va_start(argp, format);
-  vfprintf(stderr, format, argp);
-  va_end(argp);
-  fprintf(stderr, "\n");
-  fflush(stderr);
+  /* Check whether we are running as a daemon so we can do the right thing about logging instead of printing errors */
+  if (getppid() != 1)
+    { // we're not running as a daemon, so print the error normally
+      va_start(argp, format);
+      vfprintf(stderr, format, argp);
+      va_end(argp);
+      fprintf(stderr, "\n");
+      fflush(stderr);
+    } 
+  else vsyslog(LOG_ERR, format, argp);
 
 #ifdef HAVE_MPI
   MPI_Initialized(&mpiflag);
@@ -302,6 +323,142 @@ esl_fatal(const char *format, ...)
  * 2. Memory allocation/deallocation conventions.
  *****************************************************************/
 
+/* Function:  esl_resize()
+ * Synopsis:  Implement idiomatic resize-by-doubling + redline allocation rules.
+ * Incept:    SRE, Sun 21 Feb 2021
+ *
+ * Purpose:   Return a recommended allocation size, given minimum required allocation
+ *            size <n>, current allocation size <a>, and "redline" <r>. Implements
+ *            Easel's idiom for growing an allocation exponentially, while trying
+ *            to keep it capped at a maximum redline.
+ *
+ *            Let's call the return value <b>: $b \geq n$, i.e. the returned <b> is
+ *            always sufficient to fit <n>.
+ *
+ *               - If $n >= r$, the requested allocation is above redline, so return
+ *                 $b=n$ exactly. This includes when we need to grow the allocation
+ *                 ($a < n$), and cases where the current allocation would suffice
+ *                 ($a >= n$) but we can shrink it back toward the redline somewhat.
+ *
+ *               - If $n \leq a$ then the current allocation suffices. If $a \leq r$,
+ *                 return $b=a$ (signifying "don't reallocate"). If $a > r$, the
+ *                 current allocation is excessive (we know $n < r$) so pull it
+ *                 back to redline, returning $b=r$.
+ *
+ *               - If $n > a$ then increase the current allocation by doubling, until
+ *                 it suffices. Cap it at the redline if necessary and don't allow
+ *                 doubling to overflow an integer. Now $b \leq r$ and $n \leq b <
+ *                 2n$.
+ *
+ *            If the caller wants to allow both growing and shrinking (for example,
+ *            supporting an object that has a <Resize()> but not a <Reuse()>), the idiom
+ *            is:
+ *
+ *               ```
+ *               if ( ( newalloc = esl_resize(n, obj->nalloc, obj->redline)) != a) {
+ *                 ESL_REALLOC(obj, ...);
+ *                 obj->nalloc = newalloc;
+ *               }
+ *               ```
+ *
+ *            If the caller only wants <Resize()> to grow, not shrink (because there's
+ *            a <Reuse()> to handle shrinking):
+ *
+ *               ```
+ *               if (n > obj->nalloc) {
+ *                  newalloc = esl_resize(n, obj->nalloc, obj->redline);
+ *                  ESL_REALLOC(obj, ...);
+ *                  obj->nalloc = newalloc;
+ *               }
+ *               ```
+ *
+ *            If the caller is a <Reuse()> that's only responsible for shrinking
+ *            allocations back to redline, pass $n=0$, so the allocation will only
+ *            change if $a>r$:
+ *
+ *               ```
+ *               if (( newalloc = esl_resize(0, obj->nalloc, obj->redline)) != a) {
+ *                  ESL_REALLOC(obj, ...);
+ *                  obj->nalloc = newalloc;
+ *               }
+ *               ```
+ *
+ *            Growing allocations exponentially (by doubling) minimizes the number of
+ *            expensive reallocation calls we have to make, when we're expecting to
+ *            reuse/reallocate a space a lot... either because we're growing it
+ *            dynamically (perhaps one unit at a time, like a list), or because we're
+ *            dynamically resizing it for each task in an iteration over different
+ *            tasks.
+ *
+ *            The "redline" tries to cap or at least minimize allocation size when it
+ *            would exceed <r>.  We're often in a situation where the allocations we
+ *            need for an iterated set of tasks have a long-tailed distribution -
+ *            sequence lengths, for example.  We may only need to occasionally make
+ *            excursions into very large allocations. Thus, it's advantageous to just
+ *            make a transient exceptional allocation of exactly enough size. In
+ *            Easel's idioms, the next <_Reuse()> or <_Resize()> call pulls an
+ *            exceptional allocation size back down to the redline.
+ *
+ *            The redline is only useful in the iterated-set-of-different-sized-tasks
+ *            use case. It's not useful in the grow-one-unit-each-step use case (over
+ *            redline, you'd start inefficiently making a reallocation at each step).
+ *            If you're in the grow-one-unit-each-step use case, you want to set the
+ *            redline to <INT_MAX>; or for convenience, if you pass <r=0>, this will
+ *            also turn the redline off (by setting it to INT_MAX internally).
+ *
+ *            The <n> argument is _inclusive_ of any constant additional allocation
+ *            that the caller needs for edge effects - for example, if caller has
+ *            <s=2> sentinels at positions 0 and m+1 of an array of elements 1..m, it
+ *            passes <n=m+s> as the argument to esl_resize.
+ *
+ * Args:      n  : requested allocation size (n >= 0)
+ *            a  : current allocation size   (a >= 0)
+ *            r  : redline limit (r >= 0; 0 means don't use a redline)
+ *
+ * Returns:   b, the suggested new allocation (b >= n and b >= 1)
+ */
+int
+esl_resize(int n, int a, int r)
+{
+  const int overflow_limit = INT_MAX / 2;
+
+  ESL_DASSERT1(( n >= 0 && a >= 0 && r >= 0));
+
+  if (r == 0) r = INT_MAX;     // r=0 allows caller to conveniently turn redline off
+  if (a == 0) a = 1;           // 0*=2 isn't going to go anywhere now is it?
+  
+  if (n >= r)   return n;      // this could be n < a (shrink), n=a (stay), or n > a (grow)
+
+  if (n <= a) {                // current allocation a suffices...
+    if (a <= r) return a;      //   ... and is below redline, so fine
+    else        return r;      //   ... but a>r, and r suffices, so shrink back to redline r
+  }
+  
+  while (a < n && a <= overflow_limit) a *= 2;   
+  if      (a < n) return r;      // Doublings of <a> didn't suffice, because n >= (INT_MAX/2) +1. We know r > n here; use r.
+  else if (a > r) return r;      // Cap the allocation at the redline. (Again, we already know r > n here.)
+
+  return a;                      // a has been successfully increased by doubling.
+}
+
+/* Function:  esl_free()
+ * Synopsis:  free(), while allowing ptr to be NULL.
+ * Incept:    SRE, Fri Nov  3 17:12:01 2017
+ *
+ * Purpose:   Easel uses a convention of initializing ptrs to be NULL
+ *            before allocating them. When cleaning up after errors, a
+ *            routine can check for non-NULL ptrs to know what to
+ *            free(). Easel code is slightly cleaner if we have a
+ *            free() that no-ops on NULL ptrs.
+ *
+ * OBSOLETE. C99 free() allows NULL already.
+ */
+void
+esl_free(void *p)
+{
+  if (p) free(p);
+}
+
 /* Function:  esl_Free2D()
  *
  * Purpose:   Free a 2D pointer array <p>, where first dimension is
@@ -310,6 +467,8 @@ esl_fatal(const char *format, ...)
  *            sparse arrays.
  *
  * Returns:   void.
+ *
+ * DEPRECATED. Replace with esl_arr2_Destroy()
  */
 void
 esl_Free2D(void **p, int dim1)
@@ -331,6 +490,8 @@ esl_Free2D(void **p, int dim1)
  *            pointers being NULL, to allow sparse arrays.
  *
  * Returns:   void.
+ *
+ * DEPRECATED. Replace with esl_arr3_Destroy()
  */
 void
 esl_Free3D(void ***p, int dim1, int dim2)
@@ -397,7 +558,7 @@ esl_Free3D(void ***p, int dim1, int dim2)
  *            <eslEWRITE> on write error.
  */
 int
-esl_banner(FILE *fp, char *progname, char *banner)
+esl_banner(FILE *fp, const char *progname, char *banner)
 {
   char *appname = NULL;
   int   status;
@@ -456,7 +617,7 @@ esl_banner(FILE *fp, char *progname, char *banner)
  *            <eslEWRITE> on write failure.
  */
 int
-esl_usage(FILE *fp, char *progname, char *usage)
+esl_usage(FILE *fp, const char *progname, char *usage)
 {
   char *appname = NULL;
   int   status;
@@ -548,7 +709,7 @@ esl_dataheader(FILE *fp, ...)
       s   = va_arg(ap, char *);
       len = strlen(s);
       if (len > width) {
-	if (col == 0) ESL_XEXCEPTION(eslEINVAL, "esl_dataheader(): first arg (%s) too wide for %d-char column ('# ' leader took 2 chars)", col, s, width+2);
+	if (col == 0) ESL_XEXCEPTION(eslEINVAL, "esl_dataheader(): first arg (%s) too wide for %d-char column ('# ' leader took 2 chars)", s, width);
 	else          ESL_XEXCEPTION(eslEINVAL, "esl_dataheader(): arg %d (%s) too wide for %d-char column", col, s, width);
       }
 
@@ -592,6 +753,7 @@ esl_dataheader(FILE *fp, ...)
 /******************************************************************************
  * 4. Replacements for C library functions
  *  fgets()   ->  esl_fgets()     fgets() with dynamic allocation
+ *  printf()  ->  esl_printf()    printf() wrapped in our exception handling
  *  strdup()  ->  esl_strdup()    strdup() is not ANSI
  *  strcat()  ->  esl_strcat()    strcat() with dynamic allocation
  *  strtok()  ->  esl_strtok()    threadsafe strtok()
@@ -692,6 +854,77 @@ esl_fgets(char **buf, int *n, FILE *fp)
   *n   = 0;
   return status;
 }
+
+
+/* Function:  esl_fprintf()
+ * Synopsis:  fprintf() wrapped in our exception handling
+ * Incept:    SRE, Thu Jun 14 09:43:59 2018 
+ *
+ * Purpose:   <fprintf()> wrapped in Easel exception handling. See
+ *            <esl_printf()> for rationale.
+ *
+ * Returns:   <eslOK> on success.
+ *
+ * Throws:    <eslEWRITE> on failure.
+ */
+int
+esl_fprintf(FILE *fp, const char *format, ...)
+{
+  if (fp && format)
+    {
+      va_list argp;
+      va_start(argp, format);
+      if ( vfprintf(fp, format, argp) < 0 ) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+      va_end(argp);
+    }
+  return eslOK;
+}
+
+
+
+/* Function:  esl_printf()
+ * Synopsis:  printf() wrapped in our exception handling
+ * Incept:    SRE, Thu Jun 14 09:17:17 2018 
+ *
+ * Purpose:   <printf()> wrapped in Easel exception handling. 
+ *
+ *            Rarely and insidiously, <printf()> can fail -- for
+ *            example, when output is redirected to a file and a disk
+ *            fills up. Every <printf()> needs to guard against this,
+ *            else output could silently fail. It seems slightly
+ *            cleaner to use Easel's idiomatic:
+ *
+ *            ```
+ *               if ((status = esl_printf(...)) != eslOK) return status; // no cleanup
+ *               if ((status = esl_printf(...)) != eslOK) goto ERROR;    // with cleanup
+ *            ```
+ *
+ *            as opposed to having to invoke
+ *            <ESL_EXCEPTION_SYS(eslEWRITE, "write failed")> each
+ *            time.
+ *
+ * Returns:   <eslOK> on success. 
+ *
+ * Throws:    <eslEWRITE> on failure.
+ */
+int
+esl_printf(const char *format, ...)
+{
+  if (format)
+    {
+      va_list argp;
+      va_start(argp, format);
+      if ( vprintf(format, argp) < 0 ) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
+      va_end(argp);
+    }
+  return eslOK;
+}
+
+
+
+
+
+
 
 /* Function: esl_strdup()
  *
@@ -1212,6 +1445,85 @@ esl_strcasecmp(const char *s1, const char *s2)
   return 0;  /* else, a case-insensitive match. */
 }
 #endif /* ! HAVE_STRCASECMP */
+
+
+#ifndef HAVE_STRSEP
+/* Function:  esl_strsep()
+ * Synopsis:  Separate strings.
+ * Incept:    Contributed by Sebastien Jaenick, July 2016.
+ *
+ * Purpose:   Portable replacement for strsep(). Solaris, for example,
+ *            does not have it.
+ *
+ *            Get next token from string *stringp, where tokens are
+ *            possibly-empty strings separated by characters from
+ *            delim.
+ *
+ *            Writes NULs into the string at *stringp to end tokens.
+ *            delim need not remain constant from call to call.  On
+ *            return, *stringp points past the last NUL written (if
+ *            there might be further tokens), or is NULL (if there are
+ *            definitely no more tokens).
+ *
+ *            If *stringp is NULL, strsep returns NULL.
+ *
+ * Note: 
+ *     Taken from FreeBSD, under BSD open source license:
+ *
+ *     Copyright (c) 1990, 1993
+ *     The Regents of the University of California.  All rights reserved.
+ *
+ *     Redistribution and use in source and binary forms, with or without
+ *     modification, are permitted provided that the following conditions
+ *     are met:
+ *     1. Redistributions of source code must retain the above copyright
+ *        notice, this list of conditions and the following disclaimer.
+ *     2. Redistributions in binary form must reproduce the above copyright
+ *        notice, this list of conditions and the following disclaimer in the
+ *        documentation and/or other materials provided with the distribution.
+ *     4. Neither the name of the University nor the names of its contributors
+ *        may be used to endorse or promote products derived from this software
+ *        without specific prior written permission.
+ *
+ *     THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ *     ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *     IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *     ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ *     FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ *     DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ *     OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ *     HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *     LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ *     OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ *     SUCH DAMAGE.
+ */
+char *
+esl_strsep(char **stringp, const char *delim)
+{
+  const char *spanp;
+  char       *s;
+  int         c, sc;
+  char       *tok;
+
+  if ((s = *stringp) == NULL)
+    return NULL;
+  for (tok = s;;) {
+    c = *s++;
+    spanp = delim;
+    do {
+      if ((sc = *spanp++) == c) {
+	if (c == 0)
+	  s = NULL;
+	else
+	  s[-1] = 0;
+	*stringp = s;
+	return tok;
+      }
+    } while (sc != 0);
+  }
+  /* NOTREACHED */
+}
+#endif
 /*------------- end, portable drop-in replacements --------------*/
 
 
@@ -1403,16 +1715,12 @@ esl_str_GetMaxWidth(char **s, int n)
  *
  * Purpose:   Returns TRUE if <filename> exists and is readable, else FALSE.
  *     
- * Note:      Testing a read-only fopen() is the only portable ANSI C     
- *            I'm aware of. We could also use a POSIX func here, since
- *            we have a ESL_POSIX_AUGMENTATION flag in the code.
- *            
  * Xref:      squid's FileExists().
  */
 int
 esl_FileExists(const char *filename)
 {
-#if defined _POSIX_VERSION
+#ifdef _POSIX_VERSION
   struct stat fileinfo;
   if (stat(filename, &fileinfo) != 0) return FALSE;
   if (! (fileinfo.st_mode & S_IRUSR)) return FALSE;
@@ -1880,7 +2188,7 @@ esl_tmpfile_named(char *basename6X, FILE **ret_fp)
 
   *ret_fp = NULL;
   old_mode = umask(077);
-  if ((fd = mkstemp(basename6X)) <  0)    return eslFAIL;
+  if ((fd = mkstemp(basename6X)) <  0)  return eslFAIL;
   umask(old_mode);
   if ((fp = fdopen(fd, "w+b")) == NULL) return eslFAIL;
 
@@ -1953,89 +2261,77 @@ esl_getcwd(char **ret_cwd)
  * 8. Typed comparison routines.
  *****************************************************************/
 
-/* Function:  esl_DCompare()
+/* Function:  esl_{DF}Compare()
+ * Synopsis:  Compare floating point values for approximate equality, better version.
+ * Incept:    SRE, Thu 19 Jul 2018 [Benasque]
  *
- * Purpose:   Compare two floating point scalars <a> and <b> for approximate equality.
- *            Return <eslOK> if equal, <eslFAIL> if not.
+ * Purpose:   Return <eslOK> if <x0> and <x> are approximately equal within
+ *            relative tolerance tolerance <r_tol> and absolute
+ *            tolerance <a_tol>;  <eslFAIL> if not.
  *            
- *            Equality is defined by being within a relative
- *            epsilon <tol>, as <2*fabs(a-b)/(a+b)> $\leq$ <tol>.
- *            Additionally, we catch the special cases where <a>
- *            and/or <b> are 0 or -0. If both are, return <eslOK>; if
- *            one is, check that the absolute value of the other is
- *            $\leq$ <tol>.
+ *            Equality is defined as $|x0-x| < |x0|*r_tol + a_tol$.
  *            
- *            <esl_DCompare()> and <esl_FCompare()> work on <double> and <float>
- *            scalars, respectively.
+ *            <x0> is the reference value: the true value or the
+ *            better estimate. For example, in an iterative
+ *            optimization, if you are comparing a new (better)
+ *            estimate $x_i$ to a previous (worse) estimate $x_{i-1}$,
+ *            <x0> is the new, <x> is the old.
+ *
+ *            Tolerances <r_tol> and <a_tol> must be $\geq 0$. For a
+ *            strictly relative tolerance test, use <a_tol=0>; for
+ *            strict absolute tolerance, use <r_tol=0>.
+ *            
+ *            "Approximate equality" in floating point math: here be
+ *            dragons. Usually you want to compare floating point
+ *            values by their relative difference <r_tol>. An <r_tol>
+ *            of $1e-5$ essentially means they agree up to their first
+ *            five digits, regardless of absolute magnitude. However,
+ *            relative difference fails for <x0 ~ 0>.  Using both
+ *            <r_tol> and <a_tol>, there is a switch at <|x0| = a_tol
+ *            / r_tol>: above this |x0|, <rtol> dominates, and below
+ *            it, <a_tol> does. You typically want <a_tol << r_tol>,
+ *            so the switchover only happens close to zero.
+ *            
+ *            In floating point math, the smallest possible |x0-x| is
+ *            on the order of |x0| times machine epsilon, where
+ *            <DBL_EPSILON> is 2.2e-16 and <FLT_EPSILON> is 1.2e-7, so
+ *            it does not make sense to set <a_tol> smaller than this.
+ *            (If you do, the function will require exact equality.)
+ *            
+ *            Special values follow IEEE754 floating point exact
+ *            comparison rules; <a_tol> and <r_tol> have no
+ *            effect. Any comparison involving <NaN> is
+ *            <eslFAIL>. Equal-signed infinities are <eslOK>:
+ *            <inf==inf>, <-inf==-inf>.
+
+ *            Note that <eslOK> has value 0, not TRUE, so you don't want to
+ *            write code like <if (esl_DCompare_old()) ...>; you want to
+ *            test explicitly against <eslOK>.
+ *
+ * Args:      x0    - reference value to compare against (either true, or better estimate)
+ *            x     - test value 
+ *            r_tol - relative tolerance
+ *            a_tol - absolute tolerance
+ *
+ * Returns:   <eslOK> if <x0> and <x> are approximately equal.
+ *            <eslFAIL> if not.
+ *
+ * Xref:      H5/116
  */
 int
-esl_DCompare(double a, double b, double tol)
+esl_DCompare(double x0, double x, double r_tol, double a_tol)
 {
-  if (isinf(a) && isinf(b))                 return eslOK;
-  if (isnan(a) && isnan(b))                 return eslOK;
-  if (!isfinite(a) || !isfinite(b))         return eslFAIL;
-  if (a == b)                               return eslOK;
-  if (fabs(a) == 0. && fabs(b) <= tol)      return eslOK;
-  if (fabs(b) == 0. && fabs(a) <= tol)      return eslOK;
-  if (2.*fabs(a-b) / fabs(a+b) <= tol)      return eslOK;
+  if (isfinite(x0)) { if (fabs(x0 - x) <= r_tol * fabs(x0) + a_tol) return eslOK; }
+  else              { if (x0 == x) return eslOK; }                                   // inf=inf, -inf=-inf;  -inf!=inf, NaN!=(inf,-inf,NaN)
   return eslFAIL;
 }
 int
-esl_FCompare(float a, float b, float tol)
-{ 
-  if (isinf(a) && isinf(b))                 return eslOK;
-  if (isnan(a) && isnan(b))                 return eslOK;
-  if (!isfinite(a) || !isfinite(b))         return eslFAIL;
-  if (a == b)                               return eslOK;
-  if (fabs(a) == 0. && fabs(b) <= tol)      return eslOK;
-  if (fabs(b) == 0. && fabs(a) <= tol)      return eslOK;
-  if (2.*fabs(a-b) / fabs(a+b) <= tol)      return eslOK;
-  return eslFAIL;
-}
-
-/* Function:  esl_DCompareAbs()
- *
- * Purpose:   Compare two floating point scalars <a> and <b> for
- *            approximate equality, by absolute difference.  Return
- *            <eslOK> if equal, <eslFAIL> if not.
- *            
- *            Equality is defined as <fabs(a-b) $\leq$ tol> for finite
- *            <a,b>; or <inf=inf>, <NaN=NaN> when either value is not
- *            finite.
- *            
- *            Generally it is preferable to compare floating point
- *            numbers for equality using relative difference: see
- *            <esl_{DF}Compare()>, and also Knuth's Seminumerical
- *            Algorithms. However, cases arise where absolute
- *            difference comparison is preferred. One such case is in
- *            comparing the log probability values of DP matrices,
- *            where numerical error tends to accumulate on an absolute
- *            scale, dependent more on the number of terms than on
- *            their magnitudes. DP cells with values that happen to be
- *            very close to zero can have high relative differences.
- */
-int
-esl_DCompareAbs(double a, double b, double tol)
+esl_FCompare(float x0, float x, float r_tol, float a_tol)
 {
-  if (isinf(a) && isinf(b))            return eslOK;
-  if (isnan(a) && isnan(b))            return eslOK;
-  if (!isfinite(a) || !isfinite(b))    return eslFAIL;
-  if (fabs(a-b) <= tol)                return eslOK;
+  if (isfinite(x0)) { if (fabs(x0 - x) <= r_tol * fabs(x0) + a_tol) return eslOK; }
+  else              { if (x0 == x) return eslOK; }                                   
   return eslFAIL;
 }
-int
-esl_FCompareAbs(float a, float b, float tol)
-{ 
-  if (isinf(a) && isinf(b))            return eslOK;
-  if (isnan(a) && isnan(b))            return eslOK;
-  if (!isfinite(a) || !isfinite(b))    return eslFAIL;
-  if (fabs(a-b) <= tol)                return eslOK;
-  return eslFAIL;
-}
-
-
-
-
 
 /* Function:  esl_CCompare()
  * Synopsis:  Compare two optional strings for equality.
@@ -2059,6 +2355,48 @@ esl_CCompare(char *s1, char *s2)
   return eslOK;
 }
 
+/* Function:  esl_{DF}Compare_old()
+ * OBSOLETE. Use esl_{DF}Compare() instead.
+ *
+ * Purpose:   Compare two floating point scalars <a> and <b> for approximate equality.
+ *            Return <eslOK> if equal, <eslFAIL> if not.
+ *            
+ *            Equality is defined by being within a relative
+ *            epsilon <tol>, as <2*fabs(a-b)/(a+b)> $\leq$ <tol>.
+ *            Additionally, we catch the special cases where <a>
+ *            and/or <b> are 0 or -0. If both are, return <eslOK>; if
+ *            one is, check that the absolute value of the other is
+ *            $\leq$ <tol>.
+ *            
+ *            <esl_DCompare_old()> and <esl_FCompare_old()> work on <double> and <float>
+ *            scalars, respectively.
+ */
+int
+esl_DCompare_old(double a, double b, double tol)
+{
+  if (isinf(a) && isinf(b))                 return eslOK;
+  if (isnan(a) && isnan(b))                 return eslOK;
+  if (!isfinite(a) || !isfinite(b))         return eslFAIL;
+  if (a == b)                               return eslOK;
+  if (fabs(a) == 0. && fabs(b) <= tol)      return eslOK;
+  if (fabs(b) == 0. && fabs(a) <= tol)      return eslOK;
+  if (2.*fabs(a-b) / fabs(a+b) <= tol)      return eslOK;
+  return eslFAIL;
+}
+int
+esl_FCompare_old(float a, float b, float tol)
+{ 
+  if (isinf(a) && isinf(b))                 return eslOK;
+  if (isnan(a) && isnan(b))                 return eslOK;
+  if (!isfinite(a) || !isfinite(b))         return eslFAIL;
+  if (a == b)                               return eslOK;
+  if (fabs(a) == 0. && fabs(b) <= tol)      return eslOK;
+  if (fabs(b) == 0. && fabs(a) <= tol)      return eslOK;
+  if (2.*fabs(a-b) / fabs(a+b) <= tol)      return eslOK;
+  return eslFAIL;
+}
+
+
 
 /*-------------- end, typed comparison routines --------------------*/
 
@@ -2072,6 +2410,45 @@ esl_CCompare(char *s1, char *s2)
  * 9. Unit tests.
  *****************************************************************/
 #ifdef eslEASEL_TESTDRIVE
+
+#include "esl_random.h"
+
+static void
+utest_resize(ESL_RANDOMNESS *rng)
+{
+  char msg[]  = "esl_resize unit test failed";
+  int ntrials = 100;
+  int i;
+  int a,n,r,b;
+
+  for (i = 0; i < ntrials; i++)
+    {
+      if (esl_rnd_Roll(rng, 2)) { n = esl_rnd_Roll(rng, INT_MAX); a = esl_rnd_Roll(rng, INT_MAX); r = esl_rnd_Roll(rng, INT_MAX); }
+      else                      { n = esl_rnd_Roll(rng, 8);       a = esl_rnd_Roll(rng, 8);       r = esl_rnd_Roll(rng, 8);       }
+
+      b = esl_resize(n,a,r);
+
+      if (r == 0) r = INT_MAX;  // that's the calling convention used by esl_resize
+
+      if (n > a)                                           // if we need to reallocate to fit n...
+        {
+          if (b < n)                      esl_fatal(msg);  // new allocation b is always sufficient to hold n 
+          if (n <= r) {                                    // if requested n is under redline...
+            if (b > r)                    esl_fatal(msg);  //     ... new allocation b cannot exceed redline
+            if (n < INT_MAX/2 && b > 2*n) esl_fatal(msg);  //     ... and it won't be more than 2x overallocated
+          } else {
+            if (b != n) esl_fatal(msg);                    // if requested n is over redline, then it is exactly allocated, not overallocated
+          }
+        }
+      else
+        {                                                 // existing allocation a suffices...
+          if (a > r  && n <= r && b != r) esl_fatal(msg);  // if r suffices too, and a is over redline r, shrink allocation back to r
+          if (a > r  && n >  r && b != n) esl_fatal(msg);  // if r doesn't suffice, only shrink back to n
+          if (a <= r && a == 0 && b != 1) esl_fatal(msg);  // even for n=0 a=0, where a zero allocation "suffices", return 1 to avoid zero allocation
+          if (a <= r && a > 0  && b != a) esl_fatal(msg);  // normal case where a suffices and is under redline; don't change allocation.
+        }
+    }
+}
 
 static void
 utest_IsInteger(void)
@@ -2184,7 +2561,6 @@ utest_strtok(void)
   if (*s != '\0')                                                    esl_fatal(msg);
 
   free(teststring);
-  return;
 }
   
 static void
@@ -2233,7 +2609,6 @@ utest_FileExists(void)
 
   remove(tmpfile);
   if (esl_FileExists(tmpfile))   esl_fatal(msg);
-  return;
 }
 
 static void
@@ -2252,8 +2627,49 @@ utest_tmpfile_named(void)
   if (strcmp(buf, "Unit test.\n")  != 0)     esl_fatal(msg);
   fclose(fp);
   remove(tmpfile);
-  return;
 }
+
+static void
+utest_compares(void)
+{
+  char msg[] = "easel utest_compares failed";
+
+  if (esl_DCompare(-eslINFINITY, eslINFINITY,   1e-12, 1e-16) != eslFAIL) esl_fatal(msg);   // -inf != inf
+  if (esl_DCompare(eslINFINITY,  eslINFINITY,   1e-12, 1e-16) != eslOK)   esl_fatal(msg);   // inf = inf,  even though rel and abs diff = inf!
+  if (esl_DCompare(-eslINFINITY,-eslINFINITY,   1e-12, 1e-16) != eslOK)   esl_fatal(msg);   
+  if (esl_DCompare(eslNaN,       eslNaN,        1e-12, 1e-16) != eslFAIL) esl_fatal(msg);   // NaN fails in any comparison 
+  if (esl_DCompare(0.,           eslNaN,        1e-12, 1e-16) != eslFAIL) esl_fatal(msg);   
+  if (esl_DCompare(eslNaN,       0.,            1e-12, 1e-16) != eslFAIL) esl_fatal(msg);
+  if (esl_DCompare(0.,           1e-17,         1e-12, 1e-16) != eslOK)   esl_fatal(msg);
+
+  /* exact comparisons with zero tolerance: eslOK unless a NaN is involved */
+  if (esl_DCompare(0.,            0.0,            0.0,   0.0) != eslOK)   esl_fatal(msg);  
+  if (esl_DCompare(eslINFINITY,   eslINFINITY,    0.0,   0.0) != eslOK)   esl_fatal(msg);  
+  if (esl_DCompare(-eslINFINITY, -eslINFINITY,    0.0,   0.0) != eslOK)   esl_fatal(msg);  
+  if (esl_DCompare(eslNaN,        eslNaN,         0.0,   0.0) != eslFAIL) esl_fatal(msg);  
+
+  /* float versions */
+  if (esl_FCompare(-eslINFINITY, eslINFINITY,    1e-6, 1e-10) != eslFAIL) esl_fatal(msg);   
+  if (esl_FCompare(eslINFINITY,  eslINFINITY,    1e-6, 1e-10) != eslOK)   esl_fatal(msg);   
+  if (esl_FCompare(-eslINFINITY,-eslINFINITY,    1e-6, 1e-10) != eslOK)   esl_fatal(msg);   
+  if (esl_FCompare(eslNaN,       eslNaN,         1e-6, 1e-10) != eslFAIL) esl_fatal(msg);   
+  if (esl_FCompare(0.,           eslNaN,         1e-6, 1e-10) != eslFAIL) esl_fatal(msg);   
+  if (esl_FCompare(eslNaN,       0.,             1e-6, 1e-10) != eslFAIL) esl_fatal(msg);
+  if (esl_FCompare(0.,           1e-11,          1e-6, 1e-10) != eslOK)   esl_fatal(msg);
+
+  if (esl_FCompare(0.,            0.0,            0.0,   0.0) != eslOK)   esl_fatal(msg);  
+  if (esl_FCompare(eslINFINITY,   eslINFINITY,    0.0,   0.0) != eslOK)   esl_fatal(msg);  
+  if (esl_FCompare(-eslINFINITY, -eslINFINITY,    0.0,   0.0) != eslOK)   esl_fatal(msg);  
+  if (esl_FCompare(eslNaN,        eslNaN,         0.0,   0.0) != eslFAIL) esl_fatal(msg);  
+
+  // if (esl_DCompare_old(-eslINFINITY, eslINFINITY, 1e-5) != eslFAIL) esl_fatal(msg);   /* -inf != inf */
+  // if (esl_DCompare_old(eslNaN, eslNaN, 1e-5) != eslFAIL) esl_fatal(msg);              /* NaN fails in any comparison */
+  if (esl_DCompare_old(0.,           eslNaN,        1e-12) != eslFAIL) esl_fatal(msg);
+  if (esl_DCompare_old(eslNaN,       0.,            1e-12) != eslFAIL) esl_fatal(msg);
+  //  if (esl_DCompare_old(eslINFINITY,  eslINFINITY,   1e-12) != eslFAIL) esl_fatal(msg);  
+}
+
+
 
 #endif /*eslEASEL_TESTDRIVE*/
 
@@ -2263,17 +2679,34 @@ utest_tmpfile_named(void)
  *****************************************************************/
 
 #ifdef eslEASEL_TESTDRIVE
-/* gcc -g -Wall -o easel_utest -I. -L. -DeslEASEL_TESTDRIVE easel.c -leasel -lm
- * ./easel_utest
- */
-#include "easel.h"
 
-int main(void)
+#include "easel.h"
+#include "esl_getopts.h"
+#include "esl_random.h"
+
+static ESL_OPTIONS options[] = {
+  /* name           type      default  env  range toggles reqs incomp  help                             docgroup*/
+  { "-h",  eslARG_NONE,   FALSE,  NULL, NULL,  NULL,  NULL, NULL, "show brief help on version and usage",    0 },
+  { "-s",  eslARG_INT,      "0",  NULL, NULL,  NULL,  NULL, NULL, "set random number seed to <n>",           0 },
+  {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+};
+static char usage[]  = "[-options]";
+static char banner[] = "test driver for easel module";
+
+int
+main(int argc, char **argv)
 {
+  ESL_GETOPTS    *go   = esl_getopts_CreateDefaultApp(options, 0, argc, argv, banner, usage);
+  ESL_RANDOMNESS *rng  = esl_randomness_Create(esl_opt_GetInteger(go, "-s"));
+
+  fprintf(stderr, "## %s\n", argv[0]);
+  fprintf(stderr, "#  rng seed = %" PRIu32 "\n", esl_randomness_GetSeed(rng));
+
 #ifdef eslTEST_THROWING
   esl_exception_SetHandler(&esl_nonfatal_handler);
 #endif
-
+  
+  utest_resize(rng);
   utest_IsInteger();
   utest_IsReal();
   utest_strmapcat();
@@ -2281,6 +2714,12 @@ int main(void)
   utest_sprintf();
   utest_FileExists();
   utest_tmpfile_named();
+  utest_compares();
+  
+  fprintf(stderr, "#  status = ok\n");
+
+  esl_randomness_Destroy(rng);
+  esl_getopts_Destroy(go);
   return eslOK;
 }
 #endif /*eslEASEL_TESTDRIVE*/
@@ -2308,7 +2747,7 @@ int main(void)
   esl_tmpfile(tmpfile1, &fp);
   fprintf(fp, "Hello world!\n");
   rewind(fp);
-  fgets(buf, 256, fp);
+  if (fgets(buf, 256, fp) == NULL) esl_fatal("bad fread()");
   printf("first temp file says: %s\n", buf);
   fclose(fp);
 
@@ -2319,7 +2758,7 @@ int main(void)
   fclose(fp);		/* tmpfile2 now exists on disk and can be closed/reopened */
 
   fp = fopen(tmpfile2, "r");
-  fgets(buf, 256, fp);
+  if (fgets(buf, 256, fp) == NULL) esl_fatal("bad fread()");
   printf("second temp file says: %s\n", buf);
   fclose(fp);
   remove(tmpfile2);	/* disk file cleanup necessary with this version. */
@@ -2330,9 +2769,3 @@ int main(void)
 #endif /*eslEASEL_EXAMPLE*/
 
 
-/*****************************************************************
- * @LICENSE@
- * 
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/  

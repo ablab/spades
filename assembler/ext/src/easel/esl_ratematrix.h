@@ -1,11 +1,10 @@
 /* Routines for manipulating evolutionary rate matrices.
  * 
  * SRE, Tue Jul 13 16:09:05 2004 [St. Louis]
- * SVN $Id$
- * SVN $URL$
  */
 #ifndef eslRATEMATRIX_INCLUDED
 #define eslRATEMATRIX_INCLUDED
+#include "esl_config.h"
 
 /* 1. Setting standard rate matrix models. */
 extern int esl_rmx_SetWAG(ESL_DMATRIX *Q, double *pi); 
@@ -26,6 +25,4 @@ extern double esl_rmx_ExpectedScore  (ESL_DMATRIX *P, double *pi);
 
 
 #endif /*eslRATEMATRIX_INCLUDED*/
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
+

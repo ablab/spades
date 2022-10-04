@@ -1,7 +1,6 @@
 /* Fetch an HMM from an HMM database (such as Pfam)
  * 
  * SRE, Mon Jun 18 09:30:06 2007 [Janelia]
- * SVN $Id$
  */
 #include "esl_config.h"
 

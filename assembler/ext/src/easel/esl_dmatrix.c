@@ -15,7 +15,6 @@
  *   9. Unit tests
  *  10. Test driver
  *  11. Examples
- *  12. Copyright and license 
  *
  * To do:
  *   - eventually probably want additional matrix types
@@ -233,7 +232,7 @@ esl_dmatrix_Clone(const ESL_DMATRIX *A)
 /* Function:  esl_dmatrix_Compare()
  *
  * Purpose:   Compares matrix <A> to matrix <B> element by element,
- *            using <esl_DCompare()> on each cognate element pair,
+ *            using <esl_DCompare_old()> on each cognate element pair,
  *            with relative equality defined by a fractional tolerance
  *            <tol>.  If all elements are equal, return <eslOK>; if
  *            any elements differ, return <eslFAIL>.
@@ -255,7 +254,7 @@ esl_dmatrix_Compare(const ESL_DMATRIX *A, const ESL_DMATRIX *B, double tol)
   if (A->type == B->type) 
     {  /* simple case. */
       for (c = 0; c < A->ncells; c++) /* can deal w/ packed or unpacked storage */
-	if (esl_DCompare(A->mx[0][c], B->mx[0][c], tol) == eslFAIL) return eslFAIL;
+	if (esl_DCompare_old(A->mx[0][c], B->mx[0][c], tol) == eslFAIL) return eslFAIL;
     }
   else 
     { /* comparing matrices of different types */
@@ -268,7 +267,7 @@ esl_dmatrix_Compare(const ESL_DMATRIX *A, const ESL_DMATRIX *B, double tol)
 	    if (B->type == eslUPPER && i > j) x2 = 0.;
 	    else                              x2 = B->mx[i][j];
 
-	    if (esl_DCompare(x1, x2, tol) == eslFAIL) return eslFAIL;
+	    if (esl_DCompare_old(x1, x2, tol) == eslFAIL) return eslFAIL;
 	  }
     }
   return eslOK;
@@ -278,7 +277,7 @@ esl_dmatrix_Compare(const ESL_DMATRIX *A, const ESL_DMATRIX *B, double tol)
 /* Function:  esl_dmatrix_CompareAbs()
  *
  * Purpose:   Compares matrix <A> to matrix <B> element by element,
- *            using <esl_DCompareAbs()> on each cognate element pair,
+ *            using <esl_DCompare()> on each cognate element pair,
  *            with absolute equality defined by a absolute difference tolerance
  *            <tol>.  If all elements are equal, return <eslOK>; if
  *            any elements differ, return <eslFAIL>.
@@ -300,7 +299,7 @@ esl_dmatrix_CompareAbs(const ESL_DMATRIX *A, const ESL_DMATRIX *B, double tol)
   if (A->type == B->type) 
     {  /* simple case. */
       for (c = 0; c < A->ncells; c++) /* can deal w/ packed or unpacked storage */
-	if (esl_DCompareAbs(A->mx[0][c], B->mx[0][c], tol) == eslFAIL) return eslFAIL;
+	if (esl_DCompare(A->mx[0][c], B->mx[0][c], /*rtol=*/ 0.0, tol) == eslFAIL) return eslFAIL;
     }
   else 
     { /* comparing matrices of different types */
@@ -313,7 +312,7 @@ esl_dmatrix_CompareAbs(const ESL_DMATRIX *A, const ESL_DMATRIX *B, double tol)
 	    if (B->type == eslUPPER && i > j) x2 = 0.;
 	    else                              x2 = B->mx[i][j];
 
-	    if (esl_DCompareAbs(x1, x2, tol) == eslFAIL) return eslFAIL;
+	    if (esl_DCompare(x1, x2, /*rtol=*/0.0, tol) == eslFAIL) return eslFAIL;
 	  }
     }
   return eslOK;
@@ -1585,9 +1584,4 @@ int main(void)
 
 
 
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
+

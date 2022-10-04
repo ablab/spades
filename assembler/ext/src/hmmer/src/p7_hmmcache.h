@@ -22,9 +22,3 @@ extern void   p7_hmmcache_Close          (P7_HMMCACHE *cache);
 
 #endif /*P7_HMMCACHE_INCLUDED*/
 
-/*****************************************************************
- * @LICENSE@
- * 
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/

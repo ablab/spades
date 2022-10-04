@@ -2,15 +2,24 @@
  */
 #ifndef eslDSQDATA_INCLUDED
 #define eslDSQDATA_INCLUDED
-
-#include "easel.h"
-#include "esl_alphabet.h"
-#include "esl_sqio.h"
+#include "esl_config.h"
 
 #include <stdio.h>
 #include <stdint.h>
 #include <pthread.h>
 
+#include "easel.h"
+#include "esl_alphabet.h"
+#include "esl_sqio.h"
+#ifdef __cplusplus // magic to make C++ compilers happy
+extern "C" {
+#endif
+/* Defaults for control parameters
+ */
+#define eslDSQDATA_CHUNK_MAXSEQ       4096      // max number of sequences in a chunk
+#define eslDSQDATA_CHUNK_MAXPACKET  262144      // max number of uint32 sequence packets in a chunk (1MiB chunks)
+#define eslDSQDATA_UNPACKERS             4      // default number of unpacker threads
+#define eslDSQDATA_UMAX                  4      // max number of unpacker threads (compile-time)
 
 
 /* ESL_DSQDATA_CHUNK
@@ -28,7 +37,7 @@ typedef struct esl_dsqdata_chunk_s {
   int64_t  *L;            // Sequence lengths, in residues. The unpacker figures these out.
 
   /* Memory management */
-  char     *smem;         // Unpacked (dsq[]) and packed (psq) data ptrs share this allocation.
+  unsigned char *smem;    // Unpacked (dsq[]) and packed (psq) data ptrs share this allocation. [can't be void; we do arithmetic on it]
   uint32_t *psq;          // Pointer into smem; packed data fread()'s go here.
   int       pn;           // how many uint32's are loaded in <psq>
   char     *metadata;     // Raw fread() buffer of all name/acc/desc/taxid data.
@@ -82,45 +91,47 @@ typedef struct esl_dsqdata_s {
   int          pack5;           // TRUE if we're using all 5bit packing; FALSE for mixed 2+5bit
 
   /* Managing the reader's threaded producer/consumer pipeline:
-   * consisting of 1 loader thread and 1 unpacker thread that we manage,
-   * and <nconsumers> consumer threads that caller created to get
-   * successive chunks with esl_dsqdata_Read().
+   * consisting of 1 loader thread and <n_unpackers> unpacker threads
+   * that we manage, and <nconsumers> consumer threads that caller
+   * created to get successive chunks with esl_dsqdata_Read().
    */
-  int                nconsumers;               // Caller's reading with this # of readers
+  int                nconsumers;                     // caller told us the reader is being used by this many consumer threads
+  int                n_unpackers;                    // number of unpacker threads
 
-  pthread_t          loader_t;                 // Loader thread id
-  ESL_DSQDATA_CHUNK *loader_outbox;            // A loaded chunk goes here, for unpacker
-  pthread_mutex_t    loader_outbox_mutex;      // mutex protecting the outbox
-  pthread_cond_t     loader_outbox_full_cv;    // signal to unpacker that next chunk is ready
-  pthread_cond_t     loader_outbox_empty_cv;   // signal from unpacker that it's got the chunk
+  ESL_DSQDATA_CHUNK *inbox[eslDSQDATA_UMAX];         // unpacker input slots
+  pthread_mutex_t    inbox_mutex[eslDSQDATA_UMAX];   // mutexes protecting the inboxes
+  pthread_cond_t     inbox_cv[eslDSQDATA_UMAX];      // signal that state of inbox[u] has changed
+  int                inbox_eod[eslDSQDATA_UMAX];     // flag that inbox[u] is in EOD state
 
-  pthread_t          unpacker_t;               // Unpacker thread id
-  ESL_DSQDATA_CHUNK *unpacker_outbox;          // Unpacked chunk goes here, for _Read() 
-  pthread_mutex_t    unpacker_outbox_mutex;    // mutex protecting the outbox
-  pthread_cond_t     unpacker_outbox_full_cv;  // signal to _Read() that chunk is ready (or at_eof)
-  pthread_cond_t     unpacker_outbox_empty_cv; // signal from _Read() that it's got the chunk
-  int                at_eof;                   // flag that goes up at end of the input file; 
-                                               //  .. <at_eof> change is in unpacker's mutex
-  ESL_DSQDATA_CHUNK *recycling;                // Linked list of chunk memory for reuse
-  pthread_mutex_t    recycling_mutex;          // mutex protecting the recycling list
-  pthread_cond_t     recycling_cv;             // signal to loader that a chunk is available
+  ESL_DSQDATA_CHUNK *outbox[eslDSQDATA_UMAX];        // unpacker output slots
+  pthread_mutex_t    outbox_mutex[eslDSQDATA_UMAX];  // mutexes protecting the outboxes
+  pthread_cond_t     outbox_cv[eslDSQDATA_UMAX];     // signal that state of outbox[u] has changed
+  int                outbox_eod[eslDSQDATA_UMAX];    // flag that outbox[u] is in EOD state
 
-  /* Error handling.
-   * Pthread variables don't define a value for "unset", so for pristine cleanup after
-   * errors, we must use separate booleans to track which thread resources are  created.
+  int64_t            nchunk;                         // # of chunks read so far; shared across consumers
+  pthread_mutex_t    nchunk_mutex;                   // mutex protecting access to <nchunk> from other consumers
+
+  ESL_DSQDATA_CHUNK *recycling;                      // linked list of chunk memory for reuse
+  pthread_mutex_t    recycling_mutex;                // mutex protecting the recycling list
+  pthread_cond_t     recycling_cv;                   // signal to loader that a chunk is available
+
+  /* _Open() starts threads while it's still initializing.
+   * To be sure that initialization is complete before threads start their work,
+   * we use a condition variable to send a signal.
    */
-  int  lt_c;  int lom_c;  int lof_c;  int loe_c;
-  int  ut_c;  int uom_c;  int uof_c;  int uoe_c;
-  int  rm_c;  int r_c;
+  int                go;            // TRUE when _Open() completes thread initialization.
+  pthread_mutex_t    go_mutex;      //   
+  pthread_cond_t     go_cv;         // Used to signal worker threads that DSQDATA structure is ready.
+
+  pthread_t          loader_t;                       // loader thread id
+  pthread_t          unpacker_t[eslDSQDATA_UMAX];    // unpacker thread ids
+
   char errbuf[eslERRBUFSIZE];   // User-directed error message in case of a failed open or read.
 } ESL_DSQDATA;  
   
 
 
-/* Defaults for size of eslDSQDATA_CHUNK 
- */
-#define eslDSQDATA_CHUNK_MAXSEQ       4096      // max number of sequences
-#define eslDSQDATA_CHUNK_MAXPACKET  262144      // max number of uint32 sequence packets 
+
 
 /* Reading the control bits on a packet v
  */
@@ -137,5 +148,7 @@ extern int  esl_dsqdata_Recycle(ESL_DSQDATA *dd, ESL_DSQDATA_CHUNK *chu);
 extern int  esl_dsqdata_Close  (ESL_DSQDATA *dd);
 
 extern int  esl_dsqdata_Write  (ESL_SQFILE *sqfp, char *basename, char *errbuf);
-
+#ifdef __cplusplus // magic to make C++ compilers happy
+}
+#endif
 #endif /*eslDSQDATA_INCLUDED*/

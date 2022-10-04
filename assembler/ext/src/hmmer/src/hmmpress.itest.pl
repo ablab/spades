@@ -5,8 +5,14 @@
 # Usage:   ./hmmpress.itest.pl <hmmpress binary> <hmmfile> <tmpfile prefix>
 # Example: ./hmmpress.itest.pl ./hmmpress ../testsuite/minifam.hmm foo
 #
+# The testsuite creates and presses minifam.hmm. 
+# If you need to do it yourself:
+#   cd testsuite
+#   ../src/hmmbuild minifam.hmm minifam
+#   ../src/hmmpress minifam.hmm
+# 
 # SRE, Thu Nov 12 08:47:56 2009 [Janelia]
-# SVN $Id$
+
 
 $hmmpress = shift;		# The hmmpress executable. example: "./hmmpress"
 $minifam  = shift;		# An HMM database.         example: "../testsuite/minifam.hmm"
@@ -35,8 +41,8 @@ if ($1 != $nmodels)                              { die "unexpected number of mod
 # Try to press it again. 
 # This should issue a normal warning that the files already exist.
 $output = `$hmmpress $tmppfx.hmm 2>&1`;
-if ( ($? >> 8) != 1)                            { die "expected exit code 1 from hmmpress"; }
-if ($output !~ /Error:.+is already pressed/)    { die "second press should have failed"; }
+if ( ($? >> 8) != 1)                           { die "expected exit code 1 from hmmpress"; }
+if ($output !~ /SSI index.+already exists/)    { die "second press should have failed"; }
 
 # Press it again with -f
 # Bug #h65 was here.

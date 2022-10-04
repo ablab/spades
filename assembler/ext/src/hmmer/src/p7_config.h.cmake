@@ -24,10 +24,19 @@
  *****************************************************************/
 
 /* p7_RAMLIMIT controls the switch from fast full DP to slow
- * linear-memory divide and conquer. Default devotes 32 MB/thread.
+ *             linear-memory divide and conquer. Default devotes 32
+ *             MB/thread.
  */
 #ifndef p7_RAMLIMIT
 #define p7_RAMLIMIT   32
+#endif
+
+/* p7_NCPU sets the default number of CPU cores (worker threads)
+ *         used by multithreaded programs. Must be quoted, because
+ *         it's used to set default options.
+ */
+#ifndef p7_NCPU
+#define p7_NCPU  "2"
 #endif
 
 /* p7_ALILENGTH controls length of displayed alignment lines.
@@ -102,11 +111,11 @@
 #cmakedefine _LARGEFILE_SOURCE
 
 /* Choice of optimized implementation (one and only one must be set)
+ * These are also identically defined in Easel esl_config.h.in
  */
-#cmakedefine p7_IMPL_SSE
-#cmakedefine p7_IMPL_VMX
-#cmakedefine p7_IMPL_DUMMY
-
+#cmakedefine eslENABLE_NEON
+#cmakedefine eslENABLE_SSE
+#cmakedefine eslENABLE_VMX
 
 /* System headers
  */
@@ -116,22 +125,12 @@
 
 /* Optional parallel implementations
  */
-#cmakedefine HAVE_SSE2
-#cmakedefine HAVE_MPI
-#cmakedefine HMMER_PVM
+#cmakedefine HMMER_MPI
 #cmakedefine HMMER_THREADS
-#cmakedefine HAVE_PTHREAD_ATTR_SETSCOPE
-#cmakedefine HAVE_PTHREAD_SETCONCURRENCY
 
 /* Optional processor specific support
  */
 #cmakedefine HAVE_FLUSH_ZERO_MODE
 
-/* Debugging hooks
- */
-#cmakedefine p7_DEBUGGING
-
 #endif /*P7_CONFIGH_INCLUDED*/
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
+

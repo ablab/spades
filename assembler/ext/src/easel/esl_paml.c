@@ -1,10 +1,7 @@
 /* PAML interface.
  * 
- *   "Phylogenetic Analysis by Maximum Likelihood"
- *   Ziheng Yang
+ *   Ziheng Yang, "Phylogenetic Analysis by Maximum Likelihood"  [Yang97]
  *   http://abacus.gene.ucl.ac.uk/software/paml.html
- *   [Yang97]
- * 
  */
 #include "esl_config.h"
 
@@ -174,11 +171,4 @@ main(int argc, char **argv)
 }
 
 #endif /*eslPAML_UTILITY1*/
-
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
 

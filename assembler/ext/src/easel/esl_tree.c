@@ -9,7 +9,6 @@
  *   6. Unit tests.
  *   7. Test driver.
  *   8. Examples.
- *   9. Copyright notice and license.
  */
 #include "esl_config.h"
 
@@ -19,11 +18,13 @@
 #include <assert.h>
 
 #include "easel.h"
-#include "esl_tree.h"
+#include "esl_arr2.h"
 #include "esl_dmatrix.h"
+#include "esl_random.h"
 #include "esl_stack.h"
 #include "esl_vectorops.h"
-#include "esl_random.h"
+
+#include "esl_tree.h"
 
 /*****************************************************************
  *# 1. The ESL_TREE object.
@@ -340,7 +341,7 @@ esl_tree_SetTaxonlabels(ESL_TREE *T, char **names)
   int i;
   int status;
   
-  if (T->taxonlabel != NULL) esl_Free2D((void **) T->taxonlabel, T->N);
+  if (T->taxonlabel != NULL) esl_arr2_Destroy((void **) T->taxonlabel, T->N);
   ESL_ALLOC(T->taxonlabel, sizeof(char *) * T->nalloc);
   for (i = 0; i < T->nalloc; i++) T->taxonlabel[i] = NULL;
 
@@ -360,7 +361,7 @@ esl_tree_SetTaxonlabels(ESL_TREE *T, char **names)
   return eslOK;
 
  ERROR:
-  if (T->taxonlabel != NULL) esl_Free2D((void **) T->taxonlabel, T->nalloc);
+  if (T->taxonlabel != NULL) esl_arr2_Destroy((void **) T->taxonlabel, T->nalloc);
   return status;
 }
 
@@ -502,7 +503,7 @@ esl_tree_VerifyUltrametric(ESL_TREE *T)
   /* In an ultrametric tree, all those distances must be equal.
    */
   for (i = 1; i < T->N; i++)
-    if ((status = esl_DCompare(d[0], d[i], 0.0001)) != eslOK) break;
+    if ((status = esl_DCompare_old(d[0], d[i], 0.0001)) != eslOK) break;
 
   free(d);
   return status;
@@ -614,15 +615,16 @@ esl_tree_Destroy(ESL_TREE *T)
 {
   if (T == NULL) return;
 
-  if (T->parent     != NULL) free(T->parent);
-  if (T->left       != NULL) free(T->left);
-  if (T->right      != NULL) free(T->right);
-  if (T->ld         != NULL) free(T->ld);
-  if (T->rd         != NULL) free(T->rd);
-  if (T->taxaparent != NULL) free(T->taxaparent);
-  if (T->cladesize  != NULL) free(T->cladesize);
-  if (T->taxonlabel != NULL) esl_Free2D((void **) T->taxonlabel, T->nalloc);
-  if (T->nodelabel  != NULL) esl_Free2D((void **) T->nodelabel,  T->nalloc-1);
+  esl_free(T->parent);
+  esl_free(T->left);
+  esl_free(T->right);
+  esl_free(T->ld);
+  esl_free(T->rd);
+  esl_free(T->taxaparent);
+  esl_free(T->cladesize);
+
+  esl_arr2_Destroy((void **) T->taxonlabel, T->nalloc);
+  esl_arr2_Destroy((void **) T->nodelabel,  T->nalloc-1);
   free(T);
   return;
 }
@@ -1590,6 +1592,7 @@ cluster_engine(ESL_DMATRIX *D_original, int mode, ESL_TREE **ret_T)
   ESL_DASSERT1((D_original != NULL));               /* matrix exists      */
   ESL_DASSERT1((D_original->n == D_original->m));   /* D is NxN square    */
   ESL_DASSERT1((D_original->n >= 2));               /* >= 2 taxa          */
+
 #if (eslDEBUGLEVEL >=1)
   for (i = 0; i < D_original->n; i++) {
     assert(D_original->mx[i][i] == 0.);	           /* self-self d = 0    */
@@ -2183,9 +2186,3 @@ int main(int argc, char **argv)
 }
 /*::cexcerpt::tree_example2::end::*/
 #endif /*eslTREE_EXAMPLE*/
-
-
-
-/*****************************************************************  
- * @LICENSE@
- *****************************************************************/

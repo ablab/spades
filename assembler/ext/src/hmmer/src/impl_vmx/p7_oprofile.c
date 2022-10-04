@@ -10,10 +10,8 @@
  *   6. Unit tests.
  *   7. Test driver.
  *   8. Example.
- *   9. Copyright and license information.
  *
  * SRE, Wed Jul 30 11:00:04 2008 [Janelia]
- * SVN $Id$
  */
 #include "p7_config.h"
 
@@ -1709,7 +1707,7 @@ p7_oprofile_Sample(ESL_RANDOMNESS *r, const ESL_ALPHABET *abc, const P7_BG *bg, 
  *            or <eslFAIL> if not.
  *
  *            Floating point comparisons are done to a tolerance
- *            of <tol> using <esl_FCompare()>.
+ *            of <tol> using <esl_FCompare_old()>.
  *
  *            If a comparison fails, an informative error message is
  *            left in <errmsg> to indicate why.
@@ -1719,7 +1717,7 @@ p7_oprofile_Sample(ESL_RANDOMNESS *r, const ESL_ALPHABET *abc, const P7_BG *bg, 
  *
  * Args:      om1    - one optimized profile to compare
  *            om2    - the other
- *            tol    - floating point comparison tolerance; see <esl_FCompare()>
+ *            tol    - floating point comparison tolerance; see <esl_FCompare_old()>
  *            errmsg - ptr to array of at least <eslERRBUFSIZE> characters.
  *
  * Returns:   <eslOK> on effective equality;  <eslFAIL> on difference.
@@ -1781,7 +1779,7 @@ p7_oprofile_Compare(const P7_OPROFILE *om1, const P7_OPROFILE *om2, float tol, c
     for (q = 0; q < Q4; q++)
       {
 	a4.v = om1->rfv[x][q]; b4.v = om2->rfv[x][q];
-	for (r = 0; r < 4; r++) if (esl_FCompare(a4.x[r], b4.x[r], tol) != eslOK)  ESL_FAIL(eslFAIL, errmsg, "comparison failed: rf[%d] elem %d", q, r);
+	for (r = 0; r < 4; r++) if (esl_FCompare_old(a4.x[r], b4.x[r], tol) != eslOK)  ESL_FAIL(eslFAIL, errmsg, "comparison failed: rf[%d] elem %d", q, r);
       }
   for (q = 0; q < 8*Q4; q++)
     {
@@ -2087,7 +2085,3 @@ main(int argc, char **argv)
 /*----------------------- end, example --------------------------*/
 
 
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

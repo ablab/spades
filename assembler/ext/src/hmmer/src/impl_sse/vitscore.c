@@ -17,10 +17,8 @@
  *   3. Unit tests.
  *   4. Test driver.
  *   5. Example.
- *   6. Copyright and license information.
  *   
  * SRE, Sun Aug  3 13:10:24 2008 [St. Louis]
- * SVN $Id$
  */
 #include "p7_config.h"
 
@@ -100,7 +98,7 @@ p7_ViterbiScore(const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, P7_OMX *ox, fl
   xJ   = -eslINFINITY;
   xC   = -eslINFINITY;
 
-#if p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
   if (ox->debugging) p7_omx_DumpFloatRow(ox, FALSE, 0, 5, 2, xE, xN, xJ, xB, xC); /* logify=FALSE, <rowi>=0, width=5, precision=2*/
 #endif
 
@@ -205,7 +203,7 @@ p7_ViterbiScore(const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, P7_OMX *ox, fl
 	  DMXo(0) = dcv;
 	}
 
-#if p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
       if (ox->debugging) p7_omx_DumpFloatRow(ox, FALSE, i, 5, 2, xE, xN, xJ, xB, xC); /* logify=FALSE, <rowi>=i, width=5, precision=2*/
 #endif
     } /* end loop over sequence residues 1..L */
@@ -552,6 +550,3 @@ main(int argc, char **argv)
 #endif /*p7VITSCORE_EXAMPLE*/
 /*-------------------------- end, example ------------------------------*/
 
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/ 

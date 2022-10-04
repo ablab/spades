@@ -1,25 +1,25 @@
 /* Shuffling, bootstrapping, permuting alignments, by column or row.
  * 
  * Table of contents:
- *    1. Randomizing MSAs by column.
- *    2. Permuting sequence order (i.e. by row)
- *    3. Shuffling pairwise (QRNA) alignments.
+ *    1. Shuffling or resampling columns ("horizontal" shuffling)
+ *    2. Shuffling residues within columns ("vertical" shuffling)
+ *    3. Permuting sequence order (i.e. by row)
+ *    4. Shuffling pairwise (QRNA) alignments.
+ *    5. Example
  */
 #include "esl_config.h"
 
 #include <string.h>
 
 #include "easel.h"
-#ifdef eslAUGMENT_ALPHABET
 #include "esl_alphabet.h"
-#endif
 #include "esl_msa.h"
-#include "esl_msashuffle.h"
 #include "esl_random.h"
 
+#include "esl_msashuffle.h"
 
 /*****************************************************************
- * 1. Randomizing MSAs by column.
+ * 1. Shuffling or resampling columns ("horizontal" shuffling)
  *****************************************************************/ 
 
 /* Function:  esl_msashuffle_Shuffle()
@@ -68,13 +68,12 @@ esl_msashuffle_Shuffle(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_MSA *shuf)
 	  pos = esl_rnd_Roll(r, alen);
 	  for (i = 0; i < msa->nseq; i++)
 	    {
-	      c                     = msa->aseq[i][pos];
+	      c                     = shuf->aseq[i][pos];
 	      shuf->aseq[i][pos]    = shuf->aseq[i][alen-1];
 	      shuf->aseq[i][alen-1] = c;
 	    }
 	}
     }
-#ifdef eslAUGMENT_ALPHABET
   else 
     {
       ESL_DSQ x;
@@ -93,13 +92,12 @@ esl_msashuffle_Shuffle(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_MSA *shuf)
 	  pos = esl_rnd_Roll(r, alen) + 1;
 	  for (i = 0; i < msa->nseq; i++)
 	    {
-	      x                 = msa->ax[i][pos];
+	      x                 = shuf->ax[i][pos];
 	      shuf->ax[i][pos]  = shuf->ax[i][alen];
 	      shuf->ax[i][alen] = x;
 	    }
 	}
     }
-#endif /*eslAUGMENT_ALPHABET*/
 
   return eslOK;
 }
@@ -153,7 +151,6 @@ esl_msashuffle_Bootstrap(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_MSA *bootsample)
       for (i = 0; i < msa->nseq; i++)
 	bootsample->aseq[i][msa->alen] = '\0';
     }
-#ifdef eslAUGMENT_ALPHABET
   else
     {
       for (i = 0; i < msa->nseq; i++)
@@ -169,14 +166,82 @@ esl_msashuffle_Bootstrap(ESL_RANDOMNESS *r, ESL_MSA *msa, ESL_MSA *bootsample)
       for (i = 0; i < msa->nseq; i++)
 	bootsample->ax[i][msa->alen+1] = eslDSQ_SENTINEL;
     }
-#endif /*eslAUGMENT_ALPHABET*/
 
   return eslOK;
 }
 
 
 /*****************************************************************
- * 2. Permuting the sequence order 
+ * 2. Shuffling residues within columns ("vertical" shuffling)
+ *****************************************************************/
+
+/* Function:  esl_msashuffle_VShuffle()
+ * Synopsis:  Shuffle <msa> residues within independent columns
+ * Incept:    SRE, Tue 10 Jul 2018 [World Cup, France v. Belgium]
+ *
+ * Purpose:   Shuffle the residues in each column of <msa>
+ *            independently, using random generator <rng>. 
+ *            Return the shuffled alignment in <shuf>, space
+ *            allocated by the caller. <msa> and <shuf> can
+ *            be identical to shuffle <msa> in place.
+ *
+ *            Caller is responsible for the metadata in <shuf> (name,
+ *            etc.; everything but the alignment itself).  Easiest
+ *            thing for caller to do is to <esl_msa_Clone()> the <msa>
+ *            to create <shuf>, then shuffle it.
+ *
+ *            <msa> and <shuf> must be in digital mode.
+ *
+ * Args:      rng  - random number generator
+ *            msa  - input multiple alignment to shuffle
+ *            shuf - RESULT: shuffled <msa>
+ *
+ * Returns:   <eslOK> on success, and <shuf> contains the shuffled
+ *            alignment.
+ *
+ * Throws:    <eslEMEM> on allocation error. Now <shuf> is untouched.
+ */
+int
+esl_msashuffle_VShuffle(ESL_RANDOMNESS *rng, const ESL_MSA *msa, ESL_MSA *shuf)
+{
+  ESL_DASSERT1 ((  msa->flags  & eslMSA_DIGITAL ));
+  ESL_DASSERT1 ((  shuf->flags & eslMSA_DIGITAL ));
+  ESL_DSQ *csq = NULL;
+  int      idx, apos;
+  int      nres;      // number of non-gap residues in this column
+  int      status;
+
+
+  ESL_ALLOC(csq, sizeof(ESL_DSQ) * (msa->nseq+2));  // +2 because we hack <csq> column to look like a digital sequence, suitable for esl_rsq*
+  csq[0] = eslDSQ_SENTINEL;
+  
+  for (apos = 1; apos <= msa->alen; apos++)
+    {
+      /* transpose each column from [idx][apos] to an array (residues only) we can shuffle */
+      for (idx = 0, nres = 0; idx < msa->nseq; idx++)
+	if (! esl_abc_XIsGap(msa->abc, msa->ax[idx][apos]))
+	  csq[++nres] = msa->ax[idx][apos];  // (again, the prepend ++nres here is because we make <csq> look like a digital seq, starts at 1
+      csq[nres+1] = eslDSQ_SENTINEL;
+
+      /* shuffle it (remember, it's only the residues (and *,~), not the gaps */
+      esl_rsq_XShuffle(rng, csq, nres, csq);
+
+      /* put it back in <shuf> */
+      for (idx = 0, nres = 0; idx < msa->nseq; idx++)
+	if (! esl_abc_XIsGap(msa->abc, msa->ax[idx][apos]))
+	  shuf->ax[idx][apos] = csq[++nres];   // (again the ++, so we start at 1)
+    }
+  free(csq);
+  return eslOK;
+
+ ERROR:
+  return status;
+}  
+
+
+
+/*****************************************************************
+ * 3. Permuting the sequence order 
  *****************************************************************/
 
 /* Function:  esl_msashuffle_PermuteSequenceOrder()
@@ -202,9 +267,7 @@ esl_msashuffle_PermuteSequenceOrder(ESL_RANDOMNESS *r, ESL_MSA *msa)
       i = esl_rnd_Roll(r, N);	/* idx = 0..N-1 */
       
       if ( ! (msa->flags & eslMSA_DIGITAL)) { tmp = msa->aseq[i]; msa->aseq[i] = msa->aseq[N-1]; msa->aseq[N-1] = tmp; }
-#ifdef eslAUGMENT_ALPHABET
       else 	                            { tmp = msa->ax[i];   msa->ax[i]   = msa->ax[N-1];   msa->ax[N-1]   = tmp; }
-#endif
       tmp    = msa->sqname[i]; msa->sqname[i] = msa->sqname[N-1]; msa->sqname[N-1] = tmp;
       tmpwgt = msa->wgt[i];    msa->wgt[i]    = msa->wgt[N-1];    msa->wgt[N-1]    = tmpwgt;
 
@@ -235,9 +298,9 @@ esl_msashuffle_PermuteSequenceOrder(ESL_RANDOMNESS *r, ESL_MSA *msa)
 
 
 /*****************************************************************
- * 3. Shuffling pairwise (QRNA) alignments
+ * 4. Shuffling pairwise (QRNA) alignments
  *****************************************************************/ 
-#ifdef eslAUGMENT_ALPHABET
+
 /* Function: esl_msashuffle_XQRNA()
  * Synopsis: Gap-preserving column shuffle of a digital pairwise alignment.
  * Incept:   SRE, Tue Jan 22 09:09:52 2008 [Market Street Cafe, Leesburg]
@@ -428,11 +491,12 @@ esl_msashuffle_CQRNA(ESL_RANDOMNESS *r, ESL_ALPHABET *abc, char *x, char *y, cha
   if (ycol  != NULL) free(ycol);
   return status;
 }
-#endif /*eslAUGMENT_ALPHABET*/
+
+
 
 
 /*****************************************************************
- * 4. Example.
+ * 5. Example.
  *****************************************************************/
 #ifdef eslMSASHUFFLE_EXAMPLE
 #include <stdio.h>
@@ -509,6 +573,3 @@ main(int argc, char **argv)
 }
 #endif
 
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

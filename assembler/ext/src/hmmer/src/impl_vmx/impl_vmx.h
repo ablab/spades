@@ -2,16 +2,14 @@
  * routines: structures, declarations, and macros.
  * 
  * SRE, Sun Nov 25 11:23:02 2007
- * SVN $Id$
  */
 #ifndef P7_IMPL_VMX_INCLUDED
 #define P7_IMPL_VMX_INCLUDED
+#include "p7_config.h"
 
 #ifndef __APPLE_ALTIVEC__
 #include <altivec.h>
 #endif
-
-#include "p7_config.h"
 
 #include "esl_alphabet.h"
 #include "esl_random.h"
@@ -271,6 +269,8 @@ extern size_t       p7_oprofile_Sizeof(P7_OPROFILE *om);
 extern P7_OPROFILE *p7_oprofile_Copy(P7_OPROFILE *om);
 extern P7_OPROFILE *p7_oprofile_Clone(const P7_OPROFILE *om);
 extern int          p7_oprofile_UpdateFwdEmissionScores(P7_OPROFILE *om, P7_BG *bg, float *fwd_emissions, float *sc_arr);
+extern int          p7_oprofile_UpdateVitEmissionScores(P7_OPROFILE *om, P7_BG *bg, float *fwd_emissions, float *sc_arr);
+extern int          p7_oprofile_UpdateMSVEmissionScores(P7_OPROFILE *om, P7_BG *bg, float *fwd_emissions, float *sc_arr);
 
 extern int          p7_oprofile_Convert(const P7_PROFILE *gm, P7_OPROFILE *om);
 extern int          p7_oprofile_ReconfigLength    (P7_OPROFILE *om, int L);
@@ -352,13 +352,9 @@ static inline void
 impl_ThreadInit(void)
 {
 }
-  
-
 #endif /* P7_IMPL_VMX_INCLUDED */
 
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
+
 
 /* 
  * Currently (and this remains in flux as of 14 Dec 07) an optimized

@@ -3,17 +3,15 @@
  * Contents:
  *   1. Introduction
  *   2. p7_SSVFilter() implementation
- *   3. Copyright and license information
  * 
  * Bjarne Knudsen, CLC Bio
- * SVN $Id$
  */
 
 /*****************************************************************
  * 1. Introduction
  *****************************************************************/
  
-/* Here is a description of the major ides going into this
+/* Here is a description of the major ideas going into this
  * implementation of the SSV filter.
  *
  *
@@ -856,7 +854,7 @@ get_xE(const ESL_DSQ *dsq, int L, const P7_OPROFILE *om)
 #endif
   };
 
-  beginv =  _mm_set1_epi8(128);
+  beginv =  _mm_set1_epi8(-128);
   xEv    =  beginv;
 
   /* Use the highest number of bands but no more than MAX_BANDS */
@@ -925,8 +923,4 @@ p7_SSVFilter(const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, float *ret_sc)
   return eslOK;
 }
 
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
 

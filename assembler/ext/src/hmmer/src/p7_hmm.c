@@ -8,8 +8,6 @@
  *   5. Other routines in the API.
  *   6. Unit tests.
  *   7. Test driver. 
- *   8. Copyright and license.
- * 
  */
 #include "p7_config.h"
 
@@ -823,15 +821,12 @@ int
 p7_hmm_ScaleExponential(P7_HMM *hmm, double exp)
 {
 
-//  printf ("\n==================\nTry exp = %.4f\n", exp);
   int k;
   for (k = 1; k <= hmm->M; k++) {
 
     float count = esl_vec_FSum(hmm->mat[k], hmm->abc->K);
     float new_count = pow(count, exp);
-    double scale = new_count / count;
-
-    //printf ("column %d : cnt: %.1f,  new_cnt: %.1f,  scale: %.4f\n", k, count, new_count, scale );
+    double scale = count>0 ? new_count / count : 1.0;  /* if no counts in the column (strange, but possible), just use default freqs*/
 
     esl_vec_FScale(hmm->t[k],   p7H_NTRANSITIONS, scale);
     esl_vec_FScale(hmm->mat[k], hmm->abc->K,      scale);
@@ -1206,7 +1201,7 @@ p7_hmm_Compare(P7_HMM *h1, P7_HMM *h2, float tol)
   if (strcmp(h1->ctime,  h2->ctime)  != 0) return eslFAIL;
 
   if (h1->nseq     != h2->nseq)                                      return eslFAIL;
-  if (esl_FCompare(h1->eff_nseq, h2->eff_nseq, tol) != eslOK)        return eslFAIL;
+  if (esl_FCompare_old(h1->eff_nseq, h2->eff_nseq, tol) != eslOK)        return eslFAIL;
   if (h1->checksum != h2->checksum)        return eslFAIL;
 
   if (esl_strcmp(h1->acc,  h2->acc)  != 0) return eslFAIL;
@@ -1220,21 +1215,21 @@ p7_hmm_Compare(P7_HMM *h1, P7_HMM *h2, float tol)
   if ((h1->flags & p7H_MAP)   && esl_vec_ICompare(h1->map, h2->map, h1->M+1) != 0) return eslFAIL;
 
   if (h1->flags & p7H_GA) {
-    if (esl_FCompare(h1->cutoff[p7_GA1], h2->cutoff[p7_GA1], tol) != eslOK) return eslFAIL;
-    if (esl_FCompare(h1->cutoff[p7_GA2], h2->cutoff[p7_GA2], tol) != eslOK) return eslFAIL;
+    if (esl_FCompare_old(h1->cutoff[p7_GA1], h2->cutoff[p7_GA1], tol) != eslOK) return eslFAIL;
+    if (esl_FCompare_old(h1->cutoff[p7_GA2], h2->cutoff[p7_GA2], tol) != eslOK) return eslFAIL;
   }
   if (h1->flags & p7H_TC) {
-    if (esl_FCompare(h1->cutoff[p7_TC1], h2->cutoff[p7_TC1], tol) != eslOK) return eslFAIL;
-    if (esl_FCompare(h1->cutoff[p7_TC2], h2->cutoff[p7_TC2], tol) != eslOK) return eslFAIL;
+    if (esl_FCompare_old(h1->cutoff[p7_TC1], h2->cutoff[p7_TC1], tol) != eslOK) return eslFAIL;
+    if (esl_FCompare_old(h1->cutoff[p7_TC2], h2->cutoff[p7_TC2], tol) != eslOK) return eslFAIL;
   }
   if (h1->flags & p7H_NC) {
-    if (esl_FCompare(h1->cutoff[p7_NC1], h2->cutoff[p7_NC1], tol) != eslOK) return eslFAIL;
-    if (esl_FCompare(h1->cutoff[p7_NC2], h2->cutoff[p7_NC2], tol) != eslOK) return eslFAIL;
+    if (esl_FCompare_old(h1->cutoff[p7_NC1], h2->cutoff[p7_NC1], tol) != eslOK) return eslFAIL;
+    if (esl_FCompare_old(h1->cutoff[p7_NC2], h2->cutoff[p7_NC2], tol) != eslOK) return eslFAIL;
   }
 
   if (h1->flags & p7H_STATS) {
     for (z = 0; z < p7_NEVPARAM; z++)
-      if (esl_FCompare(h1->evparam[z], h2->evparam[z], tol) != eslOK) return eslFAIL;
+      if (esl_FCompare_old(h1->evparam[z], h2->evparam[z], tol) != eslOK) return eslFAIL;
   }
 
   return eslOK;
@@ -1393,7 +1388,7 @@ utest_occupancy(ESL_GETOPTS *go, ESL_RANDOMNESS *r, ESL_ALPHABET *abc)
       printf("expected 0.6; got %.3f\n\n", x);
     }
 
-  if (esl_FCompare(x, 0.6, 0.1)                 != eslOK) esl_fatal(msg);
+  if (esl_FCompare_old(x, 0.6, 0.1)                 != eslOK) esl_fatal(msg);
 
   free(occ);
   p7_hmm_Destroy(hmm);
@@ -1496,11 +1491,4 @@ main(int argc, char **argv)
 #endif /*p7HMM_TESTDRIVE*/
 /*-------------------- end of test driver ---------------------*/
 
-
-/************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- ************************************************************/
 

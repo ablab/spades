@@ -157,7 +157,7 @@ getFMHits( FM_DATA *fm, FM_CFG *cfg, FM_INTERVAL *interval, int block_id, int hi
     while ( j != fm->term_loc && (j % cfg->meta->freq_SA)) { //go until we hit a position in the full SA that was sampled during FM index construction
       uint8_t c = fm_getChar( cfg->meta->alph_type, j, fm->BWT);
       j = fm_getOccCount (fm, cfg, j-1, c);
-      j += abs(fm->C[c]);
+      j += abs((int)(fm->C[c]));
       len++;
     }
 
@@ -197,8 +197,9 @@ hit_sorter(const void *a, const void *b)
     if      (h1->direction > h2->direction) return 1;
     else if (h1->direction < h2->direction) return -1;
     else {
-      if  (h1->start > h2->start) return  1;
-      else                        return -1;
+      if     (h1->start > h2->start) return  1;
+      else if(h1->start < h2->start) return -1;
+      else                           return  0;
     }
   }
 }
@@ -510,14 +511,6 @@ main(int argc,  char *argv[])
 ERROR:
   printf ("failure allocating memory for hits\n");
   exit(status);
-
-
 }
 
 
-
-
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

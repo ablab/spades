@@ -1,10 +1,7 @@
 /* Mixture Dirichlet priors for profile HMMs.
  * 
- * 
  * SRE, Sat Mar 24 09:12:44 2007 [Janelia]
- * SVN $Id$
  */
-
 #include "p7_config.h"
 
 #include "easel.h"
@@ -41,52 +38,23 @@
 P7_PRIOR *
 p7_prior_CreateAmino(void)
 {
-  int status;
   P7_PRIOR *pri = NULL;
-  int q;
+  int k;
+  int status;
 				/* default match mixture coefficients: [Sjolander96] */
-  static double defmq[9] = {
-    0.178091, 0.056591, 0.0960191, 0.0781233, 0.0834977, 
-    0.0904123, 0.114468, 0.0682132, 0.234585 };
+  static double defmq[9] = {  0.178091, 0.056591, 0.0960191, 0.0781233, 0.0834977, 0.0904123, 0.114468, 0.0682132, 0.234585 };
 
 				/* default match mixture Dirichlet components [Sjolander96] */
   static double defm[9][20] = {
-    { 0.270671, 0.039848, 0.017576, 0.016415, 0.014268, 
-      0.131916, 0.012391, 0.022599, 0.020358, 0.030727, 
-      0.015315, 0.048298, 0.053803, 0.020662, 0.023612,
-      0.216147, 0.147226, 0.065438, 0.003758, 0.009621 },
-    { 0.021465, 0.010300, 0.011741, 0.010883, 0.385651, 
-      0.016416, 0.076196, 0.035329, 0.013921, 0.093517, 
-      0.022034, 0.028593, 0.013086, 0.023011, 0.018866, 
-      0.029156, 0.018153, 0.036100, 0.071770, 0.419641 },
-    { 0.561459, 0.045448, 0.438366, 0.764167, 0.087364,
-      0.259114, 0.214940, 0.145928, 0.762204, 0.247320,
-      0.118662, 0.441564, 0.174822, 0.530840, 0.465529, 
-      0.583402, 0.445586, 0.227050, 0.029510, 0.121090 },
-    { 0.070143, 0.011140, 0.019479, 0.094657, 0.013162, 
-      0.048038, 0.077000, 0.032939, 0.576639, 0.072293, 
-      0.028240, 0.080372, 0.037661, 0.185037, 0.506783, 
-      0.073732, 0.071587, 0.042532, 0.011254, 0.028723 },
-    { 0.041103, 0.014794, 0.005610, 0.010216, 0.153602, 
-      0.007797, 0.007175, 0.299635, 0.010849, 0.999446, 
-      0.210189, 0.006127, 0.013021, 0.019798, 0.014509, 
-      0.012049, 0.035799, 0.180085, 0.012744, 0.026466 },
-    { 0.115607, 0.037381, 0.012414, 0.018179, 0.051778, 
-      0.017255, 0.004911, 0.796882, 0.017074, 0.285858, 
-      0.075811, 0.014548, 0.015092, 0.011382, 0.012696, 
-      0.027535, 0.088333, 0.944340, 0.004373, 0.016741 },
-    { 0.093461, 0.004737, 0.387252, 0.347841, 0.010822, 
-      0.105877, 0.049776, 0.014963, 0.094276, 0.027761, 
-      0.010040, 0.187869, 0.050018, 0.110039, 0.038668, 
-      0.119471, 0.065802, 0.025430, 0.003215, 0.018742 },
-    { 0.452171, 0.114613, 0.062460, 0.115702, 0.284246,
-      0.140204, 0.100358, 0.550230, 0.143995, 0.700649, 
-      0.276580, 0.118569, 0.097470, 0.126673, 0.143634, 
-      0.278983, 0.358482, 0.661750, 0.061533, 0.199373 },
-    { 0.005193, 0.004039, 0.006722, 0.006121, 0.003468, 
-      0.016931, 0.003647, 0.002184, 0.005019, 0.005990, 
-      0.001473, 0.004158, 0.009055, 0.003630, 0.006583, 
-      0.003172, 0.003690, 0.002967, 0.002772, 0.002686 },
+    { 0.270671, 0.039848, 0.017576, 0.016415, 0.014268, 0.131916, 0.012391, 0.022599, 0.020358, 0.030727, 0.015315, 0.048298, 0.053803, 0.020662, 0.023612, 0.216147, 0.147226, 0.065438, 0.003758, 0.009621 },
+    { 0.021465, 0.010300, 0.011741, 0.010883, 0.385651, 0.016416, 0.076196, 0.035329, 0.013921, 0.093517, 0.022034, 0.028593, 0.013086, 0.023011, 0.018866, 0.029156, 0.018153, 0.036100, 0.071770, 0.419641 },
+    { 0.561459, 0.045448, 0.438366, 0.764167, 0.087364, 0.259114, 0.214940, 0.145928, 0.762204, 0.247320, 0.118662, 0.441564, 0.174822, 0.530840, 0.465529, 0.583402, 0.445586, 0.227050, 0.029510, 0.121090 },
+    { 0.070143, 0.011140, 0.019479, 0.094657, 0.013162, 0.048038, 0.077000, 0.032939, 0.576639, 0.072293, 0.028240, 0.080372, 0.037661, 0.185037, 0.506783, 0.073732, 0.071587, 0.042532, 0.011254, 0.028723 },
+    { 0.041103, 0.014794, 0.005610, 0.010216, 0.153602, 0.007797, 0.007175, 0.299635, 0.010849, 0.999446, 0.210189, 0.006127, 0.013021, 0.019798, 0.014509, 0.012049, 0.035799, 0.180085, 0.012744, 0.026466 },
+    { 0.115607, 0.037381, 0.012414, 0.018179, 0.051778, 0.017255, 0.004911, 0.796882, 0.017074, 0.285858, 0.075811, 0.014548, 0.015092, 0.011382, 0.012696, 0.027535, 0.088333, 0.944340, 0.004373, 0.016741 },
+    { 0.093461, 0.004737, 0.387252, 0.347841, 0.010822, 0.105877, 0.049776, 0.014963, 0.094276, 0.027761, 0.010040, 0.187869, 0.050018, 0.110039, 0.038668, 0.119471, 0.065802, 0.025430, 0.003215, 0.018742 },
+    { 0.452171, 0.114613, 0.062460, 0.115702, 0.284246, 0.140204, 0.100358, 0.550230, 0.143995, 0.700649, 0.276580, 0.118569, 0.097470, 0.126673, 0.143634, 0.278983, 0.358482, 0.661750, 0.061533, 0.199373 },
+    { 0.005193, 0.004039, 0.006722, 0.006121, 0.003468, 0.016931, 0.003647, 0.002184, 0.005019, 0.005990, 0.001473, 0.004158, 0.009055, 0.003630, 0.006583, 0.003172, 0.003690, 0.002967, 0.002772, 0.002686 },
   };
 
   ESL_ALLOC(pri, sizeof(P7_PRIOR));
@@ -98,32 +66,31 @@ p7_prior_CreateAmino(void)
   pri->em = esl_mixdchlet_Create(9, 20); /* 9 component; 20 params */
   pri->ei = esl_mixdchlet_Create(1, 20); /* single component; 20 params */
 
-
   if (pri->tm == NULL || pri->ti == NULL || pri->td == NULL || pri->em == NULL || pri->ei == NULL) goto ERROR;
 
   /* Transition priors: originally from Graeme Mitchison. Notes are lost, but we believe
    * they were trained on an early version of Pfam. 
    */
-  pri->tm->pq[0]       = 1.0;
+  pri->tm->q[0]        = 1.0;
   pri->tm->alpha[0][0] = 0.7939; /* TMM */
   pri->tm->alpha[0][1] = 0.0278; /* TMI */ /* Markus suggests ~10x MD, ~0.036; test! */
   pri->tm->alpha[0][2] = 0.0135; /* TMD */ /* Markus suggests 0.1x MI, ~0.004; test! */
 
-  pri->ti->pq[0]       = 1.0;
+  pri->ti->q[0]        = 1.0;
   pri->ti->alpha[0][0] = 0.1551; /* TIM */
   pri->ti->alpha[0][1] = 0.1331; /* TII */
 
-  pri->td->pq[0]       = 1.0;
+  pri->td->q[0]        = 1.0;
   pri->td->alpha[0][0] = 0.9002; /* TDM */
   pri->td->alpha[0][1] = 0.5630; /* TDD */
 
   /* Match emission priors are from Kimmen Sjolander, trained
    * on the Blocks9 database. [Sjolander96]
    */  
-  for (q = 0; q < 9; q++)
+  for (k = 0; k < 9; k++)
     {
-      pri->em->pq[q] = defmq[q];
-      esl_vec_DCopy(defm[q], 20, pri->em->alpha[q]);
+      pri->em->q[k] = defmq[k];
+      esl_vec_DCopy(defm[k], 20, pri->em->alpha[k]);
     }
 
   /* Insert emission priors were trained on Pfam 1.0, 10 Nov 1996;
@@ -131,7 +98,7 @@ p7_prior_CreateAmino(void)
    * Inserts are slightly biased towards polar residues and away from
    * hydrophobic residues.
    */
-  pri->ei->pq[0] = 1.0;
+  pri->ei->q[0] = 1.0;
   pri->ei->alpha[0][0]  = 681.;         /* A */
   pri->ei->alpha[0][1]  = 120.;         /* C */
   pri->ei->alpha[0][2]  = 623.;         /* D */
@@ -220,16 +187,16 @@ p7_prior_CreateNucleic(void)
 
   /* Transition priors: roughly, learned from rmark benchmark - hand-beautified (trimming overspecified significant digits)
    */
-  pri->tm->pq[0]       = 1.0;
+  pri->tm->q[0]        = 1.0;
   pri->tm->alpha[0][0] = 2.0;  // TMM
   pri->tm->alpha[0][1] = 0.1;  // TMI
   pri->tm->alpha[0][2] = 0.1;  // TMD
 
-  pri->ti->pq[0]       = 1.0;
+  pri->ti->q[0]        = 1.0;
   pri->ti->alpha[0][0] = 0.12; // TIM -  was 0.06 (TW changed 3/19/15)
   pri->ti->alpha[0][1] = 0.4;  // TII -  was 0.2  (TW changed 3/19/15)
 
-  pri->td->pq[0]       = 1.0;
+  pri->td->q[0]        = 1.0;
   pri->td->alpha[0][0] = 0.5;  // TDM -  was 0.1 (TW changed 3/19/15)
   pri->td->alpha[0][1] = 1.0;  // TDD -  was 0.2 (TW changed 3/19/15)
 
@@ -237,13 +204,13 @@ p7_prior_CreateNucleic(void)
   /* Match emission priors  */
   for (q = 0; q < num_comp; q++)
     {
-      pri->em->pq[q] = defmq[q];
+      pri->em->q[q] = defmq[q];
       esl_vec_DCopy(defm[q], 4, pri->em->alpha[q]);
     }
 
   /* Insert emission priors. Should alphas be lower? higher?
    */
-  pri->ei->pq[0] = 1.0;
+  pri->ei->q[0] = 1.0;
   esl_vec_DSet(pri->ei->alpha[0], 4, 1.0);
 
   return pri;
@@ -278,11 +245,11 @@ p7_prior_CreateLaplace(const ESL_ALPHABET *abc)
 
   if (pri->tm == NULL || pri->ti == NULL || pri->td == NULL || pri->em == NULL || pri->ei == NULL) goto ERROR;
 
-  pri->tm->pq[0] = 1.0;   esl_vec_DSet(pri->tm->alpha[0], 3,      1.0);  /* match transitions  */
-  pri->ti->pq[0] = 1.0;   esl_vec_DSet(pri->ti->alpha[0], 2,      1.0);  /* insert transitions */
-  pri->td->pq[0] = 1.0;   esl_vec_DSet(pri->td->alpha[0], 2,      1.0);  /* delete transitions */
-  pri->em->pq[0] = 1.0;   esl_vec_DSet(pri->em->alpha[0], abc->K, 1.0);  /* match emissions    */
-  pri->ei->pq[0] = 1.0;   esl_vec_DSet(pri->ei->alpha[0], abc->K, 1.0);  /* insert emissions   */
+  pri->tm->q[0] = 1.0;   esl_vec_DSet(pri->tm->alpha[0], 3,      1.0);  /* match transitions  */
+  pri->ti->q[0] = 1.0;   esl_vec_DSet(pri->ti->alpha[0], 2,      1.0);  /* insert transitions */
+  pri->td->q[0] = 1.0;   esl_vec_DSet(pri->td->alpha[0], 2,      1.0);  /* delete transitions */
+  pri->em->q[0] = 1.0;   esl_vec_DSet(pri->em->alpha[0], abc->K, 1.0);  /* match emissions    */
+  pri->ei->q[0] = 1.0;   esl_vec_DSet(pri->ei->alpha[0], abc->K, 1.0);  /* insert emissions   */
   return pri;
 
  ERROR:
@@ -333,7 +300,8 @@ p7_ParameterEstimation(P7_HMM *hmm, const P7_PRIOR *pri)
   int   k;
   double c[p7_MAXABET];
   double p[p7_MAXABET];
-  double mix[p7_MAXDCHLET];
+
+  //  double mix[p7_MAXDCHLET];
   
   /* Special case of pri=NULL: convert to frequencies.*/  
   if (pri==NULL) return p7_hmm_Renormalize(hmm);
@@ -343,7 +311,7 @@ p7_ParameterEstimation(P7_HMM *hmm, const P7_PRIOR *pri)
    */
   for (k = 0; k <= hmm->M; k++) {
     esl_vec_F2D(hmm->t[k], 3, c);
-    esl_mixdchlet_MPParameters(c, 3, pri->tm, mix, p);
+    esl_mixdchlet_MPParameters(pri->tm, c, p);
     esl_vec_D2F(p, 3, hmm->t[k]);
   }
   hmm->t[hmm->M][p7H_MD] = 0.0;
@@ -353,7 +321,7 @@ p7_ParameterEstimation(P7_HMM *hmm, const P7_PRIOR *pri)
    */
   for (k = 0; k <= hmm->M; k++) {
     esl_vec_F2D(hmm->t[k]+3, 2, c);
-    esl_mixdchlet_MPParameters(c, 2, pri->ti, mix, p);
+    esl_mixdchlet_MPParameters(pri->ti, c, p);
     esl_vec_D2F(p, 2, hmm->t[k]+3);
   }
 
@@ -363,7 +331,7 @@ p7_ParameterEstimation(P7_HMM *hmm, const P7_PRIOR *pri)
    */
   for (k = 1; k < hmm->M; k++) {
     esl_vec_F2D(hmm->t[k]+5, 2, c);
-    esl_mixdchlet_MPParameters(c, 2, pri->td, mix, p);
+    esl_mixdchlet_MPParameters(pri->td, c, p);
     esl_vec_D2F(p, 2, hmm->t[k]+5);
   }
   hmm->t[0][p7H_DM] = hmm->t[hmm->M][p7H_DM] = 1.0;
@@ -374,7 +342,7 @@ p7_ParameterEstimation(P7_HMM *hmm, const P7_PRIOR *pri)
    */
   for (k = 1; k <= hmm->M; k++) {
     esl_vec_F2D(hmm->mat[k], hmm->abc->K, c);
-    esl_mixdchlet_MPParameters(c, hmm->abc->K, pri->em, mix, p);
+    esl_mixdchlet_MPParameters(pri->em, c, p);
     esl_vec_D2F(p, hmm->abc->K, hmm->mat[k]);
   }
   esl_vec_FSet(hmm->mat[0], hmm->abc->K, 0.);
@@ -384,14 +352,10 @@ p7_ParameterEstimation(P7_HMM *hmm, const P7_PRIOR *pri)
    */
   for (k = 0; k <= hmm->M; k++) {
     esl_vec_F2D(hmm->ins[k], hmm->abc->K, c);
-    esl_mixdchlet_MPParameters(c, hmm->abc->K, pri->ei, mix, p);
+    esl_mixdchlet_MPParameters(pri->ei, c, p);
     esl_vec_D2F(p, hmm->abc->K, hmm->ins[k]);
   }
   return eslOK;
 }
 
 
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

@@ -3,7 +3,6 @@
  */
 #ifndef eslHEAP_INCLUDED
 #define eslHEAP_INCLUDED
-
 #include "esl_config.h"
 
 #define eslHEAP_INITALLOC 128
@@ -36,9 +35,3 @@ extern int       esl_heap_IExtractTop(ESL_HEAP *hp, int *ret_val);
 extern int       esl_heap_IGetTop(ESL_HEAP *hp);
 
 #endif /*eslHEAP_INCLUDED*/
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/

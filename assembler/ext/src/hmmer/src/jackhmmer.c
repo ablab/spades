@@ -18,16 +18,16 @@
 #include "esl_sqio.h"
 #include "esl_stopwatch.h"
 
-#ifdef HAVE_MPI
+#ifdef HMMER_MPI
 #include "mpi.h"
 #include "esl_mpi.h"
-#endif /*HAVE_MPI*/
+#endif 
 
 #ifdef HMMER_THREADS
 #include <unistd.h>
 #include "esl_threads.h"
 #include "esl_workqueue.h"
-#endif /*HMMER_THREADS*/
+#endif 
 
 #include "hmmer.h"
 
@@ -46,11 +46,11 @@ typedef struct {
 #define INCOPTS     "--incE,--incT,--cut_ga,--cut_nc,--cut_tc"
 #define INCDOMOPTS  "--incdomE,--incdomT,--cut_ga,--cut_nc,--cut_tc"
 #define THRESHOPTS  "-E,-T,--domE,--domT,--incE,--incT,--incdomE,--incdomT,--cut_ga,--cut_nc,--cut_tc"
-#define CONOPTS     "--fast,--hand"                            /* Exclusive options for model construction                    */
-#define EFFOPTS     "--eent,--eentexp,--eclust,--eset,--enone"           /* Exclusive options for effective sequence number calculation */
-#define WGTOPTS     "--wgsc,--wblosum,--wpb,--wnone,--wgiven"  /* Exclusive options for relative weighting                    */
+#define CONOPTS     "--fast,--hand"                                         // jackhmmer doesn't use these - but leave them for consistency 
+#define EFFOPTS     "--eent,--eentexp,--eclust,--eset,--enone"              // Exclusive options for effective sequence number calculation 
+#define WGTOPTS     "--wgsc,--wblosum,--wpb,--wnone"                        // Exclusive options for relative weighting                    
 
-#if defined (HMMER_THREADS) && defined (HAVE_MPI)
+#if defined (HMMER_THREADS) && defined (HMMER_MPI)
 #define CPUOPTS     "--mpi"
 #define MPIOPTS     "--cpu"
 #else
@@ -88,8 +88,8 @@ static ESL_OPTIONS options[] = {
   { "--incT",       eslARG_REAL,        FALSE, NULL, NULL,      NULL,    NULL,  INCOPTS,         "consider sequences >= this score threshold as significant",    5 },
   { "--incdomE",    eslARG_REAL,      "0.001", NULL, "x>0",     NULL,    NULL,  INCDOMOPTS,      "consider domains <= this E-value threshold as significant",    5 },
   { "--incdomT",    eslARG_REAL,        FALSE, NULL, NULL,      NULL,    NULL,  INCDOMOPTS,      "consider domains >= this score threshold as significant",      5 },
-/* Model-specific thresholding for both reporting and inclusion (unused in jackhmmer) */
-  { "--cut_ga",     eslARG_NONE,        FALSE, NULL, NULL,      NULL,    NULL,  THRESHOPTS,      "use profile's GA gathering cutoffs to set all thresholding",  99 },
+/* Model-specific thresholding for both reporting and inclusion (unused in jackhmmer, but p7_Builder() needs them set to defaults) */
+  { "--cut_ga",     eslARG_NONE,        FALSE, NULL, NULL,      NULL,    NULL,  THRESHOPTS,      "use profile's GA gathering cutoffs to set all thresholding",  99 },  // group=99 undocuments them; process_commandline() prohibits them.
   { "--cut_nc",     eslARG_NONE,        FALSE, NULL, NULL,      NULL,    NULL,  THRESHOPTS,      "use profile's NC noise cutoffs to set all thresholding",      99 },
   { "--cut_tc",     eslARG_NONE,        FALSE, NULL, NULL,      NULL,    NULL,  THRESHOPTS,      "use profile's TC trusted cutoffs to set all thresholding",    99 },
 /* Control of acceleration pipeline */
@@ -99,26 +99,26 @@ static ESL_OPTIONS options[] = {
   { "--F3",         eslARG_REAL,       "1e-5", NULL, NULL,      NULL,    NULL, "--max",          "Stage 3 (Fwd) threshold: promote hits w/ P <= F3",             7 },
   { "--nobias",     eslARG_NONE,         NULL, NULL, NULL,      NULL,    NULL, "--max",          "turn off composition bias filter",                             7 },
 /* Alternative model construction strategies */
-  { "--fast",       eslARG_NONE,        FALSE, NULL, NULL,   CONOPTS,    NULL,  NULL,            "assign cols w/ >= symfrac residues as consensus",              8 },
-  { "--hand",       eslARG_NONE,    "default", NULL, NULL,   CONOPTS,    NULL,  NULL,            "manual construction (requires reference annotation)",          8 },
-  { "--symfrac",    eslARG_REAL,        "0.5", NULL, "0<=x<=1", NULL,"--fast",  NULL,            "sets sym fraction controlling --fast construction",            8 },
+  { "--fast",       eslARG_NONE,        FALSE, NULL, NULL,    CONOPTS,   NULL,  NULL,            "assign cols w/ >= symfrac residues as consensus",              99 }, // unused/prohibited in jackhmmer. Models must be --hand.
+  { "--hand",       eslARG_NONE,    "default", NULL, NULL,    CONOPTS,   NULL,  NULL,            "manual construction (requires reference annotation)",          99 },
+  { "--symfrac",    eslARG_REAL,        "0.5", NULL, "0<=x<=1", NULL,"--fast",  NULL,            "sets sym fraction controlling --fast construction",            99 },
   { "--fragthresh", eslARG_REAL,        "0.5", NULL, "0<=x<=1", NULL,    NULL,  NULL,            "if L <= x*alen, tag sequence as a fragment",                   8 },
 /* Alternative relative sequence weighting strategies */
   { "--wpb",        eslARG_NONE,    "default", NULL, NULL,   WGTOPTS,    NULL,  NULL,            "Henikoff position-based weights",                              9 },
   { "--wgsc",       eslARG_NONE,         NULL, NULL, NULL,   WGTOPTS,    NULL,  NULL,            "Gerstein/Sonnhammer/Chothia tree weights",                     9 },
   { "--wblosum",    eslARG_NONE,         NULL, NULL, NULL,   WGTOPTS,    NULL,  NULL,            "Henikoff simple filter weights",                               9 },
   { "--wnone",      eslARG_NONE,         NULL, NULL, NULL,   WGTOPTS,    NULL,  NULL,            "don't do any relative weighting; set all to 1",                9 },
-  { "--wgiven",     eslARG_NONE,         NULL, NULL, NULL,   WGTOPTS,    NULL,  NULL,            "use weights as given in MSA file",                            99 }, /* no-op in jackhmmer */
+  { "--wgiven",     eslARG_NONE,         NULL, NULL, NULL,   WGTOPTS,    NULL,  NULL,            "use weights as given in MSA file",                            99 }, /* unused/prohibited in jackhmmer */
   { "--wid",        eslARG_REAL,       "0.62", NULL,"0<=x<=1", NULL,"--wblosum",NULL,            "for --wblosum: set identity cutoff",                           9 },
 /* Alternative effective sequence weighting strategies */
-  { "--eent",       eslARG_NONE,    "default", NULL, NULL,   EFFOPTS,    NULL,  NULL,            "adjust eff seq # to achieve relative entropy target",         10 },
-  { "--eentexp",    eslARG_NONE,     "default",NULL, NULL,    EFFOPTS,    NULL, NULL,            "adjust eff seq # to reach rel. ent. target using exp scaling",  10 },
-  { "--eclust",     eslARG_NONE,        FALSE, NULL, NULL,   EFFOPTS,    NULL,  NULL,            "eff seq # is # of single linkage clusters",                   10 },
-  { "--enone",      eslARG_NONE,        FALSE, NULL, NULL,   EFFOPTS,    NULL,  NULL,            "no effective seq # weighting: just use nseq",                 10 },
-  { "--eset",       eslARG_REAL,         NULL, NULL, NULL,   EFFOPTS,    NULL,  NULL,            "set eff seq # for all models to <x>",                         10 },
-  { "--ere",        eslARG_REAL,         NULL, NULL,"x>0",      NULL,    NULL, NULL,            "for --eent[exp]: set minimum rel entropy/position to <x>",         10 },
-  { "--esigma",     eslARG_REAL,       "45.0", NULL,"x>0",      NULL,    NULL, NULL,            "for --eent[exp]: set sigma param to <x>",                          10 },
-  { "--eid",        eslARG_REAL,       "0.62", NULL,"0<=x<=1",  NULL,"--eclust",NULL,            "for --eclust: set fractional identity cutoff to <x>",         10 },
+  { "--eent",       eslARG_NONE,    "default", NULL, NULL,   EFFOPTS,    NULL,  NULL,            "adjust eff seq # to achieve relative entropy target",          10 },
+  { "--eentexp",    eslARG_NONE,     "default",NULL, NULL,    EFFOPTS,    NULL, NULL,            "adjust eff seq # to reach rel. ent. target using exp scaling", 10 },
+  { "--eclust",     eslARG_NONE,        FALSE, NULL, NULL,   EFFOPTS,    NULL,  NULL,            "eff seq # is # of single linkage clusters",                    10 },
+  { "--enone",      eslARG_NONE,        FALSE, NULL, NULL,   EFFOPTS,    NULL,  NULL,            "no effective seq # weighting: just use nseq",                  10 },
+  { "--eset",       eslARG_REAL,         NULL, NULL, NULL,   EFFOPTS,    NULL,  NULL,            "set eff seq # for all models to <x>",                          10 },
+  { "--ere",        eslARG_REAL,         NULL, NULL,"x>0",      NULL,    NULL, NULL,            "for --eent[exp]: set minimum rel entropy/position to <x>",      10 },
+  { "--esigma",     eslARG_REAL,       "45.0", NULL,"x>0",      NULL,    NULL, NULL,            "for --eent[exp]: set sigma param to <x>",                       10 },
+  { "--eid",        eslARG_REAL,       "0.62", NULL,"0<=x<=1",  NULL,"--eclust",NULL,            "for --eclust: set fractional identity cutoff to <x>",          10 },
 /* Alternative prior strategies */
   { "--pnone",       eslARG_NONE,       FALSE, NULL, NULL,      NULL,    NULL,"--plaplace",      "don't use any prior; parameters are frequencies",             13 },
   { "--plaplace",    eslARG_NONE,       FALSE, NULL, NULL,      NULL,    NULL,   "--pnone",      "use a Laplace +1 prior",                                      13 },
@@ -139,9 +139,9 @@ static ESL_OPTIONS options[] = {
   { "--tformat",    eslARG_STRING,       NULL, NULL, NULL,      NULL,    NULL,  NULL,            "assert target <seqdb> is in format <s>>: no autodetection",   12 },
 
 #ifdef HMMER_THREADS
-  { "--cpu",        eslARG_INT,       NULL,"HMMER_NCPU","n>=0", NULL,    NULL,  CPUOPTS,         "number of parallel CPU workers to use for multithreads",      12 },
+  { "--cpu",        eslARG_INT,      p7_NCPU,"HMMER_NCPU","n>=0", NULL,    NULL,  CPUOPTS,       "number of parallel CPU workers to use for multithreads",      12 },
 #endif
-#ifdef HAVE_MPI
+#ifdef HMMER_MPI
   { "--stall",      eslARG_NONE,       FALSE, NULL,  NULL,      NULL,  "--mpi", NULL,            "arrest after start: for debugging MPI under gdb",             12 },  
   { "--mpi",        eslARG_NONE,       FALSE, NULL,  NULL,      NULL,    NULL,  MPIOPTS,         "run as an MPI parallel program",                              12 },
 #endif  
@@ -174,12 +174,12 @@ static int  serial_loop(WORKER_INFO *info, ESL_SQFILE *dbfp);
 
 static int  thread_loop(ESL_THREADS *obj, ESL_WORK_QUEUE *queue, ESL_SQFILE *dbfp);
 static void pipeline_thread(void *arg);
-#endif /*HMMER_THREADS*/
+#endif 
 
-#ifdef HAVE_MPI
+#ifdef HMMER_MPI
 static int  mpi_master   (ESL_GETOPTS *go, struct cfg_s *cfg);
 static int  mpi_worker   (ESL_GETOPTS *go, struct cfg_s *cfg);
-#endif /*HAVE_MPI*/
+#endif 
 
 static void checkpoint_hmm(int nquery, P7_HMM *hmm,  char *basename, int iteration);
 static void checkpoint_msa(int nquery, ESL_MSA *msa, char *basename, int iteration);
@@ -197,6 +197,21 @@ process_commandline(int argc, char **argv, ESL_GETOPTS **ret_go, char **ret_qfil
   if (esl_opt_ProcessEnvironment(go)         != eslOK)  { if (printf("Failed to process environment: %s\n", go->errbuf) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   if (esl_opt_ProcessCmdline(go, argc, argv) != eslOK)  { if (printf("Failed to parse command line: %s\n",  go->errbuf) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
   if (esl_opt_VerifyConfig(go)               != eslOK)  { if (printf("Failed to parse command line: %s\n",  go->errbuf) < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
+
+  /* jackhmmer prohibits setting some standard p7_Builder() options.
+   * they don't appear in documentation (they're set to help group 99)
+   * but we want to make positively sure they don't get set. Not
+   * sufficient to do ! esl_opt_IsDefault(), which only checks that
+   * the setting is at default regardless of how it was set that way;
+   * instead, verify that the option wasn't set at all.
+   */
+  if (esl_opt_GetSetter(go, "--cut_ga")  != eslARG_SETBY_DEFAULT)  { if (printf("Failed to parse command line: jackhmmer does not accept a --cut-ga option\n")  < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
+  if (esl_opt_GetSetter(go, "--cut_nc")  != eslARG_SETBY_DEFAULT)  { if (printf("Failed to parse command line: jackhmmer does not accept a --cut-nc option\n")  < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
+  if (esl_opt_GetSetter(go, "--cut_tc")  != eslARG_SETBY_DEFAULT)  { if (printf("Failed to parse command line: jackhmmer does not accept a --cut-tc option\n")  < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
+  if (esl_opt_GetSetter(go, "--fast")    != eslARG_SETBY_DEFAULT)  { if (printf("Failed to parse command line: jackhmmer does not accept a --fast option\n")    < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
+  if (esl_opt_GetSetter(go, "--hand")    != eslARG_SETBY_DEFAULT)  { if (printf("Failed to parse command line: jackhmmer does not accept a --hand option\n")    < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
+  if (esl_opt_GetSetter(go, "--symfrac") != eslARG_SETBY_DEFAULT)  { if (printf("Failed to parse command line: jackhmmer does not accept a --symfrac option\n") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
+  if (esl_opt_GetSetter(go, "--wgiven")  != eslARG_SETBY_DEFAULT)  { if (printf("Failed to parse command line: jackhmmer does not accept a --wgiven option\n")  < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto FAILURE; }
 
   /* help format: */
   if (esl_opt_GetBoolean(go, "-h") == TRUE) 
@@ -341,7 +356,7 @@ output_header(FILE *ofp, ESL_GETOPTS *go, char *qfile, char *dbfile)
 #ifdef HMMER_THREADS
   if (esl_opt_IsUsed(go, "--cpu")        && fprintf(ofp, "# number of worker threads:        %d\n",             esl_opt_GetInteger(go, "--cpu"))      < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
 #endif
-#ifdef HAVE_MPI
+#ifdef HMMER_MPI
   if (esl_opt_IsUsed(go, "--mpi")        && fprintf(ofp, "# MPI:                             on\n")                                                   < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
 #endif 
   if (fprintf(ofp, "# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n\n")                                                   < 0) ESL_EXCEPTION_SYS(eslEWRITE, "write failed");
@@ -373,7 +388,7 @@ main(int argc, char **argv)
   /* Figure out who we are, and send control there: 
    * we might be an MPI master, an MPI worker, or a serial program.
    */
-#ifdef HAVE_MPI
+#ifdef HMMER_MPI
   /* pause the execution of the programs execution until the user has a
    * chance to attach with a debugger and send a signal to resume execution
    * i.e. (gdb) signal SIGCONT
@@ -393,7 +408,7 @@ main(int argc, char **argv)
       MPI_Finalize();
     }
   else
-#endif /*HAVE_MPI*/
+#endif /*HMMER_MPI*/
     {
       status = serial_master(go, &cfg);
     }
@@ -510,9 +525,7 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
 
 #ifdef HMMER_THREADS
   /* initialize thread data */
-  if (esl_opt_IsOn(go, "--cpu")) ncpus = esl_opt_GetInteger(go, "--cpu");
-  else                           esl_threads_CPUCount(&ncpus);
-
+  ncpus = ESL_MIN(esl_opt_GetInteger(go, "--cpu"), esl_threads_GetCPUCount());
   if (ncpus > 0)
     {
       threadObj = esl_threads_Create(&pipeline_thread);
@@ -591,7 +604,7 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
 	  else
 	    {
 	      /* Throw away old model. Build new one. */
-	      status = p7_Builder(bld, msa, info[0].bg, ret_hmm, NULL, NULL, &om, NULL, NULL, NULL);
+	      status = p7_Builder(bld, msa, info[0].bg, ret_hmm, NULL, NULL, &om, NULL);
 	      if      (status == eslENORESULT) p7_Fail("Failed to construct new model from iteration %d results:\n%s", iteration, bld->errbuf);
 	      else if (status == eslEFORMAT)   p7_Fail("Failed to construct new model from iteration %d results:\n%s", iteration, bld->errbuf);
 	      else if (status != eslOK)        p7_Fail("Unexpected error constructing new model at iteration %d:",     iteration);
@@ -669,7 +682,10 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
 	  /* <&qsq, &qtr, 1> included in p7_tophits_Alignment args here => initial query is added to the msa at each round. */
 	  p7_tophits_Alignment(info->th, abc, &qsq, &qtr, 1, p7_ALL_CONSENSUS_COLS, &msa);
 	  esl_msa_Digitize(abc,msa,NULL);
-	  esl_msa_FormatName(msa, "%s-i%d", qsq->name, iteration);
+	  esl_msa_FormatName(msa, "%s-i%d", qsq->name, iteration);  
+	  if (qsq->acc[0]  != '\0') esl_msa_SetAccession(msa, qsq->acc,  -1);
+	  if (qsq->desc[0] != '\0') esl_msa_SetDesc     (msa, qsq->desc, -1);
+	  esl_msa_FormatAuthor(msa, "jackhmmer (HMMER %s)", HMMER_VERSION);
 
 	  /* Optional checkpointing */
 	  if (esl_opt_IsOn(go, "--chkali")) checkpoint_msa(nquery, msa, esl_opt_GetString(go, "--chkali"), iteration);
@@ -775,7 +791,7 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
   return eslFAIL;
 }
 
-#ifdef HAVE_MPI
+#ifdef HMMER_MPI
 
 /* Define common tags used by the MPI master/slave processes */
 #define HMMER_ERROR_TAG          1
@@ -1110,7 +1126,7 @@ mpi_master(ESL_GETOPTS *go, struct cfg_s *cfg)
 	  else
 	    {
 	      /* Throw away old model. Build new one. */
-	      status = p7_Builder(bld, msa, bg, ret_hmm, NULL, NULL, &om, NULL, NULL, NULL);
+	      status = p7_Builder(bld, msa, bg, ret_hmm, NULL, NULL, &om, NULL);
 	      if      (status == eslENORESULT) mpi_failure("Failed to construct new model from iteration %d results:\n%s", iteration, bld->errbuf);
 	      else if (status == eslEFORMAT)   mpi_failure("Failed to construct new model from iteration %d results:\n%s", iteration, bld->errbuf);
 	      else if (status != eslOK)        mpi_failure("Unexpected error constructing new model at iteration %d:",     iteration);
@@ -1220,7 +1236,10 @@ mpi_master(ESL_GETOPTS *go, struct cfg_s *cfg)
 	  /* Create alignment of the top hits */
 	  p7_tophits_Alignment(th, abc, &qsq, &qtr, 1, p7_ALL_CONSENSUS_COLS, &msa);
 	  esl_msa_Digitize(abc,msa,NULL);
-	  esl_msa_FormatName(msa, "%s-i%d", qsq->name, iteration);
+	  esl_msa_FormatName(msa, "%s-i%d", qsq->name, iteration);  
+	  if (qsq->acc[0]  != '\0') esl_msa_SetAccession(msa, qsq->acc,  -1);
+	  if (qsq->desc[0] != '\0') esl_msa_SetDesc     (msa, qsq->desc, -1);
+	  esl_msa_FormatAuthor(msa, "jackhmmer (HMMER %s)", HMMER_VERSION);
 
 	  /* Optional checkpointing */
 	  if (esl_opt_IsOn(go, "--chkali")) checkpoint_msa(nquery, msa, esl_opt_GetString(go, "--chkali"), iteration);
@@ -1529,7 +1548,7 @@ mpi_worker(ESL_GETOPTS *go, struct cfg_s *cfg)
   esl_alphabet_Destroy(abc);
   return eslOK;
 }
-#endif /*HAVE_MPI*/
+#endif /*HMMER_MPI*/
 
 
 /* checkpoint_hmm()
@@ -1624,7 +1643,7 @@ thread_loop(ESL_THREADS *obj, ESL_WORK_QUEUE *queue, ESL_SQFILE *dbfp)
   while (sstatus == eslOK)
     {
       block = (ESL_SQ_BLOCK *) newBlock;
-      sstatus = esl_sqio_ReadBlock(dbfp, block, -1, -1, FALSE);
+      sstatus = esl_sqio_ReadBlock(dbfp, block, -1, -1, /*max_init_window=*/FALSE, FALSE);
       if (sstatus == eslEOF)
 	{
 	  if (eofCount < esl_threads_GetWorkerCount(obj)) sstatus = eslOK;
@@ -1708,6 +1727,3 @@ pipeline_thread(void *arg)
 #endif   /* HMMER_THREADS */
 
 
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

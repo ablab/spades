@@ -2,6 +2,7 @@
  */
 #ifndef eslMSAFILE_PHYLIP_INCLUDED
 #define eslMSAFILE_PHYLIP_INCLUDED
+#include "esl_config.h"
 
 #include "esl_msa.h"
 #include "esl_msafile.h"
@@ -14,6 +15,4 @@ extern int esl_msafile_phylip_Write        (FILE *fp, const ESL_MSA *msa, int fo
 extern int esl_msafile_phylip_CheckFileFormat(ESL_BUFFER *bf, int *ret_format, int *ret_namewidth);
 
 #endif /* eslMSAFILE_PHYLIP_INCLUDED */
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
+

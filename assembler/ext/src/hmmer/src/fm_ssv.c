@@ -15,8 +15,9 @@ static int
 FM_hit_sorter(const void *a, const void *b)
 {
 //    return 2 * (((FM_DIAG*)a)->sortkey > ((FM_DIAG*)b)->sortkey) - 1;  // same as the test below
-    if      ( ((FM_DIAG*)a)->sortkey > ((FM_DIAG*)b)->sortkey) return 1;
-    else                                 return -1;
+    if      ( ((FM_DIAG*)a)->sortkey > ((FM_DIAG*)b)->sortkey) return  1;
+    else  if( ((FM_DIAG*)a)->sortkey < ((FM_DIAG*)b)->sortkey) return -1;
+    else                                                       return  0;
 }
 
 
@@ -133,7 +134,7 @@ FM_backtrackSeed(const FM_DATA *fmf, const FM_CFG *fm_cfg, int i) {
   while ( j != fmf->term_loc && (j % fm_cfg->meta->freq_SA)) { //go until we hit a position in the full SA that was sampled during FM index construction
     c = fm_getChar( fm_cfg->meta->alph_type, j, fmf->BWT);
     j = fm_getOccCount (fmf, fm_cfg, j-1, c);
-    j += abs(fmf->C[c]);
+    j += abs((int)(fmf->C[c]));
     len++;
   }
 
@@ -318,7 +319,6 @@ FM_Recurse( int depth, int Kp, int fm_direction,
             || ( dp_pairs[i].model_direction == fm_backward && k == 1 )                                             //can't extend anymore, 'cause we're at the beginning of the model, going backwards
             || (depth == dp_pairs[i].score_peak_len + fm_cfg->drop_max_len)                                        //too many consecutive positions with a negative total score contribution (sort of like Xdrop)
             || (depth > 4 && depth > consec_consensus && (float)sc/(float)depth < fm_cfg->score_density_req)       //score density is too low (don't bother checking in the first couple slots
-            || (depth >= 0.7*fm_cfg->max_depth && depth > consec_consensus &&  (float)sc/(float)depth < sc_threshFM/(float)(fm_cfg->max_depth))                      // if we're most of the way across the sequence, and score density is too low, abort -- if the density on the other side is high enough, I'll find it on the reverse sweep
             || (dp_pairs[i].max_consec_pos < fm_cfg->consec_pos_req  &&                                               //a seed is expected to have at least one run of positive-scoring matches at least length consec_pos_req;  if it hasn't,  (see Tue Nov 23 09:39:54 EST 2010)
                 (fm_cfg->consec_pos_req - positive_run) ==  (fm_cfg->max_depth - depth + 1)                 // if we're close to the end of the sequence, abort -- if that end does have sufficiently long all-positive run, I'll find it on the reverse sweep
                )
@@ -464,7 +464,7 @@ static int FM_getSeeds ( const FM_DATA *fmf, const FM_DATA *fmb,
     int fwd_cnt=0;
     int rev_cnt=0;
     interval_f1.lower = interval_f2.lower = interval_bk.lower = fmf->C[i];
-    interval_f1.upper = interval_f2.upper = interval_bk.upper = abs(fmf->C[i+1])-1;
+    interval_f1.upper = interval_f2.upper = interval_bk.upper = abs((int)(fmf->C[i+1]))-1;
 
     if (interval_f1.lower<0 ) //none of that character found
       continue;
@@ -578,7 +578,6 @@ static int FM_getSeeds ( const FM_DATA *fmf, const FM_DATA *fmb,
 
 ERROR:
   return eslEMEM;
-
 }
 
 
@@ -603,22 +602,19 @@ ERROR:
  * Returns:   <eslOK> on success.
  */
 static int
-FM_window_from_diag (FM_DIAG *diag, const FM_DATA *fm, const FM_METADATA *meta, P7_HMM_WINDOWLIST *windowlist) {
-
+FM_window_from_diag (FM_DIAG *diag, const FM_DATA *fm, const FM_METADATA *meta, P7_HMM_WINDOWLIST *windowlist) 
+{
+  uint32_t seg_id;
+  uint64_t seg_pos;
   // if diag->complementarity == p7_NOCOMPLEMENT, these positions are in context of FM->T
   // otherwise, they're in context of revcomp(FM->T).
 
-  int status;
-  uint32_t seg_id;
-  uint64_t seg_pos;
-
-  status = fm_getOriginalPosition (fm, meta, 0, diag->length, diag->complementarity, diag->n, &seg_id, &seg_pos);
+  fm_getOriginalPosition (fm, meta, 0, diag->length, diag->complementarity, diag->n, &seg_id, &seg_pos);
 
   p7_hmmwindow_new(windowlist, seg_id, seg_pos, diag->n, diag->k+diag->length-1, diag->length, diag->score, diag->complementarity,
          meta->seq_data[seg_id].length);
 
   return eslOK;
-
 }
 
 
@@ -645,7 +641,6 @@ FM_window_from_diag (FM_DIAG *diag, const FM_DATA *fm, const FM_METADATA *meta, 
 static int
 FM_extendSeed(FM_DIAG *diag, const FM_DATA *fm, const P7_SCOREDATA *ssvdata, FM_CFG *cfg, ESL_SQ  *tmp_sq)
 {
-
   uint64_t k,n;
   int32_t model_start, model_end;
   int64_t target_start, target_end;
@@ -731,7 +726,7 @@ FM_extendSeed(FM_DIAG *diag, const FM_DATA *fm, const P7_SCOREDATA *ssvdata, FM_
 int
 p7_SSVFM_longlarget( P7_OPROFILE *om, float nu, P7_BG *bg, double F1,
          const FM_DATA *fmf, const FM_DATA *fmb, FM_CFG *fm_cfg, const P7_SCOREDATA *ssvdata,
-         int strands, P7_HMM_WINDOWLIST *windowlist)
+         int strands, ESL_RANDOMNESS *r, P7_HMM_WINDOWLIST *windowlist)
 {
   float sc_thresh, sc_threshFM;
   float invP;
@@ -759,8 +754,11 @@ p7_SSVFM_longlarget( P7_OPROFILE *om, float nu, P7_BG *bg, double F1,
 
   /* convert the consensus to a collection of ints, so I can test for runs of identity to the consensus */
   ESL_ALLOC(consensus, (om->M+1)*sizeof(uint8_t) );
-  for (i=1; i<=om->M; i++)
+  for (i=1; i<=om->M; i++) {
     consensus[i] = om->abc->inmap[(int)(om->consensus[i])];
+    if (consensus[i] > om->abc->K)
+          consensus[i] = esl_rnd_Roll(r,om->abc->K);
+  }
 
 
   /* Set false target length. This is a conservative estimate of the length of window that'll
@@ -830,6 +828,3 @@ ERROR:
 /*------------------ end, FM_MSV() ------------------------*/
 
 
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

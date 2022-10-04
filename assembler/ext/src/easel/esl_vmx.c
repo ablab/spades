@@ -1,4 +1,4 @@
-/* Vectorized routines for PowerPC, using Altivec/VMX.
+/* Vectorized routines for PowerPC processors, using Altivec/VMX intrinsics.
  * 
  * Table of contents           
  *     1. SIMD logf(), expf()
@@ -7,7 +7,14 @@
  *     4. Unit tests
  *     5. Test driver
  *     6. Example
- *     7. Copyright and license
+ *
+ *****************************************************************
+ *
+ * This code is conditionally compiled, only when <eslENABLE_VMX> was
+ * set in <esl_config.h> by the configure script, and that will only
+ * happen on ARM platforms. When <eslENABLE_VMX> is not set, we
+ * include some dummy code to silence compiler and ranlib warnings
+ * about empty translation units and no symbols, and dummy drivers
  *     
  *****************************************************************
  * Credits:
@@ -21,7 +28,7 @@
  * information is appended at the end of the file.
  */
 #include "esl_config.h"
-#ifdef HAVE_VMX
+#ifdef eslENABLE_VMX
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -37,15 +44,8 @@
 
 
 /*****************************************************************
- * 1. VMX SIMD logf(), expf()
+ * 1. Altivec/VMX SIMD logf(), expf()
  *****************************************************************/ 
-
-/* As of Dec 2007, I am unaware of any plans for Intel/AMD to release
- * SSE intrinsics for logf(), expf(), or other special functions.
- *
- * I need them, and the code below should suffice. If you know of
- * better ways to compute these functions, please let me know.
- */
 
 /* Function:  esl_vmx_logf()
  * Synopsis:  <r[z] = log x[z]>
@@ -230,8 +230,6 @@ esl_vmx_dump_vecfloat(FILE *fp, vector float v)
  *****************************************************************/
 #ifdef eslVMX_BENCHMARK
 
-/* gcc -maltivec -O3 -o vmx_benchmark -I . -L . -DeslVMX_BENCHMARK -DHAVE_VMX esl_vmx.c -leasel -lm
- */
 #include "esl_config.h"
 
 #include <stdio.h>
@@ -412,7 +410,7 @@ utest_odds(ESL_GETOPTS *go, ESL_RANDOMNESS *r)
   if (verbose) {
     printf("Average [max] logf() relative error in %d odds trials:  %13.8g  [%13.8g]\n", N, avgerr1, maxerr1);
     printf("Average [max] expf() relative error in %d odds trials:  %13.8g  [%13.8g]\n", N, avgerr2, maxerr2);
-    printf("(random seed : %ld)\n", esl_randomness_GetSeed(r));
+    printf("(random seed : %d)\n", esl_randomness_GetSeed(r));
   }
 }
 #endif /*eslVMX_TESTDRIVE*/
@@ -425,8 +423,6 @@ utest_odds(ESL_GETOPTS *go, ESL_RANDOMNESS *r)
  *****************************************************************/
 
 #ifdef eslVMX_TESTDRIVE
-/* gcc -g -Wall -maltivec -o vmx_utest -I. -L. -DeslVMX_TESTDRIVE esl_vmx.c -leasel -lm
- */
 #include "esl_config.h"
 
 #include <stdio.h>
@@ -468,15 +464,12 @@ main(int argc, char **argv)
 
 
 
-
 /*****************************************************************
  * 6. Example
  *****************************************************************/
 
 #ifdef eslVMX_EXAMPLE
 /*::cexcerpt::vmx_example::begin::*/
-/* gcc -msse2 -g -Wall -o vmx_example -I. -L. -DeslVMX_EXAMPLE esl_vmx.c -leasel -lm
- */
 #include "esl_config.h"
 
 #include <stdio.h>
@@ -504,65 +497,63 @@ main(int argc, char **argv)
 }
 /*::cexcerpt::vmx_example::end::*/
 #endif /*eslVMX_EXAMPLE*/
-#endif /*HAVE_VMX*/
 
-#ifndef HAVE_VMX
+
+#else // ! eslENABLE_VMX
 
 /* If we don't have VMX compiled in, provide some nothingness to:
  *   a. prevent Mac OS/X ranlib from bitching about .o file that "has no symbols" 
  *   b. prevent compiler from bitching about "empty compilation unit"
- *   c. automatically pass the automated tests.
+ *   c. compile blank drivers and automatically pass the automated tests.
  */
-#include "easel.h"
-
-void esl_vmx_DoAbsolutelyNothing(void) { return; }
+void esl_vmx_silence_hack(void) { return; }
 #if defined eslVMX_TESTDRIVE || defined eslVMX_EXAMPLE || eslVMX_BENCHMARK
 int main(void) { return 0; }
-#endif
-#endif
+#endif 
+#endif // eslENABLE_VMX or not
+
 
 /*****************************************************************
- * @LICENSE@
- * 
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
-
-/* Additionally, esl_sse_logf() and esl_sse_expf() are 
+ * additional copyright and license information for this file    
+ *****************************************************************
+ * In addition to our own copyrights, esl_vmx_logf() and esl_vmx_expf() are also:
  *  Copyright (C) 2007 Julien Pommier
  *  Copyright (C) 1992 Stephen Moshier 
  *
  * These functions derived from zlib-licensed routines by
  * Julien Pommier, http://gruntthepeon.free.fr/ssemath/. The
  * zlib license:
- */
-
-/* Copyright (C) 2007  Julien Pommier
-
-  This software is provided 'as-is', without any express or implied
-  warranty.  In no event will the authors be held liable for any damages
-  arising from the use of this software.
-
-  Permission is granted to anyone to use this software for any purpose,
-  including commercial applications, and to alter it and redistribute it
-  freely, subject to the following restrictions:
-
-  1. The origin of this software must not be misrepresented; you must not
-     claim that you wrote the original software. If you use this software
-     in a product, an acknowledgment in the product documentation would be
-     appreciated but is not required.
-  2. Altered source versions must be plainly marked as such, and must not be
-     misrepresented as being the original software.
-  3. This notice may not be removed or altered from any source distribution.
-*/
-
-/* In turn, Pommier had derived the logf() and expf() functions from
+ *
+ *-------------------------------------------------------------------------
+ * Copyright (C) 2007  Julien Pommier
+ *
+ *  This software is provided 'as-is', without any express or implied
+ *  warranty.  In no event will the authors be held liable for any damages
+ *  arising from the use of this software.
+ *
+ *  Permission is granted to anyone to use this software for any purpose,
+ *  including commercial applications, and to alter it and redistribute it
+ *  freely, subject to the following restrictions:
+ *
+ *  1. The origin of this software must not be misrepresented; you must not
+ *     claim that you wrote the original software. If you use this software
+ *     in a product, an acknowledgment in the product documentation would be
+ *     appreciated but is not required.
+ *  2. Altered source versions must be plainly marked as such, and must not be
+ *     misrepresented as being the original software.
+ *  3. This notice may not be removed or altered from any source distribution.
+ *
+ *-------------------------------------------------------------------------
+ *
+ * In turn, Pommier had derived the logf() and expf() functions from
  * serial versions in the Cephes math library. According to its
  * readme, Cephes is "copyrighted by the author" and "may be used
  * freely but it comes with no support or guarantee."  Cephes is
  * available in NETLIB [http://www.netlib.org/cephes/]. NETLIB is
- * widely considered to be a free scientific code repository, hough
+ * widely considered to be a free scientific code repository, though
  * the copyright and license status of many parts, including Cephes,
- * is not well defined in legal terms. We hereby note this, and have
- * attached Moshier's copyright.
+ * is ill-defined. We have attached Moshier's copyright,
+ * to credit his original contribution. Thanks to both Pommier and
+ * Moshier for their clear code.
  */
+

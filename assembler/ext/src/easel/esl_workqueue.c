@@ -3,8 +3,6 @@
  * Contents:
  *    1. Work queue routines
  *    2. Examples.
- *    3. Copyright and license.
- * 
  */
 #include "esl_config.h"
 
@@ -555,10 +553,5 @@ main(void)
 #endif /*eslWORKQUEUE_EXAMPLE*/
 #endif /* HAVE_PTHREAD */
 
-/*****************************************************************  
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
+
 

@@ -1,7 +1,7 @@
 project(hmmer C)
 
-set(HMMER_DATE "July 2016")
-set(HMMER_COPYRIGHT "Copyright (C) 2016 Howard Hughes Medical Institute.")
+set(HMMER_DATE "Nov 2020")
+set(HMMER_COPYRIGHT "Copyright (C) 2020 Howard Hughes Medical Institute.")
 set(HMMER_LICENSE "Freely distributed under the BSD open source license.")
 set(HMMER_VERSION "3.1b3")
 set(HMMER_URL "http://hmmer.org/")
@@ -14,22 +14,15 @@ set(HMMER_BUILT_INCLUDE_DIR ${HMMER_BINARY_DIR}/include)
 
 include(CheckIncludeFiles)
 
-check_include_files(endian.h HAVE_FEATURES_H)
+check_include_files(endian.h HAVE_ENDIAN_H)
 check_include_files(inttypes.h HAVE_INTTYPES_H)
 check_include_files(stdint.h HAVE_STDINT_H)
 check_include_files(unistd.h HAVE_UNISTD_H)
 check_include_files(strings.h HAVE_STRINGS_H)
+check_include_files(netinet/in.h HAVE_NETINET_IN_H)
 check_include_files(sys/types.h HAVE_SYS_TYPES_H)
 check_include_files(sys/param.h HAVE_SYS_PARAM_H)
 check_include_files(sys/sysctl.h HAVE_SYS_SYSCTL_H)
-
-check_include_files(emmintrin.h HAVE_SSE2)
-check_include_files(pmmintrin.h HAVE_SSE3)
-check_include_files(xmmintrin.h HAVE_SSE)
-if (HAVE_SSE2)
-  set(HAVE_SSE2_CAST 1)
-  set(p7_IMPL_SSE 1)
-endif()
 
 find_package(Threads)
 if (CMAKE_USE_PTHREADS_INIT)
@@ -69,14 +62,24 @@ set(hmmer_src
   src/p7_hmm.c src/p7_hmmcache.c src/p7_hmmfile.c src/p7_hmmwindow.c
   src/p7_null3.c src/p7_pipeline.c src/p7_prior.c src/p7_profile.c
   src/p7_spensemble.c src/p7_tophits.c src/p7_trace.c src/p7_scoredata.c
+  src/p7_hit.c src/p7_domain.c
   src/hmmpgmd2msa.c src/fm_alphabet.c src/fm_general.c src/fm_sse.c src/fm_ssv.c)
 
-if (HAVE_SSE2)
+if (eslENABLE_SSE)
   set(hmmer_sse_src
     src/impl_sse/decoding.c src/impl_sse/fwdback.c src/impl_sse/io.c src/impl_sse/ssvfilter.c
     src/impl_sse/msvfilter.c src/impl_sse/null2.c src/impl_sse/optacc.c src/impl_sse/stotrace.c
     src/impl_sse/vitfilter.c src/impl_sse/p7_omx.c src/impl_sse/p7_oprofile.c src/impl_sse/mpi.c)
   set(hmmer_src ${hmmer_src} ${hmmer_sse_src})
+endif()
+
+if (eslENABLE_NEON)
+  set(hmmer_neon_src
+    src/impl_neon/decoding.c src/impl_neon/io.c src/impl_neon/msvfilter.c src/impl_neon/optacc.c
+    src/impl_neon/p7_oprofile.c src/impl_neon/stotrace.c
+    src/impl_neon/fwdback.c src/impl_neon/mpi.c src/impl_neon/null2.c src/impl_neon/p7_omx.c
+    src/impl_neon/ssvfilter.c src/impl_neon/vitfilter.c)
+  set(hmmer_src ${hmmer_src} ${hmmer_neon_src})
 endif()
 
 add_library(hmmer STATIC ${hmmer_src})

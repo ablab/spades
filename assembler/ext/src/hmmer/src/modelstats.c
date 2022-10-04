@@ -1,7 +1,6 @@
 /* Miscellaneous summary statistics calculated for HMMs and profiles.
  * 
  * SRE, Fri May  4 11:43:20 2007 [Janelia]
- * SVN $Id$
  */
 
 #include "p7_config.h"
@@ -22,8 +21,8 @@
  *            \[
  *              \frac{1}{M} \sum_{k=1}^{M}
  *                \left[ 
- *                     \sum_x p_k(x) \log_2 p_k(x) 
- *                   - \sum_x f(x) \log_2 f(x)
+ *                     \sum_x f(x)   \log_2 f(x)
+ *                   - \sum_x p_k(x) \log_2 p_k(x) 
  *                \right] 
  *            \]
  *            
@@ -199,14 +198,14 @@ p7_MeanPositionRelativeEntropy(const P7_HMM *hmm, const P7_BG *bg, double *ret_e
 }
 
 
-/* Function:  p7_hmm_CompositionKLDist()
+/* Function:  p7_hmm_CompositionKLD()
  * Synopsis:  A statistic of model's composition bias.
  * Incept:    SRE, Mon Jul  2 08:40:12 2007 [Janelia]
  *
- * Purpose:   Calculates the K-L distance between the average match
- *            state residue composition in model <hmm> and a
- *            background frequency distribution in <bg>, and
- *            return it in <ret_KL>. 
+ * Purpose:   Calculates the KL divergence (relative entropy) between
+ *            the average match state residue composition in model
+ *            <hmm> and the background frequency distribution in <bg>;
+ *            return it in <ret_KL>, in bits.
  *            
  *            Optionally return the average match state residue
  *            composition in <opt_avp>. This vector, of length
@@ -215,16 +214,21 @@ p7_MeanPositionRelativeEntropy(const P7_HMM *hmm, const P7_BG *bg, double *ret_e
  *            
  *            The average match composition is an occupancy-weighted
  *            average (see <p7_hmm_CalculateOccupancy()>.
- *            
- *            The `K-L distance' <*ret_KL> is the symmetricized
- *            Kullback-Leibler distance in bits (log base 2).
  *
+ *            For average match state residue composition <p> and
+ *            background residue frequencies <q>, the KL divergence
+ *            is:
+ *
+ *            \begin{eqnarray*}
+ *                 \sum_a p_a \log_2 \frac{p_a}{q_a}
+ *            \end{eqnarray*}
+ *            
  * Returns:   <eslOK> on success.
  *
  * Throws:    <eslEMEM> on allocation error.
  */
 int
-p7_hmm_CompositionKLDist(P7_HMM *hmm, P7_BG *bg, float *ret_KL, float **opt_avp)
+p7_hmm_CompositionKLD(const P7_HMM *hmm, const P7_BG *bg, float *ret_KL, float **opt_avp)
 {
   int    K   = hmm->abc->K;
   float *occ = NULL;
@@ -234,28 +238,25 @@ p7_hmm_CompositionKLDist(P7_HMM *hmm, P7_BG *bg, float *ret_KL, float **opt_avp)
 
   ESL_ALLOC(occ, sizeof(float) * (hmm->M+1));
   ESL_ALLOC(p,   sizeof(float) * K);
-  p7_hmm_CalculateOccupancy(hmm, occ, NULL);
 
-  esl_vec_FSet(p, K, 0.);
+  p7_hmm_CalculateOccupancy(hmm, occ, NULL);         // match state occupancy probabilities 
+
+  esl_vec_FSet(p, K, 0.);                            // average composition over match states
   for (k = 1; k <= hmm->M; k++)
     esl_vec_FAddScaled(p, hmm->mat[k], occ[k], K);
   esl_vec_FNorm(p, K);
 
-  *ret_KL = (esl_vec_FRelEntropy(p, bg->f, K) + esl_vec_FRelEntropy(bg->f, p, K)) / (2.0 * eslCONST_LOG2);
+  *ret_KL = esl_vec_FRelEntropy(p, bg->f, K);       // easel returns this value in bits
   if (opt_avp != NULL) *opt_avp = p;  else free(p); 
   free(occ);
   return eslOK;
   
  ERROR:
-  if (occ != NULL) free(occ);
-  if (p   != NULL) free(p);
+  free(occ);
+  free(p);
+  if (opt_avp) *opt_avp = NULL;
   *ret_KL = 0.0;
-  if (opt_avp != NULL) *opt_avp = NULL;
   return status;
 }
 
 
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

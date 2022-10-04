@@ -10,7 +10,6 @@
  *   4. Unit tests.
  *   5. Test driver.
  *   6. References.
- *   7. Copyright and license information.
  */
 #include "p7_config.h"
 
@@ -98,7 +97,7 @@ p7_gmxchk_Create(int M, int L, int64_t ramlimit)
   for (r = 0; r < gxc->allocR; r++) 
     gxc->dp[r] = gxc->dp_mem + (r * gxc->allocW);
 
-#ifdef p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
   gxc->do_debugging  = FALSE;
   gxc->dfp           = NULL;
   gxc->dbg_width     = 9;
@@ -279,7 +278,7 @@ p7_gmxchk_Destroy(P7_GMXCHK *gxc)
 /*****************************************************************
  *= 2. Debugging and testing tools
  *****************************************************************/
-#if p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
 
 /* Function:  p7_gmxchk_Dump()
  * Synopsis:  Dump a checkpointed DP matrix to a stream.
@@ -474,7 +473,7 @@ p7_gmxchk_DumpRow(FILE *ofp, P7_GMXCHK *gxc, float *dpc, int i, int kstart, int 
   fprintf(ofp, "\n\n");		
   return eslOK;
 }
-#endif /* p7_DEBUGGING */
+#endif // eslDEBUGLEVEL
 /*------------- end, debugging and testing tools ----------------*/
 
 
@@ -837,13 +836,5 @@ main(int argc, char **argv)
  * References:
  *   SRE J8/109-112, Oct 2011: implementation plan.
  */
-
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
-
 
 

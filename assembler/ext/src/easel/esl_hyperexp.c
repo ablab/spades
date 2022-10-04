@@ -5,13 +5,12 @@
  *   2. Evaluating densities and distributions
  *   3. Generic API routines: for general interface w/ histogram module
  *   4. Dumping plots for files
- *   5. Sampling                    (augmentation: random)
- *   6. File input                  (augmentation: fileparser)
- *   7. ML fitting to complete data (augmentation: minimizer)
- *   8. ML fitting to binned data   (augmentation: histogram, minimizer)
+ *   5. Sampling                   
+ *   6. File input                 
+ *   7. ML fitting to complete data
+ *   8. ML fitting to binned data  
  *   9. Test driver
  *  10. Example
- *  11. Copyright and license information
  *   
  * Xrefs:
  *   STL9/140     :  original implementation
@@ -29,23 +28,15 @@
 #include <math.h>
 
 #include "easel.h"
+#include "esl_exponential.h"
+#include "esl_fileparser.h"
+#include "esl_histogram.h"
+#include "esl_minimizer.h"
+#include "esl_random.h"
 #include "esl_stats.h"
 #include "esl_vectorops.h"
-#include "esl_exponential.h"
-#include "esl_hyperexp.h"
 
-#ifdef eslAUGMENT_RANDOM
-#include "esl_random.h"
-#endif
-#ifdef eslAUGMENT_HISTOGRAM
-#include "esl_histogram.h"
-#endif
-#ifdef eslAUGMENT_MINIMIZER
-#include "esl_minimizer.h"
-#endif
-#ifdef eslAUGMENT_FILEPARSER
-#include "esl_fileparser.h"
-#endif
+#include "esl_hyperexp.h"
 
 /****************************************************************************
  *# 1. The ESL_HYPEREXP object
@@ -512,9 +503,9 @@ esl_hxp_Plot(FILE *fp, ESL_HYPEREXP *h,
 
 
 /****************************************************************************
- * 5. Sampling (requires augmentation w/ random module)
+ * 5. Sampling
  ****************************************************************************/ 
-#ifdef eslAUGMENT_RANDOM
+
 /* Function:  esl_hxp_Sample()
  *
  * Purpose:   Sample a random variate x from a hyperexponential <h>, 
@@ -527,7 +518,7 @@ esl_hxp_Sample(ESL_RANDOMNESS *r, ESL_HYPEREXP *h)
   k = esl_rnd_DChoose(r, h->q, h->K);
   return esl_exp_Sample(r, h->mu, h->lambda[k]);
 }
-#endif /*eslAUGMENT_RANDOM*/
+
 /*--------------------------- end sampling ---------------------------------*/
 
 
@@ -535,7 +526,7 @@ esl_hxp_Sample(ESL_RANDOMNESS *r, ESL_HYPEREXP *h)
 /****************************************************************************
  * 6. File input (mixture models are a little too complex to set on commandline)
  ****************************************************************************/ 
-#ifdef eslAUGMENT_FILEPARSER
+
 /* Function:  esl_hyperexp_Read()
  *
  * Purpose:   Reads hyperexponential parameters from an open <e>.
@@ -662,10 +653,6 @@ esl_hyperexp_ReadFile(char *filename, ESL_HYPEREXP **ret_hxp)
   fclose(fp);
   return status;
 }
-#endif /*eslAUGMENT_FILEPARSER*/
-
-
-
 
 
 
@@ -673,7 +660,7 @@ esl_hyperexp_ReadFile(char *filename, ESL_HYPEREXP **ret_hxp)
 /****************************************************************************
  * 7. ML fitting to complete data
  ****************************************************************************/ 
-#ifdef eslAUGMENT_MINIMIZER
+
 /* This structure is used to sneak the data into minimizer's generic
  * (void *) API for all aux data
  */
@@ -869,47 +856,32 @@ int
 esl_hxp_FitComplete(double *x, int n, ESL_HYPEREXP *h)
 {
   struct hyperexp_data data;
-  int     status;
   double *p   = NULL;
-  double *u   = NULL;
-  double *wrk = NULL;
-  double  tol;
   int     np;
   double  fx;
   int     i;
+  int     status;
 
-  tol = 1e-6;
-
-  /* Determine number of free parameters and allocate 
-   */
+  /* Determine number of free parameters and allocate */
   np = 0;
   if (! h->fixmix) np += h->K-1;  /* K-1 mix coefficients...     */
   for (i = 0; i < h->K; i++)      /* ...and up to K lambdas free */
     if (! h->fixlambda[i]) np++;	
   ESL_ALLOC(p,   sizeof(double) * np);
-  ESL_ALLOC(u,   sizeof(double) * np);
-  ESL_ALLOC(wrk, sizeof(double) * np * 4);
 
-  /* Copy shared info into the "data" structure
-   */
+  /* Copy shared info into the "data" structure */
   data.x   = x;
   data.n   = n;
   data.h   = h;
 
-  /* From h, create the parameter vector.
-   */
+  /* From h, create the parameter vector. */
   hyperexp_pack_paramvector(p, np, h);
 
-  /* Define the step size vector u.
-   */
-  for (i = 0; i < np; i++) u[i] = 1.0;
-
-  /* Feed it all to the mighty optimizer.
-   */
-  status = esl_min_ConjugateGradientDescent(p, u, np, 
+  /* Feed it all to the mighty optimizer. */
+  status = esl_min_ConjugateGradientDescent(NULL, p, np, 
 					    &hyperexp_complete_func, 
 					    &hyperexp_complete_gradient,
-					    (void *) (&data), tol, wrk, &fx);
+					    (void *) (&data), &fx, NULL);
   if (status != eslOK) goto ERROR;
 
   /* Convert the final parameter vector back to a hyperexponential
@@ -917,15 +889,11 @@ esl_hxp_FitComplete(double *x, int n, ESL_HYPEREXP *h)
   hyperexp_unpack_paramvector(p, np, h);
   
   free(p);
-  free(u);
-  free(wrk);
   esl_hyperexp_SortComponents(h);
   return eslOK;
 
  ERROR:
-  if (p   != NULL) free(p);
-  if (u   != NULL) free(u);
-  if (wrk != NULL) free(wrk);
+  free(p);
   return status;
 }
 
@@ -933,7 +901,7 @@ esl_hxp_FitComplete(double *x, int n, ESL_HYPEREXP *h)
 /****************************************************************************
  * 8. Maximum likelihood fitting, complete binned data         xref STL9/143-144
  ****************************************************************************/ 
-#ifdef eslAUGMENT_HISTOGRAM
+
 /* minimizer API only allows us one generic void ptr to pass
  * our data through:
  */
@@ -1100,14 +1068,11 @@ int
 esl_hxp_FitCompleteBinned(ESL_HISTOGRAM *g, ESL_HYPEREXP *h)
 {
   struct hyperexp_binned_data data;
-  int     status;
   double *p   = NULL;
-  double *u   = NULL;
-  double *wrk = NULL;
   double  fx;
   int     i;
-  double  tol = 1e-6;
   int     np;
+  int     status;
 
   np = 0;
   if (! h->fixmix) np = h->K-1;  /* K-1 mix coefficients...      */
@@ -1115,8 +1080,6 @@ esl_hxp_FitCompleteBinned(ESL_HISTOGRAM *g, ESL_HYPEREXP *h)
     if (! h->fixlambda[i]) np++;
 
   ESL_ALLOC(p,   sizeof(double) * np);
-  ESL_ALLOC(u,   sizeof(double) * np);
-  ESL_ALLOC(wrk, sizeof(double) * np * 4);
 
   /* Copy shared info into the "data" structure  */
   data.g     = g;
@@ -1125,16 +1088,11 @@ esl_hxp_FitCompleteBinned(ESL_HISTOGRAM *g, ESL_HYPEREXP *h)
   /* From h, create the parameter vector. */
   hyperexp_pack_paramvector(p, np, h);
 
-  /* Define the step size vector u.
-   */
-  for (i = 0; i < np; i++) u[i] = 1.0;
-
-  /* Feed it all to the mighty optimizer.
-   */
-  status = esl_min_ConjugateGradientDescent(p, u, np, 
+  /* Feed it all to the mighty optimizer. */
+  status = esl_min_ConjugateGradientDescent(NULL, p, np, 
 					    &hyperexp_complete_binned_func, 
 					    &hyperexp_complete_binned_gradient,
-					    (void *) (&data), tol, wrk, &fx);
+					    (void *) (&data), &fx, NULL);
   if (status != eslOK) goto ERROR;
 
   /* Convert the final parameter vector back to a hyperexponential
@@ -1142,19 +1100,13 @@ esl_hxp_FitCompleteBinned(ESL_HISTOGRAM *g, ESL_HYPEREXP *h)
   hyperexp_unpack_paramvector(p, np, h);
   
   free(p);
-  free(u);
-  free(wrk);
   esl_hyperexp_SortComponents(h);
   return eslOK;
 
  ERROR:
-  if (p   != NULL) free(p);
-  if (u   != NULL) free(u);
-  if (wrk != NULL) free(wrk);
+  free(p);
   return status;
 }
-#endif /*eslAUGMENT_HISTOGRAM*/
-#endif /*eslAUGMENT_MINIMIZER*/
 /*--------------------------- end fitting ----------------------------------*/
 
 
@@ -1343,13 +1295,6 @@ main(int argc, char **argv)
  ****************************************************************************/ 
 #ifdef eslHYPEREXP_EXAMPLE
 /*::cexcerpt::hyperexp_example::begin::*/
-/* compile: 
-   gcc -g -Wall -I. -o example -DeslHYPEREXP_EXAMPLE\
-     -DeslAUGMENT_HISTOGRAM -DeslAUGMENT_RANDOM -DeslAUGMENT_MINIMIZER\
-      esl_hyperexp.c esl_exponential.c esl_histogram.c esl_random.c esl_minimizer.c\
-       esl_stats.c esl_vectorops.c easel.c -lm
- * run:     ./example
- */
 #include <stdio.h>
 #include "easel.h"
 #include "esl_random.h"
@@ -1407,12 +1352,5 @@ main(int argc, char **argv)
 }
 /*::cexcerpt::hyperexp_example::end::*/
 #endif /*eslHYPEREXP_EXAMPLE*/
-
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
 
 

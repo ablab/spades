@@ -5,9 +5,7 @@
  *   2. Experiment driver: generating HMMs for hmmsim tests
  *   3. Unit tests.
  *   4. Test driver.
- *   5. Copyright and license.
  */
-
 #include "p7_config.h"
 
 #include "easel.h"
@@ -301,9 +299,4 @@ main(int argc, char **argv)
 
 
 
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $URL$
- * SVN $Id$
- *****************************************************************/
+

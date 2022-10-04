@@ -31,7 +31,6 @@
  * all the necessary working memory and heuristic thresholds.
  *   
  * SRE, Thu Jan 24 09:28:01 2008 [Janelia]
- * SVN $Id$
  */
 #include "p7_config.h"
 
@@ -42,7 +41,6 @@
 #include "esl_random.h"
 #include "esl_sq.h"
 #include "esl_vectorops.h"
-#include "esl_sse.h"
 
 #include "hmmer.h"
 
@@ -366,8 +364,8 @@ p7_domaindef_ByViterbi(P7_PROFILE *gm, const ESL_SQ *sq, const ESL_SQ *ntsq, P7_
  *            using <fwd> and <bck> matrices as workspace for the
  *            necessary full-matrix DP calculations. Caller provides a
  *            new or reused <ddef> object to hold these results.
- *             A <bg> is provided for (possible) use
- *            in null3 score correction (used in nhmmer), and a boolean
+ *            A <bg> is provided for (possible) use in biased-composition
+ *            score correction (used in nhmmer), and a boolean
  *            <long_target> argument is provided to allow nhmmer-
  *            specific modifications to the behavior of this function
  *            (TRUE -> from nhmmer).
@@ -386,8 +384,7 @@ int
 p7_domaindef_ByPosteriorHeuristics(const ESL_SQ *sq, const ESL_SQ *ntsq, P7_OPROFILE *om,
 				   P7_OMX *oxf, P7_OMX *oxb, P7_OMX *fwd, P7_OMX *bck, 
 				   P7_DOMAINDEF *ddef, P7_BG *bg, int long_target,
-				   P7_BG *bg_tmp, float *scores_arr, float *fwd_emissions_arr
-)
+				   P7_BG *bg_tmp, float *scores_arr, float *fwd_emissions_arr)
 {
   int i, j;
   int triggered;
@@ -780,12 +777,10 @@ reparameterize_model (P7_BG *bg, P7_OPROFILE *om, const ESL_SQ *sq, int start, i
  * working space and heuristic thresholds.
  *
  * If <long_target> is TRUE, the calling function  optionally
- * passes in three allocated arrays (bgf_arr, scores_arr,
+ * passes in three allocated arrays (bg_tmp, scores_arr,
  * fwd_emissions_arr) used for temporary storage in
- * reparameterize_model(), and a previously computed array block_bg
- * of residue frequencies for the long_target block from which this
- * envelope came (if scores_arr is NULL, reparameterization is not
- * done, and the domcorrection, used to determine null2, is not
+ * reparameterize_model(). If scores_arr is NULL, reparameterization
+ * is not done, and the domcorrection, used to determine null2, is not
  * computed).
  * 
  * Returns <eslOK> if a domain was successfully identified, scored,
@@ -797,7 +792,6 @@ reparameterize_model (P7_BG *bg, P7_OPROFILE *om, const ESL_SQ *sq, int start, i
  * <ddef>: <ddef->tr> has been used, and possibly reallocated, for
  *         the OA trace of the domain. Before exit, we called
  *         <Reuse()> on it.
- *
  * 
  * <ox1> : happens to be holding OA score matrix for the domain
  *         upon return, but that's not part of the spec; officially
@@ -807,6 +801,14 @@ reparameterize_model (P7_BG *bg, P7_OPROFILE *om, const ESL_SQ *sq, int start, i
  *         for the domain upon return, but we're not making that
  *         part of the spec, so caller shouldn't rely on this;
  *         spec just makes its contents "undefined".
+ *         
+ * 
+ * Returns <eslFAIL> if domain is not successfully identified.  This
+ * is rare; one way it can happen is if posterior decoding calculation
+ * overflows, which can occur on highly repetitive sequence
+ * {J3/119-121}. Beware: as a result, it is possible to have
+ * <ddef->ndom = 0>, for nonzero region(s)/envelope(s). See {iss131}.
+ * 
  */
 static int
 rescore_isolated_domain(P7_DOMAINDEF *ddef, P7_OPROFILE *om, const ESL_SQ *sq, const ESL_SQ *ntsq,
@@ -842,7 +844,12 @@ rescore_isolated_domain(P7_DOMAINDEF *ddef, P7_OPROFILE *om, const ESL_SQ *sq, c
   p7_Backward(sq->dsq + i-1, Ld, om, ox1, ox2, NULL);
 
   status = p7_Decoding(om, ox1, ox2, ox2);      /* <ox2> is now overwritten with post probabilities     */
-  if (status == eslERANGE) return eslFAIL;      /* rare: numeric overflow; domain is assumed to be repetitive garbage [J3/119-212] */
+  if (status == eslERANGE) { /* rare: numeric overflow; domain is assumed to be repetitive garbage [J3/119-121] */
+    if (long_target && scores_arr) 
+      reparameterize_model(bg, om, NULL, 0, 0, fwd_emissions_arr, bg_tmp->f, scores_arr); /* revert to original bg model */
+    status = eslFAIL;
+    goto ERROR;
+  }
 
   /* Find an optimal accuracy alignment */
   p7_OptimalAccuracy(om, ox2, ox1, &oasc);      /* <ox1> is now overwritten with OA scores              */
@@ -892,7 +899,11 @@ rescore_isolated_domain(P7_DOMAINDEF *ddef, P7_OPROFILE *om, const ESL_SQ *sq, c
       p7_Backward(sq->dsq + i-1, Ld, om, ox1, ox2, NULL);
 
       status = p7_Decoding(om, ox1, ox2, ox2);      /* <ox2> is now overwritten with post probabilities     */
-      if (status == eslERANGE) return eslFAIL;      /* rare: numeric overflow; domain is assumed to be repetitive garbage [J3/119-212] */
+      if (status == eslERANGE) { /* rare: numeric overflow; domain is assumed to be repetitive garbage [J3/119-121] */
+          reparameterize_model(bg, om, NULL, 0, 0, fwd_emissions_arr, bg_tmp->f, scores_arr); /* revert to original bg model */
+          status = eslFAIL;
+          goto ERROR;
+      }
 
       /* Find an optimal accuracy alignment */
       p7_OptimalAccuracy(om, ox2, ox1, &oasc);      /* <ox1> is now overwritten with OA scores              */
@@ -1082,7 +1093,8 @@ main(int argc, char **argv)
   /* retrieve and display results */
   for (d = 0; d < ddef->ndom; d++)
     {
-      printf("domain %-4d : %4d %4d  %6.2f  %6.2f\n", d+1, 
+      printf("domain %-4d : %4" PRId64 " %4" PRId64 "  %6.2f  %6.2f\n", 
+	     d+1, 
 	     ddef->dcl[d].ienv,
 	     ddef->dcl[d].jenv,
 	     ddef->dcl[d].envsc,

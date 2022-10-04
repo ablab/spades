@@ -2,6 +2,7 @@
  */
 #ifndef eslMSAFILE_AFA_INCLUDED
 #define eslMSAFILE_AFA_INCLUDED
+#include "esl_config.h"
 
 #include "esl_msa.h"
 #include "esl_msafile.h"
@@ -13,6 +14,3 @@ extern int esl_msafile_afa_Write        (FILE *fp, const ESL_MSA *msa);
 
 #endif /* eslMSAFILE_AFA_INCLUDED */
 
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

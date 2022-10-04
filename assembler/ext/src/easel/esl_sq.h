@@ -2,17 +2,12 @@
  */
 #ifndef eslSQ_INCLUDED
 #define eslSQ_INCLUDED
+#include "esl_config.h"
 
-#ifdef eslAUGMENT_ALPHABET
 #include "esl_alphabet.h"
-#endif
-#ifdef eslAUGMENT_MSA
 #include "esl_msa.h"
-#endif
-#if defined eslAUGMENT_RANDOM && defined eslAUGMENT_RANDOMSEQ
 #include "esl_random.h"         /* random, randomseq add ability to sample random sq objects for unit tests */
-#include "esl_randomseq.h"         /* random, randomseq add ability to sample random sq objects for unit tests */
-#endif
+#include "esl_randomseq.h"      /* random, randomseq add ability to sample random sq objects for unit tests */
 
 /* ESL_SQ - a biosequence
  * 
@@ -82,7 +77,18 @@
  * acc, desc info is now deprecated. Cannot distinguish empty string
  * from lack of annotation. Should use NULL ptr instead. Fix this in
  * future.  (21 Nov 09 xref J5/114)
- *    
+ *
+ * Easel dsq coordinates are "1-offset, closed-interval, no-flag".
+ * 1-offset means 1..n, as opposed to 0..n-1. Closed-interval means
+ * that start/end coords i..j refers to subseq x_i..x_j, not
+ * x_i..x_j-1 (as in half-open coords of Python lists, for example).
+ * No-flag means that we don't keep a flag for forward vs. reverse
+ * strand on DNA/RNA sequences; instead, start>end means reverse
+ * strand. A flaw in such a coord system is that we cannot
+ * unambiguously represent fwd/rev strand for a subsequence of length
+ * 1, where start=end. So in the case of start=end, Easel always
+ * assumes fwd strand; if rev strand is needed, there will be some
+ * sort of patchy workaround. 
  */
 typedef struct esl_sq_s {
   /*::cexcerpt::sq_sq::begin::*/
@@ -96,7 +102,7 @@ typedef struct esl_sq_s {
   int64_t  n;              /* length of seq (or dsq) and ss                    */
   /*::cexcerpt::sq_sq::end::*/
 
-  /* Coordinate info for:                                       seq       subseq     window     info */
+  /* Source-tracking coordinate info for:                       seq       subseq     window     info */
   /*                                                           ----       ------     ------    ----- */
   int64_t  start;  /* coord of seq[0],dsq[1] on source  [1..L]    1      1<=i<=L    1<=i<=L      0   */
   int64_t  end;    /* coord of seq[n-1],dsq[n] on source[1..L]    L      1<=j<=L    1<=j<=L      0   */
@@ -114,7 +120,7 @@ typedef struct esl_sq_s {
   int64_t  salloc;         /* alloc for seq or dsq, and ss if present          */
   int      srcalloc;	   /* allocated length for source name                 */
 
-  /* Disk offset bookkeeping:                                                  */
+  /* Disk-tracking offset bookkeeping:                                         */
   int64_t  idx;           /* ctr for which # seq this is; -1 if not counting   */
   off_t    roff;          /* record offset (start of record); -1 if none       */
   off_t    hoff;          /* offset to last byte of header; -1 if unknown      */
@@ -129,11 +135,7 @@ typedef struct esl_sq_s {
   int     nxr;             /* number of extra residue markups                                                             */
 
   /* Copy of a pointer to the alphabet, if digital mode */
-#if defined(eslAUGMENT_ALPHABET)
   const ESL_ALPHABET *abc; /* reference to the alphabet for <dsq>              */
-#else
-  const void         *abc; /* void reference, if we're not even augmented      */
-#endif
 } ESL_SQ;
 
 typedef struct {
@@ -167,10 +169,10 @@ extern int     esl_sq_SetName        (ESL_SQ *sq, const char *name);
 extern int     esl_sq_SetAccession   (ESL_SQ *sq, const char *acc);
 extern int     esl_sq_SetDesc        (ESL_SQ *sq, const char *desc);
 extern int     esl_sq_SetSource      (ESL_SQ *sq, const char *source);
-extern int     esl_sq_FormatName     (ESL_SQ *sq, const char *name,   ...);
-extern int     esl_sq_FormatAccession(ESL_SQ *sq, const char *acc,    ...);
-extern int     esl_sq_FormatDesc     (ESL_SQ *sq, const char *desc,   ...);
-extern int     esl_sq_FormatSource   (ESL_SQ *sq, const char *source, ...);
+extern int     esl_sq_FormatName     (ESL_SQ *sq, const char *name,   ...) ESL_ATTRIBUTE_FORMAT(printf, 2, 3);
+extern int     esl_sq_FormatAccession(ESL_SQ *sq, const char *acc,    ...) ESL_ATTRIBUTE_FORMAT(printf, 2, 3);
+extern int     esl_sq_FormatDesc     (ESL_SQ *sq, const char *desc,   ...) ESL_ATTRIBUTE_FORMAT(printf, 2, 3);
+extern int     esl_sq_FormatSource   (ESL_SQ *sq, const char *source, ...) ESL_ATTRIBUTE_FORMAT(printf, 2, 3);
 extern int     esl_sq_AppendDesc     (ESL_SQ *sq, const char *desc);
 extern int     esl_sq_SetCoordComplete(ESL_SQ *sq, int64_t L);
 extern int     esl_sq_CAddResidue (ESL_SQ *sq, char c);
@@ -178,7 +180,6 @@ extern int     esl_sq_ReverseComplement(ESL_SQ *sq);
 extern int     esl_sq_Checksum(const ESL_SQ *sq, uint32_t *ret_checksum);
 extern int     esl_sq_CountResidues(const ESL_SQ *sq, int start, int L, float *f);
 
-#ifdef eslAUGMENT_ALPHABET
 extern ESL_SQ *esl_sq_CreateDigital(const ESL_ALPHABET *abc);
 extern ESL_SQ *esl_sq_CreateDigitalFrom(const ESL_ALPHABET *abc, const char *name, const ESL_DSQ *dsq, 
 					int64_t L, const char *desc, const char *acc,  const char *ss);
@@ -187,25 +188,18 @@ extern int     esl_sq_Textize(ESL_SQ *sq);
 extern int     esl_sq_GuessAlphabet(ESL_SQ *sq, int *ret_type);
 extern int     esl_sq_XAddResidue(ESL_SQ *sq, ESL_DSQ x);
 extern int     esl_sq_ConvertDegen2X(ESL_SQ *sq);
-#endif
 
-#ifdef eslAUGMENT_MSA
 extern int     esl_sq_GetFromMSA  (const ESL_MSA *msa, int which, ESL_SQ *sq);
 extern int     esl_sq_FetchFromMSA(const ESL_MSA *msa, int which, ESL_SQ **ret_sq);
-#endif
 
 extern ESL_SQ_BLOCK *esl_sq_CreateBlock(int count);
 extern int esl_sq_BlockGrowTo(ESL_SQ_BLOCK *sqblock, int newsize, int do_digital, const ESL_ALPHABET *abc);
-#ifdef eslAUGMENT_ALPHABET
 extern ESL_SQ_BLOCK *esl_sq_CreateDigitalBlock(int count, const ESL_ALPHABET *abc);
-#endif
 extern void          esl_sq_DestroyBlock(ESL_SQ_BLOCK *sqBlock);
+extern int esl_sq_BlockReallocSequences(ESL_SQ_BLOCK *block);
 
-#if defined eslAUGMENT_RANDOM && defined eslAUGMENT_RANDOMSEQ
+extern int esl_sq_Validate(ESL_SQ *sq, char *errmsg);
 extern int esl_sq_Sample(ESL_RANDOMNESS *rng, ESL_ALPHABET *abc, int maxL, ESL_SQ **ret_sq);
-#endif /* eslAUGMENT_RANDOM && eslAUGMENT_RANDOMSEQ */
 
 #endif /*eslSQ_INCLUDED*/
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
+

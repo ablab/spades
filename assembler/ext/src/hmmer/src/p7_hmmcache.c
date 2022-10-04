@@ -1,10 +1,9 @@
 /* A cached profile database. Used by the hmmpgmd daemon.
  * 
  * Contents:
- *   x. P7_HMMCACHE : a daemon's cached profile database.
- *   x. Benchmark driver.
- *   x. Unit tests.
- *   x. License and copyright information
+ *   1. P7_HMMCACHE : a daemon's cached profile database.
+ *   2. Benchmark driver.
+ *   3. Unit tests.
  */
 #include "p7_config.h"
 
@@ -224,9 +223,3 @@ main(int argc, char **argv)
 
 
 
-/*****************************************************************
- * @LICENSE@
- * 
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/

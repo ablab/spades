@@ -6,7 +6,6 @@
  *   3. Unit tests.
  *   4. Test driver.
  *   5. Example.
- *   6. Copyright and license information.
  */
 #include "p7_config.h"
 
@@ -480,9 +479,3 @@ dump_matrix_csv(FILE *fp, P7_GMX *pp, int istart, int iend, int kstart, int kend
 
 
 
-/*****************************************************************
- * @LICENSE@
- *   
- * SVN $URL$
- * SVN $Id$
- *****************************************************************/

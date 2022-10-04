@@ -2,6 +2,7 @@
  */
 #ifndef eslSCOREMATRIX_INCLUDED
 #define eslSCOREMATRIX_INCLUDED
+#include "esl_config.h"
 
 #include "esl_alphabet.h"
 #include "esl_fileparser.h"
@@ -69,9 +70,7 @@ extern int esl_scorematrix_Probify(const ESL_SCOREMATRIX *S, ESL_DMATRIX **opt_P
 				   double **opt_fi, double **opt_fj, double *opt_lambda);
 
 #endif /*eslSCOREMATRIX_INCLUDED*/
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/ 
+
 
 
 

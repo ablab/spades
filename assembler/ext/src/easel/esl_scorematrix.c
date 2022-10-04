@@ -13,7 +13,6 @@
  *   9. Unit tests.
  *  10. Test driver.
  *  11. Example program.
- *  12. License and copyright.
  */
 #include "esl_config.h"
 
@@ -27,9 +26,9 @@
 #include "esl_fileparser.h"
 #include "esl_rootfinder.h"
 #include "esl_ratematrix.h"
-#include "esl_scorematrix.h"
 #include "esl_vectorops.h"
 
+#include "esl_scorematrix.h"
 
 /*****************************************************************
  *# 1. The ESL_SCOREMATRIX object
@@ -328,7 +327,7 @@ esl_scorematrix_RelEntropy(const ESL_SCOREMATRIX *S, const double *fi, const dou
 	if (pij > 0.) D += pij * log(pij / (fi[i] * fj[j]));
 	
       }
-  if (esl_DCompare(sum, 1.0, 1e-3) != eslOK) 
+  if (esl_DCompare_old(sum, 1.0, 1e-3) != eslOK) 
     ESL_XEXCEPTION(eslEINVAL, "pij's don't sum to one (%.4f): bad lambda or bad bg?", sum);
 
   D /= eslCONST_LOG2;
@@ -358,7 +357,7 @@ esl_scorematrix_RelEntropy(const ESL_SCOREMATRIX *S, const double *fi, const dou
  *            All values in <P> involving the codes for gap,
  *            nonresidue, and missing data (codes <K>,<Kp-2>, and
  *            <Kp-1>) are 0.0, not probabilities. Only rows/columns
- *            <i=0..K,K+1..Kp-3> are valid probability vectors.
+ *            <i=0..K-1,K+1..Kp-3> are valid probability vectors.
  *
  * Returns:   <eslOK> on success.
  *
@@ -736,6 +735,30 @@ struct esl_scorematrix_nt_preload_s {
   int   matrix[eslNTDIM][eslNTDIM];
 };
 
+/* "DNA1" matrix
+ * 
+ * Travis Wheeler created the "DNA1" custom matrix for nhmmer. It's
+ * derived from the DNA prior (see <p7_prior_CreateNucleic()>), by
+ * computing mean posterior joint probabilities p_ij for a single
+ * observed count of each residue, assuming uniform background, and
+ * symmetricizing the result by taking means; then calling
+ * <esl_scorematrix_SetFromProbs()> with lambda = 0.02.
+ * 
+ * The p_ij matrix was:
+ *         A     C     G     T 
+ *      0.143 0.033 0.037 0.037  A
+ *      0.033 0.136 0.029 0.044  C
+ *      0.037 0.029 0.157 0.034  G
+ *      0.037 0.044 0.034 0.136  T
+ * 
+ * Travis estimated the DNA prior from a subset of Rfam 10.0 seed
+ * alignments, based on a procedure from Eric Nawrocki: remove
+ * columns with >50% gaps, collect weighted counts, and estimate
+ * a four-component Dirichlet mixture.
+ * 
+ * [xref email from Travis 8/21/2017]
+ * 
+ */
 static const struct esl_scorematrix_nt_preload_s ESL_SCOREMATRIX_NT_PRELOADS[] = {
   { "DNA1", {
     /*   A    C    G    T    -    R    Y    M    K    S    W    H    B    V    D    N    *    ~ */
@@ -1090,7 +1113,7 @@ esl_scorematrix_Read(ESL_FILEPARSER *efp, const ESL_ALPHABET *abc, ESL_SCOREMATR
 	}
       if ((status = esl_fileparser_GetTokenOnLine(efp, &tok, &toklen)) != eslEOL)  ESL_XFAIL(eslEFORMAT, efp->errbuf, "Too many fields on line");
     }
-  if ((status = esl_fileparser_NextLine(efp)) != eslEOF) ESL_XFAIL(eslEFORMAT, efp->errbuf, "Too many lines in file");
+  if ((status = esl_fileparser_NextLine(efp)) != eslEOF) ESL_XFAIL(eslEFORMAT, efp->errbuf, "Too many lines in file. (Make sure it's square & symmetric. E.g. use NUC.4.4 not NUC.4.2)");
   
 
   /* Annotate the score matrix */
@@ -1199,7 +1222,8 @@ lambda_fdf(double lambda, void *params, double *ret_fx, double *ret_dfx)
  *            Only actual residue degeneracy can have nonzero values
  *            for <p_ij>; by convention, all values involving the
  *            special codes for gap, nonresidue, and missing data
- *            (<K>, <Kp-2>, <Kp-1>) are 0.
+ *            (<K>, <Kp-2>, <Kp-1>) are 0. The fully degenerate
+ *            code <Kp-3> is 1.0 by construction.
  *            
  *            If the caller wishes to convert this joint probability
  *            matrix to conditionals, it can take advantage of the
@@ -1218,7 +1242,7 @@ lambda_fdf(double lambda, void *params, double *ret_fx, double *ret_dfx)
  *            fi         - background frequencies for query sequence i
  *            fj         - background frequencies for target sequence j
  *            opt_lambda - optRETURN: calculated $\lambda$ parameter
- *            opt_P      - optRETURN: implicit target probabilities $p_{ij}$; a KxK DMATRIX.                  
+ *            opt_P      - optRETURN: implicit target probabilities $p_{ij}$; a Kp x Kp DMATRIX.                  
  *
  * Returns:   <eslOK> on success, <*ret_lambda> contains the
  *            calculated $\lambda$ parameter, and <*ret_P> points to
@@ -1956,7 +1980,7 @@ main(int argc, char **argv)
  *****************************************************************/
 
 #ifdef eslSCOREMATRIX_TESTDRIVE
-#include <esl_dirichlet.h>
+#include "esl_dirichlet.h"
 
 static void
 utest_ReadWrite(ESL_ALPHABET *abc, ESL_SCOREMATRIX *S)
@@ -1966,12 +1990,12 @@ utest_ReadWrite(ESL_ALPHABET *abc, ESL_SCOREMATRIX *S)
   ESL_SCOREMATRIX *S2  = NULL;
   ESL_FILEPARSER  *efp = NULL;
   
-  if (esl_tmpfile_named(tmpfile, &fp)          != eslOK) esl_fatal("failed to open tmp file");
-  if (esl_scorematrix_Write(fp, S)                     != eslOK) esl_fatal("failed to write test matrix");
+  if (esl_tmpfile_named(tmpfile, &fp)  != eslOK) esl_fatal("failed to open tmp file");
+  if (esl_scorematrix_Write(fp, S)     != eslOK) esl_fatal("failed to write test matrix");
   fclose(fp);
 
   if (esl_fileparser_Open(tmpfile, NULL, &efp) != eslOK) esl_fatal("failed to open tmpfile containing BLOSUM62 matrix");
-  if (esl_scorematrix_Read(efp, abc, &S2)              != eslOK) esl_fatal("failed to read tmpfile containing BLOSUM62 matrix");
+  if (esl_scorematrix_Read(efp, abc, &S2)      != eslOK) esl_fatal("failed to read tmpfile containing BLOSUM62 matrix");
   if (esl_scorematrix_Compare(S, S2)           != eslOK) esl_fatal("the two test matrices aren't identical");
   
   remove(tmpfile); 
@@ -1992,17 +2016,17 @@ utest_ProbifyGivenBG(ESL_SCOREMATRIX *S0, ESL_DMATRIX *P0, double *wagpi, double
 
   if (esl_scorematrix_ProbifyGivenBG(S0, wagpi, wagpi, &lambda, &P) != eslOK) esl_fatal(msg);
 
-  if (esl_DCompare(lambda0, lambda, 1e-3)     != eslOK) esl_fatal("lambda is wrong");
+  if (esl_DCompare_old(lambda0, lambda, 1e-3)     != eslOK) esl_fatal("lambda is wrong");
 
   for (a = 0; a < 20; a++) 	/* you can't just call esl_dmx_Sum(P), because P includes */
     for (b = 0; b < 20; b++)    /* marginalized degeneracies */
       sum += P->mx[a][b];
 
-  if (esl_DCompare(sum, 1.0, 1e-9)     != eslOK) esl_fatal("P doesn't sum to 1");
+  if (esl_DCompare_old(sum, 1.0, 1e-9)     != eslOK) esl_fatal("P doesn't sum to 1");
 
   for (a = 0; a < 20; a++)	/* for the same reason,  you can't dmatrix_Compare P and P0 */
     for (b = 0; b < 20; b++)
-      if (esl_DCompare(P0->mx[a][b], P->mx[a][b], 1e-2) != eslOK) esl_fatal("P is wrong");
+      if (esl_DCompare_old(P0->mx[a][b], P->mx[a][b], 1e-2) != eslOK) esl_fatal("P is wrong");
 
   esl_dmatrix_Destroy(P);
   return;
@@ -2042,20 +2066,20 @@ utest_yualtschul(ESL_DMATRIX *P0, double *wagpi)
   if ( yualtschul_engine(S, P, fi, fj, &lambda) != eslOK) esl_fatal("reverse engineering engine failed");
 
   /* Validate the solution (expect more accuracy from this than from integer scores) */
-  if (esl_DCompare(lambda0, lambda, 1e-4)      != eslOK) esl_fatal("failed to get right lambda");
+  if (esl_DCompare_old(lambda0, lambda, 1e-4)      != eslOK) esl_fatal("failed to get right lambda");
 
   for (i = 0; i < 20; i++) 	/* you can't just call esl_dmx_Sum(P), because P includes */
     for (j = 0; j < 20; j++)    /* marginalized degeneracies */
       sum += P->mx[i][j];
-  if (esl_DCompare(sum, 1.0, 1e-6) != eslOK) esl_fatal("reconstructed P doesn't sum to 1");
+  if (esl_DCompare_old(sum, 1.0, 1e-6) != eslOK) esl_fatal("reconstructed P doesn't sum to 1");
 
   for (i = 0; i < 20; i++)	/* for the same reason,  you can't dmatrix_Compare P and P0 */
     for (j = 0; j < 20; j++)
-      if (esl_DCompare(P0->mx[i][j], P->mx[i][j], 1e-2) != eslOK) esl_fatal("failed to recover correct P_ij");
+      if (esl_DCompare_old(P0->mx[i][j], P->mx[i][j], 1e-2) != eslOK) esl_fatal("failed to recover correct P_ij");
   for (i = 0; i < 20; i++) 
     {
-      if (esl_DCompare(fi[i],    fj[i],  1e-6) != eslOK) esl_fatal("background fi, fj not the same");
-      if (esl_DCompare(wagpi[i], fi[i],  1e-3) != eslOK) esl_fatal("failed to reconstruct WAG backgrounds");  
+      if (esl_DCompare_old(fi[i],    fj[i],  1e-6) != eslOK) esl_fatal("background fi, fj not the same");
+      if (esl_DCompare_old(wagpi[i], fi[i],  1e-3) != eslOK) esl_fatal("failed to reconstruct WAG backgrounds");  
     }
 
   free(fj);
@@ -2084,15 +2108,15 @@ utest_Probify(ESL_SCOREMATRIX *S0, ESL_DMATRIX *P0, double *wagpi, double lambda
   if (esl_scorematrix_Probify(S0, &P, &fi, &fj, &lambda) != eslOK) esl_fatal("reverse engineering failed");
 
   /* Validate the solution, gingerly (we expect significant error due to integer roundoff) */
-  if (esl_DCompare(lambda0, lambda, 0.01)       != eslOK) esl_fatal("failed to get right lambda");
+  if (esl_DCompare_old(lambda0, lambda, 0.01)       != eslOK) esl_fatal("failed to get right lambda");
   for (i = 0; i < 20; i++) 	/* you can't just call esl_dmx_Sum(P), because P includes */
     for (j = 0; j < 20; j++)    /* marginalized degeneracies */
       sum += P->mx[i][j];
-  if (esl_DCompare(sum, 1.0, 1e-6) != eslOK) esl_fatal("reconstructed P doesn't sum to 1");
+  if (esl_DCompare_old(sum, 1.0, 1e-6) != eslOK) esl_fatal("reconstructed P doesn't sum to 1");
 
   for (i = 0; i < 20; i++)	/* for the same reason,  you can't dmatrix_Compare P and P0 */
     for (j = 0; j < 20; j++)
-      if (esl_DCompare(P0->mx[i][j], P->mx[i][j], 0.1) != eslOK) esl_fatal("failed to recover correct P_ij");
+      if (esl_DCompare_old(P0->mx[i][j], P->mx[i][j], 0.1) != eslOK) esl_fatal("failed to recover correct P_ij");
   free(fj);
   free(fi);
   esl_dmatrix_Destroy(P);
@@ -2205,14 +2229,28 @@ main(int argc, char **argv)
 #include "easel.h"
 #include "esl_alphabet.h"
 #include "esl_fileparser.h"
+#include "esl_getopts.h"
 #include "esl_dmatrix.h"
 #include "esl_vectorops.h"
 #include "esl_scorematrix.h"
 
-int main(int argc, char **argv)
+static ESL_OPTIONS options[] = {
+  /* name             type          default  env  range    toggles          reqs incomp  help                                       docgroup*/
+  { "-h",          eslARG_NONE,       FALSE,  NULL, NULL,  NULL,             NULL, NULL, "show brief help on version and usage",        0 },
+  { "--dna",       eslARG_NONE,       FALSE,  NULL, NULL,  "--dna,--amino",  NULL, NULL, "use DNA alphabet",                            0 },
+  { "--amino",     eslARG_NONE,      "TRUE",  NULL, NULL,  "--dna,--amino",  NULL, NULL, "use protein alphabet",                        0 },
+  {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+};
+static char usage[]  = "[-options] <mxfile>";
+static char banner[] = "example of using easel scorematrix routines";
+
+
+int 
+main(int argc, char **argv)
 {
-  char            *scorefile = argv[1];
-  ESL_ALPHABET    *abc       = esl_alphabet_Create(eslAMINO);
+  ESL_GETOPTS     *go        = esl_getopts_CreateDefaultApp(options, 1, argc, argv, banner, usage);
+  char            *scorefile = esl_opt_GetArg(go, 1);
+  ESL_ALPHABET    *abc       = NULL;
   ESL_FILEPARSER  *efp       = NULL;
   ESL_SCOREMATRIX *S         = NULL;
   ESL_DMATRIX     *P1        = NULL; /* implicit probability basis, bg unknown */
@@ -2222,9 +2260,12 @@ int main(int argc, char **argv)
   double           lambda, D, E;
   int              vstatus;
 
-  /* Input an amino acid score matrix from a file. */
-  if ( esl_fileparser_Open(scorefile, NULL, &efp) != eslOK) esl_fatal("failed to open score file %s", scorefile);
-  if ( esl_scorematrix_Read(efp, abc, &S)         != eslOK) esl_fatal("failed to read matrix from %s", scorefile);
+  if      (esl_opt_GetBoolean(go, "--dna"))   abc = esl_alphabet_Create(eslDNA);
+  else if (esl_opt_GetBoolean(go, "--amino")) abc = esl_alphabet_Create(eslAMINO);
+
+  /* Input a score matrix from a file. */
+  if ( esl_fileparser_Open(scorefile, NULL, &efp) != eslOK) esl_fatal("failed to open score file %s",         scorefile);
+  if ( esl_scorematrix_Read(efp, abc, &S)         != eslOK) esl_fatal("failed to read matrix from %s:\n  %s", scorefile, efp->errbuf);
   esl_fileparser_Close(efp);
 
   /* Try to reverse engineer it to get implicit probabilistic model. This may fail! */
@@ -2285,15 +2326,8 @@ int main(int argc, char **argv)
   esl_dmatrix_Destroy(P1);  esl_dmatrix_Destroy(P2);
   esl_scorematrix_Destroy(S);
   esl_alphabet_Destroy(abc);
+  esl_getopts_Destroy(go);
   return 0;
 }
 /*::cexcerpt::scorematrix_example::end::*/
 #endif /*eslSCOREMATRIX_EXAMPLE*/
-
-
-/*****************************************************************
- * @LICENSE@
- * 
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/ 

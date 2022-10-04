@@ -1,22 +1,18 @@
 /* Unaligned ascii sequence file i/o.
- * 
- * SVN $Id$
- * SVN $URL$
  */
 #ifndef eslSQIO_ASCII_INCLUDED
 #define eslSQIO_ASCII_INCLUDED
+#include "esl_config.h"
 
 #include <stdio.h>
-#include "esl_sq.h"
-#include "esl_sqio.h"
-
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-#ifdef eslAUGMENT_MSA
+
 #include "esl_msa.h"
 #include "esl_msafile.h"
-#endif
+#include "esl_sq.h"
+#include "esl_sqio.h"
 
 /* set the max residue count to 1 meg when reading a block */
 #define MAX_RESIDUE_COUNT (1024 * 1024)
@@ -64,18 +60,12 @@ typedef struct esl_sqascii_s {
   int  (*skip_header) (struct esl_sqio_s *, ESL_SQ *sq);
   int  (*parse_end)   (struct esl_sqio_s *, ESL_SQ *sq); 
 
-  /* MSA augmentation confers reading MSA files as sequential seq files. */
-#if defined(eslAUGMENT_MSA)
+  /* MSA files can be read as sequential seq files.                     */
   ESL_MSAFILE  *afp;	      /* open ESL_MSAFILE for reading           */
   ESL_MSA      *msa;	      /* preloaded alignment to draw seqs from  */
   int           idx;	      /* index of next seq to return, 0..nseq-1 */
-#else
-  void        *afp; 	      /* NULL */
-  void        *msa;           /* NULL */
-  int          idx;           /* 0    */
-#endif /*eslAUGMENT_MSA*/
 
-  /* SSI augmentation confers random access of records in a seq file        */
+  /* SSI indexes allow fast random access of records in a seq file          */
   char    *ssifile;	      /* path to expected SSI index file            */
   int      rpl;		      /* residues per line in file; -1=unset 0=inval*/
   int      bpl;		      /* bytes per line in file; -1=unset, 0=inval  */
@@ -83,11 +73,7 @@ typedef struct esl_sqascii_s {
   int      curbpl;	      /* bytes on current line    (-1=unknown)      */
   int      prvrpl;	      /* residues on previous line                  */
   int      prvbpl;	      /* bytes on previous line                     */
-#if defined(eslAUGMENT_SSI)
-  ESL_SSI *ssi;		/* open ESL_SSI index, or NULL if none     */
-#else
-  void    *ssi;		/* NULL */
-#endif /*eslAUGMENT_SSI*/
+  ESL_SSI *ssi;		      /* open ESL_SSI index, or NULL if none        */
 } ESL_SQASCII_DATA;
 
 
@@ -95,8 +81,4 @@ extern int  esl_sqascii_Open(char *seqfile, int format, struct esl_sqio_s *sqfp)
 extern int  esl_sqascii_WriteFasta(FILE *fp, ESL_SQ *s, int update);
 extern int  esl_sqascii_Parse(char *buf, int size, ESL_SQ *s, int format);
 
-
 #endif /*eslSQIO_ASCII_INCLUDED*/
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

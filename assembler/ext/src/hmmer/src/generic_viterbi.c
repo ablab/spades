@@ -20,9 +20,7 @@
  *    3. Unit tests.
  *    4. Test driver.
  *    5. Example.
- *    6. Copyright and license information.
  */
- 
 #include "p7_config.h"
 
 #include "easel.h"
@@ -476,7 +474,7 @@ utest_basic(ESL_GETOPTS *go)
   p7_trace_Score(tr, dsq, gm, &vsc2);
   if (esl_opt_GetBoolean(go, "-v")) p7_trace_Dump(stdout, tr, gm, dsq);
   
-  if (esl_FCompare(vsc, vsc2, 1e-5) != eslOK)  esl_fatal("trace score and Viterbi score don't agree.");
+  if (esl_FCompare_old(vsc, vsc2, 1e-5) != eslOK)  esl_fatal("trace score and Viterbi score don't agree.");
 
   p7_GForward   (dsq, L, gm, gx, &fsc);
   if (esl_opt_GetBoolean(go, "-v")) printf("Forward score: %.4f\n", fsc);
@@ -523,7 +521,7 @@ utest_viterbi(ESL_GETOPTS *go, ESL_RANDOMNESS *r, ESL_ALPHABET *abc, P7_BG *bg, 
       if (p7_GTrace  (dsq, L, gm, gx, tr)         != eslOK) esl_fatal("trace failed");
       if (p7_trace_Validate(tr, abc, dsq, errbuf) != eslOK) esl_fatal("trace invalid:\n%s", errbuf);
       if (p7_trace_Score(tr, dsq, gm, &sc2)       != eslOK) esl_fatal("trace score failed");
-      if (esl_FCompare(sc1, sc2, 1e-6)            != eslOK) esl_fatal("Trace score != Viterbi score"); 
+      if (esl_FCompare_old(sc1, sc2, 1e-6)            != eslOK) esl_fatal("Trace score != Viterbi score"); 
       if (p7_bg_NullOne(bg, dsq, L, &sc2)         != eslOK) esl_fatal("null score failed");
 
       avg_sc += (sc1 - sc2);
@@ -711,9 +709,4 @@ main(int argc, char **argv)
 #endif /*p7GENERIC_VITERBI_EXAMPLE*/
 /*-------------------- end, example -----------------------------*/
 
-/*****************************************************************
- * @LICENSE@
- * 
- * SVN $URL$
- * SVN $Id: generic_viterbi.c 3569 2011-06-16 16:16:13Z eddys $
- *****************************************************************/
+

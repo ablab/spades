@@ -7,12 +7,9 @@
  *   4. Unit tests
  *   5. Test driver
  *   6. Example
- *   7. Copyright and license information
  * 
  * SRE, Fri Feb 29 12:48:46 2008 [Janelia]
- * SVN $Id$
  */
-
 #include "p7_config.h"
 
 #include <float.h>
@@ -204,7 +201,7 @@ p7_GOATrace(const P7_PROFILE *gm, const P7_GMX *pp, const P7_GMX *gx, P7_TRACE *
   int          sprv, scur;
   int          status;
 
-#ifdef p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
   if (tr->N != 0) ESL_EXCEPTION(eslEINVAL, "trace isn't empty: forgot to Reuse()?");
 #endif
 
@@ -623,6 +620,4 @@ main(int argc, char **argv)
 
 
 
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
+

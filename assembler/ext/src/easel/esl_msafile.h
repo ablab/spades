@@ -5,6 +5,7 @@
  */
 #ifndef eslMSAFILE_INCLUDED
 #define eslMSAFILE_INCLUDED
+#include "esl_config.h"
 
 #include <stdio.h>
 
@@ -64,8 +65,8 @@ typedef struct {
   esl_pos_t            lineoffset;    /* offset of start of <line> in <bf>; -1 if line unset   */
 
   ESL_DSQ              inmap[128];    /* input map, 0..127                                     */
-  const ESL_ALPHABET  *abc;	      /* non-NULL if augmented and in digital mode             */
-  ESL_SSI             *ssi;	      /* open SSI index; or NULL, if none or not augmented     */
+  const ESL_ALPHABET  *abc;	      /* non-NULL if in digital mode                           */
+  ESL_SSI             *ssi;	      /* open SSI index; or NULL if none                       */
   char                 errmsg[eslERRBUFSIZE];   /* user-directed message for normal errors     */
 } ESL_MSAFILE;
 
@@ -109,14 +110,10 @@ extern int   esl_msafile_EncodeFormat(char *fmtstring);
 extern char *esl_msafile_DecodeFormat(int fmt);
 
 /* 4. Utilities for different alphabets */
-#ifdef eslAUGMENT_ALPHABET
 extern int esl_msafile_GuessAlphabet(ESL_MSAFILE *afp, int *ret_type);
-#endif
 
 /* 5. Random access in a MSA flatfile database */
-#ifdef eslAUGMENT_SSI
 extern int esl_msafile_PositionByKey(ESL_MSAFILE *afp, const char *key);
-#endif
 
 /* 6. Reading an MSA from an ESL_MSAFILE */
 extern int  esl_msafile_Read(ESL_MSAFILE *afp, ESL_MSA **ret_msa);
@@ -137,9 +134,3 @@ extern int esl_msafile_PutLine(ESL_MSAFILE *afp);
 #include "esl_msafile_selex.h"
 #include "esl_msafile_stockholm.h"
 #endif /*eslMSAFILE_INCLUDED*/
-
-
-
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

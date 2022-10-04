@@ -6,7 +6,6 @@
  *    3. Benchmark driver.
  *    4. Example main().
  *    5. References.
- *    6. Copyright and license information.
  */
 #include "p7_config.h"
 
@@ -239,7 +238,7 @@ p7_GBackwardCheckpointed(const ESL_DSQ *dsq, int L, const P7_PROFILE *gm, P7_GMX
   int          i,i2,k,b,w,s;
   float        overall_sc = gxc->dp[gxc->R0+gxc->R-1][(M+1)*p7G_NSCELLS + p7GC_C] + gm->xsc[p7P_C][p7P_MOVE];
 
-#ifdef p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
   if (gxc->do_debugging) p7_gmxchk_DumpHeader(gxc->dfp, gxc, 0, gxc->M, gxc->dbg_flags);
 #endif
 
@@ -275,7 +274,7 @@ p7_GBackwardCheckpointed(const ESL_DSQ *dsq, int L, const P7_PROFILE *gm, P7_GMX
       MMR(bck, k) = p7_FLogsum( XMR(bck, p7GC_E) + esc,
 				DMR(bck, k+1)    + TSC(p7P_MD, k));
     }
-#ifdef p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
   if (gxc->do_debugging) p7_gmxchk_DumpRow(gxc->dfp, gxc, bck, i, 0, gxc->M, gxc->dbg_flags);
 #endif
   posterior_decode_row(i, fwd, bck, M, overall_sc, bnd);
@@ -294,7 +293,7 @@ p7_GBackwardCheckpointed(const ESL_DSQ *dsq, int L, const P7_PROFILE *gm, P7_GMX
       dpp = bck;
       bck = gxc->dp[(L-1)%2];
       backward_row(dsq, gm, gxc, dpp, bck, i);
-#ifdef p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
       if (gxc->do_debugging) p7_gmxchk_DumpRow(gxc->dfp, gxc, bck, i, 0, gxc->M, gxc->dbg_flags);
 #endif
 
@@ -313,7 +312,7 @@ p7_GBackwardCheckpointed(const ESL_DSQ *dsq, int L, const P7_PROFILE *gm, P7_GMX
       fwd = gxc->dp[gxc->R0+gxc->R]; /* pop last forward row off "stack" */
       bck = gxc->dp[i%2];
       backward_row(dsq, gm, gxc, dpp, bck, i);
-#ifdef p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
       if (gxc->do_debugging) p7_gmxchk_DumpRow(gxc->dfp, gxc, bck, i, 0, gxc->M, gxc->dbg_flags);
 #endif
       posterior_decode_row(i, fwd, bck, M, overall_sc, bnd);
@@ -336,7 +335,7 @@ p7_GBackwardCheckpointed(const ESL_DSQ *dsq, int L, const P7_PROFILE *gm, P7_GMX
 	  bck = gxc->dp[i2%2];
 
 	  backward_row(dsq, gm, gxc, dpp, bck, i2);
-#ifdef p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
 	  if (gxc->do_debugging) p7_gmxchk_DumpRow(gxc->dfp, gxc, bck, i2, 0, gxc->M, gxc->dbg_flags);
 #endif
 
@@ -357,7 +356,7 @@ p7_GBackwardCheckpointed(const ESL_DSQ *dsq, int L, const P7_PROFILE *gm, P7_GMX
       bck = gxc->dp[i%2];
 
       backward_row(dsq, gm, gxc, dpp, bck, i);
-#ifdef p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
       if (gxc->do_debugging) p7_gmxchk_DumpRow(gxc->dfp, gxc, bck, i, 0, gxc->M, gxc->dbg_flags);
 #endif
       posterior_decode_row(i, fwd, bck, M, overall_sc, bnd);
@@ -379,7 +378,7 @@ p7_GBackwardCheckpointed(const ESL_DSQ *dsq, int L, const P7_PROFILE *gm, P7_GMX
 
   for (k = M; k >= 1; k--)
     MMR(bck,k) = IMR(bck,k) = DMR(bck,k) = -eslINFINITY;
-#ifdef p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
   if (gxc->do_debugging) p7_gmxchk_DumpRow(gxc->dfp, gxc, bck, i, 0, gxc->M, gxc->dbg_flags);
 #endif
 
@@ -839,9 +838,4 @@ main(int argc, char **argv)
  *    SRE J8/109-112, Oct 2011: implementation plan.
  */
 
-/*****************************************************************
- * @LICENSE@
- *    
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
+

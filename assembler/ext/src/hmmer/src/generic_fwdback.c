@@ -6,9 +6,7 @@
  *   3. Unit tests.
  *   4. Test driver.
  *   5. Example.
- *   6. Copyright and license information.
  */
-
 #include "p7_config.h"
 
 #include "easel.h"
@@ -558,7 +556,7 @@ utest_enumeration(ESL_GETOPTS *go, ESL_RANDOMNESS *r, ESL_ALPHABET *abc, int M)
   P7_GMX         *gx   = NULL;
   float  vsc, fsc;
   float  bg_ll;   		/* log P(seq | bg) */
-  double vp, fp;		/* P(seq,\pi | model) and P(seq | model) */
+  double fp;	      	        /* P(seq | model) */
   int L;
   int i;
   double total_p;
@@ -593,8 +591,7 @@ utest_enumeration(ESL_GETOPTS *go, ESL_RANDOMNESS *r, ESL_ALPHABET *abc, int M)
 	  /* calculate bg log likelihood component of the scores */
 	  for (bg_ll = 0., i = 1; i <= L; i++)  bg_ll += log(bg->f[dsq[i]]);
 	  
-	  /* convert to probabilities, adding the bg LL back to the LLR */
-	  vp =  exp(vsc + bg_ll);
+	  /* convert to probability, adding the bg LL back to the LLR */
 	  fp =  exp(fsc + bg_ll);
 
 	  if (esl_opt_GetBoolean(go, "--vv")) {
@@ -826,9 +823,4 @@ main(int argc, char **argv)
 #endif /*p7GENERIC_FWDBACK_EXAMPLE*/
 /*-------------------- end, example -----------------------------*/
 
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $URL$
- * SVN $Id$  
- *****************************************************************/
+

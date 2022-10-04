@@ -12,7 +12,6 @@
  *   9. Unit tests.
  *  10. Test driver.
  *  11. Example.
- *  12. Copyright and license information 
  */
 #include "esl_config.h"
 
@@ -24,6 +23,7 @@
 
 #include "easel.h"
 #include "esl_alphabet.h"
+#include "esl_arr2.h"
 #include "esl_random.h"
 #include "esl_randomseq.h"
 
@@ -434,13 +434,13 @@ esl_rsq_CShuffleDP(ESL_RANDOMNESS *r, const char *s, char *shuffled)
   
   /* Free and return.
    */
-  esl_Free2D((void **) E, 26);
+  esl_arr2_Destroy((void **) E, 26);
   free(nE);
   free(iE);
   return eslOK;
 
  ERROR:
-  esl_Free2D((void **) E, 26);
+  esl_arr2_Destroy((void **) E, 26);
   if (nE != NULL) free(nE);
   if (iE != NULL) free(iE);
   return status;
@@ -759,13 +759,15 @@ esl_rsq_CMarkov1(ESL_RANDOMNESS *r, const char *s, char *markoved)
  *           has a digital alphabet.) The caller must provide a <dsq>
  *           allocated for at least <L+2> residues of type <ESL_DSQ>,
  *           room for <L> residues and leading/trailing digital sentinel bytes.
- *           
+ * 
  *           <esl_rsq_xfIID()> does the same, but for a
  *           single-precision float vector <p> rather than a
  *           double-precision vector <p>.
+ * 
+ *           As a special case, if <p> is <NULL>, sample residues uniformly.
  *
  * Args:     r         - ESL_RANDOMNESS object
- *           p         - probability distribution [0..n-1]
+ *           p         - probability distribution [0..n-1] (or NULL for uniform)
  *           K         - number of symbols in alphabet
  *           L         - length of generated sequence
  *           ret_s     - RETURN: the generated sequence. 
@@ -780,7 +782,7 @@ esl_rsq_xIID(ESL_RANDOMNESS *r, const double *p, int K, int L, ESL_DSQ *dsq)
 
   dsq[0] = dsq[L+1] = eslDSQ_SENTINEL;
   for (x = 1; x <= L; x++) 
-    dsq[x] = esl_rnd_DChoose(r,p,K);
+    dsq[x] = p ? esl_rnd_DChoose(r,p,K) : esl_rnd_Roll(r,K);
   return eslOK;
 }
 int
@@ -790,13 +792,13 @@ esl_rsq_xfIID(ESL_RANDOMNESS *r, const float *p, int K, int L, ESL_DSQ *dsq)
 
   dsq[0] = dsq[L+1] = eslDSQ_SENTINEL;
   for (x = 1; x <= L; x++) 
-    dsq[x] = esl_rnd_FChoose(r,p,K);
+    dsq[x] = p ? esl_rnd_FChoose(r,p,K) : esl_rnd_Roll(r,K);
   return eslOK;
 }
 
 
 /* Function:  esl_rsq_SampleDirty()
- * Synopsis:  Sample a digital sequence, including noncanonicals.
+ * Synopsis:  Sample a digital sequence with noncanonicals, optionally gaps.
  * Incept:    SRE, Wed Feb 17 10:57:28 2016 [H1/76]
  *
  * Purpose:   Using random number generator <rng>, use probability
@@ -815,7 +817,8 @@ esl_rsq_xfIID(ESL_RANDOMNESS *r, const float *p, int K, int L, ESL_DSQ *dsq)
  *            "alignment", <p[K]> is nonzero.
  *            
  *            If <p> is <NULL>, then we sample a probability vector
- *            according to the following rules. 
+ *            according to the following rules, which generates
+ *            *ungapped* dirtied random sequences:
  *               1. Sample pc, the probability of canonical
  *                  vs. noncanonical residues, uniformly on [0,1).
  *               2. Sample a p[] uniformly for canonical residues
@@ -1041,14 +1044,14 @@ esl_rsq_XShuffleDP(ESL_RANDOMNESS *r, const ESL_DSQ *dsq, int L, int K, ESL_DSQ 
   if (x != sf)   ESL_XEXCEPTION(eslEINCONCEIVABLE, "hey, you didn't end on s_f.");
   if (i != L+1)  ESL_XEXCEPTION(eslEINCONCEIVABLE, "hey, i (%d) overran L+1 (%d).", i, L+1);
   
-  esl_Free2D((void **) E, K);
+  esl_arr2_Destroy((void **) E, K);
   free(nE);
   free(iE);
   free(Z);
   return eslOK;
 
  ERROR:
-  esl_Free2D((void **) E, K);
+  esl_arr2_Destroy((void **) E, K);
   if (nE != NULL) free(nE);
   if (iE != NULL) free(iE);
   if (Z  != NULL) free(Z);
@@ -1330,12 +1333,12 @@ esl_rsq_XMarkov1(ESL_RANDOMNESS *r, const ESL_DSQ *dsq, int L, int K, ESL_DSQ *m
   markoved[0]   = eslDSQ_SENTINEL;
   markoved[L+1] = eslDSQ_SENTINEL;
 
-  esl_Free2D((void**)p, K);
+  esl_arr2_Destroy((void**)p, K);
   free(p0);
   return eslOK;
 
  ERROR:
-  esl_Free2D((void**)p, K);
+  esl_arr2_Destroy((void**)p, K);
   if (p0 != NULL) free(p0);
   return status;
 }
@@ -1512,7 +1515,7 @@ composition_allocate(int K, int **ret_mono, int ***ret_di)
   return eslOK;
 
  ERROR:
-  esl_Free2D((void **) di, K);
+  esl_arr2_Destroy((void **) di, K);
   if (mono != NULL) free(mono);
   *ret_mono = NULL;
   *ret_di   = NULL;
@@ -1648,8 +1651,8 @@ utest_CShufflers(ESL_RANDOMNESS *r, int L, char *alphabet, int K)
   free(p);
   free(m1);
   free(m2);
-  esl_Free2D((void **) di1, 26);
-  esl_Free2D((void **) di2, 26);
+  esl_arr2_Destroy((void **) di1, 26);
+  esl_arr2_Destroy((void **) di2, 26);
   return;
   
  ERROR:
@@ -1747,8 +1750,8 @@ utest_CMarkovs(ESL_RANDOMNESS *r, int L, char *alphabet)
   free(p);
   free(m1);
   free(m2);
-  esl_Free2D((void **) di1, 26);
-  esl_Free2D((void **) di2, 26);
+  esl_arr2_Destroy((void **) di1, 26);
+  esl_arr2_Destroy((void **) di2, 26);
   return;
   
  ERROR:
@@ -1859,8 +1862,8 @@ utest_XShufflers(ESL_RANDOMNESS *r, int L, int K)
   free(p);
   free(m1);
   free(m2);
-  esl_Free2D((void **) di1, K);
-  esl_Free2D((void **) di2, K);
+  esl_arr2_Destroy((void **) di1, K);
+  esl_arr2_Destroy((void **) di2, K);
   return;
   
  ERROR:
@@ -1952,8 +1955,8 @@ utest_XMarkovs(ESL_RANDOMNESS *r, int L, int K)
   free(p);
   free(m1);
   free(m2);
-  esl_Free2D((void **) di1, K);
-  esl_Free2D((void **) di2, K);
+  esl_arr2_Destroy((void **) di1, K);
+  esl_arr2_Destroy((void **) di2, K);
   return;
   
  ERROR:
@@ -1990,7 +1993,7 @@ utest_markov1_bug(ESL_RANDOMNESS *r)
     if (xcomposition(testdsq, L, 4, mono, di)   != eslOK) esl_fatal(logmsg);
     if (mono[0] + mono[3] != L)                           esl_fatal(logmsg);
   }
-  esl_Free2D((void **) di, 4);
+  esl_arr2_Destroy((void **) di, 4);
   free(mono);
 
   if (composition_allocate(26, &mono, &di) != eslOK) esl_fatal(logmsg);
@@ -1999,7 +2002,7 @@ utest_markov1_bug(ESL_RANDOMNESS *r)
     if (composition(seq, L, mono, di)      != eslOK) esl_fatal(logmsg);
     if (mono[0] + mono['T'-'A'] != L)                esl_fatal(logmsg);
   }
-  esl_Free2D((void **) di, 26);
+  esl_arr2_Destroy((void **) di, 26);
   free(mono);
   free(seq);
   free(dsq);
@@ -2109,10 +2112,3 @@ main(int argc, char **argv)
 /*::cexcerpt::randomseq_example::end::*/
 #endif /*eslRANDOMSEQ_EXAMPLE*/
 /*--------------------- end, example ----------------------------*/
-
-/*****************************************************************
- * @LICENSE@
- * 
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/

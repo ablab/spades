@@ -1,7 +1,5 @@
-/* regexp.c
- * Regular expression matching on strings.
+/* esl_regexp.c: regular expression matching on strings.
  *
- *****************************************************************
  * This is a wrapper around a modified version of Henry Spencer's
  * regex library. Spencer's copyright notice appears below, after my
  * wrappers, prefacing the section that includes his code. I believe
@@ -48,6 +46,14 @@
  *    but legal characters, for example). We would probably want
  *    to implement some artificial limits on repeat operators,
  *    to keep length of sampled seq reasonable.
+ *
+ * Contents:
+ *   1. Easel's regexp API
+ *   2. Henry Spencer's regex library    
+ *   3. My extensions to the Spencer code
+ *   4. Unit tests
+ *   5. Test driver
+ *   6. Examples
  */
 #include "esl_config.h"
 
@@ -73,7 +79,7 @@ static void         regdump(esl__regexp *r);
 
 
 /*****************************************************************
- * Easel's regexp API
+ * 1. Easel's regexp API
  *****************************************************************/
 
 /* Function:  esl_regexp_Create()
@@ -110,36 +116,12 @@ esl_regexp_Create(void)
 void
 esl_regexp_Destroy(ESL_REGEXP *machine)
 {
-  /* Spencer's clever alloc for the NDFA allows us to free it w/ free()  */
-  if (machine->ndfa != NULL) free(machine->ndfa); 
-  free(machine);
+  if (machine)
+    { /* Spencer's clever alloc for the NDFA allows us to free it w/ free()  */
+      free(machine->ndfa); 
+      free(machine);
+    }
   return;
-}
-
-
-
-
-/* Function:  esl_regexp_Match()
- * Incept:    SRE, Fri Jan  7 11:24:02 2005 [St. Louis]
- *
- * Purpose:   Determine if string <s> matches the regular expression <pattern>,
- *            using a <machine>.
- *
- * Returns:   <eslOK> if <pattern> matches <s>; <eslEOD> if it doesn't.
- *            
- * Throws:    <eslEINVAL> if the <pattern> couldn't be compiled for any reason.
- *            Throws <eslEINCONCEIVABLE> or <eslECORRUPT> if something
- *            went wrong in the search phase.
- *            (At the failure point, an error was generated with an appropriate
- *            code and message; an <ESL_SYNTAX> code, for example, may have
- *            been generated to indicate that the <pattern> is an invalid syntax.)
- */
-int
-esl_regexp_Match(ESL_REGEXP *machine, const char *pattern, const char *s)
-{
-  if (machine->ndfa != NULL) { free(machine->ndfa); machine->ndfa = NULL; }
-  if ((machine->ndfa = regcomp(pattern)) == NULL) return eslEINVAL;
-  return regexec(machine->ndfa, s);
 }
 
 
@@ -148,8 +130,7 @@ esl_regexp_Match(ESL_REGEXP *machine, const char *pattern, const char *s)
  *
  * Purpose:   Precompile an NDFA for <pattern> and store it in 
  *            a <machine>, in preparation for using the same
- *            pattern for multiple searches (see
- *            <esl_regexp_MultipleMatches()>).
+ *            pattern for multiple searches.
  *
  * Returns:   <eslOK> on success.
  *
@@ -162,6 +143,46 @@ esl_regexp_Compile(ESL_REGEXP *machine, const char *pattern)
   if ((machine->ndfa = regcomp(pattern)) == NULL) return eslEINVAL;
   return eslOK;
 }
+
+
+
+/* Function:  esl_regexp_Match()
+ * Incept:    SRE, Fri Jan  7 11:24:02 2005 [St. Louis]
+ *
+ * Purpose:   Determine if string <s> matches the regular expression
+ *            <pattern>, using a <machine>. Upon return, <machine>
+ *            contains the compiled <pattern>.
+ *
+ *            If <pattern> is <NULL>, use the last pattern compiled
+ *            into the <machine>. 
+
+ *            If there's a match, return <eslOK>, and the <machine>
+ *            contains information about the match, which you can
+ *            extract with <esl_regexp_Submatch*()> functions.
+ *
+ *            If there's no match, return <eslEOD>.
+ *
+ * Returns:   <eslOK> if <pattern> matches <s>; <eslEOD> if it doesn't.
+ *            
+ * Throws:    <eslEINVAL> if the <pattern> couldn't be compiled for any reason.
+ *            <eslEINCONCEIVABLE> or <eslECORRUPT> if something
+ *            went wrong in the search phase.
+ *
+ *            (At the failure point, an error was generated with an appropriate
+ *            code and message; an <ESL_SYNTAX> code, for example, may have
+ *            been generated to indicate that the <pattern> is an invalid syntax.)
+ */
+int
+esl_regexp_Match(ESL_REGEXP *machine, const char *pattern, const char *s)
+{
+  if (pattern)
+    {
+      if (machine->ndfa) { free(machine->ndfa); machine->ndfa = NULL; }
+      if ((machine->ndfa = regcomp(pattern)) == NULL) return eslEINVAL;
+    }
+  return regexec(machine->ndfa, s);
+}
+
 
 
 /* Function:  esl_regexp_MultipleMatches()
@@ -200,6 +221,35 @@ esl_regexp_MultipleMatches(ESL_REGEXP *machine, char **sptr)
   else 
     *sptr = NULL;
   return status;
+}
+
+
+
+/* Function:  esl_regexp_GetMatch()
+ * Synopsis:  Get matched text as a ptr and a length (esl_mem style)
+ * Incept:    SRE, Mon 23 Nov 2020
+ *
+ * Purpose:   Given a <machine> that just got done matching a pattern
+ *            against a target string, retrieve a pointer to and a
+ *            length of text that matched. <which> indicates which
+ *            submatch to retrieve; 0 means the entire match, and
+ *            1..15 are up to 15 ()'d submatches in the pattern.
+ *
+ * Returns:   <eslOK> on success. Now <*ret_s> points to the start of
+ *            the match, and <*ret_n> is its length.
+ *
+ * Throws:    (no abnormal error conditions)
+ */
+int
+esl_regexp_GetMatch(ESL_REGEXP *machine, int which, char **ret_s, esl_pos_t *ret_n)
+{
+  ESL_DASSERT1(( which >= 0 && which < ESL_REGEXP_NSUB ));
+  ESL_DASSERT1(( machine->ndfa ));
+  ESL_DASSERT1(( machine->ndfa->startp[which] && machine->ndfa->endp[which] ));
+
+  *ret_s = machine->ndfa->startp[which];
+  *ret_n = (esl_pos_t) (machine->ndfa->endp[which] - machine->ndfa->startp[which]);
+  return eslOK;
 }
 
 
@@ -362,11 +412,11 @@ esl_regexp_SubmatchCoords(ESL_REGEXP *machine, char *origin, int elem,
  *            <eslFAIL> if the start or end values are not parsed.
  */
 int
-esl_regexp_ParseCoordString(const char *cstring, uint32_t *ret_start, uint32_t *ret_end)
+esl_regexp_ParseCoordString(const char *cstring, int64_t *ret_start, int64_t *ret_end)
 {
   ESL_REGEXP *re = esl_regexp_Create();
-  char        tok1[32];
-  char        tok2[32];
+  char        tok1[20];   // max length of int64_t in char = 18 + '-' + '\0' = 20
+  char        tok2[20];
   int         status;
 
   if (esl_regexp_Match(re, "^(\\d+)\\D+(\\d*)$", cstring) != eslOK) { status = eslESYNTAX; goto ERROR; }
@@ -383,12 +433,13 @@ esl_regexp_ParseCoordString(const char *cstring, uint32_t *ret_start, uint32_t *
   esl_regexp_Destroy(re);
   return status;
 }
-
-
 /*=================== end of the exposed API ==========================================*/
 
 
 
+/***************************************************************** 
+ * 2. Henry Spencer's regexp library
+ *****************************************************************/
 
 /**************************************************************************************
  * This next big chunk of code is:
@@ -547,7 +598,7 @@ static char *regpiece(struct comp *cp, int *flagp);
 static char *regatom(struct comp *cp, int *flagp);
 static char *regnode(register struct comp *cp, char op);
 static char *regnext(char *node);
-static void regc(struct comp *cp, char c);
+static void regc(struct comp *cp, unsigned char c);
 static void reginsert(struct comp *cp, char op, char *opnd);
 static void regtail(struct comp *cp, char *p, char *val);
 static void regoptail(struct comp *cp, char *p, char *val);
@@ -1010,7 +1061,7 @@ regnode(register struct comp *cp, char op)
  - regc - emit (if appropriate) a byte of code
  */
 static void
-regc(register struct comp *cp, char b)
+regc(register struct comp *cp, unsigned char b)
 {
   if (EMITTING(cp))
     *cp->regcode++ = b;
@@ -1590,6 +1641,12 @@ regsub(const esl__regexp *rp, const char *source, char *dest)
 #endif /* regsub() currently disabled */
 /*============= end of Spencer's copyrighted regexp code =============================*/
 
+
+
+/***************************************************************** 
+ * 3. My extensions to the Spencer code
+ *****************************************************************/
+
 /* Spencer's code originally handled a backslashed alphanum
  * like \t as t: in regatom(), the logic was:
  *     ret = regnode(cp, EXACTLY);
@@ -1684,7 +1741,112 @@ regescape(struct comp *cp, char c)
 
 
 /*****************************************************************
- * 3 code examples, and the test driver 
+ * 4. Unit tests
+ *****************************************************************/
+#ifdef eslREGEXP_TESTDRIVE
+
+static void
+utest_basic_ops(void)
+{
+  char        msg[]    = "esl_regexp basic_ops test failed";
+  ESL_REGEXP *m        = esl_regexp_Create(); 
+  char        string[] = "aaafoobarfoooobazfo..aaa"; // positive
+  char        str2[]   = "aaafoxbaxfoxoobaxfo..aaa"; // negative
+  char       *s;
+  char        buf[64];
+  int         status;
+  int         i,j;
+  int         n;
+  
+  /* esl_regexp_Match() with a new pattern */
+  if (esl_regexp_Match(m, "foo", str2)   != eslEOD) esl_fatal(msg);  // shouldn't match
+  if (esl_regexp_Match(m, "foo", string) != eslOK)  esl_fatal(msg);  // should match
+  esl_regexp_SubmatchCoords(m, string, 0, &i, &j);
+  if (i != 3 || j != 5) esl_fatal(msg);
+  s = esl_regexp_SubmatchDup(m, 0);        if (strcmp(s,   "foo") != 0) esl_fatal(msg);
+  esl_regexp_SubmatchCopy(m, 0, buf, 64);  if (strcmp(buf, "foo") != 0) esl_fatal(msg);
+  free(s);
+
+  /* esl_regexp_Match() re-using the previous pattern */
+  if (esl_regexp_Match(m, NULL, str2)   != eslEOD) esl_fatal(msg);
+  if (esl_regexp_Match(m, NULL, string) != eslOK)  esl_fatal(msg);
+  esl_regexp_SubmatchCoords(m, string, 0, &i, &j);
+  if (i != 3 || j != 5) esl_fatal(msg);
+
+  /* test all the metacharacters in one pattern;
+   * and token 2 extraction grabs "oobaz" 13..17
+   */
+  esl_regexp_Compile(m, "^aaaa*(foo|bar|baz)+([aboz]+).o\\.[^a-z]aaa?$");
+  if (esl_regexp_Match(m, NULL, str2)   != eslEOD) esl_fatal(msg);
+  if (esl_regexp_Match(m, NULL, string) != eslOK)  esl_fatal(msg);
+  esl_regexp_SubmatchCoords(m, string, 2, &i, &j);
+  if (i != 12 || j != 16) esl_fatal(msg);
+  s = esl_regexp_SubmatchDup(m, 2);
+  if (strcmp(s, "oobaz") != 0) esl_fatal(msg);
+  free(s);
+
+  /* test multiple matching:
+   * this pattern hits five times in the sequence, w/
+   * variations on foo.
+   */
+  esl_regexp_Compile(m, "bar|foo*|baz");
+  s = string;
+  n = 0;
+  while ((status = esl_regexp_MultipleMatches(m, &s)) == eslOK)
+    {
+      n++;
+      esl_regexp_SubmatchCopy(m, 0, buf, 64);
+      if ((n == 1 && strcmp(buf, "foo")   != 0) ||
+	  (n == 2 && strcmp(buf, "bar")   != 0) ||
+	  (n == 3 && strcmp(buf, "foooo") != 0) ||
+	  (n == 4 && strcmp(buf, "baz")   != 0) ||
+	  (n == 5 && strcmp(buf, "fo")    != 0))
+        esl_fatal(msg);
+    }
+  if (n != 5) esl_fatal(msg);
+  esl_regexp_Destroy(m);
+}
+#endif /*eslREGEXP_TESTDRIVE*/
+
+/*****************************************************************
+ * 5. Test driver
+ *****************************************************************/
+
+#ifdef eslREGEXP_TESTDRIVE
+#include "esl_config.h"
+
+#include <stdio.h>
+
+#include "easel.h"
+#include "esl_getopts.h"
+
+static ESL_OPTIONS options[] = {
+   /* name  type         default  env   range togs  reqs  incomp  help                       docgrp */
+  { "-h",  eslARG_NONE,    FALSE, NULL, NULL,  NULL,  NULL, NULL, "show help and usage",     0},
+  { 0,0,0,0,0,0,0,0,0,0},
+};
+static char usage[]  = "[-options]";
+static char banner[] = "test driver for regexp module";
+
+int
+main(int argc, char **argv)
+{
+  ESL_GETOPTS *go   = esl_getopts_CreateDefaultApp(options, 0, argc, argv, banner, usage);
+    
+  fprintf(stderr, "## %s\n", argv[0]);
+
+  utest_basic_ops();
+
+  fprintf(stderr, "#  status = ok\n");
+
+  esl_getopts_Destroy(go);
+  return 0;
+}
+#endif /*eslREGEXP_TESTDRIVE*/
+
+
+/*****************************************************************
+ * 6. Examples
  *****************************************************************/
 
 #ifdef eslREGEXP_EXAMPLE
@@ -1827,86 +1989,5 @@ main(int argc, char **argv)
 }
 #endif /*eslREGEXP_EXAMPLE3*/
 
-#ifdef eslREGEXP_TESTDRIVE
-/* A test driver exercises every function in the
- * external API at least once, and tries to uncover
- * obvious problems. 
- *
- * gcc -g -Wall -o test -I. -DeslREGEXP_TESTDRIVE regexp.c easel.c
- * ./test
- */
-int
-main(void)
-{
-  ESL_REGEXP *m; 
-  char       *pattern;
-  char       *string;
-  char       *s;
-  char        buf[64];
-  int         status;
-  int         i,j;
-  int         n;
-  
-  m = esl_regexp_Create();
-  string  = "aaafoobarfoooobazfo..aaa";
-
-  /* simple matching test.
-   */
-  pattern = "foo";
-  if (esl_regexp_Match(m, pattern, string) != eslOK) abort();
-  esl_regexp_SubmatchCoords(m, string, 0, &i, &j);
-  if (i != 3 || j != 5) abort();
-  s = esl_regexp_SubmatchDup(m, 0);
-  if (strcmp(s, "foo") != 0) abort();
-  free(s);
-  esl_regexp_SubmatchCopy(m, 0, buf, 64);
-  if (strcmp(buf, "foo") != 0) abort();
-
-  /* test all the metacharacters in one pattern;
-   * and token 2 extraction grabs "oobaz" 13..17
-   */
-  pattern = "^aaaa*(foo|bar|baz)+([aboz]+).o\\.[^a-z]aaa?$";
-  if (esl_regexp_Match(m, pattern, string) != eslOK) abort();
-  esl_regexp_SubmatchCoords(m, string, 2, &i, &j);
-  if (i != 12 || j != 16) abort();
-  s = esl_regexp_SubmatchDup(m, 2);
-  if (strcmp(s, "oobaz") != 0) abort();
-  free(s);
-
-  /* test multiple matching:
-   * this pattern hits five times in the sequence, w/
-   * variations on foo.
-   */
-  pattern = "bar|foo*|baz";
-  esl_regexp_Compile(m, pattern);
-  s = string;
-  n = 0;
-  while ((status = esl_regexp_MultipleMatches(m, &s)) == eslOK)
-    {
-      n++;
-      esl_regexp_SubmatchCopy(m, 0, buf, 64);
-      if ((n == 1 && strcmp(buf, "foo")   != 0) ||
-	  (n == 2 && strcmp(buf, "bar")   != 0) ||
-	  (n == 3 && strcmp(buf, "foooo") != 0) ||
-	  (n == 4 && strcmp(buf, "baz")   != 0) ||
-	  (n == 5 && strcmp(buf, "fo")    != 0))
-	abort();
-    }
-  if (n != 5) abort();
-  esl_regexp_Destroy(m);
-  exit(0);
-}
-#endif /* test driver */
-/*============= end of test driver and example code =============================*/
 
 
-
-
-
-
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/

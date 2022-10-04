@@ -4,9 +4,6 @@
  * mstack - SRE, Fri Oct 10 10:18:16 2003 [St. Louis]
  * cstack - SRE, Mon Oct 13 12:57:56 2003 [St. Louis]
  * Incorp into easel - SRE, Sun Dec 26 07:39:02 2004 [Zaragoza]
- *
- * SVN $Id$
- * SVN $URL$
  */
 #ifndef eslSTACK_INCLUDED
 #define eslSTACK_INCLUDED
@@ -17,10 +14,8 @@
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
 #endif
-#ifdef eslAUGMENT_RANDOM
-#include "esl_random.h"
-#endif /*eslAUGMENT_RANDOM*/
 
+#include "esl_random.h"
 
 typedef struct esl_stack_s {
   int   *idata;			/* integer data stack                       */
@@ -59,9 +54,7 @@ extern char *esl_stack_Convert2String(ESL_STACK *cs);
 extern int   esl_stack_DiscardTopN(ESL_STACK *s, int n);
 extern int   esl_stack_DiscardSelected(ESL_STACK *s, int (*discard_func)(void *, void *), void *param);
 
-#ifdef eslAUGMENT_RANDOM
 extern int esl_stack_Shuffle(ESL_RANDOMNESS *r, ESL_STACK *s);
-#endif /*eslAUGMENT_RANDOM*/
 
 #ifdef HAVE_PTHREAD
 extern int esl_stack_UseMutex   (ESL_STACK *s);
@@ -69,6 +62,3 @@ extern int esl_stack_UseCond    (ESL_STACK *s);
 extern int esl_stack_ReleaseCond(ESL_STACK *s);
 #endif
 #endif /*eslSTACK_INCLUDED*/
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

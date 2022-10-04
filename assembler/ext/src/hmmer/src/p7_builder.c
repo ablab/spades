@@ -4,7 +4,6 @@
  *    1. P7_BUILDER: allocation, initialization, destruction
  *    2. Standardized model construction API.
  *    3. Internal functions.
- *    4. Copyright and license information
  */   
 #include "p7_config.h"
 
@@ -139,19 +138,6 @@ p7_builder_Create(const ESL_GETOPTS *go, const ESL_ALPHABET *abc)
       default:       bld->prior = p7_prior_CreateLaplace(abc); break;
       }
       if (bld->prior == NULL) goto ERROR;
-      /*
-      if      (go != NULL) {
-        if (esl_opt_IsOn(go, "--tmm"))  bld->prior->tm->alpha[0][0] = esl_opt_GetReal(go, "--tmm"); // TMM
-        if (esl_opt_IsOn(go, "--tmi"))  bld->prior->tm->alpha[0][1] = esl_opt_GetReal(go, "--tmi"); // TMM
-        if (esl_opt_IsOn(go, "--tmd"))  bld->prior->tm->alpha[0][2] = esl_opt_GetReal(go, "--tmd"); // TMM
-
-        if (esl_opt_IsOn(go, "--tim"))  bld->prior->ti->alpha[0][0] = esl_opt_GetReal(go, "--tim"); // TMM
-        if (esl_opt_IsOn(go, "--tii"))  bld->prior->ti->alpha[0][1] = esl_opt_GetReal(go, "--tii"); // TMM
-
-        if (esl_opt_IsOn(go, "--tdm"))  bld->prior->td->alpha[0][0] = esl_opt_GetReal(go, "--tdm"); // TMM
-        if (esl_opt_IsOn(go, "--tdd"))  bld->prior->td->alpha[0][1] = esl_opt_GetReal(go, "--tdd"); // TMM
-      }
-      */
     }
 
 
@@ -427,7 +413,7 @@ static int    make_post_msa        (P7_BUILDER *bld, const ESL_MSA *premsa, cons
 int
 p7_Builder(P7_BUILDER *bld, ESL_MSA *msa, P7_BG *bg,
 	   P7_HMM **opt_hmm, P7_TRACE ***opt_trarr, P7_PROFILE **opt_gm, P7_OPROFILE **opt_om,
-	   ESL_MSA **opt_postmsa, FILE *seqweights_w_fp, FILE *seqweights_e_fp)
+	   ESL_MSA **opt_postmsa)
 {
   int i,j;
   uint32_t    checksum = 0;	/* checksum calculated for the input MSA. hmmalign --mapali verifies against this. */
@@ -438,12 +424,7 @@ p7_Builder(P7_BUILDER *bld, ESL_MSA *msa, P7_BG *bg,
   if ((status =  validate_msa         (bld, msa))                       != eslOK) goto ERROR;
   if ((status =  esl_msa_Checksum     (msa, &checksum))                 != eslOK) ESL_XFAIL(status, bld->errbuf, "Failed to calculate checksum"); 
   if ((status =  relative_weights     (bld, msa))                       != eslOK) goto ERROR;
-  if (seqweights_w_fp != NULL) {
-    for (i = 0; i < msa->nseq; i++)
-      fprintf( seqweights_w_fp, "%.2f  %s\n", msa->wgt[i], msa->sqname[i]) ;
-  }
-
-  if ((status =  esl_msa_MarkFragments(msa, bld->fragthresh))           != eslOK) goto ERROR;
+  if ((status =  esl_msa_MarkFragments_old(msa, bld->fragthresh))           != eslOK) goto ERROR;
   if ((status =  build_model          (bld, msa, &hmm, tr_ptr))         != eslOK) goto ERROR;
 
 
@@ -454,10 +435,6 @@ p7_Builder(P7_BUILDER *bld, ESL_MSA *msa, P7_BG *bg,
       hmm->t[i][p7H_II] = ESL_MIN(hmm->t[i][p7H_II], bld->max_insert_len*hmm->t[i][p7H_MI]);
 
   if ((status =  effective_seqnumber  (bld, msa, hmm, bg))              != eslOK) goto ERROR;
-  if (seqweights_e_fp != NULL) {
-    for (i = 0; i < msa->nseq; i++)
-      fprintf( seqweights_e_fp, "%.4f  %s\n", msa->wgt[i], msa->sqname[i]) ;
-  }
   if ((status =  parameterize         (bld, hmm))                       != eslOK) goto ERROR;
   if ((status =  annotate             (bld, msa, hmm))                  != eslOK) goto ERROR;
   if ((status =  calibrate            (bld, hmm, bg, opt_gm, opt_om))   != eslOK) goto ERROR;
@@ -504,7 +481,7 @@ p7_Builder(P7_BUILDER *bld, ESL_MSA *msa, P7_BG *bg,
  *            
  * Args:      bld       - build configuration
  *            sq        - query sequence
- *            bg        - null model (needed to paramaterize insert emission probs)
+ *            bg        - null model (needed to parameterize insert emission probs)
  *            opt_hmm   - optRETURN: new HMM
  *            opt_gm    - optRETURN: profile corresponding to <hmm>
  *            opt_om    - optRETURN: optimized profile corresponding to <gm>
@@ -797,7 +774,7 @@ p7_Builder_MaxLength (P7_HMM *hmm, double emit_thresh)
  * 
  * HMMER uses a convention for missing data characters: they
  * indicate that a sequence is a fragment.  (See
- * esl_msa_MarkFragments()).
+ * esl_msa_MarkFragments_old()).
  *
  * Because of the way these fragments will be handled in tracebacks,
  * we reject any alignment that uses missing data characters in any
@@ -830,16 +807,20 @@ validate_msa(P7_BUILDER *bld, ESL_MSA *msa)
 static int
 relative_weights(P7_BUILDER *bld, ESL_MSA *msa)
 {
-  int status = eslOK;
+  ESL_MSAWEIGHT_CFG *cfg    = esl_msaweight_cfg_Create();
+  int                status = eslOK;
+
+  cfg->ignore_rf = (bld->arch_strategy == p7_ARCH_HAND ? FALSE : TRUE);  // PB weights use RF consensus columns only if --hand is set. [iss #180]
 
   if      (bld->wgt_strategy == p7_WGT_NONE)                    { esl_vec_DSet(msa->wgt, msa->nseq, 1.); }
   else if (bld->wgt_strategy == p7_WGT_GIVEN)                   ;
-  else if (bld->wgt_strategy == p7_WGT_PB)                      status = esl_msaweight_PB(msa); 
+  else if (bld->wgt_strategy == p7_WGT_PB)                      status = esl_msaweight_PB_adv(cfg, msa, /*ESL_MSAWEIGHT_DAT=*/ NULL); 
   else if (bld->wgt_strategy == p7_WGT_GSC)                     status = esl_msaweight_GSC(msa); 
   else if (bld->wgt_strategy == p7_WGT_BLOSUM)                  status = esl_msaweight_BLOSUM(msa, bld->wid); 
   else ESL_EXCEPTION(eslEINCONCEIVABLE, "no such weighting strategy");
 
   if (status != eslOK) ESL_FAIL(status, bld->errbuf, "failed to set relative weights in alignment");
+  esl_msaweight_cfg_Destroy(cfg);
   return eslOK;
 }
 
@@ -879,7 +860,7 @@ build_model(P7_BUILDER *bld, ESL_MSA *msa, P7_HMM **ret_hmm, P7_TRACE ***opt_tr)
 
 
 
-/* set_effective_seqnumber()
+/* effective_seqnumber()
  *
  * <hmm> comes in with weighted observed counts. It goes out with
  * those observed counts rescaled to sum to the "effective sequence
@@ -899,7 +880,7 @@ effective_seqnumber(P7_BUILDER *bld, const ESL_MSA *msa, P7_HMM *hmm, const P7_B
 
   if (bld->effn_strategy == p7_EFFN_ENTROPY_EXP) {
       double etarget; 
-      double eff_nseq;
+      double eff_nseq = 0.0;
       double exp;
       etarget = (bld->esigma - eslCONST_LOG2R * log( 2.0 / ((double) hmm->M * (double) (hmm->M+1)))) / (double) hmm->M; /* xref J5/36. */
       etarget = ESL_MAX(bld->re_target, etarget);
@@ -948,10 +929,6 @@ effective_seqnumber(P7_BUILDER *bld, const ESL_MSA *msa, P7_HMM *hmm, const P7_B
 
   }
 
-  //this re-assignment of the wgt values is done in support of hmmbuild's --seq_weights_e flag
-  for (i = 0; i < msa->nseq; i++)
-    msa->wgt[i] *= (hmm->eff_nseq / (double) hmm->nseq);
-
   return eslOK;
 
  ERROR:
@@ -997,9 +974,24 @@ annotate(P7_BUILDER *bld, const ESL_MSA *msa, P7_HMM *hmm)
   if ((status = p7_hmm_SetComposition(hmm))                     != eslOK) ESL_XFAIL(status, bld->errbuf, "Failed to determine model composition");
   if ((status = p7_hmm_SetConsensus(hmm, NULL))                 != eslOK) ESL_XFAIL(status, bld->errbuf, "Failed to set consensus line");
 
-  if (msa->cutset[eslMSA_GA1] && msa->cutset[eslMSA_GA2]) { hmm->cutoff[p7_GA1] = msa->cutoff[eslMSA_GA1]; hmm->cutoff[p7_GA2] = msa->cutoff[eslMSA_GA2]; hmm->flags |= p7H_GA; }
-  if (msa->cutset[eslMSA_TC1] && msa->cutset[eslMSA_TC2]) { hmm->cutoff[p7_TC1] = msa->cutoff[eslMSA_TC1]; hmm->cutoff[p7_TC2] = msa->cutoff[eslMSA_TC2]; hmm->flags |= p7H_TC; }
-  if (msa->cutset[eslMSA_NC1] && msa->cutset[eslMSA_NC2]) { hmm->cutoff[p7_NC1] = msa->cutoff[eslMSA_NC1]; hmm->cutoff[p7_NC2] = msa->cutoff[eslMSA_NC2]; hmm->flags |= p7H_NC; }
+  if (msa->cutset[eslMSA_GA1]) {
+    hmm->cutoff[p7_GA1] = msa->cutoff[eslMSA_GA1];
+    hmm->flags |= p7H_GA;
+    if (msa->cutset[eslMSA_GA2])
+      hmm->cutoff[p7_GA2] = msa->cutoff[eslMSA_GA2];
+  }
+  if (msa->cutset[eslMSA_TC1]) {
+    hmm->cutoff[p7_TC1] = msa->cutoff[eslMSA_TC1];
+    hmm->flags |= p7H_TC;
+    if (msa->cutset[eslMSA_TC2])
+      hmm->cutoff[p7_TC2] = msa->cutoff[eslMSA_TC2];
+  }
+  if (msa->cutset[eslMSA_NC1]) {
+    hmm->cutoff[p7_NC1] = msa->cutoff[eslMSA_NC1];
+    hmm->flags |= p7H_NC;
+    if (msa->cutset[eslMSA_NC2])
+      hmm->cutoff[p7_NC2] = msa->cutoff[eslMSA_NC2];
+  }
 
   return eslOK;
 
@@ -1054,19 +1046,5 @@ make_post_msa(P7_BUILDER *bld, const ESL_MSA *premsa, const P7_HMM *hmm, P7_TRAC
   if (postmsa != NULL) esl_msa_Destroy(postmsa);
   return status;
 }
-
-
-
-
 /*---------------- end, internal functions ----------------------*/
 
-
-
-
-
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/

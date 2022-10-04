@@ -4,11 +4,16 @@
  * sequences. Sequence data are packed bitwise into 32-bit packets,
  * where each packet contains either six 5-bit residues or fifteen
  * 2-bit residues, plus two control bits.  Input is asynchronous,
- * using POSIX threads, with a "reader" thread doing disk reads and an
- * "unpacker" thread preparing chunks of sequences for
+ * using POSIX threads, with a "loader" thread doing disk reads and 
+ * "unpacker" thread(s) preparing chunks of sequences for
  * analysis. Sequence data and metadata are stored in separate files,
- * which sometimes may allow further input acceleration by deferring
+ * which may allow further input acceleration by deferring
  * metadata accesses until they're actually needed.
+ * 
+ * All thread synchronization is handled internally. A caller does not
+ * need to worry about the internal parallelism; it just calls
+ * <esl_dsqdata_Read()>. Caller can create multiple threads, each
+ * calling <esl_dsqdata_Read()>.
  * 
  * A DSQDATA database <basename> is stored in four files:
  *    - basename       : a human-readable stub
@@ -27,18 +32,20 @@
  *   8. Test driver
  *   9. Examples
  */
-
-#include "easel.h"
-#include "esl_alphabet.h"
-#include "esl_dsqdata.h"
-#include "esl_random.h"
-#include "esl_sq.h"
-#include "esl_sqio.h"
+#include "esl_config.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include <pthread.h>
+
+#include "easel.h"
+#include "esl_alphabet.h"
+#include "esl_random.h"
+#include "esl_sq.h"
+#include "esl_sqio.h"
+
+#include "esl_dsqdata.h"
 
 static ESL_DSQDATA_CHUNK *dsqdata_chunk_Create (ESL_DSQDATA *dd);
 static void               dsqdata_chunk_Destroy(ESL_DSQDATA_CHUNK *chu);
@@ -68,46 +75,54 @@ static uint32_t eslDSQDATA_MAGIC_V1SWAP = 0xb1d1d3c4; //  ... as above, but byte
  * Synopsis:  Open a digital sequence database for reading
  * Incept:    SRE, Wed Jan 20 09:50:00 2016 [Amtrak 2150, NYP-BOS]
  *
- * Purpose:   Open digital sequence database <basename> for reading.
- *            Configure it for a specified number of 1 or
- *            more parallelized <nconsumers>. The consumers are one or
- *            more threads that are processing chunks of data in
- *            parallel.
+ * Purpose:   Open dsqdata database <basename> for reading.  The file
+ *            <basename> is a stub describing the database. The bulk
+ *            of the data are in three accompanying binary files: the
+ *            index file <basename>.dsqi, the metadata file
+ *            <basename>.dsqm, and the sequence file <basename>.dsqs.
  *            
- *            The file <basename> is a human-readable stub describing
- *            the database. The bulk of the data are in three
- *            accompanying binary files: the index file
- *            <basename>.dsqi, the metadata file <basename>.dsqm, and
- *            the sequence file <basename>.dsqs.
+ *            <nconsumers> is an upper bound on the number of threads
+ *            in which the caller plans to be calling
+ *            <esl_dsqdata_Read()> -- or, more precisely, the maximum
+ *            number of data chunks that the caller could be working
+ *            on at any given instant.  This is a hint, not a
+ *            commitment. The dsqdata loader uses it to determine the
+ *            maximum number of data chunks that can be in play at
+ *            once (including chunks it is juggling internally, plus
+ *            if all the caller's reader threads are busy on
+ *            theirs). If <nconsumers> is set too small, the loader
+ *            may stall waiting for chunks to come back for recycling.
  *            
- *            <byp_abc> provides a way to either tell <dsqdata> to
- *            expect a specific alphabet in the <basename> database
- *            (and return a normal failure on a mismatch), or, when
- *            the alphabet remains unknown, to figure out the alphabet
- *            in <basename> is and allocate and return a new alphabet.
- *            <byp_abc> uses a partial Easel "bypass" idiom for this:
- *            if <*byp_abc> is NULL, we allocate and return a new
- *            alphabet; if <*byp_abc> is a ptr to an existing
- *            alphabet, we use it for validation. That is,
+ *            Reading digital sequence data requires a digital
+ *            alphabet.  You can either provide one (in which case we
+ *            validate that it matches the alphabet used by the
+ *            dsqdata) or, as a convenience, <esl_dsqdata_Open()> can
+ *            create one for you. Either way, you pass a pointer to an
+ *            <ESL_ALPHABET> structure <abc>, in <byp_abc>.  <byp_abc>
+ *            uses a partial Easel "bypass" idiom: if <*byp_abc> is
+ *            NULL, we allocate and return a new alphabet; if
+ *            <*byp_abc> is a ptr to an existing alphabet, we use it
+ *            for validation. That is, you have two choices:
  *                
- *            \begin{cchunk}
- *                abc = NULL;
+ *            ```
+ *                ESL_ALPHABET *abc = NULL;
  *                esl_dsqdata_Open(&abc, basename...)
  *                // <abc> is now the alphabet of <basename>; 
- *                // you're responsible for Destroy'ing it
- *            \end{cchunk}
+ *                // now you're responsible for Destroy'ing it
+ *            ```
  *                
  *            or:
- *            \begin{cchunk}
- *                abc = esl_alphabet_Create(eslAMINO);
+ *
+ *            ```
+ *                ESL_ALPHABET *abc = esl_alphabet_Create(eslAMINO);
  *                status = esl_dsqdata_Open(&abc, basename);
  *                // if status == eslEINCOMPAT, alphabet in basename 
  *                // doesn't match caller's expectation
- *            \end{cchunk}
+ *            ```
  *
- * Args:      byp_abc    : optional alphabet hint; pass &abc or NULL.
+ * Args:      byp_abc    : expected or created alphabet; pass &abc, abc=NULL or abc=expected alphabet
  *            basename   : data are in files <basename> and <basename.dsq[ism]>
- *            nconsumers : number of consumer threads caller is going to Read() with
+ *            nconsumers : upper bound on number of consumer threads caller is going to Read() with
  *            ret_dd     : RETURN : the new ESL_DSQDATA object.
  *
  * Returns:   <eslOK> on success.
@@ -124,6 +139,8 @@ static uint32_t eslDSQDATA_MAGIC_V1SWAP = 0xb1d1d3c4; //  ... as above, but byte
  *            an error state, and <dd->errbuf> is a user-directed
  *            error message that the caller can relay to the user. Other
  *            than the <errbuf>, the rest of the contents are undefined.
+ *            
+ *            Caller is responsible for destroying <*byp_abc>.
  *
  * Throws:    <eslEMEM> on allocation error.
  *            <eslESYS> on system call failure.
@@ -131,6 +148,9 @@ static uint32_t eslDSQDATA_MAGIC_V1SWAP = 0xb1d1d3c4; //  ... as above, but byte
  *               TODO: handle byteswapping
  * 
  *            On any thrown exception, <*ret_dd> is returned NULL.
+ *
+ *            On <eslESYS> exceptions, some thread resources may
+ *            not be fully freed, leading to some memory leakage.
  */
 int
 esl_dsqdata_Open(ESL_ALPHABET **byp_abc, char *basename, int nconsumers, ESL_DSQDATA **ret_dd)
@@ -142,9 +162,11 @@ esl_dsqdata_Open(ESL_ALPHABET **byp_abc, char *basename, int nconsumers, ESL_DSQ
   uint32_t     alphatype = eslUNKNOWN;
   char        *p;                       // used for strtok() parsing of fields on a line
   char         buf[4096];
+  int          u;
   int          status;
   
-  ESL_DASSERT1(( nconsumers > 0 ));
+  ESL_DASSERT1(( nconsumers > 0   ));
+  ESL_DASSERT1(( byp_abc  != NULL ));  // either *byp_abc == NULL or *byp_abc = the caller's expected alphabet.
   
   ESL_ALLOC(dd, sizeof(ESL_DSQDATA));
   dd->stubfp          = NULL;
@@ -152,6 +174,7 @@ esl_dsqdata_Open(ESL_ALPHABET **byp_abc, char *basename, int nconsumers, ESL_DSQ
   dd->sfp             = NULL;
   dd->mfp             = NULL;
   dd->abc_r           = *byp_abc;        // This may be NULL; if so, we create it later.
+
   dd->magic           = 0;
   dd->uniquetag       = 0;
   dd->flags           = 0;
@@ -168,15 +191,8 @@ esl_dsqdata_Open(ESL_ALPHABET **byp_abc, char *basename, int nconsumers, ESL_DSQ
   dd->pack5           = FALSE;  
 
   dd->nconsumers      = nconsumers;
-  dd->loader_outbox   = NULL;
-  dd->unpacker_outbox = NULL;
-  dd->recycling       = NULL;
+  dd->n_unpackers     = eslDSQDATA_UNPACKERS;      // we'll want to allow tuning this too
   dd->errbuf[0]       = '\0';
-  dd->at_eof          = FALSE;
-  dd->lt_c = dd->lom_c = dd->lof_c = dd->loe_c = FALSE;  
-  dd->ut_c = dd->uom_c = dd->uof_c = dd->uoe_c = FALSE;
-  dd->rm_c = dd->r_c   = FALSE;
-  dd->errbuf[0] = '\0';
 
   /* Open the four files.
    */
@@ -260,20 +276,52 @@ esl_dsqdata_Open(ESL_ALPHABET **byp_abc, char *basename, int nconsumers, ESL_DSQ
   if ( magic != dd->magic)                                 ESL_XFAIL(eslEFORMAT, dd->errbuf, "sequence file has bad magic");
   if ( tag   != dd->uniquetag)                             ESL_XFAIL(eslEFORMAT, dd->errbuf, "sequence file has bad tag, doesn't match stub");
 
-  /* Create the loader and unpacker threads.
-   */
-  if ( pthread_mutex_init(&dd->loader_outbox_mutex,      NULL) != 0) ESL_XEXCEPTION(eslESYS, "pthread_mutex_init() failed");    dd->lom_c = TRUE;
-  if ( pthread_mutex_init(&dd->unpacker_outbox_mutex,    NULL) != 0) ESL_XEXCEPTION(eslESYS, "pthread_mutex_init() failed");    dd->uom_c = TRUE;
-  if ( pthread_mutex_init(&dd->recycling_mutex,          NULL) != 0) ESL_XEXCEPTION(eslESYS, "pthread_mutex_init() failed");    dd->rm_c  = TRUE;
+  /* unpacker inboxes and outboxes */
+  for (u = 0; u < dd->n_unpackers; u++)
+    {
+      dd->inbox[u]  = NULL;
+      if ( pthread_mutex_init(&(dd->inbox_mutex[u]),   NULL) != 0) ESL_XEXCEPTION(eslESYS, "pthread_mutex_init() failed");
+      if ( pthread_cond_init (&(dd->inbox_cv[u]),      NULL) != 0) ESL_XEXCEPTION(eslESYS, "pthread_cond_init() failed");     
+      dd->inbox_eod[u] = FALSE;
 
-  if ( pthread_cond_init(&dd->loader_outbox_full_cv,     NULL) != 0) ESL_XEXCEPTION(eslESYS, "pthread_cond_init() failed");     dd->lof_c = TRUE;
-  if ( pthread_cond_init(&dd->loader_outbox_empty_cv,    NULL) != 0) ESL_XEXCEPTION(eslESYS, "pthread_cond_init() failed");     dd->loe_c = TRUE;
-  if ( pthread_cond_init(&dd->unpacker_outbox_full_cv,   NULL) != 0) ESL_XEXCEPTION(eslESYS, "pthread_cond_init() failed");     dd->uof_c = TRUE;
-  if ( pthread_cond_init(&dd->unpacker_outbox_empty_cv,  NULL) != 0) ESL_XEXCEPTION(eslESYS, "pthread_cond_init() failed");     dd->uoe_c = TRUE;
-  if ( pthread_cond_init(&dd->recycling_cv,              NULL) != 0) ESL_XEXCEPTION(eslESYS, "pthread_cond_init() failed");     dd->r_c   = TRUE;
-  
-  if ( pthread_create(&dd->unpacker_t, NULL, dsqdata_unpacker_thread, dd) != 0) ESL_XEXCEPTION(eslESYS, "pthread_create() failed");  dd->ut_c = TRUE;
-  if ( pthread_create(&dd->loader_t,   NULL, dsqdata_loader_thread,   dd) != 0) ESL_XEXCEPTION(eslESYS, "pthread_create() failed");  dd->lt_c = TRUE;
+      dd->outbox[u]  = NULL;
+      if ( pthread_mutex_init(&(dd->outbox_mutex[u]),  NULL) != 0) ESL_XEXCEPTION(eslESYS, "pthread_mutex_init() failed");
+      if ( pthread_cond_init (&(dd->outbox_cv[u]),     NULL) != 0) ESL_XEXCEPTION(eslESYS, "pthread_cond_init() failed");     
+      dd->outbox_eod[u] = FALSE;
+    }
+
+  /* consumers share access to <nchunk> counter */
+  dd->nchunk = 0;
+  if ( pthread_mutex_init(&dd->nchunk_mutex,           NULL) != 0) ESL_XEXCEPTION(eslESYS, "pthread_mutex_init() failed");      
+
+  /* chunk recycling stack */
+  dd->recycling = NULL;
+  if ( pthread_mutex_init(&dd->recycling_mutex,        NULL) != 0) ESL_XEXCEPTION(eslESYS, "pthread_mutex_init() failed");      
+  if ( pthread_cond_init(&dd->recycling_cv,            NULL) != 0) ESL_XEXCEPTION(eslESYS, "pthread_cond_init() failed");     
+
+  /* Create the "initialization is complete" signaling mechanism
+   * before creating any threads, and lock the initialization mutex
+   * while we're creating them. The issue here is that unpackers
+   * identify their [u] index by comparing their self thread id to the
+   * master list of thread ids, so make sure that master list actually
+   * exists.
+   */
+  dd->go = FALSE;
+  if ( pthread_mutex_init(&dd->go_mutex, NULL) != 0) ESL_XEXCEPTION(eslESYS, "pthread_mutex_init() failed on go_mutex");    
+  if ( pthread_cond_init( &dd->go_cv,    NULL) != 0) ESL_XEXCEPTION(eslESYS, "pthread_cond_init() failed on go_cv");    
+  if ( pthread_mutex_lock(&dd->go_mutex)       != 0) ESL_XEXCEPTION(eslESYS, "pthread_mutex_lock() failed on go_mutex");    
+
+  /* Create the loader and the unpackers. 
+   * They will wait to start until we signal through go->cv.
+   */
+  if ( pthread_create(&dd->loader_t,   NULL, dsqdata_loader_thread,   dd) != 0) ESL_XEXCEPTION(eslESYS, "pthread_create() failed"); 
+  for (u = 0; u < dd->n_unpackers; u++)
+    if ( pthread_create(&(dd->unpacker_t[u]), NULL, dsqdata_unpacker_thread, dd) != 0) ESL_XEXCEPTION(eslESYS, "pthread_create() failed"); 
+
+  /* All threads started, initialization complete - broadcast "go" signal to all threads */
+  dd->go = TRUE;
+  if ( pthread_mutex_unlock(&dd->go_mutex)  != 0) ESL_XEXCEPTION(eslESYS, "pthread_mutex_unlock() failed on go_mutex");
+  if ( pthread_cond_broadcast(&dd->go_cv)   != 0) ESL_XEXCEPTION(eslESYS, "pthread_cond_broadcast() failed on go_cv");
 
   *ret_dd  = dd;
   *byp_abc = dd->abc_r;     // If caller provided <*byp_abc> this is a no-op, because we set abc_r = *byp_abc.
@@ -286,14 +334,21 @@ esl_dsqdata_Open(ESL_ALPHABET **byp_abc, char *basename, int nconsumers, ESL_DSQ
       if (*byp_abc == NULL && dd->abc_r) esl_alphabet_Destroy(dd->abc_r);
       return status;
     }
-  else
-    {   /* on exceptions, we free <dd>, return it NULL, don't change *byp_abc */
+  else if (status != eslESYS)
+    {   /* on most exceptions, we free <dd>, return it NULL, don't change *byp_abc */
       esl_dsqdata_Close(dd);
       *ret_dd = NULL;
       if (*byp_abc == NULL && dd->abc_r) esl_alphabet_Destroy(dd->abc_r);
       return status;
     }
+  else
+    { /* on eslESYS exceptions - pthread initializations failing - we can't assume we can _Close() correctly. */
+      *ret_dd = NULL;
+      if (*byp_abc == NULL && dd->abc_r) esl_alphabet_Destroy(dd->abc_r);
+      return status;
+    }
 }
+
 
 
 /* Function:  esl_dsqdata_Read()
@@ -333,69 +388,33 @@ esl_dsqdata_Open(ESL_ALPHABET **byp_abc, char *basename, int nconsumers, ESL_DSQ
 int
 esl_dsqdata_Read(ESL_DSQDATA *dd, ESL_DSQDATA_CHUNK **ret_chu)
 {
-  ESL_DSQDATA_CHUNK *chu = NULL;
+  ESL_DSQDATA_CHUNK *chu    = NULL;
+  int                u;
 
-  /* The loader and unpacker have already done the work.  All that
-   * _Read() needs to do is take a finished chunk from the unpacker's
-   * outbox. There's three possibilities here:
-   *   
-   * 1. A chunk is waiting in the outbox (unpacker_outbox != NULL, chu->N > 0).
-   *    Pick it up; signal back to the unpacker that we've done so.
-   *
-   * 2. An empty chunk is waiting in the outbox (unpacker_outbox !=
-   *    NULL, chu->N == 0). This is the EOF signal from the unpacker.
-   *    There's only one of them, so only one reader will see it.
-   *    This reader raises the at_eof flag for all other readers to
-   *    see. Now instead of signalling the *unpacker* (which already
-   *    knows it is EOF), we must signal the other *readers*, who may
-   *    be sitting on a conditional wait for the outbox to be
-   *    non-NULL, which it will never be again: so we signal "outbox
-   *    full", which really means "outbox full or at EOF".  Then the
-   *    reader recycles the empty chunk itself, and caller just gets a
-   *    NULL chunk and a eslEOF return status.
-   *
-   * 3. The at_eof flag is up. Again we signal "outbox full or at EOF"
-   *    to the remaining readers to wake them up, then return eslEOF.
-   *    
-   * The reason for the above verbosity is that it's super easy to
-   * get a low-probability race condition here, and stall the threads.
-   */
-  if ( pthread_mutex_lock(&dd->unpacker_outbox_mutex) != 0) ESL_EXCEPTION(eslESYS, "pthread call failed");
-  while (! dd->at_eof && dd->unpacker_outbox == NULL)  {                                                  
-    if ( pthread_cond_wait(&dd->unpacker_outbox_full_cv, &dd->unpacker_outbox_mutex) != 0) 
-      ESL_EXCEPTION(eslESYS, "pthread call failed");
+  /* First, determine which slot the next chunk is in, using the consumer-shared <nchunk> counter */
+  if ( pthread_mutex_lock(&dd->nchunk_mutex) != 0) ESL_EXCEPTION(eslESYS, "failed to lock reader mutex");
+  u = (int) (dd->nchunk % dd->n_unpackers);
+
+  /* Acquire a lock that outbox, wait for it to be in full or EOD state */
+  if ( pthread_mutex_lock(&(dd->outbox_mutex[u])) != 0) ESL_EXCEPTION(eslESYS, "failed to lock outbox[u] mutex");
+  while (! dd->outbox_eod[u]  && dd->outbox[u] == NULL)  {                                                  
+    if ( pthread_cond_wait(&(dd->outbox_cv[u]), &(dd->outbox_mutex[u])) != 0) ESL_EXCEPTION(eslESYS, "failed to wait on outbox[u] signal");
   }
 
-  chu = dd->unpacker_outbox; 
-  dd->unpacker_outbox = NULL;
+  /* Get the chunk from outbox. */
+  chu           = dd->outbox[u]; 
+  dd->outbox[u] = NULL;
+  if (chu) dd->nchunk++;     // chu==NULL if we're EOD. (and eod flag is up too, but we already know that by getting here)
 
-  /* Case 1: A data chunk. */
-  if (chu && chu->N)
-    {
-      if ( pthread_mutex_unlock(&dd->unpacker_outbox_mutex)    != 0) ESL_EXCEPTION(eslESYS, "pthread call failed");
-      if ( pthread_cond_signal (&dd->unpacker_outbox_empty_cv) != 0) ESL_EXCEPTION(eslESYS, "pthread call failed");
-      *ret_chu = chu;
-      return eslOK;      
-    }
-  /* Case 2. The EOF chunk. */
-  else if (chu)
-    {
-      dd->at_eof = TRUE;      
-      if ( pthread_mutex_unlock(&dd->unpacker_outbox_mutex)   != 0) ESL_EXCEPTION(eslESYS, "pthread call failed");
-      if ( pthread_cond_signal (&dd->unpacker_outbox_full_cv) != 0) ESL_EXCEPTION(eslESYS, "pthread call failed");  
-      esl_dsqdata_Recycle(dd, chu);  
-      *ret_chu = NULL;
-      return eslEOF;
-    }
-  /* Case 3: Another reader already set eof */
-  else
-    {
-      if ( pthread_mutex_unlock(&dd->unpacker_outbox_mutex)   != 0) ESL_EXCEPTION(eslESYS, "pthread call failed");
-      if ( pthread_cond_signal (&dd->unpacker_outbox_full_cv) != 0) ESL_EXCEPTION(eslESYS, "pthread call failed");  
-      *ret_chu = NULL;
-      return eslEOF;
-    }
-  /*NOTREACHED*/
+  /* Release the outbox lock and signal back to unpacker (skip signalling if we're EOD; unpacker[u] is done) */
+  if (        pthread_mutex_unlock(&(dd->outbox_mutex[u])) != 0) ESL_EXCEPTION(eslESYS, "failed to unlock outbox[u] mutex");
+  if ( chu && pthread_cond_signal (&(dd->outbox_cv[u]))    != 0) ESL_EXCEPTION(eslESYS, "failed to signal outbox[u] is empty");
+
+  /* Release the reader lock that protects dd->nchunk counter */
+  if ( pthread_mutex_unlock(&dd->nchunk_mutex) != 0) ESL_EXCEPTION(eslESYS, "failed to unlock reader mutex");
+  
+  *ret_chu = chu;
+  return (chu ? eslOK : eslEOF);
 }
 
 
@@ -408,10 +427,7 @@ esl_dsqdata_Read(ESL_DSQDATA *dd, ESL_DSQDATA_CHUNK **ret_chu)
  *            chunks. The reader will either reuse the chunk's memory
  *            if more chunks remain to be read, or it will free it.
  *            
- *            If <chu> is <NULL>, do nothing. This case arises when
- *            the reader is at EOF.
- *
- * Args:      dd  : the dsqdata reader
+ * Args:      dd  : dsqdata reader
  *            chu : chunk to recycle
  *
  * Returns:   <eslOK> on success. 
@@ -428,11 +444,10 @@ esl_dsqdata_Recycle(ESL_DSQDATA *dd, ESL_DSQDATA_CHUNK *chu)
   if (chu)
     {
       if ( pthread_mutex_lock(&dd->recycling_mutex)   != 0) ESL_EXCEPTION(eslESYS, "pthread mutex lock failed");
-      chu->nxt = dd->recycling;      // Push chunk onto head of recycling stack
+      chu->nxt      = dd->recycling;       // Push chunk onto head of recycling stack
       dd->recycling = chu;
       if ( pthread_mutex_unlock(&dd->recycling_mutex) != 0) ESL_EXCEPTION(eslESYS, "pthread mutex unlock failed");
-      if ( pthread_cond_signal(&dd->recycling_cv)     != 0) ESL_EXCEPTION(eslESYS, "pthread cond signal failed");
-      // That signal told the loader that there's a chunk it can recycle.
+      if ( pthread_cond_signal(&dd->recycling_cv)     != 0) ESL_EXCEPTION(eslESYS, "pthread cond signal failed");  // loader may wait for this signal
     }
   return eslOK;
 }
@@ -451,35 +466,65 @@ esl_dsqdata_Recycle(ESL_DSQDATA *dd, ESL_DSQDATA_CHUNK *chu)
  *            calls and fclose(). Caller should regard such a failure
  *            as disastrous: treat <dd> as toxic and exit as soon as 
  *            possible without making any other system calls, if possible.
+ *            
+ * Note: Normally Easel would call _Close() not only on a correctly
+ *            opened object (after the Open returns) but also from
+ *            within the Open call to clean up on failure. This relies
+ *            on being able to tell which parts of an incomplete
+ *            object have been initialized; this is why Easel sets
+ *            ptrs to NULL before allocating them, for example.  POSIX
+ *            threads doesn't seem to give us a way to check whether a
+ *            mutex, condition variable, or thread has been
+ *            initialized; and destroying an uninitialized mutex or CV
+ *            results in undefined behavior. We could include a
+ *            boolean flag for each pthreads component -- or one for
+ *            all of them -- but instead, we simply say that a failure
+ *            of pthreads initialization in the Open function is so
+ *            catastrophic and unexpected that we exit that function
+ *            without cleaning up the incomplete ESL_DSQDATA
+ *            structure.  We expect that the caller is simply going to
+ *            have to quit anyway, so we don't need to worry about
+ *            memory leakage.
  */
 int
 esl_dsqdata_Close(ESL_DSQDATA *dd)
 {
+  int u;
+
   if (dd)
     {
-      if (dd->lt_c)   { if ( pthread_join(dd->loader_t,   NULL)                  != 0)  ESL_EXCEPTION(eslESYS, "pthread join failed");          }
-      if (dd->ut_c)   { if ( pthread_join(dd->unpacker_t, NULL)                  != 0)  ESL_EXCEPTION(eslESYS, "pthread join failed");          }
-      if (dd->lof_c)  { if ( pthread_cond_destroy(&dd->loader_outbox_full_cv)    != 0)  ESL_EXCEPTION(eslESYS, "pthread cond destroy failed");  }
-      if (dd->loe_c)  { if ( pthread_cond_destroy(&dd->loader_outbox_empty_cv)   != 0)  ESL_EXCEPTION(eslESYS, "pthread cond destroy failed");  }
-      if (dd->uof_c)  { if ( pthread_cond_destroy(&dd->unpacker_outbox_full_cv)  != 0)  ESL_EXCEPTION(eslESYS, "pthread cond destroy failed");  }
-      if (dd->uoe_c)  { if ( pthread_cond_destroy(&dd->unpacker_outbox_empty_cv) != 0)  ESL_EXCEPTION(eslESYS, "pthread cond destroy failed");  }
-      if (dd->r_c)    { if ( pthread_cond_destroy(&dd->recycling_cv)             != 0)  ESL_EXCEPTION(eslESYS, "pthread cond destroy failed");  }
-      if (dd->lom_c)  { if ( pthread_mutex_destroy(&dd->loader_outbox_mutex)     != 0)  ESL_EXCEPTION(eslESYS, "pthread mutex destroy failed"); }
-      if (dd->uom_c)  { if ( pthread_mutex_destroy(&dd->unpacker_outbox_mutex)   != 0)  ESL_EXCEPTION(eslESYS, "pthread mutex destroy failed"); }
-      if (dd->rm_c)   { if ( pthread_mutex_destroy(&dd->recycling_mutex)         != 0)  ESL_EXCEPTION(eslESYS, "pthread mutex destroy failed"); }
+      /* out of abundance of caution - wait for threads to join before breaking down <dd> */
+      if ( pthread_join(dd->loader_t,   NULL)      != 0)  ESL_EXCEPTION(eslESYS, "pthread join failed");          
+      for (u = 0; u < dd->n_unpackers; u++)
+	if ( pthread_join(dd->unpacker_t[u], NULL) != 0)  ESL_EXCEPTION(eslESYS, "pthread join failed");          
 
+      if (dd->basename) free(dd->basename);
+      if (dd->stubfp) { if ( fclose(dd->stubfp) != 0) ESL_EXCEPTION(eslESYS, "fclose failed"); }
       if (dd->ifp)    { if ( fclose(dd->ifp)    != 0) ESL_EXCEPTION(eslESYS, "fclose failed"); }
       if (dd->sfp)    { if ( fclose(dd->sfp)    != 0) ESL_EXCEPTION(eslESYS, "fclose failed"); }
       if (dd->mfp)    { if ( fclose(dd->mfp)    != 0) ESL_EXCEPTION(eslESYS, "fclose failed"); }
-      if (dd->stubfp) { if ( fclose(dd->stubfp) != 0) ESL_EXCEPTION(eslESYS, "fclose failed"); }
 
-      if (dd->basename) free(dd->basename);
+      for (u = 0; u < dd->n_unpackers; u++)
+	{
+	  if ( pthread_mutex_destroy(&(dd->inbox_mutex[u]))  != 0)  ESL_EXCEPTION(eslESYS, "pthread mutex destroy failed"); 
+	  if ( pthread_cond_destroy(&(dd->inbox_cv[u]))      != 0)  ESL_EXCEPTION(eslESYS, "pthread cond destroy failed");  
+	  if ( pthread_mutex_destroy(&(dd->outbox_mutex[u])) != 0)  ESL_EXCEPTION(eslESYS, "pthread mutex destroy failed"); 
+	  if ( pthread_cond_destroy(&(dd->outbox_cv[u]))     != 0)  ESL_EXCEPTION(eslESYS, "pthread cond destroy failed"); 
+	}
+      if ( pthread_mutex_destroy(&dd->nchunk_mutex)          != 0)  ESL_EXCEPTION(eslESYS, "pthread mutex destroy failed"); 
+      if ( pthread_mutex_destroy(&dd->recycling_mutex)       != 0)  ESL_EXCEPTION(eslESYS, "pthread mutex destroy failed"); 
+      if ( pthread_cond_destroy(&dd->recycling_cv)           != 0)  ESL_EXCEPTION(eslESYS, "pthread cond destroy failed");  
+      if ( pthread_mutex_destroy(&dd->go_mutex)              != 0)  ESL_EXCEPTION(eslESYS, "pthread mutex destroy failed"); 
+      if ( pthread_cond_destroy(&dd->go_cv)                  != 0)  ESL_EXCEPTION(eslESYS, "pthread cond destroy failed");  
 
       /* Loader thread is responsible for freeing all chunks it created, even on error. */
-      ESL_DASSERT1(( dd->loader_outbox   == NULL ));
-      ESL_DASSERT1(( dd->unpacker_outbox == NULL ));
-      ESL_DASSERT1(( dd->recycling       == NULL ));
-
+#if (eslDEBUGLEVEL >= 1)
+      for (u = 0; u < dd->n_unpackers; u++) {
+	assert( dd->inbox[u]  == NULL );
+	assert( dd->outbox[u] == NULL );
+      }
+      assert(dd->recycling == NULL );
+#endif
       free(dd);
     }
   return eslOK;
@@ -805,7 +850,8 @@ dsqdata_loader_thread(void *p)
   ESL_DSQDATA         *dd        = (ESL_DSQDATA *) p;
   ESL_DSQDATA_RECORD  *idx       = NULL;
   ESL_DSQDATA_CHUNK   *chu       = NULL;
-  int                  nchunk    = 0;             // number of chunks we create, and need to destroy.
+  int64_t              nchunk    = 0;             // total number of chunks loaded (including empty EOF)
+  int                  nalloc    = 0;             // number of chunks we create, and need to destroy.
   int                  nidx      = 0;             // how many records in <idx>: usually MAXSEQ, until end
   int                  nload     = 0;             // how many sequences we load: >=1, <=nidx
   int                  ncarried  = 0;             // how many records carry over to next iteration: nidx-nload
@@ -814,35 +860,52 @@ dsqdata_loader_thread(void *p)
   int                  i0        = 0;             // absolute index of first record in <idx>, 0-offset
   int64_t              psq_last  = -1;            // psq_end for record i0-1
   int64_t              meta_last = -1;            // metadata_end for record i0-1
-  int                  done      = FALSE;
+  int                  u;                         // which unpacker outbox we put this chunk in 
   int                  status;
 
+  /* Don't use <dd> until we get the structure-is-ready signal */
+  if ( pthread_mutex_lock(&dd->go_mutex)   != 0) ESL_XEXCEPTION(eslESYS, "pthread_mutex_lock failed on go_mutex");
+  while (! dd->go) {
+    if ( pthread_cond_wait(&dd->go_cv, &dd->go_mutex) != 0) ESL_XEXCEPTION(eslESYS, "pthread_cond_wait failed on go_cv");
+  }
+  if ( pthread_mutex_unlock(&dd->go_mutex) != 0) ESL_XEXCEPTION(eslESYS, "pthread_mutex_lock failed on go_mutex");
+
+  /* We can begin. */
   ESL_ALLOC(idx, sizeof(ESL_DSQDATA_RECORD) * dd->chunk_maxseq);
-
-  while (! done)
+  while (1)
     {
+      //printf("loader: working on chunk %d\n", (int) nchunk+1);
 
-      /* Get a chunk - either by creating it, or recycling it.
-       * We'll create up to <nconsumers>+2 of them.
+      /* Get a chunk structure we can use - either by creating it, or recycling it.
+       * We probably don't benefit from having more than <nconsumers> + 3*<n_unpackers> + 2,
+       * which is enough to have all threads working, all in/outboxes full, and at least 1 
+       * waiting in recycling.
+       * SRE TODO: test, how many is optimal, does it matter? 
+       *           the two limits below perform comparably in `esl_dsqdata_example -n`, but that
+       *           doesn't have high-cpu reader threads.
        */
-      if (nchunk < dd->nconsumers+2)
+      //if (nalloc < dd->nconsumers + dd->n_unpackers + 1)
+      if (nalloc < dd->nconsumers + 3 * dd->n_unpackers + 2)
 	{
+	  //printf("loader: creating a new chunk\n");
+	  
 	  if ( (chu = dsqdata_chunk_Create(dd)) == NULL) { status = eslEMEM; goto ERROR; }
-	  nchunk++;
+	  nalloc++;
 	}
       else
 	{
+	  //printf("loader: getting a new chunk from recycling...\n");
+
 	  if ( pthread_mutex_lock(&dd->recycling_mutex) != 0) ESL_XEXCEPTION(eslESYS, "pthread mutex lock failed");
-	  while (dd->recycling == NULL)
-	    {
-	      if ( pthread_cond_wait(&dd->recycling_cv, &dd->recycling_mutex) != 0) 
-		ESL_XEXCEPTION(eslESYS, "pthread cond wait failed");
-	    }
-	  chu = dd->recycling;
-	  dd->recycling = chu->nxt;                    // pop one off recycling stack
+	  while (dd->recycling == NULL) {
+	    if ( pthread_cond_wait(&dd->recycling_cv, &dd->recycling_mutex) != 0) ESL_XEXCEPTION(eslESYS, "pthread cond wait failed");
+	  }
+	  chu           = dd->recycling;                 // pop one off recycling stack
+	  dd->recycling = chu->nxt;    
 	  if ( pthread_mutex_unlock(&dd->recycling_mutex) != 0) ESL_XEXCEPTION(eslESYS, "pthread mutex unlock failed");
-	  if ( pthread_cond_signal(&dd->recycling_cv)     != 0) ESL_XEXCEPTION(eslESYS, "pthread cond signal failed");
-	  // signal *after* unlocking mutex
+	  if ( pthread_cond_signal(&dd->recycling_cv)     != 0) ESL_XEXCEPTION(eslESYS, "pthread cond signal failed"); 	  // signal *after* unlocking mutex
+
+	  //printf("loader: ... done, have new chunk from recycling.\n");
 	}
       
       /* Refill index. (The memmove is avoidable. Alt strategy: we could load in 2 frames)
@@ -865,95 +928,111 @@ dsqdata_loader_thread(void *p)
       nidx  = fread(idx + ncarried, sizeof(ESL_DSQDATA_RECORD), dd->chunk_maxseq - ncarried, dd->ifp);
       nidx += ncarried;               // usually, this'll be MAXSEQ, unless we're near EOF.
       
-      if (nidx == 0) 
-	{ // We're EOF. This chunk will be the empty EOF signal to unpacker, consumers.
-	  chu->i0 = i0;
-	  chu->N  = 0;
-	  chu->pn = 0;
-	  done    = TRUE;
+      if (nidx == 0)  // then we're EOD.
+	{ 
+	  //printf("loader: reached EOD.\n");
+	  dsqdata_chunk_Destroy(chu);	  
+	  nalloc--;  // we'd counted that chunk towards <nalloc>.
+	  break;     // this is the only way out of loader's main loop
 	}
+
+
+      /* Figure out how many sequences we're going to load: <nload>
+       *  nload = max i : i <= MAXSEQ && idx[i].psq_end - psq_last <= CHUNK_MAX
+       */
+      ESL_DASSERT1(( idx[0].psq_end - psq_last <= dd->chunk_maxpacket ));
+      if (idx[nidx-1].psq_end - psq_last <= dd->chunk_maxpacket)
+	nload = nidx;
       else
-	{
-	  /* Figure out how many sequences we're going to load: <nload>
-	   *  nload = max i : i <= MAXSEQ && idx[i].psq_end - psq_last <= CHUNK_MAX
-	   */
-	  ESL_DASSERT1(( idx[0].psq_end - psq_last <= dd->chunk_maxpacket ));
-	  if (idx[nidx-1].psq_end - psq_last <= dd->chunk_maxpacket)
-	    nload = nidx;
-	  else
-	    { // Binary search for nload = max_i idx[i-1].psq_end - lastend <= MAX
-	      int righti = nidx;
-	      int mid;
-	      nload = 1;
-	      while (righti - nload > 1)
-		{
-		  mid = nload + (righti - nload) / 2;
-		  if (idx[mid-1].psq_end - psq_last <= dd->chunk_maxpacket) nload = mid;
-		  else righti = mid;
-		}                                                  
-	    }
+	{ // Binary search for nload = max_i idx[i-1].psq_end - lastend <= MAX
+	  int righti = nidx;
+	  int mid;
+	  nload = 1;
+	  while (righti - nload > 1)
+	    {
+	      mid = nload + (righti - nload) / 2;
+	      if (idx[mid-1].psq_end - psq_last <= dd->chunk_maxpacket) nload = mid;
+	      else righti = mid;
+	    }                                                  
+	}
 	  
-	  /* Read packed sequence. */
-	  chu->pn = idx[nload-1].psq_end - psq_last;
-	  nread   = fread(chu->psq, sizeof(uint32_t), chu->pn, dd->sfp);
-	  //printf("Read %d packed ints from seq file\n", nread);
-	  if ( nread != chu->pn ) ESL_XEXCEPTION(eslEOD, "dsqdata packet loader: expected %d, got %d", chu->pn, nread);
+      /* Read packed sequence. */
+      //printf("loader: loading chunk %d from disk.\n", (int) nchunk+1);
+
+      chu->pn = idx[nload-1].psq_end - psq_last;
+      nread   = fread(chu->psq, sizeof(uint32_t), chu->pn, dd->sfp);
+      //printf("Read %d packed ints from seq file\n", nread);
+      if ( nread != chu->pn ) ESL_XEXCEPTION(eslEOD, "dsqdata packet loader: expected %d, got %d", chu->pn, nread);
 
 	      
-	  /* Read metadata, reallocating if needed */
-	  nmeta = idx[nload-1].metadata_end - meta_last;
-	  if (nmeta > chu->mdalloc) {
-	    ESL_REALLOC(chu->metadata, sizeof(char) * nmeta);   // should be realloc by doubling instead?
-	    chu->mdalloc = nmeta;
-	  }
-	  nread  = fread(chu->metadata, sizeof(char), nmeta, dd->mfp);
-	  if ( nread != nmeta ) ESL_XEXCEPTION(eslEOD, "dsqdata metadata loader: expected %d, got %d", nmeta, nread); 
+      /* Read metadata, reallocating if needed */
+      nmeta = idx[nload-1].metadata_end - meta_last;
+      if (nmeta > chu->mdalloc) {
+	ESL_REALLOC(chu->metadata, sizeof(char) * nmeta);   // should be realloc by doubling instead?
+	chu->mdalloc = nmeta;
+      }
+      nread  = fread(chu->metadata, sizeof(char), nmeta, dd->mfp);
+      if ( nread != nmeta ) ESL_XEXCEPTION(eslEOD, "dsqdata metadata loader: expected %d, got %d", nmeta, nread); 
 
-	  chu->i0   = i0;
-	  chu->N    = nload;
-	  psq_last  = idx[nload-1].psq_end;
-	  meta_last = idx[nload-1].metadata_end;
-	}
+      chu->i0   = i0;
+      chu->N    = nload;
+      psq_last  = idx[nload-1].psq_end;
+      meta_last = idx[nload-1].metadata_end;
 
-      /* Put the finished chunk into outbox;
-       * unpacker will pick it up and unpack it.
+      /* Put chunk in appropriate outbox.
        */
-      if ( pthread_mutex_lock(&dd->loader_outbox_mutex) != 0) ESL_XEXCEPTION(eslESYS, "pthread mutex lock failed");
-      while (dd->loader_outbox != NULL) 
-	{ 
-	  if (pthread_cond_wait(&dd->loader_outbox_empty_cv, &dd->loader_outbox_mutex) != 0)
-	    ESL_XEXCEPTION(eslESYS, "pthread cond wait failed");
-	}
-      dd->loader_outbox = chu;   
-      if ( pthread_mutex_unlock(&dd->loader_outbox_mutex)  != 0) ESL_XEXCEPTION(eslESYS, "pthread mutex unlock failed");
-      if ( pthread_cond_signal(&dd->loader_outbox_full_cv) != 0) ESL_XEXCEPTION(eslESYS, "pthread cond signal failed");
+      u = nchunk % dd->n_unpackers;   // note this is the loader's own private <nchunk> counter, not the consumer-shared one in <dd>
+      //printf("loader: about to put chunk %d into inbox %d\n", (int) nchunk+1, u);
+      if ( pthread_mutex_lock(&(dd->inbox_mutex[u])) != 0) ESL_XEXCEPTION(eslESYS, "pthread mutex lock failed");
+      while (dd->inbox[u] != NULL) { 
+	if (pthread_cond_wait(&(dd->inbox_cv[u]), &(dd->inbox_mutex[u])) != 0) ESL_XEXCEPTION(eslESYS, "pthread cond wait failed");
+      }
+      dd->inbox[u] = chu;   
+      if ( pthread_mutex_unlock(&(dd->inbox_mutex[u])) != 0) ESL_XEXCEPTION(eslESYS, "pthread mutex unlock failed");
+      if ( pthread_cond_signal(&(dd->inbox_cv[u]))     != 0) ESL_XEXCEPTION(eslESYS, "pthread cond signal failed");
+      //printf("loader: finished putting chunk %d into inbox %d\n", (int) nchunk+1, u);
+
+      nchunk++;
     }
 
-  /* done == TRUE: we've sent the empty EOF chunk downstream, and now
-   * we wait to get all our chunks back through the recycling, so we
-   * can free them and exit cleanly. We counted them as they went out,
-   * in <nchunk>, so we know how many need to come home.
+  /* Cleanup time. First, set all unpacker inboxes to EOD state. (We overwrite <u> here.)
    */
-  while (nchunk)
+  for (u = 0; u < dd->n_unpackers; u++)
     {
+      //printf("loader: setting EOD on inbox %d\n", u);
+      if ( pthread_mutex_lock(&(dd->inbox_mutex[u])) != 0) ESL_XEXCEPTION(eslESYS, "pthread mutex lock failed");
+      while (dd->inbox[u] != NULL) { 
+	if (pthread_cond_wait(&(dd->inbox_cv[u]), &(dd->inbox_mutex[u])) != 0) ESL_XEXCEPTION(eslESYS, "pthread cond wait failed");
+      }
+      dd->inbox_eod[u] = TRUE;  // we know inbox[u] is already NULL
+      if ( pthread_mutex_unlock(&(dd->inbox_mutex[u])) != 0) ESL_XEXCEPTION(eslESYS, "pthread mutex unlock failed");
+      if ( pthread_cond_signal(&(dd->inbox_cv[u]))     != 0) ESL_XEXCEPTION(eslESYS, "pthread cond signal failed");
+    }
+
+  
+  /* Then, wait to get all our chunks back through the recycling, so we
+   * can free them and exit cleanly. We counted them as they went out,
+   * in <nalloc>, so we know how many need to come home to roost.
+   */
+  while (nalloc)
+    {
+      //printf("loader: clearing recycling, %d chunks left to free\n", nalloc);
       if ( pthread_mutex_lock(&dd->recycling_mutex) != 0) ESL_XEXCEPTION(eslESYS, "pthread mutex lock failed");
-      while (dd->recycling == NULL)                 // Readers may still be working, will Recycle() their chunks
-	{
-	  if ( pthread_cond_wait(&dd->recycling_cv, &dd->recycling_mutex) != 0)
-	    ESL_XEXCEPTION(eslESYS, "pthread cond wait failed");
-	}
+      while (dd->recycling == NULL)  {               // Readers may still be working, will Recycle() their chunks
+	if ( pthread_cond_wait(&dd->recycling_cv, &dd->recycling_mutex) != 0) ESL_XEXCEPTION(eslESYS, "pthread cond wait failed");
+      }
       while (dd->recycling != NULL) {               // Free entire stack, while we have the mutex locked.
 	chu           = dd->recycling;   
 	dd->recycling = chu->nxt;
 	dsqdata_chunk_Destroy(chu);
-	nchunk--;
+	nalloc--;
       }
       if ( pthread_mutex_unlock(&dd->recycling_mutex) != 0) ESL_XEXCEPTION(eslESYS, "pthread mutex unlock failed");
-      /* Because the recycling is a stack, readers never have to wait
-       * on a condition to Recycle(); the recycling, unlike the
-       * outboxes, doesn't need to be empty.
+      /* Because the recycling is a stack, consumers never have to wait
+       * on a condition to Recycle(), so we don't need to signal anything.
        */
     }
+  //printf("loader: exiting\n");
   free(idx);
   pthread_exit(NULL);
 
@@ -977,49 +1056,68 @@ dsqdata_loader_thread(void *p)
 static void *
 dsqdata_unpacker_thread(void *p)
 {
-  ESL_DSQDATA          *dd   = (ESL_DSQDATA *) p;
-  ESL_DSQDATA_CHUNK    *chu  = NULL;
-  int                   done = FALSE;
+  ESL_DSQDATA          *dd    = (ESL_DSQDATA *) p;
+  ESL_DSQDATA_CHUNK    *chu   = NULL;
+  pthread_t             my_id = pthread_self();
+  int                   u;
   int                   status;
 
-  while (! done)
-    {
-      /* Get a chunk from loader's outbox. Wait if necessary. */
-      if ( pthread_mutex_lock(&dd->loader_outbox_mutex) != 0) ESL_XEXCEPTION(eslESYS, "pthread mutex lock failed");
-      while (dd->loader_outbox == NULL) 
-	{
-	  if ( pthread_cond_wait(&dd->loader_outbox_full_cv, &dd->loader_outbox_mutex) != 0)
-	    ESL_XEXCEPTION(eslESYS, "pthread cond wait failed");
-	}
-      chu = dd->loader_outbox;
-      dd->loader_outbox  = NULL;
-      if ( pthread_mutex_unlock(&dd->loader_outbox_mutex)   != 0) ESL_XEXCEPTION(eslESYS, "pthread mutex unlock failed");
-      if ( pthread_cond_signal(&dd->loader_outbox_empty_cv) != 0) ESL_XEXCEPTION(eslESYS, "pthread cond signal failed");
+  /* Don't use <dd> until we get the structure-is-ready signal */
+  if ( pthread_mutex_lock(&dd->go_mutex)   != 0) ESL_XEXCEPTION(eslESYS, "pthread_mutex_lock failed on go_mutex");
+  while (! dd->go) {
+    if ( pthread_cond_wait(&dd->go_cv, &dd->go_mutex) != 0) ESL_XEXCEPTION(eslESYS, "pthread_cond_wait failed on go_cv");
+  }
+  if ( pthread_mutex_unlock(&dd->go_mutex) != 0) ESL_XEXCEPTION(eslESYS, "pthread_mutex_lock failed on go_mutex");
 
-      /* Unpack the metadata.
-       * If chunk is empty (N==0), it's the EOF signal - let it go straight out to a consumer.
-       * (The first consumer that sees it will set the at_eof flag in <dd>, which all
-       *  consumers check. So we only need the one empty EOF chunk to flow downstream.)
-       */
-      if (! chu->N) done = TRUE; // still need to pass the chunk along to a consumer.
-      else
-	{ 	
-	  if (( status = dsqdata_unpack_chunk(chu, dd->pack5)) != eslOK) goto ERROR;
-	}
+  /* There may be more than one unpacker. Figure out who we are, so we
+   * know which slot is ours. (This is why it's especially important
+   * for the unpacker threads to wait for <dd> to be fully
+   * initialized.)
+   */
+  for (u = 0; u < dd->n_unpackers; u++)
+    if ( pthread_equal(my_id, dd->unpacker_t[u] )) break;
+  if (u >= dd->n_unpackers) esl_fatal("unpacker failed to figure out its identity");
 
-      /* Put unpacked chunk into the unpacker's outbox.
-       * May need to wait for it to be empty/available.
-       */
-      if ( pthread_mutex_lock(&dd->unpacker_outbox_mutex) != 0) ESL_XEXCEPTION(eslESYS, "pthread mutex lock failed");
-      while (dd->unpacker_outbox != NULL) 
-	{ 
-	  if ( pthread_cond_wait(&dd->unpacker_outbox_empty_cv, &dd->unpacker_outbox_mutex) != 0)
-	    ESL_XEXCEPTION(eslESYS, "pthread cond wait failed");
-	}
-      dd->unpacker_outbox = chu;
-      if ( pthread_mutex_unlock(&dd->unpacker_outbox_mutex)  != 0) ESL_XEXCEPTION(eslESYS, "pthread mutex unlock failed");
-      if ( pthread_cond_signal(&dd->unpacker_outbox_full_cv) != 0) ESL_XEXCEPTION(eslESYS, "pthread cond signal failed");
+  //printf("unpacker thread %d: ready.\n", u);
+
+  /* Ready. Let's go. */
+  do {
+    //printf("unpacker thread %d: checking for next chunk.\n", u);
+
+    /* Get a chunk from loader in our inbox. Wait if necessary. */
+    if ( pthread_mutex_lock(&(dd->inbox_mutex[u])) != 0) ESL_XEXCEPTION(eslESYS, "pthread mutex lock failed");
+    while (! dd->inbox_eod[u] && dd->inbox[u] == NULL) {
+      if ( pthread_cond_wait(&(dd->inbox_cv[u]), &(dd->inbox_mutex[u])) != 0) ESL_XEXCEPTION(eslESYS, "pthread cond wait failed");
     }
+    chu           = dd->inbox[u];  // NULL if we're EOD
+    dd->inbox[u]  = NULL;
+    if ( pthread_mutex_unlock(&(dd->inbox_mutex[u])) != 0) ESL_XEXCEPTION(eslESYS, "pthread mutex unlock failed");
+
+    //if (chu) printf("unpacker thread %d: took encoded chunk from inbox\n", u);
+    //else     printf("unpacker thread %d: EOD\n", u);
+
+    if (chu) {
+      /* only need to signal inbox change to the loader if we're not EOD */
+      if ( pthread_cond_signal(&(dd->inbox_cv[u])) != 0) ESL_XEXCEPTION(eslESYS, "pthread cond signal failed");
+      /* unpack it */
+      if (( status = dsqdata_unpack_chunk(chu, dd->pack5)) != eslOK) goto ERROR;
+    }
+    
+    /* Put unpacked chunk into the unpacker's outbox, or set EOD status.
+     * May need to wait for it to be empty/available.
+     */
+    if ( pthread_mutex_lock(&(dd->outbox_mutex[u])) != 0) ESL_XEXCEPTION(eslESYS, "pthread mutex lock failed");
+    while (dd->outbox[u] != NULL) {  
+      if ( pthread_cond_wait(&(dd->outbox_cv[u]), &(dd->outbox_mutex[u])) != 0) ESL_XEXCEPTION(eslESYS, "pthread cond wait failed");
+    }
+    dd->outbox[u] = chu;  // that's NULL if we're EOD
+    if (! chu) dd->outbox_eod[u] = TRUE;
+    if ( pthread_mutex_unlock(&(dd->outbox_mutex[u])) != 0) ESL_XEXCEPTION(eslESYS, "pthread mutex unlock failed");
+    if ( pthread_cond_signal(&(dd->outbox_cv[u]))     != 0) ESL_XEXCEPTION(eslESYS, "pthread cond signal failed");
+
+    //if (chu) printf("unpacker thread %d: placed unpacked chunk on outbox\n", u);
+    //else     printf("unpacker thread %d: exiting EOD\n", u);
+  } while (chu);
   pthread_exit(NULL);
 
  ERROR:
@@ -1071,7 +1169,7 @@ dsqdata_unpack_chunk(ESL_DSQDATA_CHUNK *chu, int do_pack5)
   i            = 0;
   r            = 0;
   pos          = 0;
-  chu->smem[0] = eslDSQ_SENTINEL;
+  chu->smem[0] = eslDSQ_SENTINEL;  // This initialization is why <smem> needs to be unsigned.
   while (pos < chu->pn)
     {
       chu->dsq[i] = (ESL_DSQ *) chu->smem + r;
@@ -1083,6 +1181,7 @@ dsqdata_unpack_chunk(ESL_DSQDATA_CHUNK *chu, int do_pack5)
       chu->L[i] = L;
       i++;
     }
+
   ESL_DASSERT1(( pos == chu->pn ));  // we should've unpacked exactly pn packets,
   ESL_DASSERT1((   i == chu->N ));   //  .. and exactly N sequences.
   return eslOK;
@@ -1442,7 +1541,7 @@ static void
 utest_readwrite(ESL_RANDOMNESS *rng, ESL_ALPHABET *abc)
 {
   char               msg[]         = "esl_dsqdata :: readwrite unit test failed";
-  char               tmpfile[32]   = "esltmpXXXXXX";
+  char               tmpfile[16]   = "esltmpXXXXXX";
   char               basename[32];
   ESL_SQ           **sqarr         = NULL;
   FILE              *tmpfp         = NULL;
@@ -1632,12 +1731,13 @@ main(int argc, char **argv)
 #include "esl_alphabet.h"
 #include "esl_dsqdata.h"
 #include "esl_getopts.h"
+#include "esl_vectorops.h"
 
 static ESL_OPTIONS options[] = {
   /* name             type          default  env  range toggles reqs incomp  help                                       docgroup*/
   { "-h",          eslARG_NONE,       FALSE,  NULL, NULL,  NULL,  NULL, NULL, "show brief help on version and usage",        0 },
-  { "-n",          eslARG_NONE,       FALSE,  NULL, NULL,  NULL,  NULL, NULL, "no residue counting: faster time version",    0 },
-  { "-t",          eslARG_INT,          "4",  NULL, NULL,  NULL,  NULL, NULL, "set number of threads to <n>",                0 },
+  { "-c",          eslARG_NONE,       FALSE,  NULL, NULL,  NULL,  NULL, NULL, "report summary of chunk contents",            0 },
+  { "-r",          eslARG_NONE,       FALSE,  NULL, NULL,  NULL,  NULL, NULL, "report summary of residue counts",            0 },
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 
@@ -1647,13 +1747,15 @@ static char banner[] = "example of using ESL_DSQDATA to read sequence db";
 int
 main(int argc, char **argv)
 {
-  ESL_GETOPTS       *go       = esl_getopts_CreateDefaultApp(options, 1, argc, argv, banner, usage);
-  ESL_ALPHABET      *abc      = NULL;
-  char              *basename = esl_opt_GetArg(go, 1);
-  int                no_count = esl_opt_GetBoolean(go, "-n");
-  int                ncpu     = esl_opt_GetInteger(go, "-t");
-  ESL_DSQDATA       *dd       = NULL;
-  ESL_DSQDATA_CHUNK *chu      = NULL;
+  ESL_GETOPTS       *go         = esl_getopts_CreateDefaultApp(options, 1, argc, argv, banner, usage);
+  ESL_ALPHABET      *abc        = NULL;
+  char              *basename   = esl_opt_GetArg(go, 1);
+  int                do_summary = esl_opt_GetBoolean(go, "-c");
+  int                do_resct   = esl_opt_GetBoolean(go, "-r");
+  int                ncpu       = 1;
+  ESL_DSQDATA       *dd         = NULL;
+  ESL_DSQDATA_CHUNK *chu        = NULL;
+  int                nchunk     = 0;
   int                i;
   int64_t            pos;
   int64_t            ct[128], total;
@@ -1667,18 +1769,25 @@ main(int argc, char **argv)
 
   for (x = 0; x < 127; x++) ct[x] = 0;
 
+  if (do_summary) esl_dataheader(stdout, 8, "idx", 4, "nseq", 8, "nres", 7, "npacket", 0);
+
   while ((status = esl_dsqdata_Read(dd, &chu)) == eslOK)
     {
-      if (! no_count)
+      nchunk++;
+      
+      if (do_resct)
 	for (i = 0; i < chu->N; i++)
 	  for (pos = 1; pos <= chu->L[i]; pos++)
 	    ct[ chu->dsq[i][pos] ]++;
+
+      if (do_summary)
+	printf("%-8d %4d %8" PRId64 " %7d\n", nchunk, chu->N, esl_vec_LSum(chu->L, chu->N), chu->pn);
 
       esl_dsqdata_Recycle(dd, chu);
     }
   if (status != eslEOF) esl_fatal("unexpected error %d in reading dsqdata", status);
 
-  if (! no_count)
+  if (do_resct)
     {
       total = 0;
       for (x = 0; x < abc->Kp; x++) 

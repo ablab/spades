@@ -1,7 +1,7 @@
 /* Easel's interfaces to the GNU Scientific Library
  */
-#ifdef HAVE_LIBGSL
 #include "esl_config.h"
+#ifdef HAVE_LIBGSL
 
 #include <stdlib.h>
 #include "easel/easel.h"
@@ -51,10 +51,5 @@ esl_GSL_MatrixInversion(ESL_DMATRIX *A, ESL_DMATRIX **ret_Ai)
 
 #endif /*HAVE_LIBGSL*/
 
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
+
 

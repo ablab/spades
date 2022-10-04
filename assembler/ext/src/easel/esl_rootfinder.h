@@ -1,12 +1,9 @@
 /* Finding roots of functions.
  * 
  * SRE, Fri Apr  6 10:01:43 2007 [Janelia]
- * SVN $Id$
- * SVN $URL$
  */
 #ifndef ESL_ROOTFINDER_INCLUDED
 #define ESL_ROOTFINDER_INCLUDED
-
 #include "esl_config.h"
 
 typedef struct {
@@ -47,8 +44,4 @@ extern void esl_rootfinder_Destroy(ESL_ROOTFINDER *R);
 extern int esl_root_Bisection(ESL_ROOTFINDER *R, double xl, double xr, double *ret_x);
 extern int esl_root_NewtonRaphson(ESL_ROOTFINDER *R, double guess, double *ret_x);
 
-
 #endif /*eslROOTFINDER_INCLUDED*/
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

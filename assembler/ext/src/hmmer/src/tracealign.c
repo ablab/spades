@@ -4,10 +4,8 @@
  *   1. API for aligning sequence or MSA traces
  *   2. Internal functions used by the API
  *   3. Test driver
- *   4. Copyright and license.
  * 
  * SRE, Tue Oct 21 19:38:19 2008 [Casa de Gatos]
- * SVN $Id$
  */
 #include "p7_config.h"
 
@@ -1304,9 +1302,6 @@ main(int argc, char **argv)
 /*--------------------- end, test driver ------------------------*/
 
 
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
 
 
 

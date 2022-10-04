@@ -6,7 +6,6 @@
  *     2. Unit tests.
  *     3. Test driver.
  *     4. Statistics collection driver.
- *     5. Copyright and license
  * 
  * Revised May 2005: xref STL9/77-81.       (Uniform fragment distribution)
  * Again, Sept 2005: xref STL10/24-26.      (Inherent target length dependency)
@@ -319,7 +318,7 @@ utest_occupancy(P7_HMM *hmm)
   occ = malloc(sizeof(float) * (hmm->M+1));
   p7_hmm_CalculateOccupancy(hmm, occ, NULL);
   x = esl_vec_FSum(occ+1, hmm->M) / (float) hmm->M;
-  if (esl_FCompare(x, 0.6, 0.1) != eslOK)           esl_fatal(msg);
+  if (esl_FCompare_old(x, 0.6, 0.1) != eslOK)           esl_fatal(msg);
   free(occ);
   return;
 }
@@ -1120,6 +1119,3 @@ profile_local_endpoints(ESL_RANDOMNESS *r, P7_HMM *core, P7_PROFILE *gm, ESL_SQ 
 
 
 
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

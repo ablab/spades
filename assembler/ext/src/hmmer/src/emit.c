@@ -4,10 +4,8 @@
  *    1. Exported API: sequence emission routines.
  *    2. Private functions.
  *    3. Stats driver.
- *    4. Copyright and license.
  * 
  * SRE, Tue Jan  9 08:55:53 2007 [Janelia] [The Crystal Method, Vegas]
- * SVN $Id$
  */
 
 #include "p7_config.h"
@@ -599,13 +597,8 @@ main(int argc, char **argv)
   return 0;
 }
 #endif /*p7EMIT_EXAMPLE*/
-
-
-
 /*---------------------- end, example ---------------------------*/
 
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
+
 
 

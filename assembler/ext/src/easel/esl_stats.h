@@ -2,6 +2,7 @@
  */
 #ifndef eslSTATS_INCLUDED
 #define eslSTATS_INCLUDED
+#include "esl_config.h"
 
 #include "easel.h"
 
@@ -20,16 +21,23 @@
  * 
  * Not only is this arcane and dubious, static code checking (using
  * the clang/llvm checker) doesn't like it. I found an improvement
- * in a library called zenilib, at:
+ * in a library called zenilib by Mitchell Keith Bloch at:
  *  http://www-personal.umich.edu/~bazald/l/api/math__private_8h_source.html
  *  
  * Here we do the same thing in an ANSI-respecting way using unions,
  * with endianness detected at compile time.
  * 
  * The zenilib code also appears to derive from (C) Sun Microsystems
- * code.
+ * code. The following code is:
  *
- * SRE TODO: insert license/copyright info here
+ * ====================================================
+ * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+ *
+ * Developed at SunPro, a Sun Microsystems, Inc. business.
+ * Permission to use, copy, modify, and distribute this
+ * software is freely granted, provided that this notice
+ * is preserved.
+ * ====================================================
  */
 
 #ifdef WORDS_BIGENDIAN    
@@ -110,7 +118,8 @@ extern int esl_stats_IMean(const int    *x, int n, double *opt_mean, double *opt
 
 /* 2. Special functions */
 extern int    esl_stats_LogGamma(double x, double *ret_answer);
-extern int    esl_stats_Psi(double x, double *ret_answer);
+extern int    esl_stats_Psi     (double x, double *ret_answer);
+extern int    esl_stats_Trigamma(double x, double *ret_answer);
 extern int    esl_stats_IncompleteGamma(double a, double x, double *ret_pax, double *ret_qax);
 extern double esl_stats_erfc(double x);
 
@@ -134,9 +143,4 @@ extern int esl_stats_LinearRegression(const double *x, const double *y, const do
 #endif
 
 #endif /*eslSTATS_INCLUDED*/
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
+

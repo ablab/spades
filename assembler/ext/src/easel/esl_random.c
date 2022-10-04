@@ -1,19 +1,18 @@
-/* Portable, threadsafe random number generators.
- * Provides both a fast generator and a strong generator.
+/* Portable, threadsafe Mersenne Twister random number generator
  *
  *  1. The ESL_RANDOMNESS object.
  *  2. The generators, esl_random().
  *  3. Debugging/development tools.
  *  4. Other fundamental sampling (including Gaussian, gamma).
  *  5. Multinomial sampling from discrete probability n-vectors.
- *  6. Benchmark driver
- *  7. Unit tests.
- *  8. Test driver.
- *  9. Example.
- * 10. Copyright and license information.
+ *  6. Random data generators (unit testing, etc.)
+ *  7. Benchmark driver
+ *  8. Unit tests.
+ *  9. Test driver.
+ * 10. Example.
  *  
- * See http://csrc.nist.gov/rng/ for the NIST random number
- * generation test suite.
+ * NIST test suite for validating random number generators:
+ * https://csrc.nist.gov/projects/random-bit-generation/documentation-and-software
  *
  * It'd be nice if we had a debugging/unit testing mode in which
  * esl_random() deliberately generated extreme values, such as 0 for
@@ -21,6 +20,8 @@
  * the interval 0,1 is open or closed. We should be able to test for
  * problems with interval endpoints without taking enormous numbers of
  * samples.
+ * 
+ * Competitive alternatives to MT exist, including PCG [http://www.pcg-random.org/].
  */
 #include "esl_config.h"
 
@@ -39,7 +40,6 @@
 #include "esl_random.h"
 
 static uint32_t choose_arbitrary_seed(void);
-static uint32_t jenkins_mix3(uint32_t a, uint32_t b, uint32_t c);
 static uint32_t knuth              (ESL_RANDOMNESS *r);
 static uint32_t mersenne_twister   (ESL_RANDOMNESS *r);
 static void     mersenne_seed_table(ESL_RANDOMNESS *r, uint32_t seed);
@@ -53,7 +53,7 @@ static void     mersenne_fill_table(ESL_RANDOMNESS *r);
  * Synopsis:  Create the default strong random number generator.
  *
  * Purpose:   Create a random number generator using
- *            a given random seed. The <seed> must be $\geq 0$.
+ *            a given random seed. 
  *            
  *            The default random number generator uses the Mersenne
  *            Twister MT19937 algorithm \citep{Matsumoto98}.  It has a
@@ -67,16 +67,14 @@ static void     mersenne_fill_table(ESL_RANDOMNESS *r);
  *            make reproducible stochastic simulations, for example.
  *            
  *            If <seed> is 0, an arbitrary seed is chosen.
- *            Internally, the arbitrary seed is produced by a
- *            combination of the current <time()> and the process id
- *            (if available; POSIX only). Two RNGs created with
- *            <seed>=0 will very probably (but not assuredly) give
+ *            Internally, this comes from hashing together the current
+ *            <time()>, <clock()>, and process id.  Two RNGs created
+ *            with <seed>=0 probably (but not assuredly) give
  *            different streams of pseudorandom numbers. The true seed
  *            can be retrieved from the <ESL_RANDOMNESS> object using
  *            <esl_randomness_GetSeed()>.  The strategy used for
- *            choosing the arbitrary seed is predictable, so it is
- *            not secure in any sense, especially in the cryptographic
- *            sense.
+ *            choosing the arbitrary seed is predictable; it should
+ *            not be considered cryptographically secure.
  *            
  * Args:      seed $>= 0$.
  *
@@ -108,39 +106,36 @@ esl_randomness_Create(uint32_t seed)
 
 /* Function:  esl_randomness_CreateFast()
  * Synopsis:  Create the alternative fast generator.
+ *            
+ * THIS FUNCTION IS DEPRECATED. USE esl_randomness_Create() INSTEAD.
  *
  * Purpose:   Same as <esl_randomness_Create()>, except that a simple
  *            linear congruential generator (LCG) will be used.
- *            
- *            This is a low quality generator. Successive samples from
- *            an LCG are correlated, and it has a relatively short
- *            period. IT SHOULD NOT BE USED FOR SERIOUS
- *            SIMULATIONS. Rather, it's a quick and dirty RNG where
- *            you're sure that speed is more important than the
- *            quality of your random numbers. For a high quality RNG,
- *            use <esl_randomness_Create()> instead.
- *            
  *            This is a $(a=69069, c=1)$ LCG, with a period of
  *            $2^{32}$. 
  *            
- *            It is about 20x faster to initialize the generator, and
- *            about 25\% faster to sample each number, compared to the
- *            default Mersenne Twister. (In most cases, this speed
- *            differential is not worth the degradation in
- *            quality. Since we made MT our default generator, the
- *            speed advantage of the LCG essentially disappeared, so
- *            in some sense this is legacy code.)
- *
+ *            This is a low quality RNG. It fails several standard
+ *            NIST statistical tests. Successive samples from an LCG
+ *            are correlated, and it has a relatively short period. IT
+ *            SHOULD NOT BE USED (period). It is present in Easel for
+ *            legacy reasons. It used to be substantially faster than
+ *            our high quality RNG, but now our default Mersenne
+ *            Twister is plenty fast. We have regression and unit
+ *            tests that use the LCG and depend on a fixed seed and a
+ *            particular pseudorandom number sequence; they would have
+ *            to be re-studied carefully to upgrade them to a
+ *            different RNG.
+ * 
  *            Here's an example of how serial correlation arises in an
  *            LCG, and how it can lead to serious (and difficult to
- *            diagnose) failure in a Monte Carlo simulation. Recall
- *            that an LCG calculates $x_{i+1} = ax_i + c$. Suppose
- *            $x_i$ is small: in the range 0..6000, say, as a specific
- *            example. Now $x_{i+1}$ cannot be larger than 4.1e8, for
- *            an LCG with $a=69069$,$c=1$. So if you take a sample and
- *            test whether it is $< 1e-6$ (say), the next sample will
- *            be in a range of about 0..0.1, rather than being uniform
- *            on 0..1.
+ *            diagnose) failure in a Monte Carlo simulation.  An LCG
+ *            calculates $x_{i+1} = ax_i + c$. Suppose $x_i$ is small:
+ *            in the range 0..6000, say, as a specific example. Now
+ *            $x_{i+1}$ cannot be larger than 4.1e8, for an LCG with
+ *            $a=69069$,$c=1$. So if you take a sample and test
+ *            whether it is $< 1e-6$ (say), the next sample will be in
+ *            a range of about 0..0.1, rather than being uniform on
+ *            0..1.
  *
  * Args:      seed $>= 0$.
  *
@@ -149,8 +144,7 @@ esl_randomness_Create(uint32_t seed)
  *              
  * Throws:    <NULL> on failure.
  *
- * Xref:      SRE:J5/44: for accidental proof that the period is
- *                       indeed 2^32.
+ * Xref:      SRE:J5/44: for accidental proof that period is indeed 2^32.
  */
 ESL_RANDOMNESS *
 esl_randomness_CreateFast(uint32_t seed)
@@ -173,6 +167,8 @@ esl_randomness_CreateFast(uint32_t seed)
 
 /* Function:  esl_randomness_CreateTimeseeded()
  * Synopsis:  Create an RNG with a quasirandom seed.
+ *            
+ * THIS FUNCTION IS DEPRECATED. USE esl_randomness_Create(0).           
  *
  * Purpose:   Like <esl_randomness_Create()>, but it initializes the
  *            the random number generator using a POSIX <time()> call 
@@ -201,21 +197,17 @@ esl_randomness_CreateTimeseeded(void)
  * Purpose:   Reset and reinitialize an existing <ESL_RANDOMNESS>
  *            object with a new seed. 
  *            
- *            Not generally recommended. This does not make a
- *            sequence of numbers more random, and may make it less
- *            so. Sometimes, though, it's useful to reseed an RNG
- *            to guarantee a particular reproducible series of
- *            pseudorandom numbers at an arbitrary point in a program;
- *            HMMER does this, for example, to guarantee the same
- *            results from the same HMM/sequence comparison regardless
- *            of where in a search the HMM or sequence occurs.
+ *            Sometimes it's useful to reseed an RNG to guarantee a
+ *            particular reproducible series of pseudorandom numbers
+ *            at an arbitrary point in a program; HMMER does this, for
+ *            example, to guarantee the same results from the same
+ *            HMM/sequence comparison regardless of where in a search
+ *            the HMM or sequence occurs.
  *
  * Args:      r     - randomness object
- *            seed  - new seed to use; >0.
+ *            seed  - new seed to use; >=0.
  *
  * Returns:   <eslOK> on success.
- *
- * Throws:    <eslEINVAL> if seed is $<= 0$.
  *
  * Xref:      SRE:STL8/p57.
  */
@@ -231,7 +223,7 @@ esl_randomness_Init(ESL_RANDOMNESS *r, uint32_t seed)
   else 
     {
       r->seed = seed;
-      r->x    = jenkins_mix3(seed, 87654321, 12345678);	/* arbitrary dispersion of the seed */
+      r->x    = esl_rnd_mix3(seed, 87654321, 12345678);	/* arbitrary dispersion of the seed */
       if (r->x == 0) r->x = 42;                         /* make sure we don't have a zero */
     }
   return eslOK;
@@ -286,7 +278,7 @@ double
 esl_random(ESL_RANDOMNESS *r)
 {
   uint32_t x = (r->type == eslRND_MERSENNE) ? mersenne_twister(r) : knuth(r);
-  return ((double) x / 4294967296.0); /* 2^32: normalizes to [0,1) */
+  return ((double) x / 4294967296.0);    // 2^32: [0,1).  Original MT code has * (1.0/ 4294967296.0), which I believe (and tested) to be identical.
 }
 
 
@@ -330,16 +322,24 @@ mersenne_twister(ESL_RANDOMNESS *r)
   if (r->mti >= 624) mersenne_fill_table(r);
 
   x = r->mt[r->mti++];
-  x ^= (x>>11);
-  x ^= (x<< 7) & 0x9d2c5680;
-  x ^= (x<<15) & 0xefc60000;
-  x ^= (x>>18);
+  x ^= (x >> 11);
+  x ^= (x <<  7) & 0x9d2c5680;
+  x ^= (x << 15) & 0xefc60000;
+  x ^= (x >> 18);
   return x;
 }
 
 /* mersenne_seed_table()
- * Initialize the state of the RNG from a seed.
- * Uses the knuth linear congruential generator.
+ * Initialize the state of the RNG from a seed, using a Knuth LCG.
+ * 
+ * TODO: In January 2002, Nishimura and Matsumoto replaced this with a
+ * better initialization. (Why did I use their ~1999 initialization
+ * when I adapted MT in June 2009?) They say that the problem with
+ * this version is that the seed's most significant bit has little
+ * effect on the MT state vector. Upgrading this will require effort
+ * though: any change to the output of our RNG will break numerous
+ * unit tests and regressions that use fixed RNG seeds to get
+ * reproducible streams.
  */
 static void
 mersenne_seed_table(ESL_RANDOMNESS *r, uint32_t seed)
@@ -384,8 +384,8 @@ mersenne_fill_table(ESL_RANDOMNESS *r)
 
 
 /* choose_arbitrary_seed()
- * Return a 'quasirandom' seed > 0.
- * This should be ok, but could be better.
+ * Return a 'quasirandom' seed > 0, concocted by hashing time(),
+ * clock(), and getpid() together.
  * See RFC1750 for a discussion of securely seeding RNGs.
  */
 static uint32_t
@@ -398,18 +398,21 @@ choose_arbitrary_seed(void)
 #ifdef HAVE_GETPID
   b  = (uint32_t) getpid();	                    // preferable b choice, if we have POSIX getpid()
 #endif
-  seed = jenkins_mix3(a,b,c);	                    // try to decorrelate closely spaced choices of pid/times
-  return (seed == 0) ? 42 : seed; /* 42 is entirely arbitrary, just to avoid seed==0. */
+  seed = esl_rnd_mix3(a,b,c);	                    // try to decorrelate closely spaced choices of pid/times
+  return (seed == 0) ? 42 : seed;                   // 42 is arbitrary, just to avoid seed==0. 
 }
 
-/* jenkins_mix3()
- * 
- * from Bob Jenkins: given a,b,c, generate a number that's distributed
- * reasonably uniformly on the interval 0..2^32-1 even for closely
- * spaced choices of a,b,c.
+/* Function:  esl_rnd_mix3()
+ * Synopsis:  Make a quasirandom number by mixing three inputs.
+ * Incept:    SRE, Tue 21 Aug 2018
+ *
+ * Purpose:   This is Bob Jenkin's <mix()>. Given <a,b,c>,
+ *            generate a number that's generated reasonably
+ *            uniformly on $[0,2^{32}-1]$ even for closely
+ *            spaced choices of $a,b,c$. 
  */
-static uint32_t 
-jenkins_mix3(uint32_t a, uint32_t b, uint32_t c)
+uint32_t 
+esl_rnd_mix3(uint32_t a, uint32_t b, uint32_t c)
 {
   a -= b; a -= c; a ^= (c>>13);		
   b -= c; b -= a; b ^= (a<<8); 
@@ -732,45 +735,69 @@ esl_rnd_Gamma(ESL_RANDOMNESS *r, double a)
  *            K     : number of elements in alpha, p
  *            p     : RESULT: sampled probability vector
  *
- * Returns:   (void)
+ * Returns:   <eslOK> on success, and <p> is a sampled probability vector.
  */
-void
+int
 esl_rnd_Dirichlet(ESL_RANDOMNESS *rng, const double *alpha, int K, double *p)
 {
-  int    x;
+  int    i;
   double norm = 0.;
 
-  for (x = 0; x < K; x++) 
+  for (i = 0; i < K; i++) 
     {
-      p[x] = esl_rnd_Gamma(rng, (alpha ? alpha[x] : 1.0));
-      norm += p[x];
+      p[i] = esl_rnd_Gamma(rng, (alpha ? alpha[i] : 1.0));
+      norm += p[i];
     }
-  for (x = 0; x < K; x++)
-    p[x] /= norm;
+  for (i = 0; i < K; i++)
+    p[i] /= norm;
+
+  return eslOK;
 }
 
 
-/* Function:  esl_rnd_mem()
- * Synopsis:  Overwrite a buffer with random garbage.
- * Incept:    SRE, Fri Feb 19 08:53:07 2016
+/* Function:  esl_rnd_Deal()
+ * Synopsis:  Sequential random sample of <m> random integers in range <n>
+ * Incept:    SRE, Sun 17 Mar 2019 
  *
- * Purpose:   Write <n> bytes of random garbage into buffer
- *            <buf>, by uniform sampling of values 0..255,
- *            using generator <rng>.
+ * Purpose:   Obtain a random sequential sample of <m> integers without
+ *            replacement from <n> possible ones, like dealing a hand
+ *            of m=5 cards from a deck of n=52 possible cards with
+ *            cards numbered <0..n-1>. Caller provides allocated space
+ *            <deal>, allocated for at least <m> elements. Return the
+ *            sample in <deal>, in sorted order (smallest to largest).
+ *            
+ *            Uses the selection sampling algorithm [Knuth, 3.4.2],
+ *            which is O(n) time. For more impressive O(m)
+ *            performance, see <esl_rand64_Deal()>.
+ *            
+ *            As a special case, if m = 0 (for whatever reason,
+ *            probably an edge-case-exercising unit test), do
+ *            nothing. <deal> is untouched, and can even be <NULL>.
  *
- *            Used in unit tests that are reusing memory, and that
- *            want to make sure that there's no favorable side effects
- *            from that reuse.
+ * Args:      m    - number of integers to sample
+ *            n    - range: each sample is 0..n-1
+ *            deal - RESULT: allocated space for <m> sampled integers
+ *
+ * Returns:   <eslOK> on success, and the sample of <m> integers
+ *            is in <deal>.
+ *
+ * Throws:    (no abnormal error conditions)
  */
-void
-esl_rnd_mem(ESL_RANDOMNESS *rng, void *buf, int n)
+int
+esl_rnd_Deal(ESL_RANDOMNESS *rng, int m, int n, int *deal)
 {
-  unsigned char *p = (unsigned char *) buf;
-  int            i;
+  int i = 0;
+  int j = 0;
 
-  for (i = 0; i < n; i++)
-    p[i] = (unsigned char) esl_rnd_Roll(rng, 256);
+  ESL_DASSERT1(( m >= 0 ));  // m=0 is a special case where <deal> can be NULL.
+  ESL_DASSERT1(( n >= 1 )); 
+  ESL_DASSERT1(( m <= n ));
+
+  for (j = 0; j < n && i < m; j++)
+    if ( ((double) (n - j)) * esl_random(rng) < (double) (m - i)) deal[i++] = j;
+  return eslOK;
 }
+
 
 
 /*****************************************************************
@@ -909,7 +936,106 @@ esl_rnd_FChooseCDF(ESL_RANDOMNESS *r, const float *cdf, int N)
 
 
 /*****************************************************************
- * 6. Benchmark driver
+ * 6. Random data generators (unit testing, etc.)
+ *****************************************************************/
+
+
+
+/* Function:  esl_rnd_mem()
+ * Synopsis:  Overwrite a buffer with random garbage.
+ * Incept:    SRE, Fri Feb 19 08:53:07 2016
+ *
+ * Purpose:   Write <n> bytes of random garbage into buffer
+ *            <buf>, by uniform sampling of values 0..255,
+ *            using generator <rng>.
+ *
+ *            Used in unit tests that are reusing memory, and that
+ *            want to make sure that there's no favorable side effects
+ *            from that reuse.
+ */
+int
+esl_rnd_mem(ESL_RANDOMNESS *rng, void *buf, int n)
+{
+  unsigned char *p = (unsigned char *) buf;
+  int            i;
+
+  for (i = 0; i < n; i++)
+    p[i] = (unsigned char) esl_rnd_Roll(rng, 256);
+  return eslOK;
+}
+
+
+/* Function:  esl_rnd_floatstring()
+ * Synopsis:  Generate a string representation of a floating point number.
+ * Incept:    SRE, Wed 15 Aug 2018 [Hamilton, It's Quiet Uptown]
+ *
+ * Purpose:   Generate a string decimal representation of a random 
+ *            floating point number in <s>, which is space provided
+ *            by the caller, allocated for at least 20 characters.
+ *            
+ *            The string representation of the number consists of:
+ *              * an optional - sign  (50%)
+ *              * a 1-6 digit integer part; (1/7 '0'; else 1/7 for each len, [1-9][0-9]* uniformly)
+ *              * an optional fractional part (50%), consisting of:
+ *                 - '.'
+ *                 - a 1-7 digit fractional part; 1/7 for each len, [0-9]* uniformly
+ *              * an optional exponent (50%), consisting of:
+ *                 - 'e'
+ *                 -  -20..e20, 1/41 uniformly.
+ *              * '\0' terminator.
+ *
+ *            Maximum length is 1+6+1+7+4+1 = 20.
+ *            
+ *            The string representation is an intersection of what's
+ *            valid for <strtod()>, JSON number values, and C. JSON
+ *            number values do not permit numbers like "1."  (a
+ *            decimal part, decimal point, no fractional part), nor
+ *            hexadecimal representations, nor leading or trailing
+ *            whitespace.
+ *            
+ *            The generated number does not attempt to exercise
+ *            extreme values. The absolute magnitude of non-zero
+ *            numbers ranges from 0.0000001e-20..999999e20 (1e-27 to
+ *            ~1e27), well within IEEE754 FLT_MIN..FLT_MAX
+ *            range. Special values "infinity" and "nan" are not
+ *            generated.  Zero can be represented by many different
+ *            patterns <-?0.0+(e-?..)?>.
+ *
+ * Returns:   <eslOK> on success.
+ */
+int
+esl_rnd_floatstring(ESL_RANDOMNESS *rng, char *s)
+{
+  int i = 0;
+  int n;
+  int exponent;
+
+  if (esl_rnd_Roll(rng, 2)) s[i++] = '-';
+  n = esl_rnd_Roll(rng, 7);                                      // length of integer part.
+  s[i++] = (n-- == 0) ? '0' : '0' + (1 + esl_rnd_Roll(rng, 9));  // No 0 prefix except "0."
+  while (n-- > 0) s[i++] = '0' + esl_rnd_Roll(rng, 10);
+  if (esl_rnd_Roll(rng, 2))                                      // optional fractional part
+    {
+      n = 1 + esl_rnd_Roll(rng, 7);                           
+      s[i++] = '.';
+      while (n--) s[i++] = '0' + esl_rnd_Roll(rng, 10);
+    }
+  if (esl_rnd_Roll(rng, 2))                                      // optional exponent
+    {
+      s[i++] = 'e';
+      exponent = -20 + esl_rnd_Roll(rng, 41);
+      i += sprintf(s+i, "%d", exponent);
+    }
+  s[i++] = '\0';
+  ESL_DASSERT1(( i <= 20 ));
+  return eslOK;
+}
+
+
+
+
+/*****************************************************************
+ * 7. Benchmark driver
  *****************************************************************/
 #ifdef eslRANDOM_BENCHMARK
 /*
@@ -924,6 +1050,7 @@ esl_rnd_FChooseCDF(ESL_RANDOMNESS *r, const float *cdf, int N)
    27 Dec 08 on wanderoo:  1e7    0.78s    78 nsec     1e6   2.08s     2.1 usec   ran2() from NR
    30 May 09 on wanderoo:  1e9    8.39s     8 nsec     1e6   5.98s     6.0 usec   Mersenne Twister
                            1e9    5.73s     6 nsec     1e8   2.51s     0.03 usec  Knuth
+   22 Aug 18 on wyvern:    1e9    3.31s     3 nsec     1e7   8.71s     0.8 usec   Mersenne Twister
 
  */
 #include "easel.h"
@@ -980,7 +1107,7 @@ main(int argc, char **argv)
 
 
 /*****************************************************************
- * 7. Unit tests.
+ * 8. Unit tests.
  *****************************************************************/
 
 #ifdef eslRANDOM_TESTDRIVE
@@ -1112,16 +1239,56 @@ utest_choose(ESL_RANDOMNESS *r, int n, int nbins, int be_verbose)
   free(ct);
   return;
 }
+
+
+/* utest_Deal()  
+ * tests esl_rnd_Deal()
+ * 
+ * If deals are random, each possible integer is sampled uniformly.
+ * Take <nsamp> deals of <m> integers from possible <n>.
+ * Expected count of each integer = nsamp * (m/n), +/- s.d. \sqrt(u)
+ * Test that min, max are within +/- 6 sd.
+ *
+ * Can fail stochastically, so caller should default to an <rng>
+ * with a fixed RNG seed.
+ */
+static void
+utest_Deal(ESL_RANDOMNESS *rng)
+{
+  char msg[]           = "esl_random deal unit test failed";
+  int    m             = 100;
+  int    n             = 1000;
+  int    nsamp         = 10000;
+  int   *deal          = malloc(sizeof(int) * m);
+  int   *ct            = malloc(sizeof(int) * n);
+  double expected_mean = ((double) m / (double) n) * (double) nsamp;
+  double expected_sd   = sqrt(expected_mean);
+  int    max_allowed   = (int) round( expected_mean + 6. * expected_sd);
+  int    min_allowed   = (int) round( expected_mean - 6. * expected_sd);
+  int    i;
+
+  if (deal == NULL || ct == NULL) esl_fatal(msg);
+  esl_vec_ISet(ct, n, 0);
+
+  while (nsamp--)
+    {
+      esl_rnd_Deal(rng, m, n, deal);
+      for (i = 0; i < m; i++) ct[deal[i]]++;
+    }
+  if (esl_vec_IMax(ct, n) > max_allowed) esl_fatal(msg);
+  if (esl_vec_IMin(ct, n) < min_allowed) esl_fatal(msg);
+
+  free(deal);
+  free(ct);
+}
 #endif /*eslRANDOM_TESTDRIVE*/
 /*-------------------- end, unit tests --------------------------*/
 
 
 /*****************************************************************
- * 8. Test driver.
+ * 9. Test driver.
  *****************************************************************/
 #ifdef eslRANDOM_TESTDRIVE
-/* gcc -g -Wall -o esl_random_utest -L. -I. -DeslRANDOM_TESTDRIVE esl_random.c -leasel -lm
- */
 #include "esl_config.h"
 
 #include <stdio.h>
@@ -1170,6 +1337,8 @@ main(int argc, char **argv)
   utest_random(r2, n, nbins, be_verbose);
   utest_choose(r2, n, nbins, be_verbose);
 
+  utest_Deal(r1);
+
   if (mtbitfile) save_bitfile(mtbitfile, r1, n);
   if (kbitfile)  save_bitfile(kbitfile,  r2, n);
 
@@ -1214,7 +1383,7 @@ save_bitfile(char *bitfile, ESL_RANDOMNESS *r, int n)
 
 
 /*****************************************************************
- * 9. Example.
+ * 10. Example.
  *****************************************************************/
 #ifdef eslRANDOM_EXAMPLE
 /*::cexcerpt::random_example::begin::*/
@@ -1268,12 +1437,5 @@ main(int argc, char **argv)
 /*::cexcerpt::random_example::end::*/
 #endif /*eslRANDOM_EXAMPLE*/
 
-
-/*****************************************************************
- * @LICENSE@
- * 
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
 
 

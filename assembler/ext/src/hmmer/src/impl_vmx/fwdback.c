@@ -26,10 +26,8 @@
  *   5. Unit tests.
  *   6. Test driver.
  *   7. Example.
- *   8. Copyright and license information.
  * 
  * SRE, Thu Jul 31 08:43:20 2008 [Janelia]
- * SVN $Id$
  */
 #include "p7_config.h"
 
@@ -92,7 +90,7 @@ static int backward_engine(int do_full, const ESL_DSQ *dsq, int L, const P7_OPRO
 int
 p7_Forward(const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, P7_OMX *ox, float *opt_sc)
 {
-#ifdef p7_DEBUGGING		
+#if eslDEBUGLEVEL > 0		
   if (om->M >  ox->allocQ4*4)    ESL_EXCEPTION(eslEINVAL, "DP matrix allocated too small (too few columns)");
   if (L     >= ox->validR)       ESL_EXCEPTION(eslEINVAL, "DP matrix allocated too small (too few MDI rows)");
   if (L     >= ox->allocXR)      ESL_EXCEPTION(eslEINVAL, "DP matrix allocated too small (too few X rows)");
@@ -134,7 +132,7 @@ p7_Forward(const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, P7_OMX *ox, float *
 int
 p7_ForwardParser(const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, P7_OMX *ox, float *opt_sc)
 {
-#ifdef p7_DEBUGGING		
+#if eslDEBUGLEVEL > 0		
   if (om->M >  ox->allocQ4*4)    ESL_EXCEPTION(eslEINVAL, "DP matrix allocated too small (too few columns)");
   if (ox->validR < 1)            ESL_EXCEPTION(eslEINVAL, "DP matrix allocated too small (too few MDI rows)");
   if (L     >= ox->allocXR)      ESL_EXCEPTION(eslEINVAL, "DP matrix allocated too small (too few X rows)");
@@ -192,7 +190,7 @@ p7_ForwardParser(const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, P7_OMX *ox, f
 int 
 p7_Backward(const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, const P7_OMX *fwd, P7_OMX *bck, float *opt_sc)
 {
-#ifdef p7_DEBUGGING		
+#if eslDEBUGLEVEL > 0		
   if (om->M >  bck->allocQ4*4)    ESL_EXCEPTION(eslEINVAL, "DP matrix allocated too small (too few columns)");
   if (L     >= bck->validR)       ESL_EXCEPTION(eslEINVAL, "DP matrix allocated too small (too few MDI rows)");
   if (L     >= bck->allocXR)      ESL_EXCEPTION(eslEINVAL, "DP matrix allocated too small (too few X rows)");
@@ -238,7 +236,7 @@ p7_Backward(const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, const P7_OMX *fwd,
 int 
 p7_BackwardParser(const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, const P7_OMX *fwd, P7_OMX *bck, float *opt_sc)
 {
-#ifdef p7_DEBUGGING		
+#if eslDEBUGLEVEL > 0		
   if (om->M >  bck->allocQ4*4)    ESL_EXCEPTION(eslEINVAL, "DP matrix allocated too small (too few columns)");
   if (bck->validR < 1)            ESL_EXCEPTION(eslEINVAL, "DP matrix allocated too small (too few MDI rows)");
   if (L     >= bck->allocXR)      ESL_EXCEPTION(eslEINVAL, "DP matrix allocated too small (too few X rows)");
@@ -290,7 +288,7 @@ forward_engine(int do_full, const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, P7
   ox->xmx[p7X_SCALE] = 1.0;
   ox->totscale       = 0.0;
 
-#if p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
   if (ox->debugging) p7_omx_DumpFBRow(ox, TRUE, 0, 9, 5, xE, xN, xJ, xB, xC);	/* logify=TRUE, <rowi>=0, width=8, precision=5*/
 #endif
 
@@ -447,7 +445,7 @@ forward_engine(int do_full, const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, P7
       ox->xmx[i*p7X_NXCELLS+p7X_B] = xB;
       ox->xmx[i*p7X_NXCELLS+p7X_C] = xC;
 
-#if p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
       if (ox->debugging) p7_omx_DumpFBRow(ox, TRUE, i, 9, 5, xE, xN, xJ, xB, xC);	/* logify=TRUE, <rowi>=i, width=8, precision=5*/
 #endif
     } /* end loop over sequence residues 1..L */
@@ -559,7 +557,7 @@ backward_engine(int do_full, const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, c
   bck->xmx[L*p7X_NXCELLS+p7X_B] = xB;
   bck->xmx[L*p7X_NXCELLS+p7X_C] = xC;
 
-#if p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
   if (bck->debugging) p7_omx_DumpFBRow(bck, TRUE, L, 9, 4, xE, xN, xJ, xB, xC);	/* logify=TRUE, <rowi>=L, width=9, precision=4*/
 #endif
 
@@ -691,7 +689,7 @@ backward_engine(int do_full, const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, c
       bck->xmx[i*p7X_NXCELLS+p7X_B] = xB;
       bck->xmx[i*p7X_NXCELLS+p7X_C] = xC;
 
-#if p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
       if (bck->debugging) p7_omx_DumpFBRow(bck, TRUE, i, 9, 4, xE, xN, xJ, xB, xC);	/* logify=TRUE, <rowi>=i, width=9, precision=4*/
 #endif
     } /* thus ends the loop over sequence positions i */
@@ -718,7 +716,7 @@ backward_engine(int do_full, const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, c
   bck->xmx[p7X_E]     = 0.0;
   bck->xmx[p7X_SCALE] = 1.0;
 
-#if p7_DEBUGGING
+#if eslDEBUGLEVEL > 0
   dpc = bck->dpf[0];
   for (q = 0; q < Q; q++) /* Not strictly necessary, but if someone's looking at DP matrices, this is nice to do: */
     MMO(dpc,q) = DMO(dpc,q) = IMO(dpc,q) = zerov;
@@ -1183,6 +1181,4 @@ main(int argc, char **argv)
 }
 #endif /*p7FWDBACK_EXAMPLE*/
 
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/
+

@@ -13,7 +13,7 @@
 #include "p7_config.h"
 
 #include <string.h>
-#ifdef HAVE_MPI
+#ifdef HMMER_MPI
 #include <mpi.h>
 #endif
 
@@ -395,7 +395,7 @@ p7_profile_GetT(const P7_PROFILE *gm, char st1, int k1, char st2, int k2, float 
   if (st1 == p7T_X || st2 == p7T_X) return eslOK;
   if (st1 == p7T_B && st2 == p7T_I) return eslOK;
   if (st1 == p7T_B && st2 == p7T_D) return eslOK;
-  if (st1 == p7T_I && st1 == p7T_E) return eslOK;
+  if (st1 == p7T_I && st2 == p7T_E) return eslOK;
 
   /* Now we're sure this is a profile trace, as it should usually be. */
   switch (st1) {
@@ -640,9 +640,3 @@ main(int argc, char **argv)
 }
 #endif /*p7PROFILE_TESTDRIVE*/
 
-/*****************************************************************
- * @LICENSE@
- * 
- * SVN $URL$
- * SVN $Id$
- *****************************************************************/

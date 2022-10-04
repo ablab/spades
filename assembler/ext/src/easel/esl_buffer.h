@@ -2,6 +2,7 @@
  */
 #ifndef eslBUFFER_INCLUDED
 #define eslBUFFER_INCLUDED
+#include "esl_config.h"
 
 #include <stdio.h>
 
@@ -106,6 +107,3 @@ extern int esl_buffer_Read(ESL_BUFFER *bf, size_t nbytes, void *p);
  */
 
 #endif	/*eslBUFFER_INCLUDED*/
-/*****************************************************************
- * @LICENSE@
- *****************************************************************/

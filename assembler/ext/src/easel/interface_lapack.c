@@ -1,12 +1,13 @@
 /* Interface with the LAPACK (Fortran77) numerical library.
  */
-#ifdef HAVE_LIBLAPACK
 #include "esl_config.h"
+#ifdef HAVE_LIBLAPACK
 
 #include <stdlib.h>
-#include "easel/easel.h"
-#include "easel/dmatrix.h"
-#include "easel/interface_lapack.h"
+
+#include "easel.h"
+#include "esl_dmatrix.h"
+#include "interface_lapack.h"
 
 /* A:       nxn real matrix
  * ret_Er:  RETURN: vector of eigenvalues, real part, allocated 0..n-1
@@ -82,10 +83,4 @@ esl_lapack_dgeev(ESL_DMATRIX *A, double **ret_Er, double **ret_Ei, ESL_DMATRIX *
 
 #endif /*HAVE_LIBLAPACK*/
 
-/*****************************************************************
- * @LICENSE@
- *
- * SVN $Id$
- * SVN $URL$
- *****************************************************************/
 
