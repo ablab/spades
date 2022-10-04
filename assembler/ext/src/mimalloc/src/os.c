@@ -690,7 +690,7 @@ static void* mi_unix_mmap(void* addr, size_t size, size_t try_alignment, int pro
     }
   }
   if (p == NULL) {
-    _mi_warning_message("unable to allocate OS memory (%zu bytes, error code: %i, address: %p, large only: %d, allow large: %d)\n", size, errno, addr, large_only, allow_large);
+    _mi_error_message(errno, "unable to allocate OS memory (%zu bytes, error code: %i [%s], address: %p, large only: %d, allow large: %d)\n", size, errno, strerror(errno), addr, large_only, allow_large);
   }
   return p;
 }
