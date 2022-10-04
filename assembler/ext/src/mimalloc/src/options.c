@@ -421,6 +421,16 @@ static void mi_error_default(int err) {
 #endif
 #if defined(MI_XMALLOC)
   if (err==ENOMEM || err==EOVERFLOW) { // abort on memory allocation fails in xmalloc mode
+    size_t elapsed, user_time, sys_time;
+    size_t current_rss, peak_rss, current_commit, peak_commit, page_faults;
+    mi_process_info(&elapsed, &user_time, &sys_time, &current_rss, &peak_rss, &current_commit, &peak_commit, &page_faults);
+    _mi_fprintf(NULL, NULL, "mimalloc: process info:\n");
+    _mi_fprintf(NULL, NULL, "%10s: %7ld.%03ld s\n", "elapsed", elapsed/1000, elapsed%1000);
+    _mi_fprintf(NULL, NULL, "%10s: user: %ld.%03ld s, system: %ld.%03ld s, faults: %lu\n", "process",
+                 user_time/1000, user_time%1000, sys_time/1000, sys_time%1000, (unsigned long)page_faults );
+    _mi_fprintf(NULL, NULL, "%10s: current: %lu, peak: %lu\n", "rss", current_rss, peak_rss);
+    _mi_fprintf(NULL, NULL, "%10s: current: %lu, peak: %lu\n", "commit", current_commit, peak_commit);
+
     abort();
   }
 #endif
