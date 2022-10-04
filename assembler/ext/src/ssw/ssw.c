@@ -35,7 +35,12 @@
  *
  */
 
+#ifdef __ARM_NEON
+#include "sse2neon/sse2neon.h"
+#else // x86 (Intel)
 #include <emmintrin.h>
+#endif
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>

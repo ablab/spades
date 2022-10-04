@@ -14,7 +14,12 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+
+#ifdef __ARM_NEON
+#include "sse2neon/sse2neon.h"
+#else // x86 (Intel)
 #include <emmintrin.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
