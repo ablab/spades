@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------
-Copyright (c) 2018,2020 Microsoft Research, Daan Leijen
+Copyright (c) 2018-2021 Microsoft Research, Daan Leijen
 This is free software; you can redistribute it and/or modify it under the
 terms of the MIT license. A copy of the license can be found in the file
 "LICENSE" at the root of this distribution.
@@ -23,10 +23,15 @@ terms of the MIT license. A copy of the license can be found in the file
 #define  _Atomic(tp)            std::atomic<tp>
 #define  mi_atomic(name)        std::atomic_##name
 #define  mi_memory_order(name)  std::memory_order_##name
+#if !defined(ATOMIC_VAR_INIT) || (__cplusplus >= 202002L) // c++20, see issue #571
+ #define MI_ATOMIC_VAR_INIT(x)  x
+#else
+ #define MI_ATOMIC_VAR_INIT(x)  ATOMIC_VAR_INIT(x)
+#endif
 #elif defined(_MSC_VER)
 // Use MSVC C wrapper for C11 atomics
-#define  _Atomic(tp)            tp
-#define  ATOMIC_VAR_INIT(x)     x
+#define  _Atomic(tp)            tp 
+#define  MI_ATOMIC_VAR_INIT(x)  x
 #define  mi_atomic(name)        mi_atomic_##name
 #define  mi_memory_order(name)  mi_memory_order_##name
 #else
@@ -34,6 +39,7 @@ terms of the MIT license. A copy of the license can be found in the file
 #include <stdatomic.h>
 #define  mi_atomic(name)        atomic_##name
 #define  mi_memory_order(name)  memory_order_##name
+#define  MI_ATOMIC_VAR_INIT(x)  ATOMIC_VAR_INIT(x)
 #endif
 
 // Various defines for all used memory orders in mimalloc
@@ -118,7 +124,7 @@ static inline void mi_atomic_maxi64_relaxed(volatile int64_t* p, int64_t x) {
 
 // MSVC C compilation wrapper that uses Interlocked operations to model C11 atomics.
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include <windows.h>
 #include <intrin.h>
 #ifdef _WIN64
 typedef LONG64   msc_intptr_t;
@@ -173,7 +179,7 @@ static inline uintptr_t mi_atomic_exchange_explicit(_Atomic(uintptr_t)*p, uintpt
 }
 static inline void mi_atomic_thread_fence(mi_memory_order mo) {
   (void)(mo);
-  _Atomic(uintptr_t)x = 0;
+  _Atomic(uintptr_t) x = 0;
   mi_atomic_exchange_explicit(&x, 1, mo);
 }
 static inline uintptr_t mi_atomic_load_explicit(_Atomic(uintptr_t) const* p, mi_memory_order mo) {
@@ -281,17 +287,41 @@ static inline void mi_atomic_yield(void) {
 static inline void mi_atomic_yield(void) {
   YieldProcessor();
 }
+#elif defined(__SSE2__)
+#include <emmintrin.h>
+static inline void mi_atomic_yield(void) {
+  _mm_pause();
+}
 #elif (defined(__GNUC__) || defined(__clang__)) && \
-      (defined(__x86_64__) || defined(__i386__) || defined(__arm__) || defined(__aarch64__))
+      (defined(__x86_64__) || defined(__i386__) || defined(__arm__) || defined(__armel__) || defined(__ARMEL__) || \
+       defined(__aarch64__) || defined(__powerpc__) || defined(__ppc__) || defined(__PPC__))
 #if defined(__x86_64__) || defined(__i386__)
 static inline void mi_atomic_yield(void) {
   __asm__ volatile ("pause" ::: "memory");
 }
-#elif defined(__arm__) || defined(__aarch64__)
+#elif defined(__aarch64__)
 static inline void mi_atomic_yield(void) {
-  __asm__ volatile("yield");
+  __asm__ volatile("wfe");
+}
+#elif (defined(__arm__) && __ARM_ARCH__ >= 7)
+static inline void mi_atomic_yield(void) {
+  __asm__ volatile("yield" ::: "memory");
+}
+#elif defined(__powerpc__) || defined(__ppc__) || defined(__PPC__)
+static inline void mi_atomic_yield(void) {
+  __asm__ __volatile__ ("or 27,27,27" ::: "memory");
+}
+#elif defined(__armel__) || defined(__ARMEL__)
+static inline void mi_atomic_yield(void) {
+  __asm__ volatile ("nop" ::: "memory");
 }
 #endif
+#elif defined(__sun)
+// Fallback for other archs
+#include <synch.h>
+static inline void mi_atomic_yield(void) {
+  smt_pause();
+}
 #elif defined(__wasi__)
 #include <sched.h>
 static inline void mi_atomic_yield(void) {

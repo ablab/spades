@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------
-Copyright (c) 2018, Microsoft Research, Daan Leijen
+Copyright (c) 2018-2021, Microsoft Research, Daan Leijen
 This is free software; you can redistribute it and/or modify it under the
 terms of the MIT license. A copy of the license can be found in the file
 "LICENSE" at the root of this distribution.
@@ -105,7 +105,7 @@ static void mi_stats_add(mi_stats_t* stats, const mi_stats_t* src) {
   mi_stat_add(&stats->segments_cache, &src->segments_cache, 1);
   mi_stat_add(&stats->normal, &src->normal, 1);
   mi_stat_add(&stats->huge, &src->huge, 1);
-  mi_stat_add(&stats->giant, &src->giant, 1);
+  mi_stat_add(&stats->large, &src->large, 1);
 
   mi_stat_counter_add(&stats->pages_extended, &src->pages_extended, 1);
   mi_stat_counter_add(&stats->mmap_calls, &src->mmap_calls, 1);
@@ -115,7 +115,7 @@ static void mi_stats_add(mi_stats_t* stats, const mi_stats_t* src) {
   mi_stat_counter_add(&stats->searches, &src->searches, 1);
   mi_stat_counter_add(&stats->normal_count, &src->normal_count, 1);
   mi_stat_counter_add(&stats->huge_count, &src->huge_count, 1);
-  mi_stat_counter_add(&stats->giant_count, &src->giant_count, 1);
+  mi_stat_counter_add(&stats->large_count, &src->large_count, 1);
 #if MI_STAT>1
   for (size_t i = 0; i <= MI_BIN_HUGE; i++) {
     if (src->normal_bins[i].allocated > 0 || src->normal_bins[i].freed > 0) {
@@ -133,25 +133,29 @@ static void mi_stats_add(mi_stats_t* stats, const mi_stats_t* src) {
 // unit == 0: count as decimal
 // unit < 0 : count in binary
 static void mi_printf_amount(int64_t n, int64_t unit, mi_output_fun* out, void* arg, const char* fmt) {
-  char buf[32];
+  char buf[32]; buf[0] = 0;  
   int  len = 32;
-  const char* suffix = (unit <= 0 ? " " : "b");
+  const char* suffix = (unit <= 0 ? " " : "B");
   const int64_t base = (unit == 0 ? 1000 : 1024);
   if (unit>0) n *= unit;
 
   const int64_t pos = (n < 0 ? -n : n);
   if (pos < base) {
-    snprintf(buf, len, "%d %s ", (int)n, suffix);
+    if (n!=1 || suffix[0] != 'B') {  // skip printing 1 B for the unit column
+      snprintf(buf, len, "%d %-3s", (int)n, (n==0 ? "" : suffix));
+    }
   }
   else {
-    int64_t divider = base;
-    const char* magnitude = "k";
-    if (pos >= divider*base) { divider *= base; magnitude = "m"; }
-    if (pos >= divider*base) { divider *= base; magnitude = "g"; }
+    int64_t divider = base;    
+    const char* magnitude = "K";
+    if (pos >= divider*base) { divider *= base; magnitude = "M"; }
+    if (pos >= divider*base) { divider *= base; magnitude = "G"; }
     const int64_t tens = (n / (divider/10));
     const long whole = (long)(tens/10);
     const long frac1 = (long)(tens%10);
-    snprintf(buf, len, "%ld.%ld %s%s", whole, frac1, magnitude, suffix);
+    char unitdesc[8];
+    snprintf(unitdesc, 8, "%s%s%s", magnitude, (base==1024 ? "i" : ""), suffix);
+    snprintf(buf, len, "%ld.%ld %-3s", whole, (frac1 < 0 ? -frac1 : frac1), unitdesc);
   }
   _mi_fprintf(out, arg, (fmt==NULL ? "%11s" : fmt), buf);
 }
@@ -169,10 +173,10 @@ static void mi_print_count(int64_t n, int64_t unit, mi_output_fun* out, void* ar
 static void mi_stat_print(const mi_stat_count_t* stat, const char* msg, int64_t unit, mi_output_fun* out, void* arg ) {
   _mi_fprintf(out, arg,"%10s:", msg);
   if (unit>0) {
-    mi_print_amount(stat->current, unit, out, arg);
     mi_print_amount(stat->peak, unit, out, arg);
     mi_print_amount(stat->allocated, unit, out, arg);
     mi_print_amount(stat->freed, unit, out, arg);
+    mi_print_amount(stat->current, unit, out, arg);
     mi_print_amount(unit, 1, out, arg);
     mi_print_count(stat->allocated, unit, out, arg);
     if (stat->allocated > stat->freed)
@@ -181,10 +185,10 @@ static void mi_stat_print(const mi_stat_count_t* stat, const char* msg, int64_t 
       _mi_fprintf(out, arg, "  ok\n");
   }
   else if (unit<0) {
-    mi_print_amount(stat->current, -1, out, arg);
     mi_print_amount(stat->peak, -1, out, arg);
     mi_print_amount(stat->allocated, -1, out, arg);
     mi_print_amount(stat->freed, -1, out, arg);
+    mi_print_amount(stat->current, -1, out, arg);
     if (unit==-1) {
       _mi_fprintf(out, arg, "%22s", "");
     }
@@ -198,9 +202,10 @@ static void mi_stat_print(const mi_stat_count_t* stat, const char* msg, int64_t 
       _mi_fprintf(out, arg, "  ok\n");
   }
   else {
-    mi_print_amount(stat->current, 1, out, arg);
     mi_print_amount(stat->peak, 1, out, arg);
     mi_print_amount(stat->allocated, 1, out, arg);
+    _mi_fprintf(out, arg, "%11s", " ");  // no freed 
+    mi_print_amount(stat->current, 1, out, arg);
     _mi_fprintf(out, arg, "\n");
   }
 }
@@ -220,7 +225,7 @@ static void mi_stat_counter_print_avg(const mi_stat_counter_t* stat, const char*
 
 
 static void mi_print_header(mi_output_fun* out, void* arg ) {
-  _mi_fprintf(out, arg, "%10s: %10s %10s %10s %10s %10s %10s\n", "heap stats", "current  ", "peak  ", "total  ", "freed  ", "unit  ", "count  ");
+  _mi_fprintf(out, arg, "%10s: %10s %10s %10s %10s %10s %10s\n", "heap stats", "peak   ", "total   ", "freed   ", "current   ", "unit   ", "count   ");
 }
 
 #if MI_STAT>1
@@ -295,20 +300,17 @@ static void _mi_stats_print(mi_stats_t* stats, mi_output_fun* out0, void* arg0) 
   #endif
   #if MI_STAT
   mi_stat_print(&stats->normal, "normal", (stats->normal_count.count == 0 ? 1 : -(stats->normal.allocated / stats->normal_count.count)), out, arg);
+  mi_stat_print(&stats->large, "large", (stats->large_count.count == 0 ? 1 : -(stats->large.allocated / stats->large_count.count)), out, arg);
   mi_stat_print(&stats->huge, "huge", (stats->huge_count.count == 0 ? 1 : -(stats->huge.allocated / stats->huge_count.count)), out, arg);
-  mi_stat_print(&stats->giant, "giant", (stats->giant_count.count == 0 ? 1 : -(stats->giant.allocated / stats->giant_count.count)), out, arg);
   mi_stat_count_t total = { 0,0,0,0 };
   mi_stat_add(&total, &stats->normal, 1);
+  mi_stat_add(&total, &stats->large, 1);
   mi_stat_add(&total, &stats->huge, 1);
-  mi_stat_add(&total, &stats->giant, 1);
   mi_stat_print(&total, "total", 1, out, arg);
   #endif
   #if MI_STAT>1
-  mi_stat_print(&stats->malloc, "malloc total", 1, out, arg);
-
-  _mi_fprintf(out, arg, "malloc requested:     ");
-  mi_print_amount(stats->malloc.allocated, 1, out, arg);
-  _mi_fprintf(out, arg, "\n\n");
+  mi_stat_print(&stats->malloc, "malloc req", 1, out, arg);
+  _mi_fprintf(out, arg, "\n");
   #endif
   mi_stat_print(&stats->reserved, "reserved", 1, out, arg);
   mi_stat_print(&stats->committed, "committed", 1, out, arg);
@@ -325,7 +327,7 @@ static void _mi_stats_print(mi_stats_t* stats, mi_output_fun* out0, void* arg0) 
   mi_stat_counter_print(&stats->commit_calls, "commits", out, arg);
   mi_stat_print(&stats->threads, "threads", -1, out, arg);
   mi_stat_counter_print_avg(&stats->searches, "searches", out, arg);
-  _mi_fprintf(out, arg, "%10s: %7i\n", "numa nodes", _mi_os_numa_node_count());
+  _mi_fprintf(out, arg, "%10s: %7zu\n", "numa nodes", _mi_os_numa_node_count());
   
   mi_msecs_t elapsed;
   mi_msecs_t user_time;
@@ -390,19 +392,12 @@ void mi_thread_stats_print_out(mi_output_fun* out, void* arg) mi_attr_noexcept {
   _mi_stats_print(mi_stats_get_default(), out, arg);
 }
 
-size_t mi_stats_total_mem() mi_attr_noexcept {
-  mi_stat_count_t total = { 0,0,0,0 };
-  mi_stat_add(&total, &_mi_stats_main.normal, 1);
-  mi_stat_add(&total, &_mi_stats_main.huge, 1);
-  mi_stat_add(&total, &_mi_stats_main.giant, 1);
-  return total.current < 0 ? 0 : total.current;
-}
 
 // ----------------------------------------------------------------
 // Basic timer for convenience; use milli-seconds to avoid doubles
 // ----------------------------------------------------------------
 #ifdef _WIN32
-#include <Windows.h>
+#include <windows.h>
 static mi_msecs_t mi_to_msecs(LARGE_INTEGER t) {
   static LARGE_INTEGER mfreq; // = 0
   if (mfreq.QuadPart == 0LL) {
@@ -421,10 +416,14 @@ mi_msecs_t _mi_clock_now(void) {
 }
 #else
 #include <time.h>
-#ifdef CLOCK_REALTIME
+#if defined(CLOCK_REALTIME) || defined(CLOCK_MONOTONIC)
 mi_msecs_t _mi_clock_now(void) {
   struct timespec t;
+  #ifdef CLOCK_MONOTONIC
+  clock_gettime(CLOCK_MONOTONIC, &t);
+  #else  
   clock_gettime(CLOCK_REALTIME, &t);
+  #endif
   return ((mi_msecs_t)t.tv_sec * 1000) + ((mi_msecs_t)t.tv_nsec / 1000000);
 }
 #else
@@ -457,7 +456,7 @@ mi_msecs_t _mi_clock_end(mi_msecs_t start) {
 // --------------------------------------------------------
 
 #if defined(_WIN32)
-#include <Windows.h>
+#include <windows.h>
 #include <psapi.h>
 #pragma comment(lib,"psapi.lib")
 
@@ -488,12 +487,12 @@ static void mi_stat_process_info(mi_msecs_t* elapsed, mi_msecs_t* utime, mi_msec
   *page_faults    = (size_t)info.PageFaultCount;  
 }
 
-#elif defined(__unix__) || defined(__unix) || defined(unix) || (defined(__APPLE__) && defined(__MACH__)) || defined(__HAIKU__)
+#elif !defined(__wasi__) && (defined(__unix__) || defined(__unix) || defined(unix) || defined(__APPLE__) || defined(__HAIKU__))
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/resource.h>
 
-#if defined(__APPLE__) && defined(__MACH__)
+#if defined(__APPLE__)
 #include <mach/mach.h>
 #endif
 
@@ -529,7 +528,8 @@ static void mi_stat_process_info(mi_msecs_t* elapsed, mi_msecs_t* utime, mi_msec
   while (get_next_area_info(tid.team, &c, &mem) == B_OK) {
     *peak_rss += mem.ram_size;
   }
-#elif defined(__APPLE__) && defined(__MACH__)
+  *page_faults = 0;
+#elif defined(__APPLE__)
   *peak_rss = rusage.ru_maxrss;         // BSD reports in bytes
   struct mach_task_basic_info info;
   mach_msg_type_number_t infoCount = MACH_TASK_BASIC_INFO_COUNT;

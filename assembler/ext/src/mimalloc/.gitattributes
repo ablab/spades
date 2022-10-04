@@ -2,9 +2,11 @@
 * text eol=lf
 *.png binary
 *.pdn binary
+*.jpg binary
 *.sln binary
 *.suo binary
 *.vcproj binary
 *.patch binary
 *.dll binary
 *.lib binary
+*.exe binary

@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------
-Copyright (c) 2018, Microsoft Research, Daan Leijen
+Copyright (c) 2018-2021, Microsoft Research, Daan Leijen
 This is free software; you can redistribute it and/or modify it under the
 terms of the MIT license. A copy of the license can be found in the file
 "LICENSE" at the root of this distribution.
@@ -50,9 +50,9 @@ static bool mi_heap_visit_pages(mi_heap_t* heap, heap_page_visitor_fun* fn, void
 
 #if MI_DEBUG>=2
 static bool mi_heap_page_is_valid(mi_heap_t* heap, mi_page_queue_t* pq, mi_page_t* page, void* arg1, void* arg2) {
-  UNUSED(arg1);
-  UNUSED(arg2);
-  UNUSED(pq);
+  MI_UNUSED(arg1);
+  MI_UNUSED(arg2);
+  MI_UNUSED(pq);
   mi_assert_internal(mi_page_heap(page) == heap);
   mi_segment_t* segment = _mi_page_segment(page);
   mi_assert_internal(segment->thread_id == heap->thread_id);
@@ -86,8 +86,8 @@ typedef enum mi_collect_e {
 
 
 static bool mi_heap_page_collect(mi_heap_t* heap, mi_page_queue_t* pq, mi_page_t* page, void* arg_collect, void* arg2 ) {
-  UNUSED(arg2);
-  UNUSED(heap);
+  MI_UNUSED(arg2);
+  MI_UNUSED(heap);
   mi_assert_internal(mi_heap_page_is_valid(heap, pq, page, NULL, NULL));
   mi_collect_t collect = *((mi_collect_t*)arg_collect);
   _mi_page_free_collect(page, collect >= MI_FORCE);
@@ -104,10 +104,10 @@ static bool mi_heap_page_collect(mi_heap_t* heap, mi_page_queue_t* pq, mi_page_t
 }
 
 static bool mi_heap_page_never_delayed_free(mi_heap_t* heap, mi_page_queue_t* pq, mi_page_t* page, void* arg1, void* arg2) {
-  UNUSED(arg1);
-  UNUSED(arg2);
-  UNUSED(heap);
-  UNUSED(pq);
+  MI_UNUSED(arg1);
+  MI_UNUSED(arg2);
+  MI_UNUSED(heap);
+  MI_UNUSED(pq);
   _mi_page_use_delayed_free(page, MI_NEVER_DELAYED_FREE, false);
   return true; // don't break
 }
@@ -115,17 +115,20 @@ static bool mi_heap_page_never_delayed_free(mi_heap_t* heap, mi_page_queue_t* pq
 static void mi_heap_collect_ex(mi_heap_t* heap, mi_collect_t collect)
 {
   if (heap==NULL || !mi_heap_is_initialized(heap)) return;
-  _mi_deferred_free(heap, collect >= MI_FORCE);
+
+  const bool force = collect >= MI_FORCE;  
+  _mi_deferred_free(heap, force);
 
   // note: never reclaim on collect but leave it to threads that need storage to reclaim 
-  if (
-  #ifdef NDEBUG
+  const bool force_main = 
+    #ifdef NDEBUG
       collect == MI_FORCE
-  #else
+    #else
       collect >= MI_FORCE
-  #endif
-    && _mi_is_main_thread() && mi_heap_is_backing(heap) && !heap->no_reclaim)
-  {
+    #endif
+      && _mi_is_main_thread() && mi_heap_is_backing(heap) && !heap->no_reclaim;
+
+  if (force_main) {
     // the main thread is abandoned (end-of-program), try to reclaim all abandoned segments.
     // if all memory is freed by now, all segments should be freed.
     _mi_abandoned_reclaim_all(heap, &heap->tld->segments);
@@ -141,20 +144,28 @@ static void mi_heap_collect_ex(mi_heap_t* heap, mi_collect_t collect)
   _mi_heap_delayed_free(heap);
 
   // collect retired pages
-  _mi_heap_collect_retired(heap, collect >= MI_FORCE);
+  _mi_heap_collect_retired(heap, force);
 
   // collect all pages owned by this thread
   mi_heap_visit_pages(heap, &mi_heap_page_collect, &collect, NULL);
   mi_assert_internal( collect != MI_ABANDON || mi_atomic_load_ptr_acquire(mi_block_t,&heap->thread_delayed_free) == NULL );
 
-  // collect segment caches
-  if (collect >= MI_FORCE) {
+  // collect abandoned segments (in particular, decommit expired parts of segments in the abandoned segment list)
+  // note: forced decommit can be quite expensive if many threads are created/destroyed so we do not force on abandonment
+  _mi_abandoned_collect(heap, collect == MI_FORCE /* force? */, &heap->tld->segments);
+
+  // collect segment local caches
+  if (force) {
     _mi_segment_thread_collect(&heap->tld->segments);
   }
 
+  // decommit in global segment caches
+  // note: forced decommit can be quite expensive if many threads are created/destroyed so we do not force on abandonment
+  _mi_segment_cache_collect( collect == MI_FORCE, &heap->tld->os);  
+
   // collect regions on program-exit (or shared library unload)
-  if (collect >= MI_FORCE && _mi_is_main_thread() && mi_heap_is_backing(heap)) {
-    _mi_mem_collect(&heap->tld->os);
+  if (force && _mi_is_main_thread() && mi_heap_is_backing(heap)) {
+    //_mi_mem_collect(&heap->tld->os);
   }
 }
 
@@ -193,7 +204,7 @@ mi_heap_t* mi_heap_new(void) {
   mi_heap_t* bheap = mi_heap_get_backing();
   mi_heap_t* heap = mi_heap_malloc_tp(bheap, mi_heap_t);  // todo: OS allocate in secure mode?
   if (heap==NULL) return NULL;
-  memcpy(heap, &_mi_heap_empty, sizeof(mi_heap_t));
+  _mi_memcpy_aligned(heap, &_mi_heap_empty, sizeof(mi_heap_t));
   heap->tld = bheap->tld;
   heap->thread_id = _mi_thread_id();
   _mi_random_split(&bheap->random, &heap->random);
@@ -220,7 +231,7 @@ static void mi_heap_reset_pages(mi_heap_t* heap) {
 #ifdef MI_MEDIUM_DIRECT
   memset(&heap->pages_free_medium, 0, sizeof(heap->pages_free_medium));
 #endif
-  memcpy(&heap->pages, &_mi_heap_empty.pages, sizeof(heap->pages));
+  _mi_memcpy_aligned(&heap->pages, &_mi_heap_empty.pages, sizeof(heap->pages));
   heap->thread_delayed_free = NULL;
   heap->page_count = 0;
 }
@@ -262,19 +273,19 @@ static void mi_heap_free(mi_heap_t* heap) {
 ----------------------------------------------------------- */
 
 static bool _mi_heap_page_destroy(mi_heap_t* heap, mi_page_queue_t* pq, mi_page_t* page, void* arg1, void* arg2) {
-  UNUSED(arg1);
-  UNUSED(arg2);
-  UNUSED(heap);
-  UNUSED(pq);
+  MI_UNUSED(arg1);
+  MI_UNUSED(arg2);
+  MI_UNUSED(heap);
+  MI_UNUSED(pq);
 
   // ensure no more thread_delayed_free will be added
   _mi_page_use_delayed_free(page, MI_NEVER_DELAYED_FREE, false);
 
   // stats
   const size_t bsize = mi_page_block_size(page);
-  if (bsize > MI_LARGE_OBJ_SIZE_MAX) {
-    if (bsize > MI_HUGE_OBJ_SIZE_MAX) {
-      mi_heap_stat_decrease(heap, giant, bsize);
+  if (bsize > MI_MEDIUM_OBJ_SIZE_MAX) {
+    if (bsize <= MI_LARGE_OBJ_SIZE_MAX) {
+      mi_heap_stat_decrease(heap, large, bsize);
     }
     else {
       mi_heap_stat_decrease(heap, huge, bsize);
@@ -333,7 +344,7 @@ void mi_heap_destroy(mi_heap_t* heap) {
   Safe Heap delete
 ----------------------------------------------------------- */
 
-// Tranfer the pages from one heap to the other
+// Transfer the pages from one heap to the other
 static void mi_heap_absorb(mi_heap_t* heap, mi_heap_t* from) {
   mi_assert_internal(heap!=NULL);
   if (from==NULL || from->page_count == 0) return;
@@ -359,7 +370,9 @@ static void mi_heap_absorb(mi_heap_t* heap, mi_heap_t* from) {
   // turns out to be ok as `_mi_heap_delayed_free` only visits the list and calls a 
   // the regular `_mi_free_delayed_block` which is safe.
   _mi_heap_delayed_free(from);  
-  mi_assert_internal(from->thread_delayed_free == NULL);
+  #if !defined(_MSC_VER) || (_MSC_VER > 1900) // somehow the following line gives an error in VS2015, issue #353
+  mi_assert_internal(mi_atomic_load_ptr_relaxed(mi_block_t,&from->thread_delayed_free) == NULL);
+  #endif
 
   // and reset the `from` heap
   mi_heap_reset_pages(from);  
@@ -420,8 +433,8 @@ bool mi_heap_contains_block(mi_heap_t* heap, const void* p) {
 
 
 static bool mi_heap_page_check_owned(mi_heap_t* heap, mi_page_queue_t* pq, mi_page_t* page, void* p, void* vfound) {
-  UNUSED(heap);
-  UNUSED(pq);
+  MI_UNUSED(heap);
+  MI_UNUSED(pq);
   bool* found = (bool*)vfound;
   mi_segment_t* segment = _mi_page_segment(page);
   void* start = _mi_page_start(segment, page, NULL);
@@ -468,13 +481,14 @@ static bool mi_heap_area_visit_blocks(const mi_heap_area_ex_t* xarea, mi_block_v
   if (page->used == 0) return true;
 
   const size_t bsize = mi_page_block_size(page);
+  const size_t ubsize = mi_page_usable_block_size(page); // without padding
   size_t   psize;
   uint8_t* pstart = _mi_page_start(_mi_page_segment(page), page, &psize);
 
   if (page->capacity == 1) {
     // optimize page with one block
     mi_assert_internal(page->used == 1 && page->free == NULL);
-    return visitor(mi_page_heap(page), area, pstart, bsize, arg);
+    return visitor(mi_page_heap(page), area, pstart, ubsize, arg);
   }
 
   // create a bitmap of free blocks.
@@ -508,7 +522,7 @@ static bool mi_heap_area_visit_blocks(const mi_heap_area_ex_t* xarea, mi_block_v
     else if ((m & ((uintptr_t)1 << bit)) == 0) {
       used_count++;
       uint8_t* block = pstart + (i * bsize);
-      if (!visitor(mi_page_heap(page), area, block, bsize, arg)) return false;
+      if (!visitor(mi_page_heap(page), area, block, ubsize, arg)) return false;
     }
   }
   mi_assert_internal(page->used == used_count);
@@ -519,17 +533,19 @@ typedef bool (mi_heap_area_visit_fun)(const mi_heap_t* heap, const mi_heap_area_
 
 
 static bool mi_heap_visit_areas_page(mi_heap_t* heap, mi_page_queue_t* pq, mi_page_t* page, void* vfun, void* arg) {
-  UNUSED(heap);
-  UNUSED(pq);
+  MI_UNUSED(heap);
+  MI_UNUSED(pq);
   mi_heap_area_visit_fun* fun = (mi_heap_area_visit_fun*)vfun;
   mi_heap_area_ex_t xarea;
   const size_t bsize = mi_page_block_size(page);
+  const size_t ubsize = mi_page_usable_block_size(page);
   xarea.page = page;
   xarea.area.reserved = page->reserved * bsize;
   xarea.area.committed = page->capacity * bsize;
   xarea.area.blocks = _mi_page_start(_mi_page_segment(page), page, NULL);
-  xarea.area.used = page->used;
-  xarea.area.block_size = bsize;
+  xarea.area.used = page->used * bsize;
+  xarea.area.block_size = ubsize;
+  xarea.area.full_block_size = bsize;
   return fun(heap, &xarea, arg);
 }
 
