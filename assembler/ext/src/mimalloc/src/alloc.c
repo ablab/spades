@@ -325,24 +325,6 @@ static void mi_stat_free(const mi_page_t* page, const mi_block_t* block) {
 }
 #endif
 
-#if (MI_STAT>0)
-// maintain stats for huge objects
-static void mi_stat_huge_free(const mi_page_t* page) {
-  mi_heap_t* const heap = mi_heap_get_default();
-  const size_t bsize = mi_page_block_size(page); // to match stats in `page.c:mi_page_huge_alloc`
-  if (bsize <= MI_LARGE_OBJ_SIZE_MAX) {
-    mi_heap_stat_decrease(heap, large, bsize);
-  }
-  else {
-    mi_heap_stat_decrease(heap, huge, bsize);
-  }
-}
-#else
-static void mi_stat_huge_free(const mi_page_t* page) {
-  MI_UNUSED(page);
-}
-#endif
-
 // ------------------------------------------------------
 // Free
 // ------------------------------------------------------
@@ -361,7 +343,6 @@ static mi_decl_noinline void _mi_free_block_mt(mi_page_t* page, mi_block_t* bloc
   // huge page segments are always abandoned and can be freed immediately
   mi_segment_t* segment = _mi_page_segment(page);
   if (segment->kind==MI_SEGMENT_HUGE) {
-    mi_stat_huge_free(page);
     _mi_segment_huge_page_free(segment, page, block);
     return;
   }

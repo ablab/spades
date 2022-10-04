@@ -116,7 +116,7 @@ size_t get_used_memory() {
         return cmem;
     }
 #elif defined(SPADES_USE_MIMALLOC)
-    // mimalloc implements separate and independent memory pulls for each thread
+    // mimalloc implements separate and independent memory pools for each thread
     // The statistics is also collected per pool. So we essentially need to propagate
     // the stats from per-thread pool into main one
     if (omp_get_thread_num() > 0) {
