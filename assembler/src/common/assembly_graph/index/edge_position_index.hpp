@@ -11,7 +11,7 @@
 #include "kmer_index/ph_map/perfect_hash_map.hpp"
 #include "kmer_index/ph_map/kmer_maps.hpp"
 
-#include <folly/SmallLocks.h>
+#include <folly/synchronization/PicoSpinLock.h>
 
 namespace debruijn_graph {
 

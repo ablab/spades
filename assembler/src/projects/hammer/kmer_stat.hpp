@@ -12,7 +12,7 @@
 
 #include "sequence/seq.hpp"
 
-#include <folly/SmallLocks.h>
+#include <folly/synchronization/PicoSpinLock.h>
 
 #include <functional>
 #include <vector>

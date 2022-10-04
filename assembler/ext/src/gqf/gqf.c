@@ -63,12 +63,14 @@ typedef struct __attribute__ ((__packed__)) qfblock {
 #endif
 } qfblock;
 
+/*
 static __inline__ unsigned long long rdtsc(void)
 {
 	unsigned hi, lo;
 	__asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
 	return ( (unsigned long long)lo)|( ((unsigned long long)hi)<<32 );
 }
+*/
 
 #ifdef LOG_WAIT_TIME
 static inline bool qf_spin_lock(QF *qf, volatile int *lock, uint64_t idx, bool
@@ -174,11 +176,7 @@ static void modify_metadata(QF *qf, uint64_t *metadata, int cnt) {
 
 
 static inline int popcnt(uint64_t val) {
-       asm("popcnt %[val], %[val]"
-                       : [val] "+r" (val)
-                       :
-                       : "cc");
-       return val;
+    return __builtin_popcountll(val);
 }
 
 static inline int popcntv(const uint64_t val, int ignore)
