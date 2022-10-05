@@ -32,7 +32,8 @@ __m128i v2 = _mm_set1_epi32(86);
 union { __m128i v; int32_t x[4]; } v3;
 v3.v = _mm_add_epi32(v1, v2);
 return (int) v3.x[0];
-}" eslENABLE_SSE)
+}
+int main(void) { if (stub_sse() != 128) return 1; else return 0; }" eslENABLE_SSE)
 
 check_c_source_compiles("
 #include <x86intrin.h>

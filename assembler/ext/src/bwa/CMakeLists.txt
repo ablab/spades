@@ -18,7 +18,7 @@ if (NOT HAVE_SHM_OPEN)
   check_library_exists(rt shm_open "" HAVE_SHM_OPEN_IN_RT)
 endif()
 if (NOT HAVE_SHM_OPEN AND NOT HAVE_SHM_OPEN_IN_RT)
-  error("Cannot find shm_open()")
+  message(FATAL_ERROR "Cannot find shm_open()")
 endif()
 
 add_library(bwa STATIC
