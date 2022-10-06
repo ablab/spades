@@ -266,7 +266,7 @@ struct HybridAllocatedStorage : public SmallPODVectorData<T> {
         void *data = that.data_.getPointer(), *new_data = data;
         memcpy(new_data, data, this->size() * sizeof(T));
     }
-    
+
     HybridAllocatedStorage(HybridAllocatedStorage &&that) {
         void *data = that.data_.getPointer(), *new_data = data;
         size_t sz = that.data_.getInt(), new_sz = sz;
@@ -381,7 +381,47 @@ public:
                   "Value type for SmallPODVector should be trivially copyable");
 
 private:
+    bool references_range(const void *v, const void *first, const void *last) const {
+     // Use std::less to avoid UB.
+     std::less<> less_than;
+     return !less_than(v, first) && less_than(v, last);
+   }
 
+   bool references_data(const void *v) const {
+     return references_range(v, this->begin(), this->end());
+   }
+
+    template <class ArgType>
+    iterator insert_one(const_iterator pos, ArgType &&value) {
+        static_assert(std::is_same<std::remove_const_t<std::remove_reference_t<ArgType>>,
+                      T>::value,
+                      "ArgType must be derived from T!");
+
+        if (pos == this->end()) { // Important special case for empty vector
+            this->push_back(std::forward<ArgType>(value));
+            return this->end() - 1;
+        }
+
+        difference_type idx = pos - this->begin();
+        size_type sz = this->size();
+        bool invalidated = references_data(&value);
+        difference_type vidx = invalidated ? &value - this->begin() : 0;
+
+        data_.grow(sz + 1); // This might invalidate iterators
+
+        iterator it = this->begin() + idx;
+        std::copy_backward(it, this->end() - 1, this->end());
+
+        // If we just moved the element we're inserting, be sure to update the
+        // reference.
+        std::remove_reference_t<ArgType> *vptr = invalidated ? this->begin() + vidx : &value;
+        if (references_range(vptr, it, this->end()))
+            ++vptr;
+
+        *it = std::forward<ArgType>(*vptr);
+
+        return it;
+    }
 
 public:
     SmallPODVector() = default;
@@ -544,29 +584,12 @@ public:
         return this->begin() + idx;
     }
 
+    iterator insert(const_iterator pos, T &&value) {
+        return insert_one(pos, std::move(value));
+    }
+
     iterator insert(const_iterator pos, const T &value) {
-        if (pos == this->end()) {
-            this->push_back(value);
-            return this->end() - 1;
-        }
-
-        difference_type idx = pos - this->begin();
-        size_type sz = this->size();
-
-        data_.grow(sz + 1); // This might invalidate iterators
-
-        iterator it = this->begin() + idx;
-        std::copy_backward(it, this->end() - 1, this->end());
-
-        // If we just moved the element we're inserting, be sure to update the
-        // reference.
-        const T *vptr = &value;
-        if (it <= vptr && vptr < this->end())
-            ++vptr;
-
-        *it = *vptr;
-
-        return it;
+        return insert_one(pos, value);
     }
 
     template<typename... ArgTypes>
