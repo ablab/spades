@@ -81,7 +81,7 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
       (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
       (option("-k") & integer("value", cfg.k)) % "k-mer length to use",
       (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
-      (option("--tmp-dir") & value("dir", cfg.tmpdir.c_str())) % "scratch directory to use",
+      (option("--tmp-dir") & value("dir", tmpdir)) % "scratch directory to use",
       (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option",
       (option("--hic").set(cfg.hic)) % "enable HiC-aware paired-end processing (implies -Xhic unless mode is specified)",
       (with_prefix("-X",
