@@ -95,37 +95,19 @@ static void HandleSegment(const gfa::segment &record,
         DEBUG("Map ids: " << ce.int_id() << ":" << name << "'");
         mapper.map(name + '\'', ce.int_id());
     }
-    VertexId v1 = helper.CreateVertex(DeBruijnVertexData());
+    std::vector<DeBruijnDataMaster::LinkPtr> empty_links;
+    VertexId v1 = helper.CreateVertex(DeBruijnVertexData(empty_links));
     helper.LinkIncomingEdge(v1, e);
 
     if (e != ce) {
-        VertexId v2 = helper.CreateVertex(DeBruijnVertexData());
+        auto next_storage = new DeBruijnDataMaster::OverlapStorage(empty_links);
+        VertexId v2 = helper.CreateVertex(DeBruijnVertexData(next_storage));
         helper.LinkIncomingEdge(v2, ce);
     }
 }
 
 void GFAReader::HandleLink(const link &record) {
-    link_storage_.push_back(std::make_unique<link>(std::move(record)));
-
-    // We need to be careful here: we cannot use EdgeStart since it's
-    // essentially conjugate(EdgeEnd(conjugate(e))) and EdgeEend might be empty.
-    // So, instead we're checking two "edge tips" (ends of e1 and e2')
-//    VertexId v1 = g.EdgeEnd(e1), cv2 = g.EdgeEnd(ce2);
-//    if (!v1 && !cv2) {
-//        v1 = helper.CreateVertex(DeBruijnVertexData(ovl));
-//        helper.LinkIncomingEdge(v1, e1);
-//    }
-//
-//    if (v1) {
-//        VERIFY(ovl == g.length(v1));
-//        if (cv2 && v1 == g.conjugate(cv2))
-//            return ovl;
-//
-//        helper.LinkOutgoingEdge(v1, e2);
-//    } else if (cv2) {
-//        VERIFY(ovl == g.length(cv2));
-//        helper.LinkIncomingEdge(g.conjugate(cv2), e1);
-//    return ovl;
+    link_storage_.push_back(std::make_shared<link>(record));
 }
 
 void GFAReader::HandlePath(const gfa::path &record,
@@ -162,7 +144,6 @@ unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
     char *line = nullptr;
     size_t len = 0;
     ssize_t read;
-    unsigned k = -1U;
 
     while ((read = gzgetline(&line, &len, fp.get())) != -1) {
         if (read <= 1)
@@ -181,10 +162,6 @@ unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
             else if constexpr (std::is_same_v<T, gfa::link>) {
                 num_links_ += 1;
                 HandleLink(record);
-//                if (k == -1U)
-//                    k = ovl;
-//                else if (k && k != ovl)
-//                    k = 0;
             } else if constexpr (std::is_same_v<T, gfa::path>) {
                 HandlePath(record, *id_mapper, g);
             }
@@ -192,7 +169,7 @@ unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
             *result);
     }
 
-    ProcessLinks(g, *id_mapper);
+    unsigned k = ProcessLinks(g, *id_mapper);
 
     // Add "point tips" of edges
     for (EdgeId e : g.edges()) {
@@ -210,11 +187,12 @@ unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
 
     return k;
 }
-void GFAReader::ProcessLinks(DeBruijnGraph &g, const io::IdMapper<std::string> &mapper) {
+unsigned GFAReader::ProcessLinks(DeBruijnGraph &g, const io::IdMapper<std::string> &mapper) {
     auto helper = g.GetConstructionHelper();
+    unsigned k = -1U;
 
-    for (const auto &link_ptr: link_storage_) {
-        const link &record = *link_ptr;
+    for (const auto &link: link_storage_) {
+        const auto &record = *link;
         EdgeId e1 = mapper[std::string(record.lhs)], ce1 = g.conjugate(e1);
         if (record.lhs_revcomp)
             std::swap(e1, ce1);
@@ -233,15 +211,21 @@ void GFAReader::ProcessLinks(DeBruijnGraph &g, const io::IdMapper<std::string> &
         } else if (overlap.size() == 1) {
             ovl = overlap.front().count;
         }
+        if (k == -1U)
+            k = ovl;
+        else if (k && k != ovl)
+            k = 0;
 
         VertexId v1 = g.EdgeEnd(e1);
         VertexId v2 = g.EdgeStart(e2);
         std::pair<EdgeId, EdgeId> edge_pair(e1, e2);
-        Link current_link(edge_pair, ovl);
+        auto current_link = std::make_shared<Link>(edge_pair, ovl);
+        g.add_link(current_link);
         g.data(v1).add_link(current_link);
         g.data(v1).add_links(g.data(v2).move_links());
         helper.LinkEdges(e1, e2);
     }
+    return k;
 }
 
 }

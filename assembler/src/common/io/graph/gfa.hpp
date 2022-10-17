@@ -102,9 +102,9 @@ struct cigarop {
 using cigar_string = std::vector<cigarop>;
 
 struct link {
-    std::string_view lhs;
+    std::string lhs;
     bool lhs_revcomp;
-    std::string_view rhs;
+    std::string rhs;
     bool rhs_revcomp;
     cigar_string overlap;
     std::vector<gfa::tag> tags;
@@ -119,6 +119,8 @@ struct link {
                   std::vector<gfa::tag> t)
             : lhs{std::move(l)}, lhs_revcomp(lr.front() == '-'), rhs{std::move(r)}, rhs_revcomp(rr.front() == '-'),
               overlap(std::move(o)), tags(std::move(t)) {}
+
+    link(const link&) = default;
 
     void print() const {
         std::fputs("L", stdout);

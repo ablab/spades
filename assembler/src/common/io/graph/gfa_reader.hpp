@@ -77,7 +77,7 @@ class GFAReader {
 
     void HandleLink(const gfa::link &record);
 
-    void ProcessLinks(debruijn_graph::DeBruijnGraph &g, const io::IdMapper<std::string> &mapper);
+    unsigned ProcessLinks(debruijn_graph::DeBruijnGraph &g, const io::IdMapper<std::string> &mapper);
 
     Links link_storage_;
     std::filesystem::path filename_;
