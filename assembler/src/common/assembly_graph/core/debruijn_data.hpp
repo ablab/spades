@@ -33,6 +33,7 @@ struct Link {
 
 class DeBruijnVertexData {
     friend class DeBruijnDataMaster;
+    typedef std::shared_ptr<Link> LinkPtr;
 
 
     enum OverlapKind {
@@ -41,32 +42,33 @@ class DeBruijnVertexData {
     };
 
     struct OverlapStorage {
-      OverlapStorage(const std::vector<Link> &links) : links(links) {}
+      OverlapStorage(): links() {}
+      OverlapStorage(const std::vector<LinkPtr> &other_links): links(other_links) {}
 
-      void AddLinks(const std::vector<Link> &added_links) {
-          //overlaps_.insert(overlaps_.end(), std::make_move_iterator(overlaps.begin()), std::make_move_iterator(overlaps.end()));
-          links.insert(links.end(), added_links.begin(), added_links.end());
+      ~OverlapStorage() {
+          links.clear();
       }
 
-      void AddLink(const Link &added_link) {
+      void AddLinks(const std::vector<LinkPtr> &other_links) {
+          for (const auto &link: other_links) {
+              links.push_back(link);
+          }
+      }
+
+      void AddLink(LinkPtr added_link) {
           links.push_back(added_link);
       }
 
-      std::vector<Link> GetLinks() const {
+      std::vector<LinkPtr> GetLinks() const {
           return links;
       }
 
-      std::vector<Link> MoveLinks() {
-          //fixme use actual move
+      std::vector<LinkPtr> MoveLinks() {
           auto links_copy = links;
           links.clear();
           return links_copy;
-
       }
-      // Store links
-        // Store overlaps
-        std::vector<Link> links;
-//        uint32_t overlap_ = 0;
+      std::vector<LinkPtr> links;
     };
 
     typedef llvm::PointerEmbeddedInt<uint32_t, 32> SimpleOverlap;
@@ -77,14 +79,23 @@ class DeBruijnVertexData {
     Overlap overlap_;
 
 public:
-    DeBruijnVertexData(std::vector<Link> links = {})
+    explicit DeBruijnVertexData(const std::vector<LinkPtr> &links)
             : overlap_(Overlap::create<ComplexOverlap>(new OverlapStorage(links))) {}
-    explicit DeBruijnVertexData(unsigned overlap)
+//    {
+//        INFO("New storage")
+//        auto *storage = new OverlapStorage(links);
+//        INFO("Creating");
+//        overlap_ = Overlap::create<ComplexOverlap>(storage);
+//        INFO("kek");
+//    }
+    explicit DeBruijnVertexData(unsigned overlap = 0)
             : overlap_(Overlap::create<ExplicitOverlap>(overlap)) {}
+    explicit DeBruijnVertexData(OverlapStorage *storage)
+            : overlap_(Overlap::create<ComplexOverlap>(storage)) {}
 
     ~DeBruijnVertexData() {
-        if (has_complex_overlap())
-            delete complex_overlap();
+//        if (has_complex_overlap())
+//            delete complex_overlap();
     }
 
     void set_overlap(unsigned overlap) {
@@ -95,19 +106,19 @@ public:
         return overlap_.get<ExplicitOverlap>();
     }
 
-    std::vector<Link> get_links() {
+    std::vector<LinkPtr> get_links() const {
         return overlap_.get<ComplexOverlap>()->GetLinks();
     }
 
-    std::vector<Link> move_links() {
+    std::vector<LinkPtr> move_links() {
         return overlap_.get<ComplexOverlap>()->MoveLinks();
     }
 
-    void add_link(const Link &link) {
+    void add_link(LinkPtr link) {
         overlap_.get<ComplexOverlap>()->AddLink(link);
     }
 
-    void add_links(const std::vector<Link> &links) {
+    void add_links(const std::vector<LinkPtr> &links) {
         overlap_.get<ComplexOverlap>()->AddLinks(links);
     }
 
@@ -195,6 +206,8 @@ private:
 public:
     typedef DeBruijnVertexData VertexData;
     typedef DeBruijnEdgeData EdgeData;
+    typedef DeBruijnVertexData::LinkPtr LinkPtr;
+    typedef DeBruijnVertexData::OverlapStorage OverlapStorage;
 
     DeBruijnDataMaster(unsigned k)
             : k_(k) {}

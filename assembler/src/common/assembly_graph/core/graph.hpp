@@ -26,12 +26,15 @@ public:
     typedef VertexIt VertexIterator;
     typedef VertexIterator iterator; // for for_each
     typedef const VertexIterator const_iterator; // for for_each
+    typedef DeBruijnDataMaster::LinkPtr LinkPtr;
+    typedef std::vector<std::shared_ptr<Link>> LinkStorage;
 private:
     CoverageIndex<DeBruijnGraph> coverage_index_;
+    LinkStorage link_storage_;
 
 public:
     DeBruijnGraph(unsigned k) :
-            base(k), coverage_index_(*this) {
+            base(k), coverage_index_(*this), link_storage_() {
     }
 
     CoverageIndex<DeBruijnGraph>& coverage_index() {
@@ -51,6 +54,10 @@ public:
 
     uint64_t kmer_multiplicity(EdgeId edge) const {
         return coverage_index_.RawCoverage(edge);
+    }
+
+    void add_link(LinkPtr link_ptr) {
+        link_storage_.push_back(link_ptr);
     }
 
     using base::AddVertex;
