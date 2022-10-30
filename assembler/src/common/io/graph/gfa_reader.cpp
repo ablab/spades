@@ -106,15 +106,29 @@ static void HandleSegment(const gfa::segment &record,
     }
 }
 
-void GFAReader::HandleLink(const link &record) {
-    link_storage_.push_back(std::make_shared<link>(record));
+typedef std::vector<std::tuple<EdgeId, EdgeId, gfa::cigar_string>> Links;
+
+static void HandleLink(Links &links,
+                       const gfa::link &record,
+                       const io::IdMapper<std::string> &mapper,
+                       const ConjugateDeBruijnGraph &g) {
+    EdgeId e1 = mapper[std::string(record.lhs)];
+    if (record.lhs_revcomp)
+        e1 = g.conjugate(e1);
+
+    EdgeId e2 = mapper[std::string(record.rhs)];
+    if (record.rhs_revcomp)
+        e2 = g.conjugate(e2);
+
+    links.emplace_back(e1, e2, record.overlap);
 }
 
-void GFAReader::HandlePath(const gfa::path &record,
-                           const io::IdMapper<std::string> &mapper,
-                           const ConjugateDeBruijnGraph &g) {
-    paths_.emplace_back(std::string{record.name});
-    GFAPath &cpath = paths_.back();
+static void HandlePath(std::vector<GFAReader::GFAPath> &paths,
+                       const gfa::path &record,
+                       const io::IdMapper<std::string> &mapper,
+                       const ConjugateDeBruijnGraph &g) {
+    paths.emplace_back(std::string{record.name});
+    auto &cpath = paths.back();
     for (const std::string_view &oriented_segment : record.segments) {
         bool rc = oriented_segment.back() == '-';
         std::string_view segment(oriented_segment.data(), oriented_segment.size() - 1);
@@ -123,6 +137,43 @@ void GFAReader::HandlePath(const gfa::path &record,
             e = g.conjugate(e);
         cpath.edges.push_back(e);
     }
+}
+
+static unsigned ProcessLinks(DeBruijnGraph &g, const Links &links) {
+    auto helper = g.GetConstructionHelper();
+    unsigned k = -1U;
+
+    for (const auto &link: links) {
+        EdgeId e1 = std::get<0>(link), e2 = std::get<1>(link);
+
+        const auto &overlap = std::get<2>(link);
+        unsigned ovl = -1U;
+        if (overlap.size() > 1 ||
+            (overlap.size() == 1 && overlap.front().op != 'M')) {
+            ovl = std::accumulate(overlap.begin(), overlap.end(), 0,
+                                  [](size_t sum, const auto &cigar) {
+                                      return sum + cigar.count;
+                                  });
+        } else if (overlap.size() == 1) {
+            ovl = overlap.front().count;
+        }
+
+        if (k == -1U)
+            k = ovl;
+        else if (k && k != ovl)
+            k = 0;
+
+        VertexId v1 = g.EdgeEnd(e1);
+        VertexId v2 = g.EdgeStart(e2);
+        std::pair<EdgeId, EdgeId> edge_pair(e1, e2);
+        auto current_link = std::make_shared<Link>(edge_pair, ovl);
+        g.add_link(current_link);
+        g.data(v1).add_link(current_link);
+        g.data(v1).add_links(g.data(v2).move_links());
+        helper.LinkEdges(e1, e2);
+    }
+
+    return k;
 }
 
 unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
@@ -145,6 +196,7 @@ unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
     size_t len = 0;
     ssize_t read;
 
+    Links links;
     while ((read = gzgetline(&line, &len, fp.get())) != -1) {
         if (read <= 1)
             continue; // skip empty lines
@@ -158,18 +210,17 @@ unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
             if constexpr (std::is_same_v<T, gfa::segment>) {
                 num_edges_ += 1;
                 HandleSegment(record, *id_mapper, g, helper);
-            }
-            else if constexpr (std::is_same_v<T, gfa::link>) {
+            } else if constexpr (std::is_same_v<T, gfa::link>) {
                 num_links_ += 1;
-                HandleLink(record);
+                HandleLink(links, record, *id_mapper, g);
             } else if constexpr (std::is_same_v<T, gfa::path>) {
-                HandlePath(record, *id_mapper, g);
+                HandlePath(paths_, record, *id_mapper, g);
             }
         },
             *result);
     }
 
-    unsigned k = ProcessLinks(g, *id_mapper);
+    unsigned k = ProcessLinks(g, links);
 
     // Add "point tips" of edges
     for (EdgeId e : g.edges()) {
@@ -185,46 +236,6 @@ unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
     if (k != -1U)
         helper.master().set_k(k);
 
-    return k;
-}
-unsigned GFAReader::ProcessLinks(DeBruijnGraph &g, const io::IdMapper<std::string> &mapper) {
-    auto helper = g.GetConstructionHelper();
-    unsigned k = -1U;
-
-    for (const auto &link: link_storage_) {
-        const auto &record = *link;
-        EdgeId e1 = mapper[std::string(record.lhs)], ce1 = g.conjugate(e1);
-        if (record.lhs_revcomp)
-            std::swap(e1, ce1);
-
-        EdgeId e2 = mapper[std::string(record.rhs)], ce2 = g.conjugate(e2);
-        if (record.rhs_revcomp)
-            std::swap(e2, ce2);
-
-        const auto &overlap = record.overlap;
-        unsigned ovl = -1U;
-        if (overlap.size() > 1 ||
-            (overlap.size() == 1 && overlap.front().op != 'M')) {
-            ovl = std::accumulate(overlap.begin(), overlap.end(), 0, [](size_t sum, const auto &cigar) {
-              return sum + cigar.count;
-            });
-        } else if (overlap.size() == 1) {
-            ovl = overlap.front().count;
-        }
-        if (k == -1U)
-            k = ovl;
-        else if (k && k != ovl)
-            k = 0;
-
-        VertexId v1 = g.EdgeEnd(e1);
-        VertexId v2 = g.EdgeStart(e2);
-        std::pair<EdgeId, EdgeId> edge_pair(e1, e2);
-        auto current_link = std::make_shared<Link>(edge_pair, ovl);
-        g.add_link(current_link);
-        g.data(v1).add_link(current_link);
-        g.data(v1).add_links(g.data(v2).move_links());
-        helper.LinkEdges(e1, e2);
-    }
     return k;
 }
 
