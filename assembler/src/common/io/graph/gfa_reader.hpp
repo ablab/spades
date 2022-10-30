@@ -30,13 +30,11 @@ namespace gfa {
 struct path;
 struct segment;
 struct link;
-
-
+struct cigarop;
 
 class GFAReader {
     typedef debruijn_graph::DeBruijnGraph Graph;
     typedef Graph::EdgeId EdgeId;
-    typedef std::vector<std::shared_ptr<gfa::link>> Links;
 
   public:
     struct GFAPath {
@@ -71,15 +69,6 @@ class GFAReader {
     unsigned to_graph(debruijn_graph::DeBruijnGraph &g, io::IdMapper<std::string> *id_mapper = nullptr);
 
   private:
-    void HandlePath(const gfa::path &record,
-                    const io::IdMapper<std::string> &mapper,
-                    const debruijn_graph::Graph &g);
-
-    void HandleLink(const gfa::link &record);
-
-    unsigned ProcessLinks(debruijn_graph::DeBruijnGraph &g, const io::IdMapper<std::string> &mapper);
-
-    Links link_storage_;
     std::filesystem::path filename_;
     std::vector<GFAPath> paths_;
     size_t num_edges_ = 0;

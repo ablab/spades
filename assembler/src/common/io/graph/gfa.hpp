@@ -102,9 +102,9 @@ struct cigarop {
 using cigar_string = std::vector<cigarop>;
 
 struct link {
-    std::string lhs;
+    std::string_view lhs;
     bool lhs_revcomp;
-    std::string rhs;
+    std::string_view rhs;
     bool rhs_revcomp;
     cigar_string overlap;
     std::vector<gfa::tag> tags;
