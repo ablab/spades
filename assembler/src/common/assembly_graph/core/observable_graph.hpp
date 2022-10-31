@@ -118,7 +118,7 @@ public:
     /////////////////////////graph operations
     //adding/removing vertices and edges
 
-    VertexId AddVertex(const VertexData& data, VertexId id1 = 0, VertexId id2 = 0);
+    VertexId AddVertex(VertexData data, VertexId id1 = 0, VertexId id2 = 0);
 
     void DeleteVertex(VertexId v);
 
@@ -126,8 +126,8 @@ public:
     
     using base::conjugate;
 
-    EdgeId AddEdge(const EdgeData& data, EdgeId id1 = 0, EdgeId id2 = 0);
-    EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData& data,
+    EdgeId AddEdge(EdgeData data, EdgeId id1 = 0, EdgeId id2 = 0);
+    EdgeId AddEdge(VertexId v1, VertexId v2, EdgeData data,
                    EdgeId id1 = 0, EdgeId id2 = 0);
 
     void DeleteEdge(EdgeId e);
@@ -160,8 +160,8 @@ private:
 
 template<class DataMaster>
 typename ObservableGraph<DataMaster>::VertexId
-ObservableGraph<DataMaster>::AddVertex(const VertexData &data, VertexId id1, VertexId id2) {
-    VertexId v = base::HiddenAddVertex(data, id1, id2);
+ObservableGraph<DataMaster>::AddVertex(VertexData data, VertexId id1, VertexId id2) {
+    VertexId v = base::HiddenAddVertex(std::move(data), id1, id2);
     FireAddVertex(v);
     return v;
 }
@@ -183,17 +183,17 @@ void ObservableGraph<DataMaster>::ForceDeleteVertex(VertexId v) {
 
 template<class DataMaster>
 typename ObservableGraph<DataMaster>::EdgeId
-ObservableGraph<DataMaster>::AddEdge(VertexId v1, VertexId v2, const EdgeData &data,
+ObservableGraph<DataMaster>::AddEdge(VertexId v1, VertexId v2, EdgeData data,
                                      EdgeId id1, EdgeId id2) {
-    EdgeId e = base::HiddenAddEdge(v1, v2, data, id1, id2);
+    EdgeId e = base::HiddenAddEdge(v1, v2, std::move(data), id1, id2);
     FireAddEdge(e);
     return e;
 }
 
 template<class DataMaster>
 typename ObservableGraph<DataMaster>::EdgeId
-ObservableGraph<DataMaster>::AddEdge(const EdgeData& data, EdgeId id1, EdgeId id2) {
-    EdgeId e = base::HiddenAddEdge(data, id1, id2);
+ObservableGraph<DataMaster>::AddEdge(EdgeData data, EdgeId id1, EdgeId id2) {
+    EdgeId e = base::HiddenAddEdge(std::move(data), id1, id2);
     FireAddEdge(e);
     return e;
 }
@@ -483,10 +483,12 @@ std::pair<typename ObservableGraph<DataMaster>::EdgeId, typename ObservableGraph
     bool sc_flag = (edge == conjugate(edge));
     VERIFY_MSG(position > 0 && position < (sc_flag ? base::length(edge) / 2 + 1 : base::length(edge)),
             "Edge length is " << base::length(edge) << " but split pos was " << position);
-    auto newData = base::master().SplitData(base::data(edge), position, sc_flag);
-    VertexId splitVertex = base::HiddenAddVertex(newData.first);
-    EdgeId new_edge1 = base::HiddenAddEdge(base::EdgeStart(edge), splitVertex, newData.second.first);
-    EdgeId new_edge2 = base::HiddenAddEdge(splitVertex, sc_flag ? conjugate(splitVertex) : base::EdgeEnd(edge), newData.second.second);
+    auto [vdata, edata1, edata2]  = base::master().SplitData(base::data(edge), position, sc_flag);
+    VertexId splitVertex = base::HiddenAddVertex(std::move(vdata));
+    EdgeId new_edge1 = base::HiddenAddEdge(base::EdgeStart(edge), splitVertex,
+                                           std::move(edata1));
+    EdgeId new_edge2 = base::HiddenAddEdge(splitVertex, sc_flag ? conjugate(splitVertex) : base::EdgeEnd(edge),
+                                           std::move(edata2));
     VERIFY(!sc_flag || new_edge2 == conjugate(new_edge2))
     FireSplit(edge, new_edge1, new_edge2);
     FireDeleteEdge(edge);
@@ -509,12 +511,12 @@ typename ObservableGraph<DataMaster>::EdgeId ObservableGraph<DataMaster>::GlueEd
     base::HiddenDeleteEdge(edge1);
     base::HiddenDeleteEdge(edge2);
 
-    if (base::IsDeadStart(start) && base::IsDeadEnd(start)) {
+    if (base::IsDeadStart(start) && base::IsDeadEnd(start))
         DeleteVertex(start);
-    }
-    if (base::IsDeadStart(end) && base::IsDeadEnd(end)) {
+
+    if (base::IsDeadStart(end) && base::IsDeadEnd(end))
         DeleteVertex(end);
-    }
+
     DEBUG("Delete vertex");
     return new_edge;
 }

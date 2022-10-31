@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "adt/iterator_range.hpp"
 #include "observable_graph.hpp"
 #include "coverage.hpp"
 #include "debruijn_data.hpp"
@@ -23,19 +24,33 @@ public:
     typedef base::EdgeId EdgeId;
     typedef base::VertexId VertexId;
     typedef base::VertexIt VertexIt;
+    typedef DataMasterT::LinkId LinkId;
     typedef VertexIt VertexIterator;
     typedef VertexIterator iterator; // for for_each
     typedef const VertexIterator const_iterator; // for for_each
-    typedef DeBruijnDataMaster::LinkPtr LinkPtr;
-    typedef std::vector<std::shared_ptr<Link>> LinkStorage;
 private:
     CoverageIndex<DeBruijnGraph> coverage_index_;
+
+    struct Link {
+        Link() = default;
+        Link(std::pair<EdgeId, EdgeId> link, unsigned overlap)
+                : link(std::move(link)), overlap(overlap) {}
+        Link(EdgeId e1, EdgeId e2, unsigned overlap)
+                : link{e1, e2}, overlap(overlap) {}
+
+        Link(const Link&) = default;
+        Link(Link&&) = default;
+
+        std::pair<EdgeId, EdgeId> link;
+        unsigned overlap;
+    };
+
+    typedef std::vector<Link> LinkStorage;
     LinkStorage link_storage_;
 
 public:
-    DeBruijnGraph(unsigned k) :
-            base(k), coverage_index_(*this), link_storage_() {
-    }
+    DeBruijnGraph(unsigned k)
+            : base(k), coverage_index_(*this), link_storage_{} {}
 
     CoverageIndex<DeBruijnGraph>& coverage_index() {
         return coverage_index_;
@@ -56,15 +71,55 @@ public:
         return coverage_index_.RawCoverage(edge);
     }
 
-    void add_link(LinkPtr link_ptr) {
-        link_storage_.push_back(link_ptr);
+    void set_overlap(VertexId v, unsigned ovl) {
+        data(v).set_overlap(ovl);
     }
+
+    LinkId add_link(EdgeId e1, EdgeId e2, unsigned ovl) {
+        link_storage_.emplace_back(e1, e2, ovl);
+        return link_storage_.size() - 1;
+    }
+
+    void add_link(VertexId v, LinkId idx) {
+        data(v).add_link(idx);
+    }
+
+    void add_links(VertexId v, const std::vector<LinkId> &links) {
+        data(v).add_links(links);
+    }
+
+    auto move_links(VertexId v) {
+        data(v).move_links();
+    }
+
+    auto clear_links(VertexId v) {
+        data(v).clear_links();
+    }
+
+    auto links(VertexId v) {
+        return data(v).links();
+    }
+
+    auto links(VertexId v) const {
+        return data(v).links();
+    }
+
+    const auto& link(size_t idx) const {
+        return link_storage_[idx];
+    }
+
+    auto link_begin() { return link_storage_.begin(); }
+    auto link_end() { return link_storage_.end(); }
+    auto link_begin() const { return link_storage_.begin(); }
+    auto link_end() const { return link_storage_.end(); }
+    auto links() { return adt::make_range(link_begin(), link_end()); }
+    auto links() const { return adt::make_range(link_begin(), link_end()); }
 
     using base::AddVertex;
     using base::AddEdge;
 
-    VertexId AddVertex() {
-        return AddVertex(VertexData());
+    VertexId AddVertex(unsigned ovl = -1U) {
+        return AddVertex(VertexData(ovl == -1U ? k() : ovl));
     }
 
     EdgeId AddEdge(VertexId from, VertexId to, const Sequence &nucls) {
@@ -105,4 +160,5 @@ typedef DeBruijnGraph ConjugateDeBruijnGraph;
 typedef ConjugateDeBruijnGraph Graph;
 typedef Graph::EdgeId EdgeId;
 typedef Graph::VertexId VertexId;
+typedef Graph::LinkId LinkId;
 }

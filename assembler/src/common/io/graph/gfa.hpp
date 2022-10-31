@@ -120,8 +120,6 @@ struct link {
             : lhs{std::move(l)}, lhs_revcomp(lr.front() == '-'), rhs{std::move(r)}, rhs_revcomp(rr.front() == '-'),
               overlap(std::move(o)), tags(std::move(t)) {}
 
-    link(const link&) = default;
-
     void print() const {
         std::fputs("L", stdout);
         std::fprintf(stdout, "\t%s\t%c", std::string(lhs).c_str(), lhs_revcomp ? '-' : '+');

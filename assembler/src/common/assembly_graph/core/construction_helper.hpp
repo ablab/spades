@@ -26,12 +26,12 @@ class ConstructionHelper {
 
 
     void MaybeAddVertex(Graph &clone,
-                        const VertexData &data,
+                        VertexData data,
                         VertexId id1, VertexId id2) const {
         if (clone.contains(id1))
             return;
         TRACE("Vertex " << id1 << " ~ " << id2 << " .");
-        auto new_id = clone.AddVertex(data, id1, id2);
+        auto new_id = clone.AddVertex(std::move(data), id1, id2);
         VERIFY(new_id == id1);
         VERIFY(clone.conjugate(new_id) == id2);
     }
@@ -75,12 +75,12 @@ public:
         return clone;
     }
 
-    EdgeId AddEdge(const EdgeData &data, EdgeId id = 0) {
-        return graph_.AddEdge(data, id);
+    EdgeId AddEdge(EdgeData data, EdgeId id = 0) {
+        return graph_.AddEdge(std::move(data), id);
     }
 
-    EdgeId AddEdge(const EdgeData &data, EdgeId id, EdgeId cid) {
-        return graph_.AddEdge(data, id, cid);
+    EdgeId AddEdge(EdgeData data, EdgeId id, EdgeId cid) {
+        return graph_.AddEdge(std::move(data), id, cid);
     }
 
     void LinkIncomingEdge(VertexId v, EdgeId e) {
@@ -116,12 +116,12 @@ public:
         graph_.DestroyVertex(v);
     }
 
-    VertexId CreateVertex(const VertexData &data, VertexId id = 0) {
-        return graph_.CreateVertex(data, id);
+    VertexId CreateVertex(VertexData data, VertexId id = 0) {
+        return graph_.CreateVertex(std::move(data), id);
     }
 
-    VertexId CreateVertex(const VertexData &data, VertexId id1, VertexId id2) {
-        return graph_.CreateVertex(data, id1, id2);
+    VertexId CreateVertex(VertexData data, VertexId id1, VertexId id2) {
+        return graph_.CreateVertex(std::move(data), id1, id2);
     }
 
 };
