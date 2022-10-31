@@ -80,8 +80,7 @@ static void HandleSegment(const gfa::segment &record,
     if (auto cval = getTag<int64_t>("KC", record.tags))
         cov = unsigned(*cval);
 
-    DeBruijnEdgeData edata(Sequence{record.seq});
-    EdgeId e = helper.AddEdge(edata);
+    EdgeId e = helper.AddEdge(DeBruijnEdgeData(Sequence{record.seq}));
 
     g.coverage_index().SetRawCoverage(e, cov);
     g.coverage_index().SetRawCoverage(g.conjugate(e), cov);
@@ -95,13 +94,12 @@ static void HandleSegment(const gfa::segment &record,
         DEBUG("Map ids: " << ce.int_id() << ":" << name << "'");
         mapper.map(name + '\'', ce.int_id());
     }
-    std::vector<DeBruijnDataMaster::LinkPtr> empty_links;
+    std::vector<LinkId> empty_links;
     VertexId v1 = helper.CreateVertex(DeBruijnVertexData(empty_links));
     helper.LinkIncomingEdge(v1, e);
 
     if (e != ce) {
-        auto next_storage = new DeBruijnDataMaster::OverlapStorage(empty_links);
-        VertexId v2 = helper.CreateVertex(DeBruijnVertexData(next_storage));
+        VertexId v2 = helper.CreateVertex(DeBruijnVertexData(empty_links));
         helper.LinkIncomingEdge(v2, ce);
     }
 }
@@ -140,36 +138,47 @@ static void HandlePath(std::vector<GFAReader::GFAPath> &paths,
 }
 
 static unsigned ProcessLinks(DeBruijnGraph &g, const Links &links) {
-    auto helper = g.GetConstructionHelper();
-    unsigned k = -1U;
-
+    // First, determine if all overlaps are simple and same (de Bruijn graph, etc.)
+    unsigned k = -1U; bool simple = true;
     for (const auto &link: links) {
-        EdgeId e1 = std::get<0>(link), e2 = std::get<1>(link);
-
         const auto &overlap = std::get<2>(link);
         unsigned ovl = -1U;
-        if (overlap.size() > 1 ||
-            (overlap.size() == 1 && overlap.front().op != 'M')) {
-            ovl = std::accumulate(overlap.begin(), overlap.end(), 0,
-                                  [](size_t sum, const auto &cigar) {
-                                      return sum + cigar.count;
-                                  });
-        } else if (overlap.size() == 1) {
+        if (overlap.size() == 1 && overlap.front().op == 'M') {
             ovl = overlap.front().count;
+        } else {
+            k = 0; simple = false;
+            break;
         }
 
         if (k == -1U)
             k = ovl;
-        else if (k && k != ovl)
-            k = 0;
+        else if (k && k != ovl) {
+            k = 0; simple = false;
+            break;
+        }
+    }
 
+    auto helper = g.GetConstructionHelper();
+    for (const auto &link: links) {
+        EdgeId e1 = std::get<0>(link), e2 = std::get<1>(link);
+        const auto &overlap = std::get<2>(link);
+
+        unsigned ovl = std::accumulate(overlap.begin(), overlap.end(), 0,
+                                       [](size_t sum, const auto &cigar) {
+                                           return sum + cigar.count;
+                                       });
         VertexId v1 = g.EdgeEnd(e1);
         VertexId v2 = g.EdgeStart(e2);
-        std::pair<EdgeId, EdgeId> edge_pair(e1, e2);
-        auto current_link = std::make_shared<Link>(edge_pair, ovl);
-        g.add_link(current_link);
-        g.data(v1).add_link(current_link);
-        g.data(v1).add_links(g.data(v2).move_links());
+        if (simple) {
+            g.set_overlap(v1, ovl);
+            g.set_overlap(v2, ovl);
+        } else {
+            LinkId link_idx = g.add_link(e1, e2, ovl);
+            g.add_link(v1, link_idx);
+            g.add_links(v1, g.links(v2));
+            g.clear_links(v2);
+        }
+
         helper.LinkEdges(e1, e2);
     }
 

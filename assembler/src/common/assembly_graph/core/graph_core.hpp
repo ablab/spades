@@ -128,8 +128,8 @@ private:
     EdgeId conjugate_;
     EdgeData data_;
 
-    PairedEdge(VertexId end, const EdgeData &data)
-            : end_(end), data_(data) {}
+    PairedEdge(VertexId end, EdgeData data)
+            : end_(end), data_(std::move(data)) {}
 
     PairedEdge(PairedEdge &&that) = default;
 
@@ -181,8 +181,8 @@ private:
         return edge_const_iterator(outgoing_edges_.cend(), graph, conjugate);
     }
 
-    PairedVertex(const VertexData &data)
-            : data_(data) {}
+    PairedVertex(VertexData data)
+            : data_(std::move(data)) {}
 
     PairedVertex(PairedVertex &&that) = default;
 
@@ -231,15 +231,18 @@ private:
     class IdStorage {
       private:
         void resize(size_t N) {
+            // INFO("resize to " << N);
             VERIFY(N > storage_size_);
             T *new_storage = (T*)malloc(N * sizeof(T));
+            // Note: we cannot iterate over id's here as resize() could
+            // be called during create() and therefore we might end with
+            // uninitialized newly created id as well.
             for (uint64_t id = bias_; id < storage_size_; ++id) {
                 if (!id_distributor_.occupied(id))
                     continue;
 
                 T *val = &storage_[id];
                 ::new(new_storage + id) T(std::move(*val));
-                val->~T();
             }
 
             if (storage_)
@@ -258,8 +261,16 @@ private:
         }
 
         ~IdStorage() {
-            if (storage_)
+            if (storage_) {
+                for (uint64_t id : id_distributor_.ids()) {
+                    // INFO("~Remove " << id << ":" << typeid(T).name());
+
+                    T *val = &storage_[id];
+                    val->~T();
+                }
+
                 free(storage_);
+            }
         }
 
         id_iterator id_begin() const { return id_distributor_.begin(); }
@@ -291,7 +302,7 @@ private:
             new(storage_ + id) T(std::forward<ArgTypes>(args)...);;
             size_ += 1;
 
-            // INFO("Create " << id);
+            // INFO("Create " << id << ":" << typeid(T).name());
             return id;
         }
 
@@ -304,14 +315,14 @@ private:
             new(storage_ + at) T(std::forward<ArgTypes>(args)...);;
             size_.fetch_add(1);
 
-            // INFO("Emplace " << at);
+            // INFO("Emplace " << at << ":" << typeid(T).name());
             return at;
         }
 
         void erase(uint64_t id) {
             T *v = &storage_[id];
 
-            // INFO("Remove " << id);
+            // INFO("Remove " << id << ":" << typeid(T).name());
             v->~T();
 
             id_distributor_.release(id);
@@ -354,7 +365,7 @@ private:
 
     struct EdgePredicate {
         typedef EdgeId operand_type;
-        
+
         EdgePredicate(const GraphCore<DataMaster> &graph)
                 : graph_(graph) {}
 
@@ -384,7 +395,7 @@ private:
 
     struct VertexPredicate {
         typedef VertexId operand_type;
-        
+
         VertexPredicate(const GraphCore<DataMaster> &graph)
                 : graph_(graph) {}
 
@@ -411,7 +422,7 @@ private:
             return e <= g.conjugate(e);
         }
     };
-    
+
     template<class Predicate1, class Predicate2>
     struct And {
         And(Predicate1 p1, Predicate2 p2)
@@ -495,7 +506,7 @@ public:
     auto canonical_vertices() const {
         return vertices<true>();
     }
-    
+
     template<class Predicate, bool Canonical = false>
     auto e_begin(Predicate p) const {
         using BasePredicate = typename std::conditional<Canonical, CanonicalEdges, AllEdges>::type;
@@ -553,17 +564,18 @@ public:
     void clear_state() { estorage_.clear_state(); vstorage_.clear_state(); }
 
 private:
-    VertexId CreateVertex(const VertexData &data, VertexId id1 = 0, VertexId id2 = 0) {
-        return CreateVertex(data, master_.conjugate(data), id1, id2);
+    VertexId CreateVertex(VertexData data, VertexId id1 = 0, VertexId id2 = 0) {
+        auto cdata = master_.conjugate(data);
+        return CreateVertex(std::move(data), std::move(cdata), id1, id2);
     }
 
-    VertexId CreateVertex(const VertexData& data1, const VertexData& data2,
+    VertexId CreateVertex(VertexData data1, VertexData data2,
                           VertexId id1 = 0, VertexId id2 = 0) {
         if (id1 && !id2)
             id2 = id1.int_id() + 1;
 
-        VertexId vid1 = (id1 ? vstorage_.emplace(id1.int_id(), data1) : vstorage_.create(data1));
-        VertexId vid2 = (id2 ? vstorage_.emplace(id2.int_id(), data2) : vstorage_.create(data2));
+        VertexId vid1 = (id1 ? vstorage_.emplace(id1.int_id(), std::move(data1)) : vstorage_.create(std::move(data1)));
+        VertexId vid2 = (id2 ? vstorage_.emplace(id2.int_id(), std::move(data2)) : vstorage_.create(std::move(data2)));
 
         vertex(vid1).set_conjugate(vid2);
         vertex(vid2).set_conjugate(vid1);
@@ -578,10 +590,10 @@ private:
     }
 
     EdgeId AddSingleEdge(VertexId v1, VertexId v2,
-                         const EdgeData &data, EdgeId id = 0) {
+                         EdgeData data, EdgeId id = 0) {
         EdgeId eid = (id ?
-                      estorage_.emplace(id.int_id(), v2, data) :
-                      estorage_.create(v2, data));
+                      estorage_.emplace(id.int_id(), v2, std::move(data)) :
+                      estorage_.create(v2, std::move(data)));
         if (v1.int_id())
             vertex(v1).AddOutgoingEdge(eid);
         return eid;
@@ -599,37 +611,39 @@ private:
     }
 
 protected:
-    VertexId HiddenAddVertex(const VertexData& data, VertexId at1 = 0, VertexId at2 = 0) {
-        return CreateVertex(data, at1, at2);
+    VertexId HiddenAddVertex(VertexData data, VertexId at1 = 0, VertexId at2 = 0) {
+        return CreateVertex(std::move(data), at1, at2);
     }
 
     void HiddenDeleteVertex(VertexId vertex) {
         DestroyVertex(vertex);
     }
 
-    EdgeId HiddenAddEdge(const EdgeData& data,
+    EdgeId HiddenAddEdge(EdgeData data,
                          EdgeId at1 = 0, EdgeId at2 = 0) {
-        EdgeId result = AddSingleEdge(VertexId(), VertexId(), data, at1);
         if (this->master().isSelfConjugate(data)) {
+            EdgeId result = AddSingleEdge(VertexId(), VertexId(), std::move(data), at1);
             edge(result).set_conjugate(result);
             return result;
         }
 
+        EdgeData cdata = this->master().conjugate(data);
+        EdgeId result = AddSingleEdge(VertexId(), VertexId(), std::move(data), at1);
+
         if (at1 && !at2)
             at2 = at1.int_id() + 1;
-        EdgeId rcEdge = AddSingleEdge(VertexId(), VertexId(), this->master().conjugate(data),
-                                      at2);
+        EdgeId rcEdge = AddSingleEdge(VertexId(), VertexId(), std::move(cdata), at2);
         edge(result).set_conjugate(rcEdge);
         edge(rcEdge).set_conjugate(result);
         return result;
     }
 
-    EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData& data,
+    EdgeId HiddenAddEdge(VertexId v1, VertexId v2, EdgeData data,
                          EdgeId at1 = 0, EdgeId at2 = 0) {
         //      todo was suppressed for concurrent execution reasons (see concurrent_graph_component.hpp)
         //      VERIFY(this->vertices_.find(v1) != this->vertices_.end() && this->vertices_.find(v2) != this->vertices_.end());
-        EdgeId result = AddSingleEdge(v1, v2, data, at1);
         if (this->master().isSelfConjugate(data) && (v1 == conjugate(v2))) {
+            EdgeId result = AddSingleEdge(v1, v2, std::move(data), at1);
             //              todo why was it removed???
             //          Because of some split issues: when self-conjugate edge is split armageddon happends
             //          VERIFY(v1 == conjugate(v2));
@@ -640,8 +654,12 @@ protected:
 
         if (at1 && !at2)
             at2 = at1.int_id() + 1;
+
+        EdgeData cdata = this->master().conjugate(data);
+        EdgeId result = AddSingleEdge(v1, v2, std::move(data), at1);
+
         EdgeId rcEdge = AddSingleEdge(vertex(v2).conjugate(), vertex(v1).conjugate(),
-                                      this->master().conjugate(data), at2);
+                                      std::move(cdata), at2);
         edge(result).set_conjugate(rcEdge);
         edge(rcEdge).set_conjugate(result);
         return result;
