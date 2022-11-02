@@ -36,10 +36,10 @@ check_whether_OPTARG_is_an_integer() {
 }
 
 # return the argument first character
-str_head() { echo "$(expr substr "$1" 1 1)"; }
+str_head() { echo "${1::1}"; }
 
 # return the argument without the first character
-str_tail() { echo "$(expr substr "$1" 2 $((${#1}-1)))"; }
+str_tail() { echo "${1:1}"; }
 
 print_help() {
   echo
