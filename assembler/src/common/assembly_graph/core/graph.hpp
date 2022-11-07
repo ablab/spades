@@ -108,6 +108,10 @@ public:
         return link_storage_[idx];
     }
 
+    bool is_complex(VertexId v) const {
+        return data(v).has_complex_overlap();
+    }
+
     auto link_begin() { return link_storage_.begin(); }
     auto link_end() { return link_storage_.end(); }
     auto link_begin() const { return link_storage_.begin(); }

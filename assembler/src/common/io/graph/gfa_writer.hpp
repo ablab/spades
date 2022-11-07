@@ -27,6 +27,7 @@ namespace gfa {
 class GFAWriter {
   protected:
     typedef debruijn_graph::DeBruijnGraph Graph;
+    typedef debruijn_graph::VertexId VertexId;
     typedef omnigraph::GraphComponent<Graph> Component;
 
 public:
@@ -49,6 +50,9 @@ public:
 
     void WriteSegments(const Component &gc);
     void WriteLinks(const Component &gc);
+
+    void WriteVertexLinks(const VertexId &vertex);
+    void WriteVertexLinks(const VertexId &vertex, const Component &gc);
 
   protected:
     const Graph &graph_;

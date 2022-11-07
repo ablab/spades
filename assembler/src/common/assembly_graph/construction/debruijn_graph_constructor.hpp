@@ -547,7 +547,7 @@ public:
         for (size_t vertex_num = 0; vertex_num < size; ++vertex_num) {
             size_t i = unique_record_indices[vertex_num];
 
-            VertexId v = helper.CreateVertex(DeBruijnVertexData(), min_id + (vertex_num << 1));
+            VertexId v = helper.CreateVertex(DeBruijnVertexData(graph.k()), min_id + (vertex_num << 1));
             for (size_t j = i; j < records.size() && records[j].GetHash() == records[i].GetHash(); j++) {
                 LinkEdge(helper, graph, v, records[j].GetEdge(), records[j].IsStart(), records[j].IsRC());
             }

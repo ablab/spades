@@ -41,14 +41,8 @@ void GFAWriter::WriteSegments() {
 }
 
 void GFAWriter::WriteLinks() {
-    for (VertexId v : graph_.canonical_vertices()) {
-        for (auto inc_edge : graph_.IncomingEdges(v)) {
-            for (auto out_edge : graph_.OutgoingEdges(v)) {
-                WriteLink(inc_edge, out_edge, graph_.length(v),
-                          os_, edge_namer_);
-            }
-        }
-    }
+    for (VertexId v : graph_.canonical_vertices())
+        WriteVertexLinks(v);
 }
 
 
@@ -64,25 +58,53 @@ void GFAWriter::WriteSegments(const Component &gc) {
 
 void GFAWriter::WriteLinks(const Component &gc) {
     for (VertexId v : gc.vertices()) {
-        if (v <= graph_.conjugate(v)) {
-            for (auto inc_edge : graph_.IncomingEdges(v)) {
-                if (!gc.contains(inc_edge))
-                    continue;
-
-                for (auto out_edge : graph_.OutgoingEdges(v)) {
-                    if (!gc.contains(out_edge))
-                        continue;
-
-                    WriteLink(inc_edge, out_edge, graph_.k(),
-                              os_, edge_namer_);
-                }
-            }
-        }
+        if (v <= graph_.conjugate(v))
+            WriteVertexLinks(v, gc);
     }
 }
 
 void GFAWriter::WriteSegmentsAndLinks(const Component &gc) {
     WriteSegments(gc);
     WriteLinks(gc);
+}
+
+void GFAWriter::WriteVertexLinks(const VertexId &vertex) {
+    if (graph_.is_complex(vertex)) {
+        for (const LinkId &link_id: graph_.links(vertex)) {
+            const auto &link = graph_.link(link_id);
+            WriteLink(link.link.first, link.link.second, link.overlap, os_, edge_namer_);
+        }
+    } else {
+        for (auto inc_edge: graph_.IncomingEdges(vertex)) {
+            for (auto out_edge: graph_.OutgoingEdges(vertex)) {
+                WriteLink(inc_edge, out_edge, graph_.length(vertex),
+                          os_, edge_namer_);
+            }
+        }
+    }
+}
+
+void GFAWriter::WriteVertexLinks(const VertexId &vertex, const Component &gc) {
+    if (graph_.is_complex(vertex)) {
+        for (const LinkId &link_id: graph_.links(vertex)) {
+            const auto &link = graph_.link(link_id);
+
+            if (gc.contains(link.link.first) && gc.contains(link.link.second))
+                WriteLink(link.link.first, link.link.second, link.overlap, os_, edge_namer_);
+        }
+    } else {
+        for (EdgeId inc_edge: graph_.IncomingEdges(vertex)) {
+            if (!gc.contains(inc_edge))
+                continue;
+        
+            for (EdgeId out_edge: graph_.OutgoingEdges(vertex)) {
+                if (!gc.contains(out_edge))
+                    continue;
+            
+                WriteLink(inc_edge, out_edge, graph_.length(vertex),
+                          os_, edge_namer_);
+            }
+        }
+    }
 }
 
