@@ -12,6 +12,9 @@
 #include <string>
 #include <vector>
 
+#include "utils/logger/logger.hpp"
+#include "utils/logger/log_writers.hpp"
+
 #include "nucl.hpp"
 #include "sequence.hpp"
 #include "levenshtein.hpp"
@@ -38,9 +41,17 @@ inline Sequence MergeOverlappingSequences(const std::vector<Sequence>& ss,
     if (ss.empty()) {
         return Sequence();
     }
-    VERIFY(ss.size() >= 2);
+    VERIFY(overlaps.size() + 1 == ss.size());
+    INFO(ss[0]);
+    for (size_t i = 1; i + 1 < ss.size(); ++i) {
+        DEBUG(overlaps[i - 1]);
+        DEBUG(ss[i]);
+    }
     SequenceBuilder sb;
     sb.append(ss.front());
+    if (ss.size() == 1) {
+        return sb.BuildSequence();
+    }
     Sequence prev_end = ss.front().Subseq(ss.front().size() - overlaps.front());
     for (size_t i = 1; i + 1 < ss.size(); ++i) {
         if (safe_merging) {
