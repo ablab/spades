@@ -42,11 +42,6 @@ inline Sequence MergeOverlappingSequences(const std::vector<Sequence>& ss,
         return Sequence();
     }
     VERIFY(overlaps.size() + 1 == ss.size());
-    INFO(ss[0]);
-    for (size_t i = 1; i + 1 < ss.size(); ++i) {
-        DEBUG(overlaps[i - 1]);
-        DEBUG(ss[i]);
-    }
     SequenceBuilder sb;
     sb.append(ss.front());
     if (ss.size() == 1) {
