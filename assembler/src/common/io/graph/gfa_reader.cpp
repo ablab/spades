@@ -242,6 +242,13 @@ unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
 
     free(line);
 
+    // INFO("Filtering dangling vertices");
+    for (VertexId v : g.vertices()) {
+        if (g.OutgoingEdgeCount(v) > 0 || g.IncomingEdgeCount(v) > 0)
+            continue;
+        g.DeleteVertex(v);
+    }
+
     if (k != -1U)
         helper.master().set_k(k);
 
