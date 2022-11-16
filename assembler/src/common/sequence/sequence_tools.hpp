@@ -12,9 +12,6 @@
 #include <string>
 #include <vector>
 
-#include "utils/logger/logger.hpp"
-#include "utils/logger/log_writers.hpp"
-
 #include "nucl.hpp"
 #include "sequence.hpp"
 #include "levenshtein.hpp"

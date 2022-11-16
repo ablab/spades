@@ -97,8 +97,20 @@ public:
 
     void LinkEdges(EdgeId e1, EdgeId e2) {
         VertexId v = graph_.EdgeEnd(e1), w = graph_.EdgeStart(e2);
-        DeleteLink(w, e2);
-        LinkOutgoingEdge(v, e2);
+        std::vector<EdgeId> in_edges;
+        std::vector<EdgeId> out_edges;
+        auto in_edges_it = graph_.IncomingEdges(w);
+        auto out_edges_it = graph_.OutgoingEdges(w);
+        std::copy(in_edges_it.begin(), in_edges_it.end(), std::back_inserter(in_edges));
+        std::copy(out_edges_it.begin(), out_edges_it.end(), std::back_inserter(out_edges));
+        for (auto in_edge: in_edges) {
+            DeleteLink(graph_.conjugate(w), graph_.conjugate(in_edge));
+            LinkOutgoingEdge(graph_.conjugate(v), graph_.conjugate(in_edge));
+        }
+        for (auto out_edge: out_edges) {
+            DeleteLink(w, out_edge);
+            LinkOutgoingEdge(v, out_edge);
+        }
     }
 
     void DeleteLink(VertexId v, EdgeId e) {
