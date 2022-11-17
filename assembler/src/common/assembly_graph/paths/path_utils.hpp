@@ -119,7 +119,8 @@ namespace debruijn_graph {
             auto end = g.EdgeEnd(continuous_path[i - 1]);
             auto start = g.EdgeStart(continuous_path[i]);
             VERIFY(start == end);
-            overlaps.push_back(g.data(start).overlap());
+            uint32_t overlap = g.link_length(start, continuous_path[i - 1], continuous_path[i]);
+            overlaps.push_back(overlap);
             path_sequences.push_back(g.EdgeNucls(continuous_path[i]));
         }
         return MergeOverlappingSequences(path_sequences, overlaps, /*no need to check again*/false);

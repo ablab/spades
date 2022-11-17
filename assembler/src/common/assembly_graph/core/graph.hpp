@@ -112,6 +112,20 @@ public:
         return data(v).has_complex_overlap();
     }
 
+    size_t link_length(VertexId v, EdgeId in, EdgeId out) const {
+        //todo optimize
+        if (not is_complex(v)) {
+            return data(v).overlap();
+        }
+        for (const LinkId &link_id: links(v)) {
+            const Link &link = this->link(link_id);
+            if (link.link.first == in and link.link.second == out) {
+                return link.overlap;
+            }
+        }
+        VERIFY_MSG(false, "Link " << in.int_id() << " -> " << out.int_id() << " was not found for vertex " << v.int_id());
+    }
+
     auto link_begin() { return link_storage_.begin(); }
     auto link_end() { return link_storage_.end(); }
     auto link_begin() const { return link_storage_.begin(); }
