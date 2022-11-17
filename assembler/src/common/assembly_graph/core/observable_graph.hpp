@@ -148,7 +148,9 @@ public:
 
     std::vector<EdgeId> CorrectMergePath(const std::vector<EdgeId>& path) const;
 
-    EdgeId MergePath(const std::vector<EdgeId> &path, bool safe_merging = true);
+    EdgeId MergePath(const std::vector<EdgeId> &path,
+                     bool safe_merging = true,
+                     std::vector<uint32_t> overlaps = std::vector<uint32_t>());
 
     std::pair<EdgeId, EdgeId> SplitEdge(EdgeId edge, size_t position);
 
@@ -442,7 +444,9 @@ ObservableGraph<DataMaster>::CorrectMergePath(const std::vector<EdgeId>& path) c
 
 template<class DataMaster>
 typename ObservableGraph<DataMaster>::EdgeId
-        ObservableGraph<DataMaster>::MergePath(const std::vector<EdgeId>& path, bool safe_merging) {
+        ObservableGraph<DataMaster>::MergePath(const std::vector<EdgeId> &path,
+                                               bool safe_merging,
+                                               std::vector<uint32_t> overlaps) {
     VERIFY(!path.empty());
     for (size_t i = 0; i < path.size(); i++)
         for (size_t j = i + 1; j < path.size(); j++) {
@@ -458,13 +462,15 @@ typename ObservableGraph<DataMaster>::EdgeId
     VertexId v1 = base::EdgeStart(corrected_path[0]);
     VertexId v2 = base::EdgeEnd(corrected_path[corrected_path.size() - 1]);
     std::vector<const EdgeData *> to_merge;
-    std::vector<uint32_t> overlaps;
-    for (auto it1 = corrected_path.begin(), it2 = std::next(it1); it2 != corrected_path.end(); ++it1, ++it2) {
-        to_merge.push_back(&(base::data(*it1)));
-        VertexId end = base::EdgeEnd(*it1);
-        VERIFY(end == base::EdgeStart(*it2));
-        uint32_t overlap = base::data(end).overlap();
-        overlaps.push_back(overlap);
+    std::vector<uint32_t> local_overlaps;
+    if (overlaps.empty()) {
+        for (auto it1 = corrected_path.begin(), it2 = std::next(it1); it2 != corrected_path.end(); ++it1, ++it2) {
+            to_merge.push_back(&(base::data(*it1)));
+            VertexId end = base::EdgeEnd(*it1);
+            VERIFY(end == base::EdgeStart(*it2));
+            uint32_t overlap = base::data(end).overlap();
+            overlaps.push_back(overlap);
+        }
     }
     to_merge.push_back(&(base::data(corrected_path.back())));
     EdgeId new_edge = base::HiddenAddEdge(v1, v2, base::master().MergeData(to_merge, overlaps, safe_merging));
