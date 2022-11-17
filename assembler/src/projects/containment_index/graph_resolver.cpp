@@ -18,16 +18,20 @@ GraphResolver::GraphResolverInfo::VertexMap GraphResolver::SplitVertices(debruij
     for (const auto &vertex_entry: vertex_results.vertex_to_result) {
         const VertexId &vertex = vertex_entry.first;
         DEBUG("Conjugate: " << graph.conjugate(vertex).int_id());
-        uint32_t overlap = graph.data(vertex).overlap();
         const auto &vertex_result = vertex_entry.second;
+
         if (vertex_result.state == VertexState::Completely) {
+            auto in_to_correct_link = GetLinkMap(graph, vertex, vertex_result);
+            VERIFY_DEV(in_to_correct_link.size() == vertex_entry.second.supported_pairs.size());
             for (const auto &entry: vertex_result.supported_pairs) {
                 EdgeId in_edge = entry.first;
                 EdgeId out_edge = entry.second;
+                LinkId link = in_to_correct_link.at(in_edge);
                 DEBUG("In edge: " << in_edge.int_id() << ", out edge: " << out_edge.int_id() << ", vertex: " << vertex.int_id());
                 helper.DeleteLink(vertex, out_edge);
                 helper.DeleteLink(graph.conjugate(vertex), graph.conjugate(in_edge));
-                VertexId new_vertex = helper.CreateVertex(debruijn_graph::DeBruijnVertexData(overlap));
+                std::vector<LinkId> links {link};
+                VertexId new_vertex = helper.CreateVertex(debruijn_graph::DeBruijnVertexData(links));
                 transformed_vertex_to_original[new_vertex] = vertex;
                 helper.LinkIncomingEdge(new_vertex, in_edge);
                 helper.LinkOutgoingEdge(new_vertex, out_edge);
@@ -64,5 +68,26 @@ GraphResolver::GraphResolverInfo GraphResolver::TransformGraph(debruijn_graph::G
     auto edge_map = MergePaths(graph, paths);
     GraphResolverInfo result(vertex_map, edge_map);
     return result;
+}
+GraphResolver::LinkMap GraphResolver::GetLinkMap(const debruijn_graph::Graph &graph,
+                                                 const GraphResolver::VertexId &vertex,
+                                                 const VertexResult &vertex_result) const {
+    std::unordered_map<EdgeId, EdgeId> in_to_out;
+    std::unordered_map<EdgeId, LinkId> in_to_correct_link;
+    for (const auto &entry: vertex_result.supported_pairs) {
+        EdgeId in_edge = entry.first;
+        EdgeId out_edge = entry.second;
+        VERIFY_DEV(in_to_out.find(in_edge) == in_to_out.end());
+        in_to_out[in_edge] = out_edge;
+    }
+    for (const LinkId &link_id: graph.links(vertex)) {
+        const auto &link = graph.link(link_id);
+        auto in_result = in_to_out.find(link.link.first);
+        VERIFY(in_result != in_to_out.end());
+        if (in_result->second == link.link.second) {
+            in_to_correct_link.insert({link.link.first, link_id});
+        }
+    }
+    return in_to_correct_link;
 }
 }
