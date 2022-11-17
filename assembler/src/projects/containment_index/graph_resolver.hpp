@@ -16,6 +16,8 @@ class GraphResolver {
   public:
     using EdgeId = debruijn_graph::EdgeId;
     using VertexId = debruijn_graph::VertexId;
+    using LinkId = debruijn_graph::LinkId;
+    using LinkMap = std::unordered_map<EdgeId, LinkId>;
 
     struct GraphResolverInfo {
       public:
@@ -36,5 +38,8 @@ class GraphResolver {
     GraphResolverInfo::VertexMap SplitVertices(debruijn_graph::Graph &graph,
                                                const VertexResults &vertex_results) const;
     GraphResolverInfo::EdgeMap MergePaths(debruijn_graph::Graph &graph, const path_extend::PathContainer &paths) const;
+    LinkMap GetLinkMap(const debruijn_graph::Graph &graph,
+                       const VertexId &vertex,
+                       const VertexResult &vertex_result) const;
 };
 }
