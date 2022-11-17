@@ -175,8 +175,10 @@ static unsigned ProcessLinks(DeBruijnGraph &g, const Links &links) {
         } else {
             LinkId link_idx = g.add_link(e1, e2, ovl);
             g.add_link(v1, link_idx);
-            g.add_links(v1, g.links(v2));
-            g.clear_links(v2);
+            if (v1 != v2) {
+                g.add_links(v1, g.links(v2));
+                g.clear_links(v2);
+            }
         }
 
         helper.LinkEdges(e1, e2);
