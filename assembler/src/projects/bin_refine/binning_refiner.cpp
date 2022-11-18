@@ -360,7 +360,7 @@ int main(int argc, char** argv) {
           auto dist = binning.BinDistance(soft_edge_labels);
           size_t nbins = binning.bins().size();
 
-          std::ofstream out_dist(cfg.prefix / ".bin_dist.tsv");
+          std::ofstream out_dist(cfg.prefix / "bin_dist.tsv");
           for (size_t i = 0; i < nbins; ++i)
               out_dist << '\t' << binning.bin_labels().at(i);
           out_dist << std::endl;
