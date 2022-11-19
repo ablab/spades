@@ -454,7 +454,7 @@ typename ObservableGraph<DataMaster>::EdgeId
         }
     if (path.size() == 1) {
         TRACE(
-                "Path of single edge " << base::str(*(path.begin())) << ". Nothing to merge.");
+            "Path of single edge " << base::str(*(path.begin())) << ". Nothing to merge.");
     };
     //      cerr << "Merging " << PrintDetailedPath(pObservableGraph<DataMaster><VertexIdT, EdgeIdT, VertexIt>ath) << endl;
     //      cerr << "Conjugate " << PrintConjugatePath(path) << endl;
@@ -463,17 +463,19 @@ typename ObservableGraph<DataMaster>::EdgeId
     VertexId v2 = base::EdgeEnd(corrected_path[corrected_path.size() - 1]);
     std::vector<const EdgeData *> to_merge;
     std::vector<uint32_t> local_overlaps;
-    if (overlaps.empty()) {
-        for (auto it1 = corrected_path.begin(), it2 = std::next(it1); it2 != corrected_path.end(); ++it1, ++it2) {
-            to_merge.push_back(&(base::data(*it1)));
-            VertexId end = base::EdgeEnd(*it1);
-            VERIFY(end == base::EdgeStart(*it2));
-            uint32_t overlap = base::data(end).overlap();
-            overlaps.push_back(overlap);
-        }
+    for (auto it1 = corrected_path.begin(), it2 = std::next(it1); it2 != corrected_path.end(); ++it1, ++it2) {
+        to_merge.push_back(&(base::data(*it1)));
+        VertexId end = base::EdgeEnd(*it1);
+        VERIFY(end == base::EdgeStart(*it2));
+        uint32_t overlap = base::data(end).overlap();
+        local_overlaps.push_back(overlap);
+    }
+    if (not overlaps.empty()) {
+        local_overlaps = overlaps;
     }
     to_merge.push_back(&(base::data(corrected_path.back())));
-    EdgeId new_edge = base::HiddenAddEdge(v1, v2, base::master().MergeData(to_merge, overlaps, safe_merging));
+    EdgeId new_edge = base::HiddenAddEdge(v1, v2, base::master().MergeData(to_merge, local_overlaps, safe_merging));
+
     FireMerge(corrected_path, new_edge);
     auto edges_to_delete = EdgesToDelete(corrected_path);
     auto vertices_to_delete = VerticesToDelete(corrected_path);
