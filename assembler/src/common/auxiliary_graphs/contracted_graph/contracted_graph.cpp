@@ -33,6 +33,9 @@ bool AdjacencyMap::Contains(const VertexId &vertex, const AdjacencyMap::Scaffold
 bool AdjacencyMap::empty() const {
     return data_.empty();
 }
+size_t AdjacencyMap::size() const {
+    return data_.size();
+}
 
 void ContractedGraph::InsertVertex(const ContractedGraph::VertexId &vertex) {
     if (vertices_.insert(vertex).second) {
@@ -127,9 +130,10 @@ const debruijn_graph::Graph &ContractedGraph::GetAssemblyGraph() const {
 ContractedGraph::ScaffoldVertex ContractedGraph::conjugate(ContractedGraph::ScaffoldVertex edge) const {
     return edge.GetConjugateFromGraph(assembly_graph_);
 }
-std::string ContractedGraph::EdgeNucls(ContractedGraph::EdgeId edge) const {
-    return edge.GetSequence(assembly_graph_);
-}
+//std::string ContractedGraph::EdgeNucls(ContractedGraph::EdgeId edge) const {
+//    return edge.GetSequence(assembly_graph_);
+//}
+
 double ContractedGraph::coverage(ContractedGraph::EdgeId edge) const {
     return edge.GetCoverageFromGraph(assembly_graph_);
 }
@@ -138,9 +142,6 @@ size_t ContractedGraph::length(ContractedGraph::EdgeId edge) const {
 }
 size_t ContractedGraph::int_id(ContractedGraph::EdgeId edge) const {
     return edge.int_id();
-}
-std::string ContractedGraph::VertexNucls(VertexId vertex) const {
-    return assembly_graph_.VertexNucls(vertex).str();
 }
 adt::iterator_range<ContractedGraph::const_vertex_iterator> ContractedGraph::vertices() const {
     return adt::make_range(begin(), end());
@@ -179,8 +180,24 @@ ContractedGraph::const_edge_iterator ContractedGraph::out_edge_end(const VertexI
     }
     return const_edge_iterator(entry_end, empty_.end(), entry_end);
 }
-adt::iterator_range<ContractedGraph::const_edge_iterator> ContractedGraph::OutcomingEdges(const VertexId &vertex) const {
+adt::iterator_range<ContractedGraph::const_edge_iterator> ContractedGraph::OutgoingEdges(const VertexId &vertex) const {
     return adt::make_range(out_edge_begin(vertex), out_edge_end(vertex));
+}
+auto ContractedGraph::canonical_edges() const {
+    return assembly_graph_.canonical_edges();
+}
+ContractedGraph::VertexId ContractedGraph::conjugate(const ContractedGraph::VertexId &vertex) const {
+    return assembly_graph_.conjugate(vertex);
+}
+Sequence ContractedGraph::EdgeNucls(ContractedGraph::EdgeId edge) const {
+    VERIFY(edge.GetType() == scaffold_graph::ScaffoldVertexT::Edge);
+    assembly_graph_.EdgeNucls(edge.GetFirstEdge());
+}
+size_t ContractedGraph::IncomingEdgeCount(const ContractedGraph::VertexId &vertex) const {
+    return incoming_.at(vertex).size();
+}
+size_t ContractedGraph::OutgoingEdgeCount(const contracted_graph::ContractedGraph::VertexId &vertex) const {
+    return outcoming_.at(vertex).size();
 }
 
 }
