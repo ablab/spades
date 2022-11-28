@@ -25,6 +25,7 @@ class AdjacencyMap {
     void RemovePair(const VertexId &vertex, const ScaffoldVertex &edge);
     bool Contains(const VertexId &vertex, const ScaffoldVertex &edge);
     bool empty() const;
+    size_t size() const;
 
     const_iterator begin() const;
     const_iterator end() const;
@@ -105,9 +106,11 @@ class ContractedGraph {
     const_edge_iterator in_edge_begin(const VertexId &vertex) const;
     const_edge_iterator in_edge_end(const VertexId &vertex) const;
     adt::iterator_range<const_edge_iterator> IncomingEdges(const VertexId &vertex) const;
+    size_t IncomingEdgeCount(const VertexId &vertex) const;
     const_edge_iterator out_edge_begin(const VertexId &vertex) const;
     const_edge_iterator out_edge_end(const VertexId &vertex) const;
-    adt::iterator_range<const_edge_iterator> OutcomingEdges(const VertexId &vertex) const;
+    adt::iterator_range<const_edge_iterator> OutgoingEdges(const VertexId &vertex) const;
+    size_t OutgoingEdgeCount(const VertexId &vertex) const;
 
     const_vertex_iterator begin() const;
     const_vertex_iterator end() const;
@@ -115,14 +118,19 @@ class ContractedGraph {
     size_t size() const;
     size_t CountEdges() const;
 
+    //fixme also iterates over short edges
+    auto canonical_edges () const;
+
     const Graph &GetAssemblyGraph() const;
-    std::string EdgeNucls(EdgeId edge) const;
-    std::string VertexNucls(VertexId vertex) const;
+//    std::string EdgeNucls(EdgeId edge) const;
+//    std::string VertexNucls(VertexId vertex) const;
+    Sequence EdgeNucls(EdgeId edge) const;
     double coverage(EdgeId edge) const;
     size_t length(EdgeId edge) const;
     size_t int_id(EdgeId edge) const;
 
     ScaffoldVertex conjugate(ScaffoldVertex edge) const;
+    VertexId conjugate(const VertexId &vertex) const;
 
  protected:
     EdgeContainer outcoming_;
