@@ -17,6 +17,9 @@ void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
     size_t total_length = 0;
     size_t total_edges = 0;
     size_t total_overlap = 0;
+
+    //fixme replace with graph distance
+    int default_gap = 500;
     for (const debruijn_graph::EdgeId &edge: graph_.canonical_edges()) {
         total_length += graph_.length(edge);
         ++total_edges;
@@ -61,8 +64,12 @@ void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
                         INFO("Edge is visited!");
                         break;
                     }
-                    total_path_overlap += graph_.data(graph_.EdgeStart(next_edge)).overlap();
-                    path.PushBack(next_edge);
+                    if (graph_.EdgeStart(next_edge) == graph_.EdgeEnd(current_edge)) {
+                        total_path_overlap += graph_.data(graph_.EdgeStart(next_edge)).overlap();
+                        path.PushBack(next_edge);
+                    } else {
+                        path.PushBack(next_edge, path_extend::Gap(default_gap));
+                    }
                     visited.insert(next_edge);
                     visited.insert(graph_.conjugate(next_edge));
                     current_edge = next_edge;
