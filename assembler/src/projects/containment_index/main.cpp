@@ -16,6 +16,7 @@
 #include "vertex_info_getter.hpp"
 #include "vertex_resolver.hpp"
 
+#include "auxiliary_graphs/contracted_graph/contracted_graph_builder.hpp"
 #include "io/binary/read_cloud.hpp"
 #include "io/graph/gfa_writer.hpp"
 #include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/path_cluster_helper.hpp"
@@ -36,6 +37,11 @@ enum class GraphType {
     Multiplexed
 };
 
+enum class ResolutionMode {
+    Diploid,
+    Meta
+};
+
 struct gcfg {
   unsigned k = 55;
   unsigned mapping_k = 31;
@@ -47,6 +53,7 @@ struct gcfg {
   std::filesystem::path tmpdir = "saves";
   unsigned libindex = -1u;
   GraphType graph_type = GraphType::Multiplexed;
+  ResolutionMode mode = ResolutionMode::Diploid;
   bool bin_load = false;
   bool debug = false;
   bool statistics = false;
@@ -58,8 +65,10 @@ struct gcfg {
   //graph construction
   double graph_score_threshold = 2.0;
   size_t tail_threshold = 200000;
-  size_t length_threshold = 0;
   size_t count_threshold = 1;
+
+  //meta mode
+  size_t length_threshold = 2000;
 
   //path cluster extraction
   double relative_score_threshold = 10.0;
@@ -96,21 +105,23 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
         (with_prefix("-G",
                      option("lja").set(cfg.graph_type, GraphType::Multiplexed) |
                      option("blunt").set(cfg.graph_type, GraphType::Blunted)) % "assembly graph type"),
-
-        (option("--frame-size") & value("frame-size", cfg.frame_size)) % "Resolution of barcode index",
+        (with_prefix("-M",
+                     option("diploid").set(cfg.mode, ResolutionMode::Diploid) |
+                     option("meta").set(cfg.mode, ResolutionMode::Meta)) % "repeat resolution mode (diploid or meta"),
+         (option("--frame-size") & value("frame-size", cfg.frame_size)) % "Resolution of barcode index",
         (option("--linkage-distance") & value("read-linkage-distance", cfg.read_linkage_distance)) %
             "Reads are assigned to the same fragment based on linkage distance",
         (option("--score") & value("score", cfg.graph_score_threshold)) % "Score threshold for link index",
         (option("--tail-threshold") & value("tail-threshold", cfg.tail_threshold)) %
             "Barcodes are assigned to the first and last <tail_threshold> nucleotides of the edge",
-        (option("--length-threshold") & value("length-threshold", cfg.length_threshold))
-            % "Minimum scaffold graph edge length",
         (option("--count-threshold") & value("count-threshold", cfg.count_threshold))
             % "Minimum number of reads for barcode index",
         (option("--relative-score-threshold") & value("relative-score-threshold", cfg.relative_score_threshold))
             % "Relative score threshold for path cluster extraction",
         (option("--min-read-threshold") & value("min-read-threshold", cfg.min_read_threshold))
-            % "Minimum number of reads for path cluster extraction"
+            % "Minimum number of reads for path cluster extraction",
+        (option("--length-threshold") & value("length-threshold", cfg.length_threshold))
+            % "Minimum scaffold graph edge length (meta mode option)"
     );
 
     auto result = parse(argc, argv, cli);
@@ -164,6 +175,19 @@ void ReadGraph(const gcfg &cfg,
     }
 }
 
+size_t GetLengthThreshold(const gcfg &cfg) {
+    switch (cfg.mode) {
+        default:
+            FATAL_ERROR("Unknown repeat resolution mode");
+        case ResolutionMode::Diploid: {
+            return 0;
+        }
+        case ResolutionMode::Meta: {
+            return cfg.length_threshold;
+        }
+    }
+}
+
 void CountStatistics(const gcfg &cfg,
                      debruijn_graph::Graph &graph,
                      const barcode_index::FrameBarcodeIndex<Graph> &barcode_index,
@@ -185,18 +209,53 @@ void CountStatistics(const gcfg &cfg,
                                                             cfg.nthreads);
 }
 
+cont_index::VertexResults GetRepeatResolutionResults(const gcfg &cfg,
+                                                     debruijn_graph::Graph &graph,
+                                                     std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr,
+                                                     io::IdMapper<std::string> *id_mapper) {
+    size_t length_threshold = GetLengthThreshold(cfg);
+
+    //fixme separate output
+    std::filesystem::path vertex_output_path = cfg.output_dir / "vertex_stats.tsv";
+    bool unique_kmer_count = false;
+    switch (cfg.mode) {
+        default:
+            FATAL_ERROR("Unknown repeat resolution mode");
+        case ResolutionMode::Diploid: {
+            cont_index::VertexResolver<debruijn_graph::Graph> vertex_resolver
+                (graph, graph, barcode_extractor_ptr, cfg.count_threshold, cfg.tail_threshold, length_threshold, cfg.nthreads,
+                 cfg.graph_score_threshold);
+            auto results = vertex_resolver.ResolveVertices();
+            vertex_resolver.PrintVertexResults(results, vertex_output_path, cfg.tmpdir, unique_kmer_count, id_mapper);
+            return results;
+        }
+        case ResolutionMode::Meta: {
+            auto length_predicate = [&graph, length_threshold](const debruijn_graph::EdgeId &edge) {
+              return graph.length(edge) >= length_threshold;
+            };
+            contracted_graph::DBGContractedGraphFactory factory(graph, length_predicate);
+            factory.Construct();
+            INFO("Constructed graph");
+            auto contracted_graph = factory.GetGraph();
+            cont_index::VertexResolver<contracted_graph::ContractedGraph> vertex_resolver
+                (*contracted_graph, contracted_graph->GetAssemblyGraph(), barcode_extractor_ptr, cfg.count_threshold,
+                 cfg.tail_threshold, length_threshold, cfg.nthreads,
+                 cfg.graph_score_threshold);
+            auto results = vertex_resolver.ResolveVertices();
+            vertex_resolver.PrintVertexResults(results, vertex_output_path, cfg.tmpdir, unique_kmer_count, id_mapper);
+            return results;
+        }
+    }
+
+}
+
 void ResolveComplexVertices(const gcfg &cfg,
                             debruijn_graph::Graph &graph,
                             std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr,
                             io::IdMapper<std::string> *id_mapper,
                             path_extend::GFAPathWriter gfa_writer) {
-    cont_index::VertexResolver vertex_resolver
-        (graph, barcode_extractor_ptr, cfg.count_threshold, cfg.tail_threshold, cfg.length_threshold, cfg.nthreads,
-         cfg.graph_score_threshold);
-    const auto &vertex_results = vertex_resolver.ResolveVertices() ;
-    std::filesystem::path vertex_output_path = cfg.output_dir / "vertex_stats.tsv";
-    bool unique_kmer_count = false;
-    vertex_resolver.PrintVertexResults(vertex_results, vertex_output_path, cfg.tmpdir, unique_kmer_count, id_mapper);
+    auto vertex_results = GetRepeatResolutionResults(cfg, graph, barcode_extractor_ptr, id_mapper);
+
     cont_index::PathExtractor path_extractor(graph);
     path_extend::PathContainer paths;
     path_extractor.ExtractPaths(paths, vertex_results);
@@ -280,6 +339,8 @@ int main(int argc, char** argv) {
         } else {
             WARN("Only read cloud libraries with barcode tags are supported for links");
         }
+
+
 
         ResolveComplexVertices(cfg, graph, barcode_extractor_ptr, id_mapper.get(), gfa_writer);
 
