@@ -259,10 +259,12 @@ void ResolveComplexVertices(const gcfg &cfg,
     cont_index::PathExtractor path_extractor(graph);
     path_extend::PathContainer paths;
     path_extractor.ExtractPaths(paths, vertex_results);
+    INFO("Extracted paths")
 
     auto name_generator = std::make_shared<path_extend::DefaultContigNameGenerator>();
     path_extend::ContigWriter writer(graph, name_generator);
     std::vector<path_extend::PathsWriterT> path_writers;
+    INFO("Creating writers")
     path_writers.push_back([&](const path_extend::ScaffoldStorage &scaffold_storage) {
       auto fn = cfg.output_dir / ("contigs.fasta");
       INFO("Outputting contigs to " << fn);
@@ -274,10 +276,12 @@ void ResolveComplexVertices(const gcfg &cfg,
     });
     writer.OutputPaths(paths, path_writers);
 
-    cont_index::GraphResolver graph_resolver;
-    auto graph_resolver_info = graph_resolver.TransformGraph(graph, paths, vertex_results);
-    TransformedGraphIO graph_output(id_mapper);
-    graph_output.PrintGraph(graph, graph_resolver_info, cfg.output_dir);
+    if (cfg.mode == ResolutionMode::Diploid) {
+        cont_index::GraphResolver graph_resolver;
+        auto graph_resolver_info = graph_resolver.TransformGraph(graph, paths, vertex_results);
+        TransformedGraphIO graph_output(id_mapper);
+        graph_output.PrintGraph(graph, graph_resolver_info, cfg.output_dir);
+    }
 }
 
 int main(int argc, char** argv) {
@@ -339,8 +343,6 @@ int main(int argc, char** argv) {
         } else {
             WARN("Only read cloud libraries with barcode tags are supported for links");
         }
-
-
 
         ResolveComplexVertices(cfg, graph, barcode_extractor_ptr, id_mapper.get(), gfa_writer);
 

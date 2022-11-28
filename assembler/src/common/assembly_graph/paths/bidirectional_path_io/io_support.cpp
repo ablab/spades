@@ -112,8 +112,9 @@ std::string path_extend::ScaffoldSequenceMaker::MakeSequence(const Bidirectional
         answer.erase((gap.trash.previous <= answer.length()) ?
                             answer.length() - gap.trash.previous : 0);
 
+
         uint32_t overlap = g_.data(g_.EdgeStart(path[i])).overlap();
-        if (i > 0 and g_.is_complex(g_.EdgeStart(path[i]))) {
+        if (i > 0 and g_.is_complex(g_.EdgeStart(path[i])) and gap.gap == 0) {
             overlap = static_cast<uint32_t>(g_.link_length(g_.EdgeStart(path[i]), path[i - 1], path[i]));
         }
         int overlap_after_trim = gap.OverlapAfterTrim(overlap);
