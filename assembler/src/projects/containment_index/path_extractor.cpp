@@ -29,9 +29,20 @@ void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
     }
 
     size_t total_resolved_overlap = 0;
+    size_t not_graph_supported_links = 0;
     for (const auto &vertex_entry: vertex_results.vertex_to_result) {
         const auto &vertex_result = vertex_entry.second;
+        auto vertex = vertex_entry.first;
+        std::unordered_map<debruijn_graph::EdgeId, std::unordered_set<debruijn_graph::EdgeId>> vertex_link_storage;
+        for (const debruijn_graph::LinkId &link_id: graph_.links(vertex)) {
+            auto &link = graph_.link(link_id);
+            vertex_link_storage[link.link.first].insert(link.link.second);
+        }
         for (const auto &entry: vertex_result.supported_pairs) {
+            if (not IsGraphLink(entry.first, entry.second, vertex_link_storage)) {
+                ++not_graph_supported_links;
+                continue;
+            }
             if (vertex_result.state == VertexState::Completely) {
                 if (in_to_out.find(entry.first) == in_to_out.end()) {
                     total_resolved_overlap += graph_.data(vertex_entry.first).overlap();
@@ -91,6 +102,7 @@ void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
         total_path_size += path.first->Size();
         total_path_length += path.first->Length();
     }
+    INFO("Linked-read links not supported by graph: " << not_graph_supported_links);
     INFO("Total graph size: " << total_edges);
     INFO("Total graph length: " << total_length);
     INFO("Total graph overlap: " << total_overlap);
@@ -110,6 +122,19 @@ bool PathExtractor::IsConjugatePair(const PathExtractor::SimplePath &first,
         if (*it1 != graph_.conjugate(*it2)) {
             return false;
         }
+    }
+    return true;
+}
+bool PathExtractor::IsGraphLink(const debruijn_graph::EdgeId first,
+                                const debruijn_graph::EdgeId second,
+                                const PathExtractor::VertexLinkStorage &vertex_storage) const {
+    auto out_graph_links = vertex_storage.find(first);
+    if (out_graph_links != vertex_storage.end()) {
+        return false;
+    }
+    auto out_link_result = out_graph_links->second.find(second);
+    if (out_link_result == out_graph_links->second.end()) {
+        return false;
     }
     return true;
 }
