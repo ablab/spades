@@ -17,6 +17,7 @@ namespace cont_index {
 
 class PathExtractor {
     typedef std::vector<debruijn_graph::EdgeId> SimplePath;
+    typedef std::unordered_map<debruijn_graph::EdgeId, std::unordered_set<debruijn_graph::EdgeId>> VertexLinkStorage;
   public:
     PathExtractor(const debruijn_graph::Graph &graph) : graph_(graph) {}
 
@@ -26,6 +27,9 @@ class PathExtractor {
 //                    io::IdMapper<std::string> *id_mapper) const;
   private:
     bool IsConjugatePair(const SimplePath &first, const SimplePath &second) const;
+    bool IsGraphLink(const debruijn_graph::EdgeId first,
+                     const debruijn_graph::EdgeId second,
+                     const VertexLinkStorage &vertex_storage) const;
 
     const debruijn_graph::Graph &graph_;
 };
