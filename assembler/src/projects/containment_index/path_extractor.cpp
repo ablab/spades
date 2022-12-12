@@ -43,7 +43,7 @@ void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
                 ++not_graph_supported_links;
                 continue;
             }
-            if (vertex_result.state == VertexState::Completely) {
+            if (vertex_result.state == VertexState::Completely or vertex_result.state == VertexState::Partially) {
                 if (in_to_out.find(entry.first) == in_to_out.end()) {
                     total_resolved_overlap += graph_.data(vertex_entry.first).overlap();
                     in_to_out[entry.first] = entry.second;
