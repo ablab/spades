@@ -20,9 +20,11 @@ GraphResolver::GraphResolverInfo::VertexMap GraphResolver::SplitVertices(debruij
         DEBUG("Conjugate: " << graph.conjugate(vertex).int_id());
         const auto &vertex_result = vertex_entry.second;
 
-        if (vertex_result.state == VertexState::Completely) {
+        if (vertex_result.state == VertexState::Completely or vertex_result.state == VertexState::Partially) {
             auto in_to_correct_link = GetLinkMap(graph, vertex, vertex_result);
             VERIFY_DEV(in_to_correct_link.size() == vertex_entry.second.supported_pairs.size());
+            std::unordered_set<EdgeId> resolved_in_edges;
+            std::unordered_set<EdgeId> resolved_out_edges;
             for (const auto &entry: vertex_result.supported_pairs) {
                 EdgeId in_edge = entry.first;
                 EdgeId out_edge = entry.second;
@@ -35,8 +37,31 @@ GraphResolver::GraphResolverInfo::VertexMap GraphResolver::SplitVertices(debruij
                 transformed_vertex_to_original[new_vertex] = vertex;
                 helper.LinkIncomingEdge(new_vertex, in_edge);
                 helper.LinkOutgoingEdge(new_vertex, out_edge);
+                resolved_in_edges.insert(in_edge);
+                resolved_out_edges.insert(out_edge);
             }
-            graph.DeleteVertex(vertex_entry.first);
+            if (vertex_result.state == VertexState::Completely) {
+                graph.DeleteVertex(vertex);
+            } else {
+                auto links = graph.move_links(vertex);
+                std::vector<LinkId> new_links;
+                for (const auto &link_id: links) {
+                    auto link = graph.link(link_id);
+                    if (resolved_in_edges.find(link.link.first) == resolved_in_edges.end() and resolved_out_edges.find(link.link.second) == resolved_out_edges.end()) {
+                        new_links.push_back(link_id);
+                    }
+                }
+                VertexId new_vertex = helper.CreateVertex(debruijn_graph::DeBruijnVertexData(new_links));
+                for (const auto &in_edge: graph.IncomingEdges(vertex)) {
+                    helper.DeleteLink(graph.conjugate(vertex), graph.conjugate(in_edge));
+                    helper.LinkIncomingEdge(new_vertex, in_edge);
+                }
+                for (const auto &out_edge: graph.OutgoingEdges(vertex)) {
+                    helper.DeleteLink(vertex, out_edge);
+                    helper.LinkOutgoingEdge(new_vertex, out_edge);
+                }
+                graph.DeleteVertex(vertex);
+            }
         }
     }
     return transformed_vertex_to_original;
