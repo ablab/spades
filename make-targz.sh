@@ -1,5 +1,5 @@
 VERSION="$(cat assembler/VERSION)"
-TARGET_DIR=SPAdes-$VERSION
+TARGET_DIR=SpLitteR
 rm -rf $TARGET_DIR
 SRC_DIR=$TARGET_DIR/src
 mkdir -p $SRC_DIR
@@ -56,5 +56,5 @@ find . -name ".?*" | xargs rm -r
 
 cd ..
 
-tar -pczf SPAdes-$VERSION.tar.gz SPAdes-$VERSION
-rm -r SPAdes-$VERSION
+tar -pczf SpLitteR.tar.gz SpLitteR
+rm -r SpLitteR

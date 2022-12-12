@@ -88,7 +88,7 @@ public:
     }
 
     auto move_links(VertexId v) {
-        data(v).move_links();
+        return data(v).move_links();
     }
 
     auto clear_links(VertexId v) {
