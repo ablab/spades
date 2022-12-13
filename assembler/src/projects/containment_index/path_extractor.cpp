@@ -39,10 +39,10 @@ void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
             vertex_link_storage[link.link.first].insert(link.link.second);
         }
         for (const auto &entry: vertex_result.supported_pairs) {
-            if (not IsGraphLink(entry.first, entry.second, vertex_link_storage)) {
-                ++not_graph_supported_links;
-                continue;
-            }
+            //if (not IsGraphLink(entry.first, entry.second, vertex_link_storage)) {
+            //    ++not_graph_supported_links;
+            //    continue;
+            //}
             if (vertex_result.state == VertexState::Completely or vertex_result.state == VertexState::Partially) {
                 if (in_to_out.find(entry.first) == in_to_out.end()) {
                     total_resolved_overlap += graph_.data(vertex_entry.first).overlap();
