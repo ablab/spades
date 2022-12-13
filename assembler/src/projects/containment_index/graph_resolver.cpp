@@ -115,7 +115,9 @@ GraphResolver::LinkMap GraphResolver::GetLinkMap(const debruijn_graph::Graph &gr
     for (const LinkId &link_id: graph.links(vertex)) {
         const auto &link = graph.link(link_id);
         auto in_result = in_to_out.find(link.link.first);
-        VERIFY(in_result != in_to_out.end());
+        if (in_result == in_to_out.end()) {
+            continue;
+	}
         if (in_result->second == link.link.second) {
             in_to_correct_link.insert({link.link.first, link_id});
         }
