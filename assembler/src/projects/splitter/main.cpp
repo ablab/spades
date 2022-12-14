@@ -51,7 +51,7 @@ struct gcfg {
   unsigned nthreads = (omp_get_max_threads() / 2 + 1);
   std::filesystem::path file = "";
   std::filesystem::path tmpdir = "saves";
-  unsigned libindex = -1u;
+  unsigned libindex = 0;
   GraphType graph_type = GraphType::Multiplexed;
   ResolutionMode mode = ResolutionMode::Diploid;
   bool bin_load = false;
@@ -92,6 +92,7 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
 
     auto cli = (
         graph << value("graph (in binary or GFA)"),
+        file << value("SLR library description (in YAML)"),
         output_dir << value("path to output directory"),
         (option("--dataset") & value("yaml", file)) % "dataset description (in YAML)",
         (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
@@ -107,7 +108,7 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
                      option("blunt").set(cfg.graph_type, GraphType::Blunted)) % "assembly graph type (mDBG or blunted)"),
         (with_prefix("-M",
                      option("diploid").set(cfg.mode, ResolutionMode::Diploid) |
-                     option("meta").set(cfg.mode, ResolutionMode::Meta)) % "repeat resolution mode (diploid or meta"),
+                     option("meta").set(cfg.mode, ResolutionMode::Meta)) % "repeat resolution mode (diploid or meta)"),
          (option("--frame-size") & value("frame-size", cfg.frame_size)) % "Resolution of barcode index",
         (option("--linkage-distance") & value("read-linkage-distance", cfg.read_linkage_distance)) %
             "Reads are assigned to the same fragment based on linkage distance",
