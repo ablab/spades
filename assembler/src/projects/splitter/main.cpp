@@ -98,13 +98,13 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
         (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
         (option("--mapping-k") & integer("value", cfg.mapping_k)) % "k for read mapping",
         (option("--tmp-dir") & value("tmp", tmpdir)) % "scratch directory to use",
-        (option("--ref") & value("reference", refpath)) % "Reference path",
+        (option("--ref") & value("reference", refpath)) % "Reference path for repeat resolution evaluation (developer option)",
         (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
         (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)",
         (option("--statistics").set(cfg.statistics)) % "produce additional read cloud library statistics (developer option)",
         (with_prefix("-G",
-                     option("lja").set(cfg.graph_type, GraphType::Multiplexed) |
-                     option("blunt").set(cfg.graph_type, GraphType::Blunted)) % "assembly graph type"),
+                     option("mdbg").set(cfg.graph_type, GraphType::Multiplexed) |
+                     option("blunt").set(cfg.graph_type, GraphType::Blunted)) % "assembly graph type (mDBG or blunted)"),
         (with_prefix("-M",
                      option("diploid").set(cfg.mode, ResolutionMode::Diploid) |
                      option("meta").set(cfg.mode, ResolutionMode::Meta)) % "repeat resolution mode (diploid or meta"),
