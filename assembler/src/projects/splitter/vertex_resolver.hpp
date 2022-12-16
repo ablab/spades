@@ -76,6 +76,8 @@ class VertexResolver {
             //todo use predicate iterator
             if (graph_.OutgoingEdgeCount(vertex) >= 2 and graph_.IncomingEdgeCount(vertex) >= 2) {
                 interesting_vertices.insert(vertex);
+            } else {
+//                INFO("Indegree: " << graph_.IncomingEdgeCount(vertex) << ", outdegree: " << graph_.OutgoingEdgeCount(vertex));
             }
         }
         INFO(interesting_vertices.size() << " complex vertices");
