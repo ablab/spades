@@ -48,6 +48,7 @@ struct gcfg {
   std::filesystem::path graph;
   std::filesystem::path output_dir;
   std::filesystem::path refpath;
+  std::filesystem::path assembly_info;
   unsigned nthreads = (omp_get_max_threads() / 2 + 1);
   std::filesystem::path file = "";
   std::filesystem::path tmpdir = "saves";
@@ -89,6 +90,7 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
     std::string refpath;
     std::string file;
     std::string tmpdir;
+    std::string assembly_info;
 
     auto cli = (
         graph << value("graph (in binary or GFA)"),
@@ -100,6 +102,8 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
         (option("--mapping-k") & integer("value", cfg.mapping_k)) % "k for read mapping",
         (option("--tmp-dir") & value("tmp", tmpdir)) % "scratch directory to use",
         (option("--ref") & value("reference", refpath)) % "Reference path for repeat resolution evaluation (developer option)",
+        (option("--assembly-info") & value("assembly-info", assembly_info))
+            % "Path to metaflye assembly_info.txt file (meta mode, metaFlye graphs only)",
         (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
         (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)",
         (option("--statistics").set(cfg.statistics)) % "produce additional read cloud library statistics (developer option)",
@@ -135,6 +139,7 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
     cfg.refpath = refpath;
     cfg.file = file;
     cfg.tmpdir = tmpdir;
+    cfg.assembly_info = assembly_info;
 }
 
 struct TimeTracerRAII {
@@ -174,6 +179,49 @@ void ReadGraph(const gcfg &cfg,
             return;
         }
     }
+}
+
+std::unordered_set<debruijn_graph::EdgeId> ParseRepetitiveEdges(const debruijn_graph::Graph &graph,
+                                                                const std::string &path_to_info,
+                                                                io::IdMapper<std::string> *id_mapper) {
+    std::unordered_set<EdgeId> result;
+    size_t total_repetitive_length = 0;
+    std::ifstream info_stream(path_to_info);
+    std::string ctg_id;
+    std::string is_repeat;
+    std::string blank;
+    std::string graph_path;
+    for (size_t i = 0; i < 8; ++i) {
+        info_stream >> blank;
+    }
+    while (!info_stream.eof()) {
+        info_stream >> ctg_id;
+        info_stream >> blank;
+        info_stream >> blank;
+        info_stream >> blank;
+        info_stream >> is_repeat;
+        info_stream >> blank;
+        info_stream >> blank;
+        info_stream >> graph_path;
+//        INFO(graph_path);
+        if (is_repeat == "Y") {
+            auto current_pos = graph_path.find(',');
+            while (current_pos != std::string::npos) {
+                std::string edge_num = graph_path.substr(0, current_pos);
+                if (edge_num != "*") {
+                    EdgeId edge = (*id_mapper)["edge_" + edge_num];
+                    result.insert(edge);
+                    result.insert(graph.conjugate(edge));
+                    total_repetitive_length += graph.length(edge);
+                }
+                graph_path.erase(0, current_pos + 1);
+//                INFO(graph_path);
+                current_pos = graph_path.find(',');
+            }
+        }
+    }
+    INFO(result.size() << " repetitive edges, total length: " << total_repetitive_length);
+    return result;
 }
 
 size_t GetLengthThreshold(const gcfg &cfg) {
@@ -231,13 +279,19 @@ cont_index::VertexResults GetRepeatResolutionResults(const gcfg &cfg,
             return results;
         }
         case ResolutionMode::Meta: {
-            auto length_predicate = [&graph, length_threshold](const debruijn_graph::EdgeId &edge) {
-              return graph.length(edge) >= length_threshold;
+//            auto length_predicate = [&graph, length_threshold](const debruijn_graph::EdgeId &edge) {
+//              return graph.length(edge) >= length_threshold;
+//            };
+
+            auto repetitive_edges = ParseRepetitiveEdges(graph, cfg.assembly_info, id_mapper);
+            auto repeat_predicate = [&repetitive_edges](const debruijn_graph::EdgeId &edge) {
+                return repetitive_edges.find(edge) == repetitive_edges.end();
             };
-            contracted_graph::DBGContractedGraphFactory factory(graph, length_predicate);
+            contracted_graph::DBGContractedGraphFactory factory(graph, repeat_predicate);
             factory.Construct();
             INFO("Constructed graph");
             auto contracted_graph = factory.GetGraph();
+            INFO("Total contracted graph vertices: " << contracted_graph->size());
             cont_index::VertexResolver<contracted_graph::ContractedGraph> vertex_resolver
                 (*contracted_graph, contracted_graph->GetAssemblyGraph(), barcode_extractor_ptr, cfg.count_threshold,
                  cfg.tail_threshold, length_threshold, cfg.nthreads,

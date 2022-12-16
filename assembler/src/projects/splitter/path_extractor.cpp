@@ -11,6 +11,7 @@ namespace cont_index {
 void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
                                  const VertexResults &vertex_results,
                                  bool canonical) const {
+    INFO("Extracting paths");
     std::unordered_map<debruijn_graph::EdgeId, debruijn_graph::EdgeId> in_to_out;
     std::unordered_map<debruijn_graph::EdgeId, size_t> in_degrees;
     std::unordered_map<debruijn_graph::EdgeId, size_t> out_degrees;
@@ -34,10 +35,13 @@ void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
         const auto &vertex_result = vertex_entry.second;
         auto vertex = vertex_entry.first;
         std::unordered_map<debruijn_graph::EdgeId, std::unordered_set<debruijn_graph::EdgeId>> vertex_link_storage;
-        for (const debruijn_graph::LinkId &link_id: graph_.links(vertex)) {
-            auto &link = graph_.link(link_id);
-            vertex_link_storage[link.link.first].insert(link.link.second);
-        }
+//        INFO("Constructing link storage");
+//        for (const debruijn_graph::LinkId &link_id: graph_.links(vertex)) {
+//            INFO(link_id);
+//            auto &link = graph_.link(link_id);
+//            vertex_link_storage[link.link.first].insert(link.link.second);
+//        }
+//        INFO("Getting path map");
         for (const auto &entry: vertex_result.supported_pairs) {
             //if (not IsGraphLink(entry.first, entry.second, vertex_link_storage)) {
             //    ++not_graph_supported_links;
