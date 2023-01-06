@@ -68,6 +68,9 @@ struct gcfg {
   size_t tail_threshold = 200000;
   size_t count_threshold = 1;
 
+  //vertex resolution
+  double rel_threshold = 2.0;
+
   //meta mode
   size_t length_threshold = 2000;
 
@@ -117,6 +120,7 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
         (option("--linkage-distance") & value("read-linkage-distance", cfg.read_linkage_distance)) %
             "Reads are assigned to the same fragment based on linkage distance",
         (option("--score") & value("score", cfg.graph_score_threshold)) % "Score threshold for link index",
+            (option("--rel-threshold") & value("rel-threshold", cfg.rel_threshold)) % "Relative score threshold for vertex resolution",
         (option("--tail-threshold") & value("tail-threshold", cfg.tail_threshold)) %
             "Barcodes are assigned to the first and last <tail_threshold> nucleotides of the edge",
         (option("--count-threshold") & value("count-threshold", cfg.count_threshold))
@@ -273,7 +277,7 @@ cont_index::VertexResults GetRepeatResolutionResults(const gcfg &cfg,
         case ResolutionMode::Diploid: {
             cont_index::VertexResolver<debruijn_graph::Graph> vertex_resolver
                 (graph, graph, barcode_extractor_ptr, cfg.count_threshold, cfg.tail_threshold, length_threshold, cfg.nthreads,
-                 cfg.graph_score_threshold);
+                 cfg.graph_score_threshold, cfg.rel_threshold);
             auto results = vertex_resolver.ResolveVertices();
             vertex_resolver.PrintVertexResults(results, vertex_output_path, cfg.tmpdir, unique_kmer_count, id_mapper);
             return results;
@@ -295,7 +299,7 @@ cont_index::VertexResults GetRepeatResolutionResults(const gcfg &cfg,
             cont_index::VertexResolver<contracted_graph::ContractedGraph> vertex_resolver
                 (*contracted_graph, contracted_graph->GetAssemblyGraph(), barcode_extractor_ptr, cfg.count_threshold,
                  cfg.tail_threshold, length_threshold, cfg.nthreads,
-                 cfg.graph_score_threshold);
+                 cfg.graph_score_threshold, cfg.rel_threshold);
             auto results = vertex_resolver.ResolveVertices();
             vertex_resolver.PrintVertexResults(results, vertex_output_path, cfg.tmpdir, unique_kmer_count, id_mapper);
             return results;

@@ -57,7 +57,8 @@ class VertexResolver {
                    size_t tail_threshold,
                    size_t length_threshold,
                    size_t threads,
-                   double score_threshold) :
+                   double score_threshold,
+                   double rel_threshold) :
         graph_(graph),
         assembly_graph_(assembly_graph),
         barcode_extractor_ptr_(barcode_extractor_ptr),
@@ -65,7 +66,8 @@ class VertexResolver {
         tail_threshold_(tail_threshold),
         length_threshold_(length_threshold),
         threads_(threads),
-        score_threshold_(score_threshold) {}
+        score_threshold_(score_threshold),
+        rel_threshold_(rel_threshold) {}
 
     VertexResults ResolveVertices() {
         std::unordered_set<debruijn_graph::VertexId> interesting_vertices;
@@ -132,8 +134,7 @@ class VertexResolver {
                     }
                 }
             }
-            const double rel_threshold = 2.0;
-            if (max_links < second_links * rel_threshold) {
+            if (max_links < second_links * rel_threshold_) {
                 is_ambiguous = true;
             } else if (max_links >= score_threshold_) {
                 in_to_out[max_pair.first] = max_pair.second;
@@ -304,6 +305,7 @@ class VertexResolver {
     size_t length_threshold_;
     size_t threads_;
     double score_threshold_;
+    double rel_threshold_;
 };
 
 }
