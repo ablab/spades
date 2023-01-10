@@ -7,18 +7,14 @@ on:
     branches: [ master]
   workflow_dispatch:
 
-env:
-  BUILD_TYPE: Release
-
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        experimental: [false]
+        build: [debug, release]
 
     steps:
       - name: '⚙️ Update deps'
@@ -44,17 +40,17 @@ jobs:
 
       - name: '⚙️ Configure CMake'
         run: |
-          cmake -B ${{github.workspace}}/build -S ${{github.workspace}}/assembler/src -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_C_COMPILER_LAUNCHER=sccache -D CMAKE_CXX_COMPILER_LAUNCHER=sccache
+          cmake -B ${{github.workspace}}/build -S ${{github.workspace}}/assembler/src -DCMAKE_BUILD_TYPE=${{matrix.build}} -DCMAKE_C_COMPILER_LAUNCHER=sccache -D CMAKE_CXX_COMPILER_LAUNCHER=sccache
         shell: bash
 
       - name: '🚧 Build Include Test'
         run: |
-          cmake --build ${{github.workspace}}/build/test/include_test --config ${{env.BUILD_TYPE}} -j8 -t include_test
+          cmake --build ${{github.workspace}}/build/test/include_test --config ${{matrix.build}} -j8 -t include_test
         shell: bash
 
       - name: '🚧 Build Debruijn Test'
         run: |
-          cmake --build ${{github.workspace}}/build/test/debruijn --config ${{env.BUILD_TYPE}} -j8 -t debruijn_test
+          cmake --build ${{github.workspace}}/build/test/debruijn --config ${{matrix.build}} -j8 -t debruijn_test
         shell: bash
 
       - name: '✔️ Run Include Test'
