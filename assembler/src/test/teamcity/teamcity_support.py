@@ -725,7 +725,7 @@ def compile_spades(args, dataset_info, working_dir):
         os.chdir(bin_dir)
 
         #Compilation
-        err_code = os.system('cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=' + working_dir + ' ' + os.path.join(working_dir, 'src') + comp_params)
+        err_code = os.system('cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=' + working_dir + ' ' + os.path.join(working_dir, 'src') + ' ' + comp_params)
         err_code = err_code | os.system('make -j 16')
         err_code = err_code | os.system('make install')
 
