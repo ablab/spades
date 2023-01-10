@@ -41,7 +41,7 @@ jobs:
 
       - name: '⚙️ Configure CMake'
         run: |
-          cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_C_COMPILER_LAUNCHER=sccache -D CMAKE_CXX_COMPILER_LAUNCHER=sccache src
+          cmake -B ${{github.workspace}}/build -S ${{github.workspace}}/assembler/src -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_C_COMPILER_LAUNCHER=sccache -D CMAKE_CXX_COMPILER_LAUNCHER=sccache
         shell: bash
 
       - name: '🚧 Build Include Test'
