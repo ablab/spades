@@ -7,6 +7,9 @@ on:
     branches: [ master]
   workflow_dispatch:
 
+env:
+  BUILD_TYPE: Release
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
