@@ -1,0 +1,62 @@
+name: SPAdes basic tests
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        experimental: [false]
+
+    steps:
+      - name: '⚙️ Update deps'
+        run: |
+             if [ "$RUNNER_OS" == "Linux" ]; then
+               sudo apt-get update
+             elif [ "$RUNNER_OS" == "macOS" ]; then
+               brew update
+             fi
+        shell: bash
+
+      - name: '🧰 Checkout repository'
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: '⚙️ Setup ccache'
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ matrix.os }}
+          variant: sccache
+
+      - name: '⚙️ Configure CMake'
+        run: |
+          cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_C_COMPILER_LAUNCHER=sccache -D CMAKE_CXX_COMPILER_LAUNCHER=sccache src
+        shell: bash
+
+      - name: '🚧 Build Include Test'
+        run: |
+          cmake --build ${{github.workspace}}/build/test/include_test --config ${{env.BUILD_TYPE}} -j8 include_test
+        shell: bash
+
+      - name: '🚧 Build Debruijn Test'
+        run: |
+          cmake --build ${{github.workspace}}/build/test/debruijn_test --config ${{env.BUILD_TYPE}} -j8 debruijn_test
+        shell: bash
+
+      - name: '✔️ Run Include Test'
+        working-directory: ${{github.workspace}}/build
+        run: bin/include_test
+
+      - name: '✔️ Run Debruijn Test'
+        working-directory: ${{github.workspace}}/build
+        run: bin/debruijn_test
