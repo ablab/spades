@@ -49,12 +49,12 @@ jobs:
 
       - name: '🚧 Build Include Test'
         run: |
-          cmake --build ${{github.workspace}}/build/test/include_test --config ${{env.BUILD_TYPE}} -j8 include_test
+          cmake --build ${{github.workspace}}/build/test/include_test --config ${{env.BUILD_TYPE}} -j8 -t include_test
         shell: bash
 
       - name: '🚧 Build Debruijn Test'
         run: |
-          cmake --build ${{github.workspace}}/build/test/debruijn_test --config ${{env.BUILD_TYPE}} -j8 debruijn_test
+          cmake --build ${{github.workspace}}/build/test/debruijn_test --config ${{env.BUILD_TYPE}} -j8 -t debruijn_test
         shell: bash
 
       - name: '✔️ Run Include Test'
