@@ -58,9 +58,9 @@ jobs:
         shell: bash
 
       - name: '✔️ Run Include Test'
-        working-directory: ${{github.workspace}}/build
-        run: bin/include_test
+        working-directory: ${{github.workspace}}/assembler
+        run: ${{github.workspace}}/build/bin/include_test
 
       - name: '✔️ Run Debruijn Test'
-        working-directory: ${{github.workspace}}/build
-        run: bin/debruijn_test
+        working-directory: ${{github.workspace}}/assembler
+        run: ${{github.workspace}}/build/bin/debruijn_test
