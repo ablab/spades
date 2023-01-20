@@ -1,5 +1,5 @@
 VERSION="$(cat assembler/VERSION)"
-TARGET_DIR=SPAdes-$VERSION
+: "${TARGET_DIR:=SPAdes-$VERSION}"
 rm -rf $TARGET_DIR
 SRC_DIR=$TARGET_DIR/src
 mkdir -p $SRC_DIR
@@ -50,11 +50,11 @@ cp assembler/rnaspades_manual.html $TARGET_DIR/
 cp assembler/changelog.html $TARGET_DIR/
 cp assembler/GPLv2.txt $TARGET_DIR/
 
-cd $TARGET_DIR/
+cd $TARGET_DIR
 touch src/CMakeListsInternal.txt
 find . -name ".?*" | xargs rm -r
 
 cd ..
 
-tar -pczf SPAdes-$VERSION.tar.gz SPAdes-$VERSION
-rm -r SPAdes-$VERSION
+tar -pczf $TARGET_DIR.tar.gz $TARGET_DIR
+rm -r $TARGET_DIR
