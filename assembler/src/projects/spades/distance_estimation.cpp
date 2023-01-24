@@ -52,7 +52,7 @@ void estimate_with_estimator_2(const Graph &graph,
                                  const omnigraph::de::AbstractDistanceEstimator& estimator,
                                  omnigraph::de::AbstractPairInfoChecker<Graph>& checker,
                                  PairedIndexT& clustered_index,
-                                 const std::vector<EdgeId> &edges) {
+                                 const std::vector<typename Graph::EdgeId> &edges) {
         DEBUG("Estimating distances");
 
         estimator.Estimate_2(clustered_index, cfg::get().max_threads, edges);

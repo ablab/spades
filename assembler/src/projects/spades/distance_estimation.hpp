@@ -29,6 +29,6 @@ void estimate_distance_molecule_extraction(conj_graph_pack& gp,
                        const io::SequencingLibrary<config::LibraryData> &lib,
                        const UnclusteredPairedIndexT& paired_index,
                        PairedIndexT& clustered_index,
-                       const std::vector<EdgeId> &edges);
+                       const std::vector<Graph::EdgeId> &edges);
 }
 
