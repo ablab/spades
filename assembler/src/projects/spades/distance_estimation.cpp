@@ -195,7 +195,7 @@ void estimate_distance_molecule_extraction(conj_graph_pack& gp,
                        const io::SequencingLibrary<config::LibraryData> &lib,
                        const UnclusteredPairedIndexT& paired_index,
                        PairedIndexT& clustered_index,
-                       std::vector<EdgeId> edges) {
+                       const std::vector<EdgeId> &edges) {
 
         const config::debruijn_config& config = cfg::get();
         size_t delta = size_t(lib.data().insert_size_deviation);
