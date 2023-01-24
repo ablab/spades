@@ -158,12 +158,12 @@ void estimate_distance(conj_graph_pack& gp,
     RefinePairedInfo(gp.g, clustered_index);                                  // contains intersecting paired info clusters,
     INFO("The refining of clustered pair information has been finished ");    // if so, it resolves such conflicts.
 
-    INFO("Improving paired information");
-    PairInfoImprover<Graph> improver(gp.g, clustered_index, lib,
-                                     (debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(config.mode))?
-                                     std::numeric_limits<size_t>::max() : config.max_repeat_length);
+    //INFO("Improving paired information");
+    //PairInfoImprover<Graph> improver(gp.g, clustered_index, lib,
+    //                                 (debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(config.mode))?
+    //                                 std::numeric_limits<size_t>::max() : config.max_repeat_length);
 
-    improver.ImprovePairedInfo((unsigned) config.max_threads);
+    //improver.ImprovePairedInfo((unsigned) config.max_threads);
 
 }
 
