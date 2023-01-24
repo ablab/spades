@@ -61,7 +61,7 @@ public:
         target_reached_(false),
         distance_bound_(bound) { }
 
-    bool Check(VertexId vertex, distance_t distance) const {
+    bool Check(VertexId vertex, distance_t distance) {
         if (vertex == target_vertex_)
             target_reached_ = true;
         if (target_reached_)

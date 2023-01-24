@@ -486,8 +486,8 @@ namespace debruijn_graph {
 
 
     std::string GetTenXBarcodeFromRead(const io::PairedRead &read) {
-        std::string delimeter = "___";
-        size_t start_pos = read.first().name().find(delimeter) + 3;
+        std::string delimeter = "BX:Z:";
+        size_t start_pos = read.first().name().find(delimeter);
         std::string barcode = "";
         if (start_pos == std::string::npos) {
             return barcode;
