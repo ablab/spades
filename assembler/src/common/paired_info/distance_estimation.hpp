@@ -117,7 +117,7 @@ public:
     }
 
     virtual void Estimate(OutPairedIndex &result, size_t nthreads) const;
-    virtual void Estimate_2(OutPairedIndex &result, size_t nthreads, const std::vector<EdgeId> &edges) const;
+    virtual void Estimate_2(OutPairedIndex &result, size_t nthreads, const std::vector<debruijn_graph::EdgeId> &edges) const;
 
 protected:
     const DEDistance max_distance_;
