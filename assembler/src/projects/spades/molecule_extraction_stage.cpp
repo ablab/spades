@@ -363,7 +363,7 @@ namespace debruijn_graph {
                                               cfg::get().use_scaffolder);
 
             INFO("graph_pack.barcode_indices[0].size() - " << graph_pack.barcode_indices[0].size());
-            estimate_distance(graph_pack, lib_10x, graph_pack.barcode_indices[0], graph_pack.barcode_clustered_indices[0]);
+            estimate_distance_molecule_extraction(graph_pack, lib_10x, graph_pack.barcode_indices[0], graph_pack.barcode_clustered_indices[0], out_edges);
             INFO("graph_pack.barcode_clustered_indices[0].size() - " << graph_pack.barcode_clustered_indices[0].size());
 
             if (graph_pack.barcode_clustered_indices[0].size() == 0)

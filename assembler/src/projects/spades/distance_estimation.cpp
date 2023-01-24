@@ -47,6 +47,30 @@ void estimate_with_estimator(const Graph &graph,
     DEBUG("Info Filtered");
 }
 
+template<class Graph>
+void estimate_with_estimator_2(const Graph &graph,
+                                 const omnigraph::de::AbstractDistanceEstimator& estimator,
+                                 omnigraph::de::AbstractPairInfoChecker<Graph>& checker,
+                                 PairedIndexT& clustered_index,
+                                 const std::vector<EdgeId> &edges) {
+        DEBUG("Estimating distances");
+
+        estimator.Estimate_2(clustered_index, cfg::get().max_threads, edges);
+
+        INFO("Filtering info");
+        if(cfg::get().amb_de.enabled){
+            AmbiguousPairInfoChecker<Graph> amb_de_checker(graph,
+                                                           clustered_index,
+                                                           checker,
+                                                           cfg::get().amb_de.haplom_threshold,
+                                                           cfg::get().amb_de.relative_length_threshold,
+                                                           cfg::get().amb_de.relative_seq_threshold);
+            PairInfoFilter<Graph>(amb_de_checker).Filter(clustered_index);
+        } else
+            PairInfoFilter<Graph>(checker).Filter(clustered_index);
+//    filter.Filter(clustered_index);
+        DEBUG("Info Filtered");
+    }
 
 // Postprocessing, checking that clusters do not intersect
 template<class Graph>
@@ -158,15 +182,40 @@ void estimate_distance(conj_graph_pack& gp,
     RefinePairedInfo(gp.g, clustered_index);                                  // contains intersecting paired info clusters,
     INFO("The refining of clustered pair information has been finished ");    // if so, it resolves such conflicts.
 
-    //INFO("Improving paired information");
-    //PairInfoImprover<Graph> improver(gp.g, clustered_index, lib,
-    //                                 (debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(config.mode))?
-    //                                 std::numeric_limits<size_t>::max() : config.max_repeat_length);
+    INFO("Improving paired information");
+    PairInfoImprover<Graph> improver(gp.g, clustered_index, lib,
+                                     (debruijn_graph::config::PipelineHelper::IsMetagenomicPipeline(config.mode))?
+                                     std::numeric_limits<size_t>::max() : config.max_repeat_length);
 
-    //improver.ImprovePairedInfo((unsigned) config.max_threads);
+    improver.ImprovePairedInfo((unsigned) config.max_threads);
 
 }
 
+void estimate_distance_molecule_extraction(conj_graph_pack& gp,
+                       const io::SequencingLibrary<config::LibraryData> &lib,
+                       const UnclusteredPairedIndexT& paired_index,
+                       PairedIndexT& clustered_index,
+                       std::vector<EdgeId> edges) {
+
+        const config::debruijn_config& config = cfg::get();
+        size_t delta = size_t(lib.data().insert_size_deviation);
+        size_t linkage_distance = size_t(config.de.linkage_distance_coeff * lib.data().insert_size_deviation);
+        GraphDistanceFinder dist_finder(gp.g,  (size_t)math::round(lib.data().mean_insert_size), lib.data().unmerged_read_length, delta);
+        size_t max_distance = size_t(config.de.max_distance_coeff * lib.data().insert_size_deviation);
+
+        PairInfoWeightChecker<Graph> checker(gp.g, config.de.clustered_filter_threshold);
+
+        INFO("Weight Filter Done");
+
+        DistanceEstimator estimator(gp.g, paired_index, dist_finder,
+                                    linkage_distance, max_distance);
+
+        estimate_with_estimator_2<Graph>(gp.g, estimator, checker, clustered_index, edges);
+
+        INFO("Refining clustered pair information ");                             // this procedure checks, whether index
+        RefinePairedInfo(gp.g, clustered_index);                                  // contains intersecting paired info clusters,
+        INFO("The refining of clustered pair information has been finished ");    // if so, it resolves such conflicts.
+    }
 void DistanceEstimation::run(conj_graph_pack &gp, const char*) {
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
         if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {

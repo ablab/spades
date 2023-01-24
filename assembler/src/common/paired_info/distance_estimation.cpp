@@ -94,6 +94,24 @@ void DistanceEstimator::Estimate(PairedInfoIndexT<Graph> &result, size_t nthread
     }
 }
 
+void DistanceEstimator::Estimate_2(PairedInfoIndexT<Graph> &result, size_t nthreads, const std::vector<EdgeId> &edges) const  {
+        this->Init();
+        const auto &index = this->index();
+
+
+        DEBUG("Processing");
+        PairedInfoBuffersT<Graph> buffer(this->graph(), nthreads);
+#   pragma omp parallel for num_threads(nthreads) schedule(guided, 10)
+        for (size_t i = 0; i < edges.size(); ++i) {
+            EdgeId edge = edges[i];
+            ProcessEdge(edge, index, buffer[omp_get_thread_num()]);
+        }
+
+        for (size_t i = 0; i < nthreads; ++i) {
+            result.Merge(buffer[i]);
+            buffer[i].clear();
+        }
+    }
 DistanceEstimator::EstimHist DistanceEstimator::EstimateEdgePairDistances(EdgePair ep, const InHistogram &histogram,
                                                                           const GraphLengths &raw_forward) const {
     using std::abs;
