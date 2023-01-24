@@ -61,7 +61,7 @@ public:
               distance_finder_(distance_finder), linkage_distance_(linkage_distance) { }
 
     virtual void Estimate(PairedInfoIndexT<debruijn_graph::Graph> &result, size_t nthreads) const = 0;
-
+    virtual void Estimate_2(PairedInfoIndexT<debruijn_graph::Graph> &result, size_t nthreads, const std::vector<debruijn_graph::EdgeId> &edges) const = 0;
     virtual ~AbstractDistanceEstimator() { }
 
 protected:
