@@ -432,9 +432,6 @@ namespace debruijn_graph {
                     edge_map[gp_.g.conjugate(e)] += 1;
                 }
             }
-            for (auto kv : edge_map) {
-                INFO(kv.first << " " << kv.second);
-            }
             auto out_edges_set = extractor_.simplifyComponent(edge_set, barcode);
             for (auto e : out_edges_set) {
                 out_edges.push_back(e);
@@ -622,7 +619,7 @@ namespace debruijn_graph {
             INFO(p.get_barcodes());
             INFO(p.get_cut_from_begin());
             INFO(p.get_cut_from_end());
-            path->PrintINFO();
+            //path->PrintINFO();
         }
         INFO("Total reads processed: " << counter);
         INFO("Total barcodes passed: " << passed_counter << ", failed " << failed_counter);
