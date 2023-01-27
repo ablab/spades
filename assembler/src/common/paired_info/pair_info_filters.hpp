@@ -239,7 +239,7 @@ public:
     {}
 
     void Filter(PairedInfoIndexT<Graph>& index) {
-        INFO("Start filtering; index size: " << index.size());
+        DEBUG("Start filtering; index size: " << index.size());
         //We can't filter while traversing, because Remove may invalidate iterators
         //So let's save edge pairs first
         using EdgePair = std::pair<EdgeId, EdgeId>;
@@ -260,7 +260,7 @@ public:
                 index.Remove(pair.first, pair.second, point);
         }
 
-        INFO("Done filtering");
+        DEBUG("Done filtering");
     }
 };
 

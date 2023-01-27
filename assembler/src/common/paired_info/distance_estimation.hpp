@@ -113,7 +113,7 @@ public:
     virtual ~DistanceEstimator() { }
 
     void Init() const {
-        INFO("Using " << this->Name() << " distance estimator");
+        DEBUG("Using " << this->Name() << " distance estimator");
     }
 
     virtual void Estimate(OutPairedIndex &result, size_t nthreads) const;

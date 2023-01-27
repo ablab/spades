@@ -57,7 +57,7 @@ void estimate_with_estimator_2(const Graph &graph,
 
         estimator.Estimate_2(clustered_index, cfg::get().max_threads, edges);
 
-        INFO("Filtering info");
+        DEBUG("Filtering info");
         if(cfg::get().amb_de.enabled){
             AmbiguousPairInfoChecker<Graph> amb_de_checker(graph,
                                                            clustered_index,
@@ -205,16 +205,16 @@ void estimate_distance_molecule_extraction(conj_graph_pack& gp,
 
         PairInfoWeightChecker<Graph> checker(gp.g, config.de.clustered_filter_threshold);
 
-        INFO("Weight Filter Done");
+        DEBUG("Weight Filter Done");
 
         DistanceEstimator estimator(gp.g, paired_index, dist_finder,
                                     linkage_distance, max_distance);
 
         estimate_with_estimator_2<Graph>(gp.g, estimator, checker, clustered_index, edges);
 
-        INFO("Refining clustered pair information ");                             // this procedure checks, whether index
+        DEBUG("Refining clustered pair information ");                             // this procedure checks, whether index
         RefinePairedInfo(gp.g, clustered_index);                                  // contains intersecting paired info clusters,
-        INFO("The refining of clustered pair information has been finished ");    // if so, it resolves such conflicts.
+        DEBUG("The refining of clustered pair information has been finished ");    // if so, it resolves such conflicts.
     }
 void DistanceEstimation::run(conj_graph_pack &gp, const char*) {
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)

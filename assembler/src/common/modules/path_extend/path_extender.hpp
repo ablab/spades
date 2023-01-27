@@ -891,7 +891,7 @@ private:
         for (size_t i = 0; i < paths.size(); ++i) {
             VERBOSE_POWER_T2(i, 100, "Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
             if (paths.size() > 10 && i % (paths.size() / 10 + 1) == 0) {
-                INFO("Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
+                DEBUG("Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
             }
             //In 2015 modes do not use a seed already used in paths.
             //FIXME what is the logic here?

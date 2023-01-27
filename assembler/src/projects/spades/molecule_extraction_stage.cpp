@@ -216,7 +216,7 @@ namespace debruijn_graph {
             for (auto p : temp_set_) {
                 paths.push_back(p.path());
             }
-            INFO(paths);
+            DEBUG(paths);
             std::vector<size_t> to_remove;
             for (size_t i = 0; i < paths.size(); ++i) {
                 for (size_t j = i + 1; j < paths.size(); ++j) {
@@ -251,7 +251,7 @@ namespace debruijn_graph {
 
 
         std::set<EdgeId> simplifyComponent(std::set<EdgeId> &edge_set, const std::string &barcode) {
-            INFO(edge_set);
+            DEBUG(edge_set);
             temp_set_.Clear();
             std::set<EdgeId> bad_edges;
             auto initial_component = GraphComponent<Graph>::FromEdges(gp_.g, edge_set, true);
@@ -362,9 +362,9 @@ namespace debruijn_graph {
                                               cfg::get().avoid_rc_connections,
                                               cfg::get().use_scaffolder);
 
-            INFO("graph_pack.barcode_indices[0].size() - " << graph_pack.barcode_indices[0].size());
+            DEBUG("graph_pack.barcode_indices[0].size() - " << graph_pack.barcode_indices[0].size());
             estimate_distance_molecule_extraction(graph_pack, lib_10x, graph_pack.barcode_indices[0], graph_pack.barcode_clustered_indices[0], out_edges);
-            INFO("graph_pack.barcode_clustered_indices[0].size() - " << graph_pack.barcode_clustered_indices[0].size());
+            DEBUG("graph_pack.barcode_clustered_indices[0].size() - " << graph_pack.barcode_clustered_indices[0].size());
 
             if (graph_pack.barcode_clustered_indices[0].size() == 0)
                 return;
@@ -411,7 +411,7 @@ namespace debruijn_graph {
                                                               used_unique_storage,
                                                               extenders);
             path_set = resolver.ExtendSeeds(seeds, composite_extender);
-            INFO("path_set.size() - " << path_set.size());
+            DEBUG("path_set.size() - " << path_set.size());
         }
 
         void extractEdges(std::vector<MappingPath<EdgeId>> &paths, std::vector<EdgeId> &out_edges, const std::string &barcode) {
@@ -535,7 +535,7 @@ namespace debruijn_graph {
             if (barcode_string != "") {
                 if (barcode_string != current_barcode && !paths.empty()) {
                     DEBUG("graph_pack.barcode_indices[0].size() - " << graph_pack.barcode_indices[0].size());
-                    DEBUG("Processing barcode " << current_barcode);
+                    INFO("Processing barcode " << current_barcode);
                     pif.StopProcessLibrary();
                     std::vector<EdgeId> good_edges;
 
@@ -597,10 +597,9 @@ namespace debruijn_graph {
         }
         long_reads_temp_container.clear();
 
-        INFO("Start to save paths");
+        INFO("Starting to save all paths found");
         std::vector<PathInfo<Graph>> debug_path;
         long_reads_temp_storage.SaveAllPaths(debug_path);
-        INFO("Save all paths");
 
         for (auto p : debug_path) {
             path_extend::BidirectionalPath *path = new path_extend::BidirectionalPath(graph_pack.g);
@@ -617,11 +616,12 @@ namespace debruijn_graph {
             path->SetCutFromEnd(p.get_cut_from_end());
             conj->SetCutFromBeginning(p.get_cut_from_end());
             conj->SetCutFromEnd(p.get_cut_from_begin());
-            INFO(p.get_barcodes());
-            INFO(p.get_cut_from_begin());
-            INFO(p.get_cut_from_end());
+            DEBUG(p.get_barcodes());
+            DEBUG(p.get_cut_from_begin());
+            DEBUG(p.get_cut_from_end());
             //path->PrintINFO();
         }
+
         INFO("Total reads processed: " << counter);
         INFO("Total barcodes passed: " << passed_counter << ", failed " << failed_counter);
         INFO(long_reads.size() << " paths totally extracted");
