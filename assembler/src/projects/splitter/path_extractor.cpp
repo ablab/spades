@@ -31,6 +31,7 @@ void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
 
     size_t total_resolved_overlap = 0;
     size_t not_graph_supported_links = 0;
+    size_t gaps = 0;
     for (const auto &vertex_entry: vertex_results.vertex_to_result) {
         const auto &vertex_result = vertex_entry.second;
         auto vertex = vertex_entry.first;
@@ -49,6 +50,10 @@ void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
             //}
             if (vertex_result.state == VertexState::Completely or vertex_result.state == VertexState::Partially) {
                 if (in_to_out.find(entry.first) == in_to_out.end()) {
+                    if (graph_.EdgeStart(entry.second) == graph_.EdgeEnd(entry.first)) {
+                        ++gaps;
+                        continue;
+                    }
                     total_resolved_overlap += graph_.data(vertex_entry.first).overlap();
                     in_to_out[entry.first] = entry.second;
                     in_degrees[entry.second]++;
@@ -114,6 +119,7 @@ void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
     INFO("Total path length: " << total_path_length);
     INFO("Total resolved overlap: " << total_resolved_overlap);
     INFO("Total path overlap: " << total_path_overlap);
+    INFO("Total gaps: " << gaps);
 }
 bool PathExtractor::IsConjugatePair(const PathExtractor::SimplePath &first,
                                     const PathExtractor::SimplePath &second) const {
