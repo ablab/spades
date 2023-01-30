@@ -18,6 +18,9 @@ void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
     size_t total_length = 0;
     size_t total_edges = 0;
     size_t total_overlap = 0;
+    size_t total_resolved_overlap = 0;
+    size_t not_graph_supported_links = 0;
+    size_t graph_supported_links = 0;
 
     //fixme replace with graph distance
     int default_gap = 500;
@@ -29,32 +32,28 @@ void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
         total_overlap += graph_.data(vertex).overlap();
     }
 
-    size_t total_resolved_overlap = 0;
-    size_t not_graph_supported_links = 0;
-    size_t gaps = 0;
+    std::unordered_map<debruijn_graph::EdgeId, std::unordered_set<debruijn_graph::EdgeId>> vertex_link_storage;
+
     for (const auto &vertex_entry: vertex_results.vertex_to_result) {
         const auto &vertex_result = vertex_entry.second;
         auto vertex = vertex_entry.first;
-        std::unordered_map<debruijn_graph::EdgeId, std::unordered_set<debruijn_graph::EdgeId>> vertex_link_storage;
-//        INFO("Constructing link storage");
-//        for (const debruijn_graph::LinkId &link_id: graph_.links(vertex)) {
-//            INFO(link_id);
-//            auto &link = graph_.link(link_id);
-//            vertex_link_storage[link.link.first].insert(link.link.second);
-//        }
-//        INFO("Getting path map");
+        DEBUG("Updating link storage");
+        for (const debruijn_graph::LinkId &link_id: graph_.links(vertex)) {
+            auto &link = graph_.link(link_id);
+            TRACE(link.link.first.int_id() << "," << link.link.second.int_id() << "," << link_id);
+            vertex_link_storage[link.link.first].insert(link.link.second);
+        }
+        DEBUG("Constructing path map");
         for (const auto &entry: vertex_result.supported_pairs) {
-            //if (not IsGraphLink(entry.first, entry.second, vertex_link_storage)) {
-            //    ++not_graph_supported_links;
-            //    continue;
-            //}
             if (vertex_result.state == VertexState::Completely or vertex_result.state == VertexState::Partially) {
                 if (in_to_out.find(entry.first) == in_to_out.end()) {
-                    if (graph_.EdgeStart(entry.second) == graph_.EdgeEnd(entry.first)) {
-                        ++gaps;
-                        continue;
+                    TRACE(entry.first.int_id() << "," << entry.second.int_id());
+                    if (IsGraphLink(entry.first, entry.second, vertex_link_storage)) {
+                        total_resolved_overlap += graph_.data(vertex_entry.first).overlap();
+                        ++graph_supported_links;
+                    } else {
+                        ++not_graph_supported_links;
                     }
-                    total_resolved_overlap += graph_.data(vertex_entry.first).overlap();
                     in_to_out[entry.first] = entry.second;
                     in_degrees[entry.second]++;
                     out_degrees[entry.first]++;
@@ -62,6 +61,9 @@ void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
             }
         }
     }
+    INFO("Tracing paths");
+    size_t visited_edges = 0;
+
     for (const auto &entry: in_degrees) {
         VERIFY_MSG(entry.second < 2, "In degree " << entry.second << ", " << entry.first);
     }
@@ -81,10 +83,11 @@ void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
                 while (out_degrees.find(current_edge) != out_degrees.end()) {
                     const auto &next_edge = in_to_out.at(current_edge);
                     if (visited.find(next_edge) != visited.end()) {
-                        INFO("Edge is visited!");
+                        TRACE("Edge is visited!");
+                        visited_edges++;
                         break;
                     }
-                    if (graph_.EdgeStart(next_edge) == graph_.EdgeEnd(current_edge)) {
+                    if (IsGraphLink(current_edge, next_edge, vertex_link_storage)) {
                         total_path_overlap += graph_.data(graph_.EdgeStart(next_edge)).overlap();
                         path.PushBack(next_edge);
                     } else {
@@ -111,7 +114,6 @@ void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
         total_path_size += path.first->Size();
         total_path_length += path.first->Length();
     }
-    INFO("Linked-read links not supported by graph: " << not_graph_supported_links);
     INFO("Total graph size: " << total_edges);
     INFO("Total graph length: " << total_length);
     INFO("Total graph overlap: " << total_overlap);
@@ -119,7 +121,9 @@ void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
     INFO("Total path length: " << total_path_length);
     INFO("Total resolved overlap: " << total_resolved_overlap);
     INFO("Total path overlap: " << total_path_overlap);
-    INFO("Total gaps: " << gaps);
+    INFO("Links not supported by graph: " << not_graph_supported_links);
+    INFO("Links supported by graph: " << graph_supported_links);
+    INFO("Edges visited by several paths: " << visited_edges);
 }
 bool PathExtractor::IsConjugatePair(const PathExtractor::SimplePath &first,
                                     const PathExtractor::SimplePath &second) const {
@@ -139,7 +143,7 @@ bool PathExtractor::IsGraphLink(const debruijn_graph::EdgeId first,
                                 const debruijn_graph::EdgeId second,
                                 const PathExtractor::VertexLinkStorage &vertex_storage) const {
     auto out_graph_links = vertex_storage.find(first);
-    if (out_graph_links != vertex_storage.end()) {
+    if (out_graph_links == vertex_storage.end()) {
         return false;
     }
     auto out_link_result = out_graph_links->second.find(second);
