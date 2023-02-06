@@ -25,7 +25,7 @@ add_library(spades-stages STATIC
             domain_graph.cpp)
 
 target_link_libraries(spades-stages hmmercpp spoa easel)
-          
+
 add_executable(spades-core
                pipeline.cpp
                main.cpp
@@ -40,7 +40,25 @@ endif()
 
 install(TARGETS spades-core
         DESTINATION bin
-        COMPONENT runtime)
+        COMPONENT spades)
+# Configs
 install(DIRECTORY "${SPADES_CFG_DIR}/debruijn"
         DESTINATION share/spades/configs
+        COMPONENT spades
         FILES_MATCHING PATTERN "*.info")
+# biosyntheticSPAdes default HMM profiles
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/biosynthetic_spades_hmms"
+        DESTINATION share/spades
+        COMPONENT spades)
+# coronaSPAdes default HMM profiles
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/coronaspades_hmms"
+        DESTINATION share/spades
+        COMPONENT spades)
+
+# Test datasets
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test_dataset"
+        DESTINATION share/spades
+        COMPONENT spades-test)
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test_dataset_plasmid"
+        DESTINATION share/spades
+        COMPONENT spades-test)

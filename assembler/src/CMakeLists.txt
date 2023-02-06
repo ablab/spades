@@ -13,7 +13,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # allow more human readable "if then else" constructs
-set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE) 
+set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 
 # modules to find additional libraries (like zlib, boost and etc)
 # Add path for custom modules
@@ -41,7 +41,7 @@ set(SPADES_CFG_DIR "${CMAKE_SOURCE_DIR}/../configs")
 include(options)
 
 # Sanity check our source directory to make sure that we are not trying to
-# generate an in-tree build 
+# generate an in-tree build
 if ((CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR) OR
     (CMAKE_SOURCE_DIR STREQUAL "${CMAKE_BINARY_DIR}/src"))
   message(FATAL_ERROR "In-source builds are not allowed.
@@ -109,63 +109,52 @@ add_subdirectory(spades_pipeline)
 # Main pipeline script
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../spades.py"
         DESTINATION bin
-        COMPONENT runtime)
+        COMPONENT spades)
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../metaspades.py"
         DESTINATION bin
-        COMPONENT runtime)
+        COMPONENT spades)
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../plasmidspades.py"
         DESTINATION bin
-        COMPONENT runtime)
+        COMPONENT spades)
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../rnaspades.py"
         DESTINATION bin
-        COMPONENT runtime)
+        COMPONENT spades)
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../metaviralspades.py"
         DESTINATION bin
-        COMPONENT runtime)
+        COMPONENT spades)
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../metaplasmidspades.py"
         DESTINATION bin
-        COMPONENT runtime)
+        COMPONENT spades)
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../rnaviralspades.py"
         DESTINATION bin
-        COMPONENT runtime)      
+        COMPONENT spades)
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../coronaspades.py"
         DESTINATION bin
-        COMPONENT runtime)      
+        COMPONENT spades)
 
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../spades_init.py"
         DESTINATION bin
-        COMPONENT runtime)
+        COMPONENT spades)
 # FIXME: Should we just configure spades_init instead?
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../VERSION"
         DESTINATION share/spades
-        COMPONENT runtime)
-# Test datasets
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../test_dataset"
-        DESTINATION share/spades)
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../test_dataset_plasmid"
-        DESTINATION share/spades)
-#biosyntheticSPAdes default HMM profiles
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../biosynthetic_spades_hmms"
-        DESTINATION share/spades)
-#coronaSPAdes default HMM profiles
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../coronaspades_hmms"
-        DESTINATION share/spades)
+        COMPONENT common)
 # manual, LICENSE, and GPLv2
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../manual.html"
         DESTINATION share/spades
-        COMPONENT runtime)
+        COMPONENT spades-docs)
 install(FILES "${README_MD_PATH}"
         DESTINATION share/spades
-        COMPONENT runtime)
+        COMPONENT spades-docs)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../rnaspades_manual.html"
         DESTINATION share/spades
-        COMPONENT runtime)
+        COMPONENT spades-docs)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../LICENSE"
         DESTINATION share/spades
-        COMPONENT runtime)
+        COMPONENT common)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../GPLv2.txt"
         DESTINATION share/spades
-        COMPONENT runtime)
+        COMPONENT common)
 
 # Random stuff
 include(CMakeListsInternal.txt)
