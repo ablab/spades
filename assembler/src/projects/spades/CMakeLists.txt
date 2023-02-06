@@ -42,18 +42,21 @@ install(TARGETS spades-core
         DESTINATION bin
         COMPONENT spades)
 # Configs
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/configs/" # Trailing / is important
+install(DIRECTORY "configs/" # Trailing / is important
         DESTINATION share/spades/configs/debruijn
         COMPONENT spades
         FILES_MATCHING PATTERN "*.info")
 # biosyntheticSPAdes default HMM profiles
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/biosynthetic_spades_hmms"
+install(DIRECTORY "biosynthetic_spades_hmms"
         DESTINATION share/spades
         COMPONENT spades)
 # coronaSPAdes default HMM profiles
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/coronaspades_hmms"
+install(DIRECTORY "coronaspades_hmms"
         DESTINATION share/spades
         COMPONENT spades)
+
+# Main pipeline script
+add_subdirectory(pipeline)
 
 # Test datasets
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test_dataset"

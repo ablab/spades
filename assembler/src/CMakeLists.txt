@@ -103,38 +103,8 @@ endif()
 # sub projects
 add_subdirectory(common)
 add_subdirectory(projects)
-add_subdirectory(spades_pipeline)
 
 
-# Main pipeline script
-install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../spades.py"
-        DESTINATION bin
-        COMPONENT spades)
-install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../metaspades.py"
-        DESTINATION bin
-        COMPONENT spades)
-install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../plasmidspades.py"
-        DESTINATION bin
-        COMPONENT spades)
-install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../rnaspades.py"
-        DESTINATION bin
-        COMPONENT spades)
-install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../metaviralspades.py"
-        DESTINATION bin
-        COMPONENT spades)
-install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../metaplasmidspades.py"
-        DESTINATION bin
-        COMPONENT spades)
-install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../rnaviralspades.py"
-        DESTINATION bin
-        COMPONENT spades)
-install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../coronaspades.py"
-        DESTINATION bin
-        COMPONENT spades)
-
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../spades_init.py"
-        DESTINATION bin
-        COMPONENT spades)
 # FIXME: Should we just configure spades_init instead?
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../VERSION"
         DESTINATION share/spades
