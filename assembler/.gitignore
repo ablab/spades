@@ -5,7 +5,6 @@ logs/
 output/
 spades_output/
 spades_test/
-spades_test_truspades/
 teamcity_precompiled/
 CMakeFiles/
 scripts/
