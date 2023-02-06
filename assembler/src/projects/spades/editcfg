@@ -21,13 +21,13 @@ then
 fi
 
 case $1 in
-  'c')  cfg="configs/debruijn/config.info" ;;
-  's')  cfg="configs/debruijn/simplification.info" ;;
-  'de') cfg="configs/debruijn/distance_estimation.info";;
-  'dip') cfg="configs/debruijn/detail_info_printer.info";;
-  'log') cfg="configs/debruijn/log.properties";;
-  'pep')   cfg="configs/debruijn/pe_params.info";;
-  'con')   cfg="configs/debruijn/construction.info";;
+  'c')  cfg="configs/config.info" ;;
+  's')  cfg="configs/simplification.info" ;;
+  'de') cfg="configs/distance_estimation.info";;
+  'dip') cfg="configs/detail_info_printer.info";;
+  'log') cfg="configs/log.properties";;
+  'pep')   cfg="configs/pe_params.info";;
+  'con')   cfg="configs/construction.info";;
   
 esac
 
