@@ -42,8 +42,8 @@ install(TARGETS spades-core
         DESTINATION bin
         COMPONENT spades)
 # Configs
-install(DIRECTORY "${SPADES_CFG_DIR}/debruijn"
-        DESTINATION share/spades/configs
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/configs/"
+        DESTINATION share/spades/configs/debruijn
         COMPONENT spades
         FILES_MATCHING PATTERN "*.info")
 # biosyntheticSPAdes default HMM profiles
