@@ -27,7 +27,8 @@ endif()
 
 install(TARGETS spades-hammer
         DESTINATION bin
-        COMPONENT runtime)
-install(DIRECTORY "${SPADES_CFG_DIR}/hammer"
-        DESTINATION share/spades/configs
+        COMPONENT spades)
+install(DIRECTORY "configs/"
+        DESTINATION share/spades/configs/hammer
+        COMPONENT spades
         FILES_MATCHING PATTERN "*.info")

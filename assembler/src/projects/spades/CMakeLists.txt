@@ -42,7 +42,7 @@ install(TARGETS spades-core
         DESTINATION bin
         COMPONENT spades)
 # Configs
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/configs/"
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/configs/" # Trailing / is important
         DESTINATION share/spades/configs/debruijn
         COMPONENT spades
         FILES_MATCHING PATTERN "*.info")

@@ -27,7 +27,8 @@ endif()
 
 install(TARGETS spades-corrector-core
         DESTINATION bin
-        COMPONENT runtime)
-install(DIRECTORY "${SPADES_CFG_DIR}/corrector"
-        DESTINATION share/spades/configs
+        COMPONENT spades)
+install(DIRECTORY "configs/"
+        DESTINATION share/spades/configs/corrector
+        COMPONENT spades
         FILES_MATCHING PATTERN "*.info")

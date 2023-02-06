@@ -41,7 +41,9 @@ if (SPADES_STATIC_BUILD)
 endif()
 
 install(TARGETS spades-ionhammer
+        COMPONENT spades
         RUNTIME DESTINATION bin)
-install(DIRECTORY "${SPADES_CFG_DIR}/ionhammer"
-        DESTINATION share/spades/configs
-                FILES_MATCHING PATTERN "*.cfg")
+install(DIRECTORY "ionhammer/"
+        DESTINATION share/spades/configs/ionhammer
+        COMPONENT spades
+        FILES_MATCHING PATTERN "*.cfg")
