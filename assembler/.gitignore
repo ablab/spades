@@ -7,7 +7,6 @@ spades_output/
 spades_test/
 teamcity_precompiled/
 CMakeFiles/
-scripts/
 share/
 *.launch
 *.ebwt
