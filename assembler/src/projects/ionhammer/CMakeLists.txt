@@ -43,7 +43,7 @@ endif()
 install(TARGETS spades-ionhammer
         COMPONENT spades
         RUNTIME DESTINATION bin)
-install(DIRECTORY "ionhammer/"
+install(DIRECTORY "configs/"
         DESTINATION share/spades/configs/ionhammer
         COMPONENT spades
         FILES_MATCHING PATTERN "*.cfg")
