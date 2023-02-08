@@ -97,6 +97,11 @@ public:
         edge_coverage_.reserve(EdgeCount());
     }
 
+    GraphCoverageMap(const Graph& g, size_t edge_count) : g_(g) {
+        edge_coverage_.reserve(edge_count);
+    }
+
+
     GraphCoverageMap(const Graph& g, const PathContainer& paths, bool subscribe = false) :
             GraphCoverageMap(g) {
         AddPaths(paths, subscribe);

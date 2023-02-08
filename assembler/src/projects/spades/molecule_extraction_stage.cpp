@@ -388,7 +388,7 @@ namespace debruijn_graph {
                                                                          opts.priority_coeff);
             INFO("HERE6");
 
-            path_extend::GraphCoverageMap cover_map(graph_pack.g);
+            path_extend::GraphCoverageMap cover_map(graph_pack.g, out_edges.size());
 
             INFO("HERE7");
             path_extend::UniqueData unique_data;
