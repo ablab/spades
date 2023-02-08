@@ -238,7 +238,7 @@ public:
     static const size_t BASIC_N_CNT = 100;
 
     ShortLoopResolver(const Graph& g, std::shared_ptr<ShortLoopEstimator> loop_estimator)
-            : g_(g), loop_estimator_(loop_estimator) { }
+            : g_(g), loop_estimator_(loop_estimator) { INFO("ShortLoopResolver");}
 
     void ResolveShortLoop(BidirectionalPath& path) const {
         EdgeId back_cycle_edge;
@@ -1018,6 +1018,8 @@ public:
               used_storage_(unique),
               investigate_short_loops_(investigate_short_loops),
               cov_map_(cov_map) {
+        INFO("LoopDetectingPathExtender");
+
 
     }
 
@@ -1148,7 +1150,7 @@ public:
         LoopDetectingPathExtender(gp, cov_map, unique, investigate_short_loops, use_short_loop_cov_resolver, is),
         extensionChooser_(ec),
         loop_resolver_(gp.g, std::make_shared<CombinedLoopEstimator>(gp.g, gp.flanking_cov, extensionChooser_->wc(), weight_threshold)),
-        weight_threshold_(weight_threshold) {}
+        weight_threshold_(weight_threshold) { INFO("SimpleExtender");}
 
     std::shared_ptr<ExtensionChooser> GetExtensionChooser() const {
         return extensionChooser_;
@@ -1259,7 +1261,7 @@ public:
                        double weight_threshold = 0.0):
             SimpleExtender(gp, cov_map, unique, ec, is, investigate_short_loops, use_short_loop_cov_resolver, weight_threshold),
             good_edges_(good_edges) {
-
+            INFO("GoodEdgeExtender");
     }
 
 protected:
