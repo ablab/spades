@@ -830,7 +830,7 @@ def save_quast_report(contigs, dataset_info, contig_storage_dir, output_dir, art
 
         if not os.path.exists(quast_output_dir):
             if not ('quast_params' in dataset_info.__dict__ and dataset_info.quast_params):
-                log.err('QUAST params are not set')
+                log.warn('QUAST params are not set')
                 return
 
             fn = os.path.join(output_dir, file_name + "." + ext)
