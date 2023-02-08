@@ -368,23 +368,36 @@ namespace debruijn_graph {
 
             if (graph_pack.barcode_clustered_indices[0].size() == 0)
                 return;
-
+            INFO("HERE1");
             auto paired_lib = path_extend::MakeNewLib(graph_pack.g, lib_10x, graph_pack.barcode_clustered_indices[0]);
+            INFO("HERE2");
             std::shared_ptr<path_extend::CoverageAwareIdealInfoProvider> iip = std::make_shared<path_extend::CoverageAwareIdealInfoProvider>(graph_pack.g, paired_lib, lib_10x.data().unmerged_read_length);
+            INFO("HERE3");
             auto wc = std::make_shared<path_extend::PathCoverWeightCounter>(graph_pack.g, paired_lib, params.pset.normalize_weight,
                                                           params.pset.extension_options.single_threshold,
                                                           iip);
+            INFO("HERE4");
+
             auto opts = params.pset.extension_options;
+            INFO("HERE4");
             auto extension_chooser_1 = std::make_shared<path_extend::TrivialExtensionChooser>(graph_pack.g);
+            INFO("HERE5");
 
             auto extension_chooser_2 = std::make_shared<path_extend::SimpleExtensionChooser>(graph_pack.g, wc,
                                                                          opts.weight_threshold,
                                                                          opts.priority_coeff);
+            INFO("HERE6");
+
             path_extend::GraphCoverageMap cover_map(graph_pack.g);
+
+            INFO("HERE7");
             path_extend::UniqueData unique_data;
+            INFO("HERE8");
             path_extend::UsedUniqueStorage used_unique_storage(unique_data.main_unique_storage_, graph_pack.g);
+            INFO("HERE9");
 
             std::set<EdgeId> edge_set(out_edges.begin(), out_edges.end());
+            INFO("HERE10");
             auto extender_1 = std::make_shared<path_extend::GoodEdgeExtender>(graph_pack, cover_map,
                                                                               used_unique_storage,
                                                                               extension_chooser_1,
@@ -393,6 +406,7 @@ namespace debruijn_graph {
                                                                               true, /*investigate loops*/
                                                                               true /*use short loop coverage resolver*/,
                                                                               opts.weight_threshold);
+            INFO("HERE11");
             auto extender_2 = std::make_shared<path_extend::GoodEdgeExtender>(graph_pack, cover_map,
                                                                             used_unique_storage,
                                                                             extension_chooser_2,
@@ -401,15 +415,21 @@ namespace debruijn_graph {
                                                                             true, /*investigate loops*/
                                                                             true /*use short loop coverage resolver*/,
                                                                             opts.weight_threshold);
+            INFO("HERE12");
             path_extend::PathExtendResolver resolver(graph_pack.g);
+            INFO("HERE13");
             auto seeds = resolver.MakeSeedsFromEdgeSet(out_edges);
+            INFO("HERE14");
             seeds.SortByLength();
+            INFO("HERE15");
 
             typedef std::vector<std::shared_ptr<path_extend::PathExtender>> Extenders;
             Extenders extenders {extender_1, extender_2};
+            INFO("HERE16");
             path_extend::CompositeExtender composite_extender(graph_pack.g, cover_map,
                                                               used_unique_storage,
                                                               extenders);
+            INFO("HERE17");
             path_set = resolver.ExtendSeeds(seeds, composite_extender);
             DEBUG("path_set.size() - " << path_set.size());
         }
