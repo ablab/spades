@@ -1230,9 +1230,9 @@ protected:
 
 
 
-class GoodEdgeExtender : public SimpleExtender {
+class   GoodEdgeExtender : public SimpleExtender {
 protected:
-    std::set<EdgeId> good_edges_;
+    const std::set<EdgeId> &good_edges_;
 
     void FilterGoodEdges(ExtensionChooser::EdgeContainer * result) {
         ExtensionChooser::EdgeContainer new_edges;
@@ -1253,7 +1253,7 @@ public:
                        UsedUniqueStorage &unique,
                        std::shared_ptr<ExtensionChooser> ec,
                        size_t is,
-                       std::set<EdgeId> good_edges,
+                       const std::set<EdgeId> &good_edges,
                        bool investigate_short_loops,
                        bool use_short_loop_cov_resolver,
                        double weight_threshold = 0.0):
