@@ -28,6 +28,7 @@ enum class LibraryType {
     PathExtendContigs,
     UntrustedContigs,
     FLRNAReads,
+    TellSeqReads,
     AssemblyGraph
 };
 

@@ -7,6 +7,7 @@
 
 #include "library.hpp"
 
+#include "library/library_fwd.hpp"
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/YAMLTraits.h"
@@ -40,6 +41,7 @@ struct ScalarEnumerationTraits<LibraryType> {
         io.enumCase(value, "sanger",              LibraryType::SangerReads);
         io.enumCase(value, "nanopore",            LibraryType::NanoporeReads);
         io.enumCase(value, "tslr",                LibraryType::TSLReads);
+        io.enumCase(value, "tell-seq",            LibraryType::TellSeqReads);
         io.enumCase(value, "trusted-contigs",     LibraryType::TrustedContigs);
         io.enumCase(value, "untrusted-contigs",   LibraryType::UntrustedContigs);
         io.enumCase(value, "path-extend-contigs", LibraryType::PathExtendContigs);
@@ -69,6 +71,7 @@ void SequencingLibraryBase::yamlize(llvm::yaml::IO &io) {
     io.mapOptional("interlaced reads", interlaced_reads_);
     io.mapOptional("merged reads", merged_reads_);
     io.mapOptional("single reads", single_reads_);
+    io.mapOptional("aux", aux_reads_);
 }
 
 void SequencingLibraryBase::validate(llvm::yaml::IO &, llvm::StringRef &res) {
@@ -76,6 +79,7 @@ void SequencingLibraryBase::validate(llvm::yaml::IO &, llvm::StringRef &res) {
     case LibraryType::PairedEnd:
     case LibraryType::MatePairs:
     case LibraryType::HQMatePairs:
+    case LibraryType::TellSeqReads:
         if (left_paired_reads_.size() != right_paired_reads_.size()) {
             res = "Left and right reads lists should have equal length";
             return;
@@ -115,13 +119,18 @@ void SequencingLibraryBase::validate(llvm::yaml::IO &, llvm::StringRef &res) {
         res = "Unsupported library type";
         return;
   }
+
+  if (type_  == LibraryType::TellSeqReads && aux_reads_.size() != left_paired_reads_.size()) {
+    res = "Aux stream (with barcodes) must be specified for TellSeq reads";
+    return;
+  }
 }
 
 void SequencingLibraryBase::update_relative_reads_filenames(const std::filesystem::path &input_dir) {
     auto update_relative_filename = [&input_dir](const std::filesystem::path &filename) {
         return input_dir / filename;
     };
-    
+
     std::transform(left_paired_reads_.begin(), left_paired_reads_.end(), left_paired_reads_.begin(),
                    update_relative_filename);
     std::transform(right_paired_reads_.begin(), right_paired_reads_.end(), right_paired_reads_.begin(),
@@ -129,6 +138,8 @@ void SequencingLibraryBase::update_relative_reads_filenames(const std::filesyste
     std::transform(interlaced_reads_.begin(), interlaced_reads_.end(), interlaced_reads_.begin(),
                    update_relative_filename);
     std::transform(merged_reads_.begin(), merged_reads_.end(), merged_reads_.begin(),
+                   update_relative_filename);
+    std::transform(aux_reads_.begin(), aux_reads_.end(), aux_reads_.begin(),
                    update_relative_filename);
     std::transform(single_reads_.begin(), single_reads_.end(), single_reads_.begin(),
                    update_relative_filename);

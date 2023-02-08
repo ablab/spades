@@ -74,6 +74,7 @@ public:
         interlaced_reads_.clear();
         merged_reads_.clear();
         single_reads_.clear();
+        aux_reads_.clear();
     }
 
     void update_relative_reads_filenames(const std::filesystem::path &input_dir);
@@ -84,6 +85,10 @@ public:
 
     void push_back_merged(const std::filesystem::path &reads) {
         merged_reads_.push_back(reads);
+    }
+
+    void push_back_aux(const std::filesystem::path &reads) {
+        aux_reads_.push_back(reads);
     }
 
     void push_back_paired(const std::filesystem::path &left, const std::filesystem::path &right) {
@@ -127,6 +132,18 @@ public:
         return adt::make_range(merged_begin(), merged_end());
     }
 
+    single_reads_iterator aux_begin() const {
+        return single_reads_iterator(aux_reads_.begin(), aux_reads_.end());
+    }
+
+    single_reads_iterator aux_end() const {
+        return single_reads_iterator(aux_reads_.end(), aux_reads_.end());
+    }
+
+    adt::iterator_range<single_reads_iterator> aux_reads() const {
+        return adt::make_range(aux_begin(), aux_end());
+    }
+
     single_reads_iterator reads_begin() const {
         // NOTE: We have a contract with single_end here. Single reads always go last!
         single_reads_iterator res(left_paired_reads_.begin(), left_paired_reads_.end());
@@ -166,6 +183,10 @@ public:
 
     bool has_merged() const {
         return !merged_reads_.empty();
+    }
+
+    bool has_aux() const {
+        return !aux_reads_.empty();
     }
 
     adt::iterator_range<single_reads_iterator> single_reads() const {
@@ -267,6 +288,7 @@ private:
     std::vector<std::filesystem::path> interlaced_reads_;
     std::vector<std::filesystem::path> merged_reads_;
     std::vector<std::filesystem::path> single_reads_;
+    std::vector<std::filesystem::path> aux_reads_;
 };
 
 template<class Data>
