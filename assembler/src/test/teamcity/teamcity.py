@@ -86,7 +86,7 @@ try:
     if 'etalon_saves' in dataset_info.__dict__:
         log.start_block('saves', 'Comparing etalon saves')
         log.log("Comparing etalon saves now")
-        ecode = os.system(os.path.join(spades_dir, "./src/test/teamcity/detect_diffs.sh") + " " + output_dir + " " + dataset_info.etalon_saves)
+        ecode = os.system(os.path.join(working_dir, "src/test/teamcity/detect_diffs.sh") + " " + output_dir + " " + dataset_info.etalon_saves)
         if ecode != 0:
             rewrite_latest = False
             log.err("Comparing etalon saves did not pass, exit code " + str(ecode))
