@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "sequence/sequence.hpp"
 #include "single_read.hpp"
 
 #include <string>
@@ -122,8 +123,35 @@ private:
 
 typedef UniversalPairedRead<SingleRead> PairedRead;
 
+class TellSeqRead : public PairedRead {
+  public:
+    const auto &aux() const { return aux_; }
+    auto &aux() { return aux_; }
+
+    const TellSeqRead operator!() const {
+        return TellSeqRead(!second(), !first(), orig_insert_size(), aux_);
+    }
+
+
+    TellSeqRead() = default;
+
+    TellSeqRead(SingleReadT first, SingleReadT second,
+                size_t insert_size,
+                SingleReadT aux)
+            : PairedRead(std::move(first), std::move(second), insert_size),
+              aux_(aux) {}
+
+  private:
+    SingleReadT aux_;
+};
+
 inline std::ostream &operator<<(std::ostream &os, const PairedRead &read) {
     os << "Single read first=" << read.first() << " second=" << read.second() << std::endl;
+    return os;
+}
+
+inline std::ostream &operator<<(std::ostream &os, const TellSeqRead &read) {
+    os <<  "Single read first=" << read.first() << " second=" << read.second() << " aux=" << read.aux() << std::endl;
     return os;
 }
 

@@ -9,11 +9,13 @@
 #include "assembly_graph/core/graph.hpp"
 #include "io/reads/binary_streams.hpp"
 #include "io/reads/file_read_flags.hpp"
+#include "io/reads/io_helper.hpp"
 #include "io/reads/rc_reader_wrapper.hpp"
 #include "io/reads/multifile_reader.hpp"
 #include "io/reads/converting_reader_wrapper.hpp"
 #include "io/reads/edge_sequences_reader.hpp"
 
+#include "library/library_fwd.hpp"
 #include "utils/filesystem/file_opener.hpp"
 #include "utils/logger/logger.hpp"
 
@@ -42,7 +44,7 @@ bool ReadConverter::LoadLibIfExists(SequencingLibraryT& lib) {
     size_t lib_index = 0;
 
     info >> format;
-    
+
     if (!info.eof())
         info >> lib_index;
 
@@ -73,32 +75,54 @@ void ReadConverter::ConvertToBinary(SequencingLibraryT& lib,
     info.close();
 
     INFO("Converting reads to binary format for library #" << data.lib_index << " (takes a while)");
-    INFO("Converting paired reads");
-    BinaryWriter paired_converter(data.binary_reads_info.paired_read_prefix);
+    ReadStreamStat read_stat;
 
-    PairedStream paired_reader = paired_easy_reader(lib,
-                                                    false, /* followed_by_rc */
-                                                    0,     /* insert_size */
-                                                    false, /* use orientation */
-                                                    true,  /* handle Ns */
-                                                    flags, pool);
-    ReadStreamStat read_stat = paired_converter.ToBinary(paired_reader, lib.orientation(),
-                                                         pool, tagger);
-    read_stat.read_count *= 2;
+    // Special case: TellSeq
+    if (lib.type() == LibraryType::TellSeqReads) {
+        INFO("Converting TellSeq reads");
+        BinaryWriter paired_converter(data.binary_reads_info.paired_read_prefix);
 
-    INFO("Converting single reads");
-    BinaryWriter single_converter(data.binary_reads_info.single_read_prefix);
-    SingleStream single_reader = single_easy_reader(lib, false, false, true, flags, pool);
-    read_stat.merge(single_converter.ToBinary(single_reader, pool, tagger));
+        TellSeqStream paired_reader = tellseq_easy_reader(lib,
+                                                          false, /* followed_by_rc */
+                                                          0,     /* insert_size */
+                                                          false, /* use orientation */
+                                                          true,  /* handle Ns */
+                                                          flags, pool);
+        auto paired_stats =
+                paired_converter.ToBinary(paired_reader, lib.orientation(),
+                                          pool);
+        paired_stats.read_count *= 2;
+        read_stat.merge(paired_stats);
+        data.unmerged_read_length = read_stat.max_len;
+    } else {
+        INFO("Converting paired reads");
+        BinaryWriter paired_converter(data.binary_reads_info.paired_read_prefix);
 
-    data.unmerged_read_length = read_stat.max_len;
-    INFO("Converting merged reads");
-    BinaryWriter merged_converter(data.binary_reads_info.merged_read_prefix);
-    SingleStream merged_reader = merged_easy_reader(lib, false, true, flags, pool);
-    auto merged_stats = merged_converter.ToBinary(merged_reader, pool, tagger);
+        PairedStream paired_reader = paired_easy_reader(lib,
+                                                        false, /* followed_by_rc */
+                                                        0,     /* insert_size */
+                                                        false, /* use orientation */
+                                                        true,  /* handle Ns */
+                                                        flags, pool);
+        auto paired_stat = paired_converter.ToBinary(paired_reader, lib.orientation(),
+                                                     pool, tagger);
+        paired_stat.read_count *= 2;
+        read_stat.merge(paired_stat);
 
-    data.merged_read_length = merged_stats.max_len;
-    read_stat.merge(merged_stats);
+        INFO("Converting single reads");
+        BinaryWriter single_converter(data.binary_reads_info.single_read_prefix);
+        SingleStream single_reader = single_easy_reader(lib, false, false, true, flags, pool);
+        read_stat.merge(single_converter.ToBinary(single_reader, pool, tagger));
+
+        data.unmerged_read_length = read_stat.max_len;
+        INFO("Converting merged reads");
+        BinaryWriter merged_converter(data.binary_reads_info.merged_read_prefix);
+        SingleStream merged_reader = merged_easy_reader(lib, false, true, flags, pool);
+        auto merged_stats = merged_converter.ToBinary(merged_reader, pool, tagger);
+
+        data.merged_read_length = merged_stats.max_len;
+        read_stat.merge(merged_stats);
+    }
     data.read_count = read_stat.read_count;
     data.total_nucls = read_stat.total_len;
 

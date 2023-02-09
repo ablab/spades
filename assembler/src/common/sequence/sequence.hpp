@@ -201,6 +201,10 @@ public:
         }
     }
 
+    const auto *data() const {
+        return data_->data();
+    }
+
     bool operator==(const Sequence &that) const {
         if (size_ != that.size_)
             return false;

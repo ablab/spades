@@ -11,6 +11,7 @@
 #include "io/reads/io_helper.hpp"
 #include "io/reads/multifile_reader.hpp"
 
+#include "io/reads/paired_read.hpp"
 #include "library/library.hpp"
 
 namespace io {
@@ -24,6 +25,18 @@ PairedStream paired_easy_reader(const SequencingLibraryBase &lib,
                                 ThreadPool::ThreadPool *pool) {
     return MultifileWrap<PairedRead>(paired_easy_readers(lib, followed_by_rc, insert_size,
                                                          use_orientation, handle_Ns, flags, pool));
+}
+
+
+TellSeqStream tellseq_easy_reader(const SequencingLibraryBase &lib,
+                                  bool followed_by_rc,
+                                  size_t insert_size,
+                                  bool use_orientation,
+                                  bool handle_Ns,
+                                  FileReadFlags flags,
+                                  ThreadPool::ThreadPool *pool) {
+    return MultifileWrap<TellSeqRead>(tellseq_easy_readers(lib, followed_by_rc, insert_size,
+                                                           use_orientation, handle_Ns, flags, pool));
 }
 
 ReadStreamList<PairedRead> paired_easy_readers(const SequencingLibraryBase &lib,
@@ -43,6 +56,27 @@ ReadStreamList<PairedRead> paired_easy_readers(const SequencingLibraryBase &lib,
         streams.push_back(PairedEasyStream(read_pair, followed_by_rc, insert_size,
                                            use_orientation, handle_Ns, lib.orientation(), flags, pool));
     }
+    return streams;
+}
+
+ReadStreamList<TellSeqRead> tellseq_easy_readers(const SequencingLibraryBase &lib,
+                                                 bool followed_by_rc,
+                                                 size_t insert_size,
+                                                 bool use_orientation,
+                                                 bool handle_Ns,
+                                                 FileReadFlags flags,
+                                                 ThreadPool::ThreadPool *pool) {
+    VERIFY_MSG(lib.has_aux(), "index stream must be specified for tellseq reads");
+    ReadStreamList<TellSeqRead> streams;
+    auto aux_it = lib.aux_begin();
+    for (const auto &read_pair : lib.paired_reads()) {
+        VERIFY(aux_it != lib.aux_end());
+        streams.push_back(TellSeqEasyStream(read_pair.first, read_pair.second,
+                                            *aux_it++,
+                                            followed_by_rc, insert_size,
+                                            use_orientation, handle_Ns, lib.orientation(), flags, pool));
+    }
+
     return streams;
 }
 

@@ -22,7 +22,7 @@ namespace io {
 class SeparatePairedReadStream {
  public:
   typedef PairedRead ReadT;
-   
+
   /*
    * Default constructor.
    *
@@ -162,4 +162,88 @@ class InterleavingPairedReadStream {
    */
   ReadStream<SingleRead> single_;
 };
+
+class TellSeqReadStream {
+ public:
+  typedef TellSeqRead ReadT;
+
+  /*
+   * Default constructor.
+   *
+   * @param filename The pair that contains the names of two files to
+   * be opened.
+   * @param distance Distance between parts of PairedReads.
+   * @param offset The offset of the read quality.
+   */
+  explicit TellSeqReadStream(const std::filesystem::path& filename1, const std::filesystem::path& filename2,
+                             const std::filesystem::path& index,
+                             size_t insert_size,
+                             FileReadFlags flags = FileReadFlags(),
+                             ThreadPool::ThreadPool *pool = nullptr);
+
+  /*
+   * Check whether the stream is opened.
+   *
+   * @return true of the stream is opened and false otherwise.
+   */
+  bool is_open() {
+    return first_.is_open() && second_.is_open();
+  }
+
+  /*
+   * Check whether we've reached the end of stream.
+   *
+   * @return true if the end of stream is reached and false
+   * otherwise.
+   */
+  bool eof();
+
+  /*
+   * Read PairedRead from stream.
+   *
+   * @param pairedread The PairedRead that will store read data.
+   *
+   * @return Reference to this stream.
+   */
+  TellSeqReadStream& operator>>(TellSeqRead& pairedread);
+
+  /*
+   * Close the stream.
+   */
+  void close() {
+    first_.close();
+    second_.close();
+  }
+
+  /*
+   * Close the stream and open it again.
+   */
+  void reset() {
+    first_.reset();
+    second_.reset();
+  }
+
+ private:
+  const size_t insert_size_;
+
+  /*
+   * @variable The first stream (reads from first file).
+   */
+  ReadStream<SingleRead> first_;
+  /*
+   * @variable The second stream (reads from second file).
+   */
+  ReadStream<SingleRead> second_;
+
+  /*
+   * @variable The index stream (reads from index file).
+   */
+  ReadStream<SingleRead> index_;
+
+  // Only for providing information about error for users
+  const std::filesystem::path filename1_;
+  const std::filesystem::path filename2_;
+  const std::filesystem::path aux_;
+};
+
 }

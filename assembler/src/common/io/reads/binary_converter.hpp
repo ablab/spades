@@ -43,6 +43,11 @@ class BinaryWriter {
         uint64_t operator()(const Read &r) const { return r.tag(); }
     };
 
+    template<class Read>
+    struct BarcodeTagger {
+        uint64_t operator()(const Read &r) const { return r.aux().sequence().data()[0]; }
+    };
+
 public:
     typedef size_t CountType;
     static constexpr size_t CHUNK = 100;
@@ -62,6 +67,10 @@ public:
                             LibraryOrientation orientation = LibraryOrientation::Undefined,
                             ThreadPool::ThreadPool *pool = nullptr,
                             ReadTagger<io::SingleRead> tagger = TrivialTagger<io::SingleRead>());
+    ReadStreamStat ToBinary(io::ReadStream<io::TellSeqRead>& stream,
+                            LibraryOrientation orientation = LibraryOrientation::Undefined,
+                            ThreadPool::ThreadPool *pool = nullptr,
+                            ReadTagger<io::TellSeqRead> tagger = BarcodeTagger<io::TellSeqRead>());
 };
 
 }

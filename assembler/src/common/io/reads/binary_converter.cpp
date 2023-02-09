@@ -57,6 +57,28 @@ private:
     Tagger tagger_;
 };
 
+class TellSeqBinaryWriter {
+public:
+    using Tagger = ReadTagger<io::TellSeqRead>;
+
+    TellSeqBinaryWriter(Tagger tagger, LibraryOrientation orientation = LibraryOrientation::Undefined)
+            : tagger_{std::move(tagger)}  {
+        std::tie(rc1_, rc2_) = GetRCFlags(orientation);
+    }
+
+    bool Write(std::ostream& file, const TellSeqRead& r) const {
+        auto tag = tagger_(r);
+        INFO("" << r);
+        return r.BinWrite(file,
+                          rc1_, rc2_,
+                          tag, tag);
+    }
+private:
+    bool rc1_;
+    bool rc2_;
+    Tagger tagger_;
+};
+
 template<class Writer, class Read>
 ReadStreamStat BinaryWriter::ToBinary(const Writer &writer, io::ReadStream<Read> &stream,
                                       ThreadPool::ThreadPool *pool) {
@@ -146,6 +168,14 @@ ReadStreamStat BinaryWriter::ToBinary(io::ReadStream<io::PairedRead>& stream,
                                       ThreadPool::ThreadPool *pool,
                                       ReadTagger<io::SingleRead> tagger) {
     PairedReadBinaryWriter<io::PairedRead> read_writer(tagger, orientation);
+    return ToBinary(read_writer, stream, pool);
+}
+
+ReadStreamStat BinaryWriter::ToBinary(io::ReadStream<io::TellSeqRead>& stream,
+                                      LibraryOrientation orientation,
+                                      ThreadPool::ThreadPool *pool,
+                                      ReadTagger<io::TellSeqRead> tagger) {
+    TellSeqBinaryWriter read_writer(tagger, orientation);
     return ToBinary(read_writer, stream, pool);
 }
 

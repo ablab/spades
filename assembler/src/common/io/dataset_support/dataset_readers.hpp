@@ -28,12 +28,28 @@ PairedStream paired_easy_reader(const SequencingLibraryBase &lib,
                                 FileReadFlags flags = FileReadFlags(),
                                 ThreadPool::ThreadPool *pool = nullptr);
 
+ReadStreamList<TellSeqRead> tellseq_easy_readers(const SequencingLibraryBase &lib,
+                                                 bool followed_by_rc,
+                                                 size_t insert_size,
+                                                 bool use_orientation = true,
+                                                 bool handle_Ns=true,
+                                                 FileReadFlags flags = FileReadFlags(),
+                                                 ThreadPool::ThreadPool *pool = nullptr);
+TellSeqStream tellseq_easy_reader(const SequencingLibraryBase &lib,
+                                  bool followed_by_rc,
+                                  size_t insert_size,
+                                  bool use_orientation = true,
+                                  bool handle_Ns=true,
+                                  FileReadFlags flags = FileReadFlags(),
+                                  ThreadPool::ThreadPool *pool = nullptr);
+
 ReadStreamList<SingleRead> single_easy_readers(const SequencingLibraryBase &lib,
                                                bool followed_by_rc,
                                                bool including_paired_reads,
                                                bool handle_Ns = true,
                                                FileReadFlags flags = FileReadFlags(),
                                                ThreadPool::ThreadPool *pool = nullptr);
+
 SingleStream single_easy_reader(const SequencingLibraryBase &lib,
                                 bool followed_by_rc,
                                 bool including_paired_reads,

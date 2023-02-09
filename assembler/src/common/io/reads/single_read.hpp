@@ -232,7 +232,6 @@ private:
      * @variable The name of SingleRead in input file.
      */
     std::string name_;
-
     /*
      * @variable The comment of SingleRead in input file.
      */
@@ -245,9 +244,6 @@ private:
      * @variable The quality of SingleRead.
      */
     std::string qual_;
-    /*
-     * @variable The flag of SingleRead correctness.
-     */
 
     // Left and right offsets with respect to original sequence
     SequenceOffsetT left_offset_  : 15;
