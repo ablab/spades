@@ -317,7 +317,6 @@ namespace debruijn_graph {
                     component.ClipTips();
                     if (IsSimplePath(component)) {
                         DEBUG("Component is a simple path");
-                        DEBUG(component.edges());
                         std::vector<EdgeId> path;
                         for (auto e : linear_path) {
                             path.push_back(e);
@@ -325,10 +324,8 @@ namespace debruijn_graph {
                         temp_set_.AddPath(path, 1, true);
                     } else if (IsSimpleCycle(component)) {
                         DEBUG("Component is a simple cycle");
-                        DEBUG(component.edges());
                     } else {
                         DEBUG("Component is not a simple path");
-                        DEBUG(component.edges());
                         size_t result = SplitComponentsOnSimplePaths(component);
                         DEBUG("Component is split on " << result << " paths");
                     }
