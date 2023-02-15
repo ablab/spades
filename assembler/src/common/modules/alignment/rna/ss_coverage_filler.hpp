@@ -135,16 +135,17 @@ private:
     }
 
     std::string GetBarcode(const io::SingleRead &r) const {
-        std::string delimeter = "___";
-        size_t start_pos = r.name().find(delimeter) + 3;
+        std::string delimeter = "BX:Z:";
+        size_t start_pos = r.name().find(delimeter);
         std::string barcode = "";
         if (start_pos == std::string::npos) {
             return barcode;
         }
         for (int i = start_pos; i < r.name().length(); ++i) {
-            if (!std::isspace(r.name()[i])) {
+            if (r.name()[i] != '1') {
                 barcode.push_back(r.name()[i]);
             } else {
+                barcode.push_back(r.name()[i]);
                 break;
             }
         }
