@@ -94,7 +94,7 @@ public:
         if (finder.FillDominated()) {
             auto ranges = finder.dominated();
             auto dom_component = finder.AsGraphComponent();
-            std::set<EdgeId> component_edges(dom_component.edges());
+            std::unordered_set<EdgeId> component_edges(dom_component.edges());
             for (auto v : dom_component.exits()) {
                 size_t current_path_length = ranges[v].end_pos;
                 for (auto e : g_.OutgoingEdges(v)) {
