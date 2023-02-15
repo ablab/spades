@@ -273,7 +273,7 @@ namespace debruijn_graph {
             return out_edge_set;
         }
 
-        PathStorage<Graph>& getLongReads(std::set<EdgeId> &edge_set, const std::string &barcode) {
+        PathStorage<Graph>& getLongReads(std::unordered_set<EdgeId> &edge_set, const std::string &barcode) {
             INFO(edge_set);
             temp_set_.Clear();
             std::set<EdgeId> bad_edges;
