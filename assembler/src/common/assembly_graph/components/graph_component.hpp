@@ -8,6 +8,7 @@
 #pragma once
 
 #include <set>
+#include <unordered_set>
 #include <queue>
 #include <string>
 
@@ -69,10 +70,10 @@ class GraphComponent {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename std::set<VertexId>::const_iterator vertex_iterator;
-    typedef typename std::set<EdgeId>::const_iterator edge_iterator;
+    typedef typename std::unordered_set<EdgeId>::const_iterator edge_iterator;
     const Graph& graph_;
     std::set<VertexId> vertices_;
-    std::set<EdgeId> edges_;
+    std::unordered_set<EdgeId> edges_;
     std::set<VertexId> exits_;
     std::set<VertexId> entrances_;
     std::string name_;
