@@ -175,7 +175,6 @@ namespace debruijn_graph {
                 }
             }
 
-            DEBUG(comp.edges());
             for (auto e : comp.edges()) {
                 if (!used_edges.count(e)) {
                     DEBUG("Current edge " << e);
