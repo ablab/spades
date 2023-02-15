@@ -703,7 +703,7 @@ protected:
 
 public:
     InsertSizeLoopDetector(const Graph& g, size_t is):
-        visited_cycles_coverage_map_(g),
+        visited_cycles_coverage_map_(g, 1000),
         path_storage_(),
         min_cycle_len_(is) {
     }
