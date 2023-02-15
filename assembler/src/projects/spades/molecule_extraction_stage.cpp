@@ -250,31 +250,26 @@ namespace debruijn_graph {
         }
 
 
-        std::set<EdgeId> simplifyComponent(std::set<EdgeId> &edge_set, const std::string &barcode) {
+        std::unordered_set<EdgeId> simplifyComponent(std::set<EdgeId> &edge_set, const std::string &barcode) {
             DEBUG(edge_set);
             temp_set_.Clear();
             std::set<EdgeId> bad_edges;
             auto initial_component = GraphComponent<Graph>::FromEdges(gp_.g, edge_set, true);
             initial_component.ChangeCoverageProvider(gp_.barcode_coverage[0].GetBarcodeMap(barcode));
             DEBUG("Initial component");
-            DEBUG(initial_component.edges());
             for (size_t i = 0; i < 2; ++i) {
                 initial_component.RemoveIsolated();
                 DEBUG("After remove isolated");
                 initial_component.ClipTips();
                 DEBUG("After clip tips");
-                DEBUG(initial_component.edges());
                 initial_component.FillGaps(30 * (i + 1));
                 DEBUG("After fill gaps");
-                DEBUG(initial_component.edges());
                 RemoveBulges(initial_component);
                 DEBUG("After remove bulges");
-                DEBUG(initial_component.edges());
                 initial_component.RemoveLowCoveredJunctions();
                 temp_set_.Clear();
             }
             DEBUG("Fixed initial component");
-            DEBUG(initial_component.edges());
             auto out_edge_set = initial_component.edges();
             return out_edge_set;
         }
@@ -286,24 +281,19 @@ namespace debruijn_graph {
             auto initial_component = GraphComponent<Graph>::FromEdges(gp_.g, edge_set, true);
             initial_component.ChangeCoverageProvider(gp_.barcode_coverage[0].GetBarcodeMap(barcode));
             DEBUG("Initial component");
-            DEBUG(initial_component.edges());
             for (size_t i = 0; i < 2; ++i) {
                 initial_component.RemoveIsolated();
                 DEBUG("After remove isolated");
                 initial_component.ClipTips();
                 DEBUG("After clip tips");
-                DEBUG(initial_component.edges());
                 initial_component.FillGaps(30 * (i + 1));
                 DEBUG("After fill gaps");
-                DEBUG(initial_component.edges());
                 RemoveBulges(initial_component);
                 DEBUG("After remove bulges");
-                DEBUG(initial_component.edges());
                 initial_component.RemoveLowCoveredJunctions();
                 temp_set_.Clear();
             }
             DEBUG("Fixed initial component");
-            DEBUG(initial_component.edges());
             edge_set = initial_component.edges();
             for (auto e : edge_set) {
                 if (!used_edges_.count(e)) {
