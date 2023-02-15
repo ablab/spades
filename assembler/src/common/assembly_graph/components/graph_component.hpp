@@ -354,7 +354,7 @@ public:
         return edges_.end();
     }
 
-    const std::set<EdgeId>& edges() const {
+    const std::unordered_set<EdgeId>& edges() const {
         return edges_;
     }
 
