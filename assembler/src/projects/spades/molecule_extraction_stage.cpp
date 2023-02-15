@@ -250,8 +250,7 @@ namespace debruijn_graph {
         }
 
 
-        std::unordered_set<EdgeId> simplifyComponent(std::set<EdgeId> &edge_set, const std::string &barcode) {
-            DEBUG(edge_set);
+        std::unordered_set<EdgeId> simplifyComponent(std::unordered_set<EdgeId> &edge_set, const std::string &barcode) {
             temp_set_.Clear();
             std::set<EdgeId> bad_edges;
             auto initial_component = GraphComponent<Graph>::FromEdges(gp_.g, edge_set, true);
@@ -406,19 +405,12 @@ namespace debruijn_graph {
         void extractEdges(std::vector<MappingPath<EdgeId>> &paths, std::vector<EdgeId> &out_edges, const std::string &barcode) {
             if (paths.size() < cfg::get().pe_params.param_set.rna_10x.min_cloud_size)
                 return;
-            std::map<EdgeId, int> edge_map;
-            std::set<EdgeId> edge_set;
+            std::unordered_set<EdgeId> edge_set;
             for (auto const& path : paths) {
                 std::vector<EdgeId> edges = path.simple_path();
                 for (auto e : edges) {
                     edge_set.insert(e);
                     edge_set.insert(gp_.g.conjugate(e));
-                    if (edge_map.find(e) != edge_map.end()) {
-                        edge_map.emplace(e, 0);
-                        edge_map.emplace(gp_.g.conjugate(e), 0);
-                    }
-                    edge_map[e] += 1;
-                    edge_map[gp_.g.conjugate(e)] += 1;
                 }
             }
             auto out_edges_set = extractor_.simplifyComponent(edge_set, barcode);
