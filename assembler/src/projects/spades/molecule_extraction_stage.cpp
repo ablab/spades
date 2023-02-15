@@ -30,7 +30,7 @@ namespace debruijn_graph {
         const debruijn_graph::conj_graph_pack &gp_;
         std::set<EdgeId> used_edges_;
         PathStorage<Graph> temp_set_;
-        std::vector<EdgeId> getForwardIntersect(EdgeId e, const std::set<EdgeId> &edge_set) const {
+        std::vector<EdgeId> getForwardIntersect(EdgeId e, const std::unordered_set<EdgeId> &edge_set) const {
             auto edges = gp_.g.IncidentEdges(gp_.g.EdgeEnd(e));
             std::vector<EdgeId> filtered;
             for (auto temp_e : edges) {
@@ -41,7 +41,7 @@ namespace debruijn_graph {
             return filtered;
         }
 
-        std::vector<EdgeId> getReverseIntersect(EdgeId e, const std::set<EdgeId> &edge_set) const {
+        std::vector<EdgeId> getReverseIntersect(EdgeId e, const std::unordered_set<EdgeId> &edge_set) const {
             auto edges = gp_.g.IncidentEdges(gp_.g.EdgeStart(e));
             std::vector<EdgeId> filtered;
             for (auto temp_e : edges) {
@@ -77,7 +77,7 @@ namespace debruijn_graph {
             return filtered;
         }
 
-        void extendForward(const std::set<EdgeId> &edge_set,
+        void extendForward(const std::unordered_set<EdgeId> &edge_set,
                            std::deque<EdgeId> &linear_path, EdgeId e) {
             auto extensions = getForwardIntersect(e, edge_set);
             for (auto next_edge : extensions) {
@@ -90,7 +90,7 @@ namespace debruijn_graph {
         }
 
 
-        void extendBackward(const std::set<EdgeId> &edge_set,
+        void extendBackward(const std::unordered_set<EdgeId> &edge_set,
                             std::deque<EdgeId> &linear_path, EdgeId e) {
             auto extensions = getReverseIntersect(e, edge_set);
             for (auto prev_edge : extensions) {
@@ -274,7 +274,6 @@ namespace debruijn_graph {
         }
 
         PathStorage<Graph>& getLongReads(std::unordered_set<EdgeId> &edge_set, const std::string &barcode) {
-            INFO(edge_set);
             temp_set_.Clear();
             std::set<EdgeId> bad_edges;
             auto initial_component = GraphComponent<Graph>::FromEdges(gp_.g, edge_set, true);
@@ -423,7 +422,7 @@ namespace debruijn_graph {
             if (paths.size() < cfg::get().pe_params.param_set.rna_10x.min_cloud_size)
                 return false;
             std::map<EdgeId, int> edge_map;
-            std::set<EdgeId> edge_set;
+            std::unordered_set<EdgeId> edge_set;
             for (auto const& path : paths) {
                 std::vector<EdgeId> edges = path.simple_path();
                 for (auto e : edges) {
