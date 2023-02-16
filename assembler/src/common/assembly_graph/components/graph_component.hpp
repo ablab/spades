@@ -69,7 +69,7 @@ template<class Graph>
 class GraphComponent {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
-    typedef typename std::set<VertexId>::const_iterator vertex_iterator;
+    typedef typename std::unordered_set<VertexId>::const_iterator vertex_iterator;
     typedef typename std::unordered_set<EdgeId>::const_iterator edge_iterator;
     const Graph& graph_;
     std::unordered_set<VertexId> vertices_;
