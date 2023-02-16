@@ -472,7 +472,8 @@ public:
         std::set<VertexId> vertices_to_delete;
         size_t max_isolated_length = 100;
         for (auto e : edges_) {
-
+            if (e > graph_.conjugate(e))
+                continue;
             if (IsIsolated(e) && (graph_.length(e) < max_isolated_length || coverage_provider_->Coverage(e) < 0.5)) {
                 edges_to_delete.insert(e);
                 edges_to_delete.insert(graph_.conjugate(e));
