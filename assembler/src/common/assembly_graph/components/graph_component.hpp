@@ -358,7 +358,7 @@ public:
         return edges_;
     }
 
-    const std::set<VertexId>& vertices() const{
+    const std::unordered_set<VertexId>& vertices() const{
         return vertices_;
     }
 
