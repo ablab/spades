@@ -468,11 +468,11 @@ public:
     }
 
     void RemoveIsolated() {
-        std::set<EdgeId> edges_to_delete;
-        std::set<VertexId> vertices_to_delete;
+        std::unordered_set<EdgeId> edges_to_delete;
+        std::unordered_set<VertexId> vertices_to_delete;
         size_t max_isolated_length = 100;
         for (auto e : edges_) {
-            if (e > graph_.conjugate(e))
+            if (e.int_id() > graph_.conjugate(e).int_id())
                 continue;
             if (IsIsolated(e) && (graph_.length(e) < max_isolated_length || coverage_provider_->Coverage(e) < 0.5)) {
                 edges_to_delete.insert(e);
