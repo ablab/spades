@@ -438,7 +438,7 @@ private:
         }
     }
 
-    void ConstructFlowGraph(FlowGraph<Graph> &fg, const std::set<VertexId> &component) {
+    void ConstructFlowGraph(FlowGraph<Graph> &fg, const std::unordered_set<VertexId> &component) {
         for (auto it = component.begin(); it != component.end(); ++it) {
             fg.AddVertex(*it);
         }
