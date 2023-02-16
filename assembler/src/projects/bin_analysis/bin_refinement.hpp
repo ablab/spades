@@ -42,7 +42,7 @@ double CountMedianCoverage(const Graph &g, const SequenceMapper &mapper, SingleR
 }
 
 typedef std::set<EdgeId> EdgeSet;
-typedef std::set<VertexId> VertexSet;
+typedef std::unordered_set<VertexId> VertexSet;
 
 template<class NeighbourIteratorFactory>
 class DFS {
