@@ -420,12 +420,9 @@ public:
     }
 
     size_t VertexDegree(VertexId v) const {
-        auto all_edges = graph_.IncidentEdges(v);
-        DEBUG(all_edges);
         size_t result = 0;
-        for (auto e : all_edges) {
+        for (auto e : graph_.IncidentEdges(v)) {
             if (edges_.count(e)) {
-                DEBUG(e.int_id() << " is counted");
                 result++;
             }
         }
@@ -433,9 +430,8 @@ public:
     }
 
     size_t VertexInDegree(VertexId v) const {
-        auto all_edges = graph_.IncomingEdges(v);
         size_t result = 0;
-        for (auto e : all_edges) {
+        for (auto e : graph_.IncomingEdges(v)) {
             if (edges_.count(e)) {
                 result++;
             }
@@ -444,9 +440,8 @@ public:
     }
 
     size_t VertexOutDegree(VertexId v) const {
-        auto all_edges = graph_.OutgoingEdges(v);
         size_t result = 0;
-        for (auto e : all_edges) {
+        for (auto e : graph_.OutgoingEdges(v)) {
             if (edges_.count(e)) {
                 result++;
             }
@@ -497,8 +492,8 @@ public:
     }
 
     void ClipTips() {
-        std::set<EdgeId> edges_to_delete;
-        std::set<VertexId> vertices_to_delete;
+        std::unordered_set<EdgeId> edges_to_delete;
+        std::unordered_set<VertexId> vertices_to_delete;
         double mult_coef = 1.0;
         size_t max_tip_length = 3000;
         for (auto e : edges_) {

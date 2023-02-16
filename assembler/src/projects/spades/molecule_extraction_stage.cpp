@@ -251,7 +251,6 @@ namespace debruijn_graph {
 
         std::unordered_set<EdgeId> simplifyComponent(std::unordered_set<EdgeId> &edge_set, const std::string &barcode) {
             temp_set_.Clear();
-            std::set<EdgeId> bad_edges;
             auto initial_component = GraphComponent<Graph>::FromEdges(gp_.g, edge_set, true);
             initial_component.ChangeCoverageProvider(gp_.barcode_coverage[0].GetBarcodeMap(barcode));
             DEBUG("Initial component");
@@ -274,7 +273,6 @@ namespace debruijn_graph {
 
         PathStorage<Graph>& getLongReads(std::unordered_set<EdgeId> &edge_set, const std::string &barcode) {
             temp_set_.Clear();
-            std::set<EdgeId> bad_edges;
             auto initial_component = GraphComponent<Graph>::FromEdges(gp_.g, edge_set, true);
             initial_component.ChangeCoverageProvider(gp_.barcode_coverage[0].GetBarcodeMap(barcode));
             DEBUG("Initial component");
