@@ -220,7 +220,7 @@ void ParallelExtractCDSSubgraphs(const conj_graph_pack &gp,
 
     size_t n = flattened_ids.size();
 
-    std::vector<std::set<EdgeId>> flattened_relevant_edges(n);
+    std::vector<std::unordered_set<EdgeId>> flattened_relevant_edges(n);
     std::vector<std::set<GraphPos>> flattened_stop_poss(n);
 
 #pragma omp parallel for schedule(guided)
