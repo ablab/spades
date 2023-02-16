@@ -380,7 +380,7 @@ private:
         return g_.length(edge) <= max_length_ && !IsTip(edge);
     }
 
-    std::set<EdgeId> CollectUnusedEdges(const std::set<VertexId> &component, const FlowGraph<Graph> &fg,
+    std::set<EdgeId> CollectUnusedEdges(const std::unordered_set<VertexId> &component, const FlowGraph<Graph> &fg,
                                         const std::map<typename FlowGraph<Graph>::FlowVertexId, size_t> &colouring) {
         std::set<EdgeId> result;
         for (auto it_start = component.begin(); it_start != component.end();
@@ -415,24 +415,24 @@ private:
         return g_.length(edge) >= uniqueness_length_;
     }
 
-    bool IsInnerShortEdge(const std::set<VertexId> &component, EdgeId edge) {
+    bool IsInnerShortEdge(const std::unordered_set<VertexId> &component, EdgeId edge) {
         return !IsUnique(edge) && component.count(g_.EdgeStart(edge)) == 1
                 && component.count(g_.EdgeEnd(edge)) == 1;
     }
 
-    void ProcessShortEdge(FlowGraph<Graph> &fg, const std::set<VertexId> &component, EdgeId edge) {
+    void ProcessShortEdge(FlowGraph<Graph> &fg, const std::unordered_set<VertexId> &component, EdgeId edge) {
         if (IsInnerShortEdge(component, edge)) {
             fg.AddEdge(g_.EdgeStart(edge), g_.EdgeEnd(edge));
         }
     }
 
-    void ProcessSource(FlowGraph<Graph> &fg, const std::set<VertexId> &/*component*/, EdgeId edge) {
+    void ProcessSource(FlowGraph<Graph> &fg, const std::unordered_set<VertexId> &/*component*/, EdgeId edge) {
         if (IsPlausible(edge) || IsUnique(edge)) {
             fg.AddSource(g_.EdgeEnd(edge), 1);
         }
     }
 
-    void ProcessSink(FlowGraph<Graph> &fg, const std::set<VertexId> &/*component*/, EdgeId edge) {
+    void ProcessSink(FlowGraph<Graph> &fg, const std::unordered_set<VertexId> &/*component*/, EdgeId edge) {
         if (IsPlausible(edge) || IsUnique(edge)) {
             fg.AddSink(g_.EdgeStart(edge), 1);
         }
