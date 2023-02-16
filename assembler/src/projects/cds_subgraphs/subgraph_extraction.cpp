@@ -125,7 +125,7 @@ MinDistRelevantComponentFinder::RelevantComponent(size_t cds_len_est,
     auto gc = omnigraph::GraphComponent<Graph>::FromVertices(g_, within_cds_limit.begin(), within_cds_limit.end());
 
     //Adding edges upstream
-    std::set<EdgeId> revised_edges(gc.edges());
+    std::unordered_set<EdgeId> revised_edges(gc.edges());
     for (auto d_v : dist_vertices) {
         size_t min_end_dist = d_v.first;
         VertexId v = d_v.second;
