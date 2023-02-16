@@ -18,7 +18,7 @@ namespace toolchain {
 class ComponentExpander {
     const Graph &g_;
 
-    bool IsInnerVertex(VertexId v, const std::set<EdgeId> &edges) const {
+    bool IsInnerVertex(VertexId v, const std::unordered_set<EdgeId> &edges) const {
         auto in_f = [&edges](EdgeId e) {
             return edges.count(e);
         };
@@ -31,7 +31,7 @@ public:
 
     omnigraph::GraphComponent<Graph> Expand(const omnigraph::GraphComponent<Graph> &component) const {
         INFO("Expanding component to include incident edges of all 'inner' vertices");
-        std::set<EdgeId> expanded_edges(component.edges());
+        std::unordered_set<EdgeId> expanded_edges(component.edges());
         for (VertexId v : component.vertices()) {
             if (IsInnerVertex(v, component.edges())) {
                 utils::insert_all(expanded_edges, g_.IncidentEdges(v));
