@@ -474,12 +474,16 @@ public:
                 edges_to_delete.insert(graph_.conjugate(e));
             }
         }
+        std::unordered_set<VertexId> vertices_to_check;
 
         for (auto e : edges_to_delete) {
             edges_.erase(e);
+            vertices_to_check.insert(graph_.EdgeEnd(e));
+            vertices_to_check.insert(graph_.EdgeStart(e));
         }
 
-        for (auto v : vertices_) {
+
+        for (auto v : vertices_to_check) {
             if (VertexDegree(v) == 0) {
                 vertices_to_delete.insert(v);
                 vertices_to_delete.insert(graph_.conjugate(v));
