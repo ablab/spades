@@ -72,7 +72,7 @@ class GraphComponent {
     typedef typename std::set<VertexId>::const_iterator vertex_iterator;
     typedef typename std::unordered_set<EdgeId>::const_iterator edge_iterator;
     const Graph& graph_;
-    std::set<VertexId> vertices_;
+    std::unordered_set<VertexId> vertices_;
     std::unordered_set<EdgeId> edges_;
     std::set<VertexId> exits_;
     std::set<VertexId> entrances_;
@@ -472,6 +472,7 @@ public:
         std::set<VertexId> vertices_to_delete;
         size_t max_isolated_length = 100;
         for (auto e : edges_) {
+
             if (IsIsolated(e) && (graph_.length(e) < max_isolated_length || coverage_provider_->Coverage(e) < 0.5)) {
                 edges_to_delete.insert(e);
                 edges_to_delete.insert(graph_.conjugate(e));
