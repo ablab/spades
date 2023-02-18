@@ -4,11 +4,13 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "alignment/kmer_sequence_mapper.hpp"
-#include "barcode_index_construction.hpp"
-
-#include "barcode_index/barcode_index_builder.hpp"
 #include "alignment/bwa_sequence_mapper.hpp"
+#include "alignment/kmer_sequence_mapper.hpp"
+
+#include "barcode_index_construction.hpp"
+#include "barcode_index/barcode_index_builder.hpp"
+
+#include "utils/verify.hpp"
 
 namespace cont_index {
 
@@ -31,7 +33,15 @@ void ConstructBarcodeIndex(barcode_index::FrameBarcodeIndex<debruijn_graph::Grap
         FrameConcurrentBarcodeIndexBuffer<debruijn_graph::Graph> buffer(graph, frame_size);
 //        ConcurrentBufferFiller buffer_filler(graph, buffer, mapper, barcode_prefices);
         FrameBarcodeIndexBuilder barcode_index_builder(graph, mapper, barcode_prefices, frame_size, nthreads);
-        barcode_index_builder.ConstructBarcodeIndex(barcode_index, lib);
+        bool is_tellseq = lib.type() == io::LibraryType::TellSeqReads;
+        if (not is_tellseq) {
+//            auto read_streams = io::paired_easy_readers(lib, false, 0);
+            barcode_index_builder.ConstructBarcodeIndex(io::paired_easy_readers(lib, false, 0), barcode_index, lib, is_tellseq);
+        }
+        if (is_tellseq) {
+//            auto read_streams = io::tellseq_easy_readers(lib, false, 0);
+            barcode_index_builder.ConstructBarcodeIndex(io::tellseq_easy_readers(lib, false, 0), barcode_index, lib, is_tellseq);
+        }
         INFO("Barcode index construction finished.");
 
         if (bin_save) {
