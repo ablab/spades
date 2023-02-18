@@ -396,11 +396,11 @@ int main(int argc, char** argv) {
         TIME_TRACE_SCOPE("Containment index");
 
         auto &lib = dataset[cfg.libindex];
-        if (lib.type() == io::LibraryType::Clouds10x) {
+        if (lib.type() == io::LibraryType::Clouds10x or lib.type() == io::LibraryType::TellSeqReads) {
             cont_index::ConstructBarcodeIndex(barcode_index, lib, graph, cfg.tmpdir, cfg.nthreads, cfg.frame_size,
                                               cfg.mapping_k, cfg.bin_load, cfg.debug);
         } else {
-            WARN("Only read cloud libraries with barcode tags are supported for links");
+            ERROR("Only read cloud libraries with barcode tags are supported for links");
         }
 
         ResolveComplexVertices(cfg, graph, barcode_extractor_ptr, id_mapper.get(), gfa_writer);

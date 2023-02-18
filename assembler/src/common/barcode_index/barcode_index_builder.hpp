@@ -66,22 +66,27 @@ class ConcurrentBufferFiller {
                            FrameConcurrentBuffer &buf,
                            const SequenceMapper &mapper,
                            const std::vector<std::string> &barcode_prefices,
-                           size_t starting_barcode) : g_(g),
-                                                      buf_(buf),
-                                                      mapper_(mapper),
-                                                      barcode_prefices_(barcode_prefices),
-                                                      encoder_(starting_barcode) { Init(); }
+                           size_t starting_barcode, bool is_tellseq) : g_(g),
+                                                                       buf_(buf),
+                                                                       mapper_(mapper),
+                                                                       barcode_prefices_(barcode_prefices),
+                                                                       encoder_(starting_barcode),
+                                                                       is_tellseq_(is_tellseq) { Init(); }
 
     bool operator()(std::unique_ptr<io::PairedRead> r) {
         const Sequence& read1 = r->first().sequence();
         const Sequence& read2 = r->second().sequence();
         MappingPath path1 = mapper_.MapSequence(read1);
         MappingPath path2 = mapper_.MapSequence(read2);
+        auto barcode = GetBarcode(std::move(r));
+        if (barcode.empty()) {
+            return false;
+        }
         if (path1.size() > 0 and path2.size() > 0) {
             TRACE("non-empty pair");
         }
 
-        ProcessPairedRead(r->first().name(), r->second().name(), path1, path2);
+        ProcessPairedRead(barcode, path1, path2);
         return false;
     }
 
@@ -94,17 +99,9 @@ class ConcurrentBufferFiller {
     }
 
   private:
-    void ProcessPairedRead(const std::string &name1,
-                           const std::string &name2,
+    void ProcessPairedRead(const std::string &barcode_string,
                            const MappingPath& path1,
                            const MappingPath& path2) {
-        std::string barcode_string = GetTenXBarcodeFromRead(name1, barcode_prefices_);
-        std::string second_barcode_string = GetTenXBarcodeFromRead(name2, barcode_prefices_);
-        if (barcode_string.empty() or barcode_string != second_barcode_string) {
-            TRACE(barcode_string);
-            TRACE(second_barcode_string);
-            return;
-        }
 
         auto code_result = encoder_.find(barcode_string);
         BarcodeId barcode;
@@ -118,6 +115,24 @@ class ConcurrentBufferFiller {
     }
     void Init() {
         buf_.InitialFillMap();
+    }
+
+    std::string GetBarcode(std::unique_ptr<io::PairedRead> r) {
+        if (not is_tellseq_) {
+            auto left_barcode_string = GetTenXBarcodeFromRead(r->first().name(), barcode_prefices_);
+            auto right_barcode_string = GetTenXBarcodeFromRead(r->second().name(), barcode_prefices_);
+
+            if (left_barcode_string.empty() or left_barcode_string != right_barcode_string) {
+                TRACE(left_barcode_string);
+                TRACE(right_barcode_string);
+                std::string empty;
+                return empty;
+            }
+            return left_barcode_string;
+        } else {
+            io::PairedRead* paired = r.get();
+            return static_cast<io::TellSeqRead*>(paired)->aux().sequence().str();
+        }
     }
 
     string GetTenXBarcodeFromRead(const std::string &read_name, const std::vector<string>& barcode_prefixes) {
@@ -158,6 +173,7 @@ class ConcurrentBufferFiller {
     const SequenceMapper &mapper_;
     const std::vector<std::string> barcode_prefices_;
     BarcodeEncoder encoder_;
+    bool is_tellseq_;
 
     DECL_LOGGER("ConcurrentBufferFiller");
 };
@@ -179,8 +195,24 @@ class FrameBarcodeIndexBuilder {
         frame_size_(frame_size),
         num_threads_(num_threads) {}
 
-    void ConstructBarcodeIndex(FrameBarcodeIndex<Graph> &barcode_index, const io::SequencingLibraryBase &lib) {
-        auto read_streams = io::paired_easy_readers(lib, false, 0);
+    template<class ReadType>
+    void ConstructBarcodeIndex(io::ReadStreamList<ReadType> read_streams,
+                               FrameBarcodeIndex<Graph> &barcode_index,
+                               const io::SequencingLibraryBase &lib,
+                               bool is_tellseq);
+  private:
+    const Graph& g_;
+    const SequenceMapper &mapper_;
+    const std::vector<std::string> barcode_prefices_;
+    size_t frame_size_;
+    size_t num_threads_;
+};
+template<class ReadType>
+void FrameBarcodeIndexBuilder::ConstructBarcodeIndex(io::ReadStreamList<ReadType> read_streams,
+                                                     FrameBarcodeIndex<Graph> &barcode_index,
+                                                     const io::SequencingLibraryBase &lib,
+                                                     bool is_tellseq) {
+    {
         size_t starting_barcode = 0;
         size_t counter = 0;
         barcode_index.SetFrameSize(frame_size_);
@@ -188,7 +220,7 @@ class FrameBarcodeIndexBuilder {
         for (auto &stream: read_streams) {
             DEBUG("Processing stream " << counter << " , currently " << starting_barcode << " barcodes");
             FrameConcurrentBarcodeIndexBuffer<debruijn_graph::Graph> buffer(g_, frame_size_);
-            ConcurrentBufferFiller buffer_filler(g_, buffer, mapper_, barcode_prefices_, starting_barcode);
+            ConcurrentBufferFiller buffer_filler(g_, buffer, mapper_, barcode_prefices_, starting_barcode, is_tellseq);
             hammer::ReadProcessor read_processor(static_cast<unsigned int>(num_threads_));
             read_processor.Run(stream, buffer_filler);
             starting_barcode += buffer_filler.GetNumberOfBarcodes();
@@ -197,11 +229,6 @@ class FrameBarcodeIndexBuilder {
             DEBUG("Finished update");
         }
     }
-  private:
-    const Graph& g_;
-    const SequenceMapper &mapper_;
-    const std::vector<std::string> barcode_prefices_;
-    size_t frame_size_;
-    size_t num_threads_;
-};
+
+}
 } //namespace barcode index
