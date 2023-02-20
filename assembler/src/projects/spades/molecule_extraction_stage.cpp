@@ -573,6 +573,8 @@ namespace debruijn_graph {
                                             graph_pack.barcode_coverage[0].GetRightMostPosition(path.first->ToVector()[path.first->ToVector().size() - 1], current_barcode));
         }
         long_reads_temp_container.clear();
+        graph_pack.clustered_indices.Clear();
+        graph_pack.barcode_clustered_indices.Clear();
 
         INFO("Starting to save all paths found");
         std::vector<PathInfo<Graph>> debug_path;
