@@ -75,7 +75,7 @@ class Sequence {
         size_t bytes_size = DataSize(size_);
         ST *bytes = data_->data();
 
-        VERIFY(is_dignucl(s[0]) || is_nucl(s[0]));
+        //VERIFY_MSG(is_dignucl(s[0]) || is_nucl(s[0]), s);
 
         // Which symbols does our string contain : 0123 or ACGT?
         bool digit_str = is_dignucl(s[0]);
