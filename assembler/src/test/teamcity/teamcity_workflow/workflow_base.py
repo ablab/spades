@@ -175,7 +175,7 @@ def make_spades_cmd(args, dataset_info, test, spades_params_list, spades_dir, ou
         spades_params.append("--configs-dir")
         spades_params.append(args.spades_cfg_dir)
 
-    spades_exec = "spades.py"
+    spades_exec = "bin/spades.py"
 
     cmd = os.path.join(spades_dir, spades_exec) + " " + " ".join(spades_params)
     if not("supress_output_dir" in test and test["supress_output_dir"]) and \
