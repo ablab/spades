@@ -403,6 +403,12 @@ int main(int argc, char** argv) {
             ERROR("Only read cloud libraries with barcode tags are supported for links");
         }
 
+        //std::ofstream barcode_out(cfg.output_dir / "barcode_index.txt");
+        //for (auto it = barcode_index.begin(); it != barcode_index.end(); ++it) {
+        //    barcode_out << it->first.int_id() << std::endl;
+        //    it->second.Serialize(barcode_out);
+        //}
+
         ResolveComplexVertices(cfg, graph, barcode_extractor_ptr, id_mapper.get(), gfa_writer);
 
         if (cfg.statistics) {

@@ -40,6 +40,7 @@ void ConstructBarcodeIndex(barcode_index::FrameBarcodeIndex<debruijn_graph::Grap
         }
         if (is_tellseq) {
 //            auto read_streams = io::tellseq_easy_readers(lib, false, 0);
+            INFO("Constructing from tellseq lib");
             barcode_index_builder.ConstructBarcodeIndex(io::tellseq_easy_readers(lib, false, 0), barcode_index, lib, is_tellseq);
         }
         INFO("Barcode index construction finished.");

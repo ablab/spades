@@ -80,6 +80,7 @@ class ConcurrentBufferFiller {
         MappingPath path2 = mapper_.MapSequence(read2);
         auto barcode = GetBarcode(std::move(r));
         if (barcode.empty()) {
+            TRACE("Empty barcode")
             return false;
         }
         if (path1.size() > 0 and path2.size() > 0) {
@@ -228,6 +229,7 @@ void FrameBarcodeIndexBuilder::ConstructBarcodeIndex(io::ReadStreamList<ReadType
             barcode_index.Update(buffer);
             DEBUG("Finished update");
         }
+        INFO(starting_barcode << "total barcodes in the barcode index");
     }
 
 }
