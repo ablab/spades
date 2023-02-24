@@ -26,7 +26,7 @@ if sys.version.startswith('2.'):
     import pyyaml2 as pyyaml
 elif sys.version.startswith('3.'):
     import pyyaml3 as pyyaml
-sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../../spades_pipeline'))
+sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../../projects/spades/pipeline/spades_pipeline'))
 import support
 
 bowtie_build = "bowtie2-build"
@@ -100,12 +100,12 @@ for d in datasets:
     support.check_file_existence(d)    
 
 if not datasets:
-    sys.stderr.wirte("no datasets provided")
+    sys.stderr.write("no datasets provided")
     usage()
     sys.exit(1)   
 
 if not reference:
-    sys.stderr.wirte("no refrence provided")
+    sys.stderr.write("no refrence provided")
     usage()
     sys.exit(1)   
 
