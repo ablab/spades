@@ -67,4 +67,20 @@ void ConstructBarcodeIndex(barcode_index::FrameBarcodeIndex<debruijn_graph::Grap
     INFO(total_reads << " total reads in barcode index");
 }
 
+void DownsampleBarcodeIndex(const debruijn_graph::Graph &graph,
+                            unsigned nthreads,
+                            barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> &barcode_index,
+                            barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> &downsampled_index,
+                            double sampling_factor) {
+    VERIFY_DEV(math::ls(sampling_factor, 1.0));
+    const unsigned min_occ = 2;
+    const auto workdir = "";
+    const size_t mapping_k = 31;
+    const std::vector<string> barcode_prefices = {"BC:Z:", "BX:Z:"};
+    alignment::ShortKMerReadMapper mapper(graph, workdir, mapping_k, min_occ);
+    FrameBarcodeIndexBuilder barcode_index_builder(graph, mapper, barcode_prefices, barcode_index.GetFrameSize(), nthreads);
+    barcode_index_builder.DownsampleBarcodeIndex(downsampled_index, barcode_index, sampling_factor);
 }
+
+}
+

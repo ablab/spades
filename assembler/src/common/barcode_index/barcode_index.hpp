@@ -23,7 +23,7 @@ using namespace omnigraph;
 namespace barcode_index {
 typedef RtSeq Kmer;
 
-class FrameMapperBuilder;
+class FrameBarcodeIndexBuilder;
 template <class Graph, class BarcodeEntryT>
 class BarcodeIndexInfoExtractor;
 typedef uint64_t BarcodeId;
@@ -646,7 +646,7 @@ protected:
 template<class Graph>
 class FrameEdgeEntry : public EdgeEntry<Graph, FrameBarcodeInfo> {
     friend class BarcodeIndex<Graph, FrameEdgeEntry>;
-    friend class FrameMapperBuilder;
+    friend class FrameBarcodeIndexBuilder;
     friend class BarcodeIndexInfoExtractor<Graph, FrameEdgeEntry>;
     friend class ConcurrentBarcodeIndexBuffer<Graph, FrameEdgeEntry>;
 protected:
@@ -800,7 +800,7 @@ class FrameConcurrentBarcodeIndexBuffer: public ConcurrentBarcodeIndexBuffer<Gra
 
 template<class Graph>
 class FrameBarcodeIndex: public BarcodeIndex<Graph, FrameEdgeEntry<Graph>> {
-    friend class FrameMapperBuilder;
+    friend class FrameBarcodeIndexBuilder;
     friend class BarcodeIndexInfoExtractor<Graph, FrameEdgeEntry<Graph>>;
  public:
     using BarcodeIndex<Graph, FrameEdgeEntry<Graph>>::barcode_map_t;
