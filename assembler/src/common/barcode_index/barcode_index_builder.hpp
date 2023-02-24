@@ -201,6 +201,38 @@ class FrameBarcodeIndexBuilder {
                                FrameBarcodeIndex<Graph> &barcode_index,
                                const io::SequencingLibraryBase &lib,
                                bool is_tellseq);
+
+    void DownsampleBarcodeIndex(FrameBarcodeIndex<Graph> &downsampled_index, FrameBarcodeIndex<Graph> &original_index, double sampling_factor) {
+        const size_t MAX_ITERATIONS = 100000;
+        size_t current_iteration = 0;
+        BarcodeId estimated_num_barcodes = 0;
+        for (auto it = original_index.begin(); it != original_index.end(); ++it) {
+            const auto &barcode_distribution = it->second.GetDistribution();
+            for (const auto &entry: barcode_distribution) {
+                BarcodeId current_barcode = entry.first;
+                estimated_num_barcodes = std::max(current_barcode, estimated_num_barcodes);
+                current_iteration++;
+            }
+            if (current_iteration >= MAX_ITERATIONS) {
+                break;
+            }
+        }
+        INFO("Estimated number of barcodes: " << estimated_num_barcodes);
+        auto max_id = static_cast<BarcodeId>(estimated_num_barcodes * sampling_factor);
+        INFO("Maximum barcode id for downsampling: " << max_id);
+
+        downsampled_index.InitialFillMap();
+        auto barcode_filter = [max_id](const auto &barcode_entry) {
+          return barcode_entry.first <= max_id;
+        };
+        for (auto it = original_index.begin(); it != original_index.end(); ++it) {
+            auto &to = downsampled_index.edge_to_entry_[it->first].barcode_distribution_;
+            auto &from = it->second.barcode_distribution_;
+            std::copy_if(std::make_move_iterator(from.begin()), std::make_move_iterator(from.end()),
+                         std::inserter(to, to.end()), barcode_filter);
+        }
+    }
+
   private:
     const Graph& g_;
     const SequenceMapper &mapper_;

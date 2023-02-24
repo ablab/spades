@@ -62,6 +62,7 @@ struct gcfg {
   //barcode_index_construction
   size_t frame_size = 40000;
   size_t read_linkage_distance = 40000;
+  double sampling_factor = 1.0;
 
   //graph construction
   double graph_score_threshold = 2.0;
@@ -101,15 +102,16 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
         output_dir << value("path to output directory"),
         (option("--dataset") & value("yaml", file)) % "dataset description (in YAML)",
         (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
+        (option("--assembly-info") & value("assembly-info", assembly_info))
+            % "Path to metaflye assembly_info.txt file (meta mode, metaFlye graphs only)",
         (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
         (option("--mapping-k") & integer("value", cfg.mapping_k)) % "k for read mapping",
         (option("--tmp-dir") & value("tmp", tmpdir)) % "scratch directory to use",
         (option("--ref") & value("reference", refpath)) % "Reference path for repeat resolution evaluation (developer option)",
-        (option("--assembly-info") & value("assembly-info", assembly_info))
-            % "Path to metaflye assembly_info.txt file (meta mode, metaFlye graphs only)",
         (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
         (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)",
         (option("--statistics").set(cfg.statistics)) % "produce additional read cloud library statistics (developer option)",
+        (option("--sampling-factor") & value("sampling-factor", cfg.sampling_factor)) % "Sampling factor for read downsampling",
         (with_prefix("-G",
                      option("mdbg").set(cfg.graph_type, GraphType::Multiplexed) |
                      option("blunt").set(cfg.graph_type, GraphType::Blunted)) % "assembly graph type (mDBG or blunted)"),
@@ -120,7 +122,7 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
         (option("--linkage-distance") & value("read-linkage-distance", cfg.read_linkage_distance)) %
             "Reads are assigned to the same fragment based on linkage distance",
         (option("--score") & value("score", cfg.graph_score_threshold)) % "Score threshold for link index",
-            (option("--rel-threshold") & value("rel-threshold", cfg.rel_threshold)) % "Relative score threshold for vertex resolution",
+        (option("--rel-threshold") & value("rel-threshold", cfg.rel_threshold)) % "Relative score threshold for vertex resolution",
         (option("--tail-threshold") & value("tail-threshold", cfg.tail_threshold)) %
             "Barcodes are assigned to the first and last <tail_threshold> nucleotides of the edge",
         (option("--count-threshold") & value("count-threshold", cfg.count_threshold))
@@ -401,6 +403,14 @@ int main(int argc, char** argv) {
                                               cfg.mapping_k, cfg.bin_load, cfg.debug);
         } else {
             ERROR("Only read cloud libraries with barcode tags are supported for links");
+        }
+
+        barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> downsampled_index(graph, cfg.frame_size);
+        if (not math::eq(cfg.sampling_factor, 1.0)) {
+            INFO("Downsampling the barcode index with factor " << cfg.sampling_factor);
+            cont_index::DownsampleBarcodeIndex(graph, cfg.nthreads, barcode_index, downsampled_index,
+                                               cfg.sampling_factor);
+            barcode_extractor_ptr = std::make_shared<BarcodeExtractor>(downsampled_index, graph);
         }
 
         //std::ofstream barcode_out(cfg.output_dir / "barcode_index.txt");
