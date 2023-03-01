@@ -15,6 +15,7 @@
 
 #include <mutex>
 #include <shared_mutex>
+#include <unordered_set>
 
 namespace barcode_index {
 
@@ -203,21 +204,24 @@ class FrameBarcodeIndexBuilder {
                                bool is_tellseq);
 
     void DownsampleBarcodeIndex(FrameBarcodeIndex<Graph> &downsampled_index, FrameBarcodeIndex<Graph> &original_index, double sampling_factor) {
-        const size_t MAX_ITERATIONS = 100000;
+        const size_t MAX_ITERATIONS = 10000000;
         size_t current_iteration = 0;
         BarcodeId estimated_num_barcodes = 0;
+        std::unordered_set<BarcodeId> encountered_barcodes;
         for (auto it = original_index.begin(); it != original_index.end(); ++it) {
             const auto &barcode_distribution = it->second.GetDistribution();
             for (const auto &entry: barcode_distribution) {
                 BarcodeId current_barcode = entry.first;
                 estimated_num_barcodes = std::max(current_barcode, estimated_num_barcodes);
                 current_iteration++;
+                encountered_barcodes.insert(current_barcode);
             }
             if (current_iteration >= MAX_ITERATIONS) {
                 break;
             }
         }
         INFO("Estimated number of barcodes: " << estimated_num_barcodes);
+        INFO("Number of encountered barcodes: " << encountered_barcodes.size());
         auto max_id = static_cast<BarcodeId>(estimated_num_barcodes * sampling_factor);
         INFO("Maximum barcode id for downsampling: " << max_id);
 
@@ -261,7 +265,7 @@ void FrameBarcodeIndexBuilder::ConstructBarcodeIndex(io::ReadStreamList<ReadType
             barcode_index.Update(buffer);
             DEBUG("Finished update");
         }
-        INFO(starting_barcode << "total barcodes in the barcode index");
+        INFO(starting_barcode << " total barcodes in the barcode index");
     }
 
 }

@@ -77,7 +77,8 @@ void DownsampleBarcodeIndex(const debruijn_graph::Graph &graph,
     const auto workdir = "";
     const size_t mapping_k = 31;
     const std::vector<string> barcode_prefices = {"BC:Z:", "BX:Z:"};
-    alignment::ShortKMerReadMapper mapper(graph, workdir, mapping_k, min_occ);
+    debruijn_graph::Graph empty_graph(mapping_k);
+    alignment::BWAReadMapper<debruijn_graph::Graph> mapper(empty_graph);
     FrameBarcodeIndexBuilder barcode_index_builder(graph, mapper, barcode_prefices, barcode_index.GetFrameSize(), nthreads);
     barcode_index_builder.DownsampleBarcodeIndex(downsampled_index, barcode_index, sampling_factor);
 }
