@@ -14,6 +14,7 @@
 #include "alignment/sequence_mapper.hpp"
 
 #include <mutex>
+#include <random>
 #include <shared_mutex>
 #include <unordered_set>
 
@@ -204,31 +205,31 @@ class FrameBarcodeIndexBuilder {
                                bool is_tellseq);
 
     void DownsampleBarcodeIndex(FrameBarcodeIndex<Graph> &downsampled_index, FrameBarcodeIndex<Graph> &original_index, double sampling_factor) {
-        const size_t MAX_ITERATIONS = 10000000;
-        size_t current_iteration = 0;
-        BarcodeId estimated_num_barcodes = 0;
-        std::unordered_set<BarcodeId> encountered_barcodes;
+        std::unordered_set<BarcodeId> barcodes;
         for (auto it = original_index.begin(); it != original_index.end(); ++it) {
             const auto &barcode_distribution = it->second.GetDistribution();
             for (const auto &entry: barcode_distribution) {
                 BarcodeId current_barcode = entry.first;
-                estimated_num_barcodes = std::max(current_barcode, estimated_num_barcodes);
-                current_iteration++;
-                encountered_barcodes.insert(current_barcode);
-            }
-            if (current_iteration >= MAX_ITERATIONS) {
-                break;
+                barcodes.insert(current_barcode);
             }
         }
-        INFO("Estimated number of barcodes: " << estimated_num_barcodes);
-        INFO("Number of encountered barcodes: " << encountered_barcodes.size());
-        auto max_id = static_cast<BarcodeId>(estimated_num_barcodes * sampling_factor);
-        INFO("Maximum barcode id for downsampling: " << max_id);
+        INFO("Number of encountered barcodes: " << barcodes.size());
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_real_distribution<> distr(.0, 1.0);
+        std::unordered_set<BarcodeId> passed_barcodes;
+        for (const auto &barcode: barcodes) {
+            if (math::le(distr(gen), sampling_factor)) {
+                passed_barcodes.insert(barcode);
+            }
+        }
+        INFO("Passed barcodes: " << passed_barcodes.size());
 
         downsampled_index.InitialFillMap();
-        auto barcode_filter = [max_id](const auto &barcode_entry) {
-          return barcode_entry.first <= max_id;
+        auto barcode_filter = [&passed_barcodes](const auto &barcode_entry) {
+          return passed_barcodes.find(barcode_entry.first) != passed_barcodes.end();
         };
+        size_t final_barcodes = 0;
         for (auto it = original_index.begin(); it != original_index.end(); ++it) {
             auto &to = downsampled_index.edge_to_entry_[it->first].barcode_distribution_;
             auto &from = it->second.barcode_distribution_;
