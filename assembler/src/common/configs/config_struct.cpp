@@ -722,6 +722,7 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
     load(cfg.additional_contigs, pt, "additional_contigs");
 
     load(cfg.rr_enable, pt, "rr_enable");
+    load(cfg.gfa12, pt, "gfa12");
 
     load(cfg.temp_bin_reads_dir, pt, "temp_bin_reads_dir");
 

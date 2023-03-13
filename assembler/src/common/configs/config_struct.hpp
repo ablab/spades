@@ -462,6 +462,7 @@ struct debruijn_config {
     bool two_step_rr;
     bool use_intermediate_contigs;
     size_t min_edge_length_for_is_count;
+    bool gfa12;
 
     single_read_resolving_mode single_reads_rr;
     bool use_single_reads;

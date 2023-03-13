@@ -604,7 +604,6 @@ def add_pipeline_args(pgroup_pipeline):
                             help=argparse.SUPPRESS,
                             action="store_false")
 
-
 def add_advanced_args(pgroup_advanced):
     mode = get_mode()
     pgroup_advanced.add_argument("--dataset",
@@ -668,6 +667,17 @@ def add_advanced_args(pgroup_advanced):
                                       "[default: None]",
                                  action="store")
 
+    gfa11 = pgroup_advanced.add_mutually_exclusive_group()
+    gfa11.add_argument("--gfa11",
+                       dest="gfa11",
+                       default=None,
+                       help="use GFA v1.1 format for assembly graph",
+                       action="store_true")
+    gfa11.add_argument("--gfa11:false",
+                       dest="gfa11",
+                       default=None,
+                       help=argparse.SUPPRESS,
+                       action="store_false")
 
 def add_hidden_args(pgroup_hidden):
     show_help_hidden = ("--help-hidden" in sys.argv)
@@ -980,6 +990,7 @@ def add_to_cfg(cfg, log, bin_home, spades_home, args):
         cfg["assembly"].__dict__["save_gp"] = args.save_gp
         if args.read_buffer_size:
             cfg["assembly"].__dict__["read_buffer_size"] = args.read_buffer_size
+        cfg["assembly"].__dict__["gfa11"] = args.gfa11
 
     # corrector can work only if contigs exist (not only error correction)
     if (not args.only_error_correction) and args.mismatch_corrector:

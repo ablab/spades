@@ -355,6 +355,11 @@ class SpadesStage(stage.Stage):
         else:
             self.cfg.__dict__["rr_enable"] = True
 
+        if self.cfg.gfa11:
+            self.cfg.__dict__["gfa12"] = False
+        else:
+            self.cfg.__dict__["gfa12"] = True
+
         dataset_filename = os.path.join(self.cfg.output_dir, "dataset.info")
         self.cfg.__dict__["dataset"] = dataset_filename
         self.cfg.tmp_dir = support.get_tmp_dir(prefix="spades_")

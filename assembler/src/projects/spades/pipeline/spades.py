@@ -154,6 +154,10 @@ def print_used_values(cfg, log):
             log.info("  Coverage cutoff is turned ON and threshold will be auto-detected")
         else:
             log.info("  Coverage cutoff is turned ON and threshold is %f" % cfg["assembly"].cov_cutoff)
+        if cfg["assembly"].gfa11:
+            log.info("  Assembly graph output will use GFA v1.1 format")
+        else:
+            log.info("  Assembly graph output will use GFA v1.2 format")
 
     log.info("Other parameters:")
     print_value(cfg, "common", "tmp_dir", "Dir for temp files")

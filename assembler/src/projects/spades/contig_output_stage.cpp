@@ -146,7 +146,8 @@ void ContigOutput::run(graph_pack::GraphPack &gp, const char*) {
         std::filesystem::path gfa_fn = output_dir / (outputs_[Kind::GFAGraph] + ".gfa");
 
         gfa_os.reset(new std::ofstream(gfa_fn));
-        gfa_writer.emplace(graph, *gfa_os, naming_f);
+        gfa_writer.emplace(graph, *gfa_os, naming_f,
+                           cfg::get().gfa12 ? GFAPathWriter::Version::GFAv12 : GFAPathWriter::Version::GFAv11);
         INFO("Writing GFA graph to " << gfa_fn);
         gfa_writer->WriteSegmentsAndLinks();
     }
