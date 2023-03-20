@@ -149,7 +149,6 @@ void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::filesys
 }
 
 int main(int argc, char* argv[]) {
-    std::cout << "kek";
     utils::segfault_handler sh;
     gcfg cfg;
 
@@ -183,18 +182,22 @@ int main(int argc, char* argv[]) {
         if (utils::ends_with(cfg.graph, ".gfa")) {
             gfa.reset(new gfa::GFAReader(cfg.graph));
             INFO("GFA segments: " << gfa->num_edges() << ", links: " << gfa->num_links() << ", paths: " << gfa->num_paths());
-            INFO("Detected k:" << gfa->k());
-            VERIFY_MSG(gfa->k() != -1U, "Failed to determine k-mer length");
-            VERIFY_MSG(gfa->k() == 0 || gfa->k() % 2 == 1, "k-mer length must be odd");
-            k = gfa->k();
         } else if (cfg.k == -1U)
             FATAL_ERROR("k-mer length should be specified");
 
         Graph graph(k);
+        unsigned gfa_k = -1U;
         if (gfa) {
-            gfa->to_graph(graph, id_mapper.get());
+            gfa_k = gfa->to_graph(graph, id_mapper.get());
         } else {
             io::binary::Load(cfg.graph, graph);
+        }
+        if (gfa_k != -1U) {
+            INFO("Detected k: " << gfa_k);
+            VERIFY_MSG(gfa_k == 0 || gfa_k % 2 == 1, "k-mer length must be odd");
+            VERIFY(graph.k() == gfa_k);
+        } else {
+            INFO("Graph seems to be multiplexed")
         }
         INFO("Graph loaded. Total vertices: " << graph.size() << ", total edges: " << graph.e_size());
 
