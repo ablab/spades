@@ -65,7 +65,7 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
     subst_dict["time_tracer_enabled"] = bool_to_str(cfg.time_tracer)
     subst_dict["gap_closer_enable"] = bool_to_str(last_one or K >= options_storage.GAP_CLOSER_ENABLE_MIN_K)
     subst_dict["rr_enable"] = bool_to_str(last_one and cfg.rr_enable)
-    subst_dict["gfa12"] = bool_to_str(cfg.gfa12)
+    subst_dict["gfa11"] = bool_to_str(cfg.gfa11)
 #    subst_dict["topology_simplif_enabled"] = bool_to_str(last_one)
     subst_dict["max_threads"] = cfg.max_threads
     subst_dict["max_memory"] = cfg.max_memory
