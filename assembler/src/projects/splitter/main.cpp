@@ -9,9 +9,7 @@
 #include "graph_resolver_io.hpp"
 #include "long_edge_statistics.hpp"
 #include "path_extractor.hpp"
-#include "reference_path_checker.hpp"
 #include "scaffold_graph_helper.hpp"
-#include "vertex_info_getter.hpp"
 #include "vertex_resolver.hpp"
 
 #include "auxiliary_graphs/contracted_graph/contracted_graph_builder.hpp"
