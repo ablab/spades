@@ -19,17 +19,34 @@ class PathExtractor {
     typedef std::vector<debruijn_graph::EdgeId> SimplePath;
     typedef std::unordered_map<debruijn_graph::EdgeId, std::unordered_set<debruijn_graph::EdgeId>> VertexLinkStorage;
   public:
-    PathExtractor(const debruijn_graph::Graph &graph) : graph_(graph) {}
+    explicit PathExtractor(const debruijn_graph::Graph &graph) : graph_(graph) {}
 
-    void ExtractPaths(path_extend::PathContainer &paths, const VertexResults &vertex_results, bool canonical = true) const;
-//    void PrintPaths(const path_extend::PathContainer &paths,
-//                    const std::filesystem::path &output_path,
-//                    io::IdMapper<std::string> *id_mapper) const;
+    void ExtractPaths(path_extend::PathContainer &paths, const VertexResults &vertex_results) const;
   private:
+    struct ScaffoldLinks {
+      typedef std::unordered_map<debruijn_graph::EdgeId, size_t> DegreeMap;
+      DegreeMap in_degrees;
+      DegreeMap out_degrees;
+      std::unordered_map<debruijn_graph::EdgeId, debruijn_graph::EdgeId> in_to_out;
+      std::unordered_map<debruijn_graph::EdgeId, std::unordered_set<debruijn_graph::EdgeId>> vertex_link_storage;
+
+      ScaffoldLinks(const DegreeMap &in_degrees,
+                    const DegreeMap &out_degrees,
+                    const std::unordered_map<debruijn_graph::EdgeId, debruijn_graph::EdgeId> &in_to_out,
+                    const std::unordered_map<debruijn_graph::EdgeId,
+                                             std::unordered_set<debruijn_graph::EdgeId>> &vertex_link_storage)
+          : in_degrees(in_degrees),
+            out_degrees(out_degrees),
+            in_to_out(in_to_out),
+            vertex_link_storage(vertex_link_storage) {}
+    };
+
     bool IsConjugatePair(const SimplePath &first, const SimplePath &second) const;
-    bool IsGraphLink(const debruijn_graph::EdgeId first,
-                     const debruijn_graph::EdgeId second,
+    bool IsGraphLink(const debruijn_graph::EdgeId &first,
+                     const debruijn_graph::EdgeId &second,
                      const VertexLinkStorage &vertex_storage) const;
+
+    ScaffoldLinks GetScaffoldLinks(const VertexResults &vertex_results) const;
 
     const debruijn_graph::Graph &graph_;
 
