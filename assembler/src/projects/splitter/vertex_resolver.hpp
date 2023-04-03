@@ -52,6 +52,7 @@ class VertexResolver {
 
     VertexResolver(Graph &graph,
                    const debruijn_graph::Graph &assembly_graph,
+                   const std::unordered_map<debruijn_graph::EdgeId, std::unordered_set<debruijn_graph::EdgeId>> &links,
                    const std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> &barcode_extractor_ptr,
                    size_t count_threshold,
                    size_t tail_threshold,
@@ -61,6 +62,7 @@ class VertexResolver {
                    double rel_threshold) :
         graph_(graph),
         assembly_graph_(assembly_graph),
+        links_(links),
         barcode_extractor_ptr_(barcode_extractor_ptr),
         count_threshold_(count_threshold),
         tail_threshold_(tail_threshold),
@@ -71,6 +73,8 @@ class VertexResolver {
 
     VertexResults ResolveVertices() {
         std::unordered_set<debruijn_graph::VertexId> interesting_vertices;
+        size_t total_in_edges = 0;
+        size_t total_out_edges = 0;
         for (const auto &vertex: graph_.vertices()) {
             if (vertex.int_id() > graph_.conjugate(vertex).int_id()) {
                 continue;
@@ -78,11 +82,14 @@ class VertexResolver {
             //todo use predicate iterator
             if (graph_.OutgoingEdgeCount(vertex) >= 2 and graph_.IncomingEdgeCount(vertex) >= 2) {
                 interesting_vertices.insert(vertex);
+                total_in_edges += graph_.IncomingEdgeCount(vertex);
+                total_out_edges += graph_.OutgoingEdgeCount(vertex);
             } else {
 //                INFO("Indegree: " << graph_.IncomingEdgeCount(vertex) << ", outdegree: " << graph_.OutgoingEdgeCount(vertex));
             }
         }
         INFO(interesting_vertices.size() << " complex vertices");
+        INFO("Total indegree: " << total_in_edges << ", total outdegree: " << total_out_edges);
         LinkIndexGraphConstructor link_index_constructor(assembly_graph_, barcode_extractor_ptr_, score_threshold_,
                                                          tail_threshold_, length_threshold_, count_threshold_, threads_);
         auto score_function = link_index_constructor.ConstructScoreFunction();
@@ -103,6 +110,7 @@ class VertexResolver {
         std::unordered_map<debruijn_graph::EdgeId, debruijn_graph::EdgeId> in_to_out;
         bool is_ambiguous = false;
         std::unordered_set<debruijn_graph::VertexId> covered_vertices;
+        double LINK_BONUS = 1000000;
 
         for (const EdgeId &sc_in_edge: graph_.IncomingEdges(vertex)) {
             //convert to dbg EdgeId
@@ -117,9 +125,16 @@ class VertexResolver {
             for (const EdgeId &sc_out_edge: graph_.OutgoingEdges(vertex)) {
                 scaffold_graph::ScaffoldVertex sc_out_vertex(sc_out_edge);
                 debruijn_graph::EdgeId out_edge = edge_getter.GetEdgeFromScaffoldVertex(sc_out_vertex);
+                if (in_edge == out_edge or in_edge == assembly_graph_.conjugate(out_edge)) {
+                    continue;
+                }
 
                 scaffold_graph::ScaffoldGraph::ScaffoldEdge sc_edge(in_edge, out_edge);
                 auto score = score_function->GetScore(sc_edge);
+                auto link_result = links_.find(in_edge);
+                if (link_result != links_.end() and link_result->second.find(out_edge) != link_result->second.end()) {
+                    score += LINK_BONUS;
+                }
                 total_links += score;
                 if (math::ge(score, score_threshold_)) {
                     covered_vertices.insert(vertex);
@@ -273,7 +288,7 @@ class VertexResolver {
         return vertex_string;
     }
   private:
-    VertexState GetState(const std::unordered_map<debruijn_graph::EdgeId, debruijn_graph::EdgeId> &in_to_out,
+    VertexState GetState(std::unordered_map<debruijn_graph::EdgeId, debruijn_graph::EdgeId> &in_to_out,
                          const debruijn_graph::VertexId &vertex,
                          bool is_ambiguous,
                          bool is_covered) const {
@@ -283,7 +298,25 @@ class VertexResolver {
             in_edges.insert(entry.first);
             out_edges.insert(entry.second);
         }
-        is_ambiguous = is_ambiguous or in_edges.size() > out_edges.size();
+        if (is_ambiguous or in_edges.size() > out_edges.size()) {
+            std::unordered_map<debruijn_graph::EdgeId, size_t> outedge_to_indegree;
+            for (const auto &entry: in_to_out) {
+                outedge_to_indegree[entry.second]++;
+            }
+            std::unordered_map<debruijn_graph::EdgeId, debruijn_graph::EdgeId> new_in_to_out;
+            for (const auto &entry: in_to_out) {
+                auto outedge = entry.second;
+                if (outedge_to_indegree.at(outedge) == 1) {
+                    new_in_to_out[entry.first] = entry.second;
+                }
+            }
+            if (not new_in_to_out.empty()) {
+                in_to_out = std::move(new_in_to_out);
+                return VertexState::Partially;
+            } else {
+                return VertexState::Ambiguous;
+            }
+        }
         if (not is_covered) {
             return VertexState::Uncovered;
         } else {
@@ -299,6 +332,7 @@ class VertexResolver {
 
     Graph &graph_;
     const debruijn_graph::Graph &assembly_graph_;
+    const std::unordered_map<debruijn_graph::EdgeId, std::unordered_set<debruijn_graph::EdgeId>> links_;
     std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr_;
     size_t count_threshold_;
     size_t tail_threshold_;
