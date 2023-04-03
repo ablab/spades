@@ -85,8 +85,6 @@ class VertexResolver {
                 interesting_vertices.insert(vertex);
                 total_in_edges += graph_.IncomingEdgeCount(vertex);
                 total_out_edges += graph_.OutgoingEdgeCount(vertex);
-            } else {
-//                INFO("Indegree: " << graph_.IncomingEdgeCount(vertex) << ", outdegree: " << graph_.OutgoingEdgeCount(vertex));
             }
         }
         INFO(interesting_vertices.size() << " complex vertices");
@@ -270,10 +268,8 @@ class VertexResolver {
         if (not is_covered) {
             return VertexState::Uncovered;
         } else {
-            if (in_edges.size() == graph_.IncomingEdgeCount(vertex) and not is_ambiguous) {
+            if (in_edges.size() == graph_.IncomingEdgeCount(vertex)) {
                 return VertexState::Completely;
-            } else if (is_ambiguous) {
-                return VertexState::Ambiguous;
             } else {
                 return VertexState::Partially;
             }
