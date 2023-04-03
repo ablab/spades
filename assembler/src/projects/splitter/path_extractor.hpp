@@ -32,6 +32,8 @@ class PathExtractor {
                      const VertexLinkStorage &vertex_storage) const;
 
     const debruijn_graph::Graph &graph_;
+
+    DECL_LOGGER("PathExtractor");
 };
 
 }

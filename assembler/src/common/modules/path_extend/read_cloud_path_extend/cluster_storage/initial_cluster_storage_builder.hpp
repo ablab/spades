@@ -76,6 +76,7 @@ class EdgeInitialClusterStorageBuilder : public InitialClusterStorageBuilder {
         size_t block_size = target_edges_vector.size() / 10;
         DEBUG("Block size: " << block_size);
         size_t processed_edges = 0;
+        size_t edge_clusters = 0;
 #pragma omp parallel for num_threads(max_threads_)
         for (size_t i = 0; i < target_edges_vector.size(); ++i) {
             scaffold_graph::EdgeGetter getter;
@@ -89,6 +90,7 @@ class EdgeInitialClusterStorageBuilder : public InitialClusterStorageBuilder {
                     std::vector<Cluster> &clusters = barcode_and_clusters.second;
                     AddClustersFromBarcodeOnEdge(unique_edge, barcode, distance_threshold_,
                                                  edge_cluster_storage, cluster_storage, clusters);
+                    edge_clusters += clusters.size();
                 }
                 processed_edges++;
                 if (block_size != 0 and processed_edges % block_size == 0) {

@@ -229,7 +229,6 @@ class FrameBarcodeIndexBuilder {
         auto barcode_filter = [&passed_barcodes](const auto &barcode_entry) {
           return passed_barcodes.find(barcode_entry.first) != passed_barcodes.end();
         };
-        size_t final_barcodes = 0;
         for (auto it = original_index.begin(); it != original_index.end(); ++it) {
             auto &to = downsampled_index.edge_to_entry_[it->first].barcode_distribution_;
             auto &from = it->second.barcode_distribution_;
