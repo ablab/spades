@@ -10,8 +10,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(splitter
                main.cpp barcode_index_construction.cpp graph_resolver.cpp graph_resolver_io.cpp
-               long_edge_statistics.cpp path_extractor.cpp reference_path_checker.cpp
-               scaffold_graph_helper.cpp vertex_info_getter.cpp)
+               long_edge_statistics.cpp path_extractor.cpp scaffold_graph_helper.cpp)
 
 target_link_libraries(splitter spades-stages graphio toolchain common_modules ${COMMON_LIBRARIES} auxiliary_graphs)
 
