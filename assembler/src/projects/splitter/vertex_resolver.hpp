@@ -49,10 +49,11 @@ class VertexResolver {
   public:
     typedef std::unordered_map<debruijn_graph::EdgeId, VertexState> ResolutionResults;
     typedef typename Graph::EdgeId EdgeId;
+    typedef std::unordered_map<debruijn_graph::EdgeId, std::unordered_set<debruijn_graph::EdgeId>> LinkMap;
 
     VertexResolver(Graph &graph,
                    const debruijn_graph::Graph &assembly_graph,
-                   const std::unordered_map<debruijn_graph::EdgeId, std::unordered_set<debruijn_graph::EdgeId>> &links,
+                   const LinkMap &links,
                    const std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> &barcode_extractor_ptr,
                    size_t count_threshold,
                    size_t tail_threshold,
@@ -135,23 +136,20 @@ class VertexResolver {
                 if (link_result != links_.end() and link_result->second.find(out_edge) != link_result->second.end()) {
                     score += LINK_BONUS;
                 }
-                total_links += score;
+                total_links += static_cast<size_t>(score);
                 if (math::ge(score, score_threshold_)) {
                     covered_vertices.insert(vertex);
-                    //fixme head\tail
-                    size_t in_barcodes = barcode_extractor_ptr_->GetNumberOfBarcodes(in_edge);
-                    size_t out_barcodes = barcode_extractor_ptr_->GetNumberOfBarcodes(out_edge);
-                    if (score > max_links) {
+                    if (score > static_cast<double>(max_links)) {
                         second_pair = max_pair;
                         second_links = max_links;
-                        max_links = score;
+                        max_links = static_cast<size_t>(score);
                         max_pair = std::make_pair(in_edge, out_edge);
                     }
                 }
             }
-            if (max_links < second_links * rel_threshold_) {
+            if (static_cast<double>(max_links) < static_cast<double>(second_links) * rel_threshold_) {
                 is_ambiguous = true;
-            } else if (max_links >= score_threshold_) {
+            } else if (static_cast<double>(max_links) >= score_threshold_) {
                 in_to_out[max_pair.first] = max_pair.second;
                 answer_links += max_links;
             }
@@ -164,47 +162,7 @@ class VertexResolver {
 
     void PrintVertexResults(const VertexResults &results,
                             const std::filesystem::path &output_path,
-                            const std::filesystem::path &tmp_path,
-                            bool count_unique_kmers,
                             io::IdMapper<std::string> *id_mapper) const {
-        std::unordered_map<EdgeId, size_t> unique_kmer_counter;
-//        for (const debruijn_graph::EdgeId &edge: assembly_graph_.canonical_edges()) {
-//            unique_kmer_counter[edge] = 0;
-//        }
-//
-//        if (count_unique_kmers) {
-//            using EdgeIndex = debruijn_graph::EdgeIndex<debruijn_graph::Graph>;
-//            INFO("Constructing index");
-//            size_t k = 31;
-//            std::unique_ptr<EdgeIndex> index;
-//
-//            const std::string index_output = tmp_path / "tmp_index";
-//            std::filesystem::create_directory(index_output);
-//            index.reset(new debruijn_graph::EdgeIndex<debruijn_graph::Graph>(assembly_graph_, index_output));
-//            index->Refill(k);
-//            size_t total_kmers = 0;
-//            size_t unique_kmers = 0;
-//            for (const EdgeId &edge: assembly_graph_.canonical_edges()) {
-//                unique_kmer_counter[edge] = 0;
-//                const Sequence &sequence = graph_.EdgeNucls(edge);
-//                EdgeIndex::KMer kmer = sequence.start<RtSeq>(k) >> 'A';
-//                for (size_t j = k - 1; j < sequence.size(); ++j) {
-//                    ++total_kmers;
-//                    uint8_t inchar = sequence[j];
-//                    kmer <<= inchar;
-//
-//                    auto pos = index->get(kmer);
-//                    if (pos.second == EdgeIndex::NOT_FOUND)
-//                        continue;
-//
-//                    ++unique_kmer_counter[edge];
-//                    ++unique_kmers;
-//                }
-//            }
-//            INFO("Constructed unique kmer counter")
-//            INFO("Unique kmers: " << unique_kmers << ", total: " << total_kmers);
-//        }
-
         std::ofstream ver_stream(output_path);
         ver_stream <<
                    "Vertex Id\tInDegree\tInEdges\tOutDegree\tOutEdges\tCovered edges\tVertex result\tSupported paths\tTotal links\tAnswer links\tAnswer\n";
@@ -228,18 +186,7 @@ class VertexResolver {
                     ++completely;
                     break;
             }
-            size_t covered_edges = 0;
-            for (const auto &edge: graph_.IncomingEdges(entry.first)) {
-                if (unique_kmer_counter[edge] != 0 or unique_kmer_counter[graph_.conjugate(edge)] != 0) {
-                    ++covered_edges;
-                }
-            }
-            for (const auto &edge: graph_.OutgoingEdges(entry.first)) {
-                if (unique_kmer_counter[edge] != 0 or unique_kmer_counter[graph_.conjugate(edge)] != 0) {
-                    ++covered_edges;
-                }
-            }
-            ver_stream << VertexResultString(entry.first, vertex_results, covered_edges, id_mapper) << std::endl;
+            ver_stream << VertexResultString(entry.first, vertex_results, id_mapper) << std::endl;
         }
         INFO(uncovered << " uncovered vertices");
         INFO(ambiguous << " ambiguous vertices");
@@ -249,7 +196,6 @@ class VertexResolver {
 
     std::string VertexResultString(const debruijn_graph::VertexId &vertex,
                                    const VertexResult &vertex_result,
-                                   size_t covered_edges,
                                    io::IdMapper<std::string> *id_mapper) const {
         std::string result_string;
         switch (vertex_result.state) {
@@ -281,9 +227,13 @@ class VertexResolver {
         out_edge_string = out_edge_string.substr(0, out_edge_string.size() - 1);
         answer_string = answer_string.substr(0, answer_string.size() - 1);
         std::string vertex_string;
-        vertex_string += std::to_string(vertex.int_id()) + "\t" + std::to_string(graph_.IncomingEdgeCount(vertex)) + "\t" + in_edge_string + "\t";
-        vertex_string += std::to_string(graph_.OutgoingEdgeCount(vertex)) + "\t" + out_edge_string + "\t" + std::to_string(covered_edges) + "\t" + result_string + "\t";
-        vertex_string += std::to_string(vertex_result.supported_pairs.size()) + "\t" + std::to_string(vertex_result.total_links);
+        vertex_string +=
+            std::to_string(vertex.int_id()) + "\t" + std::to_string(graph_.IncomingEdgeCount(vertex)) + "\t"
+                + in_edge_string + "\t";
+        vertex_string +=
+            std::to_string(graph_.OutgoingEdgeCount(vertex)) + "\t" + out_edge_string + "\t" + result_string + "\t";
+        vertex_string +=
+            std::to_string(vertex_result.supported_pairs.size()) + "\t" + std::to_string(vertex_result.total_links);
         vertex_string += "\t" + std::to_string(vertex_result.supporting_links) + "\t" + answer_string;
         return vertex_string;
     }
@@ -332,7 +282,7 @@ class VertexResolver {
 
     Graph &graph_;
     const debruijn_graph::Graph &assembly_graph_;
-    const std::unordered_map<debruijn_graph::EdgeId, std::unordered_set<debruijn_graph::EdgeId>> links_;
+    const LinkMap links_;
     std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr_;
     size_t count_threshold_;
     size_t tail_threshold_;

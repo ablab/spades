@@ -5,11 +5,9 @@
 //***************************************************************************
 
 #include "barcode_index_construction.hpp"
-#include "cloud_only_links.hpp"
 #include "graph_resolver.hpp"
 #include "graph_resolver_io.hpp"
 #include "long_edge_statistics.hpp"
-#include "path_cluster_extractor.hpp"
 #include "path_extractor.hpp"
 #include "reference_path_checker.hpp"
 #include "scaffold_graph_helper.hpp"
@@ -211,7 +209,6 @@ std::unordered_set<debruijn_graph::EdgeId> ParseRepetitiveEdges(const debruijn_g
         info_stream >> blank;
         info_stream >> blank;
         info_stream >> graph_path;
-//        INFO(graph_path);
         if (is_repeat == "Y") {
             auto current_pos = graph_path.find(',');
             while (current_pos != std::string::npos) {
@@ -223,7 +220,6 @@ std::unordered_set<debruijn_graph::EdgeId> ParseRepetitiveEdges(const debruijn_g
                     total_repetitive_length += graph.length(edge);
                 }
                 graph_path.erase(0, current_pos + 1);
-//                INFO(graph_path);
                 current_pos = graph_path.find(',');
             }
         }
@@ -258,14 +254,44 @@ void CountStatistics(const gcfg &cfg,
     long_edge_counter.CountDoubleCoverageDistribution();
 
     auto barcode_extractor_ptr = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(barcode_index, graph);
-    cont_index::PathClusterExtractor path_cluster_extractor(barcode_extractor_ptr,
-                                                            cfg.read_linkage_distance,
-                                                            cfg.relative_score_threshold,
-                                                            cfg.min_read_threshold,
-                                                            cfg.length_threshold,
-                                                            cfg.nthreads);
 }
 
+cont_index::VertexResolver<debruijn_graph::Graph>::LinkMap GetTrustedContigLinks(const std::unordered_set<EdgeId> &repetitive_edges,
+                                                                                 debruijn_graph::Graph &graph,
+                                                                                 const gfa::GFAReader &gfa) {
+    cont_index::VertexResolver<debruijn_graph::Graph>::LinkMap trusted_link_map;
+    std::unordered_set<EdgeId> non_unique_starts;
+    size_t total_path_edges = 0;
+    std::vector<std::vector<EdgeId>> non_repetitive_paths;
+    for (const auto &path: gfa.paths()) {
+        std::vector<EdgeId> non_repetitive_path;
+        for (const auto &edge: path.edges) {
+            if (repetitive_edges.find(edge) == repetitive_edges.end()) {
+                non_repetitive_path.push_back(edge);
+                ++total_path_edges;
+            }
+        }
+        non_repetitive_paths.push_back(non_repetitive_path);
+    }
+    INFO(total_path_edges << " non-repetitive edges in " << non_repetitive_paths.size() << " scaffold paths");
+    for (const auto &path: non_repetitive_paths) {
+        if (path.size() < 2) {
+            continue;
+        }
+        for (auto it1 = path.begin(), it2 = std::next(it1); it2 != path.end(); ++it1, ++it2) {
+            EdgeId current = *it1;
+            EdgeId next = *it2;
+            trusted_link_map[current].insert(next);
+            trusted_link_map[graph.conjugate(next)].insert(graph.conjugate(current));
+        }
+    }
+    size_t total_links = 0;
+    for (const auto &entry: trusted_link_map) {
+        total_links += entry.second.size();
+    }
+    INFO(total_links << " links in " << trusted_link_map.size() << " entries");
+    return trusted_link_map;
+}
 cont_index::VertexResults GetRepeatResolutionResults(const gcfg &cfg,
                                                      debruijn_graph::Graph &graph,
                                                      const gfa::GFAReader &gfa,
@@ -330,21 +356,47 @@ cont_index::VertexResults GetRepeatResolutionResults(const gcfg &cfg,
                 INFO(total_links << " links in " << trusted_link_map.size() << " entries");
             }
 
+cont_index::VertexResults GetRepeatResolutionResults(const gcfg &cfg,
+                                                     debruijn_graph::Graph &graph,
+                                                     const gfa::GFAReader &gfa,
+                                                     std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr,
+                                                     io::IdMapper<std::string> *id_mapper) {
+    size_t length_threshold = GetLengthThreshold(cfg);
+    std::filesystem::path vertex_output_path = cfg.output_dir / "vertex_stats.tsv";
+
+    switch (cfg.mode) {
+        default:
+            FATAL_ERROR("Unknown repeat resolution mode");
+        case ResolutionMode::Diploid: {
+            cont_index::VertexResolver<debruijn_graph::Graph>::LinkMap empty_map;
+            cont_index::VertexResolver<debruijn_graph::Graph> vertex_resolver
+                (graph, graph, empty_map, barcode_extractor_ptr, cfg.count_threshold, cfg.tail_threshold,
+                 length_threshold, cfg.nthreads, cfg.graph_score_threshold, cfg.rel_threshold);
+            auto results = vertex_resolver.ResolveVertices();
+            vertex_resolver.PrintVertexResults(results, vertex_output_path, id_mapper);
+            return results;
+        }
+        case ResolutionMode::Meta: {
+            auto repetitive_edges = ParseRepetitiveEdges(graph, cfg.assembly_info, id_mapper);
+            auto repeat_predicate = [&repetitive_edges](const debruijn_graph::EdgeId &edge) {
+                return repetitive_edges.find(edge) == repetitive_edges.end();
+            };
             contracted_graph::DBGContractedGraphFactory factory(graph, repeat_predicate);
             factory.Construct();
             INFO("Constructed graph");
             auto contracted_graph = factory.GetGraph();
             INFO("Total contracted graph vertices: " << contracted_graph->size());
+            auto trusted_link_map = GetTrustedContigLinks(repetitive_edges, graph, gfa);
+
             cont_index::VertexResolver<contracted_graph::ContractedGraph> vertex_resolver
-                (*contracted_graph, contracted_graph->GetAssemblyGraph(), trusted_link_map, barcode_extractor_ptr, cfg.count_threshold,
-                 cfg.tail_threshold, length_threshold, cfg.nthreads,
+                (*contracted_graph, contracted_graph->GetAssemblyGraph(), trusted_link_map, barcode_extractor_ptr,
+                 cfg.count_threshold, cfg.tail_threshold, length_threshold, cfg.nthreads,
                  cfg.graph_score_threshold, cfg.rel_threshold);
             auto results = vertex_resolver.ResolveVertices();
-            vertex_resolver.PrintVertexResults(results, vertex_output_path, cfg.tmpdir, unique_kmer_count, id_mapper);
+            vertex_resolver.PrintVertexResults(results, vertex_output_path, id_mapper);
             return results;
         }
     }
-
 }
 
 void ResolveComplexVertices(const gcfg &cfg,
@@ -451,21 +503,10 @@ int main(int argc, char** argv) {
             barcode_extractor_ptr = std::make_shared<BarcodeExtractor>(downsampled_index, graph);
         }
 
-        //std::ofstream barcode_out(cfg.output_dir / "barcode_index.txt");
-        //for (auto it = barcode_index.begin(); it != barcode_index.end(); ++it) {
-        //    barcode_out << it->first.int_id() << std::endl;
-        //    it->second.Serialize(barcode_out);
-        //}
-
         ResolveComplexVertices(cfg, graph, barcode_extractor_ptr, id_mapper.get(), gfa, gfa_writer);
 
         if (cfg.statistics) {
             CountStatistics(cfg, graph, barcode_index, cfg.output_dir);
-        }
-
-        if (not cfg.refpath.empty()) {
-            cont_index::ReferencePathChecker ref_path_checker(graph, id_mapper.get());
-            ref_path_checker.CheckAssemblyGraph(cfg.refpath);
         }
     }
 }

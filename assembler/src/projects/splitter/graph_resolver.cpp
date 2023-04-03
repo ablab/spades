@@ -75,11 +75,11 @@ GraphResolver::GraphResolverInfo::EdgeMap GraphResolver::MergePaths(debruijn_gra
             continue;
         }
         std::vector<EdgeId> simple_path;
-        std::vector<uint32_t> overlaps;
+        std::vector<size_t> overlaps;
         const auto &first_path = *(path.first);
         for (size_t i = 0; i < first_path.Size(); ++i) {
             if (i > 0 and graph.is_complex(graph.EdgeStart(first_path[i]))) {
-                uint32_t overlap = graph.link_length(graph.EdgeStart(first_path[i]), first_path[i - 1], first_path[i]);
+                size_t overlap = graph.link_length(graph.EdgeStart(first_path[i]), first_path[i - 1], first_path[i]);
                 overlaps.push_back(overlap);
             }
             simple_path.push_back(first_path[i]);
