@@ -231,7 +231,7 @@ public:
     DeBruijnDataMaster(unsigned k)
             : k_(k) {}
 
-    const EdgeData MergeData(const std::vector<const EdgeData *> &to_merge, const std::vector<uint32_t> &overlaps,
+    const EdgeData MergeData(const std::vector<const EdgeData *> &to_merge, const std::vector<size_t> &overlaps,
                              bool safe_merging = true) const;
 
     std::tuple<VertexData, EdgeData, EdgeData> SplitData(const EdgeData& edge, size_t position, bool is_self_conj = false) const;
@@ -273,7 +273,7 @@ public:
 //typedef DeBruijnDataMaster DataMaster;
 
 inline const DeBruijnEdgeData DeBruijnDataMaster::MergeData(const std::vector<const EdgeData *> &to_merge,
-                                                            const std::vector<uint32_t> &overlaps,
+                                                            const std::vector<size_t> &overlaps,
                                                             bool safe_merging) const {
     std::vector<Sequence> ss;
     ss.reserve(to_merge.size());
