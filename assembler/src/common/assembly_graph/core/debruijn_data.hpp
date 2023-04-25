@@ -292,7 +292,7 @@ inline std::tuple<DeBruijnVertexData, DeBruijnEdgeData, DeBruijnEdgeData> DeBrui
         VERIFY(position < end);
         end -= position;
     }
-    return { VertexData(), EdgeData(edge.nucls().Subseq(0, position + k_)), EdgeData(nucls.Subseq(position, end)) };
+    return { VertexData(k_), EdgeData(edge.nucls().Subseq(0, position + k_)), EdgeData(nucls.Subseq(position, end)) };
 }
 
 inline DeBruijnEdgeData DeBruijnDataMaster::GlueData(const DeBruijnEdgeData&, const DeBruijnEdgeData& data2) const {
