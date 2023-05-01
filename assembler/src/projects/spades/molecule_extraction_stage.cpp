@@ -608,6 +608,7 @@ namespace debruijn_graph {
         INFO(long_reads.size() << " paths after filtering");
         path_extend::ContigWriter writer(graph_pack.g, std::make_shared<path_extend::BarcodeContigNameGenerator>());
         writer.OutputPathsRNA(long_reads, cfg::get().output_dir + "/extracted.fasta");
+        writer.OutputPaths(long_reads, cfg::get().output_dir + "/extracted_short.fasta");
     }
 
     void MoleculeExtractionStage::run(debruijn_graph::conj_graph_pack &graph_pack, const char *) {
