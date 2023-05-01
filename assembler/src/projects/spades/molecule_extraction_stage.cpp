@@ -525,8 +525,8 @@ namespace debruijn_graph {
                         DEBUG(path.first->ToVector()[path.first->ToVector().size() - 1]);
                         DEBUG(graph_pack.barcode_coverage[0].GetLeftMostPosition(path.first->ToVector()[0], current_barcode));
                         DEBUG(graph_pack.barcode_coverage[0].GetRightMostPosition(path.first->ToVector()[path.first->ToVector().size() - 1], current_barcode));
-                        long_reads_temp_storage.AddPath(path.first->ToVector(), 1, true, current_barcode, graph_pack.barcode_coverage[0].GetLeftMostPosition(path.first->ToVector()[0], current_barcode),
-                                                        graph_pack.barcode_coverage[0].GetRightMostPosition(path.first->ToVector()[path.first->ToVector().size() - 1], current_barcode));
+                        long_reads_temp_storage.AddPath(path.first->ToVector(), 1, true, current_barcode, graph_pack.g.length(path.first->ToVector()[0]) -  graph_pack.barcode_coverage[0].GetLeftMostPosition(path.first->ToVector()[0], current_barcode),
+                                                        graph_pack.g.length(path.first->ToVector().back()) - graph_pack.barcode_coverage[0].GetRightMostPosition(path.first->ToVector().back(), current_barcode));
                     }
 
                     if (long_reads_temp_container.size())
