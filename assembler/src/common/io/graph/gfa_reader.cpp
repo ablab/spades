@@ -237,17 +237,13 @@ unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
     bool is_simple = k_and_type.second;
 
     // Add "point tips" of edges
-    if (is_simple) {
-        for (EdgeId e: g.edges()) {
-            if (g.EdgeEnd(e))
-                continue;
+    for (EdgeId e: g.edges()) {
+        if (g.EdgeEnd(e))
+            continue;
+        if (is_simple) {
             helper.LinkIncomingEdge(helper.CreateVertex(DeBruijnVertexData(k)), e);
-        }
-    } else {
-        std::vector<LinkId> empty_links;
-        for (EdgeId e: g.edges()) {
-            if (g.EdgeEnd(e))
-                continue;
+        } else {
+            std::vector<LinkId> empty_links;
             helper.LinkIncomingEdge(helper.CreateVertex(DeBruijnVertexData(empty_links)), e);
         }
     }
