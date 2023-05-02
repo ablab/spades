@@ -51,7 +51,8 @@ class AccurateEdgeClusterExtractor : public EdgeClusterExtractor {
         for (auto barcode_it = barcode_extractor_ptr_->barcode_iterator_begin(edge);
              barcode_it != barcode_extractor_ptr_->barcode_iterator_end(edge); ++barcode_it) {
             BarcodeId barcode = (*barcode_it).first;
-            TRACE("For barcode: " << barcode);
+            INFO("For barcode: " << barcode);
+            INFO("Number of reads: " << barcode_extractor_ptr_->GetNumberOfReads(edge, barcode));
             if (barcode_extractor_ptr_->GetNumberOfReads(edge, barcode) > min_read_threshold_) {
                 auto local_clusters = ExtractClustersFromBarcodeOnEdge(edge, barcode, distance_threshold_);
                 result.insert({barcode, local_clusters});

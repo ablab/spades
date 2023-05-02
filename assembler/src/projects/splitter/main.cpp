@@ -83,7 +83,7 @@ struct gcfg {
   //Long edge clusters
   size_t training_length_threshold = 500000;
   size_t training_length_offset = 50000;
-  size_t training_min_read_threshold = 6;
+  size_t training_min_read_threshold = 4;
   size_t training_linkage_distance = 30000;
 };
 
