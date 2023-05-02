@@ -238,7 +238,7 @@ unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
         if (g.EdgeEnd(e))
             continue;
 
-        helper.LinkIncomingEdge(helper.CreateVertex(DeBruijnVertexData()),
+        helper.LinkIncomingEdge(helper.CreateVertex(DeBruijnVertexData(0)),
                                 e);
     }
 
