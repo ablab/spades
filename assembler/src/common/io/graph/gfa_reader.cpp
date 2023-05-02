@@ -137,7 +137,7 @@ static void HandlePath(std::vector<GFAReader::GFAPath> &paths,
     }
 }
 
-static unsigned ProcessLinks(DeBruijnGraph &g, const Links &links) {
+static std::pair<unsigned, bool> ProcessLinks(DeBruijnGraph &g, const Links &links) {
     // First, determine if all overlaps are simple and same (de Bruijn graph, etc.)
     unsigned k = -1U; bool simple = true;
     for (const auto &link: links) {
@@ -184,7 +184,8 @@ static unsigned ProcessLinks(DeBruijnGraph &g, const Links &links) {
         helper.LinkEdges(e1, e2);
     }
 
-    return k;
+    auto result = std::pair<unsigned, bool>(k, simple);
+    return result;
 }
 
 unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
@@ -231,15 +232,24 @@ unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
             *result);
     }
 
-    unsigned k = ProcessLinks(g, links);
+    auto k_and_type = ProcessLinks(g, links);
+    unsigned k = k_and_type.first;
+    bool is_simple = k_and_type.second;
 
     // Add "point tips" of edges
-    for (EdgeId e : g.edges()) {
-        if (g.EdgeEnd(e))
-            continue;
-
-        helper.LinkIncomingEdge(helper.CreateVertex(DeBruijnVertexData(0)),
-                                e);
+    if (is_simple) {
+        for (EdgeId e: g.edges()) {
+            if (g.EdgeEnd(e))
+                continue;
+            helper.LinkIncomingEdge(helper.CreateVertex(DeBruijnVertexData(k)), e);
+        }
+    } else {
+        std::vector<LinkId> empty_links;
+        for (EdgeId e: g.edges()) {
+            if (g.EdgeEnd(e))
+                continue;
+            helper.LinkIncomingEdge(helper.CreateVertex(DeBruijnVertexData(empty_links)), e);
+        }
     }
 
     free(line);
