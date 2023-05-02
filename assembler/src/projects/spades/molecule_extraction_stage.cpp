@@ -470,10 +470,9 @@ namespace debruijn_graph {
             return barcode;
         }
         for (int i = start_pos; i < read.first().name().length(); ++i) {
-            if (read.first().name()[i] != '1') {
+            if (std::isalnum(read.first().name()[i]) || read.first().name()[i] == ':' || read.first().name()[i] == '.' || read.first().name()[i] == '_') {
                 barcode.push_back(read.first().name()[i]);
             } else {
-                barcode.push_back(read.first().name()[i]);
                 break;
             }
         }

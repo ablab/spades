@@ -142,13 +142,13 @@ private:
             return barcode;
         }
         for (int i = start_pos; i < r.name().length(); ++i) {
-            if (r.name()[i] != '1') {
+            if (std::isalnum(r.name()[i]) || r.name()[i] == ':' || r.name()[i] == '.' || r.name()[i] == '_') {
                 barcode.push_back(r.name()[i]);
             } else {
-                barcode.push_back(r.name()[i]);
                 break;
             }
         }
+        TRACE(barcode);
         return barcode;
     }
 
