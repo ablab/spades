@@ -78,7 +78,7 @@ public:
     explicit DeBruijnVertexData(const std::vector<LinkId> &links)
             : overlap_(Overlap::create<ComplexOverlap>(new OverlapStorage(links))) {}
 
-    explicit DeBruijnVertexData(unsigned overlap = 0)
+    explicit DeBruijnVertexData(unsigned overlap)
             : overlap_(Overlap::create<ExplicitOverlap>(overlap)) {}
 
     DeBruijnVertexData(DeBruijnVertexData&& that) {
