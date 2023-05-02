@@ -79,7 +79,10 @@ void GFAPathWriter::WritePaths11(const std::vector<EdgeId> &edges,
 }
 
 void GFAPathWriter::WriteJumpLinks(const JumpLinks &jump_links) {
-    for (auto &link : jump_links) {
+    std::vector<std::pair<EdgeId, EdgeId>> sorted_jump_links;
+    std::copy(jump_links.begin(), jump_links.end(), std::back_inserter(sorted_jump_links));
+    std::sort(sorted_jump_links.begin(), sorted_jump_links.end());
+    for (auto &link : sorted_jump_links) {
         os_ << 'J' << '\t'
             << edge_namer_.EdgeOrientationString(link.first, "\t") << '\t'
             << edge_namer_.EdgeOrientationString(link.second, "\t") << '\t'
