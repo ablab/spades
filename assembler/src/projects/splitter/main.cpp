@@ -71,6 +71,7 @@ struct gcfg {
 
   //vertex resolution
   double rel_threshold = 2.0;
+  bool scaffold_links = false;
 
   //meta mode
   size_t length_threshold = 2000;
@@ -127,6 +128,7 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
             "Barcodes are assigned to the first and last <tail_threshold> nucleotides of the edge",
         (option("--count-threshold") & value("count-threshold", cfg.count_threshold))
             % "Minimum number of reads for barcode index",
+        (option("--scaffold-links").set(cfg.scaffold_links)) % "Use scaffold links in the vertex resolution",
         (option("--relative-score-threshold") & value("relative-score-threshold", cfg.relative_score_threshold))
             % "Relative score threshold for path cluster extraction",
         (option("--min-read-threshold") & value("min-read-threshold", cfg.min_read_threshold))
@@ -293,36 +295,40 @@ cont_index::VertexResults GetRepeatResolutionResults(const gcfg &cfg,
                 return repetitive_edges.find(edge) == repetitive_edges.end();
             };
 
-            std::unordered_set<EdgeId> non_unique_starts;
-            size_t total_path_edges = 0;
-            std::vector<std::vector<EdgeId>> non_repetitive_paths;
-            for (const auto &path: gfa.paths()) {
-                std::vector<EdgeId> non_repetitive_path;
-                for (const auto &edge: path.edges) {
-                    if (repetitive_edges.find(edge) == repetitive_edges.end()) {
-                        non_repetitive_path.push_back(edge);
-                        ++total_path_edges;
+            if (cfg.scaffold_links) {
+                INFO("Constructing scaffold links between unique edges");
+                std::unordered_set<EdgeId> non_unique_starts;
+                size_t total_path_edges = 0;
+                std::vector<std::vector<EdgeId>> non_repetitive_paths;
+                for (const auto &path: gfa.paths()) {
+                    std::vector<EdgeId> non_repetitive_path;
+                    for (const auto &edge: path.edges) {
+                        if (repetitive_edges.find(edge) == repetitive_edges.end()) {
+                            non_repetitive_path.push_back(edge);
+                            ++total_path_edges;
+                        }
+                    }
+                    non_repetitive_paths.push_back(non_repetitive_path);
+                }
+                INFO(total_path_edges << " non-repetitive edges in " << non_repetitive_paths.size()
+                                      << " scaffold paths");
+                for (const auto &path: non_repetitive_paths) {
+                    if (path.size() < 2) {
+                        continue;
+                    }
+                    for (auto it1 = path.begin(), it2 = std::next(it1); it2 != path.end(); ++it1, ++it2) {
+                        EdgeId current = *it1;
+                        EdgeId next = *it2;
+                        trusted_link_map[current].insert(next);
+                        trusted_link_map[graph.conjugate(next)].insert(graph.conjugate(current));
                     }
                 }
-                non_repetitive_paths.push_back(non_repetitive_path);
-            }
-            INFO(total_path_edges << " non-repetitive edges in " << non_repetitive_paths.size() << " scaffold paths");
-            for (const auto &path: non_repetitive_paths) {
-                if (path.size() < 2) {
-                    continue;
+                size_t total_links = 0;
+                for (const auto &entry: trusted_link_map) {
+                    total_links += entry.second.size();
                 }
-                for (auto it1 = path.begin(), it2 = std::next(it1); it2 != path.end(); ++it1, ++it2) {
-                    EdgeId current = *it1;
-                    EdgeId next = *it2;
-                    trusted_link_map[current].insert(next);
-                    trusted_link_map[graph.conjugate(next)].insert(graph.conjugate(current));
-                }
+                INFO(total_links << " links in " << trusted_link_map.size() << " entries");
             }
-            size_t total_links = 0;
-            for (const auto &entry: trusted_link_map) {
-                total_links += entry.second.size();
-            }
-            INFO(total_links << " links in " << trusted_link_map.size() << " entries");
 
             contracted_graph::DBGContractedGraphFactory factory(graph, repeat_predicate);
             factory.Construct();
