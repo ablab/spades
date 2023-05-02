@@ -122,8 +122,9 @@ class ConcurrentBufferFiller {
 
     std::string GetBarcode(std::unique_ptr<io::PairedRead> r) {
         if (not is_tellseq_) {
-            auto left_barcode_string = GetTenXBarcodeFromRead(r->first().name(), barcode_prefices_);
-            auto right_barcode_string = GetTenXBarcodeFromRead(r->second().name(), barcode_prefices_);
+            TRACE("Getting barcode")
+            auto left_barcode_string = GetTenXBarcodeFromRead(r->first().comment(), barcode_prefices_);
+            auto right_barcode_string = GetTenXBarcodeFromRead(r->second().comment(), barcode_prefices_);
 
             if (left_barcode_string.empty() or left_barcode_string != right_barcode_string) {
                 TRACE(left_barcode_string);
