@@ -98,6 +98,7 @@ class EdgeInitialClusterStorageBuilder : public InitialClusterStorageBuilder {
                 }
             }
         }
+        INFO("Total edge clusters: " << edge_clusters);
         DEBUG("Constructed cluster storage");
     }
 
