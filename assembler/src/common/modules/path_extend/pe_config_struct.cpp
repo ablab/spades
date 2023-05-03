@@ -196,6 +196,7 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool c
     load(p.use_coordinated_coverage, pt, "use_coordinated_coverage", complete);
     load(p.scaffolding2015, pt, "scaffolding2015", complete);
     load(p.scaffold_graph_params, pt, "scaffold_graph", complete);
+    load(p.rna_10x, pt, "rna_10x_opt", complete);
 
     std::string path_cleaning_presets;
     load(path_cleaning_presets, pt, "path_cleaning_presets", complete);
