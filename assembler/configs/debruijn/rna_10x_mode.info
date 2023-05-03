@@ -12,7 +12,7 @@ params {
     sort_seeds_by_coverage true
 
     rna_10x_opt {
-	min_cloud_size 10
+	min_cloud_size 20
         remove_overlaps false
         absolute_barcode_threshold 5
         relative_barcode_threshold 0.5 ;relative to average
