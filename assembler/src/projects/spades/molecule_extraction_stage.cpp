@@ -259,7 +259,7 @@ namespace debruijn_graph {
                 DEBUG("After remove isolated");
                 initial_component.ClipTips();
                 DEBUG("After clip tips");
-                initial_component.FillGaps(30 * (i + 1));
+                initial_component.FillGaps(45 * (i + 1));
                 DEBUG("After fill gaps");
                 RemoveBulges(initial_component);
                 DEBUG("After remove bulges");
