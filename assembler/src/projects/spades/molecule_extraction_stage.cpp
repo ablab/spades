@@ -520,12 +520,12 @@ namespace debruijn_graph {
                         extractor.extractLongReadsPE(graph_pack, long_reads_temp_container, good_edges, current_barcode, lib_10x);
 
                     for (auto path : long_reads_temp_container) {
-                        DEBUG(path.first->ToVector()[0]);
-                        DEBUG(path.first->ToVector()[path.first->ToVector().size() - 1]);
-                        DEBUG(graph_pack.barcode_coverage[0].GetLeftMostPosition(path.first->ToVector()[0], current_barcode));
-                        DEBUG(graph_pack.barcode_coverage[0].GetRightMostPosition(path.first->ToVector()[path.first->ToVector().size() - 1], current_barcode));
-                        long_reads_temp_storage.AddPath(path.first->ToVector(), 1, true, current_barcode, graph_pack.barcode_coverage[0].GetLeftMostPosition(path.first->ToVector()[0], current_barcode),
-                                                        graph_pack.g.length(path.first->ToVector().back()) - graph_pack.barcode_coverage[0].GetRightMostPosition(path.first->ToVector().back(), current_barcode));
+                            DEBUG(path.first->ToVector()[0]);
+                            DEBUG(path.first->ToVector()[path.first->ToVector().size() - 1]);
+                            DEBUG(graph_pack.barcode_coverage[0].GetLeftMostPosition(path.first->ToVector()[0], current_barcode));
+                            DEBUG(graph_pack.barcode_coverage[0].GetRightMostPosition(path.first->ToVector()[path.first->ToVector().size() - 1], current_barcode));
+                            long_reads_temp_storage.AddPath(path.first->ToVector(), 1, true, current_barcode, graph_pack.barcode_coverage[0].GetLeftMostPosition(path.first->ToVector()[0], current_barcode),
+                                                            graph_pack.barcode_coverage[0].GetRightMostPosition(path.first->ToVector().back(), current_barcode));
                     }
 
                     if (long_reads_temp_container.size())
@@ -569,7 +569,7 @@ namespace debruijn_graph {
 
         for (auto path : long_reads_temp_container) {
             long_reads_temp_storage.AddPath(path.first->ToVector(), 1, true, current_barcode, graph_pack.barcode_coverage[0].GetLeftMostPosition(path.first->ToVector()[0], current_barcode),
-                                            graph_pack.g.length(path.first->ToVector().back()) -  graph_pack.barcode_coverage[0].GetRightMostPosition(path.first->ToVector().back(), current_barcode));
+                                             graph_pack.barcode_coverage[0].GetRightMostPosition(path.first->ToVector().back(), current_barcode));
         }
         long_reads_temp_container.clear();
         graph_pack.clustered_indices.Clear();
