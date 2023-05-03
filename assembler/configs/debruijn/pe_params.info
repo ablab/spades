@@ -18,7 +18,16 @@ params {
     multi_path_extend   false
     ; old | 2015 | combined | old_pe_2015
     scaffolding_mode old_pe_2015
-    
+
+    rna_10x_opt {
+    min_cloud_size 10
+        remove_overlaps false
+        absolute_barcode_threshold 5
+        relative_barcode_threshold 0.5 ;relative to average
+        absolute_length_threshold 1000
+    short_rel_barcode_threshold 1.0 ;relative to average for paths shorted than absolute_length_threshold
+    }
+
     overlap_removal {
         enabled true
         end_start_only  false
