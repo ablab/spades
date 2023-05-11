@@ -7,6 +7,21 @@ kmer_coverage_model {
     coverage_threshold 1.0
 }
 
+simp
+{
+
+    ; erroneous connections remover:
+    ec
+    { 
+       ; ec_lb: max_ec_length = k + ec_lb
+       ; icb: iterative coverage bound
+       ; to_ec_lb: max_ec_length = 2*tip_length(to_ec_lb) - 1
+       ; nbr: use not bulge erroneous connections remover 
+       ; condition               "{ ec_lb 9, icb 40.0, nbr }"
+       condition               "{ ec_lb 30, icb 20, rcec_cb 1.0 }"
+    }
+}
+
 pe {
 params {
     sort_seeds_by_coverage true
