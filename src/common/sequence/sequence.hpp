@@ -8,18 +8,16 @@
 
 #pragma once
 
-#include "seq.hpp"
-#include "rtseq.hpp"
-
-#include "utils/verify.hpp"
-
-#include <llvm/ADT/IntrusiveRefCntPtr.h>
-#include <llvm/Support/TrailingObjects.h>
-
 #include <vector>
 #include <string>
 #include <memory>
 #include <cstring>
+
+#include "seq.hpp"
+#include "rtseq.hpp"
+
+#include <llvm/ADT/IntrusiveRefCntPtr.h>
+#include <llvm/Support/TrailingObjects.h>
 
 // Silence bogus gcc warnings
 #pragma GCC diagnostic push
@@ -76,7 +74,7 @@ class Sequence {
         size_t bytes_size = DataSize(size_);
         ST *bytes = data_->data();
 
-        //VERIFY_MSG(is_dignucl(s[0]) || is_nucl(s[0]), s);
+        VERIFY(is_dignucl(s[0]) || is_nucl(s[0]));
 
         // Which symbols does our string contain : 0123 or ACGT?
         bool digit_str = is_dignucl(s[0]);

@@ -416,7 +416,7 @@ struct debruijn_config {
         bool enable;
         unsigned granularity;
     };
-
+    
     typedef std::map<info_printer_pos, info_printer> info_printers_t;
 
     std::filesystem::path dataset_file;
@@ -456,7 +456,7 @@ struct debruijn_config {
         bool start_only_from_tips;
         bool set_copynumber;
     };
-
+    
     contig_output co;
 
     std::filesystem::path load_from;

@@ -152,26 +152,24 @@ static void HandlePath(std::vector<GFAReader::GFAPath> &paths,
 
 static std::pair<unsigned, bool> ProcessLinks(DeBruijnGraph &g, const Links &links) {
     // First, determine if all overlaps are simple and same (de Bruijn graph, etc.)
-    unsigned k = -1U; 
-    bool simple = false;
-    //bool simple = true;
-    //for (const auto &link: links) {
-    //    const auto &overlap = std::get<2>(link);
-    //    unsigned ovl = -1U;
-    //    if (overlap.size() == 1 && overlap.front().op == 'M') {
-    //        ovl = overlap.front().count;
-    //    } else {
-    //        k = 0; simple = false;
-    //        break;
-    //    }
+    unsigned k = -1U; bool simple = true;
+    for (const auto &link: links) {
+        const auto &overlap = std::get<2>(link);
+        unsigned ovl = -1U;
+        if (overlap.size() == 1 && overlap.front().op == 'M') {
+            ovl = overlap.front().count;
+        } else {
+            k = 0; simple = false;
+            break;
+        }
 
-    //    if (k == -1U)
-    //        k = ovl;
-    //    else if (k && k != ovl) {
-    //        k = 0; simple = false;
-    //        break;
-    //    }
-    //}
+        if (k == -1U)
+            k = ovl;
+        else if (k && k != ovl) {
+            k = 0; simple = false;
+            break;
+        }
+    }
 
     INFO("Overlaps: " << (simple ? "simple" : "complex"));
 

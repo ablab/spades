@@ -20,7 +20,6 @@ static void PEResolving(graph_pack::GraphPack& gp) {
                                                   cfg::get().ss,
                                                   cfg::get().output_dir,
                                                   cfg::get().mode,
-                                                  cfg::get().max_threads,
                                                   cfg::get().uneven_depth,
                                                   cfg::get().avoid_rc_connections,
                                                   cfg::get().use_scaffolder);
