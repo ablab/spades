@@ -239,7 +239,7 @@ public:
     {}
 
     void Filter(PairedInfoIndexT<Graph>& index) {
-        return;
+//        return;
         DEBUG("Start filtering; index size: " << index.size());
         //We can't filter while traversing, because Remove may invalidate iterators
         //So let's save edge pairs first
