@@ -10,9 +10,9 @@
 #include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 #include "barcode_index/barcode_index_builder.hpp"
 #include "barcode_index/barcode_info_extractor.hpp"
+#include "io/graph/gfa_reader.hpp"
 #include "library/library.hpp"
 #include "library/library_data.hpp"
-#include "io/graph/gfa_reader.hpp"
 #include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
 

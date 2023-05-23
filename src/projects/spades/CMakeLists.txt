@@ -18,7 +18,6 @@ add_library(spades-stages STATIC
             contig_output_stage.cpp
             hybrid_aligning.cpp
             chromosome_removal.cpp
-            barcode_index_construction.cpp
             extract_domains.cpp
             domain_matcher.cpp
             domain_graph_construction.cpp
@@ -35,7 +34,7 @@ add_executable(spades-core
                series_analysis.cpp
                ../mts/contig_abundance.cpp)
 
-target_link_libraries(spades-core spades-stages graphio alignment common_modules ${COMMON_LIBRARIES})
+target_link_libraries(spades-core spades-stages graphio common_modules ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades-core PROPERTIES LINK_SEARCH_END_STATIC 1)

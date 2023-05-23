@@ -12,6 +12,7 @@
 #include "observable_graph.hpp"
 #include "coverage.hpp"
 #include "debruijn_data.hpp"
+
 namespace debruijn_graph {
 
 using omnigraph::CoverageIndex;
