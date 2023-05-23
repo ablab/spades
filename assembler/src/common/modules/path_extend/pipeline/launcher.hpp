@@ -8,14 +8,13 @@
 #include "extenders_logic.hpp"
 #include "launch_support.hpp"
 
-
-#include "modules/genome_consistance_checker.hpp"
 #include "modules/path_extend/pe_resolver.hpp"
-#include "modules/path_extend/scaffolder2015/connection_condition2015.hpp"
 #include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
+#include "modules/genome_consistance_checker.hpp"
 
 #include "alignment/rna/ss_coverage.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
+#include "modules/path_extend/scaffolder2015/connection_condition2015.hpp"
 
 namespace path_extend {
 
@@ -38,9 +37,6 @@ class PathExtendLauncher {
 
     std::shared_ptr<scaffold_graph::ScaffoldGraph>
         ConstructScaffoldGraph(const ScaffoldingUniqueEdgeStorage &edge_storage) const;
-
-    std::shared_ptr<scaffold_graph::ScaffoldGraph> ConstructPathScaffoldGraphForReadCloudLib(
-        const PathContainer &path_container, size_t lib_index) const;
 
     void PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph &scaffold_graph,
                             const std::set<EdgeId> &main_edge_set,
@@ -83,13 +79,7 @@ class PathExtendLauncher {
 
     Extenders ConstructPBExtenders(const ExtendersGenerator &generator);
 
-    void ConstructReadCloudStorages();
-
-    Extenders ConstructReadCloudExtenders(const ExtendersGenerator &generator);
-
     void FilterPaths(PathContainer& paths);
-
-    void ScaffoldPaths(PathContainer &paths) const;
 
     void AddFLPaths(PathContainer& paths) const;
 

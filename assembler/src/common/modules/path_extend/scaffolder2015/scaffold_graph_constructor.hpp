@@ -7,6 +7,7 @@
 #pragma once
 
 #include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
+#include "connection_condition2015.hpp"
 #include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
 
 #include <memory>
@@ -105,41 +106,6 @@ class ScaffoldSubgraphConstructor: public BaseScaffoldGraphConstructor {
                                 const size_t distance_threshold);
 
     std::shared_ptr<ScaffoldGraph> Construct() override;
-};
-
-//todo refactor connection conditions to avoid code duplication
-class UniqueScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
- public:
-    using BaseScaffoldGraphConstructor::ScaffoldGraph;
-    using BaseScaffoldGraphConstructor::ScaffoldVertex;
-
-    UniqueScaffoldGraphConstructor(const Graph &assembly_graph,
-                                   const ScaffoldingUniqueEdgeStorage &unique_storage,
-                                   const std::set<ScaffoldVertex> &scaffold_vertices,
-                                   const size_t distance,
-                                   const size_t max_threads);
-
-    std::shared_ptr<ScaffoldGraph> Construct() override;
-
- private:
-    bool CheckConnectedEdge(const ScaffoldVertex& from, const EdgeId& connected,
-                            const std::unordered_map<EdgeId, ScaffoldVertex>& first_unique_to_vertex) {
-        if (unique_storage_.IsUnique(connected) and first_unique_to_vertex.find(connected) != first_unique_to_vertex.end()) {
-            auto connected_scaff_vertex = first_unique_to_vertex.at(connected);
-            if (from != connected_scaff_vertex and
-                from != connected_scaff_vertex.GetConjugateFromGraph(graph_->AssemblyGraph())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    const path_extend::ScaffoldingUniqueEdgeStorage& unique_storage_;
-    const std::set<ScaffoldVertex> scaffold_vertices_;
-    const size_t distance_;
-    const size_t max_threads_;
-
-    DECL_LOGGER("UniqueScaffoldGraphConstructor");
 };
 
 class PredicateScaffoldGraphFilter: public BaseScaffoldGraphConstructor {

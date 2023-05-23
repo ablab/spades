@@ -385,7 +385,7 @@ void HybridLibrariesAligning::run(graph_pack::GraphPack& gp, const char*) {
                                         {}, /*min_stats_cutoff*/rtype ? 1 : 0, true);
                 gap_storage.DumpToFile(cfg::get().output_saves / "gaps.mpr");
             }
-
+            
             if (lib.type() != io::LibraryType::TrustedContigs &&
                 (cfg::get().pb.enable_gap_closing || (cfg::get().pb.enable_fl_gap_closing && lib.is_fl_lib())))
             {

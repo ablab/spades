@@ -40,15 +40,15 @@ bool PELaunchSupport::IsForSingleReadScaffolder(const io::SequencingLibrary<conf
 }
 
 bool PELaunchSupport::IsForPEExtender(const io::SequencingLibrary<config::LibraryData> &lib) const {
-    return (lib.is_paired() && !lib.is_mate_pair() && lib.data().mean_insert_size > 0.0);
+    return (lib.type() == io::LibraryType::PairedEnd && lib.data().mean_insert_size > 0.0);
 }
 
 bool PELaunchSupport::IsForShortLoopExtender(const io::SequencingLibrary<config::LibraryData> &lib) const {
-    return (lib.is_paired() && !lib.is_mate_pair() && lib.data().mean_insert_size > 0.0);
+    return (lib.type() == io::LibraryType::PairedEnd && lib.data().mean_insert_size > 0.0);
 }
 
 bool PELaunchSupport::IsForScaffoldingExtender(const io::SequencingLibrary<config::LibraryData> &lib) const {
-    return (lib.is_paired() && !lib.is_mate_pair() && lib.data().mean_insert_size > 0.0);
+    return (lib.type() == io::LibraryType::PairedEnd && lib.data().mean_insert_size > 0.0);
 }
 
 //TODO: review usage
@@ -104,15 +104,6 @@ bool PELaunchSupport::HasMPReads() const {
     }
     return false;
 }
-
-bool PELaunchSupport::HasReadClouds() const {
-    for (const auto& lib: dataset_info_.reads) {
-        if (lib.type() == io::LibraryType::Clouds10x) {
-            return true;
-        }
-    }
-    return false;
-}
 bool PELaunchSupport::SingleReadsMapped() const {
     for (const auto &lib : dataset_info_.reads) {
         if (lib.data().single_reads_mapped) {
@@ -139,7 +130,6 @@ size_t PELaunchSupport::TotalNuclsInGraph() const {
 
 bool PELaunchSupport::NeedsUniqueEdgeStorage() const {
     return !(params_.pset.sm == scaffolding_mode::sm_old ||
-             (params_.pset.sm == scaffolding_mode::sm_old_pe_2015 &&
-             !HasLongReadsScaffolding() && !HasMPReads() && !HasReadClouds()));
+             (params_.pset.sm == scaffolding_mode::sm_old_pe_2015 && !HasLongReadsScaffolding() && !HasMPReads()));
 }
 }

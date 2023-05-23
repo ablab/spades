@@ -7,8 +7,6 @@
 #include "scaffold_graph_constructor.hpp"
 #include "scaffold_graph_dijkstra.hpp"
 
-#include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_dijkstras.hpp"
-
 namespace path_extend {
 
 namespace scaffolder {
@@ -215,79 +213,6 @@ void ScoreFunctionGraphConstructor::ConstructFromScore(std::shared_ptr<EdgePairS
         }
     }
 }
-
-std::shared_ptr<scaffold_graph::ScaffoldGraph> UniqueScaffoldGraphConstructor::Construct() {
-    INFO("Scaffolding distance: " << distance_);
-    //        auto bounded_dij = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, distance_, 10000);
-
-    for (const auto& vertex: scaffold_vertices_) {
-        graph_->AddVertex(vertex);
-    }
-
-    std::vector<ScaffoldVertex> vertices_copy;
-    std::copy(scaffold_vertices_.begin(), scaffold_vertices_.end(), std::back_inserter(vertices_copy));
-
-    auto is_unique = [this](const EdgeId& edge) {
-      return unique_storage_.IsUnique(edge);
-    };
-
-    std::unordered_map<EdgeId, ScaffoldVertex> first_unique_to_vertex;
-    for (const auto& vertex: vertices_copy) {
-        auto first_unique = vertex.GetFirstEdgeWithPredicate(is_unique);
-        if (first_unique.is_initialized()) {
-            first_unique_to_vertex.insert({first_unique.get(), vertex});
-        }
-    }
-
-    size_t counter = 0;
-    const size_t block_size = vertices_copy.size() / 10;
-
-#pragma omp parallel for num_threads(max_threads_)
-    for (size_t i = 0; i < vertices_copy.size(); ++i) {
-        read_cloud::ReadCloudDijkstraHelper helper;
-        auto dij = helper.CreateUniqueDijkstra(graph_->AssemblyGraph(), distance_, unique_storage_);
-        const auto vertex = vertices_copy[i];
-        EdgeId last_edge = vertex.GetLastEdge();
-        VertexId last_vertex = graph_->AssemblyGraph().EdgeEnd(last_edge);
-        dij.Run(last_vertex);
-        std::vector<std::pair<ScaffoldVertex, size_t>> incident_vertices;
-        for (auto v: dij.ReachedVertices()) {
-            size_t distance = dij.GetDistance(v);
-            if (distance < distance_) {
-                for (auto connected: graph_->AssemblyGraph().OutgoingEdges(v)) {
-                    if (CheckConnectedEdge(vertex, connected, first_unique_to_vertex)) {
-                        const auto connected_scaff_vertex = first_unique_to_vertex.at(connected);
-                        incident_vertices.emplace_back(connected_scaff_vertex, distance);
-                    }
-                }
-            }
-        }
-#pragma omp critical
-        {
-            for (const auto& vertex_with_dist: incident_vertices) {
-                ScaffoldGraph::ScaffoldEdge edge(vertex, vertex_with_dist.first, (size_t) - 1, 0, vertex_with_dist.second);
-                //fixme replace with checking method
-                graph_->AddEdgeSimple(edge);
-            }
-            ++counter;
-            if (block_size != 0 and counter % block_size == 0) {
-                DEBUG("Processed " << counter << " vertices out of " << vertices_copy.size());
-            }
-        }
-    }
-    return graph_;
-}
-UniqueScaffoldGraphConstructor::UniqueScaffoldGraphConstructor(const Graph &assembly_graph,
-                                                               const ScaffoldingUniqueEdgeStorage &unique_storage,
-                                                               const std::set<ScaffoldVertex> &scaffold_vertices,
-                                                               const size_t distance,
-                                                               const size_t max_threads)
-    : BaseScaffoldGraphConstructor(assembly_graph),
-      unique_storage_(unique_storage),
-      scaffold_vertices_(scaffold_vertices),
-      distance_(distance),
-      max_threads_(max_threads) {}
-
 
 std::shared_ptr<scaffold_graph::ScaffoldGraph> ScaffoldSubgraphConstructor::Construct() {
     for (const ScaffoldVertex& vertex: large_graph_.vertices()) {

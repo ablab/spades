@@ -196,10 +196,6 @@ public:
         return it->second;
     }
 
-    const std::map<VertexId, std::pair<VertexId, EdgeId>>& GetPrevMap() const {
-        return prev_vert_map_;
-    };
-
     void Run(VertexId start) {
         TRACE("Starting dijkstra run from vertex " << graph_.str(start));
         Queue queue;

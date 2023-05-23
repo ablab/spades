@@ -8,13 +8,12 @@
 project(assembly_graph CXX)
 
 add_library(assembly_graph STATIC
-        core/id_distributor.cpp
-        components/connected_component.cpp
-        paths/bidirectional_path.cpp
-        paths/bidirectional_path_io/io_support.cpp
-        paths/bidirectional_path_io/bidirectional_path_output.cpp
-        graph_support/coverage_uniformity_analyzer.cpp
-        graph_support/coverage_uniformity_analyzer.cpp
-        ../alignment/edge_index_refiller.cpp)
+            core/id_distributor.cpp
+            components/connected_component.cpp
+            paths/bidirectional_path.cpp
+            paths/bidirectional_path_io/io_support.cpp
+            paths/bidirectional_path_io/bidirectional_path_output.cpp
+            graph_support/coverage_uniformity_analyzer.cpp
+            ../alignment/edge_index_refiller.cpp)
 
 target_link_libraries(assembly_graph utils llvm-support)

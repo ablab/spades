@@ -34,7 +34,7 @@ void SHWDistanceExtended(const std::string &target, const std::string &query, in
 int SHWDistance(const std::string &a, const std::string &b, int max_score, int &end_pos);
 
 inline Sequence MergeOverlappingSequences(const std::vector<Sequence>& ss,
-                                          const std::vector<size_t> &overlaps, bool safe_merging = true) {
+                                          const std::vector<uint32_t> &overlaps, bool safe_merging = true) {
     if (ss.empty()) {
         return Sequence();
     }

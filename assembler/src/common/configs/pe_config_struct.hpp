@@ -200,93 +200,6 @@ struct pe_config {
         LongReads rna_long_reads;
     };
 
-  struct ReadCloud {
-    std::string tslr_dataset;
-
-    size_t edge_tail_len;
-    size_t frame_size;
-
-    bool read_cloud_gap_closer_on;
-    bool read_cloud_resolution_on;
-
-    size_t long_edge_length_min_upper_bound;
-    size_t long_edge_length_max_upper_bound;
-    size_t long_edge_length_lower_bound;
-
-    double gap_closer_connection_score_threshold;
-    double gap_closer_relative_coverage_threshold;
-    size_t gap_closer_connection_length_threshold;
-    size_t gap_closer_scan_bound;
-
-    size_t min_training_edges;
-    size_t min_training_total_length;
-    size_t optimal_training_total_length;
-
-    double relative_score_threshold;
-
-    struct scaffold_graph_construction {
-      double score_percentile;
-      double cluster_length_percentile;
-      size_t count_threshold;
-      double relative_coverage_threshold;
-      size_t connection_length_threshold;
-      size_t connection_count_threshold;
-      double split_procedure_strictness;
-      size_t transitive_distance_threshold;
-      size_t path_scaffolder_tail_threshold;
-      size_t path_scaffolder_count_threshold;
-      size_t min_edge_length_for_barcode_collection;
-      double path_scaffolding_score;
-      double ultralong_edge_length_percentile;
-      double short_edge_threshold;
-    };
-
-    scaffold_graph_construction scaff_con;
-
-    struct scaffold_polisher {
-      size_t max_scaffold_dijkstra_distance;
-      size_t read_count_threshold;
-      size_t path_cluster_linkage_distance;
-      size_t path_cluster_min_reads;
-      double share_threshold;
-      double path_cluster_relative_threshold;
-    };
-
-    scaffold_polisher scaff_pol;
-
-    struct read_cloud_extender {
-      size_t reliable_edge_length;
-      size_t tail_threshold;
-      size_t distance_bound;
-      size_t seed_edge_length;
-      double extender_score_threshold;
-      double relative_coverage_threshold;
-      size_t barcode_threshold;
-      size_t score_function_tail_threshold;
-    };
-
-    read_cloud_extender read_ext;
-
-    struct path_searching {
-      size_t max_path_growing_iterations;
-      size_t max_paths_to_process;
-      size_t max_edge_visits;
-    };
-
-    path_searching path_search;
-
-    struct stats {
-      std::filesystem::path genome_path;
-      std::filesystem::path base_contigs_path;
-      std::filesystem::path cloud_contigs_path;
-      std::filesystem::path scaffold_graph_statistics;
-    };
-
-    stats statistics;
-
-    bool path_scaffolding_on;
-    bool debug_mode;
-  };
 
     struct MainPEParamsT {
         bool debug_output;
@@ -296,7 +209,6 @@ struct pe_config {
         VisualizeParamsT viz;
         ParamSetT param_set;
         AllLongReads long_reads;
-        ReadCloud read_cloud;
     }; // params;
 
 };

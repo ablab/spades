@@ -20,7 +20,7 @@ template<class Graph, typename distance_t = size_t>
 class VertexPutChecker {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
-public:
+  public:
     VertexPutChecker() { }
     bool Check(VertexId, EdgeId, distance_t) const { return true; }
 };
@@ -31,7 +31,7 @@ class EdgeComponentPutChecker {
     typedef typename Graph::EdgeId EdgeId;
 
     const std::set<EdgeId> &edges_;
-public:
+  public:
     EdgeComponentPutChecker(const std::set<EdgeId> &edges) : VertexPutChecker<Graph, distance_t>(), edges_(edges) { }
     bool Check(VertexId, EdgeId edge, distance_t) const {
         return edges_.count(edge) != 0;
@@ -44,9 +44,9 @@ class SubgraphPutChecker {
     typedef typename Graph::EdgeId EdgeId;
 
     const std::set<VertexId> &subgraph_;
-public:
+  public:
     SubgraphPutChecker(const std::set<VertexId>& subgraph) : VertexPutChecker<Graph, distance_t>(),
-        subgraph_(subgraph) { }
+                                                             subgraph_(subgraph) { }
     bool Check(VertexId vertex, EdgeId, distance_t) const {
         return subgraph_.count(vertex) != 0;
     }
@@ -58,7 +58,7 @@ class BoundPutChecker {
     typedef typename Graph::EdgeId EdgeId;
     const distance_t bound_;
 
-public:
+  public:
     BoundPutChecker(distance_t bound) :
         bound_(bound) { }
     bool Check(VertexId, EdgeId, distance_t length) const {
@@ -74,9 +74,9 @@ class CoveragePutChecker : public VertexPutChecker<Graph, distance_t> {
     double coverage_low_bound_;
     const Graph &g_;
     const distance_t bound_;
-public:
+  public:
     CoveragePutChecker(double coverage_low_bound, const Graph &g, distance_t bound) : VertexPutChecker<Graph, distance_t>(),
-                            coverage_low_bound_(coverage_low_bound), g_(g), bound_(bound){ }
+                                                                                      coverage_low_bound_(coverage_low_bound), g_(g), bound_(bound){ }
     bool Check(VertexId, EdgeId edge, distance_t length) const {
         return (math::gr(g_.coverage(edge), coverage_low_bound_) && length <= bound_);
     }
@@ -89,9 +89,9 @@ class LengthPutChecker : public VertexPutChecker<Graph, distance_t> {
 
     const Graph& g_;
     const distance_t length_threshold_;
- public:
+  public:
     LengthPutChecker(const Graph& g, distance_t length_threshold) : VertexPutChecker<Graph, distance_t>(),
-                                        g_(g), length_threshold_(length_threshold) { }
+                                                                    g_(g), length_threshold_(length_threshold) { }
     bool Check(VertexId, EdgeId edge, distance_t ) const {
         return g_.length(edge) < length_threshold_;
     }
@@ -103,9 +103,9 @@ class CompositePutChecker : public VertexPutChecker<Graph, distance_t> {
     typedef typename Graph::EdgeId EdgeId;
 
     std::vector<std::shared_ptr<VertexPutChecker<Graph, distance_t>>> put_checkers_;
- public:
+  public:
     explicit CompositePutChecker(const std::vector<std::shared_ptr<VertexPutChecker<Graph, distance_t>>>& put_checkers) : VertexPutChecker<Graph, distance_t>(),
-                                        put_checkers_(put_checkers) { }
+                                                                                                                          put_checkers_(put_checkers) { }
     bool Check(VertexId vertex, EdgeId edge, distance_t length) const {
         auto put_check_predicate = [vertex, edge, length] (std::shared_ptr<VertexPutChecker<Graph, distance_t>> put_checker) {
           return put_checker->Check(vertex, edge, length);
