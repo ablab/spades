@@ -11,21 +11,15 @@
 
 #include "pe_utils.hpp"
 #include "weight_counter.hpp"
+
 #include "alignment/rna/ss_coverage.hpp"
 #include "assembly_graph/components/graph_component.hpp"
-#include "assembly_graph/dijkstra/dijkstra_helper.hpp"
-#include "barcode_index/barcode_info_extractor.hpp"
-#include "read_cloud_path_extend/extender_support/candidate_selectors.hpp"
-#include "read_cloud_path_extend/extender_support/entry_collectors.hpp"
-#include "read_cloud_path_extend/scaffold_graph_construction/read_cloud_dijkstras.hpp"
-#include "scaffolder2015/scaffold_vertex_predicates.hpp"
 
 #include <cfloat>
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <queue>
-//#include "scaff_supplementary.hpp"
 
 namespace path_extend {
 
@@ -168,6 +162,7 @@ public:
     }
 };
 
+
 class ExtensionChooser {
 
 public:
@@ -267,29 +262,6 @@ public:
             }
         }
         return answer;
-    }
-};
-
-class CompositeExtensionChooser: public ExtensionChooser {
-    std::shared_ptr<ExtensionChooser> first_;
-    std::shared_ptr<ExtensionChooser> second_;
-public:
-    CompositeExtensionChooser(const Graph &g, std::shared_ptr<ExtensionChooser> first,
-                              std::shared_ptr<ExtensionChooser> second) :
-        ExtensionChooser(g), first_(first), second_(second) {}
-
-    EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
-        EdgeContainer answer;
-        auto first_result = first_->Filter(path, edges);
-        if (first_result.size() == 0) {
-            auto second_result = second_->Filter(path, edges);
-            return second_result;
-        }
-        if (first_result.size() > 1) {
-            auto second_result = second_->Filter(path, first_result);
-            return second_result;
-        }
-        return first_result;
     }
 };
 
@@ -445,10 +417,8 @@ class ExcludingExtensionChooser: public ExtensionChooser {
     EdgeContainer FindPossibleEdges(const AlternativeContainer& weights,
             double max_weight) const {
         EdgeContainer top;
-        DEBUG("Possible edges:");
         auto possible_edge = weights.lower_bound(max_weight / prior_coeff_);
         for (auto iter = possible_edge; iter != weights.end(); ++iter) {
-            DEBUG("Edge: " << (*iter).second.e_ << ", weight: " << (*iter).first);
             top.push_back(iter->second);
         }
         return top;
@@ -459,7 +429,6 @@ class ExcludingExtensionChooser: public ExtensionChooser {
         AlternativeContainer weights = FindWeights(path, edges, to_exclude);
         VERIFY(!weights.empty());
         auto max_weight = (--weights.end())->first;
-        DEBUG("Max weight: " << max_weight);
         EdgeContainer top = FindPossibleEdges(weights, max_weight);
         DEBUG("Top-scored edges " << top.size());
         EdgeContainer result;
@@ -1552,358 +1521,5 @@ private:
     DECL_LOGGER("CoordCoverageExtensionChooser");
 };
 
-class ReadCloudExtensionChooser : public ExtensionChooser {
-    std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_index_;
-    std::shared_ptr<read_cloud::BarcodeEntryCollector> barcode_entry_collector_;
-    std::shared_ptr<read_cloud::CloudReachableEdgesSelectorFactory> edge_selector_factory_;
-    const double score_threshold_;
-    const size_t tail_threshold_;
-
-    typedef std::pair<EdgeWithDistance, double> EdgeScore;
-    typedef barcode_index::SimpleVertexEntry SimpleVertexEntry;
-  public:
-    ReadCloudExtensionChooser(const Graph &g,
-                              std::shared_ptr<WeightCounter> wc,
-                              double weight_threshold,
-                              std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_index,
-                              std::shared_ptr<read_cloud::BarcodeEntryCollector> barcode_entry_collector,
-                              std::shared_ptr<read_cloud::CloudReachableEdgesSelectorFactory> edge_selector_factory,
-                              double score_threshold_, size_t tail_threshold) :
-        ExtensionChooser(g, wc, weight_threshold),
-        barcode_index_(barcode_index),
-        barcode_entry_collector_(barcode_entry_collector),
-        edge_selector_factory_(edge_selector_factory),
-        score_threshold_(score_threshold_),
-        tail_threshold_(tail_threshold) {}
-
-    EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
-        std::vector<EdgeWithDistance> result;
-        DEBUG("Trying to extend path " << path.GetId());
-        DEBUG("Current length: " << path.Length());
-        DEBUG("Trying to extend edge " << path.Back());
-        auto path_barcodes = barcode_entry_collector_->CollectEntry(path);
-        DEBUG(path_barcodes.size() << " barcodes on path");
-        if (path_barcodes.size() == 0) {
-            return result;
-        }
-        std::vector<EdgeWithDistance> candidates_with_good_score;
-        DEBUG(edges.size() << " initial candidates");
-        auto candidate_to_score = GetCandidateScores(edges, path_barcodes);
-        for (const auto &entry: candidate_to_score) {
-            candidates_with_good_score.push_back(entry.first);
-        }
-        DEBUG(candidates_with_good_score.size() << " candidates passed score threshold");
-        for (const auto &entry: candidate_to_score) {
-            DEBUG("Candidate: " << entry.first.e_.int_id() << ", score: " << entry.second);
-        }
-        if (candidates_with_good_score.empty()) {
-            DEBUG("No candidate passed threshold");
-            if (edges.empty() != 0) {
-                DEBUG("All candidates were filtered");
-            }
-            return result;
-        }
-        if (candidates_with_good_score.size() == 1) {
-            DEBUG("Single candidate passed threshold");
-            return candidates_with_good_score;
-        }
-
-        DEBUG("Multiple candidates passed threshold");
-        auto relative_threshold_result = ApplyRelativeThreshold(candidate_to_score);
-        if (relative_threshold_result.size() == 1) {
-            return relative_threshold_result;
-        }
-        DEBUG("Applying top sort criteria");
-        auto top_min_candidates = SelectTopMin(candidates_with_good_score, path_barcodes);
-        DEBUG("Top min candidates: " << top_min_candidates.size());
-        if (top_min_candidates.size() == 1 or top_min_candidates.size() == 0) {
-            return top_min_candidates;
-        }
-        auto top_min_scores = UpdateCandidateToScore(top_min_candidates, candidate_to_score);
-        for (const auto &entry: top_min_scores) {
-            TRACE("Candidate: " << entry.first.e_.int_id() << ", score: " << entry.second);
-        }
-        auto final_result = ApplyRelativeThreshold(top_min_scores);
-        DEBUG("Final candidates: " << final_result.size());
-        return final_result;
-    }
-
-  private:
-
-    std::vector<EdgeScore> UpdateCandidateToScore(const EdgeContainer &candidates,
-                                                  const std::vector<EdgeScore> &candidate_to_score) const {
-        std::set<EdgeId> candidate_set;
-        for (const auto &candidate: candidates) {
-            candidate_set.insert(candidate.e_);
-        }
-        std::vector<EdgeScore> result;
-        for (const auto &candidate_and_score: candidate_to_score) {
-            if (candidate_set.find(candidate_and_score.first.e_) != candidate_set.end()) {
-                result.push_back(candidate_and_score);
-            }
-        }
-        return result;
-    }
-
-    std::vector<EdgeScore> GetCandidateScores(const EdgeContainer &edges,
-                                              const SimpleVertexEntry &path_barcodes) const {
-        double max_score = 0;
-        std::vector<EdgeScore> candidate_to_score;
-        for (const auto &candidate: edges) {
-            const size_t count_threshold = 1;
-            const auto barcodes = barcode_index_->GetBarcodesFromHead(candidate.e_, count_threshold, tail_threshold_);
-            std::set<barcode_index::BarcodeId> intersection;
-            std::set_intersection(barcodes.begin(), barcodes.end(), path_barcodes.begin(), path_barcodes.end(),
-                                  std::inserter(intersection, intersection.begin()));
-            double score = static_cast<double>(intersection.size()) / static_cast<double>(path_barcodes.size());
-            TRACE("Candidate: " << candidate.e_.int_id());
-            TRACE("Score: " << score);
-            if (math::ge(score, max_score)) {
-                max_score = score;
-            }
-            if (math::ge(score, score_threshold_)) {
-                candidate_to_score.emplace_back(candidate, score);
-            }
-        }
-        DEBUG("Max score: " << max_score);
-        return candidate_to_score;
-    }
-
-    std::vector<EdgeWithDistance> ApplyRelativeThreshold(std::vector<EdgeScore> candidate_to_score) const {
-        std::vector<EdgeWithDistance> result;
-        std::sort(candidate_to_score.begin(), candidate_to_score.end(),
-                  [](const EdgeScore &first, const EdgeScore &second) {
-                    return math::gr(first.second, second.second) or
-                        (math::eq(first.second, second.second)
-                            and math::gr(first.first.e_.int_id(), second.first.e_.int_id()));
-                  });
-        const double relative_threshold = 2.0;
-        if (math::gr(candidate_to_score[0].second, candidate_to_score[1].second * relative_threshold)) {
-            DEBUG("Selected best candidate");
-            result.push_back(candidate_to_score[0].first);
-        }
-        return result;
-    }
-
-    std::vector<EdgeWithDistance> SelectTopMin(const std::vector<EdgeWithDistance> &candidates,
-                                               const SimpleVertexEntry &path_barcodes) const {
-        std::vector<EdgeWithDistance> result;
-        std::set<EdgeId> reached_candidates;
-        const size_t MAX_CANDIDATES = 10;
-        if (candidates.size() > MAX_CANDIDATES) {
-            return result;
-        }
-        std::map<EdgeWithDistance, EdgeContainer> candidate_to_reachable;
-        for (const auto &candidate: candidates) {
-            auto reachable = GetReachableCandidates(candidate, candidates, path_barcodes);
-            for (const auto &reached_candidate: reachable) {
-                reached_candidates.insert(reached_candidate.e_);
-            }
-        }
-        for (const auto &candidate: candidates) {
-            if (reached_candidates.find(candidate.e_) == reached_candidates.end()) {
-                result.push_back(candidate);
-            }
-        }
-        return result;
-    }
-
-    std::vector<EdgeWithDistance> GetReachableCandidates(const EdgeWithDistance &candidate,
-                                                         const EdgeContainer &others,
-                                                         const SimpleVertexEntry &path_barcodes) const {
-        std::vector<EdgeWithDistance> result;
-        auto edge_selector = edge_selector_factory_->ConstructReachableEdgesSelector(path_barcodes);
-        auto reached_edges = edge_selector->SelectReachableEdges(candidate.e_);
-        std::set<EdgeId> reached_edges_set;
-        for (const auto &edge: reached_edges) {
-            reached_edges_set.insert(edge.e_);
-        }
-        for (const auto &candidate: others) {
-            if (reached_edges_set.find(candidate.e_) != reached_edges_set.end()) {
-                result.push_back(candidate);
-            }
-        }
-        return result;
-    }
-
-    DECL_LOGGER("ReadCloudExtensionChooser");
-};
-
-class PredicateExtensionChooser : public ExtensionChooser {
-    std::shared_ptr<scaffolder::ScaffoldVertexPredicate> predicate_;
-    std::shared_ptr<ExtensionChooser> chooser_;
-
-  public:
-    PredicateExtensionChooser(const Graph &g,
-                              std::shared_ptr<scaffolder::ScaffoldVertexPredicate> intermediate_predicate,
-                              std::shared_ptr<ExtensionChooser> chooser) :
-        ExtensionChooser(g),
-        predicate_(intermediate_predicate),
-        chooser_(chooser) {}
-
-  public:
-    EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
-        DEBUG("Last edge of the path: " << path.Back().int_id());
-        DEBUG(edges.size() << " input edges:");
-        for (const auto &edge: edges) {
-            TRACE(edge.e_.int_id());
-        }
-        EdgeContainer intermediate_edges;
-        for (const auto &edge: edges) {
-            if ((*predicate_)(edge.e_)) {
-                intermediate_edges.push_back(edge);
-            }
-        }
-        DEBUG(intermediate_edges.size() << " intermediate edges:");
-        for (const auto &edge: intermediate_edges) {
-            TRACE(edge.e_.int_id());
-        }
-        EdgeContainer result = chooser_->Filter(path, intermediate_edges);
-        if (result.size() == 0) {
-            DEBUG("Filtered all edges");
-            return intermediate_edges;
-        }
-        if (result.size() < intermediate_edges.size()) {
-            DEBUG("PE chooser helped");
-        }
-        DEBUG(result.size() << "final edges");
-        for (const auto &edge: result) {
-            TRACE(edge.e_.int_id());
-        }
-        return result;
-    }
-
-    DECL_LOGGER("PredicateExtensionChooser");
-};
-
-class ReadCloudGapExtensionChooser : public ExtensionChooser {
-  protected:
-    const debruijn_graph::Graph &g_;
-    const ScaffoldingUniqueEdgeStorage &unique_storage_;
-    EdgeId end_;
-    std::shared_ptr<read_cloud::LongEdgePairGapCloserPredicate> cloud_predicate_;
-    const size_t scan_bound_;
-
-  public:
-    ReadCloudGapExtensionChooser(const Graph &g,
-                                 const ScaffoldingUniqueEdgeStorage &unique_storage_,
-                                 const EdgeId &end_,
-                                 std::shared_ptr<read_cloud::LongEdgePairGapCloserPredicate> cloud_predicate,
-                                 const size_t scan_bound_) : ExtensionChooser(g),
-                                                             g_(g),
-                                                             unique_storage_(unique_storage_),
-                                                             end_(end_),
-                                                             cloud_predicate_(cloud_predicate),
-                                                             scan_bound_(scan_bound_) {}
-
-    virtual EdgeContainer Filter(const BidirectionalPath &path, const EdgeContainer &edges) const override {
-        const size_t GAP_UPPER_BOUND = 10000;
-        DEBUG("Filter started");
-        EdgeContainer result;
-        const EdgeId last_unique = FindLastUniqueInPath(path);
-        DEBUG("Trying to close gap");
-        DEBUG("Path length: " << path.Length());
-        DEBUG("Last edge: " << path.Back().int_id());
-        DEBUG("Last unique: " << last_unique.int_id());
-        DEBUG("Target edge: " << end_.int_id());
-        DEBUG(edges.size() << " candidates");
-        if (last_unique.int_id() == 0 or end_.int_id() == 0) {
-            return result;
-        }
-        auto is_edge_supported_by_clouds = [this](const EdgeWithDistance &edge) {
-          return not unique_storage_.IsUnique(edge.e_)
-              and IsSupportedByClouds(edge.e_)
-              and IsTargetReachable(edge.e_, end_, GAP_UPPER_BOUND);
-        };
-        std::copy_if(edges.begin(), edges.end(), std::back_inserter(result), is_edge_supported_by_clouds);
-        if (result.size() > 0) {
-            DEBUG("Found " << result.size() << " supported edges");
-            for (const auto &edge: result) {
-                TRACE(edge.e_.int_id());
-            }
-            return result;
-        }
-
-        auto are_supported_by_clouds_reachable = [this](const EdgeWithDistance &edge) {
-          return not unique_storage_.IsUnique(edge.e_)
-              and AreSupportedByCloudsReachable(edge.e_, scan_bound_)
-              and IsTargetReachable(edge.e_, end_, GAP_UPPER_BOUND);
-        };
-        std::copy_if(edges.begin(), edges.end(), std::back_inserter(result), are_supported_by_clouds_reachable);
-        if (result.size() > 0) {
-            DEBUG("Supported edges are reachable from some candidates");
-        } else {
-            DEBUG("Candidates were not found.");
-        }
-        DEBUG("Result size: " << result.size());
-        for (const auto &edge: result) {
-            DEBUG(edge.e_.int_id());
-        }
-        DEBUG("Final result size: " << result.size());
-        DEBUG("Filter finished")
-        return result;
-    }
-  private:
-    bool IsTargetReachable(const EdgeId &edge, const EdgeId &target, const size_t scan_bound) const {
-        DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
-            DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_, scan_bound));
-        dijkstra.Run(g_.EdgeEnd(edge));
-        TRACE("Running dij from candidate " << edge.int_id());
-        bool found_target = false;
-        for (auto v: dijkstra.ReachedVertices()) {
-            if (dijkstra.GetDistance(v) < scan_bound) {
-                for (auto connected: g_.OutgoingEdges(v)) {
-                    TRACE("Checking edge " << connected.int_id());
-                    if (connected == target) {
-                        found_target = true;
-                        TRACE("supported");
-                        break;
-                    }
-                }
-            }
-            if (found_target) break;
-        }
-        return found_target;
-    }
-
-    bool AreSupportedByCloudsReachable(const EdgeId &edge, const size_t scan_bound) const {
-        DijkstraHelper<debruijn_graph::Graph>::BoundedDijkstra dijkstra(
-            DijkstraHelper<debruijn_graph::Graph>::CreateBoundedDijkstra(g_, scan_bound));
-        dijkstra.Run(g_.EdgeEnd(edge));
-        TRACE("Running dij from candidate " << edge.int_id());
-        bool found_supported = false;
-        //todo use custom dijkstra that stops on supported edges to improve performance
-        for (auto v: dijkstra.ReachedVertices()) {
-            if (dijkstra.GetDistance(v) < scan_bound) {
-                for (auto connected: g_.OutgoingEdges(v)) {
-                    TRACE("Checking edge " << connected.int_id());
-                    if (IsSupportedByClouds(connected)) {
-                        found_supported = true;
-                        TRACE("supported");
-                        break;
-                    }
-                }
-            }
-            if (found_supported) break;
-        }
-        return found_supported;
-    }
-
-    bool IsSupportedByClouds(const EdgeId &edge) const {
-        size_t min_edge_length = cloud_predicate_->GetParams().edge_length_threshold_;
-        return g_.length(edge) > min_edge_length and cloud_predicate_->Check(edge);
-    }
-
-    EdgeId FindLastUniqueInPath(const BidirectionalPath &path) const {
-        for (int i = static_cast<int>(path.Size()) - 1; i >= 0; --i) {
-            if (unique_storage_.IsUnique(path.At(i))) {
-                return path.At(i);
-            }
-        }
-        return EdgeId(0);
-    }
-
-    DECL_LOGGER("ReadCloudGapExtensionChooser");
-};
 }
 #endif /* EXTENSION_HPP_ */

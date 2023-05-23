@@ -14,7 +14,6 @@
 #include <memory>
 #include <vector>
 #include <set>
-#include <queue>
 #include <map>
 
 namespace path_extend {
@@ -120,7 +119,7 @@ public:
 
         return ppair;
     }
-
+    
     // This guy acquires the ownership of paths
     std::pair<BidirectionalPath&, BidirectionalPath&>
     AddPair(std::unique_ptr<BidirectionalPath> p, std::unique_ptr<BidirectionalPath> cp) {
@@ -210,39 +209,6 @@ private:
 protected:
     DECL_LOGGER("BidirectionalPath");
 
-};
-
-class QueueContainer {
-    std::queue<BidirectionalPath*> path_storage_;
-
- public:
-    ~QueueContainer() {
-        while (not path_storage_.empty()) {
-            auto current_path = path_storage_.front();
-            path_storage_.pop();
-            delete current_path;
-        }
-    }
-
-    void push(BidirectionalPath* path) {
-        path_storage_.push(path);
-    }
-
-    bool empty() const {
-        return path_storage_.empty();
-    }
-
-    void pop() {
-        path_storage_.pop();
-    }
-
-    size_t size() {
-        return path_storage_.size();
-    }
-
-    BidirectionalPath* front() const {
-        return path_storage_.front();
-    }
 };
 
 }

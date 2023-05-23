@@ -475,7 +475,7 @@ void GapClosingBase::execute(graph_pack::GraphPack &gp, const char *) {
 
     size_t cnt_pe = 0;
     for (const auto &lib: cfg::get().ds.reads.libraries()) {
-        if (lib.type() != io::LibraryType::PairedEnd or
+        if (lib.type() != io::LibraryType::PairedEnd &&
             lib.type() != io::LibraryType::Clouds10x)
             continue;
 

@@ -43,7 +43,7 @@ GraphResolver::GraphResolverInfo::VertexMap GraphResolver::SplitVertices(debruij
             if (vertex_result.state == VertexState::Completely) {
                 graph.DeleteVertex(vertex);
             } else {
-                auto links = graph.move_links(vertex);
+                std::vector<LinkId> links = graph.move_links(vertex);
                 std::vector<LinkId> new_links;
                 for (const auto &link_id: links) {
                     auto link = graph.link(link_id);
@@ -75,12 +75,12 @@ GraphResolver::GraphResolverInfo::EdgeMap GraphResolver::MergePaths(debruijn_gra
             continue;
         }
         std::vector<EdgeId> simple_path;
-        std::vector<size_t> overlaps;
+        std::vector<uint32_t> overlaps;
         const auto &first_path = *(path.first);
         for (size_t i = 0; i < first_path.Size(); ++i) {
             if (i > 0 and graph.is_complex(graph.EdgeStart(first_path[i]))) {
                 size_t overlap = graph.link_length(graph.EdgeStart(first_path[i]), first_path[i - 1], first_path[i]);
-                overlaps.push_back(overlap);
+                overlaps.push_back(static_cast<uint32_t>(overlap));
             }
             simple_path.push_back(first_path[i]);
         }
