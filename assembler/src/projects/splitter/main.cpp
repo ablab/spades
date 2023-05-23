@@ -1,5 +1,5 @@
 //***************************************************************************
-//* Copyright (c) 2021-2022 Saint Petersburg State University
+//* Copyright (c) 2021-2023 Saint Petersburg State University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
@@ -7,7 +7,6 @@
 #include "barcode_index_construction.hpp"
 #include "graph_resolver.hpp"
 #include "graph_resolver_io.hpp"
-#include "long_edge_statistics.hpp"
 #include "path_extractor.hpp"
 #include "scaffold_graph_helper.hpp"
 #include "vertex_resolver.hpp"
@@ -15,7 +14,6 @@
 #include "auxiliary_graphs/contracted_graph/contracted_graph_builder.hpp"
 #include "io/binary/read_cloud.hpp"
 #include "io/graph/gfa_writer.hpp"
-#include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/path_cluster_helper.hpp"
 #include "toolchain/utils.hpp"
 #include "utils/filesystem/path_helper.hpp"
 #include "utils/parallel/openmp_wrapper.h"
@@ -71,16 +69,6 @@ struct gcfg {
 
   //meta mode
   size_t length_threshold = 2000;
-
-  //path cluster extraction
-  double relative_score_threshold = 10.0;
-  size_t min_read_threshold = 2;
-
-  //Long edge clusters
-  size_t training_length_threshold = 500000;
-  size_t training_length_offset = 50000;
-  size_t training_min_read_threshold = 4;
-  size_t training_linkage_distance = 30000;
 };
 
 static void process_cmdline(int argc, char** argv, gcfg& cfg) {
@@ -125,10 +113,6 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
         (option("--count-threshold") & value("count-threshold", cfg.count_threshold))
             % "Minimum number of reads for barcode index",
         (option("--scaffold-links").set(cfg.scaffold_links)) % "Use scaffold links in the vertex resolution",
-        (option("--relative-score-threshold") & value("relative-score-threshold", cfg.relative_score_threshold))
-            % "Relative score threshold for path cluster extraction",
-        (option("--min-read-threshold") & value("min-read-threshold", cfg.min_read_threshold))
-            % "Minimum number of reads for path cluster extraction",
         (option("--length-threshold") & value("length-threshold", cfg.length_threshold))
             % "Minimum scaffold graph edge length (meta mode option)"
     );
@@ -239,21 +223,6 @@ size_t GetLengthThreshold(const gcfg &cfg) {
     }
 }
 
-void CountStatistics(const gcfg &cfg,
-                     debruijn_graph::Graph &graph,
-                     const barcode_index::FrameBarcodeIndex<Graph> &barcode_index,
-                     const std::filesystem::path &base_output_path) {
-    cont_index::LongEdgeStatisticsCounter long_edge_counter(graph, barcode_index, cfg.training_length_threshold,
-                                                            cfg.training_length_offset,
-                                                            cfg.training_min_read_threshold, cfg.read_linkage_distance,
-                                                            cfg.nthreads,
-                                                            base_output_path);
-    long_edge_counter.CountClusterStatistics();
-    long_edge_counter.CountDoubleCoverageDistribution();
-
-    auto barcode_extractor_ptr = std::make_shared<barcode_index::FrameBarcodeIndexInfoExtractor>(barcode_index, graph);
-}
-
 cont_index::VertexResolver<debruijn_graph::Graph>::LinkMap GetTrustedContigLinks(const std::unordered_set<EdgeId> &repetitive_edges,
                                                                                  debruijn_graph::Graph &graph,
                                                                                  const gfa::GFAReader &gfa) {
@@ -271,7 +240,6 @@ cont_index::VertexResolver<debruijn_graph::Graph>::LinkMap GetTrustedContigLinks
         }
         non_repetitive_paths.push_back(non_repetitive_path);
     }
-    INFO(total_path_edges << " non-repetitive edges in " << non_repetitive_paths.size() << " scaffold paths");
     for (const auto &path: non_repetitive_paths) {
         if (path.size() < 2) {
             continue;
@@ -287,72 +255,8 @@ cont_index::VertexResolver<debruijn_graph::Graph>::LinkMap GetTrustedContigLinks
     for (const auto &entry: trusted_link_map) {
         total_links += entry.second.size();
     }
-    INFO(total_links << " links in " << trusted_link_map.size() << " entries");
     return trusted_link_map;
 }
-cont_index::VertexResults GetRepeatResolutionResults(const gcfg &cfg,
-                                                     debruijn_graph::Graph &graph,
-                                                     const gfa::GFAReader &gfa,
-                                                     std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr,
-                                                     io::IdMapper<std::string> *id_mapper) {
-    size_t length_threshold = GetLengthThreshold(cfg);
-
-    //fixme separate output
-    std::filesystem::path vertex_output_path = cfg.output_dir / "vertex_stats.tsv";
-    bool unique_kmer_count = false;
-    std::unordered_map<EdgeId, std::unordered_set<EdgeId>> trusted_link_map;
-
-    switch (cfg.mode) {
-        default:
-            FATAL_ERROR("Unknown repeat resolution mode");
-        case ResolutionMode::Diploid: {
-            cont_index::VertexResolver<debruijn_graph::Graph> vertex_resolver
-                (graph, graph, trusted_link_map, barcode_extractor_ptr, cfg.count_threshold, cfg.tail_threshold, length_threshold, cfg.nthreads,
-                 cfg.graph_score_threshold, cfg.rel_threshold);
-            auto results = vertex_resolver.ResolveVertices();
-            vertex_resolver.PrintVertexResults(results, vertex_output_path, cfg.tmpdir, unique_kmer_count, id_mapper);
-            return results;
-        }
-        case ResolutionMode::Meta: {
-            auto repetitive_edges = ParseRepetitiveEdges(graph, cfg.assembly_info, id_mapper);
-            auto repeat_predicate = [&repetitive_edges](const debruijn_graph::EdgeId &edge) {
-                return repetitive_edges.find(edge) == repetitive_edges.end();
-            };
-
-            if (cfg.scaffold_links) {
-                INFO("Constructing scaffold links between unique edges");
-                std::unordered_set<EdgeId> non_unique_starts;
-                size_t total_path_edges = 0;
-                std::vector<std::vector<EdgeId>> non_repetitive_paths;
-                for (const auto &path: gfa.paths()) {
-                    std::vector<EdgeId> non_repetitive_path;
-                    for (const auto &edge: path.edges) {
-                        if (repetitive_edges.find(edge) == repetitive_edges.end()) {
-                            non_repetitive_path.push_back(edge);
-                            ++total_path_edges;
-                        }
-                    }
-                    non_repetitive_paths.push_back(non_repetitive_path);
-                }
-                INFO(total_path_edges << " non-repetitive edges in " << non_repetitive_paths.size()
-                                      << " scaffold paths");
-                for (const auto &path: non_repetitive_paths) {
-                    if (path.size() < 2) {
-                        continue;
-                    }
-                    for (auto it1 = path.begin(), it2 = std::next(it1); it2 != path.end(); ++it1, ++it2) {
-                        EdgeId current = *it1;
-                        EdgeId next = *it2;
-                        trusted_link_map[current].insert(next);
-                        trusted_link_map[graph.conjugate(next)].insert(graph.conjugate(current));
-                    }
-                }
-                size_t total_links = 0;
-                for (const auto &entry: trusted_link_map) {
-                    total_links += entry.second.size();
-                }
-                INFO(total_links << " links in " << trusted_link_map.size() << " entries");
-            }
 
 cont_index::VertexResults GetRepeatResolutionResults(const gcfg &cfg,
                                                      debruijn_graph::Graph &graph,
@@ -443,7 +347,7 @@ int main(int argc, char** argv) {
     process_cmdline(argc, argv, cfg);
 
     toolchain::create_console_logger();
-    START_BANNER("Containment index builder");
+    START_BANNER("SpLitteR");
 
     cfg.nthreads = spades_set_omp_threads(cfg.nthreads);
     INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg.nthreads);
@@ -502,9 +406,5 @@ int main(int argc, char** argv) {
         }
 
         ResolveComplexVertices(cfg, graph, barcode_extractor_ptr, id_mapper.get(), gfa, gfa_writer);
-
-        if (cfg.statistics) {
-            CountStatistics(cfg, graph, barcode_index, cfg.output_dir);
-        }
     }
 }

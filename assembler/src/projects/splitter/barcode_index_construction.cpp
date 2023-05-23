@@ -1,5 +1,5 @@
 //***************************************************************************
-//* Copyright (c) 2021-2022 Saint Petersburg State University
+//* Copyright (c) 2021-2023 Saint Petersburg State University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
@@ -31,15 +31,12 @@ void ConstructBarcodeIndex(barcode_index::FrameBarcodeIndex<debruijn_graph::Grap
         const unsigned min_occ = 2;
         alignment::ShortKMerReadMapper mapper(graph, workdir, mapping_k, min_occ);
         FrameConcurrentBarcodeIndexBuffer<debruijn_graph::Graph> buffer(graph, frame_size);
-//        ConcurrentBufferFiller buffer_filler(graph, buffer, mapper, barcode_prefices);
         FrameBarcodeIndexBuilder barcode_index_builder(graph, mapper, barcode_prefices, frame_size, nthreads);
         bool is_tellseq = lib.type() == io::LibraryType::TellSeqReads;
         if (not is_tellseq) {
-//            auto read_streams = io::paired_easy_readers(lib, false, 0);
             barcode_index_builder.ConstructBarcodeIndex(io::paired_easy_readers(lib, false, 0), barcode_index, lib, is_tellseq);
         }
         if (is_tellseq) {
-//            auto read_streams = io::tellseq_easy_readers(lib, false, 0);
             INFO("Constructing from tellseq lib");
             barcode_index_builder.ConstructBarcodeIndex(io::tellseq_easy_readers(lib, false, 0), barcode_index, lib, is_tellseq);
         }
@@ -64,7 +61,7 @@ void ConstructBarcodeIndex(barcode_index::FrameBarcodeIndex<debruijn_graph::Grap
             total_reads += it->second.GetCount();
         }
     }
-    INFO(total_reads << " total reads in barcode index");
+    INFO(total_reads << " total reads in the barcode index");
 }
 
 void DownsampleBarcodeIndex(const debruijn_graph::Graph &graph,
@@ -73,8 +70,6 @@ void DownsampleBarcodeIndex(const debruijn_graph::Graph &graph,
                             barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> &downsampled_index,
                             double sampling_factor) {
     VERIFY_DEV(math::ls(sampling_factor, 1.0));
-    const unsigned min_occ = 2;
-    const auto workdir = "";
     const size_t mapping_k = 31;
     const std::vector<string> barcode_prefices = {"BC:Z:", "BX:Z:"};
     debruijn_graph::Graph empty_graph(mapping_k);
