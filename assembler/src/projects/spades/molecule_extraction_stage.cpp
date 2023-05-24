@@ -514,10 +514,10 @@ namespace debruijn_graph {
                     INFO("Processing barcode " << current_barcode);
                     pif.StopProcessLibrary();
                     std::vector<EdgeId> good_edges;
-                    if (paths.size() > cfg::get().pe_params.param_set.rna_10x.min_cloud_size)
+                    if (paths.size() > cfg::get().pe_params.param_set.rna_10x.min_cloud_size && graph_pack.barcode_indices[0].size() < 70000)
                         extractor.extractEdges(paths, good_edges, current_barcode);
 
-                    if (paths.size() > cfg::get().pe_params.param_set.rna_10x.min_cloud_size && graph_pack.barcode_indices[0].size() < 100000)
+                    if (paths.size() > cfg::get().pe_params.param_set.rna_10x.min_cloud_size && graph_pack.barcode_indices[0].size() < 70000)
                         extractor.extractLongReadsPE(graph_pack, long_reads_temp_container, good_edges, current_barcode, lib_10x);
                     INFO(paths.size());
                     for (auto path : long_reads_temp_container) {
