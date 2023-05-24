@@ -259,7 +259,7 @@ namespace debruijn_graph {
                 DEBUG("After remove isolated");
                 initial_component.ClipTips();
                 DEBUG("After clip tips");
-                initial_component.FillGaps(45 * (i + 1));
+                initial_component.FillGaps(30 * (i + 1));
                 DEBUG("After fill gaps");
                 RemoveBulges(initial_component);
                 DEBUG("After remove bulges");
@@ -514,7 +514,8 @@ namespace debruijn_graph {
                     INFO("Processing barcode " << current_barcode);
                     pif.StopProcessLibrary();
                     std::vector<EdgeId> good_edges;
-                    extractor.extractEdges(paths, good_edges, current_barcode);
+                    if (paths.size() > cfg::get().pe_params.param_set.rna_10x.min_cloud_size)
+                        extractor.extractEdges(paths, good_edges, current_barcode);
 
                     if (paths.size() > cfg::get().pe_params.param_set.rna_10x.min_cloud_size)
                         extractor.extractLongReadsPE(graph_pack, long_reads_temp_container, good_edges, current_barcode, lib_10x);
