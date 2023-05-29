@@ -84,7 +84,7 @@ GraphResolver::GraphResolverInfo::EdgeMap GraphResolver::MergePaths(debruijn_gra
             }
             simple_path.push_back(first_path[i]);
         }
-
+        
         EdgeId resulting_edge = graph.MergePath(simple_path, true, overlaps);
         for (const auto &edge: simple_path) {
             original_edge_to_transformed[edge] = resulting_edge;
