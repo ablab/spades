@@ -108,7 +108,6 @@ PathExtractor::ScaffoldLinks PathExtractor::GetScaffoldLinks(const VertexResults
     std::unordered_map<debruijn_graph::EdgeId, std::unordered_set<debruijn_graph::EdgeId>> vertex_link_storage;
     size_t total_length = 0;
     size_t total_edges = 0;
-    size_t total_overlap = 0;
     size_t total_resolved_overlap = 0;
     size_t not_graph_supported_links = 0;
     size_t graph_supported_links = 0;
@@ -116,9 +115,6 @@ PathExtractor::ScaffoldLinks PathExtractor::GetScaffoldLinks(const VertexResults
     for (const debruijn_graph::EdgeId &edge: graph_.canonical_edges()) {
         total_length += graph_.length(edge);
         ++total_edges;
-    }
-    for (const debruijn_graph::VertexId &vertex: graph_.canonical_vertices()) {
-        total_overlap += graph_.data(vertex).overlap();
     }
 
     for (const auto &vertex_entry: vertex_results.vertex_to_result) {
@@ -151,7 +147,6 @@ PathExtractor::ScaffoldLinks PathExtractor::GetScaffoldLinks(const VertexResults
 
     INFO("Total graph size: " << total_edges);
     INFO("Total graph length: " << total_length);
-    INFO("Total graph overlap: " << total_overlap);
     INFO("Links not supported by graph: " << not_graph_supported_links);
     INFO("Links supported by graph: " << graph_supported_links);
     INFO("Total resolved overlap: " << total_resolved_overlap);
