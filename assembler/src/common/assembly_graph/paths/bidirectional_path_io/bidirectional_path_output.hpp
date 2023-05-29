@@ -50,24 +50,7 @@ public:
 };
 
 
-template<class Base>
-class GFAPathWriterBase : public Base {
-    void WritePath(const std::string &name,
-                   const std::vector<std::string> &edge_strs,
-                   const std::string &flags) {
-        this->os_ << "P" << "\t" ;
-        this->os_ << name << "\t";
-        bool first = true;
-        for (const auto& e : edge_strs) {
-            this->os_ << (first ? "" : "," ) << e;
-            first = false;
-        }
-        this->os_ << "\t*";
-        if (flags.length())
-            this->os_ << '\t' << flags;
-        this->os_ << '\n';
-    }
-
+class GFAPathWriter : public gfa::GFAWriter {
     void WritePath(const std::string &name, size_t segment_id,
                    const std::vector<std::string> &edge_strs,
                    const std::string &flags = "");
@@ -113,10 +96,6 @@ public:
 private:
     Version version_;
 };
-
-using GFAPathWriter = GFAPathWriterBase<gfa::GFAWriter>;
-using GFAPathComponentWriter = GFAPathWriterBase<gfa::GFAComponentWriter>;
-
 
 typedef std::function<void (const ScaffoldStorage&)> PathsWriterT;
 
