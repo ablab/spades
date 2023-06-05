@@ -121,10 +121,18 @@ PathExtractor::ScaffoldLinks PathExtractor::GetScaffoldLinks(const VertexResults
         const auto &vertex_result = vertex_entry.second;
         auto vertex = vertex_entry.first;
         DEBUG("Updating link storage");
-        for (const debruijn_graph::LinkId &link_id: graph_.links(vertex)) {
-            auto &link = graph_.link(link_id);
-            TRACE(link.link.first.int_id() << "," << link.link.second.int_id() << "," << link_id);
-            vertex_link_storage[link.link.first].insert(link.link.second);
+        if (graph_.is_complex(vertex)) {
+            for (const debruijn_graph::LinkId &link_id: graph_.links(vertex)) {
+                auto &link = graph_.link(link_id);
+                TRACE(link.link.first.int_id() << "," << link.link.second.int_id() << "," << link_id);
+                vertex_link_storage[link.link.first].insert(link.link.second);
+            }
+        } else {
+            for (const auto &in_edge: graph_.IncomingEdges(vertex)) {
+                for (const auto &out_edge: graph_.OutgoingEdges(vertex)) {
+                    vertex_link_storage[in_edge].insert(out_edge);
+                }
+            }
         }
         DEBUG("Constructing path map");
         for (const auto &entry: vertex_result.supported_pairs) {

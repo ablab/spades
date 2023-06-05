@@ -161,9 +161,9 @@ gfa::GFAReader ReadGraph(const gcfg &cfg,
             FATAL_ERROR("Unknown graph representation type");
         case GraphType::Multiplexed: {
             gfa::GFAReader gfa(cfg.graph);
-            INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: "
-                                  << gfa.num_paths());
             gfa.to_graph(graph, id_mapper);
+	    INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: "
+			                                      << gfa.num_paths());
             return gfa;
         }
     }
