@@ -27,13 +27,13 @@ using namespace cont_index;
 using namespace path_extend::read_cloud;
 
 enum class GraphType {
-    Blunted,
-    Multiplexed
+  Blunted,
+  Multiplexed
 };
 
 enum class ResolutionMode {
-    Diploid,
-    Meta
+  Diploid,
+  Meta
 };
 
 struct gcfg {
@@ -51,7 +51,6 @@ struct gcfg {
   ResolutionMode mode = ResolutionMode::Diploid;
   bool bin_load = false;
   bool debug = false;
-  bool statistics = false;
 
   //barcode_index_construction
   size_t frame_size = 40000;
@@ -83,38 +82,37 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
 
     auto cli = (
         graph << value("graph (in binary or GFA)"),
-        file << value("SLR library description (in YAML)"),
-        output_dir << value("path to output directory"),
-        (option("--dataset") & value("yaml", file)) % "dataset description (in YAML)",
-        (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
-        (option("--assembly-info") & value("assembly-info", assembly_info))
-            % "Path to metaflye assembly_info.txt file (meta mode, metaFlye graphs only)",
-        (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
-        (option("--mapping-k") & integer("value", cfg.mapping_k)) % "k for read mapping",
-        (option("--tmp-dir") & value("tmp", tmpdir)) % "scratch directory to use",
-        (option("--ref") & value("reference", refpath)) % "Reference path for repeat resolution evaluation (developer option)",
-        (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
-        (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)",
-        (option("--statistics").set(cfg.statistics)) % "produce additional read cloud library statistics (developer option)",
-        (option("--sampling-factor") & value("sampling-factor", cfg.sampling_factor)) % "Sampling factor for read downsampling",
-        (with_prefix("-G",
-                     option("mdbg").set(cfg.graph_type, GraphType::Multiplexed) |
-                     option("blunt").set(cfg.graph_type, GraphType::Blunted)) % "assembly graph type (mDBG or blunted)"),
-        (with_prefix("-M",
-                     option("diploid").set(cfg.mode, ResolutionMode::Diploid) |
-                     option("meta").set(cfg.mode, ResolutionMode::Meta)) % "repeat resolution mode (diploid or meta)"),
-         (option("--frame-size") & value("frame-size", cfg.frame_size)) % "Resolution of barcode index",
-        (option("--linkage-distance") & value("read-linkage-distance", cfg.read_linkage_distance)) %
-            "Reads are assigned to the same fragment based on linkage distance",
-        (option("--score") & value("score", cfg.graph_score_threshold)) % "Score threshold for link index",
-        (option("--rel-threshold") & value("rel-threshold", cfg.rel_threshold)) % "Relative score threshold for vertex resolution",
-        (option("--tail-threshold") & value("tail-threshold", cfg.tail_threshold)) %
-            "Barcodes are assigned to the first and last <tail_threshold> nucleotides of the edge",
-        (option("--count-threshold") & value("count-threshold", cfg.count_threshold))
-            % "Minimum number of reads for barcode index",
-        (option("--scaffold-links").set(cfg.scaffold_links)) % "Use scaffold links in the vertex resolution",
-        (option("--length-threshold") & value("length-threshold", cfg.length_threshold))
-            % "Minimum scaffold graph edge length (meta mode option)"
+            file << value("SLR library description (in YAML)"),
+            output_dir << value("path to output directory"),
+            (option("--dataset") & value("yaml", file)) % "dataset description (in YAML)",
+            (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
+            (option("--assembly-info") & value("assembly-info", assembly_info))
+                % "Path to metaflye assembly_info.txt file (meta mode, metaFlye graphs only)",
+            (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
+            (option("--mapping-k") & integer("value", cfg.mapping_k)) % "k for read mapping",
+            (option("--tmp-dir") & value("tmp", tmpdir)) % "scratch directory to use",
+            (option("--ref") & value("reference", refpath)) % "Reference path for repeat resolution evaluation (developer option)",
+            (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
+            (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)",
+            (option("--sampling-factor") & value("sampling-factor", cfg.sampling_factor)) % "Sampling factor for read downsampling",
+            (with_prefix("-G",
+                         option("mdbg").set(cfg.graph_type, GraphType::Multiplexed) |
+                             option("blunt").set(cfg.graph_type, GraphType::Blunted)) % "assembly graph type (mDBG or blunted)"),
+            (with_prefix("-M",
+                         option("diploid").set(cfg.mode, ResolutionMode::Diploid) |
+                             option("meta").set(cfg.mode, ResolutionMode::Meta)) % "repeat resolution mode (diploid or meta)"),
+            (option("--frame-size") & value("frame-size", cfg.frame_size)) % "Resolution of barcode index",
+            (option("--linkage-distance") & value("read-linkage-distance", cfg.read_linkage_distance)) %
+                "Reads are assigned to the same fragment based on linkage distance",
+            (option("--score") & value("score", cfg.graph_score_threshold)) % "Score threshold for link index",
+            (option("--rel-threshold") & value("rel-threshold", cfg.rel_threshold)) % "Relative score threshold for vertex resolution",
+            (option("--tail-threshold") & value("tail-threshold", cfg.tail_threshold)) %
+                "Barcodes are assigned to the first and last <tail_threshold> nucleotides of the edge",
+            (option("--count-threshold") & value("count-threshold", cfg.count_threshold))
+                % "Minimum number of reads for barcode index",
+            (option("--scaffold-links").set(cfg.scaffold_links)) % "Use scaffold links in addition to graph links for repeat resolution",
+            (option("--length-threshold") & value("length-threshold", cfg.length_threshold))
+                % "Minimum scaffold graph edge length (meta mode option)"
     );
 
     auto result = parse(argc, argv, cli);
@@ -154,16 +152,16 @@ struct TimeTracerRAII {
 };
 
 gfa::GFAReader ReadGraph(const gcfg &cfg,
-               debruijn_graph::Graph &graph,
-               io::IdMapper<std::string> *id_mapper) {
+                         debruijn_graph::Graph &graph,
+                         io::IdMapper<std::string> *id_mapper) {
     switch (cfg.graph_type) {
         default:
             FATAL_ERROR("Unknown graph representation type");
         case GraphType::Multiplexed: {
             gfa::GFAReader gfa(cfg.graph);
             gfa.to_graph(graph, id_mapper);
-	    INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: "
-			                                      << gfa.num_paths());
+            INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: "
+                                  << gfa.num_paths());
             return gfa;
         }
     }
@@ -281,7 +279,7 @@ cont_index::VertexResults GetRepeatResolutionResults(const gcfg &cfg,
         case ResolutionMode::Meta: {
             auto repetitive_edges = ParseRepetitiveEdges(graph, cfg.assembly_info, id_mapper);
             auto repeat_predicate = [&repetitive_edges](const debruijn_graph::EdgeId &edge) {
-                return repetitive_edges.find(edge) == repetitive_edges.end();
+              return repetitive_edges.find(edge) == repetitive_edges.end();
             };
             contracted_graph::DBGContractedGraphFactory factory(graph, repeat_predicate);
             factory.Construct();
