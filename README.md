@@ -26,12 +26,49 @@ Now to run SpLitteR move to folder `assembler/` and execute
 
 ### Input
 
-#### Format
-
 The tool requires 
 
 - Assembly graph file in [GFA 1.0 format](https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md), with scaffolds included as path lines.
-- SLR library in YAML format. The tool supports SLR libraries produced using 10X Genomics Chromium and TELL-seq technologies. SLR library should be in FASTQ format with barcodes attached as BC:Z or BX:Z tags:
+- SLR library in YAML format. The tool supports SLR libraries produced using 10X Genomics Chromium and UST TELL-Seq technologies. Other SLR technologies, such as stLFR or LoopSeq can potentially be used as an input if converted to 10X or TELL-Seq format.  
+
+SpLitteR supports [LJA](https://github.com/AntonBankevich/LJA) and [Flye](https://github.com/fenderglass/Flye) assembly graphs out of the box. Other assembly graphs should prefferably be converted into blunt format by e.g. [GetBlunted](https://github.com/vgteam/GetBlunted) utility. 
+
+#### UST TELLSeq format
+
+TELL-Seq library should include barcodes, left reads, and right reads as three separate FASTQ files. 
+
+For example, if you have a TELL-Seq library
+
+``` bash
+    tellseq_reads_I1.fastq.gz
+    tellseq_reads_R1.fastq.gz
+    tellseq_reads_R2.fastq.gz
+```
+
+YAML file should look like this:
+
+``` bash
+
+    [
+      {
+        orientation: "fr",
+        type: "tell-seq",
+        right reads: [
+          "/FULL_PATH_TO_DATASET/tellseq_reads_R2.fastq.gz"
+        ],
+        left reads: [
+          "/FULL_PATH_TO_DATASET/tellseq_reads_R1.fastq.gz"
+        ],
+        aux: [
+          "/FULL_PATH_TO_DATASET/tellseq_reads_I1.fastq.gz"
+        ]
+      }
+    ]
+```
+
+#### 10X Genomics Chromium format
+
+10X library should be in FASTQ format with barcodes attached as BC:Z or BX:Z tags:
 
 ``` 
 @COOPER:77:HCYNTBBXX:1:1216:22343:0 BX:Z:AAAAAAAAAACATAGT
@@ -74,8 +111,9 @@ Main options:
 
 - `-t` Number of threads to use (default: 1/2 of available threads)
 - `--mapping-k` k-mer length for read mapping (default: 31)
-- `-Gmdbg|-Gblunt` Assembly graph type (mDBG or blunted)
+- `-Gmdbg|-Gblunt` Assembly graph type: mDBG (LJA) or blunted (Flye)
 - `-Mdiploid|-Mmeta` Repeat resolution mode (diploid or meta)
+- `--assembly-info` Path to metaFlye assembly_info.txt file (meta mode, metaFlye graphs only)
 
 Barcode index construction:
 - `--count-threshold` Minimum number of reads for barcode index
@@ -84,18 +122,27 @@ Barcode index construction:
 - `--linkage-distance` Reads are assigned to the same fragment on long edges based on the linkage distance
 - `--min-read-threshold` Minimum number of reads for path cluster extraction
 - `--relative-score-threshold` Relative score threshold for path cluster extraction
+- `--sampling-factor` Downsample input SLR reads by this factor
 
 Repeat resolution:
 - `--score` Score threshold for link index.
 - `--tail-threshold` Barcodes are assigned to the first and last <tail_threshold> nucleotides of the edge.
+- `--scaffold-links` Use scaffold links in addition to graph links for repeat resolution
 
 Developer options:
 - `--ref` Reference path for repeat resolution evaluation
-- `--statistics` Produce additional read cloud library statistics
-- `--bin-load` Load binary-converted reads from tmpdir
-- `--debug` Produce lots of debug data
+- `--bin-load` Load read-to-graph alignment
+- `--debug` Produce lots of debug data, save read-to-graph alignment
 - `--tmp-dir` Scratch directory to use
 - `-h, --help ` Print help message
+
+Example command lines:
+
+- Assembly produced LJA from HiFi diploid human dataset, with 10X SLR library (HPC compressed)\
+ `splitter lja_output/mdbg/mdbg.hpc.gfa 10x_dataset.yaml output -Mdiploid -Gmdbg`
+- Assembly produced by metaFlye from metagenomic dataset, with TELL-Seq SLR library\
+  `splitter metaflye_output/assembly_graph.gfa tellseq_dataset.yaml output --assembly-info metaflye_output/assembly_info.txt -Mmeta -Gblunt`
+- 
 
 ### Output
 
