@@ -341,17 +341,6 @@ public:
         return this->GetInfo(edge, barcode).GetRightMost();
     }
 
-
-    /**
-     *
-     * @param edge
-     * @param barcode
-     * @return bitset representing barcoded bins of the edge
-     */
-    const boost::dynamic_bitset<>& GetBitSet(const EdgeId& edge, const BarcodeId& barcode) const {
-        return this->GetInfo(edge, barcode).GetBitSet();
-    }
-
     /**
      * @param edge
      * @return length of the bin
