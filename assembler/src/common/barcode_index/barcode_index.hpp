@@ -15,6 +15,7 @@
 
 #include <boost/dynamic_bitset.hpp>
 #include <cuckoo/cuckoohash_map.hh>
+#include <unordered_set>
 
 using std::string;
 using std::istringstream;
@@ -307,21 +308,17 @@ inline std::istream& operator >>(std::istream& os, SimpleBarcodeInfo& info)
  */
 class FrameBarcodeInfo {
 public:
-    typedef boost::dynamic_bitset<> IsOnFrameT;
-
     /**
      *
      * @param frames Number of bin in the edge
      * @return empty info
      */
-    FrameBarcodeInfo(size_t frames = 0): count_(0), is_on_frame_(), leftmost_index_(frames), rightmost_index_(0) {
-        is_on_frame_.resize(frames, false);
-    }
+    FrameBarcodeInfo(size_t frames = 0): count_(0), covered_bins_(), leftmost_index_(frames), rightmost_index_(0) {}
 
     void Update(size_t count, size_t left_frame, size_t right_frame) {
         count_ += count;
         for (size_t i = left_frame; i <= right_frame; ++i) {
-            is_on_frame_.set(i);
+            covered_bins_.insert(i);
         }
         leftmost_index_ = std::min(left_frame, leftmost_index_);
         rightmost_index_ = std::max(right_frame, rightmost_index_);
@@ -330,9 +327,11 @@ public:
     void Update(const FrameBarcodeInfo& other) {
         TRACE(count_);
         TRACE(other.count_);
-        TRACE(is_on_frame_.size());
-        TRACE(other.is_on_frame_.size());
-        is_on_frame_ |= other.is_on_frame_;
+        TRACE(covered_bins_.size());
+        TRACE(other.covered_bins_.size());
+        for (const auto &frame: other.covered_bins_) {
+            covered_bins_.insert(frame);
+        }
         leftmost_index_ = std::min(leftmost_index_, other.leftmost_index_);
         rightmost_index_ = std::max(rightmost_index_, other.rightmost_index_);
         count_ += other.count_;
@@ -359,32 +358,12 @@ public:
         return rightmost_index_;
     }
 
-    const IsOnFrameT& GetBitSet() const {
-        return is_on_frame_;
-    }
-
-    /**
-     * @param frame index of bin
-     * @return true if bin is barcoded, false otherwise
-     */
-    bool GetFrame(size_t frame) const {
-        return is_on_frame_[frame];
-    }
-
-    /**
-     *
-     * @return number of frames
-     */
-    size_t GetSize() const {
-        return is_on_frame_.size();
-    }
-
     /**
      *
      * @return number of barcoded bins
      */
     size_t GetCovered() const {
-        return is_on_frame_.count();
+        return covered_bins_.size();
     }
 
     void SetCount(size_t count) {
@@ -399,33 +378,28 @@ public:
         rightmost_index_ = index;
     }
 
-    void SetBitSet(const IsOnFrameT &bitset) {
-        is_on_frame_ = bitset;
-    }
-
     void BinRead(std::istream &str) {
         using io::binary::BinRead;
         auto count = BinRead<size_t>(str);
         SetCount(count);
 
-        auto set_positions = BinRead<std::vector<size_t>>(str);
-        VERIFY_DEV(set_positions.back() < is_on_frame_.size());
-        TRACE("Last position: " << set_positions.back());
-        TRACE("Bitset size: " << is_on_frame_.size());
-        for (const auto &pos: set_positions) {
+        auto num_positions = BinRead<size_t>(str);
+        size_t min_pos = std::numeric_limits<size_t>::max();
+        size_t max_pos = 0;
+        for (size_t i = 0; i < num_positions; ++i) {
+            auto pos = BinRead<size_t>(str);
             TRACE("Position: " << pos);
-            is_on_frame_.set(pos, true);
-        }
-
-        SetLeftMost(is_on_frame_.find_first());
-        size_t rightmost = 0;
-        for (size_t i = is_on_frame_.size() - 1; i > 0; --i) {
-            if (is_on_frame_.test(i)) {
-                rightmost = i;
-                break;
+            covered_bins_.insert(pos);
+            if (pos < min_pos) {
+                min_pos = pos;
+            }
+            if (pos > max_pos) {
+                max_pos = pos;
             }
         }
-        SetRightMost(rightmost);
+
+        SetLeftMost(min_pos);
+        SetRightMost(max_pos);
         TRACE("Leftmost: " << GetLeftMost());
         TRACE("Rightmost: " << GetRightMost());
     }
@@ -433,16 +407,11 @@ public:
     void BinWrite(std::ostream &str) const {
         using io::binary::BinWrite;
         BinWrite(str, GetCount());
+        BinWrite(str, GetCovered());
 
-        std::vector<size_t> set_positions;
-        size_t current_set_pos = GetBitSet().find_first();
-        TRACE("Size: " << GetBitSet().size());
-        while (current_set_pos != IsOnFrameT::npos) {
-            TRACE("Current set position: " << current_set_pos);
-            set_positions.push_back(current_set_pos);
-            current_set_pos = GetBitSet().find_next(current_set_pos);
+        for (const size_t &pos: covered_bins_) {
+            BinWrite(str, pos);
         }
-        BinWrite(str, set_positions);
     }
 
 
@@ -455,9 +424,9 @@ public:
      */
     size_t count_;
     /**
-     * `is_on_frame[i]` is true iff ith bin is barcoded
+     * Bins covered by the barcode
      */
-    boost::dynamic_bitset<> is_on_frame_;
+    std::unordered_set<size_t> covered_bins_;
     /**
      * Leftmost barcoded bin
      */
@@ -472,23 +441,40 @@ public:
 
 inline std::ostream& operator <<(std::ostream& os, const FrameBarcodeInfo& info)
 {
-    os << info.count_ << " " << info.is_on_frame_;
+    os << info.count_ << " " << info.covered_bins_.size();
+    for (const auto &bin: info.covered_bins_) {
+        os << bin << " ";
+    }
     return os;
 }
 
 inline std::istream& operator >>(std::istream& is, FrameBarcodeInfo& info)
 {
-    is >> info.count_;
-    is >> info.is_on_frame_;
-    info.leftmost_index_ = info.is_on_frame_.find_first();
-    size_t rightmost = 0;
-    for (size_t i = info.is_on_frame_.size() - 1; i > 0; --i) {
-        if (info.is_on_frame_.test(i)) {
-            rightmost = i;
-            break;
+    using io::binary::BinRead;
+    size_t count;
+    is >> count;
+    info.SetCount(count);
+
+    size_t num_of_bins;
+    is >> num_of_bins;
+    size_t min_pos = std::numeric_limits<size_t>::max();
+    size_t max_pos = 0;
+    for (size_t i = 0; i < num_of_bins; ++i) {
+        size_t pos = 0;
+        is >> pos;
+        TRACE("Position: " << pos);
+        if (pos < min_pos) {
+            min_pos = pos;
         }
+        if (pos > max_pos) {
+            max_pos = pos;
+        }
+        info.covered_bins_.insert(pos);
     }
-    info.rightmost_index_ = rightmost;
+    info.SetLeftMost(min_pos);
+    info.SetRightMost(max_pos);
+    TRACE("Leftmost: " << info.GetLeftMost());
+    TRACE("Rightmost: " << info.GetRightMost());
     return is;
 }
 

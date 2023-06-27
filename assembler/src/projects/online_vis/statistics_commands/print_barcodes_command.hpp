@@ -107,10 +107,7 @@ namespace online_visualization {
                     PrintElement(bitset, bitset_width, fout);
                 } else {
                     const size_t reads = barcode_extractor_.GetNumberOfReads(edge, barcode);
-                    const auto bitset = barcode_extractor_.GetBitSet(edge, barcode);
-                    const size_t bitset_width = bitset.size() + 5;
                     PrintElement(reads, number_of_reads_width_, fout);
-                    PrintElement(bitset, bitset_width, fout);
                 }
             }
             fout << endl;
