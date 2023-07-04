@@ -12,23 +12,16 @@
 
 import sys
 import os
-import shutil
-import getopt
-import re
-import datetime
-import argparse
-import subprocess
+from subprocess import call
 from traceback import print_exc
-
-sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../../spades_pipeline'))
-import process_cfg
 from teamcity_support import *
+
 
 ### main ###
 try:
     if len(sys.argv) == 1:
         command = 'python {} -h'.format(sys.argv[0])
-        subprocess.call(command, shell=True)
+        call(command, shell=True)
         sys.exit(1)
 
     sys.stderr = sys.stdout

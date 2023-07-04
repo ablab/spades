@@ -11,16 +11,12 @@
 import sys
 import os
 import shutil
-import getopt
 import re
 import datetime
 import argparse
-import subprocess
 import functools
-from traceback import print_exc
+from process_cfg import load_config_from_file
 
-sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../../spades_pipeline'))
-import process_cfg
 
 #Log class, use it, not print
 class Log:
@@ -59,10 +55,13 @@ class Log:
     def record_metric(self, name, value):
         pass
 
+
 _quote = {"'": "|'", "|": "||", "\n": "|n", "\r": "|r", '[': '|[', ']': '|]'}
+
 
 def escape_value(value):
     return "".join(_quote.get(x, x) for x in value)
+
 
 class TeamCityLog:
 
@@ -113,7 +112,9 @@ class TeamCityLog:
     def record_metric(self, name, value):
         self._tc_out("buildStatisticValue", key=name, value=value)
 
+
 log = TeamCityLog()
+
 
 ### Quality assessment ###
 
@@ -599,7 +600,7 @@ def load_info(dataset_path):
     if os.path.isdir(dataset_path):
         dataset_path = os.path.join(dataset_path, "dataset.info")
 
-    info = process_cfg.load_config_from_file(dataset_path)
+    info = load_config_from_file(dataset_path)
     info.__dict__["dataset_path"] = os.path.split(dataset_path)[0]
 
     if "mode" not in info.__dict__:
