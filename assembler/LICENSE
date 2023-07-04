@@ -1,4 +1,5 @@
 SPADES: SAINT-PETERSBURG GENOME ASSEMBLER
+Copyright (c) 2023 SPAdes team
 Copyright (c) 2015-2022 Saint Petersburg State University
 Copyright (c) 2011-2014 Saint Petersburg Academic University
 
@@ -18,40 +19,40 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 -------------------------------------------------------------------------------
 
 SPAdes
-Genome assembler for single-cell and isolates data sets
+Genome, metagenome and transcriptome assembler for second-generation sequencing technologies
 Version: see VERSION
 
-Developed in Center for Algorithmic Biotechnology, Institute of Translational Biomedicine, St. Petersburg State University.
-Developed in Algorithmic Biology Lab of St. Petersburg Academic University of the Russian Academy of Sciences.
+Currently developed and maintained by the SPAdes team, an international group with no specific affiliation.
+Previously developed at Center for Algorithmic Biotechnology, Institute of Translational Biomedicine, St. Petersburg State University.
+Previously developed at Algorithmic Biology Lab of St. Petersburg Academic University of the Russian Academy of Sciences.
 
 Current SPAdes contributors:
 
-    Dmitry Antipov,
-    Elena Bushmanova,
     Anton Kleschin,
     Anton Korobeynikov,
-    Olga Kunyavskaya,
     Dmitriy Meleshko,
-    Sergey Nurk,
     Andrey Prjibelski,
-    Mike Rayko,
     Ivan Tolstoganov,
-    Alla Lapidus and
-    Pavel Pevzner
+    Alla Lapidus
 
 Also contributed:
 
     Max Alekseyev,
+    Dmitry Antipov,
     Anton Bankevich,
+    Elena Bushmanova,
     Mikhail Dvorkin,
     Vasisliy Ershov,
     Yuriy Gorshkov,
     Alexey Gurevich,
     Alexander Kulikov,
+    Olga Kunyavskaya,
     Valery Lesin,
     Sergey Nikolenko,
+    Sergey Nurk,
     Son Pham,
     Alexey Pyshkin,
+    Mike Rayko,
     Yana Safonova,
     Vladislav Saveliev,
     Alexander Shlemov,
@@ -60,12 +61,14 @@ Also contributed:
     Artem Tarasov,
     Glenn Tesler,
     Irina Vasilinetc,
-    Nikolay Vyahhi
+    Nikolay Vyahhi,
+    Pavel Pevzner
 
-Installation instructions and manual can be found on the website:
-http://cab.spbu.ru/software/spades/
+Installation instructions and manual can be found at:
+https://github.com/ablab/spades
 
-Address for communication: spades.support@cab.spbu.ru
+Web page for communication: https://github.com/ablab/spades/issues
+
 
 References:
 
