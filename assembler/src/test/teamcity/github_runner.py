@@ -6,8 +6,9 @@
 # See file LICENSE for details.
 ############################################################################
 
-#script for testing SPAdes
-#provide a path to .info file
+# script for testing SPAdes
+# provide a path to .info file, path to spades.py and output folder
+
 
 import sys
 import os
@@ -78,7 +79,7 @@ class MetricEntry:
             return float(p)
 
 
-# Construct limit map for given metrics ---  list of triplets (config_name, report_name, should_be_higher_that_threshold)
+# Construct limit map for given metrics -  list of triplets (config_name, report_name, should_be_higher_that_threshold)
 def construct_limit_map(dataset_info, prefix, metric_list, add_all_params = False):
     limit_map = {}
     params = map(lambda x: MetricEntry(prefix + x[0], x[1], x[2], x[3], x[4], x[5]), metric_list)
@@ -108,7 +109,7 @@ def assess_map(result_map, limit_map):
         if metric in limit_map and len(limit_map[metric]) > 0:
             for entry in limit_map[metric]:
                 metric_value = int(result_map[metric]) if entry.is_int else result_map[metric]
-                log.record_metric(metric, str(metric_value))
+                log.info("  Metric %s = %s" % (metric, str(metric_value)))
 
                 if not entry.assess:
                     log.info(metric + " = " + str(metric_value))
@@ -169,43 +170,7 @@ def construct_reads_limit_map(dataset_info, prefix):
                                                       ('min_aligned', "Uniquely aligned reads", True, False, False, 0.5)])
 
 
-# Run reads quality util
-def run_reads_assessment(dataset_info, working_dir, output_dir):
-    corrected_reads_dataset = os.path.join(output_dir, "corrected/corrected.yaml")
-    exit_code = 0
-
-    if not os.path.exists(corrected_reads_dataset):
-        log.warn("Corrected reads were not detected in " + corrected_reads_dataset)
-        exit_code = 5
-    else:
-        rq_params = []
-        i = 0
-        # Setting params
-        while i < len(dataset_info.reads_quality_params):
-            option = dataset_info.reads_quality_params[i]
-            rq_params.append(str(option))
-            if i < len(dataset_info.reads_quality_params) - 1 and option == '-r':
-                rq_params.append(os.path.join(dataset_info.dataset_path, str(dataset_info.reads_quality_params[i + 1])))
-                i += 1
-            i += 1
-
-        rq_output_dir = os.path.join(output_dir, "RQ_RESULTS")
-        rq_cmd = os.path.join(working_dir, "src/tools/reads_utils/reads_quality.py") + " " + " ".join(rq_params) + " -o " + rq_output_dir + " " + corrected_reads_dataset
-        ecode = os.system(rq_cmd)
-        if ecode != 0:
-            log.warn("Reads quality tool finished abnormally with exit code " + str(ecode))
-            exit_code = 6
-        else:
-            # Assessing reads quality report
-            limit_map = construct_reads_limit_map(dataset_info, "")
-            if assess_report(os.path.join(rq_output_dir, "report.tsv"), limit_map) != 0:
-                exit_code = 7
-
-    return exit_code
-
-
-### QUAST ###
-
+# == QUAST==
 # Run QUAST for a set of contigs
 def run_quast(dataset_info, contigs, quast_output_dir, opts):
     if not reduce(lambda x, y: os.path.exists(y) and x, contigs, True):
@@ -253,7 +218,7 @@ def run_quast(dataset_info, contigs, quast_output_dir, opts):
 
 # Construct limit map for QUAST metrics
 def construct_quast_limit_map(dataset_info, prefix, add_all_params = False):
-#                                       metric name,  QUAST name, higher than threshold, is int, relative delta, delta value
+#                                  metric name,  QUAST name, higher than threshold, is int, relative delta, delta value
     return construct_limit_map(dataset_info, prefix, [
                                         ('min_contig',      "# contigs",                True,   True, True, 0.1),
                                         ('max_contig',      "# contigs",                False,  True, True, 0.1),
@@ -273,11 +238,12 @@ def construct_quast_limit_map(dataset_info, prefix, add_all_params = False):
                                         ('max_subs',        "# mismatches per 100 kbp", False,  False, False, 1),
                                         ('max_localmis',    "# local misassemblies",    False,  True, False, 1),
                                         ('max_ns',          "# N's per 100 kbp",        False,  False, True, 0.05),
-                                        ('max_dr',          "Duplication ratio",        False,  False, False, 0.03)], add_all_params)
+                                        ('max_dr',          "Duplication ratio",        False,  False, False, 0.03)],
+                               add_all_params)
 
 # Construct limit map for rnaQUAST metrics
 def construct_rnaquast_limit_map(dataset_info, prefix, add_all_params = False):
-#                                       metric name, QUAST name, higher than threshold, is int, relative delta, delta value
+#                                  metric name, QUAST name, higher than threshold, is int, relative delta, delta value
     return construct_limit_map(dataset_info, prefix, [
                                         ('min_transcripts',     "Transcripts",          True,   True, True, 0.1),
                                         ('min_transcripts_500', "Transcripts > 500 bp", True,   True, True, 0.05),
@@ -293,7 +259,8 @@ def construct_rnaquast_limit_map(dataset_info, prefix, add_all_params = False):
                                         ('min_50_iso',          "50%-assembled isoforms", True,  True, True, 0.05),
                                         ('min_95_iso',          "95%-assembled isoforms", True,  True, True, 0.05),
                                         ('max_95_iso',          "95%-assembled isoforms", False, True, True, 0.05),
-                                        ('max_mis',             "Misassemblies",        False,   True, True, 0.05)], add_all_params)
+                                        ('max_mis',             "Misassemblies",        False,   True, True, 0.05)],
+                               add_all_params)
 
 
 # Run QUAST and assess its report for a single contig file
@@ -347,8 +314,7 @@ def quast_analysis(contigs, dataset_info, folder):
     return exit_code
 
 
-### Compare misassemblies
-
+# == Compare misassemblies ==
 def parse_alignment(s):
     m = s.strip()
     if not m.startswith("Real Alignment"):
@@ -409,7 +375,7 @@ def find_mis_positions(contig_report):
                 line2 = infile.readline()
             mis = parse_misassembly(prev_line, line2)
             if not mis:
-                log.warn("Failed to parse misassembly")
+                log.warning("Failed to parse misassembly")
             elif mis not in coords:
                 coords[mis] = [currend_id]
             else:
@@ -424,17 +390,16 @@ def find_mis_positions(contig_report):
 
 # Compare two contig reports from QUAST
 def cmp_misassemblies(quast_output_dir, old_ctgs, new_ctgs):
-
     log.info("Comparing misassemblies in " + old_ctgs + " and " + new_ctgs)
 
     old_contigs_report = os.path.join(quast_output_dir, "contigs_reports/contigs_report_" + old_ctgs + ".stdout")
     new_contigs_report = os.path.join(quast_output_dir, "contigs_reports/contigs_report_" + new_ctgs + ".stdout")
 
     if not os.path.exists(old_contigs_report):
-        log.warn("Old contigs report was not found in " + old_contigs_report)
+        log.warning("Old contigs report was not found in " + old_contigs_report)
         return True
     if not os.path.exists(new_contigs_report):
-        log.warn("New contigs report was not found in " + new_contigs_report)
+        log.warning("New contigs report was not found in " + new_contigs_report)
         return True
 
     old_pos = find_mis_positions(old_contigs_report)
@@ -509,7 +474,7 @@ def compare_misassemblies(contigs, dataset_info, contig_storage_dir, output_dir)
                 if not cmp_misassemblies(quast_output_dir, "latest_" + name, file_name):
                     rewrite_latest = False
             else:
-                log.warn('Failed to find ' + latest_ctg + ', nothing to compare misassemblies with')
+                log.warning('Failed to find ' + latest_ctg + ', nothing to compare misassemblies with')
 
     return exit_code, rewrite_latest
 
@@ -564,38 +529,18 @@ def get_contigs_list(args, dataset_info, before_rr = False):
     return contigs
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('info', metavar='CONFIG_FILE', type=str,  help='teamcity.py info config')
-    parser.add_argument("--run_name", "-n", help="output dir custom suffix", type=str)
-    parser.add_argument("--spades_path", "-p", help="custom directory to spades.py", type=str)
-    parser.add_argument("--no_cfg_and_compilation", dest="cfg_compilation", help="don't copy configs or compile SPAdes even if .info file states otherwise", action='store_false')
-    parser.set_defaults(cfg_compilation=True)
-    parser.add_argument("--no_contig_archive", dest="contig_archive", help="don't save contigs to common contig archive", action='store_false')
-    parser.set_defaults(contig_archive=True)
-    parser.add_argument("--contig_name", "-s", help="archive contig name custom suffix", type=str)
-    parser.add_argument("--spades_cfg_dir", "-c", help="SPAdes config directory", type=str)
-    parser.add_argument("--local_output_dir", "-o", help="use this output dir, override output directory provided in config", type=str)
-    args = parser.parse_args()
-    return args
-
-
 # Save meta information about this teamcity.py run
 def save_run_info(args, output_dir):
     run_info = open(os.path.join(output_dir, "test_run.info"), "w")
-    run_info.write(".info file: " + args.info + "\n");
-    if args.run_name:
-        run_info.write("run name: " + args.run_name + "\n");
+    run_info.write(".info file: " + args.info + "\n")
     if args.spades_path:
-        run_info.write("path to spades.py: " + str(args.spades_path) + "\n");
+        run_info.write("path to spades.py: " + str(args.spades_path) + "\n")
     if args.contig_archive:
-        run_info.write("save contigs archive: " + str(args.contig_archive) + "\n");
+        run_info.write("save contigs archive: " + str(args.contig_archive) + "\n")
     if args.contig_name:
-        run_info.write("contig custom name: " + args.contig_name + "\n");
-    if args.spades_cfg_dir:
-        run_info.write("spades config direrctory: " + args.spades_cfg_dir + "\n");
+        run_info.write("contig custom name: " + args.contig_name + "\n")
     if args.local_output_dir:
-        run_info.write("local output dir: " + args.local_output_dir + "\n");
+        run_info.write("local output dir: " + args.local_output_dir + "\n")
     run_info.close()
 
 
@@ -604,25 +549,16 @@ def get_contigs_storage_dir(args, dataset_info):
     contig_storage_dir = ''
     if 'contig_storage' in dataset_info.__dict__ and args.contig_archive:
         contig_storage_dir = dataset_info.contig_storage
-        if args.run_name:
-            contig_storage_dir += "_" + args.run_name
     return contig_storage_dir
 
 
 # Create output folder
 def create_output_dir(args, dataset_info):
-    #make dirs and remembering history
+    # make dirs and remembering history
     output_dir = dataset_info.name
-    if 'build_agent' in dataset_info.__dict__:
-        output_dir += "_" + dataset_info.build_agent
-
-    #add custom suffix if present
-    if args.run_name:
-        output_dir += "_" + args.run_name
-
-    #override output dir set by .info config
-    if args.local_output_dir:
-        output_dir = os.path.join(args.local_output_dir, output_dir)
+    # override output dir set by .info config
+    if args.output_dir:
+        output_dir = os.path.join(args.output_dir, output_dir)
     else:
         output_dir = os.path.join(dataset_info.output_dir, output_dir)
 
@@ -633,41 +569,9 @@ def create_output_dir(args, dataset_info):
     return output_dir
 
 
-### Pipeline functions ###
-
-# Compile SPAdes
-def compile_spades(args, dataset_info, working_dir):
-    log.info("Building SPAdes")
-    if not args.cfg_compilation:
-        log.warn("Forced to use current SPAdes build, will not compile SPAdes");
-    elif 'spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile:
-        comp_params = ' '
-        if 'compilation_params' in dataset_info.__dict__:
-            comp_params = " ".join(dataset_info.compilation_params)
-
-        bin_dir = 'build_spades'
-        if not os.path.exists(bin_dir):
-            os.makedirs(bin_dir)
-        os.chdir(bin_dir)
-
-        #Compilation
-        err_code = os.system('cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=' + working_dir + ' ' + os.path.join(working_dir, 'src') + ' ' + comp_params)
-        err_code = err_code | os.system('make -j 16')
-        err_code = err_code | os.system('make install')
-
-        os.chdir(working_dir)
-
-        if err_code != 0:
-            # Compile from the beginning if failed
-            log.warn("Incremental build failed, trying from scratch")
-            shutil.rmtree('bin', True)
-            shutil.rmtree('build_spades', True)
-            return os.system('./spades_compile.sh ' + comp_params)
-    return 0
-
-
-#Create SPAdes command line
-def make_spades_cmd(args, dataset_info, spades_dir, output_dir):
+# == Pipeline functions ==
+# Create SPAdes command line
+def make_spades_cmd(dataset_info, spades_dir, output_dir):
     #Correct paths in params
     input_file_option_list = ['-1', '-2', '--12', '-s', '--hap' , '--trusted-contigs', '--untrusted-contigs' , '--nanopore' , '--pacbio', '--sanger', '--pe1-1', '--pe1-2', '--pe1-s', '--pe2-1', '--pe2-2', '--pe2-s', '--mp1-1', '--mp1-2', '--mp1-s', '--mp2-1', '--mp2-2', '--mp2-s', '--hqmp1-1', '--hqmp1-2', '--hqmp1-s', '--hqmp2-1', '--hqmp2-2', '--hqmp2-s', '--tslr', '--dataset'];
     spades_params = []
@@ -679,10 +583,6 @@ def make_spades_cmd(args, dataset_info, spades_dir, output_dir):
             spades_params.append(os.path.join(dataset_info.dataset_path, str(dataset_info.spades_params[i + 1])))
             i += 1
         i += 1
-
-    if args.spades_cfg_dir:
-        spades_params.append("--configs-dir")
-        spades_params.append(args.spades_cfg_dir)
 
     spades_exec = dataset_info.mode + "spades.py"
     if dataset_info.mode in ['standard', 'tru', 'bio']:
@@ -723,7 +623,7 @@ def save_contigs(args, output_dir, contig_storage_dir, contigs, rewrite_latest):
         saved_ctg_name = name_prefix + name + ctg_suffix + "." + ext
         spades_filename = os.path.join(output_dir, file_name + "." + ext)
         if not os.path.exists(spades_filename):
-            log.warn("File " + spades_filename + " do not exist ")
+            log.warning("File " + spades_filename + " do not exist ")
             continue
         shutil.copy(spades_filename, os.path.join(contig_storage_dir, saved_ctg_name))
         log.info(name + " saved to " + os.path.join(contig_storage_dir, saved_ctg_name))
@@ -756,7 +656,7 @@ def save_quast_report(contigs, dataset_info, contig_storage_dir, output_dir, art
 
         if not os.path.exists(quast_output_dir):
             if not ('quast_params' in dataset_info.__dict__ and dataset_info.quast_params):
-                log.warn('QUAST params are not set')
+                log.warning('QUAST params are not set')
                 return
 
             fn = os.path.join(output_dir, file_name + "." + ext)
@@ -781,94 +681,84 @@ def save_quast_report(contigs, dataset_info, contig_storage_dir, output_dir, art
         os.chdir(working_dir)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('info', metavar='CONFIG_FILE', type=str,  help='info config')
+    parser.add_argument("--spades_path", "-p", help="directory to spades.py", type=str, required=True)
+
+    parser.add_argument("--no_contig_archive", dest="contig_archive",
+                        help="don't save contigs to common contig archive", action='store_false')
+    parser.set_defaults(contig_archive=False)
+    parser.add_argument("--contig_name", "-s", help="archive contig name custom suffix", type=str)
+    parser.add_argument("--output_dir", "-o", help="use this output dir, override output directory provided in config",
+                        type=str, required=False)
+    args = parser.parse_args()
+    return args
+
+
 def main(args):
     args = parse_args()
     set_logger(args, log)
 
-    if len(sys.argv) == 1:
-        command = 'python {} -h'.format(sys.argv[0])
-        subprocess.call(command, shell=True)
-        sys.exit(1)
-
     sys.stderr = sys.stdout
     exit_code = 0
     dataset_info = load_info(args.info)
-    working_dir = os.path.join(os.path.abspath(sys.path[0]), '../../../')
+
+    script_dir = os.path.dirname(os.path.join(os.getcwd(), __file__))
     output_dir = create_output_dir(args, dataset_info)
     save_run_info(args, output_dir)
 
-    #compile
-    log.debug('build', 'Building SPAdes')
-    log.info("Building SPAdes")
-    ecode = compile_spades(args, dataset_info, working_dir)
-    if ecode != 0:
-        log.error("Compilation finished abnormally with exit code " + str(ecode), str(ecode))
-        sys.exit(3)
-    log.debug('build')
-
-    #run spades
-    log.debug('run', 'Running SPAdes')
-    spades_dir = working_dir
-    if args.spades_path:
-        spades_dir = args.spades_path
-        log.info("Different spades.py path specified: " + spades_dir)
-    spades_cmd = make_spades_cmd(args, dataset_info, spades_dir, output_dir)
+    # run spades
+    log.debug('Running SPAdes')
+    spades_dir = args.spades_path
+    spades_cmd = make_spades_cmd(dataset_info, spades_dir, output_dir)
 
     log.info("Launching: " + spades_cmd)
     ecode = os.system(spades_cmd)
     if ecode != 0:
-        log.error("SPAdes finished abnormally with exit code " + str(ecode), str(ecode))
+        log.critical("SPAdes finished abnormally with exit code " + str(ecode), str(ecode))
         sys.exit(4)
-    log.debug('run')
+    log.debug('End SPAdes')
 
-    #reads quality
-    if 'reads_quality_params' in dataset_info.__dict__:
-        log.debug('reads quality', 'Asessing reads quality')
-        exit_code = run_reads_assessment(dataset_info, working_dir, output_dir)
-        log.debug('reads quality')
-
-    #QUAST
+    # QUAST
     rewrite_latest = True
     contigs = get_contigs_list(args, dataset_info)
     if 'quast_params' in dataset_info.__dict__:
-        log.debug('quast', 'Running QUAST')
+        log.debug('Running QUAST')
         ecode = quast_analysis(contigs, dataset_info, output_dir)
         if ecode != 0:
             rewrite_latest = False
             log.error("QUAST analysis did not pass, exit code " + str(ecode), str(ecode))
             exit_code = ecode
-        log.debug('quast')
+        log.debug('End QUST')
 
-
-    #etalon saves
+    # etalon saves
     if 'etalon_saves' in dataset_info.__dict__:
-        log.debug('saves', 'Comparing etalon saves')
+        log.debug('Comparing etalon saves')
         log.info("Comparing etalon saves now")
-        ecode = os.system(os.path.join(working_dir, "src/test/teamcity/detect_diffs.sh") + " " + output_dir + " " + dataset_info.etalon_saves)
+        ecode = os.system(os.path.join(script_dir, "detect_diffs.sh") + " " + output_dir + " " + dataset_info.etalon_saves)
         if ecode != 0:
             rewrite_latest = False
             log.error("Comparing etalon saves did not pass, exit code " + str(ecode))
             exit_code = 12
-        log.debug('saves')
+        log.debug('End comparing etalon')
 
-    #compare misassemblies
-    log.debug('misassemblies', 'Comparing misassemblies')
+    # compare misassemblies
+    if not args.contig_archive:
+        sys.exit(exit_code)
+
+    log.debug('Comparing misassemblies')
     contig_storage_dir = get_contigs_storage_dir(args, dataset_info)
     ecode, rewrite = compare_misassemblies(contigs, dataset_info, contig_storage_dir, output_dir)
     rewrite_latest = rewrite_latest and rewrite
     if ecode != 0:
         log.error('Failed to compare misassemblies', str(ecode))
-    log.debug('misassemblies')
+    log.debug('End comparing misassemblies')
 
-    #save contigs to storage
-    log.debug('artifacts', 'Saving artifacts')
+    # save contigs to storage
+    log.debug('Saving artifacts')
     contigs = get_contigs_list(args, dataset_info, True)
     save_contigs(args, output_dir, contig_storage_dir, contigs, rewrite_latest)
-
-    #save quast report as build artifact
-    artifact_dir = os.path.join(working_dir, "quast_reports")
-    save_quast_report(contigs, dataset_info, contig_storage_dir, output_dir, artifact_dir)
-    log.debug('artifacts')
 
     sys.exit(exit_code)
 
