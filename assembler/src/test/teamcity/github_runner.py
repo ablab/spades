@@ -539,8 +539,8 @@ def save_run_info(args, output_dir):
         run_info.write("save contigs archive: " + str(args.contig_archive) + "\n")
     if args.contig_name:
         run_info.write("contig custom name: " + args.contig_name + "\n")
-    if args.local_output_dir:
-        run_info.write("local output dir: " + args.local_output_dir + "\n")
+    if args.output_dir:
+        run_info.write("local output dir: " + args.output_dir + "\n")
     run_info.close()
 
 
@@ -716,7 +716,7 @@ def main(args):
     log.info("Launching: " + spades_cmd)
     ecode = os.system(spades_cmd)
     if ecode != 0:
-        log.critical("SPAdes finished abnormally with exit code " + str(ecode), str(ecode))
+        log.critical("SPAdes finished abnormally with exit code " + str(ecode))
         sys.exit(4)
     log.debug('End SPAdes')
 
