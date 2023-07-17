@@ -5,6 +5,9 @@ on:
 
 env:
   BUILD_TYPE: Release
+  BUILD_DIR: ${{github.workspace}}/build
+  INSTALL_DIR: ${{github.workspace}}/spades
+  SRC_DIR: ${{github.workspace}}/assembler/src
 
 jobs:
   build:
@@ -24,15 +27,46 @@ jobs:
       - name: '⚙️ Configure CMake'
         run: >
           cmake
-          -B ${{github.workspace}}/build
-          -S${{github.workspace}}/assembler/src
-          -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/spades
+          -B ${{env.BUILD_DIR}}
+          -S ${{env.SRC_DIR}}
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
 
       - name: '🚧 Build'
         run: >
           cmake
-          --build ${{github.workspace}}/build
+          --build ${{env.BUILD_DIR}}
           -j16
 
       - name: '📦 Install'
-        run: cmake --install ${{github.workspace}}/build
+        run: cmake --install ${{env.BUILD_DIR}}
+
+  spades-1k-checks:
+    runs-on: worker-1
+    continue-on-error: true
+    needs: build
+
+    steps:
+      - name: '1k multi-cell'
+        run: >
+          ${{env.INSTALL_DIR}}/bin/spades.py --test
+
+      - name: '1k single-cell'
+        run: >
+          ${{env.INSTALL_DIR}}/bin/spades.py --sc --test
+
+      - name: '1k meta'
+        run: >
+          ${{env.INSTALL_DIR}}/bin/metaspades.py --test
+
+      - name: '1k plasmid'
+        run: >
+          ${{env.INSTALL_DIR}}/bin/plasmidspades.py --test
+
+      - name: '1k rna'
+        run: >
+          ${{env.INSTALL_DIR}}/bin/rnaspades.py --test
+
+      - name: '1k corona'
+        run: >
+          ${{env.INSTALL_DIR}}/bin/coronaspades.py --test
