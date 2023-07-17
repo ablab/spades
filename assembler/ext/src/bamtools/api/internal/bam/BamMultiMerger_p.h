@@ -54,7 +54,7 @@ struct MergeItem {
 };
 
 template<typename Compare>
-struct MergeItemSorter : public std::binary_function<MergeItem, MergeItem, bool> {
+struct MergeItemSorter {
 
     public:
         MergeItemSorter(const Compare& comp = Compare())

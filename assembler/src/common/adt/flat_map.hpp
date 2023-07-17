@@ -16,7 +16,7 @@ struct flat_map {
     typedef std::pair<K, V> value_type;
     typedef Comp key_compare;
 
-    struct value_compare : std::binary_function<value_type, value_type, bool> {
+    struct value_compare {
         bool operator()(const value_type &lhs, const value_type &rhs) const {
             return key_compare()(lhs.first, rhs.first);
         }
