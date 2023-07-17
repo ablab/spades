@@ -8,6 +8,7 @@ env:
   BUILD_DIR: ${{github.workspace}}/build
   INSTALL_DIR: ${{github.workspace}}/spades
   SRC_DIR: ${{github.workspace}}/assembler/src
+  PKG: SPAdes-3.16.0-dev-Linux
 
 jobs:
   build:
@@ -40,36 +41,81 @@ jobs:
           -j16
           -t package include_test debruijn_test
 
-      - name: '📦 Install'
-        run: cmake --install ${{env.BUILD_DIR}}
+      - name: '📦 Package'
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
+            ${{env.BUILD_DIR}}/bin/debruijn_test
+            ${{env.BUILD_DIR}}/bin/include_test
 
   spades-1k-checks:
     name: 'E. coli 1k smoke checks'
     runs-on: self-hosted
-    continue-on-error: true
     needs: build
 
     steps:
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
       - name: '1k multi-cell'
         run: >
-          ${{env.INSTALL_DIR}}/bin/spades.py --test
+          ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/spades.py --test
 
       - name: '1k single-cell'
         run: >
-          ${{env.INSTALL_DIR}}/bin/spades.py --sc --test
+          ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/spades.py --sc --test
 
       - name: '1k meta'
         run: >
-          ${{env.INSTALL_DIR}}/bin/metaspades.py --test
+          ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/metaspades.py --test
 
       - name: '1k plasmid'
         run: >
-          ${{env.INSTALL_DIR}}/bin/plasmidspades.py --test
+          ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/plasmidspades.py --test
 
       - name: '1k rna'
         run: >
-          ${{env.INSTALL_DIR}}/bin/rnaspades.py --test
+          ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/rnaspades.py --test
 
       - name: '1k corona'
         run: >
-          ${{env.INSTALL_DIR}}/bin/coronaspades.py --test
+          ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/coronaspades.py --test
+
+  spades-unittests:
+    name: 'SPAdes unittests'
+    runs-on: worker-2
+    needs: build
+
+    steps:
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.BUILD_DIR}}
+          
+
+      - name: 'Include tests'
+        working-directory: ${{github.workspace}}/assembler
+        run: >
+          chmod +x ${{env.BUILD_DIR}}/bin/include_test &&
+          ${{env.BUILD_DIR}}/bin/include_test
+
+      - name: 'De-Bruijn tests'
+        working-directory: ${{github.workspace}}/assembler
+        run: >
+          chmod +x ${{env.BUILD_DIR}}/bin/debruijn_test &&
+          ${{env.BUILD_DIR}}/bin/debruijn_test
+
