@@ -38,6 +38,7 @@ jobs:
           cmake
           --build ${{env.BUILD_DIR}}
           -j16
+          -t package include_test debruijn_test
 
       - name: '📦 Install'
         run: cmake --install ${{env.BUILD_DIR}}
