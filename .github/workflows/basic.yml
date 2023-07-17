@@ -11,7 +11,8 @@ env:
 
 jobs:
   build:
-    runs-on: worker-1
+    runs-on: self-hosted
+    name: '🚧 Build SPAdes'
 
     steps:
       - name: '🧰 Checkout'
@@ -42,7 +43,8 @@ jobs:
         run: cmake --install ${{env.BUILD_DIR}}
 
   spades-1k-checks:
-    runs-on: worker-1
+    name: 'E. coli 1k smoke checks'
+    runs-on: self-hosted
     continue-on-error: true
     needs: build
 
