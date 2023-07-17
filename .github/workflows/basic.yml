@@ -8,4 +8,31 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: worker-1
+
+    steps:
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: '⚙️ Install ccache'
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+
+      - name: '⚙️ Configure CMake'
+        run: >
+          cmake
+          -B ${{github.workspace}}/build
+          -S${{github.workspace}}/assembler/src
+          -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/spades
+
+      - name: '🚧 Build'
+        run: >
+          cmake
+          --build ${{github.workspace}}/build
+          -j16
+
+      - name: '📦 Install'
+        run: cmake --install ${{github.workspace}}/build
