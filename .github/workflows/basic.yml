@@ -103,7 +103,7 @@ jobs:
 
   spades-unittests:
     name: 'SPAdes unittests'
-    runs-on: worker-2
+    runs-on: self-hosted
     needs: build
 
     steps:
