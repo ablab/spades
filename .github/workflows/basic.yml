@@ -16,6 +16,12 @@ jobs:
     name: '🚧 Build SPAdes'
 
     steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
       - name: '🧰 Checkout'
         uses: actions/checkout@v3
         with:
@@ -56,6 +62,12 @@ jobs:
     needs: build
 
     steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+      
       - name: '📦 Download package'
         uses: actions/download-artifact@v3
         with:
@@ -95,6 +107,12 @@ jobs:
     needs: build
 
     steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+      
       - name: '🧰 Checkout'
         uses: actions/checkout@v3
         with:
@@ -107,13 +125,13 @@ jobs:
           path: ${{env.BUILD_DIR}}
           
 
-      - name: 'Include tests'
+      - name: '🔎 Include tests'
         working-directory: ${{github.workspace}}/assembler
         run: >
           chmod +x ${{env.BUILD_DIR}}/bin/include_test &&
           ${{env.BUILD_DIR}}/bin/include_test
 
-      - name: 'De-Bruijn tests'
+      - name: '🔎 De-Bruijn tests'
         working-directory: ${{github.workspace}}/assembler
         run: >
           chmod +x ${{env.BUILD_DIR}}/bin/debruijn_test &&
