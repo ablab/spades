@@ -8,6 +8,8 @@
 #ifndef NUCL_HPP_
 #define NUCL_HPP_
 
+#include <cstdint>
+
 #include "utils/verify.hpp"
 
 /**

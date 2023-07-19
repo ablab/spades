@@ -8,6 +8,7 @@
 
 #include <map>
 #include <string>
+#include <cstdint>
 
 // Forward decls for LLVM YAML API
 namespace llvm { namespace yaml { class IO; template<typename T> struct MappingTraits; } }
