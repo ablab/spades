@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <map>
 #include <string>
+#include <cstdint>
 
 // Forward decls for LLVM YAML API
 namespace llvm {
