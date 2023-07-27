@@ -40,7 +40,7 @@ PerfectClustersAnalyzer::SetDistribution PerfectClustersAnalyzer::ConstructPerfe
     }
     return result;
 }
-void PerfectClustersAnalyzer::AnalyzePerfectClouds(const std::string &path_to_reference, size_t min_length) const {
+void PerfectClustersAnalyzer::AnalyzePerfectClouds(const std::filesystem::path &path_to_reference, size_t min_length) const {
     const auto &g = gp_.get<Graph>();
     PerfectScaffoldGraphConstructor constructor(g);
     omnigraph::IterationHelper<Graph, EdgeId> edge_it_helper(g);
@@ -67,7 +67,8 @@ void PerfectClustersAnalyzer::AnalyzePerfectClouds(const std::string &path_to_re
     auto perfect_scaffold_graph = constructor.ConstuctPerfectGraph(reference_paths.paths_, min_length);
     auto perfect_clusters = ConstructPerfectClusters(perfect_scaffold_graph);
 
-    std::string output_path = fs::append_path(output_dir_, "perfect_cluster_stats");
+    std::filesystem::path outname("perfect_cluster_stats");
+    auto output_path = output_dir_ / outname;
     std::ofstream fout(output_path);
     fout << "length total_edges mean_in_cluster\n";
     for (const auto &length_threshold: length_thresholds) {
@@ -107,8 +108,8 @@ double PerfectClustersAnalyzer::GetMeanEdgeNumber(const SetDistribution &cluster
     INFO("Total clusters: " << total_clusters);
     return static_cast<double>(total_edges) / static_cast<double>(total_clusters);
 }
-PerfectClustersAnalyzer::PerfectClustersAnalyzer(const GraphPack &gp,
-                                                 const std::string &output_dir,
+PerfectClustersAnalyzer::PerfectClustersAnalyzer(const graph_pack::GraphPack &gp,
+                                                 const std::filesystem::path &output_dir,
                                                  size_t max_threads) :
     gp_(gp),
     output_dir_(output_dir),

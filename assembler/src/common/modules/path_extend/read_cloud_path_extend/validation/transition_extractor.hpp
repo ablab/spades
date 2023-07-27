@@ -9,10 +9,10 @@
 #include "modules/path_extend/extension_chooser.hpp"
 #include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_extractor.hpp"
 #include "modules/path_extend/read_cloud_path_extend/transitions/transitions.hpp"
-#include "modules/alignment/edge_index.hpp"
-#include "modules/alignment/kmer_mapper.hpp"
-#include "modules/alignment/long_read_mapper.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
+#include "alignment/edge_index.hpp"
+#include "alignment/kmer_mapper.hpp"
+#include "alignment/long_read_mapper.hpp"
+#include "alignment/sequence_mapper.hpp"
 
 namespace path_extend {
 namespace read_cloud {

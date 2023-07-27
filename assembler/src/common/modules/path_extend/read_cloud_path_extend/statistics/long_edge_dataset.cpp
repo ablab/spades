@@ -204,10 +204,10 @@ void LongEdgePairDatasetExtractor::ConstructAndSerialize(const std::string &path
     auto long_edge_dataset = GetLongEdgeDataset(scaffold_graph_storage_.GetSmallUniqueStorage(), reference_path);
     INFO(scaffold_graph_storage_.GetLargeScaffoldGraph().VertexCount() << " ultralong edges");
     auto ultralong_edge_dataset = GetLongEdgeDataset(scaffold_graph_storage_.GetLargeUniqueStorage(), reference_path);
-    const std::string output_name = "long_edge_dataset_";
-    const std::string long_output_path = fs::append_path(output_base, output_name + std::to_string(long_threshold));
-    const string ultralong_output_path = fs::append_path(output_base, output_name +
-        std::to_string(ultralong_threshold));
+    const std::filesystem::path output_name_long("long_edge_dataset_" + std::to_string(long_threshold));
+    const std::filesystem::path output_name_ultralong("ultralong_edge_dataset_" + std::to_string(ultralong_threshold));
+    const std::string long_output_path = output_base / output_name_long;
+    const string ultralong_output_path = output_base / output_name_ultralong;
     long_edge_dataset.Serialize(long_output_path);
     ultralong_edge_dataset.Serialize(ultralong_output_path);
 }

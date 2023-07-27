@@ -18,6 +18,7 @@
 #include "extract_domains.hpp"
 #include "domain_graph_construction.hpp"
 #include "restricted_edges_filling.hpp"
+#include "barcode_index_construction.hpp"
 #include "library/library.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/stage.hpp"
@@ -41,7 +42,9 @@ static bool MetaCompatibleLibraries() {
     size_t paired_end_libs = 0, long_read_libs = 0;
     for (const auto &lib : libs) {
         auto type = lib.type();
-        paired_end_libs += (type == io::LibraryType::PairedEnd);
+        paired_end_libs += (type == io::LibraryType::PairedEnd ||
+                            type == io::LibraryType::Clouds10x ||
+                            type == io::LibraryType::TellSeqReads);
         long_read_libs +=
             (type == io::LibraryType::TSLReads ||
              type == io::LibraryType::PacBioReads ||
@@ -201,6 +204,7 @@ static void AddRepeatResolutionStages(StageManager &SPAdes) {
 
     SPAdes.add<debruijn_graph::PairInfoCount>()
           .add<debruijn_graph::DistanceEstimation>()
+          .add<debruijn_graph::BarcodeMapConstructionStage>()
           .add<debruijn_graph::RepeatResolution>();
 }
 

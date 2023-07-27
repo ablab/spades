@@ -456,16 +456,16 @@ struct debruijn_config {
         bool set_copynumber;
     };
 
-    contig_output co;
+    struct read_cloud_resolver {
+      std::string tslr_dataset;
+
+      size_t edge_tail_len;
+      size_t frame_size;
+    };
+
+  contig_output co;
 
     std::filesystem::path load_from;
-    struct read_cloud_resolver {
-        std::string tslr_dataset;
-
-        size_t edge_tail_len;
-        size_t frame_size;
-
-    std::string load_from;
     std::string entry_point;
 
     bool rr_enable;

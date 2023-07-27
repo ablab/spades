@@ -257,6 +257,11 @@ def add_deprecated_input_data_args(pgroup_input_data):
                                            nargs=1,
                                            help=argparse.SUPPRESS,
                                            action=AddToDatasetAction)
+            pgroup_input_data.add_argument("--gemcode%d%s" % (num, sufix),
+                                           metavar="<filename>",
+                                           nargs=1,
+                                           help=argparse.SUPPRESS,
+                                           action=AddToDatasetAction)
 
         for orientation in ["-fr", "-rf", "-ff"]:
             pgroup_input_data.add_argument("--pe%d%s" % (num, orientation),
@@ -462,6 +467,7 @@ def add_input_data_args(pgroup_input_data):
                                    action=AddToDatasetAction)
     add_library_args("mp", "mate-pair", ["12", "1", "2", "s", "or"], pgroup_input_data, help_hidden)
     add_library_args("hqmp", "high-quality mate-pair", ["12", "1", "2", "s", "or"], pgroup_input_data, help_hidden)
+    add_library_args("gemcode", "10x format linked-reads", ["12", "1", "2", "s", "or"], pgroup_input_data)
 
     pgroup_input_data.add_argument("--sanger",
                                    metavar="<filename>",

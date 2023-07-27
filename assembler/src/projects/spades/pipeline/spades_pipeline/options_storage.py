@@ -79,7 +79,7 @@ K_MERS_PLASMID_LONG = [21, 33, 55, 77, 99, 127]
 ITERATIONS = 1
 TMP_DIR = "tmp"
 
-READS_TYPES_USED_IN_CONSTRUCTION = ["paired-end", "single", "hq-mate-pairs"]
+READS_TYPES_USED_IN_CONSTRUCTION = ["paired-end", "single", "hq-mate-pairs", "clouds10x"]
 READS_TYPES_USED_IN_RNA_SEQ = ["paired-end", "single", "trusted-contigs", "untrusted-contigs", "pacbio", "nanopore", "fl-rna"]
 
 BASE_STAGE = "read_conversion"

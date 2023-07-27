@@ -8,7 +8,7 @@
 
 #include "contracted_graph_builder.hpp"
 
-#include "assembly_graph/graph_support/scaff_supplementary.hpp"
+#include "modules/path_extend/scaff_supplementary.hpp"
 
 namespace contracted_graph {
 

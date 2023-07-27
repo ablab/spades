@@ -101,9 +101,9 @@ std::vector<ScaffoldGraphConstructionPipeline::ResultT> ScaffoldGraphConstructio
 ScaffoldGraphPipelineConstructor::ScaffoldGraphPipelineConstructor(const ReadCloudConfigsT &configs, const Graph &g) :
     read_cloud_configs_(configs), g_(g) {}
 std::shared_ptr<ScaffoldGraphPipelineConstructor::ScaffoldVertexExtractor> ScaffoldGraphPipelineConstructor::ConstructSimpleEdgeIndex(
-    const std::set<ScaffoldGraphPipelineConstructor::ScaffoldVertex> &scaffold_vertices,
-    ScaffoldGraphPipelineConstructor::BarcodeIndexPtr barcode_extractor,
-    const ScaffolderParams &params, size_t max_threads) const {
+        const std::set<ScaffoldGraphPipelineConstructor::ScaffoldVertex> &scaffold_vertices,
+        ScaffoldGraphPipelineConstructor::BarcodeIndexPtr barcode_extractor,
+        const ScaffolderParams &params, size_t max_threads) const {
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
     const size_t tail_threshold = params.tail_threshold_;
     const size_t length_threshold = params.min_length_for_barcode_collection_;
@@ -123,9 +123,12 @@ ScaffoldGraphConstructionPipeline BasicScaffoldGraphPipelineConstructor::Constru
     ScaffolderParamsConstructor params_constructor;
     typedef fragment_statistics::DistributionPack DistributionPackT;
     DistributionPackT distribution_pack(lib_.data().read_cloud_info.fragment_length_distribution);
+    INFO("Created distribution pack");
     fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor(distribution_pack);
+    INFO("Constructing scaffolder params");
     auto params = params_constructor.ConstructScaffolderParams(min_length_, read_cloud_configs_.scaff_con,
                                                                cluster_statistics_extractor);
+    INFO("Initial constructor");
     auto initial_constructor =
         std::make_shared<path_extend::scaffolder::UniqueScaffoldGraphConstructor>(gp_.get<Graph>(),
                                                                                   unique_storage_,
@@ -142,7 +145,7 @@ ScaffoldGraphConstructionPipeline BasicScaffoldGraphPipelineConstructor::Constru
 }
 BasicScaffoldGraphPipelineConstructor::BasicScaffoldGraphPipelineConstructor(
     const ReadCloudConfigsT &configs,
-    const GraphPack &gp,
+    const graph_pack::GraphPack &gp,
     const LibraryT &lib,
     const ScaffoldingUniqueEdgeStorage &unique_storage,
     std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
@@ -165,6 +168,7 @@ ScaffoldGraphConstructionPipeline GapScaffoldGraphPipelineConstructor::Construct
     fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor(distribution_pack);
     auto params = params_constructor.ConstructScaffolderParams(min_length_, read_cloud_configs_.scaff_con,
                                                                cluster_statistics_extractor);
+    INFO("Initial constructor");
     auto initial_constructor = GetInitialConstructor(params, scaffold_vertices);
     auto iterative_constructor_callers = ConstructStages(params, scaffold_vertices);
     INFO("Created " << iterative_constructor_callers.size() << " stages");
@@ -209,7 +213,7 @@ std::shared_ptr<scaffolder::ScaffoldGraphConstructor> GapScaffoldGraphPipelineCo
 }
 FullScaffoldGraphPipelineConstructor::FullScaffoldGraphPipelineConstructor(
     const ReadCloudConfigsT &configs,
-    const GraphPack &gp,
+    const graph_pack::GraphPack &gp,
     const LibraryT &lib,
     const ScaffoldingUniqueEdgeStorage &unique_storage,
     std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor,
@@ -221,14 +225,15 @@ FullScaffoldGraphPipelineConstructor::FullScaffoldGraphPipelineConstructor(
     search_parameter_pack_(search_parameter_pack) {}
 
 std::vector<std::shared_ptr<IterativeScaffoldGraphConstructorCaller>> FullScaffoldGraphPipelineConstructor::ConstructStages(
-    ScaffolderParams params,
-    const std::set<ScaffoldGraphPipelineConstructor::ScaffoldVertex> &scaffold_vertices) const {
+        ScaffolderParams params,
+        const std::set<ScaffoldGraphPipelineConstructor::ScaffoldVertex> &scaffold_vertices) const {
     barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
     const size_t length_threshold = read_cloud_configs_.scaff_con.min_edge_length_for_barcode_collection;
     const size_t count_threshold = params.count_threshold_;
+    INFO("Constructing simple index");
     auto scaffold_index_extractor =
         ConstructSimpleEdgeIndex(scaffold_vertices, barcode_extractor_, params, max_threads_);
-
+    INFO("Constructed simple edge index");
     std::vector<std::shared_ptr<IterativeScaffoldGraphConstructorCaller>> iterative_constructor_callers;
     iterative_constructor_callers.push_back(std::make_shared<BarcodeScoreConstructorCaller>(gp_.get<Graph>(),
                                                                                             max_threads_,

@@ -10,7 +10,7 @@
 #include "alignment/kmer_mapper.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include "barcode_index/barcode_index.hpp"
-#include "modules/alignment/kmer_mapper.hpp"
+#include "alignment/kmer_mapper.hpp"
 #include "paired_info/index_point.hpp"
 #include "paired_info/paired_info_helpers.hpp"
 

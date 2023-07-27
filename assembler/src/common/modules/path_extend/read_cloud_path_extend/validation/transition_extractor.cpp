@@ -8,8 +8,8 @@
 
 #include "io/reads/file_reader.hpp"
 #include "io/reads/rc_reader_wrapper.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
-#include "modules/alignment/long_read_mapper.hpp"
+#include "alignment/sequence_mapper.hpp"
+#include "alignment/long_read_mapper.hpp"
 
 namespace path_extend {
 namespace read_cloud {

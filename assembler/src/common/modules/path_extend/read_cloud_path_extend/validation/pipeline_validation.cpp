@@ -13,11 +13,11 @@ namespace read_cloud {
 namespace validation {
 
 void ScaffoldGraphPipelineValidator::ValidateStagesResults(const Pipeline &pipeline,
-                                                           const std::string &output_path) const {
+                                                           const std::filesystem::path &output_path) const {
     const auto intermediate_results = pipeline.GetIntermediateResults();
 //    const string path_to_reference = configs_.statistics.genome_path;
     DEBUG("Path to reference: " << path_to_reference_);
-    DEBUG("Path exists: " << fs::check_existence(path_to_reference_));
+    DEBUG("Path exists: " << std::filesystem::exists(path_to_reference_));
     const auto &graph = gp_.get<Graph>();
     const auto &index = gp_.get<EdgeIndex<Graph>>();
     const auto &kmer_mapper = gp_.get<KmerMapper<Graph>>();
@@ -29,18 +29,18 @@ void ScaffoldGraphPipelineValidator::ValidateStagesResults(const Pipeline &pipel
 
     for (const auto &result: intermediate_results) {
         auto scaffold_graph = *(result.first);
-        string name = result.second;
+        std::filesystem::path name(result.second);
         auto stats = scaffold_graph_validator.GetScaffoldGraphStats(scaffold_graph, reference_paths);
         INFO("Stats for " << name);
         stats.Serialize(std::cout, false);
-        std::string stage_path = fs::append_path(output_path, name);
+        std::string stage_path = output_path / name;
         std::ofstream fout(stage_path);
         stats.Serialize(fout, true);
     }
 }
 ScaffoldGraphPipelineValidator::ScaffoldGraphPipelineValidator(const string &path_to_reference,
                                                                const ScaffoldingUniqueEdgeStorage &unique_storage,
-                                                               const GraphPack &gp) :
+                                                               const graph_pack::GraphPack &gp) :
     path_to_reference_(path_to_reference),
     unique_storage_(unique_storage),
     gp_(gp) {}

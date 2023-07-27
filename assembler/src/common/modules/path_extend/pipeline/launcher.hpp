@@ -5,7 +5,8 @@
 #include "launch_support.hpp"
 
 #include "modules/path_extend/pe_resolver.hpp"
-#include "modules/path_extend/scaffolder2015/scaffold_graph.hpp"
+#include "modules/path_extend/scaffolder2015/connection_condition2015.hpp"
+#include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 #include "modules/genome_consistance_checker.hpp"
 
 #include "alignment/rna/ss_coverage.hpp"
@@ -27,7 +28,7 @@ class PathExtendLauncher {
 
     UniqueData unique_data_;
 
-    std::vector<std::shared_ptr<ConnectionCondition>>
+    std::vector<std::shared_ptr<path_extend::ConnectionCondition>>
         ConstructPairedConnectionConditions(const ScaffoldingUniqueEdgeStorage &edge_storage) const;
 
     std::shared_ptr<scaffold_graph::ScaffoldGraph>

@@ -7,7 +7,7 @@
 #pragma once
 
 #include "distribution_extractor.hpp"
-#include "modules/path_extend/pe_config_struct.hpp"
+#include "configs/pe_config_struct.hpp"
 #include "modules/path_extend/read_cloud_path_extend/cluster_storage/initial_cluster_storage_builder.hpp"
 
 namespace path_extend {
@@ -73,7 +73,7 @@ class MinTrainingLengthEstimator {
 class MinTrainingLengthEstimatorHelper {
   public:
     using Graph = debruijn_graph::Graph;
-    using ReadCloudConfigs = pe_config::ReadCloud;
+    using ReadCloudConfigs = path_extend::pe_config::ReadCloud;
 
     MinTrainingLengthEstimatorHelper(const ReadCloudConfigs &configs) : configs_(configs) {}
 

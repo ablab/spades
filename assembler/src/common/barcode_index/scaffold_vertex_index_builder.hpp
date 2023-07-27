@@ -165,7 +165,6 @@ namespace barcode_index {
             for (const auto& vertex: vertex_container)
             {
                 auto entry = vertex_entry_extractor_->ExtractEntry(vertex);
-                TRACE("Entry size: " << entry.size());
                 {
                     index_->InsertEntry(vertex, std::move(entry));
 //                    ++counter;
@@ -183,6 +182,8 @@ namespace barcode_index {
         EntryExtractorPtr vertex_entry_extractor_;
         std::shared_ptr<ScaffoldVertexIndex<EdgeEntryT>> index_;
         size_t max_threads_;
+
+        DECL_LOGGER("ScaffoldVertexSimpleEntryExtractor");
     };
 
     class SimpleScaffoldVertexIndexBuilderHelper {

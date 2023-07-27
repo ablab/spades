@@ -7,7 +7,7 @@
 #pragma once
 
 #include "assembly_graph/core/graph.hpp"
-#include "assembly_graph/graph_support/scaff_supplementary.hpp"
+#include "modules/path_extend/scaff_supplementary.hpp"
 #include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 
 #include <fstream>

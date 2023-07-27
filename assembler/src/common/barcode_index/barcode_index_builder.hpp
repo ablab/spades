@@ -10,8 +10,8 @@
 
 #include "io/dataset_support/dataset_readers.hpp"
 #include "io/reads/read_processor.hpp"
-#include "modules/alignment/sequence_mapper_notifier.hpp"
-#include "modules/alignment/sequence_mapper.hpp"
+#include "alignment/sequence_mapper_notifier.hpp"
+#include "alignment/sequence_mapper.hpp"
 
 #include <mutex>
 #include <shared_mutex>
@@ -75,7 +75,7 @@ class ConcurrentBufferFiller {
         MappingPath path1 = mapper_.MapSequence(read1);
         MappingPath path2 = mapper_.MapSequence(read2);
 
-        ProcessPairedRead(r->first().name(), r->second().name(), path1, path2);
+        ProcessPairedRead(r->first().comment(), r->second().comment(), path1, path2);
         return false;
     }
 
@@ -88,16 +88,15 @@ class ConcurrentBufferFiller {
     }
 
   private:
-    void ProcessPairedRead(const std::string &name1,
-                           const std::string &name2,
+    void ProcessPairedRead(const std::string &comment1,
+                           const std::string &comment2,
                            const MappingPath& path1,
                            const MappingPath& path2) {
-        std::string barcode_string = GetTenXBarcodeFromRead(name1, barcode_prefices_);
-        std::string second_barcode_string = GetTenXBarcodeFromRead(name2, barcode_prefices_);
+        std::string barcode_string = GetTenXBarcodeFromRead(comment1, barcode_prefices_);
+        std::string second_barcode_string = GetTenXBarcodeFromRead(comment2, barcode_prefices_);
         if (barcode_string.empty() or barcode_string != second_barcode_string) {
             return;
         }
-
         auto code_result = encoder_.find(barcode_string);
         BarcodeId barcode;
         if (code_result == encoder_.end()) {

@@ -13,7 +13,7 @@
 #include "barcode_index/scaffold_vertex_index_builder.hpp"
 #include "modules/path_extend/paired_library.hpp"
 #include "modules/path_extend/path_extender.hpp"
-#include "modules/path_extend/scaff_supplementary.hpp"#include "modules/path_extend/scaff_supplementary.hpp"
+#include "modules/path_extend/scaff_supplementary.hpp"
 
 namespace path_extend {
 
@@ -145,9 +145,9 @@ public:
 
 class SimpleExtenderFactory : public GapExtenderFactory {
 public:
-    typedef debruijn_graph::GraphPack GraphPack;
+    typedef graph_pack::GraphPack GraphPack;
 
-    SimpleExtenderFactory(const GraphPack &gp,
+    SimpleExtenderFactory(const graph_pack::GraphPack &gp,
                           const GraphCoverageMap &cover_map,
                           UsedUniqueStorage& unique,
                           const std::shared_ptr<GapExtensionChooserFactory> chooser_factory):
@@ -163,7 +163,7 @@ public:
         DEBUG("Created chooser");
         auto extender = std::make_shared<SimpleExtender>(gp_, cover_map_, unique_,
                                                     chooser_factory_->CreateChooser(original_path, position),
-                                                    MAGIC_LOOP_CONSTANT,
+                                                    SimpleExtenderFactory::MAGIC_LOOP_CONSTANT,
                                                     false,
                                                     false);
         DEBUG("Returning extender");
@@ -175,7 +175,7 @@ public:
     const GraphCoverageMap &cover_map_;
     UsedUniqueStorage& unique_;
     const std::shared_ptr<GapExtensionChooserFactory> chooser_factory_;
-    static const size_t MAGIC_LOOP_CONSTANT = 1000;
+    static constexpr size_t MAGIC_LOOP_CONSTANT = 1000;
 
     DECL_LOGGER("SimpleExtenderFactory")
 };

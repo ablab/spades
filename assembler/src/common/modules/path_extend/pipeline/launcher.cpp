@@ -13,8 +13,7 @@
 #include "modules/path_extend/scaffolder2015/path_polisher.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_visualizer.hpp"
-#include "modules/path_extend/read_cloud_path_extend/extension_chooser_checker.hpp"
-#include "modules/path_extend/read_cloud_path_extend/path_scaffolder.hpp"
+#include "modules/path_extend/path_scaffolder.hpp"
 #include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_construction_pipeline.hpp"
 #include "modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor.hpp"
 #include "modules/path_extend/read_cloud_path_extend/fragment_statistics/secondary_stats_estimators.hpp"
@@ -25,6 +24,7 @@
 #include "assembly_graph/core/basic_graph_stats.hpp"
 #include "assembly_graph/graph_support/coverage_uniformity_analyzer.hpp"
 
+#include <filesystem>
 #include <unordered_set>
 namespace path_extend {
 
@@ -108,11 +108,11 @@ std::shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructPath
     read_cloud::SearchingExtenderParams empty_searching_extender_params(empty_storage);
     read_cloud::ReadCloudSearchParameterPack empty_pack{empty_chooser_params, empty_search_params,
                                                         empty_searching_extender_params};
-    std::string base_stats_path = fs::append_path(params_.etc_dir,
-                                                  params_.pe_cfg.read_cloud.statistics.scaffold_graph_statistics);
-    std::string scaffold_graph_stats_path = fs::append_path(base_stats_path, "path_graph");
-    fs::remove_if_exists(scaffold_graph_stats_path);
-    fs::make_dir(scaffold_graph_stats_path);
+    std::string base_stats_path = params_.etc_dir / params_.pe_cfg.read_cloud.statistics.scaffold_graph_statistics;
+    std::filesystem::path path_graph_name("path_graph");
+    auto scaffold_graph_stats_path = base_stats_path / path_graph_name;
+    std::filesystem::remove(scaffold_graph_stats_path);
+    std::filesystem::create_directory(scaffold_graph_stats_path);
     read_cloud::CloudScaffoldGraphConstructor constructor(num_threads, gp_, unique_storage, cloud_lib,
                                                           params_.pe_cfg.read_cloud, empty_pack,
                                                           scaffold_graph_stats_path, extractor);
@@ -127,7 +127,6 @@ void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph 
                                             const std::set<EdgeId> &main_edge_set,
                                             const debruijn_graph::GenomeConsistenceChecker &genome_checker,
                                             const std::filesystem::path &filename) const {
-                                            const string &filename) const {
     using namespace scaffolder;
     using namespace scaffold_graph;
 
@@ -858,8 +857,6 @@ void PathExtendLauncher::Launch() {
     SelectStrandSpecificPaths(contig_paths);
 
     CountMisassembliesWithReference(contig_paths);
-
-    TenXExtensionChooser::PrintStats(cfg::get().output_dir + "10x_extender_stats");
 
     INFO("ExSPAnder repeat resolving tool finished");
 }
