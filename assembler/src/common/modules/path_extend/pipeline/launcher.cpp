@@ -92,7 +92,7 @@ std::shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructPath
         const PathContainer &path_container, size_t lib_index) const {
     read_cloud::fragment_statistics::DistributionPack distribution_pack;
     const auto &cloud_lib = dataset_info_.reads[lib_index];
-    VERIFY_DEV(cloud_lib.type() == io::LibraryType::Clouds10x);
+    VERIFY_DEV(cloud_lib.type() == io::LibraryType::Clouds10x or cloud_lib.type() == io::LibraryType::TellSeqReads);
     VERIFY_DEV(not distribution_pack.length_distribution_.empty());
     const auto &unique_storage = unique_data_.read_cloud_storages_.small_unique_storage_;
     VERIFY_DEV(unique_storage.size() != 0);
@@ -400,7 +400,7 @@ void PathExtendLauncher::ConstructReadCloudStorages() {
 
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
         const auto &lib = dataset_info_.reads[lib_index];
-        if (lib.type() == io::LibraryType::Clouds10x) {
+        if (lib.type() == io::LibraryType::Clouds10x or lib.type() == io::LibraryType::TellSeqReads) {
             using read_cloud::fragment_statistics::DistributionPack;
             const auto &lib = dataset_info_.reads[lib_index];
             DistributionPack distribution_pack(lib.data().read_cloud_info.fragment_length_distribution);
@@ -486,7 +486,7 @@ void  PathExtendLauncher::FillPBUniqueEdgeStorages() {
         INFO("Removing fake unique with paired-end libs");
         for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
             auto lib = cfg::get().ds.reads[lib_index];
-            if (lib.type() == io::LibraryType::Clouds10x or lib.type() == io::LibraryType::PairedEnd) {
+            if (lib.type() == io::LibraryType::Clouds10x or lib.type() == io::LibraryType::PairedEnd or lib.type() == io::LibraryType::TellSeqReads) {
                 unique_edge_analyzer_pb.ClearLongEdgesWithPairedLib(lib_index, unique_data_.unique_pb_storage_);
             }
         }
@@ -573,7 +573,8 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
         auto read_cloud_configs = params_.pe_cfg.read_cloud;
         bool read_cloud_polishing = read_cloud_configs.read_cloud_resolution_on and
             read_cloud_configs.read_cloud_gap_closer_on;
-        if (lib.type() == io::LibraryType::Clouds10x and read_cloud_polishing and params_.pset.sm != scaffolding_mode::sm_old) {
+        bool cloud_lib = lib.type() == io::LibraryType::Clouds10x or lib.type() == io::LibraryType::TellSeqReads;
+        if (cloud_lib and read_cloud_polishing and params_.pset.sm != scaffolding_mode::sm_old) {
             INFO("Using read cloud path polisher");
             const auto &barcode_index = gp_.get<barcode_index::FrameBarcodeIndex<Graph>>();
             auto barcode_extractor_ptr =
@@ -747,7 +748,8 @@ void PathExtendLauncher::ScaffoldPaths(PathContainer &paths) const {
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
         const auto &lib = dataset_info_.reads[lib_index];
         bool cloud_resolution_on = params_.pe_cfg.read_cloud.read_cloud_resolution_on;
-        if (lib.type() == io::LibraryType::Clouds10x and path_scaffolding_mode and cloud_resolution_on) {
+        bool cloud_lib = lib.type() == io::LibraryType::Clouds10x or lib.type() == io::LibraryType::TellSeqReads;
+        if (cloud_lib and path_scaffolding_mode and cloud_resolution_on) {
             auto path_scaffold_graph = ConstructPathScaffoldGraphForReadCloudLib(paths, lib_index);
             path_scaffolder.MergePaths(*path_scaffold_graph);
         }
@@ -817,7 +819,7 @@ void PathExtendLauncher::Launch() {
         read_cloud::fragment_statistics::DistributionPack distribution_pack;
         std::vector<io::SequencingLibrary<debruijn_graph::config::LibraryData>> cloud_libs;
         for (const auto &lib: dataset_info_.reads) {
-            if (lib.type() == io::LibraryType::Clouds10x) {
+            if (lib.type() == io::LibraryType::Clouds10x or lib.type() == io::LibraryType::TellSeqReads) {
                 distribution_pack.length_distribution_ = lib.data().read_cloud_info.fragment_length_distribution;
                 cloud_libs.push_back(lib);
             }

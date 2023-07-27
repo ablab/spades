@@ -45,7 +45,7 @@ MakeContigNameGenerator(config::pipeline_type mode,
 
 inline bool HasReadClouds(const config::dataset& dataset_info) {
     for (const auto& lib: dataset_info.reads) {
-        if (lib.type() == io::LibraryType::Clouds10x) {
+        if (lib.type() == io::LibraryType::Clouds10x or lib.type() == io::LibraryType::TellSeqReads) {
             return true;
         }
     }

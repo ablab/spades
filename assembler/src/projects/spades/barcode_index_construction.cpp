@@ -16,7 +16,7 @@ namespace debruijn_graph {
     size_t ReadCloudLibsCount(config::dataset ds) {
         size_t result = 0;
         for (const auto& lib: ds.reads) {
-            if (lib.type() == io::LibraryType::Clouds10x) {
+            if (lib.type() == io::LibraryType::Clouds10x or lib.type() == io::LibraryType::TellSeqReads) {
                 ++result;
             }
         }
@@ -42,7 +42,7 @@ namespace debruijn_graph {
 
         for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
             auto &lib = cfg::get_writable().ds.reads[i];
-            if (lib.type() == io::LibraryType::Clouds10x) {
+            if (lib.type() == io::LibraryType::Clouds10x or lib.type() == io::LibraryType::TellSeqReads) {
                 EnsureBasicMapping(gp);
                 FrameConcurrentBarcodeIndexBuffer<Graph> buffer(gp.get<Graph>(), frame_size);
                 ConcurrentBufferFiller buffer_filler(gp.get<Graph>(), buffer, *MapperInstance(gp), barcode_prefices);

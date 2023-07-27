@@ -562,6 +562,8 @@ def get_data_type(option):
         data_type = "single reads"
     elif option.endswith("-m") or option.endswith("-merged"):
         data_type = "merged reads"
+    elif option.endswith("-a") or option.endswith("-aux"):
+        data_type = "aux reads"
     else:  # -rf, -ff, -fr
         data_type = "orientation"
     return data_type
@@ -612,7 +614,7 @@ def correct_dataset(dataset_data):
         for key in reads_library.keys():
             if key.endswith("reads"):
                 has_reads = True
-            if key in ["interlaced reads", "merged reads", "left reads", "right reads"]:
+            if key in ["interlaced reads", "merged reads", "left reads", "right reads", "aux reads"]:
                 has_paired_reads = True
                 break
         if not has_reads:
@@ -622,7 +624,7 @@ def correct_dataset(dataset_data):
             if "orientation" in reads_library:
                 del reads_library["orientation"]
         if "orientation" not in reads_library:
-            if reads_library["type"] == "paired-end" or reads_library["type"] == "hq-mate-pairs" or reads_library["type"] == "clouds10x":
+            if reads_library["type"] == "paired-end" or reads_library["type"] == "hq-mate-pairs" or reads_library["type"] == "clouds10x" or reads_library["type"] == "tell-seq":
                 reads_library["orientation"] = "fr"
             elif reads_library["type"] == "mate-pairs":
                 reads_library["orientation"] = "rf"
@@ -804,7 +806,7 @@ def dataset_has_additional_contigs(dataset_data):
 
 
 def pretty_print_reads(dataset_data, log, indent="    "):
-    READS_TYPES = ["left reads", "right reads", "interlaced reads", "single reads", "merged reads"]
+    READS_TYPES = ["left reads", "right reads", "interlaced reads", "single reads", "merged reads", "aux reads"]
     for id, reads_library in enumerate(dataset_data):
         log.info(indent + "Library number: %d, library type: %s" % (id + 1, reads_library["type"]))
         if "orientation" in reads_library:

@@ -34,7 +34,8 @@ void DistanceEstimation::run(graph_pack::GraphPack &gp, const char*) {
         std::numeric_limits<size_t>::max() : config.max_repeat_length;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         const auto &lib = cfg::get().ds.reads[i];
-        if (lib.type() != io::LibraryType::PairedEnd or lib.type() != io::LibraryType::Clouds10x)
+        if (lib.type() != io::LibraryType::PairedEnd and lib.type() != io::LibraryType::Clouds10x
+                and lib.type() != io::LibraryType::TellSeqReads)
             continue;
 
         if (lib.data().mean_insert_size != 0.0) {

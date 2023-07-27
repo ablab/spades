@@ -416,7 +416,14 @@ def add_library_args(libid, name, suffixes, pgroup_input_data, help_hidden=False
                                             "Older deprecated syntax is -%s<#>-m <filename>" % (name, libid)
                                        if not help_hidden else argparse.SUPPRESS,
                                        action=AddToDatasetAction)
-
+    if "a" in suffixes:
+        pgroup_input_data.add_argument("--%s-a" % libid,
+                                       metavar=("<#>", "<filename>"),
+                                       nargs=2,
+                                       help="file with read tags (e.g. TELL-Seq library barcodes) for %s library number <#>.\n"
+                                            "Older deprecated syntax is -%s<#>-m <filename>" % (name, libid)
+                                       if not help_hidden else argparse.SUPPRESS,
+                                       action=AddToDatasetAction)
     if "or" in suffixes:
         pgroup_input_data.add_argument("--%s-or" % libid,
                                        metavar=("<#>", "<or>"),
@@ -455,6 +462,11 @@ def add_input_data_args(pgroup_input_data):
                                    nargs=1,
                                    help="file with merged forward and reverse paired-end reads",
                                    action=AddToDatasetAction)
+    pgroup_input_data.add_argument("--aux",
+                                   metavar="<filename>",
+                                   nargs=1,
+                                   help="file with auxiliary reads (e.g. TELL-Seq library barcodes)",
+                                   action=AddToDatasetAction)
 
     add_deprecated_input_data_args(pgroup_input_data)
     help_hidden = (mode in ["rna", "meta"])
@@ -468,6 +480,7 @@ def add_input_data_args(pgroup_input_data):
     add_library_args("mp", "mate-pair", ["12", "1", "2", "s", "or"], pgroup_input_data, help_hidden)
     add_library_args("hqmp", "high-quality mate-pair", ["12", "1", "2", "s", "or"], pgroup_input_data, help_hidden)
     add_library_args("gemcode", "10x format linked-reads", ["12", "1", "2", "s", "or"], pgroup_input_data)
+    add_library_args("tellseq", "TELL-Seq format linked-reads", ["12", "1", "2", "s", "or", "a"], pgroup_input_data)
 
     pgroup_input_data.add_argument("--sanger",
                                    metavar="<filename>",

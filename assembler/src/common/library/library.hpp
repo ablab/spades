@@ -197,7 +197,8 @@ public:
         return type_ == io::LibraryType::PairedEnd ||
                type_ == io::LibraryType::SingleReads ||
                type_ == io::LibraryType::HQMatePairs ||
-               type_ == io::LibraryType::Clouds10x;
+               type_ == io::LibraryType::Clouds10x ||
+               type_ == io::LibraryType::TellSeqReads;
     }
 
     bool is_bwa_alignable() const {
@@ -216,7 +217,8 @@ public:
         return type_ == io::LibraryType::PairedEnd ||
                type_ == io::LibraryType::MatePairs ||
                type_ == io::LibraryType::HQMatePairs ||
-               type_ == io::LibraryType::Clouds10x;
+               type_ == io::LibraryType::Clouds10x ||
+               type_ == io::LibraryType::TellSeqReads;
     }
 
     bool is_single() const {

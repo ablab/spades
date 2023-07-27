@@ -72,7 +72,7 @@ void SequencingLibraryBase::yamlize(llvm::yaml::IO &io) {
     io.mapOptional("interlaced reads", interlaced_reads_);
     io.mapOptional("merged reads", merged_reads_);
     io.mapOptional("single reads", single_reads_);
-    io.mapOptional("aux", aux_reads_);
+    io.mapOptional("aux reads", aux_reads_);
 }
 
 void SequencingLibraryBase::validate(llvm::yaml::IO &, llvm::StringRef &res) {

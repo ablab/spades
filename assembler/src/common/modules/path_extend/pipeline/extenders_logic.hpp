@@ -38,6 +38,7 @@ struct ExtenderTriplet {
             SET_PRIORITY(LibraryType::SingleReads); [[fallthrough]];
             SET_PRIORITY(LibraryType::PairedEnd); [[fallthrough]];
             SET_PRIORITY(LibraryType::Clouds10x); [[fallthrough]];
+            SET_PRIORITY(LibraryType::TellSeqReads); [[fallthrough]];
             SET_PRIORITY(LibraryType::HQMatePairs); [[fallthrough]];
             SET_PRIORITY(LibraryType::MatePairs); [[fallthrough]];
             SET_PRIORITY(LibraryType::TSLReads); [[fallthrough]];

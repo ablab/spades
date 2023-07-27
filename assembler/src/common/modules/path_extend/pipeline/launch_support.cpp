@@ -107,7 +107,7 @@ bool PELaunchSupport::HasMPReads() const {
 
 bool PELaunchSupport::HasReadClouds() const {
     for (const auto& lib: dataset_info_.reads) {
-        if (lib.type() == io::LibraryType::Clouds10x) {
+        if (lib.type() == io::LibraryType::Clouds10x or lib.type() == io::LibraryType::TellSeqReads) {
             return true;
         }
     }

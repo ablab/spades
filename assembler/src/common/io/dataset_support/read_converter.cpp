@@ -94,6 +94,20 @@ void ReadConverter::ConvertToBinary(SequencingLibraryT& lib,
         paired_stats.read_count *= 2;
         read_stat.merge(paired_stats);
         data.unmerged_read_length = read_stat.max_len;
+
+        INFO("Converting single reads");
+        BinaryWriter single_converter(data.binary_reads_info.single_read_prefix);
+        SingleStream single_reader = single_easy_reader(lib, false, false, true, flags, pool);
+        read_stat.merge(single_converter.ToBinary(single_reader, pool, tagger));
+
+        data.unmerged_read_length = read_stat.max_len;
+        INFO("Converting merged reads");
+        BinaryWriter merged_converter(data.binary_reads_info.merged_read_prefix);
+        SingleStream merged_reader = merged_easy_reader(lib, false, true, flags, pool);
+        auto merged_stats = merged_converter.ToBinary(merged_reader, pool, tagger);
+
+        data.merged_read_length = merged_stats.max_len;
+        read_stat.merge(merged_stats);
     } else {
         INFO("Converting paired reads");
         BinaryWriter paired_converter(data.binary_reads_info.paired_read_prefix);

@@ -68,7 +68,7 @@ public:
 
     bool Write(std::ostream& file, const TellSeqRead& r) const {
         auto tag = tagger_(r);
-        INFO("" << r);
+        DEBUG("" << r);
         return r.BinWrite(file,
                           rc1_, rc2_,
                           tag, tag);
@@ -86,10 +86,11 @@ ReadStreamStat BinaryWriter::ToBinary(const Writer &writer, io::ReadStream<Read>
     DEBUG("Reserving a buffer for " << BUF_SIZE << " reads");
     buf.resize(BUF_SIZE); flush_buf.resize(BUF_SIZE);
 
+    INFO("Writing stats");
     // Reserve space for stats
     ReadStreamStat read_stats;
     read_stats.write(*file_ds_);
-
+    INFO("Wrote stats");
     size_t rest = 1;
     std::future<void> flush_task;
     auto flush_buffer = [&](size_t sz) {
@@ -117,6 +118,7 @@ ReadStreamStat BinaryWriter::ToBinary(const Writer &writer, io::ReadStream<Read>
             flush_job();
     };
 
+    INFO("Read count");
     size_t read_count = 0, buf_size = 0;
     Read read;
     while (!stream.eof()) {
@@ -130,6 +132,7 @@ ReadStreamStat BinaryWriter::ToBinary(const Writer &writer, io::ReadStream<Read>
             buf_size = 0;
         }
     }
+    INFO("Buffer");
     flush_buffer(buf_size); // Write leftovers
     // Wait for completion of the current final task
     if (flush_task.valid())

@@ -199,7 +199,8 @@ void PairInfoCount::run(graph_pack::GraphPack &gp, const char *) {
 
                 // Only filter paired-end libraries
                 if (filter_threshold && (lib.type() == io::LibraryType::PairedEnd or
-                                         lib.type() == io::LibraryType::Clouds10x)) {
+                                         lib.type() == io::LibraryType::Clouds10x or
+                                         lib.type() == io::LibraryType::TellSeqReads)) {
                     INFO("Filtering data for library #" << i);
                     filter = paired_info::FillEdgePairFilter(graph, *ChooseProperMapper(gp, lib), lib, edgepairs);
                 }

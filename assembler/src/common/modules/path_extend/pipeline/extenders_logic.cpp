@@ -420,7 +420,7 @@ Extenders ExtendersGenerator::MakeReadCloudExtenders() const {
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); ++lib_index) {
         const auto &lib = dataset_info_.reads[lib_index];
 
-        if (lib.type() == io::LibraryType::Clouds10x) {
+        if (lib.type() == io::LibraryType::Clouds10x or lib.type() == io::LibraryType::TellSeqReads) {
             result.emplace_back(lib.type(), lib_index, MakeScaffoldGraphExtender(lib_index));
             result.emplace_back(lib.type(), lib_index, MakeReadCloudExtender(lib_index));
         }
