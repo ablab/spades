@@ -599,7 +599,7 @@ std::shared_ptr<PathExtender> ExtendersGenerator::MakeScaffoldGraphExtender(size
                                                                    default_composite_extender_params};
 
     std::string base_stats_path = params_.etc_dir / params_.pe_cfg.read_cloud.statistics.scaffold_graph_statistics;
-    std::filesystem::remove(base_stats_path);
+    std::filesystem::remove_all(base_stats_path);
     std::filesystem::create_directory(base_stats_path);
     size_t unique_length_threshold = small_unique_storage.min_length();
     size_t length_upper_bound = large_unique_storage.min_length();

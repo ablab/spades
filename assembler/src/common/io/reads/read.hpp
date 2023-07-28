@@ -162,13 +162,17 @@ public:
         name_ = s;
     }
 
+    void setComment(const char *s) {
+        comment_ = s;
+    }
+
     Read()
             : valid_(false), ltrim_(0), rtrim_(0), initial_size_(0) {
         ;
     }
 
-    Read(const std::string &name, const std::string &seq, const std::string &qual) :
-            name_(name), seq_(seq), qual_(qual) {  // for test only!
+    Read(const std::string &name, const std::string &comment, const std::string &seq, const std::string &qual) :
+            name_(name), comment_(comment), seq_(seq), qual_(qual) {  // for test only!
         ltrim_ = 0;
         initial_size_ = rtrim_ = (int) seq_.size();
         valid_ = updateValid();
@@ -184,6 +188,7 @@ public:
 
 private:
     std::string name_;
+    std::string comment_;
     std::string seq_;
     std::string qual_;
     bool valid_;
@@ -215,11 +220,11 @@ public:
         } else {
             newName = name_.substr(1, name_.length());
         }
-        return Read(newName, ReverseComplement(seq_), Reverse(qual_));
+        return Read(newName, comment_, ReverseComplement(seq_), Reverse(qual_));
     }
 
     void print(std::ostream &outf, int offset) const {
-        outf << "@" << name_.c_str() << "\n";
+        outf << "@" << name_.c_str() << "\t" << comment_.c_str() << "\n";
         for (int i = 0; i < ltrim_; ++i) outf << "N";
         outf << seq_.c_str();
         for (int i = 0; i < initial_size_ - rtrim_; ++i) outf << "N";

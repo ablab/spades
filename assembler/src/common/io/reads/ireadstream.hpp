@@ -100,6 +100,7 @@ ireadstream &operator>>(Read &r) {
         return *this;
     }
     r.setName(seq_->name.s);
+    r.setComment(seq_->comment.s);
     if (seq_->qual.s) {
         r.setQuality(seq_->qual.s, offset_);
     }
