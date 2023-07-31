@@ -851,8 +851,8 @@ void PathExtendLauncher::Launch() {
     RemoveOverlapsAndArtifacts(contig_paths, polished_map, resolver);
     DebugOutputPaths(contig_paths, "overlap_removed");
 
-    RemoveOverlapsAndArtifacts(contig_paths, polished_map, resolver);
-    DebugOutputPaths(contig_paths, "overlap_removed");
+//    RemoveOverlapsAndArtifacts(contig_paths, polished_map, resolver);
+//    DebugOutputPaths(contig_paths, "overlap_removed");
 
     AddFLPaths(contig_paths);
 
