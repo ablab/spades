@@ -173,7 +173,10 @@ void GFAPathWriter::WritePaths12(const ScaffoldStorage &scaffold_storage) {
             delimiter = (graph_.EdgeEnd(e) == graph_.EdgeStart(p[i+1]) ? "," : ";");
         }
         os_ << delimiter << edge_namer_.EdgeOrientationString(p.Back())
-            << '\t' << '*' << '\n';
+            << '\t' << '*';
+        if (p.IsCircular())
+            os_ << '\t' << "TP:Z:circular";
+        os_ << '\n';
     }
 }
 
@@ -197,7 +200,8 @@ void GFAPathWriter::WritePaths11(const ScaffoldStorage &scaffold_storage) {
         }
 
         segmented_path.push_back(edge_namer_.EdgeOrientationString(p.Back()));
-        WritePath(scaffold_info.name, segment_id, segmented_path);
+        WritePath(scaffold_info.name, segment_id, segmented_path,
+                  segment_id == 1 && p.IsCircular() ? "TP:Z:circular" : "");
     }
 }
 
