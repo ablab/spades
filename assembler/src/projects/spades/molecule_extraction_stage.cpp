@@ -518,7 +518,7 @@ namespace debruijn_graph {
                         extractor.extractEdges(paths, good_edges, current_barcode);
                         extractor.extractLongReadsPE(graph_pack, long_reads_temp_container, good_edges, current_barcode, lib_10x);
                     } else {
-                        extractor.extractLongReads(paths, long_reads_temp_container, current_barcode);
+                        extractor.extractLongReads(paths, long_reads_temp_storage, current_barcode);
                     }
                     INFO(paths.size());
                     for (auto path : long_reads_temp_container) {
