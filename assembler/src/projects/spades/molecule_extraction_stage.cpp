@@ -31,6 +31,7 @@ namespace debruijn_graph {
         std::set<EdgeId> used_edges_;
         PathStorage<Graph> temp_set_;
         std::vector<EdgeId> getForwardIntersect(EdgeId e, const std::unordered_set<EdgeId> &edge_set) const {
+            DEBUG("Here");
             auto edges = gp_.g.IncidentEdges(gp_.g.EdgeEnd(e));
             std::vector<EdgeId> filtered;
             for (auto temp_e : edges) {
@@ -42,6 +43,7 @@ namespace debruijn_graph {
         }
 
         std::vector<EdgeId> getReverseIntersect(EdgeId e, const std::unordered_set<EdgeId> &edge_set) const {
+            DEBUG("Here");
             auto edges = gp_.g.IncidentEdges(gp_.g.EdgeStart(e));
             std::vector<EdgeId> filtered;
             for (auto temp_e : edges) {
@@ -92,6 +94,7 @@ namespace debruijn_graph {
 
         void extendBackward(const std::unordered_set<EdgeId> &edge_set,
                             std::deque<EdgeId> &linear_path, EdgeId e) {
+            DEBUG("Here");
             auto extensions = getReverseIntersect(e, edge_set);
             for (auto prev_edge : extensions) {
                 linear_path.push_front(prev_edge);
@@ -104,6 +107,7 @@ namespace debruijn_graph {
 
         void extendForward(const GraphComponent<Graph> &comp,
                            std::deque<EdgeId> &linear_path, std::set<EdgeId> &used_edges) {
+            DEBUG("Here");
             EdgeId e = linear_path.back();
             if (comp.VertexInDegree(gp_.g.EdgeEnd(e)) != 1 ||
                     comp.VertexOutDegree(gp_.g.EdgeEnd(e)) != 1 ) {
@@ -292,6 +296,8 @@ namespace debruijn_graph {
             edge_set = initial_component.edges();
             for (auto e : edge_set) {
                 if (!used_edges_.count(e)) {
+                    DEBUG("Here");
+
                     std::deque<EdgeId> linear_path;
                     linear_path.push_back(e);
                     used_edges_.insert(e);
@@ -299,7 +305,10 @@ namespace debruijn_graph {
                     extendForward(edge_set, linear_path, e);
                     extendBackward(edge_set, linear_path, e);
                     auto component = GraphComponent<Graph>::FromEdges(gp_.g, linear_path, true);
+                    DEBUG("Here");
                     component.ClipTips();
+                    DEBUG("Here");
+
                     if (IsSimplePath(component)) {
                         DEBUG("Component is a simple path");
                         std::vector<EdgeId> path;
@@ -316,6 +325,7 @@ namespace debruijn_graph {
                     }
                 }
             }
+            DEBUG("Here");
             used_edges_.clear();
             return temp_set_;
         }
