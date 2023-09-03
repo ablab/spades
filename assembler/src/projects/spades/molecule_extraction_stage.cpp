@@ -306,7 +306,7 @@ namespace debruijn_graph {
                     extendBackward(edge_set, linear_path, e);
                     auto component = GraphComponent<Graph>::FromEdges(gp_.g, linear_path, true);
                     DEBUG("Here");
-                    component.ClipTips();
+//                    component.ClipTips();
                     DEBUG("Here");
 
                     if (IsSimplePath(component)) {
