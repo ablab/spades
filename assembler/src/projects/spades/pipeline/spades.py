@@ -654,9 +654,42 @@ def main(args):
             log.exception(exc_value)
             support.error("exception caught: %s" % exc_type, log)
     finally:
+        mode = options_parser.get_mode()
         log.info("\nSPAdes log can be found here: %s" % log_filename)
         log.info("")
-        log.info("Thank you for using SPAdes!")
+
+        if mode == "plasmid":
+            spades_name = "plasmidSPAdes"
+            cite_message = "Antipov et al., Bioinformatics, 2016."
+        elif mode == "bgc":
+            spades_name = "BiosyntheticSPAdes"
+            cite_message = "Meleshko et al., Genome Research, 2019."
+        elif mode == "meta":
+            spades_name = "metaSPAdes"
+            cite_message = "Nurk et al., Genome Research, 2017"
+        elif mode == "metaplasmid":
+            spades_name = "metaplasmidSPAdes"
+            cite_message = "Antipov et al., Genome Research, 2019."
+        elif mode == "metaviral":
+            spades_name = "metaviralSPAdes"
+            cite_message = "Antipov et al., Bioinformatics 2020."
+        elif mode == "corona":
+            spades_name = "coronaSPAdes"
+            cite_message = "Meleshko and Korobeynikov, bioRxiv, 2020."
+        elif mode == "rnaviral":
+            spades_name = "rnaviralSPAdes"
+            cite_message = "Meleshko and Korobeynikov, bioRxiv, 2020."
+        elif mode == "rna":
+            spades_name = "rnaSPAdes"
+            cite_message = "Bushmanova et al., GigaScience, 2019."
+        else:
+            spades_name = "SPAdes"
+            cite_message = "Prjibelski et al., Current protocols in bioinformatics, 2020."
+
+        log.info("Thank you for using %s!" % spades_name)
+        log.info("If you use it in your research please cite:")
+        log.info(cite_message)
+
         log.removeHandler(log_handler)
 
 
