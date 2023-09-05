@@ -660,35 +660,62 @@ def main(args):
 
         if mode == "plasmid":
             spades_name = "plasmidSPAdes"
-            cite_message = "Antipov et al., Bioinformatics, 2016."
+            cite_message = ("Antipov, D., Hartwick, N., Shen, M., Raiko, M., Lapidus, A. and Pevzner, P.A., 2016. "
+                            "plasmidSPAdes: assembling plasmids from whole genome sequencing data. "
+                            "Bioinformatics, 32(22), pp.3380-3387.")
+            doi = "doi.org/10.1093/bioinformatics/btw493"
         elif mode == "bgc":
             spades_name = "BiosyntheticSPAdes"
-            cite_message = "Meleshko et al., Genome Research, 2019."
+            cite_message = ("Meleshko, D., Mohimani, H., Tracanna, V., Hajirasouliha, I., Medema, M.H., "
+                            "Korobeynikov, A.  and Pevzner, P.A., 2019. BiosyntheticSPAdes: reconstructing "
+                            "biosynthetic gene clusters from assembly graphs. Genome research, 29(8), pp.1352-1362.")
+            doi = "doi.org/10.1101/gr.243477.118"
         elif mode == "meta":
             spades_name = "metaSPAdes"
-            cite_message = "Nurk et al., Genome Research, 2017"
+            cite_message = ("Nurk, S., Meleshko, D., Korobeynikov, A. and Pevzner, P.A., 2017. "
+                            "metaSPAdes: a new versatile metagenomic assembler. "
+                            "Genome research, 27(5), pp.824-834.")
+            doi = "doi.org/10.1101/gr.213959.116"
         elif mode == "metaplasmid":
             spades_name = "metaplasmidSPAdes"
-            cite_message = "Antipov et al., Genome Research, 2019."
+            cite_message = ("Antipov, D., Raiko, M., Lapidus, A. and Pevzner, P.A., 2019. "
+                            "Plasmid detection and assembly in genomic and metagenomic data sets. "
+                            "Genome research, 29(6), pp.961-968.")
+            doi = "doi.org/10.1101/gr.241299.118"
         elif mode == "metaviral":
             spades_name = "metaviralSPAdes"
-            cite_message = "Antipov et al., Bioinformatics 2020."
+            cite_message = ("Antipov, D., Raiko, M., Lapidus, A. and Pevzner, P.A., 2020. "
+                            "Metaviral SPAdes: assembly of viruses from metagenomic data. "
+                            "Bioinformatics, 36(14), pp.4126-4129.")
+            doi = "doi.org/10.1093/bioinformatics/btaa490"
         elif mode == "corona":
             spades_name = "coronaSPAdes"
-            cite_message = "Meleshko and Korobeynikov, bioRxiv, 2020."
+            cite_message = ("Meleshko, D., Hajirasouliha, I. and Korobeynikov, A., 2022. "
+                            "coronaSPAdes: from biosynthetic gene clusters to RNA viral assemblies. "
+                            "Bioinformatics, 38(1), pp.1-8.")
+            doi = "doi.org/10.1093/bioinformatics/btab597"
         elif mode == "rnaviral":
             spades_name = "rnaviralSPAdes"
-            cite_message = "Meleshko and Korobeynikov, bioRxiv, 2020."
+            cite_message = ("Korobeynikov, A. and Meleshko, D., 2022. Benchmarking state-of-the-art approaches "
+                            "for norovirus genome assembly in metagenome sample.")
+            doi = "doi.org/10.21203/rs.3.rs-1827448/v1"
         elif mode == "rna":
             spades_name = "rnaSPAdes"
-            cite_message = "Bushmanova et al., GigaScience, 2019."
+            cite_message = ("Bushmanova, E., Antipov, D., Lapidus, A. and Prjibelski, A.D., 2019. "
+                            "rnaSPAdes: a de novo transcriptome assembler and its application to RNA-Seq data. "
+                            "GigaScience, 8(9), p.giz100.")
+            doi = "doi.org/10.1093/gigascience/giz100"
         else:
             spades_name = "SPAdes"
-            cite_message = "Prjibelski et al., Current protocols in bioinformatics, 2020."
+            cite_message = ("Prjibelski, A., Antipov, D., Meleshko, D., Lapidus, A. and Korobeynikov, A., 2020. "
+                            "Using SPAdes de novo assembler. Current protocols in bioinformatics, 70(1), p.e102.")
+            doi = "doi.org/10.1002/cpbi.102"
 
-        log.info("Thank you for using %s!" % spades_name)
-        log.info("If you use it in your research please cite:")
-        log.info(cite_message)
+        log.info("Thank you for using %s! If you use it in your research, please cite:" % spades_name)
+        log.info("")
+        log.info("  %s" % cite_message)
+        log.info("  %s" % doi)
+        log.info("")
 
         log.removeHandler(log_handler)
 
