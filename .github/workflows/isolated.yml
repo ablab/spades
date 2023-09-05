@@ -1,4 +1,4 @@
-name: SPAdes isolated tests
+name: SPAdes isolated datasets tests
 
 on:
   workflow_dispatch:
