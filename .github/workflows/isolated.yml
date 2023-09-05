@@ -1,0 +1,11 @@
+name: SPAdes isolated datasets tests
+
+on:
+  workflow_dispatch:
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
