@@ -1,4 +1,4 @@
-name: SPAdes basic tests
+name: SPAdes usecases
 
 on:
   workflow_dispatch:
