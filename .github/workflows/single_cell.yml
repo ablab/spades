@@ -5,7 +5,371 @@ on:
 
 env:
   BUILD_TYPE: Release
+  BUILD_DIR: ${{github.workspace}}/build
+  INSTALL_DIR: ${{github.workspace}}/spades
+  SRC_DIR: ${{github.workspace}}/assembler/src
+  PKG: SPAdes-3.16.0-dev-Linux
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    name: '🚧 Build SPAdes'
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: '⚙️ Install ccache'
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+
+      - name: '⚙️ Configure CMake'
+        run: >
+          cmake
+          -B ${{env.BUILD_DIR}}
+          -S ${{env.SRC_DIR}}
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
+
+      - name: '🚧 Build'
+        run: >
+          cmake
+          --build ${{env.BUILD_DIR}}
+          -j16
+          -t package
+
+      - name: '📦 Package'
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
+
+  sc-ecoli-deeptrench:
+    name: 'Single-cell E.coli deeptrench'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/spades_tests/SC_E.coli_deeptrench.info
+
+  sc-ecoli-jgi-lane7:
+    name: 'Single-cell E.coli JGI lane 7'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/spades_tests/SC_E.coli_JGI_lane7.info
+
+  sc-ecoli-jgi-lane7-2libs:
+    name: 'Single-cell E.coli JGI lane 7 2 libraries'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/spades_tests/SC_E.coli_JGI_lane7_2lib.info
+
+  sc-ctg-ecoli-ucsd-lane1:
+    name: 'Single-cell+contigs E.coli UCSD lane 1'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/spades_tests/SC_CGT_E.coli_UCSD_lane1.info
+
+  sc-pheparinus-jgi-lane7:
+    name: 'Single-cell P.heparinus JGI lane 7'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/spades_tests/SC_P.heparinus_JGI_lane7.info
+
+  sc-mruber-jgi-lane9:
+    name: 'Single-cell M.ruber JGI lane 9'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/spades_tests/SC_M.ruber_JGI_lane9.info
+
+  sc-pmarinus:
+    name: 'Single-cell P.marinus'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/spades_tests/SC_P.marinus.info
+
+  sc-pb-tm6:
+    name: 'Single-cell+PacBio TM6'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/spades_tests/SC_PB_Tm6.info
+
+  sc-se-pmarinus:
+    name: 'Single-cell single-end P.marinus'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/spades_tests/SC_SE_P.marinus.info
+
+  sc-ctg-ecoli-ucsd-lane1:
+    name: 'Single-cell+contigs E.coli UCSD lane 1'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/spades_tests/SC_CGT_E.coli_UCSD_lane1.info

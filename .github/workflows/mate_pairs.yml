@@ -5,7 +5,276 @@ on:
 
 env:
   BUILD_TYPE: Release
+  BUILD_DIR: ${{github.workspace}}/build
+  INSTALL_DIR: ${{github.workspace}}/spades
+  SRC_DIR: ${{github.workspace}}/assembler/src
+  PKG: SPAdes-3.16.0-dev-Linux
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    name: '🚧 Build SPAdes'
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: '⚙️ Install ccache'
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+
+      - name: '⚙️ Configure CMake'
+        run: >
+          cmake
+          -B ${{env.BUILD_DIR}}
+          -S ${{env.SRC_DIR}}
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
+
+      - name: '🚧 Build'
+        run: >
+          cmake
+          --build ${{env.BUILD_DIR}}
+          -j16
+          -t package
+
+      - name: '📦 Package'
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
+
+  iso-ecoli-is220:
+    name: 'Isolated E.coli is220'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/spades_tests/ISO_E.coli_is220.info
+
+  iso-lgasseri:
+    name: 'Isolated L.gasseri'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/spades_tests/ISO_L.gasseri.info
+
+  mp-amirum:
+    name: 'Mate-pairs A.mirum'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/spades_tests/MP_A.mirum.info
+
+  mp-lgasseri:
+    name: 'Mate-pairs L.gasseri'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/spades_tests/MP_L.gasseri.info
+
+  nx-kpneumoniae:
+    name: 'Nextera mate-pairs K.pneumoniae'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/spades_tests/NX_K.pneumoniae.info
+
+  nx-rsphaeroides:
+    name: 'Nextera mate-pairs R.sphaeroides'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/spades_tests/NX_R.sphaeroides.info
+          
+  mp-ssmaragdinae:
+    name: 'Mate-pairs S.smaragdinae quaked'
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/spades_tests/MP_S.smaragdinae_quake.info
+
