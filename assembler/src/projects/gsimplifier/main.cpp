@@ -13,7 +13,7 @@
 #include "io/binary/graph_pack.hpp"
 #include "utils/segfault_handler.hpp"
 
-#include "projects/unitig_coverage/profile_storage.hpp"
+#include "projects/cds_subgraphs/profile_storage.hpp"
 
 #include "version.hpp"
 

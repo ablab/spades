@@ -18,12 +18,22 @@ add_executable(cds-subgraphs
 add_executable(cds-mapping-stats
                stats.cpp)
 
+add_executable(mag-improve
+               mag_improve.cpp)
+
+add_executable(unitig-coverage
+               unitig_coverage.cpp profile_storage.cpp)
+             
 target_link_libraries(cds-subgraphs toolchain common_modules ${COMMON_LIBRARIES})
 target_link_libraries(cds-mapping-stats toolchain common_modules ${COMMON_LIBRARIES})
+target_link_libraries(mag-improve toolchain common_modules ${COMMON_LIBRARIES})
+target_link_libraries(unitig-coverage toolchain graphio common_modules ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(cds-subgraphs PROPERTIES LINK_SEARCH_END_STATIC 1)
   set_target_properties(cds-mapping-stats PROPERTIES LINK_SEARCH_END_STATIC 1)
+  set_target_properties(mag-improve PROPERTIES LINK_SEARCH_END_STATIC 1)
+  set_target_properties(unitig-coverage PROPERTIES LINK_SEARCH_END_STATIC 1)  
 endif()
 
 install(TARGETS cds-subgraphs
@@ -31,5 +41,9 @@ install(TARGETS cds-subgraphs
         COMPONENT cds-subgraphs)
 
 install(TARGETS cds-mapping-stats
+        DESTINATION bin
+        COMPONENT cds-subgraphs)
+
+install(TARGETS mag-improve
         DESTINATION bin
         COMPONENT cds-subgraphs)
