@@ -21,8 +21,12 @@ set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH}
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
+# Add some utility macro
+include(utils)
+
 # Define various dirs
 set(SPADES_MAIN_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(SPADES_MAIN_PROJ_DIR ${SPADES_MAIN_SRC_DIR}/projects)
 set(SPADES_MODULES_DIR ${SPADES_MAIN_SRC_DIR}/common)
 set(SPADES_MAIN_INCLUDE_DIR ${SPADES_MAIN_SRC_DIR}/include)
 set(SPADES_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
@@ -101,9 +105,9 @@ else()
 endif()
 
 # sub projects
+include(proj)
 add_subdirectory(common)
 add_subdirectory(projects)
-
 
 # FIXME: Should we just configure spades_init instead?
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../VERSION"
