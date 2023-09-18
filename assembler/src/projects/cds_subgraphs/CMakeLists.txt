@@ -13,7 +13,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_executable(cds-subgraphs
                stop_condon_finder.cpp
                subgraph_extraction.cpp
-               main.cpp)
+               cds_subgraphs.cpp)
 
 add_executable(cds-mapping-stats
                stats.cpp)
@@ -28,8 +28,8 @@ endif()
 
 install(TARGETS cds-subgraphs
         DESTINATION bin
-        COMPONENT runtime)
+        COMPONENT cds-subgraphs)
 
 install(TARGETS cds-mapping-stats
         DESTINATION bin
-        COMPONENT runtime)
+        COMPONENT cds-subgraphs)

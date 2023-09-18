@@ -10,7 +10,7 @@ project(unitig-coverage CXX)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(unitig-coverage
-               main.cpp profile_storage.cpp)
+               unitig_coverage.cpp profile_storage.cpp)
 
 target_link_libraries(unitig-coverage toolchain graphio common_modules ${COMMON_LIBRARIES})
 

@@ -10,7 +10,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 
 add_executable(mag-improve
-               main.cpp)
+               mag-improve.cpp)
 
 target_link_libraries(mag-improve toolchain common_modules ${COMMON_LIBRARIES})
 
@@ -20,4 +20,4 @@ endif()
 
 install(TARGETS mag-improve
         DESTINATION bin
-        COMPONENT runtime)
+        COMPONENT cds-subgraphs)
