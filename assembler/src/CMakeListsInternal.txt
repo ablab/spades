@@ -6,15 +6,11 @@
 ############################################################################
 
 if (SPADES_BUILD_INTERNAL)
-  add_subdirectory(projects/online_vis)
-  add_subdirectory(projects/mts)
   add_subdirectory(test/include_test)
   add_subdirectory(test/debruijn)
   add_subdirectory(test/examples)
   add_subdirectory(test/adt)
 else()
-  add_subdirectory(projects/online_vis EXCLUDE_FROM_ALL)
-  add_subdirectory(projects/mts EXCLUDE_FROM_ALL)
   add_subdirectory(test/include_test EXCLUDE_FROM_ALL)
   add_subdirectory(test/debruijn EXCLUDE_FROM_ALL)
   add_subdirectory(test/adt EXCLUDE_FROM_ALL)

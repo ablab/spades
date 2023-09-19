@@ -6,11 +6,12 @@
 # See file LICENSE for details.
 ############################################################################
 
-#project(SpadesToolkit
-#        LANGUAGES C CXX)
-
 # Hard prerequisites
 cmake_minimum_required(VERSION 3.16)
+
+project(SpadesToolkit
+        VERSION 3.16.0
+        LANGUAGES C CXX)
 
 # allow more human readable "if then else" constructs
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
@@ -34,7 +35,6 @@ set(SPADES_TOOLS_BINARY_DIR ${SPADES_BINARY_DIR}/bin)
 set(SPADES_BUILT_INCLUDE_DIR ${SPADES_BINARY_DIR}/include)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${SPADES_TOOLS_BINARY_DIR})
 set(EXT_DIR "${CMAKE_SOURCE_DIR}/../ext")
-set(SPADES_CFG_DIR "${CMAKE_SOURCE_DIR}/../configs")
 
 # Uncomment for gprof profiling
 #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
@@ -87,7 +87,7 @@ configure_file("${SPADES_MAIN_INCLUDE_DIR}/version-gen.hpp.in"
                "${SPADES_BUILT_INCLUDE_DIR}/version-gen.hpp")
 
 # Build external dependencies (if any)
-add_subdirectory("${EXT_DIR}/src" "${Project_BINARY_DIR}/ext")
+add_subdirectory("${EXT_DIR}/src" "${PROJECT_BINARY_DIR}/ext")
 
 # Setup warnings
 add_compile_options(-Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-long-long -Wwrite-strings)
