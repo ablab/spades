@@ -21,7 +21,7 @@ endif()
 
 # Always include SPAdes by default
 if (SPADES_ENABLE_PROJECTS STREQUAL "")
-  set(SPADES_ENABLE_PROJECTS "spades")
+  set(SPADES_ENABLE_PROJECTS "spades;spades_tools")
 endif()
 
 foreach(proj ${SPADES_ENABLE_PROJECTS})
