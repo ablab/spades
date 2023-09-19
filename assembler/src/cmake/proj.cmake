@@ -13,9 +13,15 @@ set(SPADES_EXTRA_PROJECTS "mts;online_vis;cds_subgraphs")
 set(SPADES_KNOWN_PROJECTS "${SPADES_ALL_PROJECTS};${SPADES_EXTRA_PROJECTS}")
 set(SPADES_ENABLE_PROJECTS "" CACHE STRING
     "Semicolon-separated list of projects to build (${SPADES_KNOWN_PROJECTS}), or \"all\".")
+
 # Make sure expansion happens first to not handle "all" in rest of the checks.
-if (SPADES_ENABLE_PROJECTS STREQUAL "all" )
-  set(SPADES_ENABLE_PROJECTS ${SPADES_ALL_PROJECTS})
+if (SPADES_ENABLE_PROJECTS STREQUAL "all")
+  set(SPADES_ENABLE_PROJECTS "${SPADES_ALL_PROJECTS}")
+endif()
+
+# Always include SPAdes by default
+if (SPADES_ENABLE_PROJECTS STREQUAL "")
+  set(SPADES_ENABLE_PROJECTS "spades")
 endif()
 
 foreach(proj ${SPADES_ENABLE_PROJECTS})
