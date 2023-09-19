@@ -1080,7 +1080,7 @@ biosyntheticSPAdes outputs four files of interest:
 
 To provide input data to SPAdes k-mer counting tool `spades-kmercounter ` you may just specify files in [SPAdes-supported formats](#sec3.1) without any flags (after all options) or provide dataset description file in [YAML format](#inputdata:yaml).
 
-Output: <output_dir>/final_kmers - unordered set of kmers in binary format. Kmers from both forward a
+Output: `<output_dir>/final_kmers` - unordered set of kmers in binary format. Kmers from both forward a
 nd reverse-complementary reads are taken into account.
 
 Output format: All kmers are written sequentially without any separators. Each kmer takes the same nu
@@ -1263,6 +1263,7 @@ For more information on parameters and options please refer to main SPAligner ma
 
 Also if you want to align protein sequences please refer to our [pre-release version](https://github.com/ablab/spades/releases/tag/spaligner-paper).
 
+Note that in order you use SPAligner one need either to use pre-built binaries or compiler SPAdes from sources using additional `-DSPADES_ENABLE_PROJECTS=spaligner` option.
 
 <a name="sec5"></a>
 # Citation
