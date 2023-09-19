@@ -24,6 +24,13 @@ foreach(proj ${SPADES_ENABLE_PROJECTS})
   endif()
 endforeach()
 
+if (SPADES_BUILD_INTERNAL)
+  # Always build SPAdes for internal projects
+  list(APPEND SPADES_ENABLE_PROJECTS "spades")
+  list(APPEND SPADES_ENABLE_PROJECTS "mts")
+  list(APPEND SPADES_ENABLE_PROJECTS "online_vis")
+endif()
+
 # Some inter-project dependencies
 if ("spades" IN_LIST SPADES_ENABLE_PROJECTS)
   if (NOT "hammer" IN_LIST SPADES_ENABLE_PROJECTS)
