@@ -103,6 +103,11 @@ def rna_k_values(support, dataset_data, log):
         return [upper_k]
     return [lower_k, upper_k]
 
+def generateK_for_sewage(cfg, dataset_data, log):
+    if cfg.iterative_K == "auto":
+        k_values = [55]
+        cfg.iterative_K = k_values
+        log.info("K values to be used: " + str(k_values))
 
 def generateK_for_rna(cfg, dataset_data, log):
     if cfg.iterative_K == "auto":
@@ -126,7 +131,9 @@ def generateK_for_rnaviral(cfg, dataset_data, log):
 
 
 def generateK(cfg, log, dataset_data, silent=False):
-    if options_storage.args.rna:
+    if options_storage.args.sewage:
+        generateK_for_sewage(cfg, dataset_data, log)
+    elif options_storage.args.rna:
         generateK_for_rna(cfg, dataset_data, log)
     elif options_storage.args.rnaviral:
         generateK_for_rnaviral(cfg, dataset_data, log)
@@ -195,6 +202,9 @@ class SpadesCopyFileStage(stage.Stage):
     def has_hmm(self, output_file = None, latest = None, cfg = None):
         return options_storage.args.bio or options_storage.args.custom_hmms or options_storage.args.corona
 
+    def is_sewage(self, output_file = None, latest = None, cfg = None):
+        return options_storage.args.sewage
+
     def not_rna_copy(self, output_file, latest, cfg):
         return (not options_storage.args.rna) and self.always_copy(output_file, latest, cfg)
 
@@ -228,7 +238,8 @@ class SpadesCopyFileStage(stage.Stage):
             self.OutputFile(self.cfg.result_contigs_paths, "final_contigs.paths", self.not_rna_copy),
             self.OutputFile(self.cfg.result_gene_clusters, "gene_clusters.fasta", self.has_hmm),
             self.OutputFile(self.cfg.result_bgc_statistics, "hmm_statistics.txt", self.has_hmm),
-            self.OutputFile(self.cfg.result_domain_graph, "domain_graph.dot", self.has_hmm)
+            self.OutputFile(self.cfg.result_domain_graph, "domain_graph.dot", self.has_hmm),
+            self.OutputFile(self.cfg.result_sewage_lineages, "lineages.csv", self.is_sewage)
         ]
 
         for filtering_type in options_storage.filtering_types:
@@ -349,6 +360,7 @@ class SpadesStage(stage.Stage):
         self.cfg.__dict__["result_gene_clusters"] = output_files["result_gene_clusters_filename"]
         self.cfg.__dict__["result_bgc_statistics"] = output_files["result_bgc_stats_filename"]
         self.cfg.__dict__["result_domain_graph"] = output_files["result_domain_graph_filename"]
+        self.cfg.__dict__["result_sewage_lineages"] = output_files["result_sewage_lineages_filename"]
 
         if self.cfg.disable_rr:
             self.cfg.__dict__["rr_enable"] = False

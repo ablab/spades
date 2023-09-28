@@ -308,6 +308,7 @@ class LowCoverageEdgeRemovingAlgorithm : public PersistentProcessingAlgorithm<Gr
                                                                               omnigraph::CoverageComparator<Graph>> {
     typedef typename Graph::EdgeId EdgeId;
     typedef PersistentProcessingAlgorithm<Graph, EdgeId, omnigraph::CoverageComparator<Graph>> base;
+    typedef std::function<bool(EdgeId edge)> EdgeCallbackF;
 
     const SimplifInfoContainer simplif_info_;
     const std::string condition_str_;
@@ -315,6 +316,7 @@ class LowCoverageEdgeRemovingAlgorithm : public PersistentProcessingAlgorithm<Gr
 
     func::TypedPredicate<EdgeId> remove_condition_;
     func::TypedPredicate<EdgeId> proceed_condition_;
+    EdgeCallbackF callback_;
 
 protected:
 
@@ -334,6 +336,10 @@ protected:
 
     bool Process(EdgeId e) override {
         TRACE("Checking edge " << this->g().str(e) << " for the removal condition");
+        if (callback_ != nullptr && callback_(e)) {
+            TRACE("Check not passed. Restricted edges.");
+            return false;
+        }
         if (remove_condition_(e)) {
             TRACE("Check passed, removing");
             edge_remover_.DeleteEdge(e);
@@ -348,6 +354,7 @@ public:
                                      const std::string &condition_str,
                                      const SimplifInfoContainer &simplif_info,
                                      std::function<void(EdgeId)> removal_handler = nullptr,
+                                     EdgeCallbackF callback = nullptr,
                                      bool canonical_only = true,
                                      bool track_changes = true)
             : base(g, nullptr,
@@ -358,7 +365,8 @@ public:
               condition_str_(condition_str),
               edge_remover_(g, removal_handler),
               remove_condition_(func::AlwaysFalse<EdgeId>()),
-              proceed_condition_(func::AlwaysTrue<EdgeId>()) {
+              proceed_condition_(func::AlwaysTrue<EdgeId>()),
+              callback_(callback){
 
         ConditionParser<Graph> parser(g, condition_str, simplif_info);
         this->interest_el_finder_ =
@@ -462,6 +470,8 @@ AlgoPtr<Graph> RelativelyLowCoverageDisconnectorInstance(Graph &g,
             removal_handler);
 }
 
+typedef std::function<bool(EdgeId edge)> EdgeCallbackF;
+
 template<class Graph>
 AlgoPtr<Graph> ComplexBRInstance(
     Graph &g,
@@ -527,7 +537,8 @@ template<class Graph>
 AlgoPtr<Graph> RelativeECRemoverInstance(Graph &g,
                                          const config::debruijn_config::simplification::relative_coverage_ec_remover &rcec_config,
                                          const SimplifInfoContainer &info,
-                                         EdgeRemovalHandlerF<Graph> removal_handler) {
+                                         EdgeRemovalHandlerF<Graph> removal_handler,
+                                         EdgeCallbackF callback) {
     if (!rcec_config.enabled)
         return nullptr;
 
@@ -535,19 +546,20 @@ AlgoPtr<Graph> RelativeECRemoverInstance(Graph &g,
             AddRelativeCoverageECCondition(g, rcec_config.rcec_ratio,
                                            AddAlternativesPresenceCondition(g, func::TypedPredicate<typename Graph::EdgeId>
                                                    (LengthUpperBound<Graph>(g, rcec_config.max_ec_length)))),
-            info.chunk_cnt(), removal_handler, /*canonical_only*/true);
+            info.chunk_cnt(), removal_handler, /*canonical_only*/true, adt::identity(), true, callback);
 }
+
 
 template<class Graph>
 AlgoPtr<Graph> ECRemoverInstance(Graph &g,
                                  const config::debruijn_config::simplification::erroneous_connections_remover &ec_config,
                                  const SimplifInfoContainer &info,
-                                 EdgeRemovalHandlerF<Graph> removal_handler = nullptr) {
+                                 EdgeRemovalHandlerF<Graph> removal_handler = nullptr, EdgeCallbackF callback = nullptr) {
     if (ec_config.condition.empty())
         return nullptr;
 
     return std::make_shared<LowCoverageEdgeRemovingAlgorithm<Graph>>(
-            g, ec_config.condition, info, removal_handler);
+            g, ec_config.condition, info, removal_handler, callback);
 }
 
 template<class Graph>
@@ -616,7 +628,8 @@ AlgoPtr<Graph> TopologyTipClipperInstance(
                               condition, info, removal_handler, /*track changes*/false);
 }
 
-typedef std::function<bool(EdgeId edge, const std::vector<EdgeId>& path)> BulgeCallbackF;
+typedef std::function<bool(EdgeId edge)> EdgeCallbackF;
+typedef std::function<bool(EdgeId edge, std::vector<EdgeId>)> BulgeCallbackF;
 
 template<class Graph>
 AlgoPtr<Graph> BRInstance(Graph &g,
@@ -676,7 +689,7 @@ AlgoPtr<Graph> LowFlankDisconnectorInstance(Graph &g,
 template<class Graph>
 AlgoPtr<Graph> LowCoverageEdgeRemoverInstance(Graph &g,
                                               const config::debruijn_config::simplification::low_covered_edge_remover &lcer_config,
-                                              const SimplifInfoContainer &info) {
+                                              const SimplifInfoContainer &info, EdgeCallbackF callback = nullptr) {
     if (!lcer_config.enabled)
         return nullptr;
 
@@ -689,7 +702,9 @@ AlgoPtr<Graph> LowCoverageEdgeRemoverInstance(Graph &g,
                         info.chunk_cnt(),
                         (EdgeRemovalHandlerF<Graph>)nullptr,
                         /*canonical_only*/true,
-                        CoverageComparator<Graph>(g));
+                        CoverageComparator<Graph>(g),
+                        true,
+                        callback);
 }
 
 template<class Graph>

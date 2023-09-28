@@ -29,7 +29,8 @@ def add_configs(command, configs_dir, cfg):
                            ("plasmid", "plasmid_mode"),
                            ("metaviral", "metaviral_mode"),
                            ("metaplasmid", "metaplasmid_mode"),
-                           ("rnaviral", "rnaviral_mode")]
+                           ("rnaviral", "rnaviral_mode"),
+                           ("sewage", "sewage_mode")]
     # ("careful", "careful_mode"),
     for (mode, config) in mode_config_mapping:
         if options_storage.args.__dict__[mode]:
@@ -62,6 +63,9 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
     if "checkpoints" in cfg.__dict__:
         subst_dict["checkpoints"] = cfg.checkpoints
     subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
+    subst_dict["sewage"] = bool_to_str(cfg.sewage)
+    subst_dict["sewage_matrix"] = cfg.sewage_matrix
+
     subst_dict["time_tracer_enabled"] = bool_to_str(cfg.time_tracer)
     subst_dict["gap_closer_enable"] = bool_to_str(last_one or K >= options_storage.GAP_CLOSER_ENABLE_MIN_K)
     subst_dict["rr_enable"] = bool_to_str(last_one and cfg.rr_enable)

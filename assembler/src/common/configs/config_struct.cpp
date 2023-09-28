@@ -797,6 +797,8 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     load(cfg.bwa, pt, "bwa_aligner", complete);
 
     load(cfg.series_analysis, pt, "series_analysis", complete);
+    load(cfg.sewage, pt, "sewage", complete);
+    load(cfg.sewage_matrix, pt, "sewage_matrix", complete);
 
     load(cfg.ss, pt, "strand_specificity", complete);
     load(cfg.calculate_coverage_for_each_lib, pt, "calculate_coverage_for_each_lib", complete);
@@ -809,8 +811,10 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
     }
 
     if (pt.count("preliminary_simp")) {
-        CHECK_FATAL_ERROR(!cfg.preliminary_simp, "Option preliminary can be loaded only once");
-        cfg.preliminary_simp = cfg.simp;
+        //CHECK_FATAL_ERROR(!cfg.preliminary_simp, "Option preliminary can be loaded only once");
+        if (!cfg.preliminary_simp) {
+            cfg.preliminary_simp = cfg.simp;
+        }
         load(*cfg.preliminary_simp, pt, "preliminary_simp", false);
     }
     if (pt.count("prelim_pe")) {

@@ -315,6 +315,12 @@ def add_basic_args(pgroup_basic):
                               help="this flag is required for biosyntheticSPAdes mode"
                               if not help_hidden else argparse.SUPPRESS,
                               action="store_true")
+    pgroup_basic.add_argument("--sewage",
+                              dest="sewage",
+                              help="this flag is required for sewage mode"
+                              if not help_hidden else argparse.SUPPRESS,
+                              action="store_true")
+
     pgroup_basic.add_argument("--corona",
                               dest="corona",
                               help="this flag is required for coronaSPAdes mode"
@@ -926,6 +932,9 @@ def add_to_cfg(cfg, log, bin_home, spades_home, args):
     cfg["common"].__dict__["max_threads"] = args.threads
     cfg["common"].__dict__["max_memory"] = args.memory
     cfg["common"].__dict__["developer_mode"] = args.developer_mode
+    cfg["common"].__dict__["sewage"] = args.sewage
+    cfg["common"].__dict__["sewage_matrix"] = os.path.join(spades_home, "sewage/usher_barcodes.csv")
+
     cfg["common"].__dict__["time_tracer"] = args.time_tracer
     if args.series_analysis:
         cfg["common"].__dict__["series_analysis"] = args.series_analysis
@@ -1048,13 +1057,14 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
             support.error("you cannot specify --careful in RNA-Seq mode!", log)
 
     modes_count =  [args.large_genome, args.rna, args.plasmid, args.meta, args.single_cell, args.isolate, args.rnaviral,
-                    args.corona, args.metaviral, args.metaplasmid, args.bio].count(True)
+                    args.corona, args.metaviral, args.metaplasmid, args.bio, args.sewage].count(True)
     is_metaplasmid = modes_count == 3 and [args.meta, args.plasmid, args.metaplasmid].count(True) == 3
     is_bgc = modes_count == 2 and [args.meta, args.bio].count(True) == 2
     is_metaviral = modes_count == 3 and [args.meta, args.plasmid, args.metaviral].count(True) == 3
     is_rnaviral = modes_count == 2 and [args.meta, args.rnaviral].count(True) == 2
     is_corona = modes_count == 3 and [args.meta, args.rnaviral, args.corona].count(True) == 3
-    if not (modes_count <= 1 or is_metaplasmid or is_bgc or is_metaviral or is_rnaviral or is_corona):
+    is_sewage = modes_count == 4 and [args.meta, args.rnaviral, args.corona, args.sewage].count(True) == 4
+    if not (modes_count <= 1 or is_metaplasmid or is_bgc or is_metaviral or is_rnaviral or is_corona or is_sewage):
         # correct cases:
         # - either there is 1 or 0 modes specified
         # - or there is 1 of 5 allowed combinations

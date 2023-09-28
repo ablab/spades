@@ -396,6 +396,7 @@ private:
     DECL_LOGGER("PersistentProcessingAlgorithm"); 
 };
 
+
 template<class Graph,
         class Priority = adt::identity>
 class ParallelEdgeRemovingAlgorithm : public PersistentProcessingAlgorithm<Graph,
@@ -403,15 +404,21 @@ class ParallelEdgeRemovingAlgorithm : public PersistentProcessingAlgorithm<Graph
         Priority> {
     typedef typename Graph::EdgeId EdgeId;
     typedef PersistentProcessingAlgorithm<Graph, EdgeId, Priority> base;
+    typedef std::function<bool(EdgeId edge)> KeepConditionF;
 
     const func::TypedPredicate<EdgeId> remove_condition_;
     EdgeRemover<Graph> edge_remover_;
-
+    KeepConditionF callback_;
 protected:
 
     bool Process(EdgeId e) override {
         TRACE("Checking edge " << this->g().str(e) << " for the removal condition");
-        if (remove_condition_(e)) {
+        if (callback_ != nullptr && callback_(e)) {
+            TRACE("Keep condition triggered. Do not remove.");
+            return false;
+        }
+
+        if (remove_condition_(e) ) {
             TRACE("Check passed, removing");
             edge_remover_.DeleteEdge(e);
             return true;
@@ -427,12 +434,14 @@ public:
                                   std::function<void(EdgeId)> removal_handler = nullptr,
                                   bool canonical_only = false,
                                   const Priority& priority = Priority(),
-                                  bool track_changes = true)
+                                  bool track_changes = true,
+                                  KeepConditionF callback = nullptr)
             : base(g,
                    std::make_shared<ParallelInterestingElementFinder<Graph>>(remove_condition, chunk_cnt),
                    canonical_only, priority, track_changes),
                    remove_condition_(remove_condition),
-                   edge_remover_(g, removal_handler) {
+                   edge_remover_(g, removal_handler),
+                   callback_(callback) {
     }
 
 private:

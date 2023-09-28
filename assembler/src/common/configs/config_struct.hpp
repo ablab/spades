@@ -428,6 +428,9 @@ struct debruijn_config {
     std::filesystem::path log_filename;
     std::string series_analysis;
 
+    bool sewage;
+    std::string sewage_matrix;
+
     bool output_pictures;
     bool output_nonfinal_contigs;
     bool compute_paths_number;

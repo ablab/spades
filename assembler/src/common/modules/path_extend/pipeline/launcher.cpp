@@ -645,7 +645,6 @@ void PathExtendLauncher::Launch() {
     
     GraphCoverageMap polished_map(graph_, contig_paths, true);
     DebugOutputPaths(contig_paths, "polished_paths");
-
     TraverseLoops(contig_paths, polished_map);
     DebugOutputPaths(contig_paths, "loop_traveresed");
 

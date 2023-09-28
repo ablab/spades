@@ -49,6 +49,7 @@ filtering_types = ["hard", "soft"]
 bgc_stats_name = "hmm_statistics.txt"
 gene_clusters_name = "gene_clusters.fasta"
 domain_graph_name = "domain_graph.dot"
+sewage_lineages = "lineages.csv"
 
 pipeline_state_dir = "pipeline_state"
 biosyntheticspades_hmms = "biosynthetic_spades_hmms"

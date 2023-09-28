@@ -1,0 +1,61 @@
+simp {
+        ; bulge remover:
+        br
+        {
+            enabled true
+            max_coverage			10.0
+            max_relative_coverage		0.05		; bulge_cov < this * not_bulge_cov
+            max_delta			10
+            max_relative_delta		0.1
+            dijkstra_vertex_limit   3000
+            parallel true
+        }
+       ; final bulge remover:
+       final_br
+       {
+        	enabled false
+       }
+       ; complex bulge remover
+       cbr
+       {
+           enabled false
+       }
+    ; relative coverage erroneous component remover:
+    rcc
+    {
+        enabled true
+        coverage_gap    15.
+        max_length_coeff    3.0
+        max_length_with_tips_coeff   5.0
+        max_vertex_cnt      100
+        max_ec_length_coefficient   300
+        max_coverage_coeff  -1.0
+    }
+
+    ; tip clipper:
+    tc
+    {
+        ; rctc: tip_cov < rctc * not_tip_cov
+        ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
+        condition               "{ rl 0.2, cb 10.0 } { rlmk 1.1, rctc 2.0, cb 10.0 }"
+    }
+
+     final_tc
+     {
+     condition ""
+     }
+}
+
+preliminary_simp
+{
+    ; bulge remover:
+    br
+    {
+        enabled true
+        max_coverage			500.0
+        max_relative_coverage		0.5		; bulge_cov < this * not_bulge_cov
+        max_delta			10
+        max_relative_delta		0.1
+    }
+
+}

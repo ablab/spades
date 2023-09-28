@@ -22,6 +22,8 @@
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/stage.hpp"
 #include "alignment/kmer_mapper.hpp"
+#include "wastewater_disentangle.hpp"
+
 #include "stages/genomic_info_filler.hpp"
 #include "stages/read_conversion.hpp"
 #include "stages/construction.hpp"
@@ -171,7 +173,8 @@ static void AddSimplificationStages(StageManager &SPAdes) {
 
     if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
         SPAdes.add<debruijn_graph::GapClosing>("late_gapcloser");
-
+    if (cfg::get().sewage)
+        SPAdes.add<debruijn_graph::WastewaterDisentangle>();
     SPAdes.add<debruijn_graph::SimplificationCleanup>();
 
     if (cfg::get().correct_mismatches)
@@ -247,6 +250,8 @@ void assemble_genome() {
 
     if (!AssemblyGraphPresent()) {
         AddConstructionStages(SPAdes);
+        if (cfg::get().sewage)
+            SPAdes.add<debruijn_graph::RestrictedEdgesFilling>();
 
         AddSimplificationStages(SPAdes);
 

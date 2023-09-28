@@ -39,6 +39,9 @@ entry_point read_conversion
 
 checkpoints none
 developer_mode true
+sewage false
+sewage_matrix None
+
 scaffold_correction_mode false
 
 ; enabled (1) or disabled (0) repeat resolution (former "paired_mode")

@@ -22,7 +22,8 @@ add_library(spades-stages STATIC
             domain_graph_construction.cpp
             restricted_edges_filling.cpp
             load_graph.cpp
-            domain_graph.cpp)
+            domain_graph.cpp
+            wastewater_disentangle.cpp)
 
 target_link_libraries(spades-stages hmmercpp spoa easel)
 
@@ -52,6 +53,10 @@ install(DIRECTORY "biosynthetic_spades_hmms"
         COMPONENT spades)
 # coronaSPAdes default HMM profiles
 install(DIRECTORY "coronaspades_hmms"
+        DESTINATION share/spades
+        COMPONENT spades)
+# sewage usher matrix
+install(DIRECTORY "sewage"
         DESTINATION share/spades
         COMPONENT spades)
 

@@ -90,6 +90,8 @@ def print_used_values(cfg, log):
 
         if options_storage.args.iontorrent:
             log.info("  IonTorrent data")
+        if options_storage.args.sewage:
+            log.info("  Sewage mode")
         if options_storage.args.bio:
             log.info("  BiosyntheticSPAdes mode")
         if options_storage.args.rnaviral:
@@ -489,6 +491,7 @@ def get_output_files(cfg):
                                                                      options_storage.transcripts_paths)
     output_files["result_bgc_stats_filename"] = os.path.join(cfg["common"].output_dir, options_storage.bgc_stats_name)
     output_files["result_domain_graph_filename"] = os.path.join(cfg["common"].output_dir, options_storage.domain_graph_name)
+    output_files["result_sewage_lineages_filename"] = os.path.join(cfg["common"].output_dir, options_storage.sewage_lineages)
     output_files["result_gene_clusters_filename"] = os.path.join(cfg["common"].output_dir, options_storage.scaffolds_name)
     output_files["misc_dir"] = os.path.join(cfg["common"].output_dir, "misc")
     ### if mismatch correction is enabled then result contigs are copied to misc directory

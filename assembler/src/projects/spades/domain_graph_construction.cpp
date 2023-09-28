@@ -25,6 +25,7 @@ class SetOfForbiddenEdgesPathChooser : public omnigraph::PathProcessor<Graph>::C
     const Graph &g_;
     std::set<std::vector<EdgeId>> forbidden_edges_;
     std::vector<EdgeId> answer_path_;
+    std::vector<std::vector<EdgeId>> all_known_answers_;
 
     bool CheckCoverageDiff(const std::vector<EdgeId> &path) const {
         double min_coverage = std::numeric_limits<double>::max();
@@ -67,6 +68,7 @@ public:
                return;
 
             answer_path_ = forward_path;
+            all_known_answers_.push_back(answer_path_);
             return;
         }
 
@@ -75,6 +77,7 @@ public:
 
         auto current = path_extend::BidirectionalPath::create(g_, answer_path_);
         auto candidate = path_extend::BidirectionalPath::create(g_, forward_path);
+        all_known_answers_.push_back(answer_path_);
         if (IsNewPathBetter(*current, *candidate)) {
             answer_path_ = forward_path;
         }
@@ -82,11 +85,17 @@ public:
 
     void reset() {
         answer_path_.clear();
+        all_known_answers_.clear();
     }
 
     const std::vector<EdgeId>& answer() {
         return answer_path_;
     }
+
+    const std::vector<std::vector<EdgeId>>& all_answers() const {
+        return all_known_answers_;
+    }
+
 };
 
 class DomainGraphConstructor {
@@ -123,13 +132,15 @@ private:
             DEBUG("Trying to find paths from " << g.EdgeEnd(domain_graph_.domain_edges(v1).back()) << " to " << g.EdgeStart(domain_graph_.domain_edges(v2).front()));
             ProcessPaths(g, min_len, 4000 - last_mapping - first_mapping, g.EdgeEnd(domain_graph_.domain_edges(v1).back()), g.EdgeStart(domain_graph_.domain_edges(v2).front()), chooser);
             if (!chooser.answer().empty()) {
-                DEBUG("Path was found");
-                auto p = path_extend::BidirectionalPath::create(g, chooser.answer());
-                DEBUG("Start vertex: " << g.EdgeStart(p->Front()).int_id());
-                DEBUG("End vertex: " << g.EdgeEnd(p->Back()).int_id());
-                DEBUG("Path:");
-                p->PrintDEBUG();
-                domain_graph_.AddEdge(v1, v2, false, chooser.answer(), p->Length() + last_mapping + first_mapping);
+                for (const auto &connecting_path : chooser.all_answers()) {
+                    DEBUG("Path was found");
+                    auto p = path_extend::BidirectionalPath::create(g, connecting_path);
+                    DEBUG("Start vertex: " << g.EdgeStart(p->Front()).int_id());
+                    DEBUG("End vertex: " << g.EdgeEnd(p->Back()).int_id());
+                    DEBUG("Path:");
+                    p->PrintDEBUG();
+                    domain_graph_.AddEdge(v1, v2, false, connecting_path, p->Length() + last_mapping + first_mapping);
+                }
             }
             else {
                 DEBUG("Path was not found");

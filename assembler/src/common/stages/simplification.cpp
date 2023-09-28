@@ -133,6 +133,16 @@ public:
         CompositeAlgorithm<Graph> algo(g_);
         const auto &flanking_cov = gp_.get<FlankingCoverage<Graph>>();
 
+        typedef std::function<bool(EdgeId edge)> EdgeCallbackF;
+        bool use_restricted = gp_.count<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>("restricted_edges");
+        EdgeCallbackF edge_callback_f = nullptr;
+        if (use_restricted) {
+            edge_callback_f = [this](EdgeId e) {
+                DEBUG("Checking if " << e << " is in restricted edge set");
+                return gp_.get<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>().count(e) > 0;
+            };
+        }
+
         algo.AddAlgo(
                 SelfConjugateEdgeRemoverInstance(g_,
                                                  simplif_cfg_.init_clean.self_conj_condition,
@@ -151,7 +161,8 @@ public:
                     ECRemoverInstance(g_,
                                       debruijn_config::simplification::erroneous_connections_remover(simplif_cfg_.init_clean.ec_condition),
                                       info_container_,
-                                      removal_handler_),
+                                      removal_handler_,
+                                      edge_callback_f),
                     "Initial ec remover");
 
             algo.AddAlgo(
@@ -198,18 +209,25 @@ public:
         //    std::cout << "Edge:" << g_.str(e) << "; cov: " << g_.coverage(e) << "; start " << g_.str(g_.EdgeStart(e)) << "; end " << g_.str(g_.EdgeEnd(e)) << std::endl;
         //};
         //auto extensive_handler = [&] (EdgeId e) {removal_handler_(e) ; printing_handler(e); drawing_handler.HandleDelete(e);};
-        bool use_restricted = gp_.count<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>();
+        bool use_restricted = gp_.count<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>("restricted_edges");
         if (use_restricted) {
             DEBUG("RestrictedEdgeSet is present");
         }
 
-        typedef std::function<bool(EdgeId edge, const std::vector<EdgeId>& path)> BulgeCallbackF;
+        typedef std::function<bool(EdgeId edge)> EdgeCallbackF;
+        typedef std::function<bool(EdgeId edge, std::vector<EdgeId>)> BulgeCallbackF;
         BulgeCallbackF bulge_callback_f = nullptr;
+        EdgeCallbackF edge_callback_f = nullptr;
         if (use_restricted) {
-            bulge_callback_f = [this](EdgeId e, const std::vector<EdgeId>&) {
+            edge_callback_f = [this](EdgeId e) {
                                    DEBUG("Checking if " << e << " is in restricted edge set");
                                    return gp_.get<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>().count(e) > 0;
                                };
+            bulge_callback_f = [this](EdgeId e, std::vector<EdgeId>) {
+                DEBUG("Checking if " << e << " is in restricted edge set");
+                return gp_.get<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>().count(e) > 0;
+            };
+
         }
 
         typename ComponentRemover<Graph>::HandlerF set_removal_handler_f;
@@ -231,7 +249,7 @@ public:
         }
 
         algo.AddAlgo(
-                RelativeECRemoverInstance(g_, simplif_cfg_.rcec, info_container_, removal_handler_),
+                RelativeECRemoverInstance(g_, simplif_cfg_.rcec, info_container_, removal_handler_, edge_callback_f),
                 "Relative coverage erroneous connection remover");
 
         algo.AddAlgo(
@@ -305,7 +323,8 @@ public:
         algo.AddAlgo(
                 LowCoverageEdgeRemoverInstance(g_,
                                                simplif_cfg_.lcer,
-                                               info_container_),
+                                               info_container_,
+                                               edge_callback_f),
                 "Removing edges with low coverage");
 
         AlgorithmRunningHelper<Graph>::LoopedRunPrimaryOpening(algo,
@@ -354,16 +373,24 @@ public:
 
         bool rna_mode = (info_container_.mode() == config::pipeline_type::rna);
 
-        bool use_restricted = gp_.count<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>();
+        bool use_restricted = gp_.count<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>("restricted_edges");
         if (use_restricted) {
             DEBUG("RestrictedEdgeSet is present");
         }
         typedef std::function<bool(EdgeId edge, const std::vector<EdgeId>& path)> BulgeCallbackF;
+        typedef std::function<bool(EdgeId edge)> EdgeCallbackF;
+
         BulgeCallbackF bulge_callback_f = nullptr;
+        EdgeCallbackF edge_callback_f = nullptr;
+
         if (use_restricted) {
             bulge_callback_f = [this](EdgeId e, const std::vector<EdgeId>&) {
                                    return gp_.get<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>().count(e) > 0;
                                };
+            edge_callback_f = [this](EdgeId e) {
+                return gp_.get<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>().count(e) > 0;
+            };
+
         }
 
         INFO("Graph simplification started");
@@ -390,7 +417,7 @@ public:
         }
 
         algo.AddAlgo(ECRemoverInstance(g_, simplif_cfg_.ec, info_container_,
-                                       removal_handler_),
+                                       removal_handler_, edge_callback_f),
                      "Low coverage edge remover");
 
         //all primary option set to closely mimic previous rna behavior
