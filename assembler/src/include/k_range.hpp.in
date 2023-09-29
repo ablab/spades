@@ -8,6 +8,8 @@
 #ifndef K_RANGE_HPP_
 #define K_RANGE_HPP_
 
+#include <cstdlib>
+
 namespace runtime_k {
 
 // K in [MIN_K, MAX_K)
