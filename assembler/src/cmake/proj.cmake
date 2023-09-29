@@ -25,7 +25,7 @@ if (SPADES_ENABLE_PROJECTS STREQUAL "")
 endif()
 
 foreach(proj ${SPADES_ENABLE_PROJECTS})
-  if (NOT proj STREQUAL "spades" AND NOT "${proj}" IN_LIST SPADES_KNOWN_PROJECTS)
+  if (NOT "${proj}" IN_LIST SPADES_KNOWN_PROJECTS)
      MESSAGE(FATAL_ERROR "${proj} isn't a known project: ${SPADES_KNOWN_PROJECTS}.")
   endif()
 endforeach()
