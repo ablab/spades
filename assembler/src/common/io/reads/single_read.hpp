@@ -13,7 +13,6 @@
 #include "sequence/nucl.hpp"
 #include "sequence/sequence_tools.hpp"
 #include "utils/verify.hpp"
-#include "utils/stl_utils.hpp"
 #include "utils/logger/logger.hpp"
 
 #include <string>

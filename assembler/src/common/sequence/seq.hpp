@@ -26,12 +26,6 @@
 #ifndef SEQ_HPP_
 #define SEQ_HPP_
 
-#include <string>
-#include <array>
-#include <algorithm>
-#include <cstring>
-#include <iostream>
-
 #include "utils/verify.hpp"
 #include "nucl.hpp"
 #include "math/log.hpp"
@@ -39,6 +33,12 @@
 
 #define XXH_INLINE_ALL
 #include "xxh/xxhash.h"
+
+#include <string>
+#include <array>
+#include <algorithm>
+#include <cstring>
+#include <iostream>
 
 /**
  * @param T is max number of nucleotides, type for storage

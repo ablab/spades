@@ -15,16 +15,17 @@
 #ifndef RTSEQ_HPP_
 #define RTSEQ_HPP_
 
-#include <string>
-#include "utils/verify.hpp"
-#include <array>
-#include <algorithm>
-#include "nucl.hpp"
-#include "math/log.hpp"
 #include "seq_common.hpp"
 #include "seq.hpp"
 #include "simple_seq.hpp"
+#include "nucl.hpp"
 
+#include "utils/verify.hpp"
+#include "math/log.hpp"
+
+#include <string>
+#include <array>
+#include <algorithm>
 #include <cstring>
 #include <iostream>
 

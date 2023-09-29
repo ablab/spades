@@ -7,16 +7,16 @@
 
 #pragma once
 
-#include <vector>
-#include <string>
-#include <memory>
-#include <cstring>
-
 #include "seq.hpp"
 #include "rtseq.hpp"
 
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
 #include <llvm/Support/TrailingObjects.h>
+
+#include <vector>
+#include <string>
+#include <memory>
+#include <cstring>
 
 // Silence bogus gcc warnings
 #pragma GCC diagnostic push
