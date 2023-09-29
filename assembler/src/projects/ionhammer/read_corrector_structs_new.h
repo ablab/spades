@@ -31,8 +31,6 @@ struct IonEvent {
         fixed_size_(fixed_size),
         is_to_good_correction_(to_good_correction) {}
 
-  IonEvent(const IonEvent& other) = default;
-
   char nucl_;
   char overserved_size_;
   char fixed_size_;

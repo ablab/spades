@@ -205,11 +205,8 @@ public:
 
         for (auto iter = inner_index_.begin(); iter != inner_index_.end(); ++iter){
             filestr << iter->second.size() << std::endl;
-            int non1 = 0;
             for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
                 filestr << " Weight: " << j_iter->weight();
-                if (j_iter->weight() > stats_weight_cutoff)
-                    non1++;
 
                 filestr << " length: " << j_iter->path().size() << " ";
                 for (auto p_iter = j_iter->path().begin(); p_iter != j_iter->path().end(); ++p_iter) {
