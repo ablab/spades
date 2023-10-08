@@ -16,12 +16,12 @@
 #include <numeric>
 
 struct Variation {
-    int position_;
+    size_t position_;
     char new_char_;
-    int len_;
+    size_t len_;
     std::string type_;
     double coverage_;
-    Variation(int position, char new_char, int len, std::string type, double coverage)
+    Variation(size_t position, char new_char, size_t len, std::string type, double coverage)
     : position_(position), new_char_(new_char), len_(len), type_(type), coverage_(coverage) {
 
     }
@@ -75,7 +75,7 @@ namespace debruijn_graph {
         return Variation(std::stoi(var_string.substr(1, var_string.length() - 2)), var_string[var_string.length() - 1], 1, "Mismatch", 0.0);
     }
 
-    bool IsAligned(const std::vector<Range> &imperfect_alignment_union, int position) {
+    bool IsAligned(const std::vector<Range> &imperfect_alignment_union, size_t position) {
         for (auto r : imperfect_alignment_union) {
             if (r.start_pos <= position && r.end_pos >= position) {
                 return true;
@@ -93,7 +93,7 @@ namespace debruijn_graph {
         std::map<std::string, std::vector<Variation>> result;
         in >> header;
         auto header_vector = split(header, ",");
-        std::map<int, std::string> id_to_var;
+        std::map<size_t, std::string> id_to_var;
         for(size_t i = 0; i < header_vector.size(); ++i) {
             id_to_var[i] = header_vector[i];
         }
@@ -132,7 +132,7 @@ namespace debruijn_graph {
         return merged_intervals;
     }
 
-    std::vector<Stats> EvaluateSNPs(const std::vector<Variation> &variation_vector, const std::map<std::string, std::vector<Variation>> &matrix, const std::string &ref_string) {
+    std::vector<Stats> EvaluateSNPs(const std::vector<Variation> &variation_vector, const std::map<std::string, std::vector<Variation>> &matrix) {
         std::vector<Stats> stats_vector;
         for (auto p : matrix) {
             int match = 0;
@@ -182,7 +182,7 @@ namespace debruijn_graph {
 
     std::map<std::string, double> WastewaterDisentangle::AssignRelativeCoverages(const std::vector<Stats> &curated_linaiges, const std::vector<double> &alpha_coverages,
                                                                                  const std::vector<std::map<char, double>> &meaningful_coverages) {
-        unsigned total_strains = curated_linaiges.size();
+        unsigned total_strains = (unsigned)curated_linaiges.size();
         std::vector<std::map<char, double>> meaningful_ratios;
         meaningful_ratios.resize(meaningful_coverages.size());
         for (size_t i = 0; i < meaningful_coverages.size(); ++i) {
@@ -201,7 +201,7 @@ namespace debruijn_graph {
 
         double alpha_coverage = 0.0;
         if (alpha_coverages.size()) {
-            alpha_coverage = std::accumulate(alpha_coverages.begin(), alpha_coverages.end(), 0) / float(alpha_coverages.size());
+            alpha_coverage = std::accumulate(alpha_coverages.begin(), alpha_coverages.end(), 0.0) / float(alpha_coverages.size());
             total_strains++;
         }
         std::map<std::string, double> result;
@@ -239,7 +239,7 @@ namespace debruijn_graph {
             double total = 0.0;
             for (auto cov : p.second)
                 total += cov;
-            avg_coverages[p.first] = total / p.second.size();
+            avg_coverages[p.first] = total / (double)p.second.size();
         }
 
         double total_coverage = 0.0;
@@ -277,7 +277,7 @@ namespace debruijn_graph {
         std::shared_ptr<StripedSmithWaterman::Alignment> alignment1(new StripedSmithWaterman::Alignment());
         std::shared_ptr<StripedSmithWaterman::Alignment> alignment2(new StripedSmithWaterman::Alignment());
 
-        aligner.SetReferenceSequence(ref_string.c_str(), ref_string.length());
+        aligner.SetReferenceSequence(ref_string.c_str(), (int)ref_string.length());
 
         std::vector<Variation> variation_vector;
         std::vector<Range> perfect_alignments;
@@ -301,8 +301,8 @@ namespace debruijn_graph {
             auto alignment = alignment1->sw_score > alignment2->sw_score ? alignment1 : alignment2;
             auto seq_str = alignment1->sw_score > alignment2->sw_score ? seq1_str : seq2_str;
 
-            int total = 0;
-            int current = 0;
+            size_t total = 0;
+            size_t current = 0;
             if (alignment1->sw_score > alignment2->sw_score) {
                 if (graph.OutgoingEdgeCount(graph.EdgeEnd(e)) == 0) {
                     total = seq1_str.length();
@@ -334,10 +334,9 @@ namespace debruijn_graph {
 
 
             DEBUG(alignment->cigar_string);
-            bool has_mismatch = (alignment->cigar_string.find("X") != std::string::npos || alignment->cigar_string.find("D") != std::string::npos);
             if (first_type == 4) {
-                for (int i = 0; i < first_len; ++i) {
-                    if (first_len - i > alignment->ref_begin)
+                for (size_t i = 0; i < first_len; ++i) {
+                    if (first_len  > alignment->ref_begin + i)
                         continue;
                     meaningful_coverages[alignment->ref_begin + i - first_len + 1][seq_str[i]] += graph.coverage(e);
                     current++;
@@ -359,7 +358,7 @@ namespace debruijn_graph {
 
                 switch (type) {
                     case 8:
-                        for (int k = start_pos_query; k < start_pos_query + len; ++k) {
+                        for (size_t k = start_pos_query; k < start_pos_query + len; ++k) {
                             imperfect_alignments.push_back(Range(start_pos_reference, start_pos_reference + len - 1));
                             variation_vector.push_back(Variation(start_pos_reference + (k - start_pos_query) + 1, seq_str[k], 1, "Mismatch", graph.coverage(e)));
                             meaningful_coverages[start_pos_reference + (k - start_pos_query) + 1][seq_str[k]] += graph.coverage(e);
@@ -373,7 +372,7 @@ namespace debruijn_graph {
                     case 7:
                         perfect_alignments.push_back(Range(start_pos_reference, start_pos_reference + len - 1));
                         imperfect_alignments.push_back(Range(start_pos_reference, start_pos_reference + len - 1));
-                        for (int k = start_pos_query; k < start_pos_query + len; ++k) {
+                        for (size_t k = start_pos_query; k < start_pos_query + len; ++k) {
                             meaningful_coverages[start_pos_reference + (k - start_pos_query) +
                                                  1][ref_string[start_pos_reference + (k - start_pos_query)]] += graph.coverage(e);
                             current++;
@@ -409,7 +408,7 @@ namespace debruijn_graph {
             if (current >= total)
                 continue;
             if (last_type == 4) {
-                for (int i = 0; i < last_len; ++i) {
+                for (size_t i = 0; i < last_len; ++i) {
                     meaningful_coverages[alignment->ref_end + i + 1][seq_str[alignment->query_end + i]] += graph.coverage(e);
                     current++;
                     if (current == total)
@@ -423,8 +422,8 @@ namespace debruijn_graph {
 
         std::vector<Range> imperfect_alignment_union = MergeIntervals(imperfect_alignments);
 
-        unsigned covered_bases_perfect = 0;
-        unsigned covered_bases_imperfect = 0;
+        size_t covered_bases_perfect = 0;
+        size_t covered_bases_imperfect = 0;
 
         for (auto range : alignment_union) {
             covered_bases_perfect += range.size() + 1;
@@ -456,7 +455,7 @@ namespace debruijn_graph {
         }
         auto matrix = ReadMatrix(cfg::get().sewage_matrix, imperfect_alignment_union);//"/home/dmm2017/Desktop/sewage/usher_barcodes.csv");
         INFO("Matrix parsing finished");
-        auto stats_vector = EvaluateSNPs(variation_vector, matrix, ref_string);
+        auto stats_vector = EvaluateSNPs(variation_vector, matrix);
         INFO("Top results");
         std::sort(stats_vector.begin(), stats_vector.end(), [](const Stats &a, const Stats &b) -> bool {return a.match_ > b.match_;});
         std::vector<Stats> curated_linaiges;
