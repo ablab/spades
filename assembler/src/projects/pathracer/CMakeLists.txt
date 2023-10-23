@@ -22,7 +22,7 @@ target_link_libraries(pathracer
 # target_compile_options(pathracer PRIVATE -g)
 install(TARGETS pathracer
         DESTINATION bin
-        COMPONENT runtime)
+        COMPONENT pathracer)
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(pathracer PROPERTIES LINK_SEARCH_END_STATIC 1)
@@ -33,6 +33,9 @@ add_executable(pathracer-seq-fs
 target_link_libraries(pathracer-seq-fs
                       pathracer-core
                       graphio utils ${COMMON_LIBRARIES})
+install(TARGETS pathracer-seq-fs
+        DESTINATION bin
+        COMPONENT pathracer)
 
 add_executable(pathracer_align_kmers_test
                main.cpp align_kmers.cpp)
@@ -52,7 +55,6 @@ target_link_libraries(open_event_graph
                       pathracer-core
                       graphio utils ${COMMON_LIBRARIES})
 set_target_properties(open_event_graph PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
-
 
 add_library(gtest_main_segfault_handler gtest_main.cpp)
 target_link_libraries(gtest_main_segfault_handler gtest input utils ${COMMON_LIBRARIES})
