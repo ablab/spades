@@ -18,11 +18,11 @@ BinSPreader is a tool that attempts to refine metagenome-assembled genomes (MAGs
 ``` 
 cd spades/assembler/
 mkdir build && cd build && cmake ../src
-make bin-refine
+make binspreader
 ```
 Now to run BinSPreader move to folder `assembler/` and execute 
 
-`build/bin/bin-refine`
+`build/bin/binspreader`
 
 ### Input
 
@@ -33,7 +33,7 @@ Required positional arguments:
 - Assembly graph file in [GFA 1.0 format](https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md), with scaffolds included as path lines. Alternatively, scaffold paths can be provided separately using `--path` option in the `.paths` format accepted by Bandage (see [Bandage wiki](https://github.com/rrwick/Bandage/wiki/Graph-paths) for details). 
 - Binning output from an existing tool (in `.tsv` format)
 
-Synopsis: `bin-refine <graph (in GFA)> <binning (in .tsv)> <output directory> [OPTION...]`
+Synopsis: `binspreader <graph (in GFA)> <binning (in .tsv)> <output directory> [OPTION...]`
 
 Main options:
 

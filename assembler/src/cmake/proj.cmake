@@ -8,7 +8,7 @@
 
 # Side-by-side subprojects layout: automatically set the
 # SPADES_EXTERNAL_${project}_SOURCE_DIR using SPADES_ALL_PROJECTS
-set(SPADES_ALL_PROJECTS "spades;hammer;ionhammer;corrector;spaligner;spades_tools")
+set(SPADES_ALL_PROJECTS "spades;hammer;ionhammer;corrector;spaligner;spades_tools;binspreader")
 set(SPADES_EXTRA_PROJECTS "mts;online_vis;cds_subgraphs")
 set(SPADES_KNOWN_PROJECTS "${SPADES_ALL_PROJECTS};${SPADES_EXTRA_PROJECTS}")
 set(SPADES_ENABLE_PROJECTS "" CACHE STRING
