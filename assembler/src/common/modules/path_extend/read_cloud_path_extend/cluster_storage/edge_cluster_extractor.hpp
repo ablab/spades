@@ -72,9 +72,9 @@ class AccurateEdgeClusterExtractor : public EdgeClusterExtractor {
         size_t bin_length = barcode_extractor_ptr_->GetBinLength(edge);
         size_t current_gap = 0;
         bool has_cluster = true;
-        auto bitset = barcode_extractor_ptr_->GetBitSet(edge, barcode);
+        auto bitset = barcode_extractor_ptr_->GetCoveredFrames(edge, barcode);
         for (size_t i = current_left; i <= rightmost; ++i) {
-            if (bitset.test(i)) {
+            if (bitset.find(i) != bitset.end()) {
                 current_right = i;
                 if (!has_cluster) {
                     current_left = i;

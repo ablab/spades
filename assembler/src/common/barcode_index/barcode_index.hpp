@@ -13,9 +13,9 @@
 #include "io/reads/paired_readers.hpp"
 #include "sequence/range.hpp"
 
-#include <boost/unordered_map.hpp>
 #include <boost/dynamic_bitset.hpp>
 #include <cuckoo/cuckoohash_map.hh>
+#include <unordered_set>
 
 using std::string;
 using std::istringstream;
@@ -24,7 +24,7 @@ using namespace omnigraph;
 namespace barcode_index {
 typedef RtSeq Kmer;
 
-class FrameMapperBuilder;
+class FrameBarcodeIndexBuilder;
 template <class Graph, class BarcodeEntryT>
 class BarcodeIndexInfoExtractor;
 typedef uint64_t BarcodeId;
@@ -34,14 +34,14 @@ typedef uint64_t BarcodeId;
 */
 template <class Graph>
 class AbstractBarcodeIndex {
-public:
+  public:
     typedef typename Graph::EdgeId EdgeId;
 
-protected:
+  protected:
     const Graph& g_;
-public:
+  public:
     AbstractBarcodeIndex (const Graph &g) :
-            g_(g) {}
+        g_(g) {}
     virtual ~AbstractBarcodeIndex() {}
 
     //Number of entries in the barcode map. Currently equals to the number of edges.
@@ -101,18 +101,18 @@ class ConcurrentBarcodeIndexBuffer {
  */
 template <class Graph, class EdgeEntryT>
 class BarcodeIndex: public AbstractBarcodeIndex<Graph> {
-friend class BarcodeIndexInfoExtractor<Graph, EdgeEntryT>;
+    friend class BarcodeIndexInfoExtractor<Graph, EdgeEntryT>;
 
-public:
+  public:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef typename omnigraph::IterationHelper <Graph, EdgeId> edge_it_helper;
     typedef std::unordered_map <EdgeId, EdgeEntryT> barcode_map_t;
 
     BarcodeIndex (const Graph &g) :
-            AbstractBarcodeIndex<Graph>(g),
-            edge_to_entry_(),
-            number_of_barcodes_(0)
+        AbstractBarcodeIndex<Graph>(g),
+        edge_to_entry_(),
+        number_of_barcodes_(0)
     {}
 
     BarcodeIndex (const BarcodeIndex& other) = default;
@@ -209,8 +209,26 @@ public:
     void MoveAssign(ConcurrentBarcodeIndexBuffer<Graph, EdgeEntryT> &from) {
         this->edge_to_entry_.clear();
         auto locked_table = from.lock_table();
+        DEBUG(locked_table.size());
         for (auto& kvpair : locked_table) {
+            TRACE(kvpair.first.int_id());
+            TRACE("Length: " << g_.length(kvpair.first));
+            TRACE(kvpair.second.Size() << " barcodes");
             this->edge_to_entry_[kvpair.first] = std::move(kvpair.second);
+        }
+    }
+
+    void MoveUpdate(ConcurrentBarcodeIndexBuffer<Graph, EdgeEntryT> &from) {
+        auto locked_table = from.lock_table();
+        for (auto &kvpair: locked_table) {
+            this->edge_to_entry_[kvpair.first].MoveUpdate(kvpair.second);
+        }
+    }
+
+    void Update(ConcurrentBarcodeIndexBuffer<Graph, EdgeEntryT> &from) {
+        auto locked_table = from.lock_table();
+        for (const auto &kvpair: locked_table) {
+            this->edge_to_entry_[kvpair.first].Update(kvpair.second);
         }
     }
 
@@ -225,7 +243,7 @@ public:
         return g_;
     }
 
- protected:
+  protected:
     using AbstractBarcodeIndex<Graph>::g_;
     barcode_map_t edge_to_entry_;
     size_t number_of_barcodes_;
@@ -236,7 +254,7 @@ public:
 class SimpleBarcodeInfo {
     size_t count_;
     Range range_;
-public:
+  public:
     SimpleBarcodeInfo(): count_(0), range_() {}
     SimpleBarcodeInfo(size_t count, const Range& range): count_(count), range_(range) {}
 
@@ -289,22 +307,18 @@ inline std::istream& operator >>(std::istream& os, SimpleBarcodeInfo& info)
  * We store the set of barcoded bins and the number of reads aligned to the edge.
  */
 class FrameBarcodeInfo {
-public:
-    typedef boost::dynamic_bitset<> IsOnFrameT;
-
+  public:
     /**
      *
      * @param frames Number of bin in the edge
      * @return empty info
      */
-    FrameBarcodeInfo(size_t frames = 0): count_(0), is_on_frame_(), leftmost_index_(frames), rightmost_index_(0) {
-        is_on_frame_.resize(frames, false);
-    }
+    FrameBarcodeInfo(size_t frames = 0): count_(0), covered_bins_(), leftmost_index_(frames), rightmost_index_(0) {}
 
     void Update(size_t count, size_t left_frame, size_t right_frame) {
         count_ += count;
         for (size_t i = left_frame; i <= right_frame; ++i) {
-            is_on_frame_.set(i);
+            covered_bins_.insert(i);
         }
         leftmost_index_ = std::min(left_frame, leftmost_index_);
         rightmost_index_ = std::max(right_frame, rightmost_index_);
@@ -313,9 +327,11 @@ public:
     void Update(const FrameBarcodeInfo& other) {
         TRACE(count_);
         TRACE(other.count_);
-        TRACE(is_on_frame_.size());
-        TRACE(other.is_on_frame_.size());
-        is_on_frame_ |= other.is_on_frame_;
+        TRACE(covered_bins_.size());
+        TRACE(other.covered_bins_.size());
+        for (const auto &frame: other.covered_bins_) {
+            covered_bins_.insert(frame);
+        }
         leftmost_index_ = std::min(leftmost_index_, other.leftmost_index_);
         rightmost_index_ = std::max(rightmost_index_, other.rightmost_index_);
         count_ += other.count_;
@@ -342,32 +358,20 @@ public:
         return rightmost_index_;
     }
 
-    const IsOnFrameT& GetBitSet() const {
-        return is_on_frame_;
-    }
-
-    /**
-     * @param frame index of bin
-     * @return true if bin is barcoded, false otherwise
-     */
-    bool GetFrame(size_t frame) const {
-        return is_on_frame_[frame];
-    }
-
-    /**
-     *
-     * @return number of frames
-     */
-    size_t GetSize() const {
-        return is_on_frame_.size();
-    }
-
     /**
      *
      * @return number of barcoded bins
      */
     size_t GetCovered() const {
-        return is_on_frame_.count();
+        return covered_bins_.size();
+    }
+
+    /**
+     *
+     * @return set of barcoded bins
+     */
+    const std::unordered_set<size_t>& GetCoveredFrames() const {
+        return covered_bins_;
     }
 
     void SetCount(size_t count) {
@@ -382,33 +386,28 @@ public:
         rightmost_index_ = index;
     }
 
-    void SetBitSet(const IsOnFrameT &bitset) {
-        is_on_frame_ = bitset;
-    }
-
     void BinRead(std::istream &str) {
         using io::binary::BinRead;
         auto count = BinRead<size_t>(str);
         SetCount(count);
 
-        auto set_positions = BinRead<std::vector<size_t>>(str);
-        VERIFY_DEV(set_positions.back() < is_on_frame_.size());
-        TRACE("Last position: " << set_positions.back());
-        TRACE("Bitset size: " << is_on_frame_.size());
-        for (const auto &pos: set_positions) {
+        auto num_positions = BinRead<size_t>(str);
+        size_t min_pos = std::numeric_limits<size_t>::max();
+        size_t max_pos = 0;
+        for (size_t i = 0; i < num_positions; ++i) {
+            auto pos = BinRead<size_t>(str);
             TRACE("Position: " << pos);
-            is_on_frame_.set(pos, true);
-        }
-
-        SetLeftMost(is_on_frame_.find_first());
-        size_t rightmost = 0;
-        for (size_t i = is_on_frame_.size() - 1; i > 0; --i) {
-            if (is_on_frame_.test(i)) {
-                rightmost = i;
-                break;
+            covered_bins_.insert(pos);
+            if (pos < min_pos) {
+                min_pos = pos;
+            }
+            if (pos > max_pos) {
+                max_pos = pos;
             }
         }
-        SetRightMost(rightmost);
+
+        SetLeftMost(min_pos);
+        SetRightMost(max_pos);
         TRACE("Leftmost: " << GetLeftMost());
         TRACE("Rightmost: " << GetRightMost());
     }
@@ -416,31 +415,26 @@ public:
     void BinWrite(std::ostream &str) const {
         using io::binary::BinWrite;
         BinWrite(str, GetCount());
+        BinWrite(str, GetCovered());
 
-        std::vector<size_t> set_positions;
-        size_t current_set_pos = GetBitSet().find_first();
-        TRACE("Size: " << GetBitSet().size());
-        while (current_set_pos != IsOnFrameT::npos) {
-            TRACE("Current set position: " << current_set_pos);
-            set_positions.push_back(current_set_pos);
-            current_set_pos = GetBitSet().find_next(current_set_pos);
+        for (const size_t &pos: covered_bins_) {
+            BinWrite(str, pos);
         }
-        BinWrite(str, set_positions);
     }
 
 
     friend std::ostream& operator <<(std::ostream& os, const FrameBarcodeInfo& info);
     friend std::istream& operator >>(std::istream& is, FrameBarcodeInfo& info);
 
- private:
+  private:
     /**
      * Number of reads aligned to the edge
      */
     size_t count_;
     /**
-     * `is_on_frame[i]` is true iff ith bin is barcoded
+     * Bins covered by the barcode
      */
-    boost::dynamic_bitset<> is_on_frame_;
+    std::unordered_set<size_t> covered_bins_;
     /**
      * Leftmost barcoded bin
      */
@@ -455,37 +449,54 @@ public:
 
 inline std::ostream& operator <<(std::ostream& os, const FrameBarcodeInfo& info)
 {
-    os << info.count_ << " " << info.is_on_frame_;
+    os << info.count_ << " " << info.covered_bins_.size();
+    for (const auto &bin: info.covered_bins_) {
+        os << bin << " ";
+    }
     return os;
 }
 
 inline std::istream& operator >>(std::istream& is, FrameBarcodeInfo& info)
 {
-    is >> info.count_;
-    is >> info.is_on_frame_;
-    info.leftmost_index_ = info.is_on_frame_.find_first();
-    size_t rightmost = 0;
-    for (size_t i = info.is_on_frame_.size() - 1; i > 0; --i) {
-        if (info.is_on_frame_.test(i)) {
-            rightmost = i;
-            break;
+    using io::binary::BinRead;
+    size_t count;
+    is >> count;
+    info.SetCount(count);
+
+    size_t num_of_bins;
+    is >> num_of_bins;
+    size_t min_pos = std::numeric_limits<size_t>::max();
+    size_t max_pos = 0;
+    for (size_t i = 0; i < num_of_bins; ++i) {
+        size_t pos = 0;
+        is >> pos;
+        TRACE("Position: " << pos);
+        if (pos < min_pos) {
+            min_pos = pos;
         }
+        if (pos > max_pos) {
+            max_pos = pos;
+        }
+        info.covered_bins_.insert(pos);
     }
-    info.rightmost_index_ = rightmost;
+    info.SetLeftMost(min_pos);
+    info.SetRightMost(max_pos);
+    TRACE("Leftmost: " << info.GetLeftMost());
+    TRACE("Rightmost: " << info.GetRightMost());
     return is;
 }
 
 template <class Graph, class EntryInfoT>
 class EdgeEntry {
-public:
+  public:
     typedef typename Graph::EdgeId EdgeId;
     typedef std::map <BarcodeId, EntryInfoT> barcode_distribution_t;
     typedef EntryInfoT barcode_info_t;
 
     EdgeEntry():
-            edge_(), barcode_distribution_() {};
+        edge_(), barcode_distribution_() {};
     EdgeEntry(const EdgeId& edge) :
-            edge_(edge), barcode_distribution_() {}
+        edge_(edge), barcode_distribution_() {}
 
     virtual ~EdgeEntry() {}
 
@@ -541,7 +552,7 @@ public:
         io::binary::BinWrite(str, barcode_distribution_);
     }
 
-protected:
+  protected:
     void SerializeDistribution(std::ofstream &fout) const {
         fout << barcode_distribution_.size() << std::endl;
         for (auto entry : barcode_distribution_) {
@@ -580,13 +591,13 @@ template<class Graph>
 class SimpleEdgeEntry : public EdgeEntry<Graph, SimpleBarcodeInfo> {
     friend class BarcodeIndex<Graph, SimpleEdgeEntry>;
     friend class BarcodeIndexInfoExtractor<Graph, SimpleEdgeEntry>;
-protected:
+  protected:
     typedef typename Graph::EdgeId EdgeId;
     using EdgeEntry<Graph, SimpleBarcodeInfo>::barcode_distribution_t;
     using EdgeEntry<Graph, SimpleBarcodeInfo>::barcode_distribution_;
     using EdgeEntry<Graph, SimpleBarcodeInfo>::edge_;
 
-public:
+  public:
     SimpleEdgeEntry():
         EdgeEntry<Graph, SimpleBarcodeInfo>() {}
     SimpleEdgeEntry(const EdgeId& edge) :
@@ -597,7 +608,7 @@ public:
     void Filter(size_t trimming_threshold, size_t gap_threshold) {
         for (auto it = barcode_distribution_.begin(); it != barcode_distribution_.end() ;) {
             if (IsLowReadCount(trimming_threshold, it->second) or
-                    IsFarFromEdgeHead(gap_threshold, it->second)) {
+                IsFarFromEdgeHead(gap_threshold, it->second)) {
                 barcode_distribution_.erase(it++);
             }
             else {
@@ -606,7 +617,7 @@ public:
         }
     }
 
-protected:
+  protected:
     void InsertBarcode(const BarcodeId& barcode, const size_t count, const Range& range) {
         if (barcode_distribution_.find(barcode) == barcode_distribution_.end()) {
             SimpleBarcodeInfo info(count, range);
@@ -629,10 +640,10 @@ protected:
 template<class Graph>
 class FrameEdgeEntry : public EdgeEntry<Graph, FrameBarcodeInfo> {
     friend class BarcodeIndex<Graph, FrameEdgeEntry>;
-    friend class FrameMapperBuilder;
+    friend class FrameBarcodeIndexBuilder;
     friend class BarcodeIndexInfoExtractor<Graph, FrameEdgeEntry>;
     friend class ConcurrentBarcodeIndexBuffer<Graph, FrameEdgeEntry>;
-protected:
+  protected:
     typedef typename Graph::EdgeId EdgeId;
     using EdgeEntry<Graph, FrameBarcodeInfo>::barcode_distribution_t;
     using EdgeEntry<Graph, FrameBarcodeInfo>::barcode_distribution_;
@@ -641,7 +652,7 @@ protected:
     size_t frame_size_;
     size_t number_of_frames_;
 
-public:
+  public:
     FrameEdgeEntry():
         EdgeEntry<Graph, FrameBarcodeInfo>(),
         edge_length_(0),
@@ -658,7 +669,7 @@ public:
     void Filter(size_t trimming_threshold, size_t gap_threshold) {
         for (auto it = barcode_distribution_.begin(); it != barcode_distribution_.end() ;) {
             if (IsLowReadCount(trimming_threshold, it->second) or
-                    IsFarFromEdgeHead(gap_threshold, it->second)) {
+                IsFarFromEdgeHead(gap_threshold, it->second)) {
                 barcode_distribution_.erase(it++);
             }
             else {
@@ -705,7 +716,7 @@ public:
         }
     }
 
-protected:
+  protected:
     void InsertBarcode(const BarcodeId& barcode, const size_t count, const Range& range) override {
         DEBUG("Inserting barcode");
         if (barcode_distribution_.find(barcode) == barcode_distribution_.end()) {
@@ -721,6 +732,17 @@ protected:
         barcode_distribution_.at(barcode).Update(count, left_frame, right_frame);
     }
 
+    void MoveUpdate(FrameEdgeEntry<Graph> &other) {
+        for (auto it = other.begin(); it != other.end(); ++it) {
+            barcode_distribution_[it->first] = std::move(it->second);
+        }
+    }
+
+    void Update(const FrameEdgeEntry<Graph> &other) {
+        for (auto it = other.begin(); it != other.end(); ++it) {
+            barcode_distribution_[it->first] = it->second;
+        }
+    }
 
     bool IsFarFromEdgeHead(size_t gap_threshold, const FrameBarcodeInfo& info) {
         return info.GetLeftMost() > gap_threshold / frame_size_;
@@ -734,7 +756,7 @@ protected:
         frame_size_ = frame_size;
     }
 
-private:
+  private:
     //fixme last frame is larger than the others
     size_t GetFrameFromPos(size_t pos) {
         return pos / frame_size_;
@@ -754,10 +776,9 @@ class FrameConcurrentBarcodeIndexBuffer: public ConcurrentBarcodeIndexBuffer<Gra
         VERIFY_DEV(frame_size_ != 0);
         VERIFY_DEV(edge_to_entry_.empty());
         for (const debruijn_graph::EdgeId &edge: g_.canonical_edges()) {
-//            FrameEdgeEntry<Graph> entry(edge, g_.length(edge), frame_size_);
             edge_to_entry_.insert(edge, FrameEdgeEntry<Graph>(edge, g_.length(edge), frame_size_));
             debruijn_graph::EdgeId conj = g_.conjugate(edge);
-            edge_to_entry_.insert(conj, FrameEdgeEntry<Graph>(conj, g_.length(conj), frame_size_));
+            edge_to_entry_.insert(conj, FrameEdgeEntry<Graph>(conj, g_.length(edge), frame_size_));
         }
     }
 
@@ -773,9 +794,9 @@ class FrameConcurrentBarcodeIndexBuffer: public ConcurrentBarcodeIndexBuffer<Gra
 
 template<class Graph>
 class FrameBarcodeIndex: public BarcodeIndex<Graph, FrameEdgeEntry<Graph>> {
-    friend class FrameMapperBuilder;
+    friend class FrameBarcodeIndexBuilder;
     friend class BarcodeIndexInfoExtractor<Graph, FrameEdgeEntry<Graph>>;
- public:
+  public:
     using BarcodeIndex<Graph, FrameEdgeEntry<Graph>>::barcode_map_t;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename omnigraph::IterationHelper <Graph, EdgeId> edge_it_helper;
@@ -803,7 +824,7 @@ class FrameBarcodeIndex: public BarcodeIndex<Graph, FrameEdgeEntry<Graph>> {
         }
     }
 
- private:
+  private:
     using BarcodeIndex<Graph, FrameEdgeEntry<Graph>>::g_;
     using BarcodeIndex<Graph, FrameEdgeEntry<Graph>>::edge_to_entry_;
     size_t frame_size_;

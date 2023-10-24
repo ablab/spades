@@ -346,10 +346,10 @@ public:
      *
      * @param edge
      * @param barcode
-     * @return bitset representing barcoded bins of the edge
+     * @return unordered set representing barcoded bins of the edge
      */
-    const boost::dynamic_bitset<>& GetBitSet(const EdgeId& edge, const BarcodeId& barcode) const {
-        return this->GetInfo(edge, barcode).GetBitSet();
+    const std::unordered_set<size_t>& GetCoveredFrames(const EdgeId& edge, const BarcodeId& barcode) const {
+        return this->GetInfo(edge, barcode).GetCoveredFrames();
     }
 
     /**

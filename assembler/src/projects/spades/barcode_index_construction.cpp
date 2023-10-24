@@ -46,10 +46,15 @@ namespace debruijn_graph {
                 EnsureBasicMapping(gp);
                 FrameConcurrentBarcodeIndexBuffer<Graph> buffer(gp.get<Graph>(), frame_size);
                 auto kmer_mapper = MapperInstance(gp);
-                ConcurrentBufferFiller buffer_filler(gp.get<Graph>(), buffer, *kmer_mapper, barcode_prefices);
-                FrameBarcodeIndexBuilder barcode_index_builder(buffer_filler, num_threads);
+//                ConcurrentBufferFiller buffer_filler(gp.get<Graph>(), buffer, *kmer_mapper, barcode_prefices);
+                FrameBarcodeIndexBuilder barcode_index_builder(gp.get<Graph>(), *kmer_mapper, barcode_prefices, frame_size, num_threads);
                 auto &barcode_mapper = gp.get_mutable<barcode_index::FrameBarcodeIndex<Graph>>();
-                barcode_index_builder.ConstructBarcodeIndex(barcode_mapper, lib);
+                bool is_tellseq = lib.type() == io::LibraryType::TellSeqReads;
+                if (not is_tellseq) {
+                    barcode_index_builder.ConstructBarcodeIndex(io::paired_easy_readers(lib, false, 0), barcode_mapper, lib, is_tellseq);
+                } else {
+                    barcode_index_builder.ConstructBarcodeIndex(io::tellseq_easy_readers(lib, false, 0), barcode_mapper, lib, is_tellseq);
+                }
                 INFO("Barcode index construction finished.");
                 FrameBarcodeIndexInfoExtractor extractor(barcode_mapper, gp.get<Graph>());
                 size_t length_threshold = cfg::get().pe_params.read_cloud.long_edge_length_lower_bound;
