@@ -270,9 +270,9 @@ def handle_one_test(test, args, dataset_info, working_dir, check_test):
         ecode = check_test(dataset_info, test, output_dir, log)
 
     if ecode != 0:
-        log.log("TEST NOT PASS")
+        log.log("TEST FAILED")
     else:
-        log.log("TEST PASS")
+        log.log("TEST PASSED")
 
     return ecode
 

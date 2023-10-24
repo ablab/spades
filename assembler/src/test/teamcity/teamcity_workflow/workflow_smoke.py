@@ -43,7 +43,7 @@ def check_one_out_folder(output_dir, etalon_dir):
 
 def check_correct_finish(dataset_info, test, output_dir, log):
     if 'etalon_saves' in dataset_info:
-        log.log("Checking SPAdes finish correct.")
+        log.log("Checking etalon output.")
         etalon_dir = dataset_info["etalon_saves"]
         if ("name" in test):
             etalon_dir += test["name"]
@@ -54,6 +54,7 @@ def check_correct_finish(dataset_info, test, output_dir, log):
         for i in range(len(out_dirs)):
             err_code = check_one_out_folder(out_dirs[i], etalon_dirs[i])
             if err_code != 0:
+                log.err("Comparison of %s and %s failed" % (out_dirs[i], etalon_dirs[i]))
                 return err_code
         return 0
     else:
