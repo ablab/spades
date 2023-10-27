@@ -43,7 +43,8 @@ ExternalProject_Add(ncbi_sratools_ext
                                -DVDB_INCDIR=${NCBI_VDB_INCLUDE}
                                -DVDB_LIBDIR=${NCBI_VDB_LIB}
                                -DNO_JAVA=ON
-                    CMAKE_CACHE_ARGS ${CL_ARGS})
+                               CMAKE_CACHE_ARGS ${CL_ARGS})
+                             add_dependencies(ncbi_sratools_ext ncbi_vdb_ext)                             
 ExternalProject_Get_property(ncbi_sratools_ext INSTALL_DIR)
 set(NCBI_SRATOOLS_PREFIX  ${INSTALL_DIR})
 set(NCBI_SRATOOLS_INCLUDE ${NCBI_SRATOOLS_PREFIX}/include)

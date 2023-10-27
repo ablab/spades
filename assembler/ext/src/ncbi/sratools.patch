@@ -1,3 +1,15 @@
+diff --git a/tools/external/driver-tool/file-path.posix.cpp b/tools/external/driver-tool/file-path.posix.cpp
+index 95b08c3..f26023d 100644
+--- a/tools/external/driver-tool/file-path.posix.cpp
++++ b/tools/external/driver-tool/file-path.posix.cpp
+@@ -34,6 +34,7 @@
+ #else
+ #include <limits.h>
+ #include <stdlib.h>
++#include <string.h>
+ #include <unistd.h>
+ #include <fcntl.h>
+ #include <sys/stat.h>
 diff --git a/build/env.cmake b/build/env.cmake
 index dbf87221..a0321295 100644
 --- a/build/env.cmake
