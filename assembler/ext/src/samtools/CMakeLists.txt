@@ -29,4 +29,4 @@ add_library (samtools
   bam_reheader.c
   kprobaln.c
   bam_cat.c)
-target_link_libraries(samtools BamTools)
+target_link_libraries(samtools BamTools zlibstatic)

@@ -218,7 +218,6 @@ If you wish to compile SPAdes by yourself you will need the following libraries 
 
 -   g++ (version 5.3.1 or higher)
 -   cmake (version 3.5 or higher)
--   zlib
 -   libbz2
 
 If you meet these requirements, you can download the [SPAdes source code](http://cab.spbu.ru/files/release3.15.4/SPAdes-3.15.4.tar.gz):

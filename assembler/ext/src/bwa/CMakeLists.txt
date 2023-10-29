@@ -25,7 +25,7 @@ add_library(bwa STATIC
   utils.c kthread.c ksw.c bwt.c bntseq.c bwa.c bwamem.c bwamem_pair.c
   bwamem_extra.c malloc_wrap.c is.c bwtindex.c rope.c rle.c kstring.c)
 
-target_link_libraries(bwa z m)
+target_link_libraries(bwa zlibstatic m)
 if (HAVE_SHM_OPEN_IN_RT)
   target_link_libraries(bwa rt)
 endif()

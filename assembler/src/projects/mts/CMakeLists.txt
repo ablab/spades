@@ -32,8 +32,7 @@ add_executable(prop_binning
                read_binning.cpp
                prop_binning.cpp
                gzstream/gzstream.C)
-include_directories(SYSTEM "${ZLIB_INCLUDE_DIRS}")
-target_link_libraries(prop_binning common_modules nlopt BamTools ssw getopt_pp ${ZLIB_LIBRARIES} ${COMMON_LIBRARIES})
+target_link_libraries(prop_binning common_modules nlopt BamTools ssw getopt_pp zlibstatic ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(prop_binning PROPERTIES LINK_SEARCH_END_STATIC 1)

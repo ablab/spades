@@ -14,7 +14,6 @@ else()
 endif()
 
 find_package(OpenMP)
-find_package(ZLIB REQUIRED)
 find_package(BZip2 REQUIRED)
 find_package(Readline QUIET)
 set(CURSES_NEED_NCURSES TRUE)

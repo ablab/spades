@@ -33,5 +33,5 @@ set( BamToolsAPISources
 # create main BamTools API static library
 add_library( BamTools STATIC ${BamToolsAPISources} )
 
-target_link_libraries( BamTools ${ZLIB_LIBRARIES})
+target_link_libraries( BamTools zlibstatic)
 
