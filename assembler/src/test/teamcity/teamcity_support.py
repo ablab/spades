@@ -658,19 +658,19 @@ def parse_args():
 # Save meta information about this teamcity.py run
 def save_run_info(args, output_dir):
     run_info = open(os.path.join(output_dir, "test_run.info"), "w")
-    run_info.write(".info file: " + args.info + "\n");
+    run_info.write(".info file: " + args.info + "\n")
     if args.run_name:
-        run_info.write("run name: " + args.run_name + "\n");
+        run_info.write("run name: " + args.run_name + "\n")
     if args.spades_path:
-        run_info.write("path to spades.py: " + str(args.spades_path) + "\n");
+        run_info.write("path to spades.py: " + str(args.spades_path) + "\n")
     if args.contig_archive:
-        run_info.write("save contigs archive: " + str(args.contig_archive) + "\n");
+        run_info.write("save contigs archive: " + str(args.contig_archive) + "\n")
     if args.contig_name:
-        run_info.write("contig custom name: " + args.contig_name + "\n");
+        run_info.write("contig custom name: " + args.contig_name + "\n")
     if args.spades_cfg_dir:
-        run_info.write("spades config direrctory: " + args.spades_cfg_dir + "\n");
+        run_info.write("spades config direrctory: " + args.spades_cfg_dir + "\n")
     if args.local_output_dir:
-        run_info.write("local output dir: " + args.local_output_dir + "\n");
+        run_info.write("local output dir: " + args.local_output_dir + "\n")
     run_info.close()
 
 
@@ -714,19 +714,24 @@ def create_output_dir(args, dataset_info):
 def compile_spades(args, dataset_info, working_dir):
     log.log("Building SPAdes")
     if not args.cfg_compilation:
-        log.warn("Forced to use current SPAdes build, will not compile SPAdes");
+        log.warn("Forced to use current SPAdes build, will not compile SPAdes")
     elif 'spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile:
         comp_params = ' '
         if 'compilation_params' in dataset_info.__dict__:
-            comp_params = " ".join(dataset_info.compilation_params)
+            if isinstance(dataset_info.compilation_params, list):
+                comp_params = " ".join(dataset_info.compilation_params)
+            else:
+                comp_params = dataset_info.compilation_params
 
         bin_dir = 'build_spades'
         if not os.path.exists(bin_dir):
             os.makedirs(bin_dir)
         os.chdir(bin_dir)
 
-        #Compilation
-        err_code = os.system('cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=' + working_dir + ' ' + os.path.join(working_dir, 'src') + ' ' + comp_params)
+        # Compilation
+        comp_str = 'cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=' + working_dir + ' ' + os.path.join(working_dir, 'src') + ' ' + comp_params
+        log.log("Compiling with %s" % comp_str)
+        err_code = os.system(comp_str)
         err_code = err_code | os.system('make -j 16')
         err_code = err_code | os.system('make install')
 
@@ -734,10 +739,11 @@ def compile_spades(args, dataset_info, working_dir):
 
         if err_code != 0:
             # Compile from the beginning if failed
-            log.warn("Incremental build failed, trying from scratch")
+            comp_str = './spades_compile.sh ' + comp_params
+            log.warn("Incremental build failed, trying from scratch, running %s" % comp_str)
             shutil.rmtree('bin', True)
             shutil.rmtree('build_spades', True)
-            return os.system('./spades_compile.sh ' + comp_params)
+            return os.system(comp_str)
     return 0
 
 
