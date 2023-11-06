@@ -1,7 +1,6 @@
 name: SPAdes full-runs tests
 
 on:
-  workflow_dispatch:
   schedule:
     - cron: '0 3 7,21 * *'
 

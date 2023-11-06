@@ -1,7 +1,8 @@
 name: SPAdes basic tests
 
 on:
-  workflow_dispatch:
+  push:
+  pull_request:
 
 env:
   BUILD_TYPE: Release
