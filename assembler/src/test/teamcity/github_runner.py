@@ -18,6 +18,7 @@ import datetime
 import argparse
 import subprocess
 import logging
+import glob
 from traceback import print_exc
 from io import StringIO
 from functools import reduce
@@ -681,6 +682,15 @@ def save_quast_report(contigs, dataset_info, contig_storage_dir, output_dir, art
         os.chdir(working_dir)
 
 
+def cleanup_output_dir(output_dir):
+    shutil.rmtree(os.path.join(output_dir, "corrected", ignore_errors=True)
+    for d in glob.glob(os.path.join(output_dir, "K*")):
+        shutil.rmtree(d, ignore_errors=True)
+    for d in glob.glob(os.path.join(output_dir, "*.gfa")):
+        shutil.rmtree(d, ignore_errors=True)
+    shutil.rmtree(os.path.join(output_dir, "assembly_graph.fastg"), ignore_errors=True)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('info', metavar='CONFIG_FILE', type=str,  help='info config')
@@ -745,6 +755,7 @@ def main(args):
 
     # compare misassemblies
     if not args.contig_archive:
+        cleanup_output_dir(output_dir)
         sys.exit(exit_code)
 
     log.debug('Comparing misassemblies')
@@ -759,6 +770,8 @@ def main(args):
     log.debug('Saving artifacts')
     contigs = get_contigs_list(args, dataset_info, True)
     save_contigs(args, output_dir, contig_storage_dir, contigs, rewrite_latest)
+
+    cleanup_output_dir(output_dir)
 
     sys.exit(exit_code)
 
