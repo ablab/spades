@@ -1,6 +1,7 @@
 name: SPAdes isolated datasets tests
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master

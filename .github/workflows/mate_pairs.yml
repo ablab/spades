@@ -1,6 +1,7 @@
 name: SPAdes mate-pairs tests
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master

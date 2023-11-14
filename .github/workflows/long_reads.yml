@@ -1,6 +1,7 @@
 name: SPAdes long-read tests
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
