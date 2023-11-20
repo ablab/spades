@@ -16,6 +16,9 @@ namespace io {
 
 void SRAParser::open() {
     run_ = new ngs::ReadCollection(ncbi::NGS::openReadCollection(filename_));
+    if (run_->getAlignmentCount(ngs::Alignment::primaryAlignment))
+        WARN("SRA input file contains aligned sequences, reading will be slow");
+
     it_ = new ngs::ReadIterator(run_->getReads(ngs::Read::all));
     is_open_ = true;
     eof_ = (false == it_->nextRead());
