@@ -248,11 +248,11 @@ public:
     typedef Dijkstra<Graph, DilationDijkstraSettings> DilationDijkstra;
 
     static DilationDijkstra CreateDilationDijkstra(const Graph &graph,
-                                                   const std::unordered_set<EdgeId> &edges,
+                                                   const std::unordered_set<EdgeId> &forbidden_edges,
                                                    size_t length_threshold,
                                                    size_t distance_bound,
                                                    size_t max_vertex_number = -1ul) {
-        ForbiddenEdgesPutChecker<Graph> forbidden_put_checker(edges);
+        ForbiddenEdgesPutChecker<Graph> forbidden_put_checker(forbidden_edges);
         LengthPutChecker<Graph> length_put_checker(graph, length_threshold);
         BoundPutChecker<Graph> bound_put_checker(distance_bound);
         auto put_checkers = std::make_tuple(forbidden_put_checker, length_put_checker, bound_put_checker);
