@@ -9,7 +9,7 @@
 #define NUCL_HPP_
 
 #include "utils/verify.hpp"
-
+#include <cstdint>
 /**
  * 0123 -> true
  * @param char c
