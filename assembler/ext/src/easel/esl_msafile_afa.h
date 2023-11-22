@@ -2,7 +2,7 @@
  */
 #ifndef eslMSAFILE_AFA_INCLUDED
 #define eslMSAFILE_AFA_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "esl_msa.h"
 #include "esl_msafile.h"

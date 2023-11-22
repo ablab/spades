@@ -11,7 +11,7 @@
  *   7. Test driver.
  *   8. Example.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <string.h>
 #include <ctype.h>
@@ -61,8 +61,8 @@ typedef struct {
   int64_t    ssconslen;		/* current length of #=GC SS_cons annotation */
   int64_t    saconslen;		/* current length of #=GC SA_cons annotation */
   int64_t    ppconslen;		/* current length of #=GC PP_cons annotation */
-  int64_t    rflen;		    /* current length of #=GC RF annotation */
-  int64_t    mmasklen;    /* current length of #=GC MM annotation */
+  int64_t    rflen;		/* current length of #=GC RF annotation */
+  int64_t    mmasklen;          /* current length of #=GC MM annotation */
   int64_t   *sqlen;		/* current lengths of ax[0..nseq-1] or aseq[0..nseq-1]  */
   int64_t   *sslen;		/* current lengths of ss[0..nseq-1] */
   int64_t   *salen;		/* current lengths of sa[0..nseq-1] */
@@ -2450,7 +2450,7 @@ utest_bad_read(ESL_ALPHABET **byp_abc, int fmt, char *expected_errmsg, int expec
  *  (gcov): gcc -g -Wall -fprofile-arcs -ftest-coverage -I. -L. -o esl_msafile_stockholm_utest -DeslMSAFILE_STOCKHOLM_TESTDRIVE esl_msafile_stockholm.c -leasel -lm
  * run:     ./esl_msafile_stockholm_utest
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

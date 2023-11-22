@@ -4,7 +4,7 @@
  */
 #ifndef eslHMM_INCLUDED
 #define eslHMM_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "esl_alphabet.h"
 #include "esl_random.h"

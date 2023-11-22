@@ -2,7 +2,7 @@
  */
 #ifndef eslSQIO_NCBI_INCLUDED
 #define eslSQIO_NCBI_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #ifdef HAVE_SYS_TYPES_H

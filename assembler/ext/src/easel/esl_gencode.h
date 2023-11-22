@@ -2,7 +2,7 @@
  */
 #ifndef eslGENCODE_INCLUDED
 #define eslGENCODE_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "easel.h"
 #include "esl_alphabet.h"

@@ -4,7 +4,7 @@
  */
 #ifndef eslRATEMATRIX_INCLUDED
 #define eslRATEMATRIX_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 /* 1. Setting standard rate matrix models. */
 extern int esl_rmx_SetWAG(ESL_DMATRIX *Q, double *pi); 

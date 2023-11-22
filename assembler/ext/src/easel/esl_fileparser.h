@@ -2,7 +2,7 @@
  */
 #ifndef eslFILEPARSER_INCLUDED
 #define eslFILEPARSER_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include "easel.h"

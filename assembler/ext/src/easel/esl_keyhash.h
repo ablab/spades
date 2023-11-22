@@ -3,7 +3,7 @@
  */
 #ifndef eslKEYHASH_INCLUDED
 #define eslKEYHASH_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>		/* for FILE */
 

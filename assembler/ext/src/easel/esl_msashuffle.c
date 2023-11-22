@@ -7,7 +7,7 @@
  *    4. Shuffling pairwise (QRNA) alignments.
  *    5. Example
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <string.h>
 

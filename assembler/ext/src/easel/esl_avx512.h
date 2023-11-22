@@ -10,7 +10,7 @@
  */
 #ifndef eslAVX512_INCLUDED
 #define eslAVX512_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 #ifdef  eslENABLE_AVX512 
 
 #include "easel.h"

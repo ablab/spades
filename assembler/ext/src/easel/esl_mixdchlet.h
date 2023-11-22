@@ -3,7 +3,7 @@
 #ifndef eslMIXDCHLET_INCLUDED
 #define eslMIXDCHLET_INCLUDED
 
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "esl_random.h"
 #include "esl_fileparser.h"

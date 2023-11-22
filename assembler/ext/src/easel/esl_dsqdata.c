@@ -32,7 +32,7 @@
  *   8. Test driver
  *   9. Examples
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -160,6 +160,7 @@ esl_dsqdata_Open(ESL_ALPHABET **byp_abc, char *basename, int nconsumers, ESL_DSQ
   uint32_t     magic     = 0;
   uint32_t     tag       = 0;
   uint32_t     alphatype = eslUNKNOWN;
+  int          ndd;
   char        *p;                       // used for strtok() parsing of fields on a line
   char         buf[4096];
   int          u;
@@ -196,15 +197,16 @@ esl_dsqdata_Open(ESL_ALPHABET **byp_abc, char *basename, int nconsumers, ESL_DSQ
 
   /* Open the four files.
    */
-  ESL_ALLOC( dd->basename, sizeof(char) * (strlen(basename) + 6)); // +5 for .dsqx; +1 for \0
-  if ( sprintf(dd->basename, "%s.dsqi", basename) <= 0)   ESL_XEXCEPTION_SYS(eslESYS, "sprintf() failure");
-  if (( dd->ifp = fopen(dd->basename, "rb"))   == NULL)   ESL_XFAIL(eslENOTFOUND, dd->errbuf, "Failed to find or open index file %s\n", dd->basename);
+  ndd = strlen(basename) + 6;  // +5 for .dsqx; +1 for \0
+  ESL_ALLOC( dd->basename, ndd);
+  if ( snprintf(dd->basename, ndd, "%s.dsqi", basename) <= 0)   ESL_XEXCEPTION_SYS(eslESYS, "sprintf() failure");
+  if (( dd->ifp = fopen(dd->basename, "rb")) == NULL)           ESL_XFAIL(eslENOTFOUND, dd->errbuf, "Failed to find or open index file %s\n", dd->basename);
 
-  if ( sprintf(dd->basename, "%s.dsqm", basename) <= 0)   ESL_XEXCEPTION_SYS(eslESYS, "sprintf() failure");
-  if (( dd->mfp = fopen(dd->basename, "rb"))   == NULL)   ESL_XFAIL(eslENOTFOUND, dd->errbuf, "Failed to find or open metadata file %s\n", dd->basename);
+  if ( snprintf(dd->basename, ndd, "%s.dsqm", basename) <= 0)   ESL_XEXCEPTION_SYS(eslESYS, "sprintf() failure");
+  if (( dd->mfp = fopen(dd->basename, "rb")) == NULL)           ESL_XFAIL(eslENOTFOUND, dd->errbuf, "Failed to find or open metadata file %s\n", dd->basename);
 
-  if ( sprintf(dd->basename, "%s.dsqs", basename) <= 0)   ESL_XEXCEPTION_SYS(eslESYS, "sprintf() failure");
-  if (( dd->sfp = fopen(dd->basename, "rb"))   == NULL)   ESL_XFAIL(eslENOTFOUND, dd->errbuf, "Failed to find or open sequence file %s\n", dd->basename);
+  if ( snprintf(dd->basename, ndd, "%s.dsqs", basename) <= 0)   ESL_XEXCEPTION_SYS(eslESYS, "sprintf() failure");
+  if (( dd->sfp = fopen(dd->basename, "rb")) == NULL)           ESL_XFAIL(eslENOTFOUND, dd->errbuf, "Failed to find or open sequence file %s\n", dd->basename);
 
   strcpy(dd->basename, basename);
   if (( dd->stubfp = fopen(dd->basename, "r")) == NULL)   ESL_XFAIL(eslENOTFOUND, dd->errbuf, "Failed to find or open stub file %s\n", dd->basename);
@@ -594,6 +596,7 @@ esl_dsqdata_Write(ESL_SQFILE *sqfp, char *basename, char *errbuf)
   int64_t         spos        = 0;
   int64_t         mpos        = 0;
   int             n;
+  int             na;
   int             status;
 
   if (! esl_sqfile_IsRewindable(sqfp))  ESL_EXCEPTION(eslEINVAL, "sqfp must be rewindable (e.g. an open file)");
@@ -630,17 +633,15 @@ esl_dsqdata_Write(ESL_SQFILE *sqfp, char *basename, char *errbuf)
   if      (alphatype == eslAMINO)                      do_pack5 = TRUE;
   else if (alphatype != eslDNA && alphatype != eslRNA) ESL_EXCEPTION(eslEINVAL, "alphabet must be protein or nucleic");
 
-
-  if (( status = esl_sprintf(&outfile, "%s.dsqi", basename)) != eslOK) goto ERROR;
-  if ((    ifp = fopen(outfile, "wb"))             == NULL)  ESL_XFAIL(eslEWRITE, errbuf, "failed to open dsqdata index file %s for writing", outfile);
-  sprintf(outfile, "%s.dsqm", basename);
-  if ((    mfp = fopen(outfile, "wb"))             == NULL)  ESL_XFAIL(eslEWRITE, errbuf, "failed to open dsqdata metadata file %s for writing", outfile);
-  sprintf(outfile, "%s.dsqs", basename);
-  if ((    sfp = fopen(outfile, "wb"))             == NULL)  ESL_XFAIL(eslEWRITE, errbuf, "failed to open dsqdata sequence file %s for writing", outfile);
-  if (( stubfp = fopen(basename, "w"))             == NULL)  ESL_XFAIL(eslEWRITE, errbuf, "failed to open dsqdata stub file %s for writing", basename);
-
-
-  
+  na = strlen(basename) + 6;  // '.dsq?' + '\0'
+  ESL_ALLOC(outfile, na);
+  if ( snprintf(outfile, na, "%s.dsqi", basename) < 0) ESL_EXCEPTION(eslESYS,       "sprintf failed");
+  if (( ifp    = fopen(outfile, "wb")) == NULL)        ESL_XFAIL(eslEWRITE, errbuf, "failed to open dsqdata index file %s for writing", outfile);
+  if ( snprintf(outfile, na, "%s.dsqm", basename) < 0) ESL_EXCEPTION(eslESYS,       "sprintf failed");
+  if (( mfp    = fopen(outfile, "wb")) == NULL)        ESL_XFAIL(eslEWRITE, errbuf, "failed to open dsqdata metadata file %s for writing", outfile);
+  if ( snprintf(outfile, na, "%s.dsqs", basename) < 0) ESL_EXCEPTION(eslESYS,       "sprintf failed"); 
+  if (( sfp    = fopen(outfile, "wb")) == NULL)        ESL_XFAIL(eslEWRITE, errbuf, "failed to open dsqdata sequence file %s for writing", outfile);
+  if (( stubfp = fopen(basename, "w")) == NULL)        ESL_XFAIL(eslEWRITE, errbuf, "failed to open dsqdata stub file %s for writing", basename);
 
   /* Header: index file */
   if (fwrite(&magic,       sizeof(uint32_t), 1, ifp) != 1 ||

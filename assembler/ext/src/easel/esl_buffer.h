@@ -2,7 +2,7 @@
  */
 #ifndef eslBUFFER_INCLUDED
 #define eslBUFFER_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

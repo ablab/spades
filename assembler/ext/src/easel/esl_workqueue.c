@@ -4,7 +4,7 @@
  *    1. Work queue routines
  *    2. Examples.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #ifdef HAVE_PTHREAD
 
@@ -74,6 +74,69 @@ esl_workqueue_Create(int size)
   return NULL;
 }
 
+/* Function:  esl_workqueue_queuelock_Create()
+ * Synopsis:  Create a work queue queulock object.
+ * Incept:    NPC 1/20/2023
+ *
+ * Purpose:   Creates an <ESL_WORK_QUEUE_QUEUELOCK> object of <size>.  The
+ *            queues are used to handle objects <void *> that
+ *            are ready to be processed and that have been
+ *            processed by worker threads.
+ *
+ * Returns:   ptr to the new <ESL_WORK_QUEUE_QUEUELOCK> object.
+ * 
+ * Throws:    <eslESYS> on allocation or initialization failure.
+ */
+ESL_WORK_QUEUE_QUEUELOCK *esl_workqueue_queuelock_Create(int size)
+{
+  int             i;
+  int             status;
+  ESL_WORK_QUEUE_QUEUELOCK *queue = NULL;
+
+  ESL_ALLOC(queue, sizeof(ESL_WORK_QUEUE_QUEUELOCK));
+
+  queue->readerQueue     = NULL;
+  queue->readerQueueCnt  = 0;
+  queue->readerQueueHead = 0;
+
+  queue->workerQueue     = NULL;
+  queue->workerQueueCnt  = 0;
+  queue->workerQueueHead = 0;
+
+  queue->readerWaitQueue     = NULL;
+  queue->readerWaitQueueCnt  = 0;
+  queue->readerWaitQueueHead = 0;
+
+  queue->workerWaitQueue     = NULL;
+  queue->workerWaitQueueCnt  = 0;
+  queue->workerWaitQueueHead = 0;
+
+  queue->queueSize       = size;
+  queue->waitingWorkers  = 0;
+  queue->waitingReaders  = 0;
+
+  if (pthread_mutex_init(&queue->queueMutex, NULL) != 0)     ESL_XEXCEPTION(eslESYS, "mutex init failed");
+
+  ESL_ALLOC(queue->readerQueue, sizeof(void *) * size);
+  ESL_ALLOC(queue->workerQueue, sizeof(void *) * size);
+  ESL_ALLOC(queue->readerWaitQueue, sizeof(void *) * size);
+  ESL_ALLOC(queue->workerWaitQueue, sizeof(void *) * size);
+
+  for (i = 0; i < queue->queueSize; ++i)
+    {
+      queue->readerQueue[i] = NULL;
+      queue->workerQueue[i] = NULL;
+      queue->readerWaitQueue[i] = NULL;
+      queue->workerWaitQueue[i] = NULL;
+    }
+
+  return queue;
+
+ ERROR:
+  esl_workqueue_queuelock_Destroy(queue);
+  return NULL;
+}
+
 /* Function:  esl_workqueue_Destroy()
  * Synopsis:  Destroys an <ESL_WORK_QUEUE> object.
  * Incept:    MSF, Thu Jun 18 11:51:39 2009
@@ -96,6 +159,32 @@ esl_workqueue_Destroy(ESL_WORK_QUEUE *queue)
 
   if (queue->readerQueue != NULL) free(queue->readerQueue);
   if (queue->workerQueue != NULL) free(queue->workerQueue);
+
+  free(queue);
+}
+
+/* Function:  esl_workqueue_queuelock_Destroy()
+ * Synopsis:  Destroys an <ESL_WORK_QUEUE_QUEUELOCK> object.
+ * Incept:    NPC, 1/20/2023
+ *
+ * Purpose:   Frees an <ESL_WORK_QUEUE_QUEUELOCK> object.  
+ *
+ *            The calling routine is responsible for freeing the
+ *            memory of the actual queued objects.
+ *
+ * Returns:   void
+ */
+void 
+esl_workqueue_queuelock_Destroy(ESL_WORK_QUEUE_QUEUELOCK *queue)
+{
+  if (queue == NULL) return;
+
+  pthread_mutex_destroy (&queue->queueMutex);
+
+  if (queue->readerQueue != NULL) free(queue->readerQueue);
+  if (queue->workerQueue != NULL) free(queue->workerQueue);
+  if (queue->readerWaitQueue != NULL) free(queue->readerWaitQueue);
+  if (queue->workerWaitQueue != NULL) free(queue->workerWaitQueue);
 
   free(queue);
 }
@@ -138,6 +227,54 @@ int esl_workqueue_Init(ESL_WORK_QUEUE *queue, void *ptr)
     {
       if (pthread_cond_signal (&queue->readerQueueCond) != 0) ESL_EXCEPTION(eslESYS, "cond signal failed");
     }
+
+  if (pthread_mutex_unlock (&queue->queueMutex) != 0) ESL_EXCEPTION(eslESYS, "mutex unlock failed");
+
+  return eslOK;
+}
+
+/* Function:  esl_workqueue_queuelock_Init()
+ * Synopsis:  Adds a queued object to the producers list.
+ * Incept:    NPC 1/20/2023
+ *
+ * Purpose:   Added a work object <void> to the producers list checking for
+ *            any errors.
+ *
+ * Returns:   <eslOK> on success.
+ * 
+ * Throws:    <eslESYS> if thread synchronization fails somewhere.
+ *            <eslEINVAL> if something's wrong with <queue> or <ptr>.
+ */
+int esl_workqueue_queuelock_Init(ESL_WORK_QUEUE_QUEUELOCK *queue, void *ptr)
+{
+  int cnt;
+  int inx;
+
+  int queueSize;
+
+  if (queue == NULL) ESL_EXCEPTION(eslEINVAL, "Invalid queue object");
+  if (ptr == NULL)   ESL_EXCEPTION(eslEINVAL, "Invalid reader object");
+
+  if (pthread_mutex_lock (&queue->queueMutex) != 0) ESL_EXCEPTION(eslESYS, "mutex lock failed");
+
+  queueSize = queue->queueSize;
+
+  /* check to make sure we won't overflow */
+  cnt = queue->readerQueueCnt;
+  if (cnt >= queueSize) ESL_EXCEPTION(eslEINVAL, "Reader queue overflow");
+
+  if(queue->workerWaitQueueCnt > 0){ // There's at least one worker waiting for this block, so just pass it to them
+    *(queue->workerWaitQueue[queue->workerWaitQueueHead]) = ptr;
+    queue->workerWaitQueue[queue->workerWaitQueueHead] = NULL;
+    queue->workerWaitQueueHead = (queue->workerWaitQueueHead +1) % queue->queueSize;
+    queue->workerWaitQueueCnt -= 1;
+  }
+  else{ // put it in the queue 
+    inx = (queue->readerQueueHead + cnt) % queueSize;
+    queue->readerQueue[inx] = ptr;
+
+    ++queue->readerQueueCnt;
+  }
 
   if (pthread_mutex_unlock (&queue->queueMutex) != 0) ESL_EXCEPTION(eslESYS, "mutex unlock failed");
 
@@ -188,6 +325,51 @@ esl_workqueue_Remove(ESL_WORK_QUEUE *queue, void **obj)
 
   return status;
 }
+/* Function:  esl_workqueue_queuelock_Remove()
+ * Synopsis:  Removes a queued object from the producers list.
+ * Incept:    NPC 1/20-2023
+ *
+ * Purpose:   Removes a queued object from the producers list.
+ *
+ *            A object <void> that has already been consumed by a worker
+ *            is removed the the producers list.  If there are no empty
+ *            objects, a <obj> is set to NULL.
+ *
+ *            The pointer to the object is returned in the obj arguement.
+ *
+ * Returns:   <eslOK>  on success.
+ *            <eslEOD> if no objects are in the queue.
+ *
+ * Throws:    <eslESYS> if thread synchronization fails somewhere.
+ *            <eslEINVAL> if something's wrong with <queue>.
+ */
+int 
+esl_workqueue__queuelock_Remove(ESL_WORK_QUEUE_QUEUELOCK *queue, void **obj)
+{
+  int inx;
+  int status = eslEOD;
+
+  if (obj == NULL)   ESL_EXCEPTION(eslEINVAL, "Invalid object pointer");
+  if (queue == NULL) ESL_EXCEPTION(eslEINVAL, "Invalid queue object");
+
+  if (pthread_mutex_lock (&queue->queueMutex) != 0) ESL_EXCEPTION(eslESYS, "mutex lock failed");
+
+  /* check if there are any items on the readers list */
+  *obj = NULL;
+  if (queue->readerQueueCnt > 0)
+    {
+      inx = (queue->readerQueueHead + queue->readerQueueCnt) % queue->queueSize;
+      *obj = queue->readerQueue[inx];
+      queue->readerQueue[inx] = NULL;
+      --queue->readerQueueCnt;
+      status = eslOK;
+    }
+
+  if (pthread_mutex_unlock (&queue->queueMutex) != 0) ESL_EXCEPTION(eslESYS, "mutex unlock failed");
+
+  return status;
+}
+
 
 /* Function:  esl_workqueue_Complete()
  * Synopsis:  Signals the end of the queue.
@@ -212,6 +394,34 @@ esl_workqueue_Complete(ESL_WORK_QUEUE *queue)
     {
       if (pthread_cond_broadcast (&queue->workerQueueCond) != 0) ESL_EXCEPTION(eslESYS, "broadcast failed");
     }
+
+  if (pthread_mutex_unlock (&queue->queueMutex) != 0) ESL_EXCEPTION(eslESYS, "mutex unlock failed");
+
+  return eslOK;
+}
+
+/* Function:  esl_workqueue_queuelock-Complete()
+ * Synopsis:  Signals the end of the queue.
+ * Incept:    NPC 1/20/2023
+ *
+ * Purpose:   Signal the end of the queue.  If there are any threads
+ *            waiting on an object, signal them to wake up and complete
+ *            their processing.
+ *
+ * Returns:   <eslOK> on success.
+ *
+ * Throws:    <eslESYS> if thread synchronization fails somewhere.
+ *            <eslEINVAL> if something's wrong with <queue>.
+ */
+int 
+esl_workqueue_queuelock_Complete(ESL_WORK_QUEUE_QUEUELOCK *queue)
+{
+  if (queue == NULL)                                ESL_EXCEPTION(eslEINVAL, "Invalid queue object");
+  if (pthread_mutex_lock (&queue->queueMutex) != 0) ESL_EXCEPTION(eslESYS,   "mutex lock failed");
+
+  while(queue->workerWaitQueueCnt > 0){
+
+  }
 
   if (pthread_mutex_unlock (&queue->queueMutex) != 0) ESL_EXCEPTION(eslESYS, "mutex unlock failed");
 
@@ -437,6 +647,34 @@ int esl_workqueue_Dump(ESL_WORK_QUEUE *queue)
   return eslOK;
 }
 
+/* Function:  esl_workqueue_queuelock_Dump()
+ * Synopsis:  Print the contents of the queues.
+ * Incept:    NPC, 1/20/23
+ *
+ * Purpose:   Print the contents of the queues and their pointers.
+ *
+ * Returns:   <eslOK> on success.
+ */
+int esl_workqueue__queuelock_Dump(ESL_WORK_QUEUE_QUEUELOCK *queue)
+{
+  int i;
+
+  if (queue == NULL)                                ESL_EXCEPTION(eslEINVAL, "Invalid queue object");
+  if (pthread_mutex_lock (&queue->queueMutex) != 0) ESL_EXCEPTION(eslESYS,   "mutex lock failed");
+
+  printf ("Reader head: %2d  count: %2d\n", queue->readerQueueHead, queue->readerQueueCnt);
+  printf ("Worker head: %2d  count: %2d\n", queue->workerQueueHead, queue->workerQueueCnt);
+  for (i = 0; i < queue->queueSize; ++i)
+    {
+      printf ("  %2d:  %p  %p, %p, %p\n", i, queue->readerQueue[i], queue->workerQueue[i], queue->readerWaitQueue[i], queue->workerWaitQueue[i]);
+    }
+  printf("Waiting workers: %d\n", queue->waitingWorkers);
+  printf("Waiting readers: %d\n", queue->waitingReaders);
+
+  if (pthread_mutex_unlock (&queue->queueMutex) != 0) ESL_EXCEPTION(eslESYS, "mutex unlock failed");
+
+  return eslOK;
+}
 /*****************************************************************
  * 2. Example
  *****************************************************************/

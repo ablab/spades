@@ -5,7 +5,7 @@
  */
 #ifndef eslGUMBEL_INCLUDED
 #define eslGUMBEL_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "esl_random.h"
 

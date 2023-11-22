@@ -6,7 +6,7 @@
  *   3. Test driver.
  *   4. Examples.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -536,7 +536,7 @@ read_test_msas_text(char *afafile, char *stkfile)
  *  (gcov): gcc -g -Wall -fprofile-arcs -ftest-coverage -I. -L. -o esl_msafile_afa_utest -DeslMSAFILE_AFA_TESTDRIVE esl_msafile_afa.c -leasel -lm
  * run:     ./esl_msafile_afa_utest
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

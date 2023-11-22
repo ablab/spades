@@ -3,7 +3,7 @@
 #ifndef eslMSA_INCLUDED
 #define eslMSA_INCLUDED
 
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

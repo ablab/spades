@@ -10,7 +10,7 @@
  *    6. Test driver.
  *    7. Example.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -513,7 +513,7 @@ key_upsize(ESL_KEYHASH *kh)
    gcc -g -O2 -o keyhash_benchmark -I. -L. -DeslKEYHASH_BENCHMARK esl_keyhash.c -leasel -lm
    time ./keyhash_benchmark /usr/share/dict/words /usr/share/dict/words
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 
@@ -598,7 +598,7 @@ main(int argc, char **argv)
 /* gcc -O2 -o keyhash_benchmark2 -I. -L. -DeslKEYHASH_BENCHMARK2 esl_keyhash.c -leasel -lm
  * ./keyhash_benchmark2 <keyfile>
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <math.h>
@@ -743,7 +743,6 @@ utest_stringkeys(void)
   int             nlookup = 1200;
   int             keylen  = 2;
   char          **keys    = esl_mat_CCreate(nstore+nlookup, keylen+1);
-  int             nfound  = 0;
   int             nmissed = 0;
   int             nk;
   int             i,j,h,h42;
@@ -780,7 +779,7 @@ utest_stringkeys(void)
   for (i = nstore; i < nstore+nlookup; i++)
     {
       status = esl_keyhash_Lookup(kh, keys[i], -1, &h);
-      if      (status == eslOK)        { nfound++;  if (h < 0 || h >= nk) esl_fatal(msg); }
+      if      (status == eslOK)        {            if (h < 0 || h >= nk) esl_fatal(msg); }
       else if (status == eslENOTFOUND) { nmissed++; if (h != -1)          esl_fatal(msg); }
     }
   if ( esl_keyhash_Lookup(kh, "XX", -1, &h) != eslOK || h != h42) esl_fatal(msg);
@@ -806,7 +805,6 @@ utest_memkeys(void)
   int             nlookup = 1200;
   int             keylen  = 2;
   char          **keys    = esl_mat_CCreate(nstore+nlookup, keylen);  
-  int             nfound  = 0;
   int             nmissed = 0;
   int             nk;
   int             i,h,h42;
@@ -829,11 +827,11 @@ utest_memkeys(void)
   for (i = nstore; i < nstore+nlookup; i++)
     {
       status = esl_keyhash_Lookup(kh, keys[i], keylen, &h);
-      if      (status == eslOK)        { nfound++;  if (h < 0 || h >= nk) esl_fatal(msg); }
+      if      (status == eslOK)        {            if (h < 0 || h >= nk) esl_fatal(msg); }
       else if (status == eslENOTFOUND) { nmissed++; if (h != -1)          esl_fatal(msg); }
     }
   if ( esl_keyhash_Lookup(kh, keys[42], keylen, &h) != eslOK || h != h42) esl_fatal(msg);
-  if (nmissed != 209) esl_fatal(msg);  
+  if (nmissed != 209) esl_fatal(msg);    // for seed=42
 
   esl_mat_CDestroy(keys);
   esl_keyhash_Destroy(kh);
@@ -847,7 +845,7 @@ utest_memkeys(void)
  * 6. Test driver
  *****************************************************************/
 #ifdef eslKEYHASH_TESTDRIVE
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>

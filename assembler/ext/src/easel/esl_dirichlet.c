@@ -11,7 +11,7 @@
  *   esl_mixdchlet : mixture Dirichlets
  *   esl_gamma:      Gamma densities
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <assert.h>
 #include <stdlib.h>

@@ -5,7 +5,7 @@
  */
 #ifndef eslDISTANCE_INCLUDED
 #define eslDISTANCE_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "easel.h"		
 #include "esl_alphabet.h"	

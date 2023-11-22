@@ -16,7 +16,7 @@
  */
 #ifndef eslEASEL_INCLUDED
 #define eslEASEL_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>		/* for FILE */
@@ -146,12 +146,27 @@
  * need a tmp ptr. All ESL_RALLOC() calls can be safely converted
  * to ESL_REALLOC() calls.
  * 
- * The result of malloc(0) is implementation-defined (either NULL or
- * a ptr that may not be dereferenced), a bit of a hole in the C
- * standard. In Easel, we want to avoid having NULL as a valid
- * non-error result of malloc(), because it confuses static analysis
- * tools when they see dereferences of possibly NULL pointers. We
- * therefore treat malloc(0) as an eslEMEM error.
+ * We don't use zero allocations.  The result of malloc(0) is
+ * implementation-defined (either NULL or a ptr that may not be
+ * dereferenced), a bit of a hole in the C standard. In Easel, we want
+ * to avoid having NULL as a valid non-error result of malloc(),
+ * because it confuses static analysis tools when they see
+ * dereferences of possibly NULL pointers. We therefore treat
+ * malloc(0) as an eslEMEM error.
+ *
+ * The `size` argument is >= 0. It can be either signed or unsigned,
+ * but beware of mixed constructs like `(sizeof(foo) * n)`. `sizeof()`
+ * returns unsigned; (unsigned * signed) first converts the signed
+ * operand to unsigned; if the signed operand is negative, the
+ * conversion adds (UINT_MAX+1) modulo (UINT_MAX+1), and a small
+ * negative signed number becomes a ridiculously large unsigned
+ * one. Even when you know n is positive, a -Walloc-size-larger-than
+ * warning in some gcc versions is very aggressively looking for
+ * problems of this sort, where it may assume that your n could have
+ * any value from INT_MIN to -1, generating a false positive compiler
+ * warning. To suppress this warning we typically use a signed cast,
+ * `(ptrdiff_t) sizeof(foo) * n`.
+ * [2023/0804-h3-gcc-malloc-warning]
  */
 /*::cexcerpt::alloc_macros::begin::*/
 #define ESL_ALLOC(p, size) do {\
@@ -517,6 +532,9 @@ extern int  esl_FCompare(float  x0, float  x, float  r_tol, float  a_tol);
 extern int  esl_CCompare(char *s1, char *s2);
 extern int  esl_DCompare_old(double a,  double b, double tol);
 extern int  esl_FCompare_old(float  a,  float  b, float  tol);
+
+/* 9. Other miscellaneous functions */
+extern uint32_t esl_mix3(uint32_t a, uint32_t b, uint32_t c);
 
 #endif /*eslEASEL_INCLUDED*/
 

@@ -14,7 +14,7 @@
  *   esl_dirichlet : simple Dirichlet densities
  *   esl-mixdchlet miniapp : fitting and more
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>

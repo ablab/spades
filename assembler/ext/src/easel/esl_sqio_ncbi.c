@@ -7,7 +7,7 @@
  *    4. Sequence reading (sequential).
  *    5. Parsing routines
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -2577,7 +2577,7 @@ parse_def_line(ESL_SQNCBI_DATA *ncbi, ESL_SQ *sq)
       esl_sq_SetName(sq, ncbi->str_id_ptr);
     } else {
       char id[32];
-      sprintf(id, "%d", ncbi->int_id);
+      snprintf(id, 32, "%d", ncbi->int_id);
       esl_sq_SetName(sq, id);
     }
     if (title != NULL) esl_sq_SetDesc(sq, title);

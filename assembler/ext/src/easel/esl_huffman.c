@@ -12,7 +12,7 @@
  *   p /t v     (no leading zeros, beware!)
  *   x &v 
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 
@@ -877,7 +877,7 @@ utest_backandforth(ESL_RANDOMNESS *rng)
  * 7. Test driver
  *****************************************************************/
 #ifdef eslHUFFMAN_TESTDRIVE
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

@@ -5,10 +5,10 @@ set(EASEL_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(EASEL_TOOLS_BINARY_DIR ${EASEL_BINARY_DIR}/bin)
 set(EASEL_BUILT_INCLUDE_DIR ${EASEL_BINARY_DIR}/include)
 
-set(EASEL_DATE "Nov 2020")
-set(EASEL_COPYRIGHT "Copyright (C) 2020 Howard Hughes Medical Institute")
+set(EASEL_DATE "Aug 2023")
+set(EASEL_COPYRIGHT "Copyright (C) 2023 Howard Hughes Medical Institute")
 set(EASEL_LICENSE "Freely distributed under the BSD open source license.")
-set(EASEL_VERSION 0.48)
+set(EASEL_VERSION 0.49)
 set(EASEL_URL "http://bioeasel.org/")
 
 include(CheckIncludeFiles)

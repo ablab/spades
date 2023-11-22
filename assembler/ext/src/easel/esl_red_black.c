@@ -1,5 +1,5 @@
 /* esl_red_black.c -- functions for implementing red-black trees */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "easel.h"
 #include "esl_red_black.h"
@@ -639,7 +639,7 @@ uint32_t esl_red_black_doublekey_min_depth(ESL_RED_BLACK_DOUBLEKEY *tree){
 #ifdef eslRED_BLACK_TESTDRIVE
 /* gcc -g -Wall -o test -I. -L. -DeslCLUSTER_TESTDRIVE esl_cluster.c -leasel -lm
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>

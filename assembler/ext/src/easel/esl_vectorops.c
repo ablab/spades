@@ -10,13 +10,15 @@
  *    3. Test driver.
  *    4. Examples.
  */                      
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <math.h>
 #include <float.h>
+#include <stdint.h>
 
 #include "easel.h"
 #include "esl_random.h"
+#include "esl_rand64.h"
 
 #include "esl_vectorops.h"
 
@@ -26,27 +28,27 @@
  * Purpose:   Sets all <n> items in <vec> to <value>.
  */
 void
-esl_vec_DSet(double *vec, int n, double value)
+esl_vec_DSet(double *vec, int64_t n, double value)
 {
-  int i; 
+  int64_t i; 
   for (i = 0; i < n; i++) vec[i] = value;
 }
 void
-esl_vec_FSet(float *vec, int n, float value)
+esl_vec_FSet(float *vec, int64_t n, float value)
 {
-  int i; 
+  int64_t i; 
   for (i = 0; i < n; i++) vec[i] = value;
 }
 void
-esl_vec_ISet(int *vec, int n, int value)
+esl_vec_ISet(int *vec, int64_t n, int value)
 {
-  int i; 
+  int64_t i; 
   for (i = 0; i < n; i++) vec[i] = value;
 }
 void
-esl_vec_LSet(int64_t *vec, int n, int64_t value)
+esl_vec_LSet(int64_t *vec, int64_t n, int64_t value)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) vec[i] = value;
 }
 
@@ -57,27 +59,27 @@ esl_vec_LSet(int64_t *vec, int n, int64_t value)
  * Purpose:   Multiplies all <n> items in <vec> by <scale>.
  */
 void
-esl_vec_DScale(double *vec, int n, double scale)
+esl_vec_DScale(double *vec, int64_t n, double scale)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) vec[i] *= scale;
 }
 void
-esl_vec_FScale(float *vec, int n, float scale)
+esl_vec_FScale(float *vec, int64_t n, float scale)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) vec[i] *= scale;
 }
 void
-esl_vec_IScale(int *vec, int n, int scale)
+esl_vec_IScale(int *vec, int64_t n, int scale)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) vec[i] *= scale;
 }
 void
-esl_vec_LScale(int64_t *vec, int n, int64_t scale)
+esl_vec_LScale(int64_t *vec, int64_t n, int64_t scale)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) vec[i] *= scale;
 }
 
@@ -89,27 +91,27 @@ esl_vec_LScale(int64_t *vec, int n, int64_t scale)
  * Purpose:   Adds scalar <x> to all items in the <n>-vector <v>.
  */
 void
-esl_vec_DIncrement(double *v, int n, double x)
+esl_vec_DIncrement(double *v, int64_t n, double x)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) v[i] += x;
 }
 void
-esl_vec_FIncrement(float *v, int n, float x)
+esl_vec_FIncrement(float *v, int64_t n, float x)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) v[i] += x;
 }
 void
-esl_vec_IIncrement(int *v, int n, int x)
+esl_vec_IIncrement(int *v, int64_t n, int x)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) v[i] += x;
 }
 void
-esl_vec_LIncrement(int64_t *v, int n, int64_t x)
+esl_vec_LIncrement(int64_t *v, int64_t n, int64_t x)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) v[i] += x;
 }
 
@@ -122,27 +124,27 @@ esl_vec_LIncrement(int64_t *v, int n, int64_t x)
  *            Both vectors are of size <n>.
  */
 void
-esl_vec_DAdd(double *vec1, const double *vec2, int n)
+esl_vec_DAdd(double *vec1, const double *vec2, int64_t n)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) vec1[i] += vec2[i];
 }
 void
-esl_vec_FAdd(float *vec1, const float *vec2, int n)
+esl_vec_FAdd(float *vec1, const float *vec2, int64_t n)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) vec1[i] += vec2[i];
 }
 void
-esl_vec_IAdd(int *vec1, const int *vec2, int n)
+esl_vec_IAdd(int *vec1, const int *vec2, int64_t n)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) vec1[i] += vec2[i];
 }
 void
-esl_vec_LAdd(int64_t *vec1, const int64_t *vec2, int n)
+esl_vec_LAdd(int64_t *vec1, const int64_t *vec2, int64_t n)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) vec1[i] += vec2[i];
 }
 
@@ -154,27 +156,27 @@ esl_vec_LAdd(int64_t *vec1, const int64_t *vec2, int n)
  *           to <vec1>. Both vectors are of size <n>. 
  */
 void
-esl_vec_DAddScaled(double *vec1, const double *vec2, double a, int n)
+esl_vec_DAddScaled(double *vec1, const double *vec2, double a, int64_t n)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) vec1[i] += vec2[i] * a;
 }
 void
-esl_vec_FAddScaled(float *vec1, const float *vec2, float a, int n)
+esl_vec_FAddScaled(float *vec1, const float *vec2, float a, int64_t n)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) vec1[i] += vec2[i] * a;
 }
 void
-esl_vec_IAddScaled(int *vec1, const int *vec2, int a, int n)
+esl_vec_IAddScaled(int *vec1, const int *vec2, int a, int64_t n)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) vec1[i] += vec2[i] * a;
 }
 void
-esl_vec_LAddScaled(int64_t *vec1, const int64_t *vec2, int64_t a, int n)
+esl_vec_LAddScaled(int64_t *vec1, const int64_t *vec2, int64_t a, int64_t n)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) vec1[i] += vec2[i] * a;
 }
 
@@ -193,11 +195,11 @@ esl_vec_LAddScaled(int64_t *vec1, const int64_t *vec2, int64_t a, int n)
  *            summing it.
  */
 double 
-esl_vec_DSum(const double *vec, int n)
+esl_vec_DSum(const double *vec, int64_t n)
 {
-  double sum = 0.;
-  double y,t,c; 
-  int    i;
+  double  sum = 0.;
+  double  y,t,c; 
+  int64_t i;
 
   c = 0.0;
   for (i = 0; i < n; i++) {
@@ -206,11 +208,11 @@ esl_vec_DSum(const double *vec, int n)
   return sum;
 }
 float 
-esl_vec_FSum(const float *vec, int n)
+esl_vec_FSum(const float *vec, int64_t n)
 {
-  float sum = 0.;
-  float y,t,c;
-  int   i;
+  float   sum = 0.;
+  float   y,t,c;
+  int64_t i;
 
   c = 0.0;
   for (i = 0; i < n; i++) {
@@ -219,18 +221,18 @@ esl_vec_FSum(const float *vec, int n)
   return sum;
 }
 int
-esl_vec_ISum(const int *vec, int n)
+esl_vec_ISum(const int *vec, int64_t n)
 {
-  int sum = 0;
-  int i;
+  int     sum = 0;
+  int64_t i;
   for (i = 0; i < n; i++) sum += vec[i];
   return sum;
 }
 int64_t
-esl_vec_LSum(const int64_t *vec, int n)
+esl_vec_LSum(const int64_t *vec, int64_t n)
 {
   int64_t sum = 0;
-  int     i;
+  int64_t i;
   for (i = 0; i < n; i++) sum += vec[i];
   return sum;
 }
@@ -243,34 +245,34 @@ esl_vec_LSum(const int64_t *vec, int n)
  *            Both vectors are of size <n>.
  */
 double
-esl_vec_DDot(const double *vec1, const double *vec2, int n)
+esl_vec_DDot(const double *vec1, const double *vec2, int64_t n)
 {
-  double result = 0.;
-  int    i;
+  double  result = 0.;
+  int64_t i;
   for (i = 0; i < n; i++) result += vec1[i] * vec2[i];
   return result;
 }
 float
-esl_vec_FDot(const float *vec1, const float *vec2, int n)
+esl_vec_FDot(const float *vec1, const float *vec2, int64_t n)
 {
-  float result = 0.;
-  int   i;
+  float   result = 0.;
+  int64_t i;
   for (i = 0; i < n; i++) result += vec1[i] * vec2[i];
   return result;
 }
 int
-esl_vec_IDot(const int *vec1, const int *vec2, int n)
+esl_vec_IDot(const int *vec1, const int *vec2, int64_t n)
 {
-  int result = 0;
-  int i;
+  int     result = 0;
+  int64_t i;
   for (i = 0; i < n; i++) result += vec1[i] * vec2[i];
   return result;
 }
 int64_t
-esl_vec_LDot(const int64_t *vec1, const int64_t *vec2, int n)
+esl_vec_LDot(const int64_t *vec1, const int64_t *vec2, int64_t n)
 {
-  int result = 0;
-  int i;
+  int64_t result = 0;
+  int64_t i;
   for (i = 0; i < n; i++) result += vec1[i] * vec2[i];
   return result;
 }
@@ -284,40 +286,40 @@ esl_vec_LDot(const int64_t *vec1, const int64_t *vec2, int n)
  *            in <vec>.
  */
 double
-esl_vec_DMax(const double *vec, int n)
+esl_vec_DMax(const double *vec, int64_t n)
 {
-  double best;
-  int    i;
+  double  best;
+  int64_t i;
   best = vec[0];
   for (i = 1; i < n; i++)
     if (vec[i] > best) best = vec[i];
   return best;
 }
 float
-esl_vec_FMax(const float *vec, int n)
+esl_vec_FMax(const float *vec, int64_t n)
 {
-  float best;
-  int   i;
+  float   best;
+  int64_t i;
   best = vec[0];
   for (i = 1; i < n; i++)
     if (vec[i] > best) best = vec[i];
   return best;
 }
 int
-esl_vec_IMax(const int *vec, int n)
+esl_vec_IMax(const int *vec, int64_t n)
 {
-  int   best;
-  int   i;
+  int     best;
+  int64_t i;
   best = vec[0];
   for (i = 1; i < n; i++)
     if (vec[i] > best) best = vec[i];
   return best;
 }
 int64_t
-esl_vec_LMax(const int64_t *vec, int n)
+esl_vec_LMax(const int64_t *vec, int64_t n)
 {
   int64_t best;
-  int     i;
+  int64_t i;
   best = vec[0];
   for (i = 1; i < n; i++)
     if (vec[i] > best) best = vec[i];
@@ -333,40 +335,40 @@ esl_vec_LMax(const int64_t *vec, int n)
  *            in <vec>.
  */
 double
-esl_vec_DMin(const double *vec, int n)
+esl_vec_DMin(const double *vec, int64_t n)
 {
-  double best;
-  int    i;
+  double  best;
+  int64_t i;
   best = vec[0];
   for (i = 1; i < n; i++)
     if (vec[i] < best) best = vec[i];
   return best;
 }
 float
-esl_vec_FMin(const float *vec, int n)
+esl_vec_FMin(const float *vec, int64_t n)
 {
-  float best;
-  int   i;
+  float   best;
+  int64_t i;
   best = vec[0];
   for (i = 1; i < n; i++)
     if (vec[i] < best) best = vec[i];
   return best;
 }
 int
-esl_vec_IMin(const int *vec, int n)
+esl_vec_IMin(const int *vec, int64_t n)
 {
-  int   best;
-  int   i;
+  int     best;
+  int64_t i;
   best = vec[0];
   for (i = 1; i < n; i++)
     if (vec[i] < best) best = vec[i];
   return best;
 }
 int64_t
-esl_vec_LMin(const int64_t *vec, int n)
+esl_vec_LMin(const int64_t *vec, int64_t n)
 {
   int64_t best;
-  int     i;
+  int64_t i;
   best = vec[0];
   for (i = 1; i < n; i++)
     if (vec[i] < best) best = vec[i];
@@ -387,41 +389,41 @@ esl_vec_LMin(const int64_t *vec, int n)
  *            returned in case of ties. Some functions rely on this
  *            behavior: optimal accuracy tracebacks in HMMER for example.           
  */
-int
-esl_vec_DArgMax(const double *vec, int n)
+int64_t
+esl_vec_DArgMax(const double *vec, int64_t n)
 {
-  int i;
-  int best = 0;
+  int64_t best = 0;
+  int64_t i;
 
   for (i = 1; i < n; i++)
     if (vec[i] > vec[best]) best = i;
   return best;
 }
-int
-esl_vec_FArgMax(const float *vec, int n)
+int64_t
+esl_vec_FArgMax(const float *vec, int64_t n)
 {
-  int i;
-  int best = 0;
+  int64_t best = 0;
+  int64_t i;
 
   for (i = 1; i < n; i++)
     if (vec[i] > vec[best]) best = i;
   return best;
 }
-int
-esl_vec_IArgMax(const int *vec, int n)
+int64_t
+esl_vec_IArgMax(const int *vec, int64_t n)
 {
-  int i;
-  int best = 0;
+  int64_t best = 0;
+  int64_t i;
 
   for (i = 1; i < n; i++)
     if (vec[i] > vec[best]) best = i;
   return best;
 }
-int
-esl_vec_LArgMax(const int64_t *vec, int n)
+int64_t
+esl_vec_LArgMax(const int64_t *vec, int64_t n)
 {
-  int i;
-  int best = 0;
+  int64_t best = 0;
+  int64_t i;
 
   for (i = 1; i < n; i++)
     if (vec[i] > vec[best]) best = i;
@@ -434,40 +436,41 @@ esl_vec_LArgMax(const int64_t *vec, int n)
  * Purpose:   Returns the index of the minimum value in the <n> values
  *            in <vec>.
  */
-int
-esl_vec_DArgMin(const double *vec, int n)
+int64_t
+esl_vec_DArgMin(const double *vec, int64_t n)
 {
-  int i;
-  int best = 0;
-  for (i = 1; i < n; i++)
-    if (vec[i] < vec[best]) best = i;
-  return best;
-}
-int
-esl_vec_FArgMin(const float *vec, int n)
-{
-  int   i;
-  int   best = 0;
+  int64_t best = 0;
+  int64_t i;
 
   for (i = 1; i < n; i++)
     if (vec[i] < vec[best]) best = i;
   return best;
 }
-int
-esl_vec_IArgMin(const int *vec, int n)
+int64_t
+esl_vec_FArgMin(const float *vec, int64_t n)
 {
-  int   i;
-  int   best = 0;
+  int64_t best = 0;
+  int64_t i;
 
   for (i = 1; i < n; i++)
     if (vec[i] < vec[best]) best = i;
   return best;
 }
-int
-esl_vec_LArgMin(const int64_t *vec, int n)
+int64_t
+esl_vec_IArgMin(const int *vec, int64_t n)
 {
-  int   i;
-  int   best = 0;
+  int64_t best = 0;
+  int64_t i;
+
+  for (i = 1; i < n; i++)
+    if (vec[i] < vec[best]) best = i;
+  return best;
+}
+int64_t
+esl_vec_LArgMin(const int64_t *vec, int64_t n)
+{
+  int64_t i;
+  int64_t best = 0;
 
   for (i = 1; i < n; i++)
     if (vec[i] < vec[best]) best = i;
@@ -483,39 +486,39 @@ esl_vec_LArgMin(const int64_t *vec, int n)
  *            unchanged. Both vectors are of size <n>.
  */
 void
-esl_vec_DCopy(const double *src, int n, double *dest)
+esl_vec_DCopy(const double *src, int64_t n, double *dest)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) dest[i] = src[i];
 }
 void
-esl_vec_FCopy(const float *src, int n, float *dest)
+esl_vec_FCopy(const float *src, int64_t n, float *dest)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) dest[i] = src[i];
 }
 void
-esl_vec_ICopy(const int *src, int n, int *dest)
+esl_vec_ICopy(const int *src, int64_t n, int *dest)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) dest[i] = src[i];
 }
 void
-esl_vec_LCopy(const int64_t *src, int n, int64_t *dest)
+esl_vec_LCopy(const int64_t *src, int64_t n, int64_t *dest)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) dest[i] = src[i];
 }
 void
-esl_vec_WCopy(const int16_t *src, int n, int16_t *dest)
+esl_vec_WCopy(const int16_t *src, int64_t n, int16_t *dest)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) dest[i] = src[i];
 }
 void
-esl_vec_BCopy(const int8_t *src, int n, int8_t *dest)
+esl_vec_BCopy(const int8_t *src, int64_t n, int8_t *dest)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) dest[i] = src[i];
 }
 
@@ -531,37 +534,37 @@ esl_vec_BCopy(const int8_t *src, int n, int8_t *dest)
  *            if that's feasible.
  */
 void
-esl_vec_DSwap(double *vec1, double *vec2, int n)
+esl_vec_DSwap(double *vec1, double *vec2, int64_t n)
 {
-  int    i;
-  double tmp;
+  int64_t i;
+  double  tmp;
 
   for (i = 0; i < n; i++) 
     { tmp = vec1[i]; vec1[i] = vec2[i]; vec2[i] = tmp; }
 }
 void
-esl_vec_FSwap(float *vec1, float *vec2, int n)
+esl_vec_FSwap(float *vec1, float *vec2, int64_t n)
 {
-  int   i;
-  float tmp;
+  int64_t i;
+  float   tmp;
 
   for (i = 0; i < n; i++) 
     { tmp = vec1[i]; vec1[i] = vec2[i]; vec2[i] = tmp; }
 }
 void
-esl_vec_ISwap(int *vec1, int *vec2, int n)
+esl_vec_ISwap(int *vec1, int *vec2, int64_t n)
 {
-  int i;
-  int tmp;
+  int64_t i;
+  int     tmp;
 
   for (i = 0; i < n; i++) 
     { tmp = vec1[i]; vec1[i] = vec2[i]; vec2[i] = tmp; }
 }
 void
-esl_vec_LSwap(int64_t *vec1, int64_t *vec2, int n)
+esl_vec_LSwap(int64_t *vec1, int64_t *vec2, int64_t n)
 {
-  int i;
-  int tmp;
+  int64_t i;
+  int64_t tmp;
 
   for (i = 0; i < n; i++) 
     { tmp = vec1[i]; vec1[i] = vec2[i]; vec2[i] = tmp; }
@@ -587,10 +590,10 @@ esl_vec_LSwap(int64_t *vec1, int64_t *vec2, int n)
  *            <s2> yourself.
  */
 void
-esl_vec_DReverse(const double *vec, double *rev, int n)
+esl_vec_DReverse(const double *vec, double *rev, int64_t n)
 {
-  int    i;
-  double x;
+  int64_t i;
+  double  x;
 
   for (i = 0; i < n/2; i++)
     {
@@ -601,10 +604,10 @@ esl_vec_DReverse(const double *vec, double *rev, int n)
   if (n%2) rev[i] = vec[i];
 }
 void
-esl_vec_FReverse(const float *vec, float *rev, int n)
+esl_vec_FReverse(const float *vec, float *rev, int64_t n)
 {
-  int    i;
-  float  x;
+  int64_t i;
+  float   x;
 
   for (i = 0; i < n/2; i++)
     {
@@ -615,10 +618,10 @@ esl_vec_FReverse(const float *vec, float *rev, int n)
   if (n%2) rev[i] = vec[i];
 }
 void
-esl_vec_IReverse(const int *vec, int *rev, int n)
+esl_vec_IReverse(const int *vec, int *rev, int64_t n)
 {
-  int i;
-  int x;
+  int64_t i;
+  int     x;
 
   for (i = 0; i < n/2; i++)
     {
@@ -629,9 +632,9 @@ esl_vec_IReverse(const int *vec, int *rev, int n)
   if (n%2) rev[i] = vec[i];
 }
 void
-esl_vec_LReverse(const int64_t *vec, int64_t *rev, int n)
+esl_vec_LReverse(const int64_t *vec, int64_t *rev, int64_t n)
 {
-  int     i;
+  int64_t i;
   int64_t x;
 
   for (i = 0; i < n/2; i++)
@@ -643,9 +646,9 @@ esl_vec_LReverse(const int64_t *vec, int64_t *rev, int n)
   if (n%2) rev[i] = vec[i];
 }
 void
-esl_vec_CReverse(const char *vec, char *rev, int n)
+esl_vec_CReverse(const char *vec, char *rev, int64_t n)
 {
-  int i;
+  int64_t i;
   char x;
 
   for (i = 0; i < n/2; i++)
@@ -748,22 +751,22 @@ qsort_LDecreasing(const void *xp1, const void *xp2)
  *            the maximum.)
  */
 void
-esl_vec_DSortIncreasing(double *vec, int n)
+esl_vec_DSortIncreasing(double *vec, int64_t n)
 {
   qsort((void *) vec, n, sizeof(double), qsort_DIncreasing);
 }
 void
-esl_vec_FSortIncreasing(float *vec, int n)
+esl_vec_FSortIncreasing(float *vec, int64_t n)
 {
   qsort((void *) vec, n, sizeof(float), qsort_FIncreasing);
 }
 void
-esl_vec_ISortIncreasing(int *vec, int n)
+esl_vec_ISortIncreasing(int *vec, int64_t n)
 {
   qsort((void *) vec, n, sizeof(int), qsort_IIncreasing);
 }
 void
-esl_vec_LSortIncreasing(int64_t *vec, int n)
+esl_vec_LSortIncreasing(int64_t *vec, int64_t n)
 {
   qsort((void *) vec, n, sizeof(int64_t), qsort_LIncreasing);
 }
@@ -779,22 +782,22 @@ esl_vec_LSortIncreasing(int64_t *vec, int n)
  *            the minimum.)
  */
 void
-esl_vec_DSortDecreasing(double *vec, int n)
+esl_vec_DSortDecreasing(double *vec, int64_t n)
 {
   qsort((void *) vec, n, sizeof(double), qsort_DDecreasing);
 }
 void
-esl_vec_FSortDecreasing(float *vec, int n)
+esl_vec_FSortDecreasing(float *vec, int64_t n)
 {
   qsort((void *) vec, n, sizeof(float), qsort_FDecreasing);
 }
 void
-esl_vec_ISortDecreasing(int *vec, int n)
+esl_vec_ISortDecreasing(int *vec, int64_t n)
 {
   qsort((void *) vec, n, sizeof(int), qsort_IDecreasing);
 }
 void
-esl_vec_LSortDecreasing(int64_t *vec, int n)
+esl_vec_LSortDecreasing(int64_t *vec, int64_t n)
 {
   qsort((void *) vec, n, sizeof(int64_t), qsort_LDecreasing);
 }
@@ -805,12 +808,21 @@ esl_vec_LSortDecreasing(int64_t *vec, int n)
  *
  * Purpose:   Shuffle a vector <v> of <n> items, using the
  *            random number generator <r>.
+ *
+ *            Although <n> is an int64, <n> cannot be larger than
+ *            INT32_MAX (2^{31}-1), basically because the
+ *            ESL_RANDOMNESS that we use for shuffling is a 32-bit
+ *            random number generator. To circumvent this limitation
+ *            and shuffle large vectors with >INT32_MAX elements, use
+ *            the 64-bit ESL_RAND64 RNG and the
+ *            esl_vec_{DFIL}Shuffle64() functions further below.
  */
 int
-esl_vec_DShuffle(ESL_RANDOMNESS *r, double *v, int n)
+esl_vec_DShuffle(ESL_RANDOMNESS *r, double *v, int64_t n)
 {
-  double swap;
-  int    pos;
+  ESL_DASSERT1(( n <= INT32_MAX ));
+  double   swap;
+  int64_t  pos;
   for ( ; n > 1; n--)
     {
       pos = esl_rnd_Roll(r, n);
@@ -821,10 +833,11 @@ esl_vec_DShuffle(ESL_RANDOMNESS *r, double *v, int n)
   return eslOK;
 }
 int
-esl_vec_FShuffle(ESL_RANDOMNESS *r, float *v, int n)
+esl_vec_FShuffle(ESL_RANDOMNESS *r, float *v, int64_t n)
 {
-  float swap;
-  int   pos;
+  ESL_DASSERT1(( n <= INT32_MAX ));
+  float   swap;
+  int64_t pos;
   for ( ; n > 1; n--)
     {
       pos = esl_rnd_Roll(r, n);
@@ -835,10 +848,11 @@ esl_vec_FShuffle(ESL_RANDOMNESS *r, float *v, int n)
   return eslOK;
 }
 int
-esl_vec_IShuffle(ESL_RANDOMNESS *r, int *v, int n)
+esl_vec_IShuffle(ESL_RANDOMNESS *r, int *v, int64_t n)
 {
-  int swap;
-  int pos;
+  ESL_DASSERT1(( n <= INT32_MAX ));
+  int     swap;
+  int64_t pos;
   for ( ; n > 1; n--)
     {
       pos = esl_rnd_Roll(r, n);
@@ -849,19 +863,90 @@ esl_vec_IShuffle(ESL_RANDOMNESS *r, int *v, int n)
   return eslOK;
 }
 int
-esl_vec_LShuffle(ESL_RANDOMNESS *r, int64_t *v, int n)
+esl_vec_LShuffle(ESL_RANDOMNESS *r, int64_t *v, int64_t n)
+{
+  ESL_DASSERT1(( n <= INT32_MAX ));
+  int64_t swap;
+  int64_t pos;
+  for ( ; n > 1; n--)
+    {
+      pos = esl_rnd_Roll(r, n);
+      swap = v[pos]; 
+      v[pos] = v[n-1];
+      v[n-1] = swap;
+    }
+  return eslOK;
+}
+
+
+/* Function:  esl_vec_{DFIL}Shuffle64()
+ * Synopsis:  Shuffle a large vector, in place.
+ *
+ * Purpose:   Shuffle a vector <v> of <n> items, using the
+ *            64-bit random number generator <rng>.
+ *
+ *            These are intended for the unusual case where <v>
+ *            contains a very large number of elements, > INT32_MAX of
+ *            them (>=2^31; ~2.15B).
+ */
+int
+esl_vec_DShuffle64(ESL_RAND64 *rng, double *v, int64_t n)
+{
+  double   swap;
+  int64_t  pos;
+  for ( ; n > 1; n--)
+    {
+      pos    = esl_rand64_Roll(rng, n);
+      swap   = v[pos]; 
+      v[pos] = v[n-1];
+      v[n-1] = swap;
+    }
+  return eslOK;
+}
+int
+esl_vec_FShuffle64(ESL_RAND64 *rng, float *v, int64_t n)
+{
+  float   swap;
+  int64_t pos;
+  for ( ; n > 1; n--)
+    {
+      pos    = esl_rand64_Roll(rng, n);
+      swap   = v[pos]; 
+      v[pos] = v[n-1];
+      v[n-1] = swap;
+    }
+  return eslOK;
+}
+int
+esl_vec_IShuffle64(ESL_RAND64 *rng, int *v, int64_t n)
+{
+  int     swap;
+  int64_t pos;
+  for ( ; n > 1; n--)
+    {
+      pos    = esl_rand64_Roll(rng, n);
+      swap   = v[pos]; 
+      v[pos] = v[n-1];
+      v[n-1] = swap;
+    }
+  return eslOK;
+}
+int
+esl_vec_LShuffle64(ESL_RAND64 *rng, int64_t *v, int64_t n)
 {
   int64_t swap;
-  int     pos;
+  int64_t pos;
   for ( ; n > 1; n--)
     {
-      pos = esl_rnd_Roll(r, n);
-      swap = v[pos]; 
+      pos    = esl_rand64_Roll(rng, n);
+      swap   = v[pos]; 
       v[pos] = v[n-1];
       v[n-1] = swap;
     }
   return eslOK;
 }
+
+
 
 /* Function:  esl_vec_{DFIL}Compare()
  * Synopsis:  Return <eslOK> if two vectors are equal.
@@ -881,30 +966,30 @@ esl_vec_LShuffle(ESL_RANDOMNESS *r, int64_t *v, int n)
  *            vectors <NULL>.
  */
 int
-esl_vec_DCompare(const double *vec1, const double *vec2, int n, double tol)
+esl_vec_DCompare(const double *vec1, const double *vec2, int64_t n, double tol)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) if (esl_DCompare_old(vec1[i], vec2[i], tol) == eslFAIL) return eslFAIL;
   return eslOK;
 }
 int
-esl_vec_FCompare(const float *vec1, const float *vec2, int n, float tol)
+esl_vec_FCompare(const float *vec1, const float *vec2, int64_t n, float tol)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) if (esl_FCompare_old(vec1[i], vec2[i], tol) == eslFAIL) return eslFAIL;
   return eslOK;
 }
 int
-esl_vec_ICompare(const int *vec1, const int *vec2, int n)
+esl_vec_ICompare(const int *vec1, const int *vec2, int64_t n)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) if (vec1[i] != vec2[i]) return eslFAIL;
   return eslOK;
 }
 int
-esl_vec_LCompare(const int64_t *vec1, const int64_t *vec2, int n)
+esl_vec_LCompare(const int64_t *vec1, const int64_t *vec2, int64_t n)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) if (vec1[i] != vec2[i]) return eslFAIL;
   return eslOK;
 }
@@ -930,15 +1015,15 @@ esl_vec_LCompare(const int64_t *vec1, const int64_t *vec2, int n)
  * Returns:   <eslOK> on success.
  */
 int
-esl_vec_DDump(FILE *ofp, const double *v, int n, const char *label)
+esl_vec_DDump(FILE *ofp, const double *v, int64_t n, const char *label)
 {
-  int a;
+  int64_t a;
 
   fprintf(ofp, "     ");
   if (label != NULL) 
     for (a = 0; a < n; a++) fprintf(ofp, "         %c ", label[a]);
   else
-    for (a = 0; a < n; a++) fprintf(ofp, "%10d ", a+1);
+    for (a = 0; a < n; a++) fprintf(ofp, "%10" PRId64 " ", a+1);
   fprintf(ofp, "\n");
   
   fprintf(ofp, "      ");
@@ -948,15 +1033,15 @@ esl_vec_DDump(FILE *ofp, const double *v, int n, const char *label)
   return eslOK;
 }
 int
-esl_vec_FDump(FILE *ofp, const float *v, int n, const char *label)
+esl_vec_FDump(FILE *ofp, const float *v, int64_t n, const char *label)
 {
-  int a;
+  int64_t a;
 
   fprintf(ofp, "     ");
   if (label != NULL) 
     for (a = 0; a < n; a++) fprintf(ofp, "         %c ", label[a]);
   else
-    for (a = 0; a < n; a++) fprintf(ofp, "%10d ", a+1);
+    for (a = 0; a < n; a++) fprintf(ofp, "%10" PRId64 " ", a+1);
   fprintf(ofp, "\n");
   
   fprintf(ofp, "      ");
@@ -966,15 +1051,15 @@ esl_vec_FDump(FILE *ofp, const float *v, int n, const char *label)
   return eslOK;
 }
 int
-esl_vec_IDump(FILE *ofp, const int *v, int n, const char *label)
+esl_vec_IDump(FILE *ofp, const int *v, int64_t n, const char *label)
 {
-  int a;
+  int64_t a;
 
   fprintf(ofp, "     ");
   if (label != NULL) 
     for (a = 0; a < n; a++) fprintf(ofp, "       %c ", label[a]);
   else
-    for (a = 0; a < n; a++) fprintf(ofp, "%8d ", a+1);
+    for (a = 0; a < n; a++) fprintf(ofp, "%8" PRId64 " ", a+1);
   fprintf(ofp, "\n");
   
   fprintf(ofp, "      ");
@@ -984,19 +1069,19 @@ esl_vec_IDump(FILE *ofp, const int *v, int n, const char *label)
   return eslOK;
 }
 int
-esl_vec_LDump(FILE *ofp, const int64_t *v, int n, const char *label)
+esl_vec_LDump(FILE *ofp, const int64_t *v, int64_t n, const char *label)
 {
-  int a;
+  int64_t a;
 
   fprintf(ofp, "     ");
   if (label != NULL) 
     for (a = 0; a < n; a++) fprintf(ofp, "       %c ", label[a]);
   else
-    for (a = 0; a < n; a++) fprintf(ofp, "%8d ", a+1);
+    for (a = 0; a < n; a++) fprintf(ofp, "%8" PRId64 " ", a+1);
   fprintf(ofp, "\n");
   
   fprintf(ofp, "      ");
-  for (a = 0; a < n; a++) fprintf(ofp, "%20" PRId64 " ", v[a]);
+  for (a = 0; a < n; a++) fprintf(ofp, "%8" PRId64 " ", v[a]);
   fprintf(ofp, "\n");
 
   return eslOK;
@@ -1018,27 +1103,27 @@ esl_vec_LDump(FILE *ofp, const int64_t *v, int n, const char *label)
  *            <esl_vec_I2F()> converts integer to float.
  */
 void
-esl_vec_D2F(double *src, int n, float *dst)
+esl_vec_D2F(double *src, int64_t n, float *dst)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) dst[i] = src[i];
 }
 void
-esl_vec_F2D(float *src, int n, double *dst)
+esl_vec_F2D(float *src, int64_t n, double *dst)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) dst[i] = src[i];
 }
 void
-esl_vec_I2F(int *src, int n, float *dst)
+esl_vec_I2F(int *src, int64_t n, float *dst)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) dst[i] = src[i];
 }
 void
-esl_vec_I2D(int *src, int n, double *dst)
+esl_vec_I2D(int *src, int64_t n, double *dst)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) dst[i] = src[i];
 }
 
@@ -1054,20 +1139,20 @@ esl_vec_I2D(int *src, int n, double *dst)
  *            If sum is zero, set all elements to $\frac{1}{n}$.
  */
 void
-esl_vec_DNorm(double *vec, int n)
+esl_vec_DNorm(double *vec, int64_t n)
 {
-  double sum;
-  int    i;
+  double  sum;
+  int64_t i;
 
   sum = esl_vec_DSum(vec, n);
   if (sum != 0.0) for (i = 0; i < n; i++) vec[i] /= sum;
   else            for (i = 0; i < n; i++) vec[i] = 1. / (double) n;
 }
 void
-esl_vec_FNorm(float *vec, int n)
+esl_vec_FNorm(float *vec, int64_t n)
 {
-  float  sum;
-  int    i;
+  float   sum;
+  int64_t i;
 
   sum = esl_vec_FSum(vec, n);
   if (sum != 0.0) for (i = 0; i < n; i++) vec[i] /= sum;
@@ -1086,7 +1171,7 @@ esl_vec_FNorm(float *vec, int n)
  * Returns:   (void); <vec> is changed in place.
  */
 void
-esl_vec_DLogNorm(double *vec, int n)
+esl_vec_DLogNorm(double *vec, int64_t n)
 {
   double denom;
   
@@ -1096,7 +1181,7 @@ esl_vec_DLogNorm(double *vec, int n)
   esl_vec_DNorm(vec, n);  // unnecessary in theory, useful in practice.
 }
 void
-esl_vec_FLogNorm(float *vec, int n)
+esl_vec_FLogNorm(float *vec, int64_t n)
 {
   float denom;
   
@@ -1106,7 +1191,7 @@ esl_vec_FLogNorm(float *vec, int n)
   esl_vec_FNorm(vec, n);
 }
 void
-esl_vec_DLog2Norm(double *vec, int n)
+esl_vec_DLog2Norm(double *vec, int64_t n)
 {
   double denom;
   
@@ -1116,7 +1201,7 @@ esl_vec_DLog2Norm(double *vec, int n)
   esl_vec_DNorm (vec, n);
 }
 void
-esl_vec_FLog2Norm(float *vec, int n)
+esl_vec_FLog2Norm(float *vec, int64_t n)
 {
   float denom;
   
@@ -1141,30 +1226,30 @@ esl_vec_FLog2Norm(float *vec, int n)
  *            If a value is $\leq 0$, set it to $-\infty$.
  */
 void
-esl_vec_DLog(double *vec, int n)
+esl_vec_DLog(double *vec, int64_t n)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) 
     vec[i] = (vec[i] > 0. ? log(vec[i]) : -eslINFINITY);
 }
 void
-esl_vec_FLog(float *vec, int n)
+esl_vec_FLog(float *vec, int64_t n)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) 
     vec[i] = (vec[i] > 0. ? logf(vec[i]) : -eslINFINITY);
 }
 void
-esl_vec_DLog2(double *vec, int n)
+esl_vec_DLog2(double *vec, int64_t n)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) 
     vec[i] = (vec[i] > 0. ? log2(vec[i]) : -eslINFINITY);
 }
 void
-esl_vec_FLog2(float *vec, int n)
+esl_vec_FLog2(float *vec, int64_t n)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) 
     vec[i] = (vec[i] > 0. ? log2f(vec[i]) : -eslINFINITY);
 }
@@ -1183,27 +1268,27 @@ esl_vec_FLog2(float *vec, int n)
  *
  */
 void
-esl_vec_DExp(double *vec, int n)
+esl_vec_DExp(double *vec, int64_t n)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) vec[i] = exp(vec[i]);
 }
 void
-esl_vec_FExp(float *vec, int n)
+esl_vec_FExp(float *vec, int64_t n)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) vec[i] = expf(vec[i]);
 }
 void
-esl_vec_DExp2(double *vec, int n)
+esl_vec_DExp2(double *vec, int64_t n)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) vec[i] = exp2(vec[i]);
 }
 void
-esl_vec_FExp2(float *vec, int n)
+esl_vec_FExp2(float *vec, int64_t n)
 {
-  int i;
+  int64_t i;
   for (i = 0; i < n; i++) vec[i] = exp2f(vec[i]);
 }
 
@@ -1230,10 +1315,10 @@ esl_vec_FExp2(float *vec, int n)
  *
  */
 double
-esl_vec_DLogSum(const double *vec, int n)
+esl_vec_DLogSum(const double *vec, int64_t n)
 {
-  double max, sum;
-  int    i;
+  double  max, sum;
+  int64_t i;
   
   max = esl_vec_DMax(vec, n);
   if (max == eslINFINITY) return eslINFINITY; /* avoid inf-inf below! */
@@ -1245,10 +1330,10 @@ esl_vec_DLogSum(const double *vec, int n)
   return sum;
 }
 float
-esl_vec_FLogSum(const float *vec, int n)
+esl_vec_FLogSum(const float *vec, int64_t n)
 {
-  int i;
-  float max, sum;
+  float   max, sum;
+  int64_t i;
   
   max = esl_vec_FMax(vec, n);
   if (max == eslINFINITY) return eslINFINITY; 
@@ -1260,10 +1345,10 @@ esl_vec_FLogSum(const float *vec, int n)
   return sum;
 }
 double
-esl_vec_DLog2Sum(const double *vec, int n)
+esl_vec_DLog2Sum(const double *vec, int64_t n)
 {
-  double max, sum;
-  int    i;
+  double  max, sum;
+  int64_t i;
   
   max = esl_vec_DMax(vec, n);
   if (max == eslINFINITY) return eslINFINITY; /* avoid inf-inf below! */
@@ -1275,10 +1360,10 @@ esl_vec_DLog2Sum(const double *vec, int n)
   return sum;
 }
 float
-esl_vec_FLog2Sum(const float *vec, int n)
+esl_vec_FLog2Sum(const float *vec, int64_t n)
 {
-  int i;
-  float max, sum;
+  float   max, sum;
+  int64_t i;
   
   max = esl_vec_FMax(vec, n);
   if (max == eslINFINITY) return eslINFINITY; 
@@ -1301,20 +1386,20 @@ esl_vec_FLog2Sum(const float *vec, int n)
  *            \]
  */
 double
-esl_vec_DEntropy(const double *p, int n)
+esl_vec_DEntropy(const double *p, int64_t n)
 {
-  double H = 0.;
-  int    i;
+  double  H = 0.;
+  int64_t i;
 
   for (i = 0; i < n; i++)
     if (p[i] > 0.) H -= p[i] * log2(p[i]);
   return H;
 }
 float
-esl_vec_FEntropy(const float *p, int n)
+esl_vec_FEntropy(const float *p, int64_t n)
 {
-  float  H = 0.;
-  int    i;
+  float   H = 0.;
+  int64_t i;
 
   for (i = 0; i < n; i++)
     if (p[i] > 0.) H -= p[i] * log2f(p[i]);
@@ -1337,10 +1422,10 @@ esl_vec_FEntropy(const float *p, int n)
  *            entropy is $\infty$.
  */
 double
-esl_vec_DRelEntropy(const double *p, const double *q, int n)
+esl_vec_DRelEntropy(const double *p, const double *q, int64_t n)
 {
-  int    i;
-  double kl;
+  int64_t i;
+  double  kl;
  
   kl = 0.;
   for(i = 0; i < n; i++)
@@ -1351,10 +1436,10 @@ esl_vec_DRelEntropy(const double *p, const double *q, int n)
   return kl;
 }
 float
-esl_vec_FRelEntropy(const float *p, const float *q, int n)
+esl_vec_FRelEntropy(const float *p, const float *q, int64_t n)
 {
-  int    i;
-  float  kl;
+  int64_t i;
+  float   kl;
 
   kl = 0.;
   for(i = 0; i < n; i++)
@@ -1394,18 +1479,18 @@ esl_vec_FRelEntropy(const float *p, const float *q, int n)
  * Returns:   (void).
  */
 void
-esl_vec_DCDF(const double *p, int n, double *cdf)
+esl_vec_DCDF(const double *p, int64_t n, double *cdf)
 {
-  int i;
+  int64_t i;
  
   cdf[0] = p[0];
   for (i = 1; i < n; i++) 
     cdf[i] = p[i] + cdf[i-1];
 }
 void
-esl_vec_FCDF(const float *p, int n, float *cdf)
+esl_vec_FCDF(const float *p, int64_t n, float *cdf)
 {
-  int i;
+  int64_t i;
  
   cdf[0] = p[0];
   for (i = 1; i < n; i++) 
@@ -1434,10 +1519,10 @@ esl_vec_FCDF(const float *p, int n, float *cdf)
  *            an informative message is left there.
  */
 int
-esl_vec_DValidate(const double *vec, int n, double tol, char *errbuf)
+esl_vec_DValidate(const double *vec, int64_t n, double tol, char *errbuf)
 {
-  double sum = 0.;
-  int    i;
+  double  sum = 0.;
+  int64_t i;
 
   if (errbuf) *errbuf = 0;
   if (n == 0) return eslOK;
@@ -1452,11 +1537,11 @@ esl_vec_DValidate(const double *vec, int n, double tol, char *errbuf)
   return eslOK;
 }
 int
-esl_vec_FValidate(const float *vec, int n, float tol, char *errbuf)
+esl_vec_FValidate(const float *vec, int64_t n, float tol, char *errbuf)
 {
-  int   status;
-  int   x;
-  float sum = 0.;
+  float   sum = 0.;
+  int64_t x;
+  int     status;
 
   if (errbuf) *errbuf = 0;
   if (n == 0) return eslOK;
@@ -1496,7 +1581,7 @@ esl_vec_FValidate(const float *vec, int n, float tol, char *errbuf)
  * Throws:    <eslEMEM> on allocation failure.           
  */
 int
-esl_vec_DLogValidate(const double *vec, int n, double tol, char *errbuf)
+esl_vec_DLogValidate(const double *vec, int64_t n, double tol, char *errbuf)
 {
   int     status;
   double *expvec = NULL;
@@ -1516,7 +1601,7 @@ esl_vec_DLogValidate(const double *vec, int n, double tol, char *errbuf)
   return status;
 }
 int
-esl_vec_FLogValidate(const float *vec, int n, float tol, char *errbuf)
+esl_vec_FLogValidate(const float *vec, int64_t n, float tol, char *errbuf)
 {
   int     status;
   float  *expvec = NULL;
@@ -1536,7 +1621,7 @@ esl_vec_FLogValidate(const float *vec, int n, float tol, char *errbuf)
   return eslOK;
 }
 int
-esl_vec_DLog2Validate(const double *vec, int n, double tol, char *errbuf)
+esl_vec_DLog2Validate(const double *vec, int64_t n, double tol, char *errbuf)
 {
   int     status;
   double *expvec = NULL;
@@ -1556,7 +1641,7 @@ esl_vec_DLog2Validate(const double *vec, int n, double tol, char *errbuf)
   return status;
 }
 int
-esl_vec_FLog2Validate(const float *vec, int n, float tol, char *errbuf)
+esl_vec_FLog2Validate(const float *vec, int64_t n, float tol, char *errbuf)
 {
   int     status;
   float  *expvec = NULL;
@@ -1890,11 +1975,21 @@ utest_stable_sums(ESL_RANDOMNESS *rng)
 
   // printf("%f %f %f %f\n", naive_mean, welford_mean, kahan_mean, easel_mean);
 
-  // By checking against actual welford_mean instead of expected 0.5, we're robust against rare outliers in random samples
-  if (esl_FCompare(welford_mean, naive_mean, 1e-3, 1e-3) != eslFAIL) esl_fatal(msg);  // naive sum *will* fail
-  if (esl_FCompare(welford_mean, kahan_mean, 1e-3, 1e-3) != eslOK)   esl_fatal(msg);  // welford and kahan will both work
-  if (esl_FCompare(welford_mean, easel_mean, 1e-3, 1e-3) != eslOK)   esl_fatal(msg);  // easel uses kahan, check against welford
-
+  // By checking against actual kahan_mean instead of expected 0.5,
+  // we're robust against rare outliers in random samples, and 
+  // we don't need to protect against them with a fixed RNG seed;
+  // any seed will work.
+  //
+  // A compiler that's both smart and risktaking (e.g. icc in its
+  // default mode of -fp-model=fast) can rearrange the above
+  // calculation and end up getting the right answer for the
+  // naive_mean. But if it does fail (as we expect), both the welford
+  // mean and the easel mean will work.
+  if (esl_FCompare(kahan_mean, naive_mean, 1e-3, 1e-3) == eslFAIL)  // naive sum will typically fail, except with fast-math risk-taking optimizers
+    {
+      if (esl_FCompare(kahan_mean, welford_mean, 1e-3, 1e-3) != eslOK)   esl_fatal(msg);  // welford and kahan will both work
+      if (esl_FCompare(kahan_mean, easel_mean,   1e-3, 1e-3) != eslOK)   esl_fatal(msg);  // easel uses kahan, check against welford
+    }
   free(x);
   return;
 

@@ -5,7 +5,7 @@
  */
 #ifndef eslINTERFACE_GSL_INCLUDED
 #define eslINTERFACE_GSL_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 #ifdef HAVE_LIBGSL
 #include <stdlib.h>
 

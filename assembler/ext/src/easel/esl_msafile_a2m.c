@@ -10,7 +10,7 @@
  * Reference:
  *   http://compbio.soe.ucsc.edu/a2m-desc.html
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -916,7 +916,7 @@ utest_gibberish(ESL_RANDOMNESS *rng)
  *  (gcov): gcc -g -Wall -fprofile-arcs -ftest-coverage -I. -L. -o esl_msafile_a2m_utest -DeslMSAFILE_A2M_TESTDRIVE esl_msafile_a2m.c -leasel -lm
  * run:     ./esl_msafile_a2m_utest
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

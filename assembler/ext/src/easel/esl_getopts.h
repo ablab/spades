@@ -5,7 +5,7 @@
  */
 #ifndef eslGETOPTS_INCLUDED
 #define eslGETOPTS_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 #include "easel.h"
 #ifdef __cplusplus // magic to make C++ compilers happy
 extern "C" {
@@ -90,15 +90,15 @@ extern int          esl_getopts_Reuse  (ESL_GETOPTS *g);
 extern void         esl_getopts_Destroy(ESL_GETOPTS *g);
 extern void         esl_getopts_Dump(FILE *ofp, ESL_GETOPTS *g);
 
-extern int esl_opt_ProcessConfigfile (ESL_GETOPTS *g, char *filename, FILE *fp);
-extern int esl_opt_ProcessEnvironment(ESL_GETOPTS *g);
-extern int esl_opt_ProcessCmdline    (ESL_GETOPTS *g, int argc, char **argv);
-extern int esl_opt_ProcessSpoof      (ESL_GETOPTS *g, const char *cmdline);
-extern int esl_opt_VerifyConfig      (ESL_GETOPTS *g);
-extern int esl_opt_ArgNumber   (const ESL_GETOPTS *g);
-extern int esl_opt_SpoofCmdline(const ESL_GETOPTS *g, char **ret_cmdline);
-
-extern int esl_opt_GetSetter(const ESL_GETOPTS *g, char *optname);
+extern int   esl_opt_ProcessConfigfile (ESL_GETOPTS *g, char *filename, FILE *fp);
+extern int   esl_opt_ProcessEnvironment(ESL_GETOPTS *g);
+extern int   esl_opt_ProcessCmdline    (ESL_GETOPTS *g, int argc, char **argv);
+extern int   esl_opt_ProcessSpoof      (ESL_GETOPTS *g, const char *cmdline);
+extern int   esl_opt_VerifyConfig      (ESL_GETOPTS *g);
+extern int   esl_opt_ArgNumber   (const ESL_GETOPTS *g);
+extern int   esl_opt_SpoofCmdline(const ESL_GETOPTS *g, char **ret_cmdline);
+extern char *esl_getopts_CreateOptsLine(ESL_GETOPTS *g);
+extern int   esl_opt_GetSetter   (const ESL_GETOPTS *g, char *optname);
 
 extern int    esl_opt_IsDefault (const ESL_GETOPTS *g, char *optname);
 extern int    esl_opt_IsOn      (const ESL_GETOPTS *g, char *optname);

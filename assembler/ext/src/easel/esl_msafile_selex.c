@@ -24,7 +24,7 @@
  *  disallows them internally, even in text-mode alignments. Any
  *  spaces are mapped to '.'.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1051,7 +1051,7 @@ read_test_msas_text(char *slxfile, char *stkfile)
  *  (gcov): gcc -g -Wall -fprofile-arcs -ftest-coverage -I. -L. -o esl_msafile_selex_utest -DeslMSAFILE_SELEX_TESTDRIVE esl_msafile_selex.c -leasel -lm
  * run:     ./esl_msafile_selex_utest
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

@@ -12,7 +12,7 @@
  *   https://software.intel.com/en-us/articles/how-to-detect-knl-instruction-support
  *   https://en.wikipedia.org/wiki/CPUID
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -454,7 +454,7 @@ main(int argc, char **argv)
  *****************************************************************/
 #ifdef eslCPU_EXAMPLE
 
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "easel.h"
 #include "esl_cpu.h"

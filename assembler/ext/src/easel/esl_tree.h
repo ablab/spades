@@ -4,7 +4,7 @@
  */
 #ifndef eslTREE_INCLUDED
 #define eslTREE_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "esl_dmatrix.h"
 #include "esl_random.h"

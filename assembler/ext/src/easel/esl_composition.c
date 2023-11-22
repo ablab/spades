@@ -1,4 +1,4 @@
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "easel.h"
 #include "esl_composition.h"

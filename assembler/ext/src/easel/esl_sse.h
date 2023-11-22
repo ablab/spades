@@ -16,7 +16,7 @@
  */
 #ifndef eslSSE_INCLUDED
 #define eslSSE_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 #if defined(eslENABLE_SSE) || defined(eslENABLE_SSE4)
 
 #include "easel.h"

@@ -4,7 +4,7 @@
  */
 #ifndef eslNORMAL_INCLUDED
 #define eslNORMAL_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 extern double esl_normal_pdf   (double x, double mu, double sigma);
 extern double esl_normal_logpdf(double x, double mu, double sigma);

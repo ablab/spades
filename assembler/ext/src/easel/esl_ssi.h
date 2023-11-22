@@ -4,7 +4,7 @@
  */
 #ifndef eslSSI_INCLUDED
 #define eslSSI_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -16,9 +16,9 @@
 #include <inttypes.h>
 #endif
 
-#define eslSSI_MAXFILES 32767	     /* 2^15-1 */
-#define eslSSI_MAXKEYS  2147483647L  /* 2^31-1 */
-#define eslSSI_MAXRAM   256	     /* >256MB indices trigger external sort */
+#define eslSSI_MAXFILES 32767 	      // 2^15-1 
+#define eslSSI_MAXKEYS  (1ULL<<63)-1  // 2^63-1 
+#define eslSSI_MAXRAM   2048	      // >2048MB indices trigger external sort 
 
 #ifndef HAVE_FSEEKO
 #define fseeko fseek

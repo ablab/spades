@@ -9,7 +9,7 @@
  *   6. Test driver.
  *   7. Example.
  */ 
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -332,11 +332,11 @@ esl_stack_IPop(ESL_STACK *ns, int *ret_x)
 {
   int status;
 #ifdef HAVE_PTHREAD
-  if (ns->do_mutex           && pthread_mutex_lock(ns->mutex)          != 0) ESL_EXCEPTION(eslESYS, "pthread_mutex_lock() failure");
-  if (ns->do_cond && ! ns->n && pthread_cond_wait(ns->cond, ns->mutex) != 0) ESL_EXCEPTION(eslESYS, "pthread_cond_wait() failure");
+  if    (ns->do_mutex)              { if (pthread_mutex_lock(ns->mutex)          != 0) ESL_EXCEPTION(eslESYS, "pthread_mutex_lock() failure"); }
+  while (ns->do_cond && ns->n == 0) { if (pthread_cond_wait(ns->cond, ns->mutex) != 0) ESL_EXCEPTION(eslESYS, "pthread_cond_wait() failure");  }  // ns->n > 0 if a pusher is giving us more work; do_cond = FALSE if pusher(s) are done or if we're not using interthread comm
 #endif
 
-  if (ns->n == 0) 
+  if (ns->n == 0)  
     {
       *ret_x = 0; 
       status = eslEOD;
@@ -371,8 +371,8 @@ esl_stack_CPop(ESL_STACK *cs, char *ret_c)
 {
   int status;
 #ifdef HAVE_PTHREAD
-  if (cs->do_mutex           && pthread_mutex_lock(cs->mutex)          != 0) ESL_EXCEPTION(eslESYS, "pthread_mutex_lock() failure");
-  if (cs->do_cond && ! cs->n && pthread_cond_wait(cs->cond, cs->mutex) != 0) ESL_EXCEPTION(eslESYS, "pthread_cond_wait() failure");
+  if    (cs->do_mutex)              { if (pthread_mutex_lock(cs->mutex)          != 0) ESL_EXCEPTION(eslESYS, "pthread_mutex_lock() failure"); }
+  while (cs->do_cond && cs->n == 0) { if (pthread_cond_wait(cs->cond, cs->mutex) != 0) ESL_EXCEPTION(eslESYS, "pthread_cond_wait() failure");  }
 #endif
 
   if (cs->n == 0) 
@@ -410,8 +410,8 @@ esl_stack_PPop(ESL_STACK *ps, void **ret_p)
 {
   int status;
 #ifdef HAVE_PTHREAD
-  if (ps->do_mutex           && pthread_mutex_lock(ps->mutex)          != 0) ESL_EXCEPTION(eslESYS, "pthread_mutex_lock() failure");
-  if (ps->do_cond && ! ps->n && pthread_cond_wait(ps->cond, ps->mutex) != 0) ESL_EXCEPTION(eslESYS, "pthread_cond_wait() failure");
+  if    (ps->do_mutex)              { if (pthread_mutex_lock(ps->mutex)          != 0) ESL_EXCEPTION(eslESYS, "pthread_mutex_lock() failure"); }
+  while (ps->do_cond && ps->n == 0) { if (pthread_cond_wait(ps->cond, ps->mutex) != 0) ESL_EXCEPTION(eslESYS, "pthread_cond_wait() failure");  }  
 #endif
 
   if (ps->n == 0)
@@ -738,13 +738,12 @@ esl_stack_ReleaseCond(ESL_STACK *s)
   if (! s->do_cond)  ESL_EXCEPTION(eslESYS, "no conditional wait state is set");
 
   if (pthread_mutex_lock(s->mutex)    != 0) ESL_EXCEPTION(eslESYS, "pthread_mutex_lock() failure");
-  if (pthread_cond_broadcast(s->cond) != 0) ESL_EXCEPTION(eslESYS, "pthread_cond_broadcast() failure");
 
-  /* You can't free s->cond yet; you can only set the flag. 
-   *  Reason: you may have workers that are ALREADY in a wait state, in pthread_cond_wait(), 
-   *  and that function depends on s->cond.
+  /* We may have popper threads sleeping on the condition.
+   * To let them exit cleanly, we set do_cond = FALSE, then wake them all up with a broadcast.
    */
   s->do_cond = FALSE;
+  if (pthread_cond_broadcast(s->cond) != 0) ESL_EXCEPTION(eslESYS, "pthread_cond_broadcast() failure");
 
   if (pthread_mutex_unlock(s->mutex)  != 0) ESL_EXCEPTION(eslESYS, "pthread_mutex_unlock() failure");  
   return eslOK;
@@ -934,31 +933,27 @@ utest_discard_selected(ESL_RANDOMNESS *r)
 
 
 #ifdef HAVE_PTHREAD
-/* Unit test for using a stack as part of an idiom
- * for a command stack, with one or more threads
- * adding jobs to the stack, and one or more other threads
- * pulling jobs off. This idiom is used in the HMMER
- * hmmpgmd daemon. In this framework, <tt->input>
- * is a list of jobs to do; <tt->working> is a stack
- * of jobs waiting to be done; <tt->output> is a 
- * list of jobs done.
- *    pusher_thread() simulates a client, taking
- *     jobs from <tt->input> and adding them to
- *     the <tt->working> stack.
- *    popper_thread() simulates a worker, taking
- *     jobs from <tt->working> and putting them
- *     on the <tt->output> list.
+/* Unit test for using a stack as part of an idiom for a command
+ * stack, with one or more threads adding jobs to the stack, and one
+ * or more other threads pulling jobs off. This idiom is used in the
+ * HMMER hmmpgmd daemon. In this framework, <tt->input> is a list of
+ * jobs to do; <tt->working> is a stack of jobs waiting to be done;
+ * <tt->output> is a list of jobs done.
+ *
+ *    pusher_thread() simulates a client, taking jobs from <tt->input>
+ *     and adding them to the <tt->working> stack.
+ *
+ *    popper_thread() simulates a worker, taking jobs from
+ *     <tt->working> and putting them on the <tt->output> list.
  *     
- * <tt->working>, therefore, is the read/write stack;
- * <tt->input> is read-only (it only gets written in
- *   nonthreaded code in main())
- * <tt->output> is write-only (only gets read in
- *   nonthreaded code in main()). 
+ * <tt->working>, therefore, is the shared read/write stack;
+ * <tt->input> is shared amongst pushers (masters);
+ * <tt->output> is shared amongst poppers (workers).
  */
 struct threadtest_s {
-  ESL_STACK *input;		/* faux "work unit" queue that the pusher_thread() processes*/
-  ESL_STACK *working;		/* interthread communication: pusher puts work on this stack, popper pulls it off */
-  ESL_STACK *output;		/* popper_thread() puts "finished" units on this stack */
+  ESL_STACK *input;	// faux "work unit" queue that pusher_thread() processes
+  ESL_STACK *working;	// interthread communication: a pusher puts work on this stack, a popper pulls it off 
+  ESL_STACK *output;	// popper_thread() puts "finished" units on this stack 
 };
 
 static void *
@@ -1012,10 +1007,10 @@ utest_interthread_comm(void)
   tt->working = esl_stack_ICreate();
   tt->output  = esl_stack_ICreate();
 
-  esl_stack_UseMutex(tt->input);
-  esl_stack_UseMutex(tt->working);
-  esl_stack_UseMutex(tt->output);
-  esl_stack_UseCond(tt->working);
+  esl_stack_UseMutex(tt->input);    // shared amongst pushers; needs mutex protection.
+  esl_stack_UseMutex(tt->output);   // shared amongst poppers; ditto.
+  esl_stack_UseMutex(tt->working);  // used for pusher/popper communication...
+  esl_stack_UseCond(tt->working);   //  ... needs both mutex and condition.
 
   for (i = 0; i < njobs; i++)
     esl_stack_IPush(tt->input, i);

@@ -9,7 +9,7 @@
  *    6. Test driver.
  *    7. Example.
  */
-#include "esl_config.h"		
+#include <esl_config.h>		
 #if defined(HAVE_MPI)
 #include <string.h>
 #include "mpi.h"

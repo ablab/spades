@@ -2,7 +2,7 @@
  */
 #ifndef eslDSQDATA_INCLUDED
 #define eslDSQDATA_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <stdint.h>

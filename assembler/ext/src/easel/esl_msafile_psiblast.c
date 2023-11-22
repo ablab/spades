@@ -6,7 +6,7 @@
  *   3. Test driver.
  *   4. Examples.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -624,7 +624,7 @@ read_test_msas_text(char *pbfile, char *stkfile)
  *  (gcov): gcc -g -Wall -fprofile-arcs -ftest-coverage -I. -L. -o esl_msafile_psiblast_utest -DeslMSAFILE_PSIBLAST_TESTDRIVE esl_msafile_psiblast.c -leasel -lm
  * run:     ./esl_msafile_psiblast_utest
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

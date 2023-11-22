@@ -4,7 +4,7 @@
  */
 #ifndef eslINTERFACE_LAPACK_INCLUDED
 #define eslINTERFACE_LAPACK_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 #ifdef HAVE_LIBLAPACK
 
 /* This is the C interface to the Fortran77 dgeev routine,

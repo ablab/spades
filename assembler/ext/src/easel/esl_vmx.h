@@ -3,7 +3,7 @@
 #ifndef eslVMX_INCLUDED
 #define eslVMX_INCLUDED
 
-#include "esl_config.h"
+#include <esl_config.h>
 #ifdef eslENABLE_VMX
 
 #include "easel.h"

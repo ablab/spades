@@ -12,7 +12,7 @@
  *
  * See: http://evolution.genetics.washington.edu/phylip/doc/sequence.html
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1653,7 +1653,7 @@ utest_seqboot(void)
  *  (gcov): gcc -g -Wall -fprofile-arcs -ftest-coverage -I. -L. -o esl_msafile_phylip_utest -DeslMSAFILE_PHYLIP_TESTDRIVE esl_msafile_phylip.c -leasel -lm
  * run:     ./esl_msafile_phylip_utest
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

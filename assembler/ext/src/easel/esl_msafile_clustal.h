@@ -2,7 +2,7 @@
  */
 #ifndef eslMSAFILE_CLUSTAL_INCLUDED
 #define eslMSAFILE_CLUSTAL_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "esl_msa.h"
 #include "esl_msafile.h"

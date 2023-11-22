@@ -2,7 +2,7 @@
  */
 #ifndef eslRANDOMSEQ_INCLUDED
 #define eslRANDOMSEQ_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "esl_alphabet.h"
 #include "esl_random.h"

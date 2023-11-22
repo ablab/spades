@@ -7,7 +7,7 @@
  *    4. Test driver.
  *    5. Examples.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -126,10 +126,8 @@ esl_fileparser_Create(FILE *fp)
 /* Function:  esl_fileparser_CreateMapped()
  * Incept:    MSF, Mon Aug 16 2010 [Janelia]
  *
- * Purpose:   Sets up a memory buffer to be parsed with the
- *            file parser routines.Take an open file <fp>, and transform it to
- *            a fileparser object -- preparing to parse it
- *            one whitespace-delimited field at a time.
+ * Purpose:   Sets up a memory buffer to be parsed with the file parser
+ *            routines.
  *
  * Args:      fp  - open FILE to parse
  *
@@ -232,8 +230,7 @@ esl_fileparser_GetToken(ESL_FILEPARSER *efp, char **opt_tok, int *opt_toklen)
 	if (fcode != eslOK) return fcode;
       } 
     else if (tokcode == eslOK) goodtok = TRUE;
-    else 
-      { sprintf(efp->errbuf, "esl_strtok() failed"); return tokcode;}
+    else ESL_FAIL(tokcode, efp->errbuf, "esl_strtok() failed");
   } while (! goodtok);
 
   if (opt_tok)    *opt_tok    = tok;
@@ -550,7 +547,7 @@ nextline(ESL_FILEPARSER *efp)
 
   } else {
     if ((status = esl_fgets(&(efp->buf), &(efp->buflen), efp->fp)) != eslOK) 
-      { sprintf(efp->errbuf, "esl_fgets() failed"); return status;}
+      ESL_FAIL(status, efp->errbuf, "esl_fgets() failed");
   }
   efp->s = efp->buf;
   efp->linenumber++;
@@ -621,7 +618,7 @@ utest_GetTokenOnLine(char *filename)
       while ((status = esl_fileparser_GetTokenOnLine(efp, &tok, &toklen)) == eslOK)
 	{
 	  ntok++;
-	  sprintf(expect, "token%d", ntok);
+	  snprintf(expect, 32, "token%d", ntok);  // 32 is from the static allocation of expect[32]
 	  if (toklen != 6)               esl_fatal("bad token length for %s", tok);
 	  if (strcmp(expect, tok) != 0)  esl_fatal("bad token %s", tok);
 	}

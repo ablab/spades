@@ -10,7 +10,7 @@
  */
 #ifndef eslPAML_INCLUDED
 #define eslPAML_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

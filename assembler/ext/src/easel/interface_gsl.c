@@ -1,6 +1,6 @@
 /* Easel's interfaces to the GNU Scientific Library
  */
-#include "esl_config.h"
+#include <esl_config.h>
 #ifdef HAVE_LIBGSL
 
 #include <stdlib.h>

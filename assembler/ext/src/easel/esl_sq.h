@@ -2,7 +2,7 @@
  */
 #ifndef eslSQ_INCLUDED
 #define eslSQ_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "esl_alphabet.h"
 #include "esl_msa.h"
@@ -90,7 +90,7 @@
  * assumes fwd strand; if rev strand is needed, there will be some
  * sort of patchy workaround. 
  */
-typedef struct esl_sq_s {
+typedef struct esl_sq_s { /* SPADES_LOCAL: add struct tag */
   /*::cexcerpt::sq_sq::begin::*/
   char    *name;           /* name; one word, no whitespace ("\0" if no name)  */
   char    *acc;            /* optional accession (1 word) ("\0" if none)       */

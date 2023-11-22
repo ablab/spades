@@ -1,6 +1,6 @@
 #ifndef eslBITFIELD_INCLUDED
 #define eslBITFIELD_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "easel.h"
 

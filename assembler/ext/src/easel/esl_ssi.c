@@ -8,7 +8,7 @@
  *  5. Test driver.
  *  6. Example code.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -1079,24 +1079,18 @@ esl_newssi_Write(ESL_NEWSSI *ns)
     {
       char cmd[1024];
 
-      /* A last minute security check: make sure we won't overflow
-       * sprintf() with the tmpfile names. They're hardcoded now, so
-       * we know they don't overflow, but they might be configurable 
-       * in the future, and we wouldn't want a security hole to open
-       * up.
-       */
       if (strlen(ns->ptmpfile) > 256 || strlen(ns->ptmpfile) > 256) 
 	ESL_XEXCEPTION(eslEINVAL, "tmpfile name too long"); 
 
       fclose(ns->ptmp);
       ns->ptmp = NULL;	
-      sprintf(cmd, "env LC_ALL=POSIX sort -o %s %s\n", ns->ptmpfile, ns->ptmpfile);
+      snprintf(cmd, 1024, "env LC_ALL=POSIX sort -o %s %s\n", ns->ptmpfile, ns->ptmpfile);
       if (system(cmd) != 0)                              ESL_XFAIL(eslESYS, ns->errbuf, "external sort of primary keys failed");
       if ((ns->ptmp = fopen(ns->ptmpfile, "r")) == NULL) ESL_XFAIL(eslESYS, ns->errbuf, "failed to reopen primary key tmp file after sort");
 
       fclose(ns->stmp);
       ns->stmp = NULL;
-      sprintf(cmd, "env LC_ALL=POSIX sort -o %s %s\n", ns->stmpfile, ns->stmpfile);
+      snprintf(cmd, 1024, "env LC_ALL=POSIX sort -o %s %s\n", ns->stmpfile, ns->stmpfile);
       if (system(cmd) != 0)                              ESL_XFAIL(eslESYS, ns->errbuf, "external sort of secondary keys failed");
       if ((ns->stmp = fopen(ns->stmpfile, "r")) == NULL) ESL_XFAIL(eslESYS, ns->errbuf, "failed to reopen secondary key tmp file after sort");
     }
@@ -1888,7 +1882,7 @@ utest_enchilada(ESL_GETOPTS *go, ESL_RANDOMNESS *rng, int do_external, int do_du
   ESL_SQ      *sq         = NULL;    //   a sequence from <sqfp>
   uint16_t     fh;                   //   handle on an indexed fasta file, from _AddFile, for _AddKey
   ESL_SSI     *ssi        = NULL;    // Retrieval testing: open SSI index to use
-  char         query[32];            //   name of sequence to retrieve
+  char         query[32];            //   name of sequence to retrieve. The 32 is also used as a size by sprintf() calls below.
   char        *qfile;                //   retrieved name of file it's in
   int          qfmt;                 //   retrieved format of that file (fasta)
   off_t        roff;                 //   retrieved record offset of it
@@ -1939,8 +1933,8 @@ utest_enchilada(ESL_GETOPTS *go, ESL_RANDOMNESS *rng, int do_external, int do_du
           /* Choose a seq and file */
           i = esl_rnd_Roll(rng, td->nseq*td->nfiles);
           j = i/td->nseq;
-          if (esl_rnd_Roll(rng, 2) == 0) sprintf(query, "seq%d-file%d",  i, j);  // by primary key
-          else                           sprintf(query, "desc%d-file%d", i, j);  // by secondary key
+          if (esl_rnd_Roll(rng, 2) == 0) snprintf(query, 32, "seq%d-file%d",  i, j);  // by primary key. 32 is the alloc size for query[]
+          else                           snprintf(query, 32, "desc%d-file%d", i, j);  // by secondary key
 
           /* Retrieve it */
           if ( esl_ssi_FindName(ssi, query, &fh, &roff, NULL, NULL) != eslOK) esl_fatal(msg);
@@ -1974,7 +1968,7 @@ utest_enchilada(ESL_GETOPTS *go, ESL_RANDOMNESS *rng, int do_external, int do_du
  *****************************************************************/ 
 
 #ifdef eslSSI_TESTDRIVE
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>

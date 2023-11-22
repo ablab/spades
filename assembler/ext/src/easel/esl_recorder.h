@@ -4,7 +4,7 @@
  */
 #ifndef eslRECORDER_INCLUDED
 #define eslRECORDER_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -31,7 +31,7 @@
  * The recorder can be backed up to any previous line. It sets <ncurr>
  * to be the number of lines it *appears* to have read so far;
  * that is, the next line it will return to the caller, upon a call
- * to esl_recorder_Read(), is line <ncurr>. 
+ * to esl_recorder_Read(), is the line indexed <ncurr>. 
  * 
  * A window of MIN(nread, nalloc) lines is stored;
  * consisting of line numbers MAX(baseline, nread-nalloc) .. nread-1).

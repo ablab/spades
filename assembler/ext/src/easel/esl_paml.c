@@ -3,7 +3,7 @@
  *   Ziheng Yang, "Phylogenetic Analysis by Maximum Likelihood"  [Yang97]
  *   http://abacus.gene.ucl.ac.uk/software/paml.html
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>

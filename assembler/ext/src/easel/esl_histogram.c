@@ -8,7 +8,7 @@
  *  6. Test driver.
  *  7. Examples.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -953,7 +953,7 @@ esl_histogram_Write(FILE *fp, ESL_HISTOGRAM *h)
       else if (i > ihighbound) continue;
       else if (i == ilowbound && i != h->imin) 
 	{
-	  sprintf(buffer, "<%5.1f %6llu %6s|", x+h->w, (unsigned long long) lowcount, "-");
+	  snprintf(buffer, 81, "<%5.1f %6llu %6s|", x+h->w, (unsigned long long) lowcount, "-");  // 81 is the buffer[81] static alloc
 	  if (lowcount > 0) {
 	    num = 1+(lowcount-1) / units;
 	    for (pos = 21; num > 0; num--)  buffer[pos++] = '=';
@@ -964,7 +964,7 @@ esl_histogram_Write(FILE *fp, ESL_HISTOGRAM *h)
 	}
       else if (i == ihighbound && i != h->imax)
 	{
-	  sprintf(buffer, ">%5.1f %6llu %6s|", x, (unsigned long long) highcount, "-");
+	  snprintf(buffer, 81, ">%5.1f %6llu %6s|", x, (unsigned long long) highcount, "-");
 	  if (highcount > 0) {
 	    num = 1+(highcount-1) / units;
 	    for (pos = 21; num > 0; num--)  buffer[pos++] = '=';
@@ -979,16 +979,16 @@ esl_histogram_Write(FILE *fp, ESL_HISTOGRAM *h)
       if (h->obs[i] < 1000000)	/* displayable in 6 figures or less? */
 	{
 	  if (h->expect != NULL) 
-	    sprintf(buffer, "%6.1f %6llu %6d|", x, (unsigned long long) h->obs[i], (int) h->expect[i]);
+	    snprintf(buffer, 81, "%6.1f %6llu %6d|", x, (unsigned long long) h->obs[i], (int) h->expect[i]);
 	  else
-	    sprintf(buffer, "%6.1f %6llu %6s|", x, (unsigned long long) h->obs[i], "-");
+	    snprintf(buffer, 81, "%6.1f %6llu %6s|", x, (unsigned long long) h->obs[i], "-");
 	}
       else
 	{
 	  if (h->expect != NULL) 
-	    sprintf(buffer, "%6.1f %6.2e %6.2e|", x, (double) h->obs[i], h->expect[i]);
+	    snprintf(buffer, 81, "%6.1f %6.2e %6.2e|", x, (double) h->obs[i], h->expect[i]);
 	  else
-	    sprintf(buffer, "%6.1f %6.2e %6s|",   x, (double) h->obs[i], "-");
+	    snprintf(buffer, 81, "%6.1f %6.2e %6s|",   x, (double) h->obs[i], "-");
 	}
       buffer[21] = ' ';		/* sprintf writes a null char; replace it */
 

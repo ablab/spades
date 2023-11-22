@@ -12,7 +12,7 @@
  */    
 #ifndef eslREGEXP_INCLUDED
 #define eslREGEXP_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 /* ESL_REGEXP_NSUB specifies the maximum number of () expressions
  * in a regexp. The whole regexp counts as one, so 16 allows for 

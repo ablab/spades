@@ -10,7 +10,7 @@
  *    3. Test driver
  *    4. Example
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "easel.h"
 #include "esl_quicksort.h"

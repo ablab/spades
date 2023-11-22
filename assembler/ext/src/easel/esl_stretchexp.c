@@ -18,7 +18,7 @@
  *     on failure due to small n. Compare esl_gumbel. xref J12/93.    
  *     SRE, Wed Nov 27 11:07:44 2013
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <math.h>
@@ -493,7 +493,7 @@ esl_sxp_FitCompleteBinned(ESL_HISTOGRAM *g,
 #ifdef eslSTRETCHEXP_TESTDRIVE
 /* gcc -g -Wall -I. -L . -o stretchexp_utest -DeslSTRETCHEXP_TESTDRIVE esl_stretchexp.c -leasel -lm
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>

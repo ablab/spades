@@ -11,7 +11,7 @@
  */
 #ifndef eslAVX_INCLUDED
 #define eslAVX_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 #ifdef  eslENABLE_AVX
 
 #include "easel.h"

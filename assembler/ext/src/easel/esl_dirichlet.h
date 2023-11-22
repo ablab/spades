@@ -5,7 +5,7 @@
  */
 #ifndef eslDIRICHLET_INCLUDED
 #define eslDIRICHLET_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "esl_random.h"      
 #include "esl_fileparser.h"  // Parameter input from file

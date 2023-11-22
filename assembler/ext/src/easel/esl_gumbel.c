@@ -21,7 +21,7 @@
  *     SRE, Mon Aug  6 13:42:09 2007
  *
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <math.h>

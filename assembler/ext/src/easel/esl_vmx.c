@@ -27,7 +27,7 @@
  * and Pommier for their clear code. Additional copyright and license
  * information is appended at the end of the file.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 #ifdef eslENABLE_VMX
 
 #include <stdlib.h>
@@ -230,7 +230,7 @@ esl_vmx_dump_vecfloat(FILE *fp, vector float v)
  *****************************************************************/
 #ifdef eslVMX_BENCHMARK
 
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <math.h>
@@ -423,7 +423,7 @@ utest_odds(ESL_GETOPTS *go, ESL_RANDOMNESS *r)
  *****************************************************************/
 
 #ifdef eslVMX_TESTDRIVE
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <math.h>
@@ -470,7 +470,7 @@ main(int argc, char **argv)
 
 #ifdef eslVMX_EXAMPLE
 /*::cexcerpt::vmx_example::begin::*/
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <math.h>

@@ -29,7 +29,7 @@
  * and Pommier for their clear code. Additional copyright and license
  * information is appended at the end of the file.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 #if defined(eslENABLE_SSE) || defined(eslENABLE_SSE4)
 
 #include <stdlib.h>
@@ -255,7 +255,7 @@ esl_sse_dump_ps(FILE *fp, __m128 v)
  *****************************************************************/
 #ifdef eslSSE_BENCHMARK
 
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <math.h>
@@ -567,7 +567,7 @@ utest_select_ps(ESL_RANDOMNESS *rng)
 
 #ifdef eslSSE_TESTDRIVE
 
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <math.h>
@@ -623,7 +623,7 @@ main(int argc, char **argv)
 
 #ifdef eslSSE_EXAMPLE
 /*::cexcerpt::sse_example::begin::*/
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <math.h>

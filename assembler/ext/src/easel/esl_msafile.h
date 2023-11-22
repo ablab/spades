@@ -5,7 +5,7 @@
  */
 #ifndef eslMSAFILE_INCLUDED
 #define eslMSAFILE_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

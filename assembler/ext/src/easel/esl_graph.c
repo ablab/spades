@@ -6,7 +6,7 @@
  *    3. Test driver
  */
 
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -154,8 +154,8 @@ static void
 utest_perfect(ESL_RANDOMNESS *rng)
 {
   char   msg[]  = "esl_graph utest_perfect failed";
-  int    n      = 1 + esl_rnd_Roll(rng, 20);  // 1..20
-  int    nextra = esl_rnd_Roll(rng, n*n-n);   // 0..N^2-N-1
+  int    n      = 1 + esl_rnd_Roll(rng, 20);                 // 1..20
+  int    nextra = (n == 1 ? 0 : esl_rnd_Roll(rng, n*n-n));   // 0..N^2-N-1
   int   *shuf   = NULL;
   int  **G0     = esl_mat_ICreate(n, n);
   int  **A      = esl_mat_ICreate(n, n);

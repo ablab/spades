@@ -2,7 +2,7 @@
  */
 #ifndef eslSCOREMATRIX_INCLUDED
 #define eslSCOREMATRIX_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "esl_alphabet.h"
 #include "esl_fileparser.h"

@@ -10,7 +10,7 @@
  * This module is responsible for i/o of both eslMSAFILE_CLUSTAL and
  * eslMSAFILE_CLUSTALLIKE alignment formats.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -873,7 +873,7 @@ read_test_msas_text(char *alnfile, char *stkfile)
  *  (gcov): gcc -g -Wall -fprofile-arcs -ftest-coverage -I. -L. -o esl_msafile_clustal_utest -DeslMSAFILE_CLUSTAL_TESTDRIVE esl_msafile_clustal.c -leasel -lm
  * run:     ./esl_msafile_clustal_utest
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

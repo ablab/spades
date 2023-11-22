@@ -34,7 +34,7 @@
  *   S. Coles, An Introduction to Statistical Modeling of Extreme Values, 
  *   Springer, 2001.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <math.h>

@@ -5,7 +5,7 @@
  */
 #ifndef eslSUBCMD_INCLUDED
 #define eslSUBCMD_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "esl_getopts.h"
 

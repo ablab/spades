@@ -7,7 +7,7 @@
  *     Creative Commons Attribution 3.0 Unported License
  *     http://creativecommons.org/licenses/by/3.0/deed.en_US
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "easel.h"
 #include "esl_stopwatch.h"
@@ -159,9 +159,9 @@ format_time_string(char *buf, double sec, int do_frac)
   s  = (int) (sec) - h * 3600 - m * 60;
   if (do_frac) {
     hs = (int) (sec * 100.) - h * 360000 - m * 6000 - s * 100;
-    sprintf(buf, "%02d:%02d:%02d.%02d", h,m,s,hs);
+    snprintf(buf, 128, "%02d:%02d:%02d.%02d", h,m,s,hs);
   } else {
-    sprintf(buf, "%02d:%02d:%02d", h,m,s);
+    snprintf(buf, 128, "%02d:%02d:%02d", h,m,s);
   }
 }
 

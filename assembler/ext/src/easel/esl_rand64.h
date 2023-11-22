@@ -2,7 +2,7 @@
  */
 #ifndef eslRAND64_INCLUDED
 #define eslRAND64_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdint.h>
 #include <stdio.h>

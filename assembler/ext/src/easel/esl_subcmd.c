@@ -5,7 +5,7 @@
  * See also:  
  *    esl_getopts : command line argument parsing
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <string.h>

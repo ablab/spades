@@ -3,7 +3,7 @@
  */
 #ifndef eslISET_INCLUDED
 #define eslISET_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 #include "esl_random.h"
 
 extern int esl_iset_monoCobalt(ESL_RANDOMNESS *rng, const void *base, size_t n, size_t size,

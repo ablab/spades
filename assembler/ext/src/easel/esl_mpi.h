@@ -2,7 +2,7 @@
  */
 #ifndef eslMPI_INCLUDED
 #define eslMPI_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 #if defined(HAVE_MPI) 
 #include <mpi.h>
 

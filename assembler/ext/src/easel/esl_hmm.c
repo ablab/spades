@@ -1,6 +1,6 @@
 /* General hidden Markov models (discrete, of alphabetic strings)
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 #include <math.h>
@@ -533,7 +533,7 @@ make_occasionally_dishonest_casino(ESL_HMM **ret_hmm, ESL_ALPHABET **ret_abc)
 #ifdef eslHMM_TESTDRIVE
 /* gcc -g -Wall -o hmm_utest -L. -I. -DeslHMM_TESTDRIVE esl_hmm.c -leasel -lm
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

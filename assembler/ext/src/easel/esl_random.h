@@ -2,7 +2,7 @@
  */
 #ifndef eslRANDOM_INCLUDED
 #define eslRANDOM_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <stdint.h>
@@ -18,16 +18,6 @@ typedef struct {
   uint32_t seed;		/* seed used to init the RNG                   */
 } ESL_RANDOMNESS;
 
-/* esl_rnd_Roll(a) chooses a uniformly distributed integer
- * in the range 0..a-1, given an initialized ESL_RANDOMNESS r,
- * for a > 0.
- * 
- * TODO: Beware large numerical error for large a. For an a that isn't
- * a power of 2, the MT guys say that this has a numerical error on
- * the order of a*2^{-32}. See esl_rand64_Roll() for a better
- * strategy.
- */
-#define esl_rnd_Roll(r, a)    ((int) (esl_random(r) * (a)))
 
 /* 1. The ESL_RANDOMNESS object.
  */
@@ -42,7 +32,7 @@ extern uint32_t        esl_randomness_GetSeed(const ESL_RANDOMNESS *r);
  */
 extern double   esl_random       (ESL_RANDOMNESS *r);
 extern uint32_t esl_random_uint32(ESL_RANDOMNESS *r);
-
+extern int      esl_rnd_Roll     (ESL_RANDOMNESS *r, int n);
 extern uint32_t esl_rnd_mix3(uint32_t a, uint32_t b, uint32_t c);
 
 /* 3. Debugging/development tools.

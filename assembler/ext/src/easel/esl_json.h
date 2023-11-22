@@ -2,7 +2,7 @@
  */
 #ifndef eslJSON_INCLUDED
 #define eslJSON_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "easel.h"
 #include "esl_buffer.h"

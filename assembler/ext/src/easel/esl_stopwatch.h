@@ -6,7 +6,7 @@
  */
 #ifndef eslSTOPWATCH_INCLUDED
 #define eslSTOPWATCH_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <time.h>
 #ifdef HAVE_TIMES

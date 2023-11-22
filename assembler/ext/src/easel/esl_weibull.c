@@ -15,7 +15,7 @@
  *      on failure due to small n. Compare esl_gumbel. xref J12/93.  
  *      SRE, Wed Nov 27 11:13:48 2013
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <math.h>

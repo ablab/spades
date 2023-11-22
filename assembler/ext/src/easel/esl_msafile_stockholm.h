@@ -2,7 +2,7 @@
  */
 #ifndef eslMSAFILE_STOCKHOLM_INCLUDED
 #define eslMSAFILE_STOCKHOLM_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

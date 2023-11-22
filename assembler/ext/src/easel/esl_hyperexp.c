@@ -21,7 +21,7 @@
  *     on failure due to small n. Compare esl_gumbel. xref J12/93.  
  *     SRE, Wed Nov 27 11:17:59 2013
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -570,10 +570,7 @@ esl_hyperexp_Read(ESL_FILEPARSER *e, ESL_HYPEREXP **ret_hxp)
 
   if ((status = esl_fileparser_GetToken(e, &tok, NULL)) != eslOK) goto ERROR;
   nc = atoi(tok);
-  if (nc < 1) {  
-    sprintf(e->errbuf, "Expected # of components K >= 1 as first token");
-    goto ERROR;
-  }
+  if (nc < 1) ESL_XFAIL(eslEFORMAT, e->errbuf, "Expected # of components K >= 1 as first token");
 
   if ((hxp = esl_hyperexp_Create(nc)) == NULL) return eslEMEM; /* percolation */
   
@@ -588,27 +585,23 @@ esl_hyperexp_Read(ESL_FILEPARSER *e, ESL_HYPEREXP **ret_hxp)
       if ((status = esl_fileparser_GetToken(e, &tok, NULL)) != eslOK) goto ERROR;
       hxp->lambda[k] = atof(tok);
 
-      if (hxp->q[k] < 0. || hxp->q[k] > 1.) {
-	sprintf(e->errbuf, "Expected a mixture coefficient q[k], 0<=q[k]<=1");
-	goto ERROR;
-      }
-      if (hxp->lambda[k] <= 0.) {
-	sprintf(e->errbuf, "Expected a lambda parameter, lambda>0");
-	goto ERROR;
-      }
+      if (hxp->q[k] < 0. || hxp->q[k] > 1.)
+        ESL_XFAIL(eslEFORMAT, e->errbuf, "Expected a mixture coefficient q[k], 0<=q[k]<=1");
+
+      if (hxp->lambda[k] <= 0.) 
+        ESL_XFAIL(eslEFORMAT, e->errbuf, "Expected a lambda parameter, lambda>0");
     }
   sum = esl_vec_DSum(hxp->q, hxp->K);
-  if (fabs(sum-1.0) > 0.05) {
-    sprintf(e->errbuf, "Expected mixture coefficients to sum to 1");
-    goto ERROR;
-  }
+  if (fabs(sum-1.0) > 0.05)
+    ESL_XFAIL(eslEFORMAT, e->errbuf, "Expected mixture coefficients to sum to 1");
+
   esl_vec_DNorm(hxp->q, hxp->K);
   *ret_hxp = hxp;
   return eslOK;
 
  ERROR:
   esl_hyperexp_Destroy(hxp); 
-  return eslEFORMAT;
+  return status;
 }
 
 /* Function:  esl_hyperexp_ReadFile()

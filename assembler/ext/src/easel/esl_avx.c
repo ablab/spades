@@ -15,7 +15,7 @@
  * about empty translation units and no symbols, and dummy drivers
  * that do nothing but declare success.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 #ifdef eslENABLE_AVX
 
 #include <stdio.h>
@@ -43,7 +43,7 @@ esl_avx_dump_256i_hex4(__m256i v)
  *****************************************************************/
 #ifdef eslAVX_BENCHMARK
 
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -200,7 +200,7 @@ utest_hmax_epi16(ESL_RANDOMNESS *rng)
  *****************************************************************/
 
 #ifdef eslAVX_TESTDRIVE
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <math.h>

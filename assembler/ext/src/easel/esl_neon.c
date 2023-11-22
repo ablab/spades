@@ -28,7 +28,7 @@
  * and Pommier for their clear code. Additional copyright and license
  * information is appended at the end of the file.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 #ifdef eslENABLE_NEON
 
 #include <stdlib.h>
@@ -288,7 +288,7 @@ esl_neon_dump_float(FILE *fp, esl_neon_128f_t v)
 
 /* gcc -mfpu=neon -O3 -o benchmark-neon -I ~/src/hmmer/easel -L ~/src/hmmer/easel -DeslNEON_BENCHMARK esl_neon.c -leasel -lm
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <math.h>
@@ -604,7 +604,7 @@ utest_hmax_f32(ESL_RANDOMNESS *rng)
 #ifdef eslNEON_TESTDRIVE
 /* gcc -mfpu=neon -g -Wall -o test -I. -L. -DeslNEON_TESTDRIVE esl_neon.c -leasel -lm
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <math.h>
@@ -667,7 +667,7 @@ main(int argc, char **argv)
 /*::cexcerpt::neon_example::begin::*/
 /* gcc -mfpu=neon -g -Wall -o example -I. -L. -DeslNEON_EXAMPLE esl_neon.c -leasel -lm
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <math.h>

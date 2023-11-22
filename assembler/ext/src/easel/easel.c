@@ -9,11 +9,12 @@
  *    6. Additional string functions, esl_str*()
  *    7. File path/name manipulation, including tmpfiles.
  *    8. Typed comparison functions.
- *    9. Unit tests.
- *   10. Test driver.
- *   11. Examples. 
+ *    9. Other miscellaneous functions.
+ *   10. Unit tests.
+ *   11. Test driver.
+ *   12. Examples. 
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -77,9 +78,12 @@ esl_fail(char *errbuf, const char *format, ...)
 	  if (errbuf) vsnprintf(errbuf, eslERRBUFSIZE, format, ap);
 	  va_end(ap);
 	}
-      else vsyslog(LOG_ERR, format, ap); // SRE: TODO: check this.
-                                         // looks wrong. I think it needs va_start(), va_end().
-                                         // also see two more occurrences, below.
+      else
+        {
+          va_start(ap, format);
+          vsyslog(LOG_ERR, format, ap); 
+          va_end(ap);
+        }
     }
 }
 
@@ -155,7 +159,12 @@ esl_exception(int errcode, int use_errno, char *sourcefile, int sourceline, char
 	  if (use_errno && errno) perror("system error");
 	  fflush(stderr);
 	}  
-      else vsyslog(LOG_ERR, format, argp);
+      else
+        {
+          va_start(argp, format);
+          vsyslog(LOG_ERR, format, argp);
+          va_end(argp);
+        }
 
 #ifdef HAVE_MPI
       MPI_Initialized(&mpiflag);                 /* we're assuming we can do this, even in a corrupted, dying process...? */
@@ -306,7 +315,12 @@ esl_fatal(const char *format, ...)
       fprintf(stderr, "\n");
       fflush(stderr);
     } 
-  else vsyslog(LOG_ERR, format, argp);
+  else
+    {
+      va_start(argp, format);
+      vsyslog(LOG_ERR, format, argp);
+      va_end(argp);
+    }
 
 #ifdef HAVE_MPI
   MPI_Initialized(&mpiflag);
@@ -1872,9 +1886,9 @@ esl_FileConcat(const char *dir, const char *file, char **ret_path)
   else if (*file == eslDIRSLASH)     /* 2. <file> is already a path?   */
     strcpy(path, file); 
   else if (dir[nd-1] == eslDIRSLASH) /* 3. <dir><file> (dir is / terminated) */
-    sprintf(path, "%s%s", dir, file);
+    snprintf(path, nd+nf+2, "%s%s", dir, file);
   else				     /* 4. <dir>/<file> (usual case)   */
-    sprintf(path, "%s%c%s", dir, eslDIRSLASH, file);	
+    snprintf(path, nd+nf+2, "%s%c%s", dir, eslDIRSLASH, file);	
 
   *ret_path = path;
   return eslOK;
@@ -2006,7 +2020,7 @@ esl_FileEnvOpen(const char *fname, const char *env, FILE **opt_fp, char **opt_pa
   while (s != NULL) 
     {
       if ((s2 = strchr(s, ':')) != NULL) { *s2 = '\0'; s2++;} /* ~=strtok() */
-      sprintf(path, "%s%c%s", s, eslDIRSLASH, fname); /* // won't hurt */
+      snprintf(path, np, "%s%c%s", s, eslDIRSLASH, fname);    /* // won't hurt */
       if ((fp = fopen(path, "r")) != NULL) break;      
       s = s2;
     }
@@ -2251,7 +2265,6 @@ esl_getcwd(char **ret_cwd)
   return eslEUNIMPLEMENTED;
 #endif
 }
-
 /*----------------- end of file path/name functions ------------------------*/
 
 
@@ -2395,19 +2408,49 @@ esl_FCompare_old(float a, float b, float tol)
   if (2.*fabs(a-b) / fabs(a+b) <= tol)      return eslOK;
   return eslFAIL;
 }
-
-
-
 /*-------------- end, typed comparison routines --------------------*/
 
 
+
+/*****************************************************************
+ * 9. Other miscellaneous functions
+ *****************************************************************/
+
+/* Function:  esl_mix3()
+ * Synopsis:  Make a quasirandom number by mixing three inputs.
+ * Incept:    SRE, Tue 21 Aug 2018
+ *
+ * Purpose:   This is Bob Jenkin's <mix()>. Given <a,b,c>,
+ *            generate a number that's generated reasonably
+ *            uniformly on $[0,2^{32}-1]$ even for closely
+ *            spaced choices of $a,b,c$.
+ *
+ *            We have it in easel.c because it's used both in
+ *            esl_random and esl_rand64, which we want to be
+ *            independent of each other.
+ */
+uint32_t 
+esl_mix3(uint32_t a, uint32_t b, uint32_t c)
+{
+  a -= b; a -= c; a ^= (c>>13);		
+  b -= c; b -= a; b ^= (a<<8); 
+  c -= a; c -= b; c ^= (b>>13);
+  a -= b; a -= c; a ^= (c>>12);
+  b -= c; b -= a; b ^= (a<<16);
+  c -= a; c -= b; c ^= (b>>5); 
+  a -= b; a -= c; a ^= (c>>3); 
+  b -= c; b -= a; b ^= (a<<10);
+  c -= a; c -= b; c ^= (b>>15);
+  return c;
+}
+/*-------------- end, miscellaneous functions -------------------*/
 
 
 
 
 
 /*****************************************************************
- * 9. Unit tests.
+ * 10. Unit tests.
  *****************************************************************/
 #ifdef eslEASEL_TESTDRIVE
 
@@ -2675,7 +2718,7 @@ utest_compares(void)
 
 
 /*****************************************************************
- * 10. Test driver.
+ * 11. Test driver.
  *****************************************************************/
 
 #ifdef eslEASEL_TESTDRIVE
@@ -2725,7 +2768,7 @@ main(int argc, char **argv)
 #endif /*eslEASEL_TESTDRIVE*/
 
 /*****************************************************************
- * 11. Examples.
+ * 12. Examples.
  *****************************************************************/
 
 #ifdef eslEASEL_EXAMPLE

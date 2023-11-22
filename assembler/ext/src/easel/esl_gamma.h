@@ -4,7 +4,7 @@
  */
 #ifndef eslGAMMA_INCLUDED
 #define eslGAMMA_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "esl_histogram.h"
 #include "esl_random.h"

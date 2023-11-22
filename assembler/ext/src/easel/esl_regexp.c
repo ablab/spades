@@ -55,7 +55,7 @@
  *   5. Test driver
  *   6. Examples
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1513,7 +1513,7 @@ static char *
 regprop(char *op)
 {
 	register char *p;
-	static char buf[50];
+	static char buf[50];  // the alloc size of 50 is repeated in snprintf()'s below
 
 	(void) strcpy(buf, ":");
 
@@ -1557,9 +1557,9 @@ regprop(char *op)
 	case OPEN+7:
 	case OPEN+8:
 	case OPEN+9:
-		sprintf(buf+strlen(buf), "OPEN%d", OP(op)-OPEN);
-		p = NULL;
-		break;
+              snprintf(buf+strlen(buf), 50-strlen(buf), "OPEN%d", OP(op)-OPEN);  // 50 is the allocated size of buf
+              p = NULL;
+              break;
 	case CLOSE+1:
 	case CLOSE+2:
 	case CLOSE+3:
@@ -1569,7 +1569,7 @@ regprop(char *op)
 	case CLOSE+7:
 	case CLOSE+8:
 	case CLOSE+9:
-		sprintf(buf+strlen(buf), "CLOSE%d", OP(op)-CLOSE);
+                snprintf(buf+strlen(buf), 50-strlen(buf), "CLOSE%d", OP(op)-CLOSE);
 		p = NULL;
 		break;
 	case STAR:
@@ -1813,7 +1813,7 @@ utest_basic_ops(void)
  *****************************************************************/
 
 #ifdef eslREGEXP_TESTDRIVE
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

@@ -27,7 +27,7 @@
  * and may not provide erf(), erfc(). But Easel will compile in an
  * alternative, esl_stats_erfc(), if needed.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <math.h>
 

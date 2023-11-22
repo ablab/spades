@@ -5,7 +5,7 @@
 
 #ifndef ESL_RED_BLACK_INCLUDED
 #define ESL_RED_BLACK_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #define ESL_RED_BLACK_COLOR_RED 0
 #define ESL_RED_BLACK_COLOR_BLACK 1

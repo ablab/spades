@@ -15,7 +15,7 @@
  * for const qualifier on nested pointers (int **foo) are
  * problematic.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 

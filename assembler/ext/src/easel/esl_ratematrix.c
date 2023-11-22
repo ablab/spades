@@ -31,7 +31,7 @@
  * See also:
  *   paml   - i/o of rate matrices from/to data files in PAML format
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <math.h>
 
@@ -619,7 +619,7 @@ main(void)
   gcc -g -Wall -I. -L. -o ratematrix_regression -DeslRATEMATRIX_REGRESSION -DHAVE_LIBGSL esl_dmatrix.c esl_ratematrix.c -leasel -lgsl -lgslcblas -lm
  */
 
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_linalg.h>
@@ -783,7 +783,7 @@ utest_Diagonalization(void)
  *
  * gcc -g -Wall -o test -I. -L. -DHAVE_LIBLAPACK -DeslRATEMATRIX_TESTDRIVE esl_ratematrix.c esl_dmatrix.c -leasel -llapack -lm
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "easel.h"
 #include "esl_ratematrix.h"

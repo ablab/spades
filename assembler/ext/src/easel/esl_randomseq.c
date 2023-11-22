@@ -13,7 +13,7 @@
  *  10. Test driver.
  *  11. Example.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -1357,7 +1357,7 @@ esl_rsq_XMarkov1(ESL_RANDOMNESS *r, const ESL_DSQ *dsq, int L, int K, ESL_DSQ *m
 #ifdef eslRANDOMSEQ_STATS
 /* gcc -g -Wall -o randomseq_stats -L. -I. -DeslRANDOMSEQ_STATS esl_randomseq.c -leasel -lm
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -2018,7 +2018,7 @@ utest_markov1_bug(ESL_RANDOMNESS *r)
 /* gcc -g -Wall -o randomseq_utest -L. -I. -DeslRANDOMSEQ_TESTDRIVE esl_randomseq.c -leasel -lm
  */
 
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <string.h>

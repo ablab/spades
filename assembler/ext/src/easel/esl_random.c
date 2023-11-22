@@ -23,7 +23,7 @@
  * 
  * Competitive alternatives to MT exist, including PCG [http://www.pcg-random.org/].
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -223,7 +223,7 @@ esl_randomness_Init(ESL_RANDOMNESS *r, uint32_t seed)
   else 
     {
       r->seed = seed;
-      r->x    = esl_rnd_mix3(seed, 87654321, 12345678);	/* arbitrary dispersion of the seed */
+      r->x    = esl_mix3(seed, 87654321, 12345678);	/* arbitrary dispersion of the seed */
       if (r->x == 0) r->x = 42;                         /* make sure we don't have a zero */
     }
   return eslOK;
@@ -266,12 +266,18 @@ esl_randomness_Destroy(ESL_RANDOMNESS *r)
  *
  * Purpose:  Returns a uniform deviate x, $0.0 \leq x < 1.0$, given
  *           RNG <r>.
+ *
+ *           This new u \in [0,1) still has 2^32-1 possible values.
+ *           The base RNG generates a uint32 on range d = [0,2^32).
+ *           All of these integers d are exactly representable in a
+ *           double, and so is d/2^32.
  *           
- *           If you cast the return value to float, the [0,1) interval
- *           guarantee is lost because values close to 1 will round to
- *           1.0.
+ *           Don't cast the return value to float. The [0,1) interval
+ *           guarantee will be lost because values close to 1 will
+ *           round to 1.0. More subtly, roundoff also affects other
+ *           values; the significand of a float has only 23 bits.
  *           
- * Returns:  a uniformly distribute random deviate on interval
+ * Returns:  a uniformly distributed random deviate on interval
  *           $0.0 \leq x < 1.0$.
  */
 double
@@ -293,6 +299,25 @@ uint32_t
 esl_random_uint32(ESL_RANDOMNESS *r)
 {
   return (r->type == eslRND_MERSENNE) ? mersenne_twister(r) : knuth(r);
+}
+
+
+/* Function:  esl_rnd_Roll()
+ * Synopsis:  Generate a uniform random integer 0..n-1.
+ * Incept:    SRE, Mon 31 Jul 2023
+ *
+ * Purpose:   Generate a uniformly distributed integer on range
+ *            0..n-1, for n>0 and n<2^31.
+ */
+int
+esl_rnd_Roll(ESL_RANDOMNESS *r, int n)
+{
+  ESL_DASSERT1(( n>0 ));
+  uint32_t factor = UINT32_MAX / (uint32_t) n;
+  uint32_t u;
+
+  do { u = esl_random_uint32(r) / factor; } while (u >= n);
+  return (int) u;
 }
 
 
@@ -398,33 +423,11 @@ choose_arbitrary_seed(void)
 #ifdef HAVE_GETPID
   b  = (uint32_t) getpid();	                    // preferable b choice, if we have POSIX getpid()
 #endif
-  seed = esl_rnd_mix3(a,b,c);	                    // try to decorrelate closely spaced choices of pid/times
+  seed = esl_mix3(a,b,c);	                    // try to decorrelate closely spaced choices of pid/times
   return (seed == 0) ? 42 : seed;                   // 42 is arbitrary, just to avoid seed==0. 
 }
 
-/* Function:  esl_rnd_mix3()
- * Synopsis:  Make a quasirandom number by mixing three inputs.
- * Incept:    SRE, Tue 21 Aug 2018
- *
- * Purpose:   This is Bob Jenkin's <mix()>. Given <a,b,c>,
- *            generate a number that's generated reasonably
- *            uniformly on $[0,2^{32}-1]$ even for closely
- *            spaced choices of $a,b,c$. 
- */
-uint32_t 
-esl_rnd_mix3(uint32_t a, uint32_t b, uint32_t c)
-{
-  a -= b; a -= c; a ^= (c>>13);		
-  b -= c; b -= a; b ^= (a<<8); 
-  c -= a; c -= b; c ^= (b>>13);
-  a -= b; a -= c; a ^= (c>>12);
-  b -= c; b -= a; b ^= (a<<16);
-  c -= a; c -= b; c ^= (b>>5); 
-  a -= b; a -= c; a ^= (c>>3); 
-  b -= c; b -= a; b ^= (a<<10);
-  c -= a; c -= b; c ^= (b>>15);
-  return c;
-}
+
 /*----------- end of esl_random() --------------*/
 
 
@@ -1024,10 +1027,9 @@ esl_rnd_floatstring(ESL_RANDOMNESS *rng, char *s)
     {
       s[i++] = 'e';
       exponent = -20 + esl_rnd_Roll(rng, 41);
-      i += sprintf(s+i, "%d", exponent);
+      i += snprintf(s+i, 20-i, "%d", exponent);
     }
   s[i++] = '\0';
-  ESL_DASSERT1(( i <= 20 ));
   return eslOK;
 }
 
@@ -1289,7 +1291,7 @@ utest_Deal(ESL_RANDOMNESS *rng)
  * 9. Test driver.
  *****************************************************************/
 #ifdef eslRANDOM_TESTDRIVE
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

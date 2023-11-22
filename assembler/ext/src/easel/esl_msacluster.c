@@ -14,7 +14,7 @@
  * modules. We're better off separating its functionality away into a
  * more highly derived module.)
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "easel.h"
 #include "esl_alphabet.h"
@@ -300,7 +300,7 @@ utest_SingleLinkage(ESL_GETOPTS *go, const ESL_MSA *msa, double maxid, int expec
 #ifdef eslMSACLUSTER_TESTDRIVE
 /* gcc -g -Wall -o msacluster_utest -I. -L. -DeslMSACLUSTER_TESTDRIVE esl_msacluster.c -leasel -lm
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <math.h>

@@ -20,7 +20,7 @@
  *   - eventually probably want additional matrix types
  *   - unit tests poor 
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>

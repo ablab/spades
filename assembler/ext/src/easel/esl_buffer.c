@@ -17,7 +17,7 @@
 /*::cexcerpt::header_example::end::*/
 
 /*::cexcerpt::include_example::begin::*/
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1889,7 +1889,7 @@ buffer_counttok(ESL_BUFFER *bf, const char *sep, esl_pos_t *ret_nc)
 /* compile: gcc -g -Wall -I. -L. -o esl_buffer_benchmark -DeslBUFFER_BENCHMARK esl_buffer.c -leasel -lm
  * run:     ./esl_buffer_benchmark
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -2783,7 +2783,7 @@ utest_halfnewline(void)
  *  (gcov): gcc -g -Wall -fprofile-arcs -ftest-coverage -I. -L. -o esl_buffer_utest -DeslBUFFER_TESTDRIVE esl_buffer.c -leasel -lm
  * run:     ./esl_buffer_utest
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

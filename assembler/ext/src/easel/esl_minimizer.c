@@ -12,7 +12,7 @@
  *    6. Test driver
  *    7. Example
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <math.h>
 #include <float.h>
@@ -855,7 +855,7 @@ utest_simplefunc(ESL_RANDOMNESS *rng)
  * 6. Test driver
  *****************************************************************/
 #ifdef eslMINIMIZER_TESTDRIVE
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "easel.h"
 #include "esl_getopts.h"

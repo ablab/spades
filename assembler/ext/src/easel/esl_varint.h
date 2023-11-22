@@ -2,7 +2,7 @@
  */
 #ifndef eslVARINT_INCLUDED
 #define eslVARINT_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "easel.h"
 

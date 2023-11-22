@@ -11,7 +11,7 @@
  */
 #ifndef eslMATRIXOPS_INCLUDED
 #define eslMATRIXOPS_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 extern double **esl_mat_DCreate(int M, int N);
 extern float  **esl_mat_FCreate(int M, int N);

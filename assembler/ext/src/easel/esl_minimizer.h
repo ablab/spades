@@ -5,7 +5,7 @@
  */
 #ifndef eslMINIMIZER_INCLUDED
 #define eslMINIMIZER_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 /* Default parameters 
  * These can be customized by passing in an ESL_MIN_CFG. 

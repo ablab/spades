@@ -9,7 +9,7 @@
  */
 #ifndef eslSQIO_INCLUDED
 #define eslSQIO_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

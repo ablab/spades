@@ -20,7 +20,7 @@
  * remain. Thanks Don!
  *
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -1843,18 +1843,16 @@ make_ssi_index(ESL_ALPHABET *abc, const char *tmpfile, int format, char *ssifile
   ESL_SQFILE *sqfp = NULL;
   ESL_SQ     *sq   = esl_sq_CreateDigital(abc);
   uint16_t    fh   = 0;
-  int         nseq = 0;
   int         status;
 
   int         bpl, rpl;
  
-  sprintf(ssifile, "%s.ssi", tmpfile);
+  snprintf(ssifile, 32, "%s.ssi", tmpfile);  // 32 is the allocation size of ssifile, from main()
   if (esl_newssi_Open(ssifile, TRUE, &ns)                       != eslOK) esl_fatal(msg);
   if (esl_newssi_AddFile(ns, tmpfile, format, &fh)              != eslOK) esl_fatal(msg);
   if (esl_sqfile_OpenDigital(abc, tmpfile, format, NULL, &sqfp) != eslOK) esl_fatal(msg);
   while ((status = esl_sqio_ReadInfo(sqfp, sq)) == eslOK)
     {
-      nseq++;
       if (esl_newssi_AddKey(ns, sq->name, fh, sq->roff, sq->doff, sq->L)   != eslOK) esl_fatal(msg);
       if (sq->acc[0] != '\0' && esl_newssi_AddAlias(ns, sq->acc, sq->name) != eslOK) esl_fatal(msg);
       esl_sq_Reuse(sq);
@@ -2221,7 +2219,7 @@ utest_guess_empty_seq()
  * ./sqio_utest
  */
 #ifdef eslSQIO_TESTDRIVE
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>

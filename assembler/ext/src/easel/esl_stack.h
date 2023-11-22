@@ -7,7 +7,7 @@
  */
 #ifndef eslSTACK_INCLUDED
 #define eslSTACK_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #define ESL_STACK_INITALLOC 128	/* initial allocation; realloc by doubling  */
 

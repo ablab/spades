@@ -17,7 +17,7 @@
  *     structure instead. (See `msaweight` for example).
  *     [xref SRE:2019/0415-easel-tech-tree-v3]
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -1076,7 +1076,7 @@ utest_ReadWrite(void)
  *****************************************************************/
 #ifdef eslGENCODE_TESTDRIVE
 
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "esl_gencode.h"
 

@@ -9,7 +9,7 @@
  *   6. Test driver
  *   7. Examples
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <string.h>
 
@@ -919,9 +919,12 @@ utest_block(ESL_RANDOMNESS *rng, char *tmpfile, int *is_data, int N)
 	{
 	  /* must keep at least nread-ncurr+1 lines, to keep curr line in window */
 	  minalloc = rc->nread-rc->ncurr+1;
-	  roll = minalloc + esl_rnd_Roll(rng, rc->nalloc-minalloc+1);
-	  if (esl_recorder_ResizeTo(rc, roll) != eslOK) esl_fatal(msg);
-	  max_realloc--;
+          if (minalloc <= rc->nalloc) 
+            {
+              roll = minalloc + esl_rnd_Roll(rng, rc->nalloc-minalloc+1);
+              if (esl_recorder_ResizeTo(rc, roll) != eslOK) esl_fatal(msg);
+              max_realloc--;
+            }
 	}
     }
   

@@ -9,7 +9,7 @@
  *    4. Unit tests
  *    5. Test driver
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -143,7 +143,8 @@ esl_alloc_aligned(size_t size, size_t alignment)
 #endif
 
   if (p == NULL)
-    esl_exception(eslEMEM, FALSE, __FILE__, __LINE__, "aligned alloc of size %d failed", size); \
+    esl_exception(eslEMEM, FALSE, __FILE__, __LINE__, "aligned alloc of size %d failed", size); 
+
   return p;
 }
 

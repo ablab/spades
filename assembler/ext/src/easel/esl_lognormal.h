@@ -2,7 +2,7 @@
  */
 #ifndef eslLOGNORMAL_INCLUDED
 #define eslLOGNORMAL_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "easel.h"
 #include "esl_random.h"

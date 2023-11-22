@@ -2,7 +2,7 @@
  */
 #ifndef eslHYPEREXP_INCLUDED
 #define eslHYPEREXP_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "esl_fileparser.h"
 #include "esl_histogram.h"

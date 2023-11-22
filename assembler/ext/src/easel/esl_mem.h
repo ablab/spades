@@ -2,7 +2,7 @@
  */
 #ifndef eslMEM_INCLUDED
 #define eslMEM_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 #include "easel.h"
 
 extern int       esl_mem_strtoi32(char *p, esl_pos_t n, int base, int *opt_nc, int32_t *opt_val);

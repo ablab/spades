@@ -4,7 +4,7 @@
  */
 #ifndef eslMIXGEV_INCLUDED
 #define eslMIXGEV_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 #include <stdio.h>
 #include "esl_random.h"
 

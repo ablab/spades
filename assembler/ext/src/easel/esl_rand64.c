@@ -1,4 +1,4 @@
-/* Portable, threadsafe, 64-bit Mersenne Twister random number generator.
+/* 64-bit Mersenne Twister random number generator: portable, threadsafe.
  * 
  * Contents:
  *    1. <ESL_RAND64> object
@@ -28,7 +28,7 @@
  *    1. esl_rand64() stream matches mt19937-64.c stream
  *    2. esl_rand64() passes NIST sts-2.1.2 (2014) RNG statistical test suite  
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -38,10 +38,22 @@
 #include <unistd.h>    // getpid()
 #endif
 
-
 #include "easel.h"
-#include "esl_random.h"
 #include "esl_rand64.h"
+
+
+
+#if !defined(eslRAND64_BENCHMARK) && !defined(eslRAND64_TESTDRIVE) && !defined(eslRAND64_EXAMPLE)
+/* Usually we don't need to #if out the main code block(s) in our
+   idiom for compiling Easel driver programs.  This particular #if is
+   a workaround for a bug that cropped up in esl_rand64 in a specific
+   case of the Intel (2023.0.0) icx compiler with -O3 optimization
+   (but not -O2 or less) and -fp-model=precise (but not default or
+   strict), which caused a baffling failure in the
+   esl_rand64_utest::utest_rand64() test. It's unclear why the #if
+   fixes the problem, but it does. [xref 2023/0803-h3-icx-fpmodel]
+*/
+
 
 static void     mt64_seed_table(ESL_RAND64 *rng, uint64_t seed);
 static void     mt64_fill_table(ESL_RAND64 *rng);
@@ -180,13 +192,13 @@ esl_rand64(ESL_RAND64 *rng)
  *
  * Note:      Starting with a 64-bit uint64_t, discards the most
  *            significant bit and returns the low-order 63 bits. This
- *            makes assumptions about the binary representation of
- *            unsigned/signed integers. It will work correctly for
- *            two's-complement, one's complement, and sign/magnitude
- *            integer systems. C99 allows any of the three systems
- *            (C99 6.2.6.2) for an <int>; exact-width types such as
- *            <int64_t> are required to use two's complement (C99
- *            7.18.1.1).
+ *            makes an assumption about the binary representation of
+ *            unsigned/signed integers, but the assumption is safe. It
+ *            will work correctly for two's-complement, one's
+ *            complement, and sign/magnitude integer systems. C99
+ *            allows any of the three systems (C99 6.2.6.2) for an
+ *            <int>; exact-width types such as <int64_t> are required
+ *            to use two's complement (C99 7.18.1.1).
  */
 int64_t
 esl_rand64_int64(ESL_RAND64 *rng)
@@ -196,7 +208,7 @@ esl_rand64_int64(ESL_RAND64 *rng)
 
 
 /* Function:  esl_rand64_Roll()
- * Synopsis:  Generate a random number 0..n-1.
+ * Synopsis:  Generate a uniform random integer 0..n-1.
  * Incept:    SRE, Tue 21 Aug 2018
  */
 uint64_t
@@ -487,8 +499,8 @@ choose_arbitrary_seed(void)
 #ifdef HAVE_GETPID
   b  = (uint32_t) getpid();	                           // preferable b choice, if we have POSIX getpid()
 #endif
-  seed = (uint64_t) esl_rnd_mix3(a,b,c);                   // high bits
-  seed = (seed << 32) + (uint64_t) esl_rnd_mix3(c,a,b);    // low bits: same #'s mixed in a different order
+  seed = (uint64_t) esl_mix3(a,b,c);                       // high bits
+  seed = (seed << 32) + (uint64_t) esl_mix3(c,a,b);        // low bits: same #'s mixed in a different order
   return (seed == 0 ? 42 : seed);                          // 42 is arbitrary, just to avoid seed==0.
 }
 
@@ -517,6 +529,8 @@ esl_rand64_Dump(FILE *fp, ESL_RAND64 *rng)
   fprintf(fp, "\n");
   return eslOK;
 }
+
+#endif // !defined(eslRAND64_BENCHMARK) && !defined(eslRAND64_TESTDRIVE) && !defined(eslRAND64_EXAMPLE)
 
 
 /*****************************************************************

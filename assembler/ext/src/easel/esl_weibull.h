@@ -4,7 +4,7 @@
  */
 #ifndef eslWEIBULL_INCLUDED
 #define eslWEIBULL_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include "esl_histogram.h"
 #include "esl_random.h"

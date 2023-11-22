@@ -1,6 +1,6 @@
 /* Interface with the LAPACK (Fortran77) numerical library.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 #ifdef HAVE_LIBLAPACK
 
 #include <stdlib.h>

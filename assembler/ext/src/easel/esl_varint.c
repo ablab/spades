@@ -12,7 +12,7 @@
  * See also:
  *    esl_huffman : Huffman coding
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <limits.h>

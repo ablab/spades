@@ -11,7 +11,7 @@
  *   8. Test driver.
  *   9. Examples.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -2676,7 +2676,7 @@ ERROR:
 /* gcc -g -Wall -o esl_sq_utest -I. -L. -DeslSQ_TESTDRIVE esl_sq.c -leasel -lm
  * ./esl_sq_utest
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <math.h>

@@ -17,7 +17,7 @@
  *    ~   : nucleotide is unaligned to a structure profile, because of local structure alignment
  *
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <string.h>
 #include <ctype.h>
@@ -161,22 +161,22 @@ esl_wuss2ct(char *ss, int len, int *ct)
 int
 esl_ct2wuss(int *ct, int n, char *ss)
 {
-  int        rb[26];                /* array that delimits the right bound of a pseudoknot character */
-  ESL_STACK *pda    = NULL;         /* stack for "main" secondary structure */
-  ESL_STACK *auxpk  = NULL;	    /* aux stack for pseudoknot */
-  ESL_STACK *auxss  = NULL;	    /* aux stack for single stranded */
-  int       *cct    = NULL;         /* copy of ct vector */
-  int        nfaces;                /* number of faces in a cWW structure */
-  int        minface;               /* max depth of faces in a cWW structure */
-  int        leftbound, rightbound; /* left and right bound to find basepairs belonging to a given pseudoknot */
-  int        xpk = 0;               /* number of pseudoknot chararactes used */
-  int        npk = 0;               /* number of pseudoknots */
-  int        npairs = 0;            /* total number of basepairs */
-  int        npairs_reached = 0;    /* number of basepairs found so far */
-  int        found_partner;         /* true if we've found left partner of a given base in stack pda */
-  int        i,j,k;                 /* sequence indices */
-  int        x;                     /* index for pseudoknot characters */
-  int        status = eslEMEM;	    /* exit status 'til proven otherwise */
+  int        rb[26];                // array that delimits the right bound of a pseudoknot character
+  ESL_STACK *pda    = NULL;         // stack for "main" secondary structure
+  ESL_STACK *auxpk  = NULL;	    // aux stack for pseudoknot
+  ESL_STACK *auxss  = NULL;	    // aux stack for single stranded
+  int       *cct    = NULL;         // copy of ct vector
+  int        nfaces;                // number of faces in a cWW structure
+  int        minface;               // max depth of faces in a cWW structure
+  int        leftbound, rightbound; // left and right bound to find basepairs belonging to a given pseudoknot
+  int        xpk = 0;               // number of pseudoknot characters used
+  // int     npk = 0;               // number of pseudoknots; commented out because we don't use it for anything right now
+  int        npairs = 0;            // total number of basepairs
+  int        npairs_reached = 0;    // number of basepairs found so far
+  int        found_partner;         // true if we've found left partner of a given base in stack pda
+  int        i,j,k;                 // sequence indices
+  int        x;                     // index for pseudoknot characters
+  int        status = eslEMEM;	    // exit status 'til proven otherwise
 
   /* total number of basepairs */
   for (j = 1; j <= n; j ++) { if (ct[j] > 0 && j < ct[j]) npairs ++; }
@@ -317,7 +317,7 @@ esl_ct2wuss(int *ct, int n, char *ss)
 	  
 	  if (k == leftbound) /* a new pseudoknot */
 	    {
-	      npk ++;
+	      // npk ++;  // if you wanted to count PK's, here's where to do it
 	      xpk ++;
 	      /* figure out if we can use this alphabet index, or bump it up if necessary */
 	      while (i < rb[xpk]) { xpk ++; }
@@ -388,19 +388,19 @@ esl_ct2wuss(int *ct, int n, char *ss)
 int
 esl_ct2simplewuss(int *ct, int n, char *ss)
 {
-  int        rb[26];                /* array that delimits the right bound of a pseudoknot character */
-  ESL_STACK *pda    = NULL;         /* stack for "main" secondary structure */
-  ESL_STACK *auxpk  = NULL;	    /* aux stack for pseudoknot */
-  int       *cct    = NULL;         /* copy of ct vector */
-  int        leftbound, rightbound; /* left and right bound to find basepairs belonging to a given pseudoknot */
-  int        xpk = 0;               /* number of pseudoknot chararactes used */
-  int        npk = 0;               /* number of pseudoknots */
-  int        npairs = 0;            /* total number of basepairs */
-  int        npairs_reached = 0;    /* number of basepairs found so far */
-  int        found_partner;         /* true if we've found left partner of a given base in stack pda */
-  int        i,j,k;                 /* sequence indices */
-  int        x;                     /* index for pseudoknot characters */
-  int        status = eslEMEM;	    /* exit status 'til proven otherwise */
+  int        rb[26];                // array that delimits the right bound of a pseudoknot character
+  ESL_STACK *pda    = NULL;         // stack for "main" secondary structure
+  ESL_STACK *auxpk  = NULL;	    // aux stack for pseudoknot
+  int       *cct    = NULL;         // copy of ct vector
+  int        leftbound, rightbound; // left and right bound to find basepairs belonging to a given pseudoknot
+  int        xpk = 0;               // number of pseudoknot characters used
+  // int     npk = 0;               // number of pseudoknots; commented out because we don't use it for anything right now
+  int        npairs = 0;            // total number of basepairs
+  int        npairs_reached = 0;    // number of basepairs found so far
+  int        found_partner;         // true if we've found left partner of a given base in stack pda
+  int        i,j,k;                 // sequence indices
+  int        x;                     // index for pseudoknot characters
+  int        status = eslEMEM;	    // exit status 'til proven otherwise
 
   /* total number of basepairs */
   for (j = 1; j <= n; j ++) { if (ct[j] > 0 && j < ct[j]) npairs ++; }
@@ -496,7 +496,7 @@ esl_ct2simplewuss(int *ct, int n, char *ss)
 	  
 	  if (k == leftbound) /* a new pseudoknot */
 	    {
-	      npk ++;
+	      // npk ++;   // if you want to count PK's, here's where to do it
 	      xpk ++;
 	      /* figure out if we can use this alphabet index, or bump it up if necessary */
 	      while (i < rb[xpk]) { xpk ++; }

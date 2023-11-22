@@ -9,7 +9,7 @@
  *    6. Unit tests
  *    7. Test driver
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -718,8 +718,7 @@ esl_msa_GuessAlphabet(const ESL_MSA *msa, int *ret_type)
 {
   int64_t namino   = 0,
           ndna     = 0,
-          nrna     = 0,
-          nunknown = 0;
+          nrna     = 0;
   int     type;
   int     i,x;
   int64_t j,n;
@@ -750,7 +749,8 @@ esl_msa_GuessAlphabet(const ESL_MSA *msa, int *ret_type)
       case eslAMINO:   namino++; break;
       case eslDNA:     ndna++;   break;
       case eslRNA:     nrna++;   break;
-      default:         nunknown++; 
+      case eslUNKNOWN:           break;
+      default:                   break;  
       }
     }
   if      (namino    > 0 && (ndna+nrna)   == 0) *ret_type = eslAMINO;

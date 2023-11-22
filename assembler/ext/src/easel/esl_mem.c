@@ -7,7 +7,7 @@
  *    2. Unit tests.
  *    3. Test driver.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdint.h>
 #include <limits.h>
@@ -879,7 +879,7 @@ esl_mem_IsReal(const char *p, esl_pos_t n)
  * 2. Benchmark driver.
  *****************************************************************/
 #ifdef eslMEM_BENCHMARK
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 
@@ -1272,7 +1272,7 @@ utest_memstrcontains(void)
  * 3. Test driver
  *****************************************************************/
 #ifdef eslMEM_TESTDRIVE
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

@@ -14,7 +14,7 @@
  *   11. Test driver.
  *   12. Examples.
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -1395,7 +1395,7 @@ seq2    ACDEFGHIKLMNPQRSTVWYacdefghiklmnpqrstvwyACDEFGHIKLMNPQRSTVWYacdefghiklmn
  *  (gcov): gcc -g -Wall -fprofile-arcs -ftest-coverage -I. -L. -o esl_msafile_utest -DeslMSAFILE_TESTDRIVE esl_msafile.c -leasel -lm
  * run:     ./esl_msafile_utest
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

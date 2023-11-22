@@ -2,7 +2,7 @@
  */
 #ifndef eslSQIO_ASCII_INCLUDED
 #define eslSQIO_ASCII_INCLUDED
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 #ifdef HAVE_SYS_TYPES_H

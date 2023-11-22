@@ -19,7 +19,7 @@
  * remain. Thanks Don!
  *
  */
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -138,6 +138,7 @@ esl_sqascii_Open(char *filename, int format, ESL_SQFILE *sqfp)
 {
   int         status;/* return status from an ESL call */
   int         n;
+  int         nc;
 
   ESL_SQASCII_DATA *ascii = &sqfp->data.ascii;
 
@@ -217,8 +218,9 @@ esl_sqascii_Open(char *filename, int format, ESL_SQFILE *sqfp)
       {
         char *cmd;
         fclose(ascii->fp);
-        ESL_ALLOC(cmd, sizeof(char) * (n+1+strlen("gzip -dc ")));
-        sprintf(cmd, "gzip -dc %s", filename);
+        nc = strlen("gzip -dc ") + n + 1;
+        ESL_ALLOC(cmd, nc);
+        snprintf(cmd, nc, "gzip -dc %s", filename);
         ascii->fp = popen(cmd, "r");
         if (ascii->fp == NULL) { status = eslENOTFOUND; goto ERROR; }
         ascii->do_gzip  = TRUE;
@@ -2394,6 +2396,11 @@ skip_whitespace(ESL_SQFILE *sqfp)
   if (ascii->nc == 0)
     return eslEOF;
 
+  /* if at end of buffer, reload it */
+  if (ascii->bpos == ascii->nc)
+    if ((status = loadbuf(sqfp)) == eslEOF)
+      return eslEOF;
+
   c = (int) ascii->buf[ascii->bpos];
   x  = sqfp->inmap[c];
 
@@ -2401,6 +2408,7 @@ skip_whitespace(ESL_SQFILE *sqfp)
 
     ascii->bpos++;
 
+    /* if at end of buffer, reload it */
     if (ascii->bpos == ascii->nc)
       if ((status = loadbuf(sqfp)) == eslEOF)
         return eslEOF;
