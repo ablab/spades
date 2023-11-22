@@ -5,7 +5,7 @@
  *           4) Test Driver
  * NPC 2/20/19 [Sparta]
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -327,6 +327,7 @@ static void utest_Deserialize_error_conditions(){
 
   free(deserial);
   free(sampled);
+  free(buf);
   esl_rand64_Destroy(rng);
   return;
 }
@@ -339,6 +340,10 @@ static void utest_Serialize(int ntrials){
   HMMD_SEARCH_STATUS **serial=NULL, *deserial=NULL;
   int status;
   char msg[] = "utest_Serialize failed";
+
+  if(ntrials <=0){
+    esl_fatal("utest_Serialize requires that ntrials be >= 1\n");
+  }
 
   ESL_ALLOC(buf, sizeof(uint8_t *));
   *buf = NULL;
@@ -382,7 +387,7 @@ static void utest_Serialize(int ntrials){
   }
   free(serial);
   free(deserial);
-
+  esl_rand64_Destroy(rng);
   return;
 
   ERROR:

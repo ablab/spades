@@ -8,7 +8,7 @@
  * SRE, Fri Jan 12 13:19:38 2007 [Janelia] [Franz Ferdinand, eponymous]
  */
 
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <math.h>
 #include <float.h>

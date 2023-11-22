@@ -4,7 +4,7 @@
  *           3) Test Driver
  * NPC 2/13/19 [The soothing whir of the air filter]
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -1017,7 +1017,7 @@ static void utest_Deserialize_error_conditions(){
     esl_fatal(msg);
   }
   //printf("Test 3 passed\n");
-
+  free(buf);
   p7_hit_Destroy(deserial);
   p7_hit_Destroy(sampled);
   esl_rand64_Destroy(rng);
@@ -1068,6 +1068,8 @@ static void utest_Serialize(int ntrials){
     if(p7_hit_Compare(serial[i], deserial, 1e-4, 1e-4) != eslOK){ // deserialized structure didn't match serialized
       esl_fatal(msg);
     }
+    p7_hit_Destroy(deserial);
+    deserial = p7_hit_Create_empty();
 
   }
   // haven't failed yet, so we've succeeded.  Clean up and exit
@@ -1078,7 +1080,7 @@ static void utest_Serialize(int ntrials){
   }
   free(serial);
   p7_hit_Destroy(deserial);
-
+  esl_rand64_Destroy(rng);
   return;
 
   ERROR:

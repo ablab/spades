@@ -6,7 +6,7 @@
 #ifndef P7_IMPL_NEON_INCLUDED
 #define P7_IMPL_NEON_INCLUDED
 
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include "esl_alphabet.h"
 #include "esl_neon.h"
@@ -24,21 +24,7 @@
 
 #define p7O_EXTRA_SB 17    /* see ssvfilter.c for explanation */
 
-/* Utility NEON function - remove when merged upstream in easel
- */
-/*static inline float
-esl_neon_hmax_f32(esl_neon_128f_t a)
-{
-  #ifdef eslHAVE_NEON_AARCH64
-    return vmaxvq_f32(a.f32x4);
-  #else
-    float32x2_t tmp;
-    tmp = vpmax_f32(vget_low_f32(a.f32x4), vget_high_f32(a.f32x4));
-    tmp = vpmax_f32(tmp, tmp);
-    return vget_lane_f32(tmp, 1);
-  #endif
-}
-*/
+
 /*****************************************************************
  * 1. P7_OPROFILE: an optimized score profile
  *****************************************************************/
@@ -192,10 +178,10 @@ enum p7x_xcells_e { p7X_E = 0, p7X_N = 1, p7X_J = 2, p7X_B = 3, p7X_C = 4, p7X_S
  *    to access B[i] for example, for i=0..L:   xmx[B][i/4].x[i%4]  (quad i/4; element i%4).
  */
 typedef struct p7_omx_s {
-  int       M;      /* current actual model dimension                              */
-  int       L;      /* current actual sequence dimension                           */
+  int       M;             /* current actual model dimension                              */
+  int       L;             /* current actual sequence dimension                           */
 
-  /* The main dynamic programming matrix for M,D,I states                                      */
+  /* The main dynamic programming matrix for M,D,I states                                 */
   float32x4_t  **dpf;      /* striped DP matrix for [0,1..L][0..Q-1][MDI], float vectors  */
   int16x8_t    **dpw;      /* striped DP matrix for [0,1..L][0..Q-1][MDI], sword vectors  */
   uint8x16_t   **dpb;      /* striped DP matrix for [0,1..L][0..Q-1] uchar vectors        */
@@ -205,20 +191,20 @@ typedef struct p7_omx_s {
   int            allocQ4;  /* current set row width in <dpf> quads:   allocQ4*4 >= M      */
   int            allocQ8;  /* current set row width in <dpw> octets:  allocQ8*8 >= M      */
   int            allocQ16; /* current set row width in <dpb> 16-mers: allocQ16*16 >= M    */
-  size_t         ncells;   /* current allocation size of <dp_mem>, in accessible cells    */
+  int64_t        ncells;   /* current allocation size of <dp_mem>, in accessible cells    */
 
-  /* The X states (for full,parser; or NULL, for scorer)                                       */
-  float    *xmx;          /* logically [0.1..L][ENJBCS]; indexed [i*p7X_NXCELLS+s]       */
-  void     *x_mem;    /* X memory before 16-byte alignment                           */
-  int       allocXR;    /* # of rows allocated in each xmx[] array; allocXR >= L+1     */
-  float     totscale;    /* log of the product of all scale factors (0.0 if unscaled)   */
-  int       has_own_scales;  /* TRUE to use own scale factors; FALSE if scales provided     */
+  /* The X states (for full,parser; or NULL, for scorer)                                  */
+  float  *xmx;             /* logically [0.1..L][ENJBCS]; indexed [i*p7X_NXCELLS+s]       */
+  void   *x_mem;           /* X memory before 16-byte alignment                           */
+  int     allocXR;         /* # of rows allocated in each xmx[] array; allocXR >= L+1     */
+  float   totscale;        /* log of the product of all scale factors (0.0 if unscaled)   */
+  int     has_own_scales;  /* TRUE to use own scale factors; FALSE if scales provided     */
 
   /* Parsers,scorers only hold a row at a time, so to get them to dump full matrix, it
    * must be done during a DP calculation, after each row is calculated
    */
-  int     debugging;    /* TRUE if we're in debugging mode                             */
-  FILE   *dfp;      /* output stream for diagnostics                               */
+  int     debugging;       /* TRUE if we're in debugging mode                             */
+  FILE   *dfp;             /* output stream for diagnostics                               */
 } P7_OMX;
 
 /* ?MXo(q) access macros work for either uchar or float, so long as you

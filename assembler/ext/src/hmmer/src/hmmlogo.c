@@ -166,7 +166,6 @@ static ESL_OPTIONS options[] = {
   { "--height_relent_abovebg",   eslARG_NONE,    NULL, NULL, NULL,    NULL,  NULL,  HMMLOGO_OPTS,     "total height = relative entropy ; only letters >bg shown",    1 },
   { "--height_score",            eslARG_NONE,    NULL, NULL, NULL,    NULL,  NULL,  HMMLOGO_OPTS,     "total height = sums of (pos|neg) scores; residue height = score",            1 },
   { "--no_indel",                eslARG_NONE,    NULL, NULL, NULL,    NULL,  NULL,  NULL,             "don't provide indel rate values",                                            1 },
-
   {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 
@@ -177,27 +176,22 @@ static char banner[] = "given an hmm, produce data required to build an hmm logo
 int
 main(int argc, char **argv)
 {
-  ESL_GETOPTS  *go      = NULL;
-  int i, j;
-  int              status   = eslOK;
-  P7_HMMFILE      *hfp      = NULL;              /* open input HMM file                             */
-  P7_HMM          *hmm      = NULL;              /* one HMM query                                   */
-  ESL_ALPHABET    *abc      = NULL;              /* digital alphabet                                */
-  P7_BG           *bg       = NULL;
-
-  char   errbuf[eslERRBUFSIZE];
-  char* hmmfile;
-
-  float *rel_ents  = NULL;
-  float **heights  = NULL;
-  float **probs    = NULL;
-  float *ins_P     = NULL;
-  float *ins_expL  = NULL;
-  float *occupancy = NULL;
-
-
-  int mode = HMMLOGO_RELENT_ALL;  //default
-
+  ESL_GETOPTS   *go        = NULL;
+  P7_HMMFILE    *hfp       = NULL; // open input HMM file
+  P7_HMM        *hmm       = NULL; // one HMM query
+  ESL_ALPHABET  *abc       = NULL; // digital alphabet
+  P7_BG         *bg        = NULL;
+  char          *hmmfile   = NULL;
+  float         *rel_ents  = NULL;
+  float        **heights   = NULL;
+  float        **probs     = NULL;
+  float         *ins_P     = NULL;
+  float         *ins_expL  = NULL;
+  float         *occupancy = NULL;
+  int            mode      = HMMLOGO_RELENT_ALL;  //default
+  int   i, j;
+  int  status   = eslOK;
+  char errbuf[eslERRBUFSIZE];
 
   go = esl_getopts_Create(options);
   if (esl_opt_ProcessCmdline(go, argc, argv) != eslOK) esl_fatal(argv[0], "Failed to parse command line: %s\n", go->errbuf);
@@ -215,30 +209,23 @@ main(int argc, char **argv)
 
   hmmfile = esl_opt_GetArg(go, 1);
 
-  if (esl_opt_IsOn(go, "--height_relent_all"))
-    mode = HMMLOGO_RELENT_ALL;
-  else if (esl_opt_IsOn(go, "--height_relent_abovebg"))
-    mode = HMMLOGO_RELENT_ABOVEBG;
-  else if (esl_opt_IsOn(go, "--height_score"))
-    mode = HMMLOGO_SCORE;
-  else
-    mode = HMMLOGO_RELENT_ALL;  //default
+  if      (esl_opt_IsOn(go, "--height_relent_all"))     mode = HMMLOGO_RELENT_ALL;
+  else if (esl_opt_IsOn(go, "--height_relent_abovebg")) mode = HMMLOGO_RELENT_ABOVEBG;
+  else if (esl_opt_IsOn(go, "--height_score"))          mode = HMMLOGO_SCORE;
+  else                                                  mode = HMMLOGO_RELENT_ALL;      //stil default
 
   /* Open the query profile HMM file */
-  status = p7_hmmfile_OpenE(hmmfile, NULL, &hfp, errbuf);
+  status = p7_hmmfile_Open(hmmfile, NULL, &hfp, errbuf);
   if      (status == eslENOTFOUND) p7_Fail("File existence/permissions problem in trying to open HMM file %s.\n%s\n", hmmfile, errbuf);
   else if (status == eslEFORMAT)   p7_Fail("File format problem in trying to open HMM file %s.\n%s\n",                hmmfile, errbuf);
   else if (status != eslOK)        p7_Fail("Unexpected error %d in opening HMM file %s.\n%s\n",               status, hmmfile, errbuf);
 
-
   status = p7_hmmfile_Read(hfp, &abc, &hmm);
-
   bg     = p7_bg_Create(abc);
 
   ESL_ALLOC(rel_ents, (hmm->M+1) * sizeof(float));
   ESL_ALLOC(heights,  (hmm->M+1) * sizeof(float*));
   ESL_ALLOC(probs,    (hmm->M+1) * sizeof(float*));
-
   for (i = 1; i <= hmm->M; i++) {
     ESL_ALLOC(heights[i], abc->K * sizeof(float));
     ESL_ALLOC(probs[i],   abc->K * sizeof(float));
@@ -268,19 +255,10 @@ main(int argc, char **argv)
 
   }
 
-  if (rel_ents != NULL) free(rel_ents);
-  if (heights != NULL) {
-    for (i = 1; i <= hmm->M; i++)
-      if (heights[i] != NULL) free(heights[i]);
-    free(heights);
-  }
-
-
   /* indel values */
   if (! esl_opt_IsOn(go, "--no_indel")) {
-
-    ESL_ALLOC(ins_P, (hmm->M+1) * sizeof(float));
-    ESL_ALLOC(ins_expL, (hmm->M+1) * sizeof(float));
+    ESL_ALLOC(ins_P,     (hmm->M+1) * sizeof(float));
+    ESL_ALLOC(ins_expL,  (hmm->M+1) * sizeof(float));
     ESL_ALLOC(occupancy, (hmm->M+1) * sizeof(float));
 
     hmmlogo_IndelValues(hmm, ins_P, ins_expL, occupancy);
@@ -292,34 +270,25 @@ main(int argc, char **argv)
     free(ins_P);
     free(ins_expL);
     free(occupancy);
-
   }
 
+  free(rel_ents);
+  for (i = 1; i <= hmm->M; i++) {
+    free(heights[i]);
+    free(probs[i]);
+  }
+  free(heights);
+  free(probs);
 
-  p7_hmmfile_Close(hfp);
-  esl_alphabet_Destroy(abc);
   p7_bg_Destroy(bg);
-
-
-  exit(0);
-
-
-  ERROR:
-  if (rel_ents != NULL) free(rel_ents);
-  if (heights != NULL) {
-    for (i = 1; i <= hmm->M; i++)
-      if (heights[i] != NULL) free(heights[i]);
-    free(heights);
-  }
-  if (hfp != NULL) p7_hmmfile_Close(hfp);
-  if (abc != NULL) esl_alphabet_Destroy(abc);
-
-
-  if (ins_P != NULL)     free(ins_P);
-  if (ins_expL != NULL)  free(ins_expL);
-  if (occupancy != NULL) free(occupancy);
-
-
+  esl_alphabet_Destroy(abc);
+  p7_hmm_Destroy(hmm);
+  p7_hmmfile_Close(hfp);
+  esl_getopts_Destroy(go);
+  return eslOK;
+  
+ ERROR:
+  return status;
 }
 
 /*---------------- end, hmmlogo application ----------------------*/

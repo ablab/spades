@@ -1,6 +1,6 @@
 /* worker side of the hmmer daemon
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #ifdef HMMER_THREADS
 
@@ -120,7 +120,7 @@ print_timings(int i, double elapsed, P7_PIPELINE *pli)
   m  = (int) (elapsed / 60.) - h * 60;
   s  = (int) (elapsed) - h * 3600 - m * 60;
   hs = (int) (elapsed * 100.) - h * 360000 - m * 6000 - s * 100;
-  sprintf(buf1, "%02d:%02d.%02d", m,s,hs);
+  snprintf(buf1, 16, "%02d:%02d.%02d", m,s,hs);
 
   fprintf (stdout, "%2d %9" PRId64 " %9" PRId64 " %7" PRId64 " %7" PRId64 " %6" PRId64 " %5" PRId64 " %s\n",
            i, pli->nseqs, pli->nres, pli->n_past_msv, pli->n_past_bias, pli->n_past_vit, pli->n_past_fwd, buf1);

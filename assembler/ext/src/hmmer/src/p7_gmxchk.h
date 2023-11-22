@@ -12,7 +12,7 @@
 #ifndef P7_GMXCHK_INCLUDED
 #define P7_GMXCHK_INCLUDED
 
-#include "p7_config.h"
+#include <p7_config.h>
 
 /*****************************************************************
  * 1. Exegesis: layout of rows in a checkpointed matrix.

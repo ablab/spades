@@ -8,7 +8,7 @@
  *    
  * SRE, Thu Jun 14 09:59:20 2007 [Janelia] [Tom Waits, Orphans]
  */
-#include "p7_config.h"		
+#include <p7_config.h>		
 
 #ifdef HMMER_MPI
 #include <stdlib.h>
@@ -564,7 +564,7 @@ p7_oprofile_MPIRecv(int source, int tag, MPI_Comm comm, char **buf, int *nalloc,
   qsub -N benchmark-mpi -j y -R y -b y -cwd -V -pe lam-mpi-tight 2 'mpirun C ./benchmark-mpi  ~/notebook/1227-msp-statistics/Pfam.hmm > bench.out'
   qsub -N benchmark-mpi -j y -R y -b y -cwd -V -pe lam-mpi-tight 2 'mpirun C ./benchmark-mpi -b ~/notebook/1227-msp-statistics/Pfam.hmm > bench.out'
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <string.h>
 #include <math.h>
@@ -617,10 +617,10 @@ main(int argc, char **argv)
       P7_HMM         *hmm     = NULL;
 
       /* Read HMMs from a file. */
-      if (p7_hmmfile_OpenE(hmmfile, NULL, &hfp, NULL) != eslOK) p7_Fail("Failed to open HMM file %s", hmmfile);
+      if (p7_hmmfile_Open(hmmfile, NULL, &hfp, NULL) != eslOK) p7_Fail("Failed to open HMM file %s", hmmfile);
 
       esl_stopwatch_Start(w);
-      while (p7_oprofile_ReadMSV(hfp, &abc, &om)  == eslOK &&
+      while (p7_oprofile_ReadMSV(hfp, &abc, &om) == eslOK &&
 	     p7_oprofile_ReadRest(hfp, om)       == eslOK)
 	{
 	  if (!esl_opt_GetBoolean(go, "-b"))

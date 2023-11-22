@@ -4,7 +4,7 @@
  * Contents:
  *   1. The P7_HMMWINDOW object: allocation, initialization, destruction.
  */
-#include "p7_config.h"
+#include <p7_config.h>
 #include "hmmer.h"
 
 

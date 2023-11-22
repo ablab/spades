@@ -1,4 +1,4 @@
-#include "p7_config.h"
+#include <p7_config.h>
 #include "easel.h"
 
 #include "hmmer.h"

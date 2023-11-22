@@ -1,6 +1,6 @@
 /* Add mask line to a multiple sequence alignment
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,7 +16,6 @@
 #include "esl_msafile.h"
 #include "esl_msaweight.h"
 #include "esl_msacluster.h"
-#include "esl_stopwatch.h"
 #include "esl_vectorops.h"
 #include "esl_regexp.h"
 
@@ -237,41 +236,30 @@ p7_Alimask_MakeModel2AliMap(ESL_MSA *msa, int do_hand, float symfrac, int *model
 int
 main(int argc, char **argv)
 {
-
-  int i,j;
-
-  ESL_GETOPTS     *go = NULL;	/* command line processing                 */
-  ESL_STOPWATCH   *w  = esl_stopwatch_Create();
-
-  int              status;
-  ESL_MSA      *msa         = NULL;
-  FILE         *ofp         = NULL;    /* output file (default is stdout) */
-  ESL_ALPHABET *abc         = NULL;    /* digital alphabet */
-
-  char         *alifile;                             /* name of the alignment file we're building HMMs from  */
-  ESL_MSAFILE  *afp         = NULL;                  /* open alifile  */
-  int           infmt       = eslMSAFILE_UNKNOWN;    /* autodetect alignment format by default. */
-  int           outfmt      = eslMSAFILE_STOCKHOLM;
-
-
-  char         *postmsafile;  /* optional file to resave annotated, modified MSAs to  */
-  FILE         *postmsafp = NULL;  /* open <postmsafile>, or NULL */
-
-  int           mask_range_cnt = 0;
-  uint32_t      mask_starts[100]; // over-the-top allocation.
-  uint32_t      mask_ends[100];
-  uint32_t      min_mask_start = 0xFFFFFFFF;
-  uint32_t      max_mask_end   = 0;
-  int64_t       pos1, pos2;       // esl_regexp_ParseCoordString() works in int64_t coords now; this is a hackaround
-
-  char         *rangestr;
-  char         *rangestr_ptr;
-  char         *range;
-
-
-  int    *model2ali_map = NULL; /* model2ali_map[i]=j,  means model position i comes from column j of the alignment; 1..alen */
-  int    model_len = 0;
-  int    keep_mm;
+  ESL_GETOPTS   *go                = NULL;	            // command line processing
+  ESL_MSA       *msa               = NULL;
+  FILE          *ofp               = NULL;                  // output file (default is stdout)
+  ESL_ALPHABET  *abc               = NULL;                  // digital alphabet
+  char          *alifile;                                   // name of the alignment file we're building HMMs from
+  ESL_MSAFILE   *afp               = NULL;                  // open alifile
+  int            infmt             = eslMSAFILE_UNKNOWN;    // autodetect alignment format by default. 
+  int            outfmt            = eslMSAFILE_STOCKHOLM;
+  char          *postmsafile;                               // optional file to resave annotated, modified MSAs to
+  FILE          *postmsafp         = NULL;                  // open <postmsafile>, or NULL 
+  int            mask_range_cnt    = 0;
+  uint32_t       mask_starts[100];                // over-the-top allocation.
+  uint32_t       mask_ends[100];
+  uint32_t       min_mask_start    = 0xFFFFFFFF;
+  uint32_t       max_mask_end      = 0;
+  int64_t        pos1, pos2;                      // esl_regexp_ParseCoordString() works in int64_t coords now; this is a hackaround
+  char          *rangestr;
+  char          *rangestr_ptr;
+  char          *range;
+  int           *model2ali_map = NULL; /* model2ali_map[i]=j,  means model position i comes from column j of the alignment; 1..alen */
+  int            model_len = 0;
+  int            keep_mm;
+  int            i,j;
+  int            status;
 
   /* Set processor specific flags */
   impl_Init();
@@ -313,9 +301,9 @@ main(int argc, char **argv)
     esl_strdup(esl_opt_GetString(go, "--model2ali"), -1, &rangestr) ;
   } else if (esl_opt_IsUsed(go, "--ali2model")) {
     esl_strdup(esl_opt_GetString(go, "--ali2model"), -1, &rangestr) ;
-  } else {
-    if (puts("Must specify mask range with --modelrange, --alirange, --model2ali, or --ali2model\n") < 0) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed"); goto ERROR;
-  }
+  } else
+    esl_fatal("Must specify mask range with --modelrange, --alirange, --model2ali, or --ali2model");
+
   rangestr_ptr = rangestr;
 
   while ( (status = esl_strtok(&rangestr, ",", &range) ) == eslOK) {
@@ -331,10 +319,7 @@ main(int argc, char **argv)
     mask_ends[mask_range_cnt]   = (uint32_t) pos2;
     mask_range_cnt++;
   }
-
   free(rangestr_ptr);
-  /* Start timing. */
-  esl_stopwatch_Start(w);
 
 
   /* Open files, set alphabet.
@@ -407,7 +392,8 @@ main(int argc, char **argv)
 
     esl_msaweight_cfg_Destroy(cfg);
 
-    if ((status =  esl_msa_MarkFragments_old(msa, esl_opt_GetReal(go, "--fragthresh")))           != eslOK) goto ERROR;
+    if ( esl_msa_MarkFragments_old(msa, esl_opt_GetReal(go, "--fragthresh")) != eslOK)
+      esl_fatal("esl_msa_MarkFragments_old() failed unexpectedly");
 
     //build a map of model mask coordinates to alignment coords
     ESL_ALLOC(model2ali_map, sizeof(int)     * (msa->alen+1));
@@ -467,8 +453,6 @@ main(int argc, char **argv)
     if ((status = esl_msafile_Write(postmsafp, msa, outfmt))  != eslOK) ESL_XEXCEPTION_SYS(eslEWRITE, "write failed");
   }
 
-  esl_stopwatch_Stop(w);
-
   if (esl_opt_IsOn(go, "-o"))  fclose(ofp);
   if (postmsafp) fclose(postmsafp);
   if (afp)       esl_msafile_Close(afp);
@@ -477,11 +461,9 @@ main(int argc, char **argv)
   if (model2ali_map) free(model2ali_map);
 
   esl_getopts_Destroy(go);
-  esl_stopwatch_Destroy(w);
   return 0;
 
-
-  ERROR:
+ ERROR:
    return eslFAIL;
 }
 

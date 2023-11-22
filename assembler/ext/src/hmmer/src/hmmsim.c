@@ -3,7 +3,7 @@
  * Main testbed for exploring the statistical behavior of HMMER3
  * scores on random sequences.
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -297,7 +297,7 @@ init_master_cfg(ESL_GETOPTS *go, struct cfg_s *cfg, char *errbuf)
   char *filename;
   int   status;
 
-  status = p7_hmmfile_OpenE(cfg->hmmfile, NULL, &(cfg->hfp), NULL);
+  status = p7_hmmfile_Open(cfg->hmmfile, NULL, &(cfg->hfp), NULL);
   if      (status == eslENOTFOUND) ESL_FAIL(eslFAIL, errbuf, "Failed to open HMM file %s for reading.\n",                   cfg->hmmfile);
   else if (status == eslEFORMAT)   ESL_FAIL(eslFAIL, errbuf, "File %s does not appear to be in a recognized HMM format.\n", cfg->hmmfile);
   else if (status != eslOK)        ESL_FAIL(eslFAIL, errbuf, "Unexpected error %d in opening HMM file %s.\n",       status, cfg->hmmfile);  
@@ -449,17 +449,17 @@ mpi_master(ESL_GETOPTS *go, struct cfg_s *cfg)
 	  if ((status = p7_hmmfile_Read(cfg->hfp, &(cfg->abc), &hmm)) != eslOK) 
 	    {
 	      have_work = FALSE;
-	      if      (status == eslEOD)       { xstatus = status; sprintf(errbuf, "read failed, HMM file %s may be truncated?", cfg->hmmfile); }
-	      else if (status == eslEFORMAT)   { xstatus = status; sprintf(errbuf, "bad file format in HMM file %s",             cfg->hmmfile); }
-	      else if (status == eslEINCOMPAT) { xstatus = status; sprintf(errbuf, "HMM file %s contains different alphabets",   cfg->hmmfile); }
-	      else if (status != eslEOF)       { xstatus = status; sprintf(errbuf, "Unexpected error in reading HMMs from %s",   cfg->hmmfile); }
+	      if      (status == eslEOD)       { xstatus = status; snprintf(errbuf, eslERRBUFSIZE, "read failed, HMM file %s may be truncated?", cfg->hmmfile); }
+	      else if (status == eslEFORMAT)   { xstatus = status; snprintf(errbuf, eslERRBUFSIZE, "bad file format in HMM file %s",             cfg->hmmfile); }
+	      else if (status == eslEINCOMPAT) { xstatus = status; snprintf(errbuf, eslERRBUFSIZE, "HMM file %s contains different alphabets",   cfg->hmmfile); }
+	      else if (status != eslEOF)       { xstatus = status; snprintf(errbuf, eslERRBUFSIZE, "Unexpected error in reading HMMs from %s",   cfg->hmmfile); }
 
 	      if (cfg->bg == NULL) { // first time only
-          if (esl_opt_GetBoolean(go, "--bgflat")) cfg->bg = p7_bg_CreateUniform(cfg->abc);
-          else                                    cfg->bg = p7_bg_Create(cfg->abc);
+                if (esl_opt_GetBoolean(go, "--bgflat")) cfg->bg = p7_bg_CreateUniform(cfg->abc);
+                else                                    cfg->bg = p7_bg_Create(cfg->abc);
 	      }
 	      //this next step is redundant, but it avoids a race condition above.
-        p7_bg_SetLength(cfg->bg, esl_opt_GetInteger(go, "-L"));  /* set the null model background length in both master and workers. */
+              p7_bg_SetLength(cfg->bg, esl_opt_GetInteger(go, "-L"));  /* set the null model background length in both master and workers. */
 	    }
 	}
 
@@ -726,7 +726,7 @@ process_workunit(ESL_GETOPTS *go, struct cfg_s *cfg, char *errbuf, P7_HMM *hmm, 
   p7_profile_Destroy(gm);
   p7_gmx_Destroy(gx);
   p7_trace_Destroy(tr);
-  if (status == eslEMEM) sprintf(errbuf, "allocation failure");
+  if (status == eslEMEM) snprintf(errbuf, eslERRBUFSIZE, "allocation failure");
   return status;
 }
 

@@ -6,7 +6,7 @@
  *   2. Unit tests.
  *   3. Test driver.
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -430,7 +430,7 @@ utest_createScoreData(ESL_GETOPTS *go, ESL_RANDOMNESS *r )
  *****************************************************************/
 
 #ifdef p7SCOREDATA_TESTDRIVE
-#include "esl_config.h"
+#include <esl_config.h>
 
 #include <stdio.h>
 

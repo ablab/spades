@@ -2,7 +2,7 @@
  * 
  * SRE, Sat Mar 24 09:12:44 2007 [Janelia]
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include "easel.h"
 #include "esl_alphabet.h"

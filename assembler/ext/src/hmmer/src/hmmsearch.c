@@ -5,7 +5,7 @@
  *    only have a master, no workers. See Infernal commit r3972 on the
  *    same point; and same note in hmmscan.c's to do list.
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -406,7 +406,7 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
 
 
   /* Open the query profile HMM file */
-  status = p7_hmmfile_OpenE(cfg->hmmfile, NULL, &hfp, errbuf);
+  status = p7_hmmfile_Open(cfg->hmmfile, NULL, &hfp, errbuf);
   if      (status == eslENOTFOUND) p7_Fail("File existence/permissions problem in trying to open HMM file %s.\n%s\n", cfg->hmmfile, errbuf);
   else if (status == eslEFORMAT)   p7_Fail("File format problem in trying to open HMM file %s.\n%s\n",                cfg->hmmfile, errbuf);
   else if (status != eslOK)        p7_Fail("Unexpected error %d in opening HMM file %s.\n%s\n",               status, cfg->hmmfile, errbuf);  
@@ -429,7 +429,7 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
 #endif
 
   infocnt = (ncpus == 0) ? 1 : ncpus;
-  ESL_ALLOC(info, sizeof(*info) * infocnt);
+  ESL_ALLOC(info, (ptrdiff_t) sizeof(*info) * infocnt);
 
   /* <abc> is not known 'til first HMM is read. */
   hstatus = p7_hmmfile_Read(hfp, &abc, &hmm);
@@ -861,7 +861,7 @@ mpi_master(ESL_GETOPTS *go, struct cfg_s *cfg)
 
 
   /* Open the query profile HMM file */
-  status = p7_hmmfile_OpenE(cfg->hmmfile, NULL, &hfp, errbuf);
+  status = p7_hmmfile_Open(cfg->hmmfile, NULL, &hfp, errbuf);
   if      (status == eslENOTFOUND) mpi_failure("File existence/permissions problem in trying to open HMM file %s.\n%s\n", cfg->hmmfile, errbuf);
   else if (status == eslEFORMAT)   mpi_failure("File format problem in trying to open HMM file %s.\n%s\n",                cfg->hmmfile, errbuf);
   else if (status != eslOK)        mpi_failure("Unexpected error %d in opening HMM file %s.\n%s\n",               status, cfg->hmmfile, errbuf);  
@@ -1161,7 +1161,7 @@ mpi_worker(ESL_GETOPTS *go, struct cfg_s *cfg)
   else if (status != eslOK)        mpi_failure("Unexpected error %d opening sequence file %s\n", status, cfg->dbfile);  
 
   /* Open the query profile HMM file */
-  status = p7_hmmfile_OpenE(cfg->hmmfile, NULL, &hfp, errbuf);
+  status = p7_hmmfile_Open(cfg->hmmfile, NULL, &hfp, errbuf);
   if      (status == eslENOTFOUND) mpi_failure("File existence/permissions problem in trying to open HMM file %s.\n%s\n", cfg->hmmfile, errbuf);
   else if (status == eslEFORMAT)   mpi_failure("File format problem in trying to open HMM file %s.\n%s\n",                cfg->hmmfile, errbuf);
   else if (status != eslOK)        mpi_failure("Unexpected error %d in opening HMM file %s.\n%s\n",               status, cfg->hmmfile, errbuf);  

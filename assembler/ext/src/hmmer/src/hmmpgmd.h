@@ -56,7 +56,7 @@ typedef struct {
   uint32_t    query_type;           /* sequence / hmm                           */
   uint32_t    query_length;         /* length of the query data                 */
   uint32_t    opts_length;          /* length of the options string             */
-  char        data[1];              /* search data                              */
+  char        data[];              /* search data                              */
 } HMMD_SEARCH_CMD;
 
 /* HMMD_CMD_INIT */
@@ -69,12 +69,13 @@ typedef struct {
   uint32_t    seq_cnt;              /* sequences in database                    */
   uint32_t    hmm_cnt;              /* total number hmm databases               */
   uint32_t    model_cnt;            /* models in hmm database                   */
-  char        data[1];              /* string data                              */
+  char        data[];              /* string data                              */
 } HMMD_INIT_CMD;
 
 /* HMMD_CMD_RESET */
 typedef struct {
-  char        ip_addr[1];           /* ip address                               */
+  char        pad;
+  char        ip_addr[];           /* ip address                               */
 } HMMD_INIT_RESET;
 
 /* HMMD_HEADER */

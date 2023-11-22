@@ -12,7 +12,7 @@
  * Again, Jan 2007:  xref STL11/125,136-137 (HMMER3)
  * Again, Jul 2007:  xref J1/103            (floating point ops)
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <math.h>
 #include <float.h>
@@ -336,7 +336,7 @@ utest_occupancy(P7_HMM *hmm)
  */
 #include "easel.h"
 
-#include "p7_config.h"
+#include <p7_config.h>
 #include "hmmer.h"
 
 
@@ -374,7 +374,7 @@ main(int argc, char **argv)
 /* gcc -g -Wall -Dp7MODELCONFIG_STATS -I. -I../easel -L. -L../easel -o statprog modelconfig.c -lhmmer -leasel -lm
  * ./statprog
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -482,7 +482,7 @@ main(int argc, char **argv)
     {	/* Read the HMM (and get alphabet from it) */
       P7_HMMFILE      *hfp     = NULL;
 
-      status = p7_hmmfile_OpenE(hmmfile, NULL, &hfp, errbuf);
+      status = p7_hmmfile_Open(hmmfile, NULL, &hfp, errbuf);
       if      (status == eslENOTFOUND) p7_Fail("File existence/permissions problem in trying to open HMM file %s.\n%s\n", hmmfile, errbuf);
       else if (status == eslEFORMAT)   p7_Fail("File format problem in trying to open HMM file %s.\n%s\n",                hmmfile, errbuf);
       else if (status != eslOK)        p7_Fail("Unexpected error %d in opening HMM file %s.\n%s\n",               status, hmmfile, errbuf);  

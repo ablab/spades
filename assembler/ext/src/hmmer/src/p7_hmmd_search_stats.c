@@ -7,7 +7,7 @@
  * 3) Test driver
 */
 
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>

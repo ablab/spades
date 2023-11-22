@@ -1,6 +1,6 @@
 /* jackhmmer: iterative search of a protein sequence against a protein database
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -534,7 +534,7 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
 #endif
 
   infocnt = (ncpus == 0) ? 1 : ncpus;
-  ESL_ALLOC(info, sizeof(*info) * infocnt);
+  ESL_ALLOC(info, (ptrdiff_t) sizeof(*info) * infocnt);
 
   /* Ready to begin */
   output_header(ofp, go, cfg->qfile, cfg->dbfile);

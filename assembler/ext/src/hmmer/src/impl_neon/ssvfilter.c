@@ -405,7 +405,7 @@
  *
  */
 
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <math.h>
 
@@ -918,7 +918,7 @@ p7_SSVFilter(const ESL_DSQ *dsq, int L, const P7_OPROFILE *om, float *ret_sc)
 
 #ifdef p7SSVFILTER_BENCHMARK
 
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include "easel.h"
 #include "esl_alphabet.h"
@@ -962,7 +962,7 @@ int main(int argc, char **argv)
   float sc1, sc2, total_sc;
   double base_time, bench_time, Mcs;
 
-  if (p7_hmmfile_OpenE(hmmfile, NULL, &hfp, NULL) != eslOK)
+  if (p7_hmmfile_Open(hmmfile, NULL, &hfp, NULL) != eslOK)
     p7_Fail("Failed to open HMM file %s", hmmfile);
   if (p7_hmmfile_Read(hfp, &abc, &hmm) != eslOK)
     p7_Fail("Failed to read HMM");

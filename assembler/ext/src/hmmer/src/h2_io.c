@@ -4,7 +4,7 @@
  * Contents:
  *    1. Writing profiles in HMMER2 format.
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>

@@ -2,7 +2,7 @@
  * 
  * MSF, Thu Aug 12, 2010 [Janelia]
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #ifdef HMMER_THREADS
 

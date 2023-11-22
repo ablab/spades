@@ -7,7 +7,7 @@
  *   3. Functions related to the original sequence
  *   4. FM data initialization, configuration, and reading from file
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include "easel.h"
 #include "esl_getopts.h"

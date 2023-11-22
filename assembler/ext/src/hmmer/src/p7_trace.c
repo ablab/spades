@@ -13,7 +13,7 @@
  * Stylistic note: elements in a trace path are usually indexed by z.
  */
 
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -1605,7 +1605,7 @@ utest_faux(ESL_MSA *msa, int *matassign, int M)
   gcc -o p7_trace_utest -msse2 -std=gnu99 -g -O2 -I. -L. -I../easel -L../easel -Dp7TRACE_TESTDRIVE p7_trace.c -lhmmer -leasel -lm 
   ./p7_trace_utest
 */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include "easel.h"
 #include "esl_getopts.h"

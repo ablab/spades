@@ -5,7 +5,7 @@
  */
 #ifndef P7_IMPL_VMX_INCLUDED
 #define P7_IMPL_VMX_INCLUDED
-#include "p7_config.h"
+#include <p7_config.h>
 
 #ifndef __APPLE_ALTIVEC__
 #include <altivec.h>
@@ -188,7 +188,7 @@ typedef struct p7_omx_s {
   int       allocQ4;		/* current set row width in <dpf> quads:   allocQ4*4 >= M      */
   int       allocQ8;		/* current set row width in <dpw> octets:  allocQ8*8 >= M      */
   int       allocQ16;		/* current set row width in <dpb> 16-mers: allocQ16*16 >= M    */
-  size_t    ncells;		/* current allocation size of <dp_mem>, in accessible cells    */
+  int64_t   ncells;		/* current allocation size of <dp_mem>, in accessible cells    */
 
   /* The X states (for full,parser; or NULL, for scorer)                                       */
   float    *xmx;        	/* logically [0.1..L][ENJBCS]; indexed [i*p7X_NXCELLS+s]       */

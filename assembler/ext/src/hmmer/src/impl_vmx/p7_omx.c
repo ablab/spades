@@ -9,7 +9,7 @@
  *
  * SRE, Sun Nov 25 11:26:48 2007 [Casa de Gatos]
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdio.h>
 #include <math.h>
@@ -80,10 +80,10 @@ p7_omx_Create(int allocM, int allocL, int allocXL)
   ox->allocQ4  = p7O_NQF(allocM);
   ox->allocQ8  = p7O_NQW(allocM);
   ox->allocQ16 = p7O_NQB(allocM);
-  ox->ncells   = ox->allocR * ox->allocQ4 * 4;      /* # of DP cells allocated, where 1 cell contains MDI */
+  ox->ncells   = (int64_t) ox->allocR * (int64_t) ox->allocQ4 * 4;      /* # of DP cells allocated, where 1 cell contains MDI */
 
   /* floats always dominate; +15 for alignment */
-  ESL_ALLOC(ox->dp_mem, sizeof(vector float) * ox->allocR * ox->allocQ4 * p7X_NSCELLS + 15);
+  ESL_ALLOC(ox->dp_mem, sizeof(vector float) * (int64_t) ox->allocR * (int64_t) ox->allocQ4 * p7X_NSCELLS + 15);
   ESL_ALLOC(ox->dpb,    sizeof(vector unsigned char *) * ox->allocR);
   ESL_ALLOC(ox->dpw,    sizeof(vector signed short *)  * ox->allocR);
   ESL_ALLOC(ox->dpf,    sizeof(vector float *)         * ox->allocR);
@@ -94,9 +94,9 @@ p7_omx_Create(int allocM, int allocL, int allocXL)
   ox->dpf[0] = (vector float *)         ox->dpb[0];
 
   for (i = 1; i <= allocL; i++) {
-    ox->dpf[i] = ox->dpf[0] + i * ox->allocQ4  * p7X_NSCELLS;
-    ox->dpw[i] = ox->dpw[0] + i * ox->allocQ8  * p7X_NSCELLS;
-    ox->dpb[i] = ox->dpb[0] + i * ox->allocQ16;
+    ox->dpf[i] = ox->dpf[0] + (int64_t) i * (int64_t) ox->allocQ4  * p7X_NSCELLS;
+    ox->dpw[i] = ox->dpw[0] + (int64_t) i * (int64_t) ox->allocQ8  * p7X_NSCELLS;
+    ox->dpb[i] = ox->dpb[0] + (int64_t) i * (int64_t) ox->allocQ16;
   }
 
   ox->allocXR = allocXL+1;
@@ -140,14 +140,14 @@ p7_omx_Create(int allocM, int allocL, int allocXL)
 int
 p7_omx_GrowTo(P7_OMX *ox, int allocM, int allocL, int allocXL)
 {
-  void  *p;
-  int    nqf  = p7O_NQF(allocM);	       /* segment length; total # of striped vectors for uchar */
-  int    nqw  = p7O_NQW(allocM);	       /* segment length; total # of striped vectors for float */
-  int    nqb  = p7O_NQB(allocM);	       /* segment length; total # of striped vectors for float */
-  size_t ncells = (allocL+1) * nqf * 4;
-  int    reset_row_pointers = FALSE;
-  int    i;
-  int    status;
+  void   *p;
+  int     nqf    = p7O_NQF(allocM);	       /* segment length; total # of striped vectors for uchar */
+  int     nqw    = p7O_NQW(allocM);	       /* segment length; total # of striped vectors for float */
+  int     nqb    = p7O_NQB(allocM);	       /* segment length; total # of striped vectors for float */
+  int64_t ncells = (int64_t) (allocL+1) * (int64_t) nqf * 4;
+  int     reset_row_pointers = FALSE;
+  int     i;
+  int     status;
  
   /* If all possible dimensions are already satisfied, the matrix is fine */
   if (ox->allocQ4*4 >= allocM && ox->validR > allocL && ox->allocXR >= allocXL+1) return eslOK;
@@ -157,7 +157,7 @@ p7_omx_GrowTo(P7_OMX *ox, int allocM, int allocL, int allocXL)
    */
   if (ncells > ox->ncells)
     {
-      ESL_RALLOC(ox->dp_mem, p, sizeof(vector float) * (allocL+1) * nqf * p7X_NSCELLS + 15);
+      ESL_RALLOC(ox->dp_mem, p, sizeof(vector float) * (int64_t) (allocL+1) * (int64_t) nqf * p7X_NSCELLS + 15);
       ox->ncells = ncells;
       reset_row_pointers = TRUE;
     }
@@ -200,9 +200,9 @@ p7_omx_GrowTo(P7_OMX *ox, int allocM, int allocL, int allocXL)
       ox->validR = ESL_MIN( ox->ncells / (nqf * 4), ox->allocR);
       for (i = 1; i < ox->validR; i++)
 	{
-	  ox->dpb[i] = ox->dpb[0] + i * nqb;
-	  ox->dpw[i] = ox->dpw[0] + i * nqw * p7X_NSCELLS;
-	  ox->dpf[i] = ox->dpf[0] + i * nqf * p7X_NSCELLS;
+	  ox->dpb[i] = ox->dpb[0] + (int64_t) i * (int64_t) nqb;
+	  ox->dpw[i] = ox->dpw[0] + (int64_t) i * (int64_t) nqw * p7X_NSCELLS;
+	  ox->dpf[i] = ox->dpf[0] + (int64_t) i * (int64_t) nqf * p7X_NSCELLS;
 	}
 
       ox->allocQ4  = nqf;

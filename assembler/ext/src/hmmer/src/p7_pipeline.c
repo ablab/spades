@@ -6,7 +6,7 @@
  *   3. Example 1: search mode (in a sequence db)
  *   4. Example 2: scan mode (in an HMM db)
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -575,10 +575,27 @@ p7_pli_NewModelThresholds(P7_PIPELINE *pli, const P7_OPROFILE *om)
 int
 p7_pli_NewSeq(P7_PIPELINE *pli, const ESL_SQ *sq)
 {
-  if (!pli->long_targets) pli->nseqs++; // if long_targets, sequence counting happens in the serial loop, which can track multiple windows for a single long sequence
-  pli->nres += sq->n;
-  if (pli->Z_setby == p7_ZSETBY_NTARGETS && pli->mode == p7_SEARCH_SEQS) pli->Z = pli->nseqs;
+  if (! pli->long_targets) {  // if long_targets, sequence counting happens in main loop of the master thread, which can track multiple windows for a single long sequence
+    pli->nseqs++;             
+    if (pli->Z_setby == p7_ZSETBY_NTARGETS && pli->mode == p7_SEARCH_SEQS) pli->Z = pli->nseqs; //  ... whereas worker threads call p7_pli_NewSeq(), so pli->nseqs can't even be read, when in longtargets mode
+  }
+  pli->nres += sq->n;  
   return eslOK;
+
+  // Note on what nhmmer (long_targets mode) is doing w.r.t. threads and nseqs/nres.
+  //
+  // nhmmer counts pli->nseqs in the master thread (albeit with a possible
+  // adjustment at the end in FM-indexing mode). nres, though, is
+  // counted by *worker* threads, by calling p7_pli_NewSeq(), followed
+  // by adjustments in pipeline_thread() for window overlap and the
+  // opposite strand.  
+  //
+  // To avoid thread races, in longtarget mode you must make sure
+  // you only touch nres here, not nseqs. Since nhmmer does not use
+  // nseqs for E-value calculations (it uses nres/W) and furthermore
+  // it does not use lower bound E-values during a search the way
+  // hmmsearch does, we can just have p7_pli_NewSeq() update nres
+  // and ignore anything having to do with nseqs.
 }
 
 /* Function:  p7_pipeline_Merge()
@@ -1048,8 +1065,7 @@ static int
 p7_pli_postViterbi_LongTarget(P7_PIPELINE *pli, P7_OPROFILE *om, P7_BG *bg, P7_TOPHITS *hitlist, const P7_SCOREDATA *data,
     int64_t seqidx, int window_start, int window_len, ESL_DSQ *subseq,
     int64_t seq_start, char *seq_name, char *seq_source, char* seq_acc, char* seq_desc, int seq_len,
-    int complementarity, int *overlap, P7_PIPELINE_LONGTARGET_OBJS *pli_tmp
-)
+    int complementarity, int *overlap, P7_PIPELINE_LONGTARGET_OBJS *pli_tmp)
 {
   P7_DOMAIN        *dom     = NULL;     /* convenience variable, ptr to current domain */
   P7_HIT           *hit     = NULL;     /* ptr to the current hit output data      */
@@ -1149,7 +1165,7 @@ p7_pli_postViterbi_LongTarget(P7_PIPELINE *pli, P7_OPROFILE *om, P7_BG *bg, P7_T
         continue; // anything less than this is a funny byproduct of the Forward score passing a very low threshold, but no reliable alignment existing that supports it
       }
 
-     /* note: this bitscore was computed under a model with length of
+     /* Note: this bitscore was computed under a model with length of
       * env_len (jenv-ienv+1). Here, the score is modified (reduced) by
       * treating the hit as though it came from a window of length
       * om->max_length. To do this:
@@ -1548,7 +1564,7 @@ p7_Pipeline_LongTarget(P7_PIPELINE *pli, P7_OPROFILE *om, P7_SCOREDATA *data,
 
     p7_oprofile_GetFwdEmissionArray(om, bg, pli_tmp->fwd_emissions_arr);
 
-    if (data->prefix_lengths == NULL)  //otherwise, already filled in
+    if (data->prefix_lengths == NULL)  // otherwise, already filled in
       p7_hmm_ScoreDataComputeRest(om, data);
 
     p7_pli_ExtendAndMergeWindows (om, data, &msv_windowlist, 0);
@@ -1794,7 +1810,7 @@ p7_pli_Statistics(FILE *ofp, P7_PIPELINE *pli, ESL_STOPWATCH *w)
  * ./pipeline_example <hmmfile> <sqfile>
  */
 
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include "easel.h"
 #include "esl_getopts.h"
@@ -1850,8 +1866,8 @@ main(int argc, char **argv)
   p7_FLogsumInit();
 
   /* Read in one HMM */
-  if (p7_hmmfile_OpenE(hmmfile, NULL, &hfp, NULL) != eslOK) p7_Fail("Failed to open HMM file %s", hmmfile);
-  if (p7_hmmfile_Read(hfp, &abc, &hmm)            != eslOK) p7_Fail("Failed to read HMM");
+  if (p7_hmmfile_Open(hmmfile, NULL, &hfp, NULL) != eslOK) p7_Fail("Failed to open HMM file %s", hmmfile);
+  if (p7_hmmfile_Read(hfp, &abc, &hmm)           != eslOK) p7_Fail("Failed to read HMM");
   p7_hmmfile_Close(hfp);
 
   /* Open a sequence file */
@@ -1933,7 +1949,7 @@ main(int argc, char **argv)
  * ./pipeline_example2 <hmmdb> <sqfile>
  */
 
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include "easel.h"
 #include "esl_getopts.h"
@@ -1995,7 +2011,7 @@ main(int argc, char **argv)
   esl_sqfile_Close(sqfp);
 
   /* Open the HMM db */
-  if (p7_hmmfile_OpenE(hmmfile, NULL, &hfp, NULL) != eslOK) p7_Fail("Failed to open HMM file %s", hmmfile);
+  if (p7_hmmfile_Open(hmmfile, NULL, &hfp, NULL) != eslOK) p7_Fail("Failed to open HMM file %s", hmmfile);
 
   /* Create a pipeline for the query sequence in scan mode */
   pli      = p7_pipeline_Create(go, 100, sq->n, FALSE, p7_SCAN_MODELS);

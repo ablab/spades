@@ -10,7 +10,7 @@
  *   modelconfig.c : routines that configure a profile given an HMM
  */
 
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <string.h>
 #ifdef HMMER_MPI

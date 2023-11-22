@@ -11,7 +11,7 @@
  *   5. Test driver.
  *   6. References.
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdlib.h>
 #include <math.h>
@@ -775,7 +775,7 @@ utest_GrowTo(void)
   gcc -o p7_gmxchk_utest -msse2 -g -Wall -I. -L. -I../easel -L../easel -Dp7GMXCHK_TESTDRIVE p7_gmxchk.c -lhmmer -leasel -lm
   ./p7_gmxchk_utest
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdio.h>
 #include <math.h>

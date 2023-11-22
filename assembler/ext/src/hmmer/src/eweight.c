@@ -7,7 +7,7 @@
  * SRE, Fri May  4 14:01:54 2007 [Janelia] [Tom Waits, Orphans]
  */
 
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include "easel.h"
 #include "esl_rootfinder.h"

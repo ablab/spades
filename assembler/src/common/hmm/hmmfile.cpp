@@ -29,7 +29,7 @@ llvm::ErrorOr<HMMFile> open_file(const std::string &hmmfile) {
     int status  = eslOK;
     P7_HMMFILE *hfp  = NULL;
 
-    status = p7_hmmfile_OpenE(hmmfile.c_str(), nullptr, &hfp, NULL);
+    status = p7_hmmfile_Open(hmmfile.c_str(), nullptr, &hfp, NULL);
     if (status != eslOK)
         return to_OpenErrc(status);
 
@@ -45,7 +45,7 @@ HMMFile::HMMFile(const std::string &hmmfile)
     P7_HMMFILE *hfp  = NULL;
     char errbuf[eslERRBUFSIZE];
 
-    status = p7_hmmfile_OpenE(hmmfile.c_str(), nullptr, &hfp, errbuf);
+    status = p7_hmmfile_Open(hmmfile.c_str(), nullptr, &hfp, errbuf);
     if (status == eslOK)
         hmmfile_.reset(hfp);
     else if (status == eslENOTFOUND)

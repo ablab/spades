@@ -33,7 +33,7 @@
 
 /*  gcc -std=c99 -g -Wall -I. -I../easel -L. -L../easel -o itest_brute itest_brute.c  -lhmmer -leasel -lm
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include "easel.h"
 #include "esl_alphabet.h"

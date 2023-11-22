@@ -16,7 +16,7 @@ typedef struct {
   uint32_t    model_cnt;            /* models in hmm database                   */
   uint32_t    num_shards;			/* Number of shards the DB will be divided into */
   uint32_t	  my_shard;				/* which shard is this thread responsible for? */
-  char        data[1];              /* string data                              */
+  char        data[];              /* string data                              */
 } HMMD_INIT_CMD_SHARD;
 
 typedef struct {

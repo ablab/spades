@@ -1,6 +1,6 @@
 /* nhmmer: search profile HMM(s) against a nucleotide sequence database.
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -434,7 +434,7 @@ main(int argc, char **argv)
 
 static int
 nhmmer_open_hmm_file(struct cfg_s *cfg,  P7_HMMFILE **hfp, char *errbuf, ESL_ALPHABET **abc, P7_HMM **hmm   ) {
-    int status = p7_hmmfile_OpenE(cfg->queryfile, NULL, hfp, errbuf);
+    int status = p7_hmmfile_Open(cfg->queryfile, NULL, hfp, errbuf);
 
     if (status == eslENOTFOUND) {
         p7_Fail("File existence/permissions problem in trying to open query file %s.\n%s\n", cfg->queryfile, errbuf);
@@ -563,21 +563,16 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
   int               msas_named  = 0;
   int               force_single = ( esl_opt_IsOn(go, "--singlemx") ? TRUE : FALSE );
 
-
-  if (esl_opt_IsUsed(go, "--w_beta")) { if (  ( window_beta   = esl_opt_GetReal(go, "--w_beta") )  < 0 || window_beta > 1  ) esl_fatal("Invalid window-length beta value\n"); }
-  if (esl_opt_IsUsed(go, "--w_length")) { if (( window_length = esl_opt_GetInteger(go, "--w_length")) < 4  ) esl_fatal("Invalid window length value\n"); }
+  if (esl_opt_IsUsed(go, "--w_beta"))   { if (( window_beta   = esl_opt_GetReal   (go, "--w_beta") )  < 0 || window_beta > 1  ) esl_fatal("Invalid window-length beta value\n"); }
+  if (esl_opt_IsUsed(go, "--w_length")) { if (( window_length = esl_opt_GetInteger(go, "--w_length")) < 4  )                    esl_fatal("Invalid window length value\n"); }
 
   w = esl_stopwatch_Create();
 
   if (esl_opt_GetBoolean(go, "--notextw")) textw = 0;
   else                                     textw = esl_opt_GetInteger(go, "--textw");
 
-
-
-  if ( esl_opt_IsOn(go, "--dna") )
-    abc     = esl_alphabet_Create(eslDNA);
-  else if ( esl_opt_IsOn(go, "--rna") )
-    abc     = esl_alphabet_Create(eslRNA);
+  if      ( esl_opt_IsOn(go, "--dna")) abc = esl_alphabet_Create(eslDNA);
+  else if ( esl_opt_IsOn(go, "--rna")) abc = esl_alphabet_Create(eslRNA);
 
 
   /* nhmmer accepts _query_ files that are either (i) hmm(s), (2) msa(s), or (3) sequence(s).
@@ -826,7 +821,7 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
   }
 
   infocnt = (ncpus == 0) ? 1 : ncpus;
-  ESL_ALLOC(info, sizeof(*info) * infocnt);
+  ESL_ALLOC(info, (ptrdiff_t) sizeof(*info) * infocnt);
 
   if (status == eslOK) {
       /* One-time initializations after alphabet <abc> becomes known */
@@ -1019,7 +1014,7 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
       for (i = 0; i < infocnt; ++i) {
           /* Create processing pipeline and hit list */
           info[i].th  = p7_tophits_Create();
-          info[i].om = p7_oprofile_Copy(om);
+          info[i].om  = p7_oprofile_Copy(om);
           info[i].pli = p7_pipeline_Create(go, om->M, 100, TRUE, p7_SEARCH_SEQS); /* L_hint = 100 is just a dummy for now */
 
           //set method specific --F1, if it wasn't set at command line
@@ -1040,13 +1035,9 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
 
           info[i].pli->do_alignment_score_calc = esl_opt_IsOn(go, "--aliscoresout") ;
 
-          if (  esl_opt_IsUsed(go, "--watson") )
-            info[i].pli->strands = p7_STRAND_TOPONLY;
-          else if (  esl_opt_IsUsed(go, "--crick") )
-            info[i].pli->strands = p7_STRAND_BOTTOMONLY;
-          else
-            info[i].pli->strands = p7_STRAND_BOTH;
-
+          if      ( esl_opt_IsUsed(go, "--watson")) info[i].pli->strands = p7_STRAND_TOPONLY;
+          else if ( esl_opt_IsUsed(go, "--crick"))  info[i].pli->strands = p7_STRAND_BOTTOMONLY;
+          else                                      info[i].pli->strands = p7_STRAND_BOTH;
 
           if (dbformat != eslSQFILE_FMINDEX) {
             if (  esl_opt_IsUsed(go, "--block_length") )
@@ -1284,8 +1275,6 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
 
   free(info);
 
-
-
   if (hfp)     p7_hmmfile_Close(hfp);
   if (qfp_msa) esl_msafile_Close(qfp_msa);
   if (qfp_sq)  esl_sqfile_Close(qfp_sq);
@@ -1304,7 +1293,6 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
   }
 #endif
 
-
   if (ofp != stdout) fclose(ofp);
   if (afp)           fclose(afp);
   if (tblfp)         fclose(tblfp);
@@ -1317,7 +1305,6 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
    if (hfp)     p7_hmmfile_Close(hfp);
    if (qfp_msa) esl_msafile_Close(qfp_msa);
    if (qfp_sq)  esl_sqfile_Close(qfp_sq);
-
    if (builder) p7_builder_Destroy(builder);
    if (qsq)     esl_sq_Destroy(qsq);
 
@@ -1342,14 +1329,13 @@ serial_master(ESL_GETOPTS *go, struct cfg_s *cfg)
 static int
 serial_loop(WORKER_INFO *info, ID_LENGTH_LIST *id_length_list, ESL_SQFILE *dbfp, char *firstseq_key, int n_targetseqs)
 {
-
-  int      wstatus = eslOK;
-  int seq_id = 0;
-  ESL_SQ   *dbsq   =  esl_sq_CreateDigital(info->om->abc);
+  ESL_SQ   *dbsq   = esl_sq_CreateDigital(info->om->abc);
   ESL_SQ   *dbsq_revcmp;
+  int      wstatus = eslOK;
+  int      seq_id  = 0;
 
-  if (dbsq->abc->complement != NULL)
-    dbsq_revcmp =  esl_sq_CreateDigital(info->om->abc);
+  if (dbsq->abc->complement)
+    dbsq_revcmp = esl_sq_CreateDigital(info->om->abc);
 
   wstatus = esl_sqio_ReadWindow(dbfp, 0, info->pli->block_length, dbsq);
 

@@ -3,7 +3,7 @@
  * SRE, Fri May  4 11:43:20 2007 [Janelia]
  */
 
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include "easel.h"
 #include "esl_vectorops.h"

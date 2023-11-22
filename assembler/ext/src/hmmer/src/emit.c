@@ -8,7 +8,7 @@
  * SRE, Tue Jan  9 08:55:53 2007 [Janelia] [The Crystal Method, Vegas]
  */
 
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include "easel.h"
 #include "esl_random.h"
@@ -442,7 +442,7 @@ sample_endpoints(ESL_RANDOMNESS *r, const P7_PROFILE *gm, int *ret_kstart, int *
  * gcc -g -Wall -o stats -L. -I. -L../easel -I../easel -Dp7EMIT_STATS emit.c -lhmmer -leasel -lm
  */
 #ifdef p7EMIT_STATS
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdio.h>
 
@@ -473,8 +473,8 @@ main(int argc, char **argv)
 
   r  = esl_randomness_CreateFast(0);
   tr = p7_trace_Create();
-  if (p7_hmmfile_OpenE(hmmfile, NULL, &hfp, NULL) != eslOK) p7_Fail("failed to open %s", hmmfile);
-  if (p7_hmmfile_Read(hfp, &abc, &hmm)            != eslOK) p7_Fail("failed to read HMM");
+  if (p7_hmmfile_Open(hmmfile, NULL, &hfp, NULL) != eslOK) p7_Fail("failed to open %s", hmmfile);
+  if (p7_hmmfile_Read(hfp, &abc, &hmm)           != eslOK) p7_Fail("failed to read HMM");
   sq = esl_sq_CreateDigital(abc);
   bg = p7_bg_Create(abc);
   gm = p7_profile_Create(hmm->M, abc);
@@ -517,7 +517,7 @@ main(int argc, char **argv)
 /* 
    gcc -g -Wall -o emit_example -Dp7EMIT_EXAMPLE -I. -I../easel -L. -L../easel emit.c -lhmmer -leasel -lm
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include "easel.h"
 #include "esl_alphabet.h"
@@ -557,7 +557,7 @@ main(int argc, char **argv)
   int             i;
   int             status;
 
-  status = p7_hmmfile_OpenE(hmmfile, NULL, &hfp, errbuf);
+  status = p7_hmmfile_Open(hmmfile, NULL, &hfp, errbuf);
   if      (status == eslENOTFOUND) p7_Fail("File existence/permissions problem in trying to open HMM file %s.\n%s\n", hmmfile, errbuf);
   else if (status == eslEFORMAT)   p7_Fail("File format problem in trying to open HMM file %s.\n%s\n",                hmmfile, errbuf);
   else if (status != eslOK)        p7_Fail("Unexpected error %d in opening HMM file %s.\n%s\n",                       status, hmmfile, errbuf);  

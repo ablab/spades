@@ -20,7 +20,7 @@
  *    4. Test driver.
  *    5. Example.
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <string.h>
 
@@ -536,7 +536,7 @@ utest_fragments(void)
  */
 #include "easel.h"
 
-#include "p7_config.h"
+#include <p7_config.h>
 #include "hmmer.h"
 
 int

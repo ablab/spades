@@ -3,7 +3,7 @@
  * 
  * SRE, Thu Jan 25 09:51:18 2007 [Janelia] [Elgar, Enigma Variations]
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdio.h>
 #include <math.h>

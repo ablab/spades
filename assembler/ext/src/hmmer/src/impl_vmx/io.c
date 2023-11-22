@@ -26,7 +26,7 @@
  *      in ReadRest().
  *    
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -202,7 +202,7 @@ p7_oprofile_Write(FILE *ffp, FILE *pfp, P7_OPROFILE *om)
  *            convention used by <p7_hmmfile_Read()>.
  *            
  *            The <.h3f> file was opened automatically, if it existed,
- *            when the HMM file was opened with <p7_hmmfile_OpenE()>.
+ *            when the HMM file was opened with <p7_hmmfile_Open()>.
  *            
  *            When no more HMMs remain in the file, return <eslEOF>.
  *
@@ -319,7 +319,7 @@ p7_oprofile_ReadMSV(P7_HMMFILE *hfp, ESL_ALPHABET **byp_abc, P7_OPROFILE **ret_o
  *            model and return a pointer to it in <*ret_om>. 
  *            
  *            The <.h3f> file was opened automatically, if it existed,
- *            when the HMM file was opened with <p7_hmmfile_OpenE()>.
+ *            when the HMM file was opened with <p7_hmmfile_Open()>.
  *            
  *            When no more HMMs remain in the file, return <eslEOF>.
  *
@@ -474,7 +474,7 @@ p7_oprofile_ReadBlockMSV(P7_HMMFILE *hfp, ESL_ALPHABET **byp_abc, P7_OM_BLOCK *h
  *            optimized profile.
  *            
  *            Returns <eslEFORMAT> if <hfp> has no <.h3p> file open,
- *            or on any parsing error, and set <hfp->errbuf> to
+ *            or on any parsing error, and set <hfp->rr_errbuf> to
  *            an informative error message.
  *
  * Throws:    <eslESYS> if an <fseek()> fails to reposition the
@@ -502,72 +502,72 @@ p7_oprofile_ReadRest(P7_HMMFILE *hfp, P7_OPROFILE *om)
     }
 #endif
 
-  hfp->errbuf[0] = '\0';
-  if (hfp->pfp == NULL) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "no MSV profile file; hmmpress probably wasn't run");
+  hfp->rr_errbuf[0] = '\0';
+  if (hfp->pfp == NULL) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "no MSV profile file; hmmpress probably wasn't run");
  
   /* Position the <hfp->pfp> using offset stored in <om> */
   if (fseeko(hfp->pfp, om->offs[p7_POFFSET], SEEK_SET) != 0)                       ESL_EXCEPTION(eslESYS, "fseeko() failed");
    
-  if (! fread( (char *) &magic,          sizeof(uint32_t),      1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read magic");
-  if (magic == v3a_pmagic) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "this is an outdated HMM database format (3/a); please hmmpress your HMM file again");
-  if (magic == v3b_pmagic) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "this is an outdated HMM database format (3/b); please hmmpress your HMM file again");
-  if (magic == v3c_pmagic) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "this is an outdated HMM database format (3/c); please hmmpress your HMM file again");
-  if (magic == v3d_pmagic) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "this is an outdated HMM database format (3/d); please hmmpress your HMM file again");
-  if (magic == v3e_pmagic) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "this is an outdated HMM database format (3/e); please hmmpress your HMM file again");
-  if (magic != v3f_pmagic) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "bad magic; not an HMM database file?");
+  if (! fread( (char *) &magic,          sizeof(uint32_t),      1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read magic");
+  if (magic == v3a_pmagic) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "this is an outdated HMM database format (3/a); please hmmpress your HMM file again");
+  if (magic == v3b_pmagic) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "this is an outdated HMM database format (3/b); please hmmpress your HMM file again");
+  if (magic == v3c_pmagic) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "this is an outdated HMM database format (3/c); please hmmpress your HMM file again");
+  if (magic == v3d_pmagic) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "this is an outdated HMM database format (3/d); please hmmpress your HMM file again");
+  if (magic == v3e_pmagic) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "this is an outdated HMM database format (3/e); please hmmpress your HMM file again");
+  if (magic != v3f_pmagic) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "bad magic; not an HMM database file?");
 
-  if (! fread( (char *) &M,              sizeof(int),           1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read model size M");
-  if (! fread( (char *) &alphatype,      sizeof(int),           1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read alphabet type");  
-  if (! fread( (char *) &n,              sizeof(int),           1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read name length");  
-  if (M         != om->M)                                                          ESL_XFAIL(eslEFORMAT, hfp->errbuf, "p/f model length mismatch");
-  if (alphatype != om->abc->type)                                                  ESL_XFAIL(eslEFORMAT, hfp->errbuf, "p/f alphabet type mismatch");
+  if (! fread( (char *) &M,              sizeof(int),           1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read model size M");
+  if (! fread( (char *) &alphatype,      sizeof(int),           1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read alphabet type");  
+  if (! fread( (char *) &n,              sizeof(int),           1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read name length");  
+  if (M         != om->M)                                                          ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "p/f model length mismatch");
+  if (alphatype != om->abc->type)                                                  ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "p/f alphabet type mismatch");
 
   ESL_ALLOC(name, sizeof(char) * (n+1));
-  if (! fread( (char *) name,            sizeof(char),          n+1,         hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read name");  
-  if (strcmp(name, om->name) != 0)                                                 ESL_XFAIL(eslEFORMAT, hfp->errbuf, "p/f name mismatch");  
+  if (! fread( (char *) name,            sizeof(char),          n+1,         hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read name");  
+  if (strcmp(name, om->name) != 0)                                                 ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "p/f name mismatch");  
   
-  if (! fread((char *) &n,               sizeof(int),           1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read accession length");
+  if (! fread((char *) &n,               sizeof(int),           1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read accession length");
   if (n > 0) {
     ESL_ALLOC(om->acc, sizeof(char) * (n+1));
-    if (! fread( (char *) om->acc,       sizeof(char),          n+1,         hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read accession");      
+    if (! fread( (char *) om->acc,       sizeof(char),          n+1,         hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read accession");      
   }
-  if (! fread((char *) &n,               sizeof(int),           1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read description length");
+  if (! fread((char *) &n,               sizeof(int),           1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read description length");
   if (n > 0) {
     ESL_ALLOC(om->desc, sizeof(char) * (n+1));
-    if (! fread( (char *) om->desc,      sizeof(char),          n+1,         hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read description");      
+    if (! fread( (char *) om->desc,      sizeof(char),          n+1,         hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read description");      
   }
 
-  if (! fread((char *) om->rf,           sizeof(char),          M+2,         hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read rf annotation");
-  if (! fread((char *) om->mm,           sizeof(char),          M+2,         hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read mm annotation");
-  if (! fread((char *) om->cs,           sizeof(char),          M+2,         hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read cs annotation");
-  if (! fread((char *) om->consensus,    sizeof(char),          M+2,         hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read consensus annotation");
+  if (! fread((char *) om->rf,           sizeof(char),          M+2,         hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read rf annotation");
+  if (! fread((char *) om->mm,           sizeof(char),          M+2,         hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read mm annotation");
+  if (! fread((char *) om->cs,           sizeof(char),          M+2,         hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read cs annotation");
+  if (! fread((char *) om->consensus,    sizeof(char),          M+2,         hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read consensus annotation");
 
   Q4  = p7O_NQF(om->M);
   Q8  = p7O_NQW(om->M);
 
-  if (! fread((char *) om->twv,             sizeof(vector signed short), 8*Q8, hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read <tu>, vitfilter transitions");
+  if (! fread((char *) om->twv,             sizeof(vector signed short), 8*Q8, hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read <tu>, vitfilter transitions");
   for (x = 0; x < om->abc->Kp; x++)
-    if (! fread( (char *) om->rwv[x],       sizeof(vector signed short), Q8, hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read <ru>[%d], vitfilter emissions for sym %c", x, om->abc->sym[x]);
+    if (! fread( (char *) om->rwv[x],       sizeof(vector signed short), Q8, hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read <ru>[%d], vitfilter emissions for sym %c", x, om->abc->sym[x]);
   for (x = 0; x < p7O_NXSTATES; x++)
-    if (! fread( (char *) om->xw[x],        sizeof(int16_t),    p7O_NXTRANS, hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read <xu>[%d], vitfilter special transitions", x);
-  if (! fread((char *) &(om->scale_w),      sizeof(float),      1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read scale_w");
-  if (! fread((char *) &(om->base_w),       sizeof(int16_t),    1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read base_w");
-  if (! fread((char *) &(om->ddbound_w),    sizeof(int16_t),    1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read ddbound_w");
-  if (! fread((char *) &(om->ncj_roundoff), sizeof(float),      1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read ddbound_w");
+    if (! fread( (char *) om->xw[x],        sizeof(int16_t),    p7O_NXTRANS, hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read <xu>[%d], vitfilter special transitions", x);
+  if (! fread((char *) &(om->scale_w),      sizeof(float),      1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read scale_w");
+  if (! fread((char *) &(om->base_w),       sizeof(int16_t),    1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read base_w");
+  if (! fread((char *) &(om->ddbound_w),    sizeof(int16_t),    1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read ddbound_w");
+  if (! fread((char *) &(om->ncj_roundoff), sizeof(float),      1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read ddbound_w");
 
-  if (! fread((char *) om->tfv,          sizeof(vector float),  8*Q4,        hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read <tf> transitions");
+  if (! fread((char *) om->tfv,          sizeof(vector float),  8*Q4,        hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read <tf> transitions");
   for (x = 0; x < om->abc->Kp; x++)
-    if (! fread( (char *) om->rfv[x],    sizeof(vector float),  Q4,          hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read <rf>[%d] emissions for sym %c", x, om->abc->sym[x]);
+    if (! fread( (char *) om->rfv[x],    sizeof(vector float),  Q4,          hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read <rf>[%d] emissions for sym %c", x, om->abc->sym[x]);
   for (x = 0; x < p7O_NXSTATES; x++)
-    if (! fread( (char *) om->xf[x],     sizeof(float),         p7O_NXTRANS, hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read <xf>[%d] special transitions", x);
+    if (! fread( (char *) om->xf[x],     sizeof(float),         p7O_NXTRANS, hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read <xf>[%d] special transitions", x);
 
-  if (! fread((char *)   om->cutoff,     sizeof(float),         p7_NCUTOFFS, hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read Pfam score cutoffs");
-  if (! fread((char *) &(om->nj),        sizeof(float),         1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read nj");
-  if (! fread((char *) &(om->mode),      sizeof(int),           1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read mode");
-  if (! fread((char *) &(om->L)   ,      sizeof(int),           1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "failed to read L");
-  if (! fread( (char *) &magic,          sizeof(uint32_t),      1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "no sentinel magic: .h3p file corrupted?");
+  if (! fread((char *)   om->cutoff,     sizeof(float),         p7_NCUTOFFS, hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read Pfam score cutoffs");
+  if (! fread((char *) &(om->nj),        sizeof(float),         1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read nj");
+  if (! fread((char *) &(om->mode),      sizeof(int),           1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read mode");
+  if (! fread((char *) &(om->L)   ,      sizeof(int),           1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "failed to read L");
+  if (! fread( (char *) &magic,          sizeof(uint32_t),      1,           hfp->pfp)) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "no sentinel magic: .h3p file corrupted?");
 
-  if (magic != v3f_pmagic) ESL_XFAIL(eslEFORMAT, hfp->errbuf, "bad sentinel magic; .h3p file corrupted?");
+  if (magic != v3f_pmagic) ESL_XFAIL(eslEFORMAT, hfp->rr_errbuf, "bad sentinel magic; .h3p file corrupted?");
 
 #ifdef HMMER_THREADS
   if (hfp->syncRead)
@@ -707,7 +707,7 @@ p7_oprofile_Position(P7_HMMFILE *hfp, off_t offset)
 
   ./benchmark-io Pfam.msv
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -832,9 +832,9 @@ utest_ReadWrite(P7_HMM *hmm, P7_OPROFILE *om)
   esl_newssi_Close(nssi);
 
   /* 2. read the optimized profile back in */
-  if ( p7_hmmfile_OpenE(tmpfile, NULL, &hfp, NULL)  != eslOK) esl_fatal(msg);
-  if ( p7_oprofile_ReadMSV(hfp, &abc, &om2)         != eslOK) esl_fatal(msg);
-  if ( p7_oprofile_ReadRest(hfp, om2)               != eslOK) esl_fatal(msg);
+  if ( p7_hmmfile_Open(tmpfile, NULL, &hfp, NULL)  != eslOK) esl_fatal(msg);
+  if ( p7_oprofile_ReadMSV(hfp, &abc, &om2)        != eslOK) esl_fatal(msg);
+  if ( p7_oprofile_ReadRest(hfp, om2)              != eslOK) esl_fatal(msg);
 
   /* 3. it should be identical to the original  */
   if ( p7_oprofile_Compare(om, om2, tolerance, errbuf) != eslOK) esl_fatal("%s\n%s", msg, errbuf);
@@ -866,7 +866,7 @@ utest_ReadWrite(P7_HMM *hmm, P7_OPROFILE *om)
    gcc -g -Wall -maltivec -std=gnu99 -o io_utest -I.. -L.. -I../../easel -L../../easel -Dp7IO_TESTDRIVE io.c -lhmmer -leasel -lm
    ./io_utest
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include "easel.h"
 #include "esl_alphabet.h"
@@ -927,7 +927,7 @@ main(int argc, char **argv)
 /* gcc -g -Wall -Dp7IO_EXAMPLE -I.. -I../../easel -L.. -L../../easel -o io_example io.c -lhmmer -leasel -lm
  * ./io_example <hmmfile>
  */
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -966,7 +966,7 @@ main(int argc, char **argv)
   int            status;
   char           errbuf[eslERRBUFSIZE];
 
-  status = p7_hmmfile_OpenE(hmmfile, NULL, &hfp, errbuf);
+  status = p7_hmmfile_Open(hmmfile, NULL, &hfp, errbuf);
   if      (status == eslENOTFOUND) p7_Fail("File existence/permissions problem in trying to open HMM file %s.\n%s\n", hmmfile, errbuf);
   else if (status == eslEFORMAT)   p7_Fail("File format problem in trying to open HMM file %s.\n%s\n",                hmmfile, errbuf);
   else if (status != eslOK)        p7_Fail("Unexpected error %d in opening HMM file %s.\n%s\n",               status, hmmfile, errbuf);  

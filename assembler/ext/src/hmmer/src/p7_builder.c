@@ -5,7 +5,7 @@
  *    2. Standardized model construction API.
  *    3. Internal functions.
  */   
-#include "p7_config.h"
+#include <p7_config.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -294,9 +294,10 @@ p7_builder_SetScoreSystem(P7_BUILDER *bld, const char *mxfile, const char *env, 
   if (bld->Q != NULL) esl_dmatrix_Destroy(bld->Q);
 
   /* Get the scoring matrix */
-  if ((bld->S  = esl_scorematrix_Create(bld->abc)) == NULL) { status = eslEMEM; goto ERROR; }
+ 
   if (mxfile == NULL) 
     {
+      if ((bld->S  = esl_scorematrix_Create(bld->abc)) == NULL) { status = eslEMEM; goto ERROR; }
       if (bld->abc->type == eslAMINO) {
         if ((status = esl_scorematrix_Set("BLOSUM62", bld->S)) != eslOK) goto ERROR;
       } else {

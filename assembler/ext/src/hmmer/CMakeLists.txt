@@ -1,9 +1,9 @@
 project(hmmer C)
 
-set(HMMER_DATE "Nov 2020")
+set(HMMER_DATE "Aug 2023")
 set(HMMER_COPYRIGHT "Copyright (C) 2020 Howard Hughes Medical Institute.")
 set(HMMER_LICENSE "Freely distributed under the BSD open source license.")
-set(HMMER_VERSION "3.1b3")
+set(HMMER_VERSION "3.4")
 set(HMMER_URL "http://hmmer.org/")
 set(HMMER_SADIR "libdivsufsort")
 
