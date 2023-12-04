@@ -10,3 +10,167 @@ env:
   SRC_DIR: ${{github.workspace}}/assembler/src
   PKG: SPAdes-3.16.0-dev-Linux
 
+jobs:
+  build:
+    runs-on: self-hosted
+    name: '🚧 Build SPAdes'
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: '⚙️ Install ccache'
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+
+      - name: '⚙️ Configure CMake'
+        run: >
+          cmake
+          -B ${{env.BUILD_DIR}}
+          -S ${{env.SRC_DIR}}
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
+
+      - name: '🚧 Build'
+        run: >
+          cmake
+          --build ${{env.BUILD_DIR}}
+          -j16
+          -t package
+
+      - name: '📦 Package'
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
+            
+  copy-saves:
+    runs-on: 
+      labels: [self-hosted, worker-1]
+    name: '💾️ Copy saves'
+
+    steps:
+      - name: 'E.coli 100K'
+        run: >
+          python3 ${{env.SRC_DIR}}/test/teamcity/update_saves.py 
+          --saves_dir /data/pipeline_tests/etalon/ECOLI_IS220_100K
+          --output_dir /scratch/spades_output/ECOLI_100K/
+
+      - name: 'E.coli UCSD lane 1'
+        run: >
+          python3 ${{env.SRC_DIR}}/test/teamcity/update_saves.py 
+          --saves_dir /data/pipeline_tests/etalon/SAVES_ECOLI_UCSD_L1
+          --output_dir /scratch/spades_output/SAVES_ECOLI_UCSD_L1/
+
+      - name: 'Meta E.coli UCSD lane 1'
+        run: >
+          python3 ${{env.SRC_DIR}}/test/teamcity/update_saves.py 
+          --saves_dir /data/meta_tests/etalon/ECOLI_MIX_SAVES 
+          --output_dir /scratch/meta_output/ECOLI_MIX_SAVES/
+
+  check-saves-ecoli-100k:
+    name: 'Check saves E.coli 100K'
+    runs-on: self-hosted
+    needs: [build, copy-saves]
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/pipeline_tests/Saves_E.coli_100K.info
+
+  check-saves-ecoli-ucsd-lane1:
+    name: 'Cehck saves E.coli UCSD lane 1'
+    runs-on: self-hosted
+    needs: [build, copy-saves]
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/pipeline_tests/Saves_E.coli_UCSD_lane1.info
+
+  meta-ecoli-mix-saves:
+    name: 'E.coli mix saves'
+    runs-on: self-hosted
+    needs: [build, copy-saves]
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive
+          /data/meta_tests/ECOLI_MIX_SAVES.info
+
