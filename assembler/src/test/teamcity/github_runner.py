@@ -698,6 +698,11 @@ def parse_args():
 
     parser.add_argument("--no_contig_archive", dest="contig_archive",
                         help="don't save contigs to common contig archive", action='store_false')
+    parser.add_argument("--no_cleanup", dest="cleanup", default=True,
+                        help="don't clean up saves etc", action='store_false')
+    parser.add_argument("--ignore_checks", default=False,
+                        help="return 0 code even if QUAST/saves checks failed, fail only in case of fatal SPAdes errors",
+                        action='store_true')
     parser.set_defaults(contig_archive=False)
     parser.add_argument("--contig_name", "-s", help="archive contig name custom suffix", type=str)
     parser.add_argument("--output_dir", "-o", help="use this output dir, override output directory provided in config",
@@ -739,8 +744,8 @@ def main(args):
         if ecode != 0:
             rewrite_latest = False
             log.error("QUAST analysis did not pass, exit code " + str(ecode), str(ecode))
-            exit_code = ecode
-        log.debug('End QUST')
+            exit_code = 0 if args.ignore_checks else ecode
+        log.debug('QUAST finished')
 
     # etalon saves
     if 'etalon_saves' in dataset_info.__dict__:
@@ -750,12 +755,13 @@ def main(args):
         if ecode != 0:
             rewrite_latest = False
             log.error("Comparing etalon saves did not pass, exit code " + str(ecode))
-            exit_code = 12
+            exit_code = 0 if args.ignore_checks else 12
         log.debug('End comparing etalon')
 
     # compare misassemblies
     if not args.contig_archive:
-        cleanup_output_dir(output_dir)
+        if args.cleanup:
+            cleanup_output_dir(output_dir)
         sys.exit(exit_code)
 
     log.debug('Comparing misassemblies')
@@ -771,7 +777,8 @@ def main(args):
     contigs = get_contigs_list(args, dataset_info, True)
     save_contigs(args, output_dir, contig_storage_dir, contigs, rewrite_latest)
 
-    cleanup_output_dir(output_dir)
+    if args.cleanup:
+        cleanup_output_dir(output_dir)
 
     sys.exit(exit_code)
 

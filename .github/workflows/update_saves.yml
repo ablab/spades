@@ -53,11 +53,111 @@ jobs:
           name: build-artifacts
           path: |
             ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
-            
+
+  run-saves-ecoli-100k:
+    name: 'Run saves E.coli 100K'
+    runs-on:
+      labels: [self-hosted, worker-1]
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive --no_cleanup --ignore_checks
+          /data/pipeline_tests/Saves_E.coli_100K.info
+
+  run-saves-ecoli-ucsd-lane1:
+    name: 'Run saves E.coli UCSD lane 1'
+    runs-on:
+      labels: [self-hosted, worker-1]
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive --no_cleanup --ignore_checks
+          /data/pipeline_tests/Saves_E.coli_UCSD_lane1.info
+
+  run-meta-ecoli-mix-saves:
+    name: 'Run E.coli mix saves'
+    runs-on:
+      labels: [self-hosted, worker-1]
+    needs: build
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'Assembly'
+        run: >
+          ${{env.SRC_DIR}}/test/teamcity/github_runner.py
+          --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
+          --no_contig_archive --no_cleanup --ignore_checks
+          /data/meta_tests/ECOLI_MIX_SAVES.info
+
   copy-saves:
-    runs-on: 
+    runs-on:
       labels: [self-hosted, worker-1]
     name: '💾️ Copy saves'
+    needs: [run-saves-ecoli-100k, run-saves-ecoli-ucsd-lane1, run-meta-ecoli-mix-saves]
 
     steps:
       - name: 'E.coli 100K'
@@ -77,6 +177,13 @@ jobs:
           python3 ${{env.SRC_DIR}}/test/teamcity/update_saves.py 
           --saves_dir /data/meta_tests/etalon/ECOLI_MIX_SAVES 
           --output_dir /scratch/meta_output/ECOLI_MIX_SAVES/
+
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          rm -rf /scratch/spades_output/ECOLI_100K/K* &&
+          rm -rf /scratch/spades_output/SAVES_ECOLI_UCSD_L1/K* &&
+          rm -rf /scratch/meta_output/ECOLI_MIX_SAVES/K*
 
   check-saves-ecoli-100k:
     name: 'Check saves E.coli 100K'
@@ -111,7 +218,7 @@ jobs:
           /data/pipeline_tests/Saves_E.coli_100K.info
 
   check-saves-ecoli-ucsd-lane1:
-    name: 'Cehck saves E.coli UCSD lane 1'
+    name: 'Check saves E.coli UCSD lane 1'
     runs-on: self-hosted
     needs: [build, copy-saves]
 
@@ -142,8 +249,8 @@ jobs:
           --no_contig_archive
           /data/pipeline_tests/Saves_E.coli_UCSD_lane1.info
 
-  meta-ecoli-mix-saves:
-    name: 'E.coli mix saves'
+  check-meta-ecoli-mix-saves:
+    name: 'Check E.coli mix saves'
     runs-on: self-hosted
     needs: [build, copy-saves]
 

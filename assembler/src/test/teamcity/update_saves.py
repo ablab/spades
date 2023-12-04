@@ -63,7 +63,7 @@ def main():
         log.info("Saves are identical, will not be copied")
         return 0
 
-    new_etalon_base = "etalon_saves_" + datetime.date.today().strftime('%d.%m.%y')
+    new_etalon_base = os.path.join(args.saves_dir, "etalon_saves_" + datetime.date.today().strftime('%d.%m.%y'))
     new_etalon = new_etalon_base
     counter = 0
     while os.path.exists(new_etalon):
@@ -73,7 +73,8 @@ def main():
     log.info("Copying files to %s" % new_etalon)
     shutil.copytree(args.output_dir, new_etalon)
     log.info("Copying done")
-    os.remove(latest_etalon)
+    if os.path.exists(latest_etalon):
+        os.remove(latest_etalon)
     os.symlink(new_etalon, latest_etalon, target_is_directory=True)
     log.info("New symlinks created, exiting now")
 
