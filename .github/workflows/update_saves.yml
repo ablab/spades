@@ -1,0 +1,12 @@
+name: Update all SPAdes saves
+
+on:
+  workflow_dispatch:
+
+env:
+  BUILD_TYPE: Release
+  BUILD_DIR: ${{github.workspace}}/build
+  INSTALL_DIR: ${{github.workspace}}/spades
+  SRC_DIR: ${{github.workspace}}/assembler/src
+  PKG: SPAdes-3.16.0-dev-Linux
+
