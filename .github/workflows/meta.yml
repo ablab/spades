@@ -2,11 +2,9 @@ name: metaSPAdes tests
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - master
-    tags:
   pull_request:
+  schedule:
+  - cron: '0 22 * * 2,5'
 
 env:
   BUILD_TYPE: Release

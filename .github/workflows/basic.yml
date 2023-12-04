@@ -3,6 +3,9 @@ name: SPAdes basic tests
 on:
   workflow_dispatch:
   push:
+    branches:
+      - master
+    tags:
   pull_request:
 
 env:
