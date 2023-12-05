@@ -4,7 +4,7 @@
 #include "io/dataset_support/dataset_readers.hpp"
 #include "alignment/sequence_mapper.hpp"
 #include "alignment/sequence_mapper_notifier.hpp"
-#include "modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor_helper.hpp"
+#include "modules/path_extend/read_cloud_path_extend/fragment_statistics/cluster_distribution_estimator.hpp"
 #include "pipeline/graph_pack_helpers.h"
 #include "pipeline/sequence_mapper_gp_api.hpp"
 

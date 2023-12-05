@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "distribution_extractor_helper.hpp"
+#include "cluster_distribution_estimator.hpp"
 
 namespace path_extend {
 namespace read_cloud {

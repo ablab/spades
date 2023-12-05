@@ -11,7 +11,7 @@
 #include "read_cloud_connection_conditions.hpp"
 #include "auxiliary_graphs/scaffold_graph/scaffold_vertex.hpp"
 #include "modules/path_extend/scaffolder2015/scaffold_graph_constructor.hpp"
-#include "modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor_helper.hpp"
+#include "modules/path_extend/read_cloud_path_extend/fragment_statistics/cluster_distribution_estimator.hpp"
 
 namespace path_extend {
 namespace read_cloud {

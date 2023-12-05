@@ -27,6 +27,7 @@ add_library(path_extend STATIC
             read_cloud_path_extend/extender_support/candidate_selectors.cpp
             read_cloud_path_extend/extender_support/entry_collectors.cpp
             read_cloud_path_extend/fragment_statistics/secondary_stats_estimators.cpp
+            read_cloud_path_extend/fragment_statistics/cluster_distribution_estimator.cpp
             read_cloud_path_extend/intermediate_scaffolding/contracted_graph_from_simple.cpp
             read_cloud_path_extend/intermediate_scaffolding/pair_entry_processors.cpp
             read_cloud_path_extend/intermediate_scaffolding/path_cluster_helper.cpp

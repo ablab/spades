@@ -3,8 +3,7 @@
 
 #include "extenders_logic.hpp"
 #include "modules/path_extend/scaffolder2015/extension_chooser2015.hpp"
-#include "modules/path_extend/read_cloud_path_extend/fragment_statistics/distribution_extractor_helper.hpp"
-#include "modules/path_extend/read_cloud_path_extend/fragment_statistics/secondary_stats_estimators.hpp"
+#include "modules/path_extend/read_cloud_path_extend/fragment_statistics/cluster_distribution_estimator.hpp"
 #include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/extender_searcher.hpp"
 #include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/scaffold_graph_storage_constructor.hpp"
 #include "modules/path_extend/read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
