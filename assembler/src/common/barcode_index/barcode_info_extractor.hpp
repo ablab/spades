@@ -93,6 +93,10 @@ namespace barcode_index {
             }
             DEBUG("tails: " + std::to_string(barcodes_overall));
             DEBUG("Long edges" + long_edges);
+            if (long_edges == 0) {
+                WARN("0 long edges found in the assembly graph");
+                return .0;
+            }
             return static_cast <double> (barcodes_overall) / static_cast <double> (long_edges);
         }
 

@@ -9,9 +9,9 @@
 #include "simple_graph_utils.hpp"
 #include "contracted_graph_from_simple.hpp"
 #include "modules/path_extend/read_cloud_path_extend/cluster_storage/graph_cluster_storage_builder.hpp"
-#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
 #include "modules/path_extend/read_cloud_path_extend/utils/barcode_score_functions.hpp"
 #include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
+#include "barcode_index/scaffold_vertex_index_builder.hpp"
 
 namespace path_extend {
 namespace read_cloud {

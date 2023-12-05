@@ -6,11 +6,11 @@
 
 #include "scaffold_graph_storage_constructor.hpp"
 
+#include "barcode_index/scaffold_vertex_index_builder.hpp"
 #include "modules/path_extend/read_cloud_path_extend/validation/scaffold_graph_validation.hpp"
 #include "modules/path_extend/read_cloud_path_extend/validation/path_cluster_validation.hpp"
 #include "modules/path_extend/read_cloud_path_extend/validation/pipeline_validation.hpp"
 #include "modules/path_extend/read_cloud_path_extend/intermediate_scaffolding/scaffold_graph_polisher.hpp"
-#include "modules/path_extend/read_cloud_path_extend/cluster_storage/cluster_storage_helper.hpp"
 
 namespace path_extend {
 namespace read_cloud {
