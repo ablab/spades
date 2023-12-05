@@ -2,6 +2,8 @@ name: SPAdes IonTorrent datasets tests
 
 on:
   workflow_dispatch:
+  push:
+    tags:
   schedule:
     - cron: '0 3 14,28 * *'
     

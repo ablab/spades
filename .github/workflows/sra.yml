@@ -2,6 +2,8 @@ name: SPAdes SRA input
 
 on:
   workflow_dispatch:
+  push:
+    tags:
   schedule:
     - cron: '0 3 * * *'
 

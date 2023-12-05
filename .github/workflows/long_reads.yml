@@ -3,6 +3,8 @@ name: SPAdes long-read tests
 on:
   workflow_dispatch:
   pull_request:
+  push:
+    tags:
   schedule:
   - cron: '0 23 * * 1,4'
 

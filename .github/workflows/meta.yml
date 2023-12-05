@@ -3,6 +3,8 @@ name: metaSPAdes tests
 on:
   workflow_dispatch:
   pull_request:
+  push:
+    tags:
   schedule:
   - cron: '0 22 * * 2,5'
 

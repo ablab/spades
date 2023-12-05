@@ -2,6 +2,8 @@ name: SPAdes full-runs tests
 
 on:
   workflow_dispatch:
+  push:
+    tags:
   schedule:
     - cron: '0 3 7,21 * *'
 

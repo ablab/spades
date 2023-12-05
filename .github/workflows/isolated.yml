@@ -3,6 +3,8 @@ name: SPAdes isolated datasets tests
 on:
   workflow_dispatch:
   pull_request:
+  push:
+    tags:
   schedule:
   - cron: '0 21 * * 3,6'
 
