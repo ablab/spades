@@ -12,7 +12,7 @@ env:
   BUILD_DIR: ${{github.workspace}}/build
   INSTALL_DIR: ${{github.workspace}}/spades
   SRC_DIR: ${{github.workspace}}/assembler/src
-  PKG: SPAdes-3.16.0-dev-Linux
+  PKG: SPAdes-*-Linux
 
 jobs:
   build:
