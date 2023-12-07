@@ -38,6 +38,7 @@ def parse_args_ut():
     parser.set_defaults(tmp_dir="./.tc_tmp")
     parser.add_argument("--preserve_tmp_dir", "-p", help="do not clean or remove temporary dir", action='store_true')
     parser.set_defaults(preserve_tmp_dir=False)
+    parser.add_argument("--use_latest_run", help="use output folder instead of contig archive", action='store_true', default=False)
     #all - update all; add all missibg metrics
     #basic - update only basic metrics; add only basic missing metrics
     #none - update only metrics that are already on config, add none
@@ -197,8 +198,11 @@ def update_thresholds_for_config(args, config):
 
     full_etalon_contigs_prefix = args.etalon_contigs_prefix
     etalon_contigs_suffix = args.etalon_contigs_suffix
-    if  full_etalon_contigs_prefix == "":
-        if 'contig_storage' in dataset_info.__dict__:
+    if full_etalon_contigs_prefix == "":
+        if args.use_latest_run:
+            full_etalon_contigs_prefix = os.path.join(dataset_info.__dict__["output_dir"], dataset_info.__dict__["name"] + "/")
+            etalon_contigs_suffix = ""
+        elif 'contig_storage' in dataset_info.__dict__:
             full_etalon_contigs_prefix = os.path.join(dataset_info.contig_storage, "latest_")
             etalon_contigs_suffix = ""
         else:
