@@ -683,6 +683,7 @@ def save_quast_report(contigs, dataset_info, contig_storage_dir, output_dir, art
 
 
 def cleanup_output_dir(output_dir):
+    shutil.rmtree(os.path.join(output_dir, "tmp"), ignore_errors=True)
     shutil.rmtree(os.path.join(output_dir, "corrected"), ignore_errors=True)
     for d in glob.glob(os.path.join(output_dir, "K*")):
         shutil.rmtree(d, ignore_errors=True)
@@ -732,6 +733,8 @@ def main(args):
     ecode = os.system(spades_cmd)
     if ecode != 0:
         log.critical("SPAdes finished abnormally with exit code " + str(ecode))
+        if args.cleanup:
+            cleanup_output_dir(output_dir)
         sys.exit(4)
     log.debug('End SPAdes')
 
