@@ -28,6 +28,7 @@
     3.8. [metaplasmidSPAdes and metaviralSPAdes output](#metapv)</br>
     3.9. [biosyntheticSPAdes output](#bgc)</br>
     3.10. [Assembly evaluation](#eval)</br>
+    3.11. [wastewaterSPAdes mode](#waste)</br>
 4. [Stand-alone binaries released within SPAdes package](#sec4)</br>
     4.1. [k-mer counting](#sec4.1)</br>
     4.2. [k-mer coverage read filter](#sec4.2)</br>
@@ -64,6 +65,7 @@ SPAdes 3.15.4 includes the following additional pipelines:
 -   biosyntheticSPAdes - a module for biosynthetic gene cluster assembly with paired-end reads (see [biosynthicSPAdes options](#biosynthetic)).
 -   rnaviralSPAdes - a *de novo* assembler tailored for RNA viral datasets (transcriptome, metatranscriptome and metavirome). 
 -   coronaSPAdes is a special mode of rnaviralSPAdes specifically aimed for SARS-CoV-2 *de novo* assembly.
+-   wastewaterSPAdes - a module for assembly-based SARS-CoV-2 deconvolution.
 
 In addition, we provide several stand-alone binaries with relatively simple command-line interface: [k-mer counting](#sec4.1) (`spades-kmercounter`), [assembly graph construction](#sec4.2) (`spades-gbuilder`) and [long read to graph aligner](#sec4.3) (`spades-gmapper`). To learn options of these tools you can either run them without any parameters or read [this section](#sec4).
 
@@ -1071,6 +1073,18 @@ biosyntheticSPAdes outputs four files of interest:
 [QUAST](http://cab.spbu.ru/software/quast/) may be used to generate summary statistics (N50, maximum contig length, GC %, \# genes found in a reference list or with built-in gene finding tools, etc.) for a single assembly. It may also be used to compare statistics for multiple assemblies of the same data set (e.g., SPAdes run with different parameters, or several different assemblers).
 []()
 
+
+<a name="waste"></a>
+## wastewaterSPAdes mode
+
+SARS-CoV-2 wastewater samples are extensively collected and studied because it allows quantitative assessment of viral load in surrounding populations. We developed wastewaterSPAdes that solves SARS-CoV-2 deconvolution problem using assembly graph structure. 
+<p>To use wastewaterSPAdes, you'll need to:</p>
+<ul>
+  <li>Pass the <code>--sewage</code> flag to the <code>coronaspades.py</code> script.</li>
+  <li>Provide the SARS-CoV-2 reference genome as trusted contigs.</li>
+</ul>
+
+Results of wastewaterSPAdes are stored in lineages.csv file. First column contains strain name, and second column contains estimated abundance of this strain in the sample.
 
 <a name="sec4"></a>
 # Stand-alone binaries released within SPAdes package
