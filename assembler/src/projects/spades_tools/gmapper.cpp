@@ -140,18 +140,6 @@ static void ProcessContigs(const Graph &graph,
     notifier.ProcessLibrary(single_streams, mapper);
 }
 
-void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::filesystem::path &filename,
-               io::IdMapper<std::string> *id_mapper) {
-    using namespace debruijn_graph;
-    if (filename.extension() == ".gfa") {
-        gfa::GFAReader gfa(filename);
-        INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-        gfa.to_graph(graph, id_mapper);
-    } else {
-        io::binary::Load(filename, graph);
-    }
-}
-
 int main(int argc, char* argv[]) {
     utils::segfault_handler sh;
     gcfg cfg;
@@ -185,14 +173,14 @@ int main(int argc, char* argv[]) {
         INFO("Loading de Bruijn graph from " << cfg.graph);
         if (utils::ends_with(cfg.graph.string(), ".gfa")) {
             gfa.reset(new gfa::GFAReader(cfg.graph));
-            INFO("GFA segments: " << gfa->num_edges() << ", links: " << gfa->num_links() << ", paths: " << gfa->num_paths());
-        } else if (cfg.k == -1U)
+        else if (cfg.k == -1U)
             FATAL_ERROR("k-mer length should be specified");
 
         Graph graph(k);
         unsigned gfa_k = -1U;
         if (gfa) {
             gfa_k = gfa->to_graph(graph, id_mapper.get());
+            INFO("GFA segments: " << gfa->num_edges() << ", links: " << gfa->num_links() << ", paths: " << gfa->num_paths());
         } else {
             io::binary::Load(cfg.graph, graph);
         }
