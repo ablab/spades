@@ -24,6 +24,11 @@ typedef uint16_t SequenceOffsetT;
 
 class SingleRead {
 public:
+
+// Silence bogus GCC warnings
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+
     SingleRead()
             : name_{}, comment_{},
               seq_{}, qual_{},
@@ -83,6 +88,8 @@ public:
               left_offset_(left_offset), right_offset_(right_offset), valid_(false) {
         Init(validate);
     }
+
+#pragma GCC diagnostic pop
 
     bool IsValid() const {
         return valid_;
@@ -291,7 +298,7 @@ private:
 
 inline std::ostream &operator<<(std::ostream &os, const SingleRead &read) {
     os << "Single read name=" << (read.name().length() ? read.name() : "(empty)")
-       << " comment= " << (read.comment().length() ? read.comment() : "(empty)")    
+       << " comment= " << (read.comment().length() ? read.comment() : "(empty)")
        << " sequence=" << read.GetSequenceString() << std::endl;
     return os;
 }
@@ -363,7 +370,7 @@ public:
     uint64_t tag() const {
         return tag_;
     }
-    
+
     SingleReadSeq operator!() const {
         return SingleReadSeq(!seq_, right_offset_, left_offset_);
     }
