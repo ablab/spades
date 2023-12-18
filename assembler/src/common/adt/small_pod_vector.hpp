@@ -286,6 +286,11 @@ struct HybridAllocatedStorage : public SmallPODVectorData<T> {
         that.reset();
     }
 
+// Silence bogus GCC warnings
+#pragma GCC diagnostic push
+#if !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wmismatched-dealloc"
+#endif
     void grow(size_type N) {
         void *data = this->data_.getPointer(), *new_data = data;
         size_t sz = this->data_.getInt(), new_sz = N;
@@ -353,6 +358,7 @@ struct HybridAllocatedStorage : public SmallPODVectorData<T> {
         this->data_.setPointer(new_data);
         this->data_.setInt(new_sz);
     }
+#pragma GCC diagnostic pop
 };
 
 }
