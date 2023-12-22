@@ -1,0 +1,383 @@
+name: SPAdes GCC & Python versions
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - '*'
+  schedule:
+    - cron: '30 23 * * 7'
+
+env:
+  BUILD_TYPE: Release
+  BUILD_DIR: ${{github.workspace}}/build
+  INSTALL_DIR: ${{github.workspace}}/spades
+  SRC_DIR: ${{github.workspace}}/assembler/src
+  PKG: SPAdes-*-Linux
+
+jobs:
+  build-gcc9:
+    runs-on:
+      labels: [self-hosted, worker-1]
+    name: '🚧 Build SPAdes with GCC9'
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: '⚙️ Install ccache'
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+
+      - name: '⚙️ Configure CMake'
+        run: >
+          cmake
+          -B ${{env.BUILD_DIR}}
+          -S ${{env.SRC_DIR}}
+          -DCMAKE_C_COMPILER=gcc-9 -DCMAKE_CXX_COMPILER=g++-9 
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
+
+      - name: '🚧 Build'
+        run: >
+          cmake
+          --build ${{env.BUILD_DIR}}
+          -j16
+          -t package include_test debruijn_test
+
+      - name: '📦 Package'
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
+            ${{env.BUILD_DIR}}/bin/debruijn_test
+            ${{env.BUILD_DIR}}/bin/include_test
+
+  spades-test-python3.8:
+    name: 'E. coli 1k run with Python3.8'
+    runs-on:
+      labels: [self-hosted, worker-1]
+    needs: build-gcc9
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+      
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'E.coli 1K with Python 3.8'
+        run: >
+          python3.8 ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/spades.py --test
+
+  build-gcc10:
+    runs-on:
+      labels: [self-hosted, worker-1]
+    name: '🚧 Build SPAdes with GCC10'
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: '⚙️ Install ccache'
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+
+      - name: '⚙️ Configure CMake'
+        run: >
+          cmake
+          -B ${{env.BUILD_DIR}}
+          -S ${{env.SRC_DIR}}
+          -DCMAKE_C_COMPILER=gcc-10 -DCMAKE_CXX_COMPILER=g++-10 
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
+
+      - name: '🚧 Build'
+        run: >
+          cmake
+          --build ${{env.BUILD_DIR}}
+          -j16
+          -t package include_test debruijn_test
+
+      - name: '📦 Package'
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
+            ${{env.BUILD_DIR}}/bin/debruijn_test
+            ${{env.BUILD_DIR}}/bin/include_test
+
+  spades-test-python3.9:
+    name: 'E. coli 1k run with Python3.9'
+    runs-on:
+      labels: [self-hosted, worker-1]
+    needs: build-gcc10
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+      
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'E.coli 1K SC with Python 3.9'
+        run: >
+          python3.9 ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/spades.py --test --sc
+
+  build-gcc11:
+    runs-on:
+      labels: [self-hosted, worker-1]
+    name: '🚧 Build SPAdes with GCC11'
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: '⚙️ Install ccache'
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+
+      - name: '⚙️ Configure CMake'
+        run: >
+          cmake
+          -B ${{env.BUILD_DIR}}
+          -S ${{env.SRC_DIR}}
+          -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ 
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
+
+      - name: '🚧 Build'
+        run: >
+          cmake
+          --build ${{env.BUILD_DIR}}
+          -j16
+          -t package include_test debruijn_test
+
+      - name: '📦 Package'
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
+            ${{env.BUILD_DIR}}/bin/debruijn_test
+            ${{env.BUILD_DIR}}/bin/include_test
+
+  spades-test-python3.10:
+    name: 'E. coli 1k run with Python3.10'
+    runs-on:
+      labels: [self-hosted, worker-1]
+    needs: build-gcc11
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+      
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'E.coli 1K meta with Python 3.10'
+        run: >
+          python3.10 ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/spades.py --test --meta
+
+  build-gcc12:
+    runs-on:
+      labels: [self-hosted, worker-1]
+    name: '🚧 Build SPAdes with GCC12'
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: '⚙️ Install ccache'
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+
+      - name: '⚙️ Configure CMake'
+        run: >
+          cmake
+          -B ${{env.BUILD_DIR}}
+          -S ${{env.SRC_DIR}}
+          -DCMAKE_C_COMPILER=/home/ubuntu/bin/gcc12/bin/gcc -DCMAKE_CXX_COMPILER=/home/ubuntu/bin/gcc12/bin/g++
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
+
+      - name: '🚧 Build'
+        run: >
+          cmake
+          --build ${{env.BUILD_DIR}}
+          -j16
+          -t package include_test debruijn_test
+
+      - name: '📦 Package'
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
+            ${{env.BUILD_DIR}}/bin/debruijn_test
+            ${{env.BUILD_DIR}}/bin/include_test
+
+  spades-test-python3.11:
+    name: 'E. coli 1k run with Python3.12'
+    runs-on:
+      labels: [self-hosted, worker-1]
+    needs: build-gcc12
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+      
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'E.coli 1K RNA with Python 3.12'
+        run: >
+          python3.11 ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/spades.py --test --rna
+
+  build-gcc13:
+    runs-on:
+      labels: [self-hosted, worker-1]
+    name: '🚧 Build SPAdes with GCC13'
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: '⚙️ Install ccache'
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+
+      - name: '⚙️ Configure CMake'
+        run: >
+          cmake
+          -B ${{env.BUILD_DIR}}
+          -S ${{env.SRC_DIR}}
+          -DCMAKE_C_COMPILER=/home/ubuntu/bin/gcc13/bin/gcc -DCMAKE_CXX_COMPILER=/home/ubuntu/bin/gcc13/bin/g++
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
+
+      - name: '🚧 Build'
+        run: >
+          cmake
+          --build ${{env.BUILD_DIR}}
+          -j16
+          -t package include_test debruijn_test
+
+      - name: '📦 Package'
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
+            ${{env.BUILD_DIR}}/bin/debruijn_test
+            ${{env.BUILD_DIR}}/bin/include_test
+
+  spades-test-python3.12:
+    name: 'E. coli 1k run with Python3.12'
+    runs-on:
+      labels: [self-hosted, worker-1]
+    needs: build-gcc13
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+      
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: ${{env.INSTALL_DIR}}
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG}}.tar.gz
+      - name: 'E.coli 1K Isolate with Python 3.13'
+        run: >
+          python3.12 ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/spades.py --test --isolate
+
