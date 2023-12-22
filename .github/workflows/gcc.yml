@@ -63,7 +63,7 @@ jobs:
             ${{env.BUILD_DIR}}/bin/debruijn_test
             ${{env.BUILD_DIR}}/bin/include_test
 
-  spades-test-python3.8:
+  spades-test-python38:
     name: 'E. coli 1k run with Python3.8'
     runs-on:
       labels: [self-hosted, worker-1]
@@ -136,7 +136,7 @@ jobs:
             ${{env.BUILD_DIR}}/bin/debruijn_test
             ${{env.BUILD_DIR}}/bin/include_test
 
-  spades-test-python3.9:
+  spades-test-python39:
     name: 'E. coli 1k run with Python3.9'
     runs-on:
       labels: [self-hosted, worker-1]
@@ -209,7 +209,7 @@ jobs:
             ${{env.BUILD_DIR}}/bin/debruijn_test
             ${{env.BUILD_DIR}}/bin/include_test
 
-  spades-test-python3.10:
+  spades-test-python310:
     name: 'E. coli 1k run with Python3.10'
     runs-on:
       labels: [self-hosted, worker-1]
@@ -282,7 +282,7 @@ jobs:
             ${{env.BUILD_DIR}}/bin/debruijn_test
             ${{env.BUILD_DIR}}/bin/include_test
 
-  spades-test-python3.11:
+  spades-test-python311:
     name: 'E. coli 1k run with Python3.12'
     runs-on:
       labels: [self-hosted, worker-1]
@@ -355,7 +355,7 @@ jobs:
             ${{env.BUILD_DIR}}/bin/debruijn_test
             ${{env.BUILD_DIR}}/bin/include_test
 
-  spades-test-python3.12:
+  spades-test-python312:
     name: 'E. coli 1k run with Python3.12'
     runs-on:
       labels: [self-hosted, worker-1]
