@@ -6,7 +6,7 @@ on:
     tags:
       - '*'
   schedule:
-    - cron: '30 23 * * 7'
+    - cron: '30 23 6,12,18,24,30 * *'
 
 env:
   BUILD_TYPE: Release
