@@ -462,15 +462,15 @@ typename ObservableGraph<DataMaster>::EdgeId
     VertexId v1 = base::EdgeStart(corrected_path[0]);
     VertexId v2 = base::EdgeEnd(corrected_path[corrected_path.size() - 1]);
     std::vector<const EdgeData *> to_merge;
-    std::vector<uint32_t> local_overlaps;
-    if (overlaps.empty()) {
-        for (auto it1 = corrected_path.begin(), it2 = std::next(it1); it2 != corrected_path.end(); ++it1, ++it2) {
-            to_merge.push_back(&(base::data(*it1)));
+    bool empty_overlaps = overlaps.empty();
+    for (auto it1 = corrected_path.begin(), it2 = std::next(it1); it2 != corrected_path.end(); ++it1, ++it2) {
+        if (empty_overlaps) {
             VertexId end = base::EdgeEnd(*it1);
             VERIFY(end == base::EdgeStart(*it2));
             uint32_t overlap = base::data(end).overlap();
             overlaps.push_back(overlap);
         }
+        to_merge.push_back(&(base::data(*it1)));
     }
     to_merge.push_back(&(base::data(corrected_path.back())));
     EdgeId new_edge = base::HiddenAddEdge(v1, v2, base::master().MergeData(to_merge, overlaps, safe_merging));
