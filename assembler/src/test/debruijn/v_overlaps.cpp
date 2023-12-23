@@ -207,6 +207,7 @@ void CheckGraphWithPaths(const std::filesystem::path &graph_basename) {
     CheckPathOperations(graph, operations_path, fasta_path, *id_mapper);
 }
 
-TEST(VariableOverlaps, IO) {
+TEST(VariableOverlaps, BasicOperations) {
     CheckGraphWithPaths("src/test/debruijn/graph_fragments/v_overlaps/bone");
+    CheckGraphWithPaths("src/test/debruijn/graph_fragments/v_overlaps/triple_repeat");
 }
