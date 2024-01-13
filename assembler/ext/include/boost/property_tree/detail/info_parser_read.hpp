@@ -238,7 +238,11 @@ namespace boost { namespace property_tree { namespace info_parser
                         str_t s = read_string(text, NULL);
                         std::string inc_name =
                             convert_chtype<char, Ch>(s.c_str());
-                        std::basic_ifstream<Ch> inc_stream(inc_name.c_str());
+                        // SPADES LOCAL BEGIN
+                        size_t pos = filename.find_last_of("\\/");
+                        std::string dir = (std::string::npos == pos) ? "" : filename.substr(0, pos + 1);
+                        std::basic_ifstream<Ch> inc_stream(dir + inc_name);
+                        // SPADES LOCAL END
                         if (!inc_stream.good())
                             BOOST_PROPERTY_TREE_THROW(info_parser_error(
                                 "cannot open include file " + inc_name,
