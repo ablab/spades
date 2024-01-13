@@ -12,8 +12,6 @@
 #include "kmer_data.hpp"
 #include "utils/logger/log_writers.hpp"
 
-#include <boost/numeric/ublas/matrix.hpp>
-
 #include <iostream>
 #include <vector>
 #include "quality_metrics.h"
@@ -35,10 +33,9 @@ double TGenomicHKMersEstimator::GenerateLikelihood(const HKMer& from,
 HKMer TGenomicHKMersEstimator::Center(const KMerData& data,
                                       const std::vector<size_t>& kmers) {
   hammer::HKMer res;
-  namespace numeric = boost::numeric::ublas;
 
   for (unsigned i = 0; i < hammer::K; ++i) {
-    numeric::matrix<double> scores(4, 64, 0);
+      iontorrent::ScoreMatrix scores;
     for (size_t j = 0; j < kmers.size(); ++j) {
       const hammer::KMerStat& k = data[kmers[j]];
 // FIXME: switch to MLE when we'll have use per-run quality values
@@ -62,10 +59,9 @@ HKMer TGenomicHKMersEstimator::Center(const KMerData& data,
 HKMer TGenomicHKMersEstimator::ByPosteriorQualCenter(
     const std::vector<size_t>& kmers) {
   hammer::HKMer res;
-  namespace numeric = boost::numeric::ublas;
 
   for (unsigned i = 0; i < hammer::K; ++i) {
-    numeric::matrix<double> scores(4, 64, 0);
+    iontorrent::ScoreMatrix scores;
     for (size_t j = 0; j < kmers.size(); ++j) {
       const hammer::KMerStat& kmerStat = data_[kmers[j]];
       scores(kmerStat.kmer[i].nucl, kmerStat.kmer[i].len) +=

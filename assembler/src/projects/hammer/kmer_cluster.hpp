@@ -5,13 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * kmer_cluster.hpp
- *
- *  Created on: 16.07.2011
- *      Author: snikolenko
- */
-
 #ifndef KMER_CLUSTER_HPP
 #define KMER_CLUSTER_HPP
 
@@ -21,10 +14,12 @@
 #include <string>
 #include <vector>
 
-#include <boost/numeric/ublas/fwd.hpp>
+#include <blaze/Forward.h>
 
 class KMerClustering {
 public:
+  using ErrMatrix = blaze::StaticMatrix<uint64_t, 4, 4>;
+
   KMerClustering(KMerData &data, unsigned nthreads, const std::filesystem::path &workdir, bool debug) :
       data_(data), nthreads_(nthreads), workdir_(workdir), debug_(debug) { }
 
@@ -40,7 +35,7 @@ private:
     hammer::ExpandedSeq center_;
     size_t count_;
   };
-    
+
   double ClusterBIC(const std::vector<Center> &centers,
                     const std::vector<size_t> &indices, const std::vector<hammer::ExpandedKMer> &kmers) const;
 
@@ -59,7 +54,7 @@ private:
   std::filesystem::path GetBadKMersFname() const;
 
   size_t ProcessCluster(const std::vector<size_t> &cur_class,
-                        boost::numeric::ublas::matrix<uint64_t> &errs,
+                        ErrMatrix &errs,
                         std::ofstream &ofs, std::ofstream &ofs_bad,
                         size_t &gsingl, size_t &tsingl, size_t &tcsingl, size_t &gcsingl,
                         size_t &tcls, size_t &gcls, size_t &tkmers, size_t &tncls);

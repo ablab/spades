@@ -15,9 +15,6 @@
 #include "hkmer_distance.hpp"
 #include "valid_hkmer_generator.hpp"
 
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/storage.hpp>
-
 #include <bamtools/api/BamAlignment.h>
 #include <bamtools/api/SamHeader.h>
 #include "seqeval/BaseHypothesisEvaluator.h"

@@ -16,9 +16,6 @@
 #include "io/reads/single_read.hpp"
 #include "valid_hkmer_generator.hpp"
 
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/storage.hpp>
-
 #include <bamtools/api/BamAlignment.h>
 #include <bamtools/api/SamHeader.h>
 #include "seqeval/BaseHypothesisEvaluator.h"
@@ -42,10 +39,7 @@
 namespace hammer {
 namespace correction {
 
-namespace numeric = boost::numeric::ublas;
-
-typedef numeric::matrix<double> ScoreMatrix;
-typedef std::vector<ScoreMatrix> ScoreStorage;
+typedef std::vector<iontorrent::ScoreMatrix> ScoreStorage;
 
 template <typename It1, typename It2>
 static bool exactAlignH(It1 a_begin, It1 a_initial_pos, It1 a_end,
@@ -103,7 +97,7 @@ struct Score {
 
 #if 1
 template <typename It1, typename It2>
-static void dump(boost::numeric::ublas::matrix<Score> &scores, It1 x_begin,
+static void dump(iontorrent::ScoreMatrix &scores, It1 x_begin,
                  It1 x_end, It2 y_begin, It2 y_end) {
   std::cerr << "        ";
   for (auto it = x_begin; it != x_end; ++it)
@@ -165,8 +159,7 @@ static int alignH(It1 read_begin, It1 read_end, It2 consensus_begin,
   int m = int(x_end - x_begin);
   int n = int(y_end - y_begin);
 
-  using namespace boost::numeric::ublas;
-  matrix<Score> scores(m + 1, n + 1, Score(0, 0));
+  blaze::DynamicMatrix<Score> scores(m + 1, n + 1, Score(0, 0));
 
   size_t highest_x = 0, highest_y = 0;
   int highest_entry = std::numeric_limits<int>::min();
@@ -777,7 +770,7 @@ class CorrectedRead {
       is_first_center = false;
 
       if (chunk_pos + hammer::K > scores.size())
-        scores.resize(chunk_pos + hammer::K, ScoreMatrix(4, 64, 0));
+        scores.resize(chunk_pos + hammer::K, ScoreMatrix(0));
 
       auto k = kmer_data_[center.seq];
 

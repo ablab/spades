@@ -13,9 +13,7 @@
 #include "kmer_cluster.hpp"
 #include "config_struct_hammer.hpp"
 
-#include <boost/numeric/ublas/io.hpp>
-#include <boost/numeric/ublas/matrix_proxy.hpp>
-#include <boost/numeric/ublas/symmetric.hpp>
+#include <blaze/math/StaticMatrix.h>
 
 #include <iostream>
 #include <fstream>
@@ -23,8 +21,6 @@
 
 using std::max_element;
 using std::min_element;
-
-namespace numeric = boost::numeric::ublas;
 
 using namespace hammer;
 
@@ -435,7 +431,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
   return newkmers;
 }
 
-static void UpdateErrors(numeric::matrix<uint64_t> &m,
+static void UpdateErrors(KMerClustering::ErrMatrix &m,
                          const KMer k, const KMer kc) {
   for (unsigned i = 0; i < K; ++i) {
     m(kc[i], k[i]) += 1;
@@ -443,7 +439,7 @@ static void UpdateErrors(numeric::matrix<uint64_t> &m,
 }
 
 size_t KMerClustering::ProcessCluster(const std::vector<size_t> &cur_class,
-                                      numeric::matrix<uint64_t> &errs,
+                                      ErrMatrix &errs,
                                       std::ofstream &ofs, std::ofstream &ofs_bad,
                                       size_t &gsingl, size_t &tsingl, size_t &tcsingl, size_t &gcsingl,
                                       size_t &tcls, size_t &gcls, size_t &tkmers, size_t &tncls) {
@@ -590,7 +586,7 @@ void KMerClustering::process(const std::string &Prefix) {
   // Open and read index file
   MMappedRecordReader<size_t> findex(Prefix + ".idx",  /* unlink */ !debug_, -1ULL);
 
-  std::vector<numeric::matrix<uint64_t> > errs(nthreads_, numeric::matrix<double>(4, 4, 0.0));
+  std::vector<ErrMatrix> errs(nthreads_, ErrMatrix(0));
 
 # pragma omp parallel for shared(ofs, ofs_bad, errs) num_threads(nthreads_) schedule(guided) reduction(+:newkmers, gsingl, tsingl, tcsingl, gcsingl, tcls, gcls, tkmers, tncls)
   for (size_t chunk = 0; chunk < nthreads_ * nthreads_; ++chunk) {
@@ -631,11 +627,11 @@ void KMerClustering::process(const std::string &Prefix) {
   for (unsigned i = 1; i < nthreads_; ++i)
     errs[0] += errs[i];
 
-  numeric::matrix<uint64_t> rowsums = prod(errs[0], numeric::scalar_matrix<double>(4, 1, 1));
-  numeric::matrix<double> err(4, 4);
+  auto rowsums = blaze::sum<blaze::rowwise>(errs[0]);
+  blaze::StaticMatrix<double, 4, 4> err;
   for (unsigned i = 0; i < 4; ++i)
     for (unsigned j = 0; j < 4; ++j)
-      err(i, j) = 1.0 * (double)errs[0](i, j) / (double)rowsums(i, 0);
+      err(i, j) = 1.0 * (double)errs[0](i, j) / (double)rowsums[i];
 
   INFO("Subclustering done. Total " << newkmers << " non-read kmers were generated.");
   INFO("Subclustering statistics:");

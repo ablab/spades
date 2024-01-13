@@ -10,14 +10,16 @@
 
 #include "HSeq.hpp"
 
-#include <boost/numeric/ublas/matrix.hpp>
+#include <blaze/math/StaticMatrix.h>
 #include <limits>
 
 namespace hammer {
 namespace iontorrent {
 
+using ScoreMatrix = blaze::StaticMatrix<double, 4, 64>;
+
 inline std::pair<hammer::HomopolymerRun, double> consensus(
-    const boost::numeric::ublas::matrix<double>& scores) {
+    const ScoreMatrix &scores) {
   double inf = -std::numeric_limits<double>::infinity();
 
   double max = inf;

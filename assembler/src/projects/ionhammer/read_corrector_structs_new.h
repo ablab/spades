@@ -12,7 +12,6 @@
 namespace hammer {
 namespace correction {
 
-namespace numeric = boost::numeric::ublas;
 using HRun = HomopolymerRun;
 
 template <class Moveable>
