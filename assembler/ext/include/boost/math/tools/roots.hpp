@@ -275,14 +275,7 @@ T newton_raphson_iterate(F f, T guess, T min, T max, int digits, std::uintmax_t&
       if (fabs(delta * 2) > fabs(delta2))
       {
          // Last two steps haven't converged.
-         T shift = (delta > 0) ? (result - min) / 2 : (result - max) / 2;
-         if ((result != 0) && (fabs(shift) > fabs(result)))
-         {
-            delta = sign(delta) * fabs(result) * 1.1f; // Protect against huge jumps!
-            //delta = sign(delta) * result; // Protect against huge jumps! Failed for negative result. https://github.com/boostorg/math/issues/216
-         }
-         else
-            delta = shift;
+         delta = (delta > 0) ? (result - min) / 2 : (result - max) / 2;
          // reset delta1/2 so we don't take this branch next time round:
          delta1 = 3 * delta;
          delta2 = 3 * delta;
@@ -372,11 +365,19 @@ namespace detail {
    T bracket_root_towards_max(F f, T guess, const T& f0, T& min, T& max, std::uintmax_t& count) noexcept(BOOST_MATH_IS_FLOAT(T) && noexcept(std::declval<F>()(std::declval<T>())))
    {
       using std::fabs;
+      using std::ldexp;
+      using std::abs;
+      using std::frexp;
+      if(count < 2)
+         return guess - (max + min) / 2; // Not enough counts left to do anything!!
       //
       // Move guess towards max until we bracket the root, updating min and max as we go:
       //
+      int e;
+      frexp(max / guess, &e);
+      e = abs(e);
       T guess0 = guess;
-      T multiplier = 2;
+      T multiplier = e < 64 ? static_cast<T>(2) : static_cast<T>(ldexp(T(1), e / 32));
       T f_current = f0;
       if (fabs(min) < fabs(max))
       {
@@ -390,7 +391,7 @@ namespace detail {
                f_current = -f_current;  // There must be a change of sign!
                break;
             }
-            multiplier *= 2;
+            multiplier *= e > 1024 ? 8 : 2;
             unpack_0(f(guess), f_current);
          }
       }
@@ -409,7 +410,7 @@ namespace detail {
                f_current = -f_current;  // There must be a change of sign!
                break;
             }
-            multiplier *= 2;
+            multiplier *= e > 1024 ? 8 : 2;
             unpack_0(f(guess), f_current);
          }
       }
@@ -427,11 +428,19 @@ namespace detail {
    T bracket_root_towards_min(F f, T guess, const T& f0, T& min, T& max, std::uintmax_t& count) noexcept(BOOST_MATH_IS_FLOAT(T) && noexcept(std::declval<F>()(std::declval<T>())))
    {
       using std::fabs;
+      using std::ldexp;
+      using std::abs;
+      using std::frexp;
+      if (count < 2)
+         return guess - (max + min) / 2; // Not enough counts left to do anything!!
       //
       // Move guess towards min until we bracket the root, updating min and max as we go:
       //
+      int e;
+      frexp(guess / min, &e);
+      e = abs(e);
       T guess0 = guess;
-      T multiplier = 2;
+      T multiplier = e < 64 ? static_cast<T>(2) : static_cast<T>(ldexp(T(1), e / 32));
       T f_current = f0;
 
       if (fabs(min) < fabs(max))
@@ -446,7 +455,7 @@ namespace detail {
                f_current = -f_current;  // There must be a change of sign!
                break;
             }
-            multiplier *= 2;
+            multiplier *= e > 1024 ? 8 : 2;
             unpack_0(f(guess), f_current);
          }
       }
@@ -465,7 +474,7 @@ namespace detail {
                f_current = -f_current;  // There must be a change of sign!
                break;
             }
-            multiplier *= 2;
+            multiplier *= e > 1024 ? 8 : 2;
             unpack_0(f(guess), f_current);
          }
       }
@@ -527,7 +536,19 @@ namespace detail {
          last_f0 = f0;
          delta2 = delta1;
          delta1 = delta;
-         detail::unpack_tuple(f(result), f0, f1, f2);
+#ifndef BOOST_NO_EXCEPTIONS
+         try
+#endif
+         {
+            detail::unpack_tuple(f(result), f0, f1, f2);
+         }
+#ifndef BOOST_NO_EXCEPTIONS
+         catch (const std::overflow_error&)
+         {
+            f0 = max > 0 ? tools::max_value<T>() : -tools::min_value<T>();
+            f1 = f2 = 0;
+         }
+#endif
          --count;
 
          BOOST_MATH_INSTRUMENT_VARIABLE(f0);
@@ -558,8 +579,8 @@ namespace detail {
                   // we can jump way out of bounds if we're not careful.
                   // See https://svn.boost.org/trac/boost/ticket/8314.
                   delta = f0 / f1;
-                  if (fabs(delta) > 2 * fabs(guess))
-                     delta = (delta < 0 ? -1 : 1) * 2 * fabs(guess);
+                  if (fabs(delta) > 2 * fabs(result))
+                     delta = (delta < 0 ? -1 : 1) * 2 * fabs(result);
                }
             }
             else
@@ -568,13 +589,24 @@ namespace detail {
    #ifdef BOOST_MATH_INSTRUMENT
          std::cout << "Second order root iteration, delta = " << delta << ", residual = " << f0 << "\n";
    #endif
-         T convergence = fabs(delta / delta2);
+         // We need to avoid delta/delta2 overflowing here:
+         T convergence = (fabs(delta2) > 1) || (fabs(tools::max_value<T>() * delta2) > fabs(delta)) ? fabs(delta / delta2) : tools::max_value<T>();
          if ((convergence > 0.8) && (convergence < 2))
          {
             // last two steps haven't converged.
-            delta = (delta > 0) ? (result - min) / 2 : (result - max) / 2;
-            if ((result != 0) && (fabs(delta) > result))
-               delta = sign(delta) * fabs(result) * 0.9f; // protect against huge jumps!
+            if (fabs(min) < 1 ? fabs(1000 * min) < fabs(max) : fabs(max / min) > 1000)
+            {
+               if(delta > 0)
+                  delta = bracket_root_towards_min(f, result, f0, min, max, count);
+               else
+                  delta = bracket_root_towards_max(f, result, f0, min, max, count);
+            }
+            else
+            {
+               delta = (delta > 0) ? (result - min) / 2 : (result - max) / 2;
+               if ((result != 0) && (fabs(delta) > result))
+                  delta = sign(delta) * fabs(result) * 0.9f; // protect against huge jumps!
+            }
             // reset delta2 so that this branch will *not* be taken on the
             // next iteration:
             delta2 = delta * 3;
@@ -611,6 +643,10 @@ namespace detail {
                }
                delta = bracket_root_towards_min(f, guess, f0, min, max, count);
                result = guess - delta;
+               if (result <= min)
+                  result = float_next(min);
+               if (result >= max)
+                  result = float_prior(max);
                guess = min;
                continue;
             }
@@ -637,6 +673,10 @@ namespace detail {
                }
                delta = bracket_root_towards_max(f, guess, f0, min, max, count);
                result = guess - delta;
+               if (result >= max)
+                  result = float_prior(max);
+               if (result <= min)
+                  result = float_next(min);
                guess = min;
                continue;
             }

@@ -8,8 +8,11 @@
 #define BOOST_MATH_TOOLS_BIG_CONSTANT_HPP
 
 #include <boost/math/tools/config.hpp>
-#include <boost/math/tools/lexical_cast.hpp>
+#ifndef BOOST_MATH_STANDALONE
+#include <boost/lexical_cast.hpp>
+#endif
 
+#include <cstdlib>
 #include <type_traits>
 #include <limits>
 
@@ -54,6 +57,12 @@ template <class T>
 inline T make_big_value(largest_float, const char* s, std::false_type const&, std::false_type const&)
 {
    return boost::lexical_cast<T>(s);
+}
+#else
+template <typename T>
+inline T make_big_value(largest_float, const char*, std::false_type const&, std::false_type const&)
+{
+   static_assert(sizeof(T) == 0, "Type is unsupported in standalone mode. Please disable and try again.");
 }
 #endif
 template <class T>

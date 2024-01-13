@@ -27,34 +27,40 @@ With these techniques, the code could be simplified.
 #include <boost/math/tools/is_standalone.hpp>
 #include <boost/math/tools/assert.hpp>
 
-// Determine endinaness
+// Determine endianness
 #ifndef BOOST_MATH_STANDALONE
 
 #include <boost/predef/other/endian.h>
 #define BOOST_MATH_ENDIAN_BIG_BYTE BOOST_ENDIAN_BIG_BYTE
 #define BOOST_MATH_ENDIAN_LITTLE_BYTE BOOST_ENDIAN_LITTLE_BYTE
 
-#elif (__cplusplus > 202000L || _MSVC_LANG > 202000L)
+#elif (__cplusplus >= 202002L || _MSVC_LANG >= 202002L)
 
 #if __has_include(<bit>)
 #include <bit>
 #define BOOST_MATH_ENDIAN_BIG_BYTE (std::endian::native == std::endian::big)
 #define BOOST_MATH_ENDIAN_LITTLE_BYTE (std::endian::native == std::endian::little)
+#else
+#error Missing <bit> header. Please disable standalone mode, and file an issue at https://github.com/boostorg/math
 #endif
 
 #elif defined(_WIN32)
 
-#define BOOST_MATH_ENDIAN_BIG_BYTE 1
-#define BOOST_MATH_ENDIAN_LITTLE_BYTE 0
+#define BOOST_MATH_ENDIAN_BIG_BYTE 0
+#define BOOST_MATH_ENDIAN_LITTLE_BYTE 1
 
 #elif defined(__BYTE_ORDER__)
 
 #define BOOST_MATH_ENDIAN_BIG_BYTE (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
 #define BOOST_MATH_ENDIAN_LITTLE_BYTE (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
 
-#else 
+#else
 #error Could not determine endian type. Please disable standalone mode, and file an issue at https://github.com/boostorg/math
-#endif // Determine endinaness
+#endif // Determine endianness
+
+static_assert((BOOST_MATH_ENDIAN_BIG_BYTE || BOOST_MATH_ENDIAN_LITTLE_BYTE)
+    && !(BOOST_MATH_ENDIAN_BIG_BYTE && BOOST_MATH_ENDIAN_LITTLE_BYTE),
+    "Inconsistent endianness detected. Please disable standalone mode, and file an issue at https://github.com/boostorg/math");
 
 #ifdef BOOST_NO_STDC_NAMESPACE
   namespace std{ using ::memcpy; }
@@ -243,14 +249,7 @@ template<> struct fp_traits_non_native<double, double_precision>
     }
 
 private:
-
-#if BOOST_MATH_ENDIAN_BIG_BYTE
-    static constexpr int offset_ = 0;
-#elif BOOST_MATH_ENDIAN_LITTLE_BYTE
-    static constexpr int offset_ = 4;
-#else
-    static_assert(sizeof(double_precision) == 0, "Endian type could not be identified");
-#endif
+    static constexpr int offset_ = BOOST_MATH_ENDIAN_BIG_BYTE ? 0 : 4;
 };
 
 //..............................................................................
@@ -261,11 +260,11 @@ template<> struct fp_traits_non_native<double, double_precision>
 {
     typedef ieee_copy_all_bits_tag method;
 
-    static constexpr uint64_t sign     = ((uint64_t)0x80000000u) << 32;
-    static constexpr uint64_t exponent = ((uint64_t)0x7ff00000) << 32;
+    static constexpr uint64_t sign     = static_cast<uint64_t>(0x80000000u) << 32;
+    static constexpr uint64_t exponent = static_cast<uint64_t>(0x7ff00000) << 32;
     static constexpr uint64_t flag     = 0;
     static constexpr uint64_t significand
-        = (((uint64_t)0x000fffff) << 32) + ((uint64_t)0xffffffffu);
+        = (static_cast<uint64_t>(0x000fffff) << 32) + static_cast<uint64_t>(0xffffffffu);
 
     typedef uint64_t bits;
     static void get_bits(double x, uint64_t& a) { std::memcpy(&a, &x, 8); }
@@ -303,14 +302,7 @@ template<> struct fp_traits_non_native<long double, double_precision>
     }
 
 private:
-
-#if BOOST_MATH_ENDIAN_BIG_BYTE
-    static constexpr int offset_ = 0;
-#elif BOOST_MATH_ENDIAN_LITTLE_BYTE
-    static constexpr int offset_ = 4;
-#else
-    static_assert(sizeof(double_precision) == 0, "Endian type could not be identified");
-#endif
+    static constexpr int offset_ = BOOST_MATH_ENDIAN_BIG_BYTE ? 0 : 4;
 };
 
 //..............................................................................
@@ -321,11 +313,11 @@ template<> struct fp_traits_non_native<long double, double_precision>
 {
     typedef ieee_copy_all_bits_tag method;
 
-    static const uint64_t sign     = (uint64_t)0x80000000u << 32;
-    static const uint64_t exponent = (uint64_t)0x7ff00000 << 32;
+    static const uint64_t sign     = static_cast<uint64_t>(0x80000000u) << 32;
+    static const uint64_t exponent = static_cast<uint64_t>(0x7ff00000) << 32;
     static const uint64_t flag     = 0;
     static const uint64_t significand
-        = ((uint64_t)0x000fffff << 32) + (uint64_t)0xffffffffu;
+        = (static_cast<uint64_t>(0x000fffff) << 32) + static_cast<uint64_t>(0xffffffffu);
 
     typedef uint64_t bits;
     static void get_bits(long double x, uint64_t& a) { std::memcpy(&a, &x, 8); }
@@ -417,14 +409,7 @@ struct fp_traits_non_native<long double, extended_double_precision>
     }
 
 private:
-
-#if BOOST_MATH_ENDIAN_BIG_BYTE
-    static constexpr int offset_ = 0;
-#elif BOOST_MATH_ENDIAN_LITTLE_BYTE
-    static constexpr int offset_ = 12;
-#else
-    static_assert(sizeof(extended_double_precision) == 0, "Endian type could not be identified");
-#endif
+    static constexpr int offset_ = BOOST_MATH_ENDIAN_BIG_BYTE ? 0 : 12;
 };
 
 
@@ -498,14 +483,7 @@ struct fp_traits_non_native<long double, extended_double_precision>
     }
 
 private:
-
-#if BOOST_MATH_ENDIAN_BIG_BYTE
-    static constexpr int offset_ = 0;
-#elif BOOST_MATH_ENDIAN_LITTLE_BYTE
-    static constexpr int offset_ = 12;
-#else
-    static_assert(sizeof(extended_double_precision) == 0, "Endian type could not be identified");
-#endif
+    static constexpr int offset_ = BOOST_MATH_ENDIAN_BIG_BYTE ? 0 : 12;
 };
 
 #endif
@@ -515,7 +493,7 @@ private:
 // size_to_precision is a type switch for converting a C++ floating point type
 // to the corresponding precision type.
 
-template<int n, bool fp> struct size_to_precision
+template<size_t n, bool fp> struct size_to_precision
 {
    typedef unknown_precision type;
 };

@@ -30,8 +30,7 @@
 // move/detail
 #include <boost/move/detail/meta_utils.hpp>
 // other
-#include <boost/assert.hpp>
-#include <boost/static_assert.hpp>
+#include <cassert>
 // std
 #include <cstddef>
 
@@ -190,32 +189,36 @@
 #   endif
 
 //    BOOST_MOVE_HAS_TRIVIAL_MOVE_CONSTRUCTOR
-#   if !defined(BOOST_NO_CXX11_RVALUE_REFERENCES) && BOOST_MOVE_HAS_TRAIT(is_constructible) && BOOST_MOVE_HAS_TRAIT(is_trivially_constructible)
+#   if !defined(BOOST_NO_CXX11_RVALUE_REFERENCES) 
+
+#   if BOOST_MOVE_HAS_TRAIT(is_constructible) && BOOST_MOVE_HAS_TRAIT(is_trivially_constructible)
 #     define BOOST_MOVE_HAS_TRIVIAL_MOVE_CONSTRUCTOR(T) (__is_constructible(T, T&&) && __is_trivially_constructible(T, T&&))
 #   elif BOOST_MOVE_HAS_TRAIT(has_trivial_move_constructor)
 #     define BOOST_MOVE_HAS_TRIVIAL_MOVE_CONSTRUCTOR(T) __has_trivial_move_constructor(T)
 #   endif
 
 //    BOOST_MOVE_HAS_TRIVIAL_MOVE_ASSIGN
-#   if !defined(BOOST_NO_CXX11_RVALUE_REFERENCES) && BOOST_MOVE_HAS_TRAIT(is_assignable) && BOOST_MOVE_HAS_TRAIT(is_trivially_assignable)
+#   if BOOST_MOVE_HAS_TRAIT(is_assignable) && BOOST_MOVE_HAS_TRAIT(is_trivially_assignable)
 #     define BOOST_MOVE_HAS_TRIVIAL_MOVE_ASSIGN(T) (__is_assignable(T, T&&) && __is_trivially_assignable(T, T&&))
 #   elif BOOST_MOVE_HAS_TRAIT(has_trivial_move_assign)
 #     define BOOST_MOVE_HAS_TRIVIAL_MOVE_ASSIGN(T) __has_trivial_move_assign(T)
 #   endif
 
 //    BOOST_MOVE_HAS_NOTHROW_MOVE_CONSTRUCTOR
-#   if !defined(BOOST_NO_CXX11_RVALUE_REFERENCES) && BOOST_MOVE_HAS_TRAIT(is_constructible) && BOOST_MOVE_HAS_TRAIT(is_nothrow_constructible)
+#   if BOOST_MOVE_HAS_TRAIT(is_constructible) && BOOST_MOVE_HAS_TRAIT(is_nothrow_constructible)
 #     define BOOST_MOVE_HAS_NOTHROW_MOVE_CONSTRUCTOR(T) (__is_constructible(T, T&&) && __is_nothrow_constructible(T, T&&))
 #   elif BOOST_MOVE_HAS_TRAIT(has_nothrow_move_constructor)
 #     define BOOST_MOVE_HAS_NOTHROW_MOVE_CONSTRUCTOR(T) __has_nothrow_move_constructor(T)
 #   endif
 
 //    BOOST_MOVE_HAS_NOTHROW_MOVE_ASSIGN
-#   if !defined(BOOST_NO_CXX11_RVALUE_REFERENCES) && BOOST_MOVE_HAS_TRAIT(is_assignable) && BOOST_MOVE_HAS_TRAIT(is_nothrow_assignable)
+#   if BOOST_MOVE_HAS_TRAIT(is_assignable) && BOOST_MOVE_HAS_TRAIT(is_nothrow_assignable)
 #     define BOOST_MOVE_HAS_NOTHROW_MOVE_ASSIGN(T) (__is_assignable(T, T&&) && __is_nothrow_assignable(T, T&&))
 #   elif BOOST_MOVE_HAS_TRAIT(has_nothrow_move_assign)
 #     define BOOST_MOVE_HAS_NOTHROW_MOVE_ASSIGN(T) __has_nothrow_move_assign(T)
 #   endif
+
+#   endif   //BOOST_NO_CXX11_RVALUE_REFERENCES
 
 //    BOOST_MOVE_ALIGNMENT_OF
 #   define BOOST_MOVE_ALIGNMENT_OF(T) __alignof(T)
@@ -1102,7 +1105,7 @@ struct alignment_of
 class alignment_dummy;
 typedef void (*function_ptr)();
 typedef int (alignment_dummy::*member_ptr);
-typedef int (alignment_dummy::*member_function_ptr)();
+
 struct alignment_struct
 {  long double dummy[4];  };
 
@@ -1125,7 +1128,6 @@ union max_align
    long double long_double_[4];
    alignment_dummy *unknown_class_ptr_;
    function_ptr function_ptr_;
-   member_function_ptr member_function_ptr_;
    alignment_struct alignment_struct_;
 };
 
@@ -1235,7 +1237,7 @@ struct aligned_next;
 template<std::size_t Len, std::size_t Align, class T>
 struct aligned_next<Len, Align, T, true>
 {
-   BOOST_STATIC_ASSERT((alignment_of<T>::value == Align));
+   BOOST_MOVE_STATIC_ASSERT((alignment_of<T>::value == Align));
    typedef aligned_union<T, Len> type;
 };
 
@@ -1275,13 +1277,13 @@ template<std::size_t Len, std::size_t Align = alignment_of<max_align_t>::value>
 struct aligned_storage
 {
    //Sanity checks for input parameters
-   BOOST_STATIC_ASSERT(Align > 0);
+   BOOST_MOVE_STATIC_ASSERT(Align > 0);
 
    //Sanity checks for output type
    typedef typename aligned_storage_impl<Len ? Len : 1, Align>::type type;
    static const std::size_t value = alignment_of<type>::value;
-   BOOST_STATIC_ASSERT(value >= Align);
-   BOOST_STATIC_ASSERT((value % Align) == 0);
+   BOOST_MOVE_STATIC_ASSERT(value >= Align);
+   BOOST_MOVE_STATIC_ASSERT((value % Align) == 0);
 
    //Just in case someone instantiates aligned_storage
    //instead of aligned_storage::type (typical error).

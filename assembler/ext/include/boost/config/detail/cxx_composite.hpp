@@ -1,4 +1,4 @@
-//  This file was automatically generated on Sat Mar  6 19:55:50 2021
+//  This file was automatically generated on Fri Oct 13 19:09:38 2023
 //  by libs/config/tools/generate.cpp
 //  Copyright John Maddock 2002-21.
 //  Use, modification and distribution are subject to the 
@@ -81,6 +81,7 @@
 #if defined(BOOST_NO_CXX03)\
    || defined(BOOST_NO_CXX11_ADDRESSOF)\
    || defined(BOOST_NO_CXX11_ALIGNAS)\
+   || defined(BOOST_NO_CXX11_ALIGNOF)\
    || defined(BOOST_NO_CXX11_ALLOCATOR)\
    || defined(BOOST_NO_CXX11_AUTO_DECLARATIONS)\
    || defined(BOOST_NO_CXX11_AUTO_MULTIDECLARATIONS)\
@@ -100,7 +101,6 @@
    || defined(BOOST_NO_CXX11_HDR_ARRAY)\
    || defined(BOOST_NO_CXX11_HDR_ATOMIC)\
    || defined(BOOST_NO_CXX11_HDR_CHRONO)\
-   || defined(BOOST_NO_CXX11_HDR_CODECVT)\
    || defined(BOOST_NO_CXX11_HDR_CONDITION_VARIABLE)\
    || defined(BOOST_NO_CXX11_HDR_EXCEPTION)\
    || defined(BOOST_NO_CXX11_HDR_FORWARD_LIST)\
@@ -164,6 +164,7 @@
 #endif
 
 #if defined(BOOST_NO_CXX14)\
+   || defined(BOOST_NO_CXX17_DEDUCTION_GUIDES)\
    || defined(BOOST_NO_CXX17_FOLD_EXPRESSIONS)\
    || defined(BOOST_NO_CXX17_HDR_ANY)\
    || defined(BOOST_NO_CXX17_HDR_CHARCONV)\
@@ -196,7 +197,21 @@
    || defined(BOOST_NO_CXX20_HDR_SOURCE_LOCATION)\
    || defined(BOOST_NO_CXX20_HDR_SPAN)\
    || defined(BOOST_NO_CXX20_HDR_STOP_TOKEN)\
-   || defined(BOOST_NO_CXX20_HDR_SYNCSTREAM)
+   || defined(BOOST_NO_CXX20_HDR_SYNCSTREAM)\
+   || defined(BOOST_NO_CXX20_HDR_VERSION)
 #    define BOOST_NO_CXX20
+#endif
+
+#if defined(BOOST_NO_CXX20)\
+   || defined(BOOST_NO_CXX23_HDR_EXPECTED)\
+   || defined(BOOST_NO_CXX23_HDR_FLAT_MAP)\
+   || defined(BOOST_NO_CXX23_HDR_FLAT_SET)\
+   || defined(BOOST_NO_CXX23_HDR_GENERATOR)\
+   || defined(BOOST_NO_CXX23_HDR_MDSPAN)\
+   || defined(BOOST_NO_CXX23_HDR_PRINT)\
+   || defined(BOOST_NO_CXX23_HDR_SPANSTREAM)\
+   || defined(BOOST_NO_CXX23_HDR_STACKTRACE)\
+   || defined(BOOST_NO_CXX23_HDR_STDFLOAT)
+#    define BOOST_NO_CXX23
 #endif
 

@@ -13,6 +13,17 @@
 
 #include <boost/math/tools/is_standalone.hpp>
 
+// Minimum language standard transition
+#ifdef _MSVC_LANG
+#  if _MSVC_LANG < 201402L
+#    pragma warning("The minimum language standard to use Boost.Math will be C++14 starting in July 2023 (Boost 1.82 release)");
+#  endif
+#else
+#  if __cplusplus < 201402L
+#    warning "The minimum language standard to use Boost.Math will be C++14 starting in July 2023 (Boost 1.82 release)"
+#  endif
+#endif
+
 #ifndef BOOST_MATH_STANDALONE
 #include <boost/config.hpp>
 
@@ -22,7 +33,9 @@
 #define BOOST_MATH_NO_REAL_CONCEPT_TESTS
 #define BOOST_MATH_NO_DISTRIBUTION_CONCEPT_TESTS
 #define BOOST_MATH_NO_LEXICAL_CAST
-#define TEST_STD
+
+// Since Boost.Multiprecision is in active development some tests do not fully cooperate yet.
+#define BOOST_MATH_NO_MP_TESTS
 
 #if (__cplusplus > 201400L || _MSVC_LANG > 201400L)
 #define BOOST_CXX14_CONSTEXPR constexpr
@@ -33,13 +46,20 @@
 
 #if (__cplusplus > 201700L || _MSVC_LANG > 201700L)
 #define BOOST_IF_CONSTEXPR if constexpr
-#if !__has_include(<execution>)
+
+// Clang on mac provides the execution header with none of the functionality. TODO: Check back on this
+// https://en.cppreference.com/w/cpp/compiler_support "Standardization of Parallelism TS"
+#if !__has_include(<execution>) || (defined(__APPLE__) && defined(__clang__))
 #define BOOST_NO_CXX17_HDR_EXECUTION
 #endif
 #else
 #define BOOST_IF_CONSTEXPR if
 #define BOOST_NO_CXX17_IF_CONSTEXPR
 #define BOOST_NO_CXX17_HDR_EXECUTION
+#endif
+
+#if __cpp_lib_gcd_lcm >= 201606L
+#define BOOST_MATH_HAS_CXX17_NUMERIC
 #endif
 
 #define BOOST_JOIN(X, Y) BOOST_DO_JOIN(X, Y)
@@ -68,23 +88,90 @@
 #  define BOOST_NO_CXX11_THREAD_LOCAL
 #endif // BOOST_DISABLE_THREADS
 
+#ifdef __GNUC__
+#  if !defined(__EXCEPTIONS) && !defined(BOOST_NO_EXCEPTIONS)
+#     define BOOST_NO_EXCEPTIONS
+#  endif
+   //
+   // Make sure we have some std lib headers included so we can detect __GXX_RTTI:
+   //
+#  include <algorithm>  // for min and max
+#  include <limits>
+#  ifndef __GXX_RTTI
+#     ifndef BOOST_NO_TYPEID
+#        define BOOST_NO_TYPEID
+#     endif
+#     ifndef BOOST_NO_RTTI
+#        define BOOST_NO_RTTI
+#     endif
+#  endif
+#endif
+
+#if !defined(BOOST_NOINLINE)
+#  if defined(_MSC_VER)
+#    define BOOST_NOINLINE __declspec(noinline)
+#  elif defined(__GNUC__) && __GNUC__ > 3
+     // Clang also defines __GNUC__ (as 4)
+#    if defined(__CUDACC__)
+       // nvcc doesn't always parse __noinline__,
+       // see: https://svn.boost.org/trac/boost/ticket/9392
+#      define BOOST_NOINLINE __attribute__ ((noinline))
+#    elif defined(__HIP__)
+       // See https://github.com/boostorg/config/issues/392
+#      define BOOST_NOINLINE __attribute__ ((noinline))
+#    else
+#      define BOOST_NOINLINE __attribute__ ((__noinline__))
+#    endif
+#  else
+#    define BOOST_NOINLINE
+#  endif
+#endif
+
+#if !defined(BOOST_FORCEINLINE)
+#  if defined(_MSC_VER)
+#    define BOOST_FORCEINLINE __forceinline
+#  elif defined(__GNUC__) && __GNUC__ > 3
+     // Clang also defines __GNUC__ (as 4)
+#    define BOOST_FORCEINLINE inline __attribute__ ((__always_inline__))
+#  else
+#    define BOOST_FORCEINLINE inline
+#  endif
+#endif
+
 #endif // BOOST_MATH_STANDALONE
+
+// Support compilers with P0024R2 implemented without linking TBB
+// https://en.cppreference.com/w/cpp/compiler_support
+#if !defined(BOOST_NO_CXX17_HDR_EXECUTION) && defined(BOOST_HAS_THREADS)
+#  define BOOST_MATH_EXEC_COMPATIBLE
+#endif
+
+// C++23
+#if __cplusplus > 202002L || _MSVC_LANG > 202002L
+#  if __GNUC__ >= 13
+     // libstdc++3 only defines to/from_chars for std::float128_t when one of these defines are set
+     // otherwise we're right out of luck...
+#    if defined(_GLIBCXX_LDOUBLE_IS_IEEE_BINARY128) || defined(_GLIBCXX_HAVE_FLOAT128_MATH)
+#      include <cstring> // std::strlen is used with from_chars
+#      include <charconv>
+#      include <stdfloat>
+#      define BOOST_MATH_USE_CHARCONV_FOR_CONVERSION
+#    endif
+#  endif
+#endif
 
 #include <algorithm>  // for min and max
 #include <limits>
 #include <cmath>
 #include <climits>
 #include <cfloat>
-#if (defined(macintosh) || defined(__APPLE__) || defined(__APPLE_CC__))
-#  include <math.h>
-#endif
 
 #include <boost/math/tools/user.hpp>
 
-#if (defined(__CYGWIN__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__EMSCRIPTEN__)\
+#if (defined(__NetBSD__) || defined(__EMSCRIPTEN__)\
    || (defined(__hppa) && !defined(__OpenBSD__)) || (defined(__NO_LONG_DOUBLE_MATH) && (DBL_MANT_DIG != LDBL_MANT_DIG))) \
    && !defined(BOOST_MATH_NO_LONG_DOUBLE_MATH_FUNCTIONS)
-#  define BOOST_MATH_NO_LONG_DOUBLE_MATH_FUNCTIONS
+//#  define BOOST_MATH_NO_LONG_DOUBLE_MATH_FUNCTIONS
 #endif
 
 #ifdef __IBMCPP__
