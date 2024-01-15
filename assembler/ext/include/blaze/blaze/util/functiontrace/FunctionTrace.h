@@ -40,6 +40,14 @@
 // Includes
 //*************************************************************************************************
 
+#include <iostream>
+#include <new>
+#include <sstream>
+#include <string>
+#include <blaze/system/Debugging.h>
+#include <blaze/system/Signature.h>
+#include <blaze/system/SMP.h>
+
 #if BLAZE_HPX_PARALLEL_MODE
 #  include <hpx/include/threads.hpp>
 #elif BLAZE_CPP_THREADS_PARALLEL_MODE
@@ -49,15 +57,6 @@
 #elif BLAZE_OPENMP_PARALLEL_MODE
 #  include <omp.h>
 #endif
-
-#include <iostream>
-#include <new>
-#include <sstream>
-#include <string>
-#include <blaze/system/Debugging.h>
-#include <blaze/system/Signature.h>
-#include <blaze/system/SMP.h>
-
 
 namespace blaze {
 
@@ -178,14 +177,14 @@ inline FunctionTrace::~FunctionTrace()
    std::ostringstream oss;
    oss << " - ";
 
-#if BLAZE_OPENMP_PARALLEL_MODE
-   oss << "[Thread " << omp_get_thread_num() << "]";
+#if BLAZE_HPX_PARALLEL_MODE
+   oss << "[Thread " << hpx::this_thread::get_id() << "]";
 #elif BLAZE_CPP_THREADS_PARALLEL_MODE
    oss << "[Thread " << std::this_thread::get_id() << "]";
 #elif BLAZE_BOOST_THREADS_PARALLEL_MODE
    oss << "[Thread " << boost::this_thread::get_id() << "]";
-#elif BLAZE_HPX_PARALLEL_MODE
-   oss << "[Thread " << hpx::this_thread::get_id() << "]";
+#elif BLAZE_OPENMP_PARALLEL_MODE
+   oss << "[Thread " << omp_get_thread_num() << "]";
 #endif
 
    oss << " Leaving function '" << function_ << "' in file '" << file_ << "'\n";
