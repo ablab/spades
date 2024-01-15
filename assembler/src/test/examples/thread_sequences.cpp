@@ -13,7 +13,7 @@
 #include "toolchain/utils.hpp"
 #include "utils/segfault_handler.hpp"
 
-#include <cxxopts/cxxopts.hpp>
+#include <clipp/clipp.h>
 
 using namespace std;
 
@@ -74,25 +74,28 @@ int main(int argc, char** argv) {
     srand(42);
     srandom(42);
 
+    using namespace clipp;
+
     try {
-        unsigned k;
-        std::filesystem::path workdir, graph_path, sequences_fn, path_out_fn, edge_out_fn;
+        unsigned k = 55;
+        std::filesystem::path graph_path, sequences_fn, path_out_fn, edge_out_fn;
+        std::string graph, sequences, path_out, edge_out, workdir = "tmp";
+        
+        auto cli = (
+            required("-k", "--kmer") & value("k", k) % "K-mer length",
+            required("-g", "--graph") & value("graph", graph) % "GFA file or folder with SPAdes saves",
+            required("-q" "--queries") & value("file", sequences) % "Query sequences",
+            required("-p", "--path_out_file") & value("paths", path_out) % "File to store path output",
+            required("-e", "--edge_out_file") & value("edges", edge_out) % "File to store edge output",
+            option("-w", "--workdir") & value("workdir", workdir) % "Wording directory (default: ./tmp)"
+        );
 
-        cxxopts::Options options(argv[0], " thread sequences through the graph");
-        options.add_options()
-                ("k,kmer", "K-mer length", cxxopts::value<unsigned>(k)->default_value("55"), "K")
-                ("g,graph", "GFA file or folder with SPAdes saves", cxxopts::value<std::filesystem::path>(graph_path))
-                ("q,queries", "Query sequences", cxxopts::value<std::filesystem::path>(sequences_fn), "file")
-                ("p,path_out_file", "File to store path output", cxxopts::value<std::filesystem::path>(path_out_fn))
-                ("e,edge_out_file", "File to store edge output", cxxopts::value<std::filesystem::path>(edge_out_fn))
-                ("w,workdir", "Working directory (default: ./tmp)", cxxopts::value<std::filesystem::path>(workdir)->default_value("./tmp"), "dir")
-                ("h,help", "Print help");
-
-        options.parse(argc, argv);
-        if (options.count("help")) {
-            std::cout << options.help() << std::endl;
-            exit(0);
+        if (!parse(argc, argv, cli)) {
+            std::cout << make_man_page(cli, argv[0]);
+            exit(1);
         }
+        
+        graph_path = graph; path_out_fn = path_out; edge_out_fn = edge_out;
 
         toolchain::create_console_logger();
 
@@ -104,8 +107,7 @@ int main(int argc, char** argv) {
     } catch (const std::string &s) {
         std::cerr << s;
         return EINTR;
-    } catch (const cxxopts::OptionException &e) {
-        std::cerr << "error parsing options: " << e.what() << std::endl;
-        exit(1);
     }
+
+    return 0;
 }
