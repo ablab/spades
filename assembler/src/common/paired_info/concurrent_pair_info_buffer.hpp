@@ -14,6 +14,9 @@
 #include <btree/btree_map.h>
 #include <cuckoo/cuckoohash_map.hh>
 
+#define XXH_INLINE_ALL
+#include "xxh/xxhash.h"
+
 namespace omnigraph {
 
 namespace de {
@@ -38,8 +41,15 @@ class ConcurrentPairedBuffer : public PairedBufferBase<ConcurrentPairedBuffer<G,
     using typename base::EdgePair;
     using typename base::Point;
 
+    struct EdgeIdHasher {
+        size_t operator()(EdgeId e) const {
+            uint64_t h1 = e.hash();
+            return XXH3_64bits(&h1, sizeof(h1));
+        }
+    };
+
     typedef Container<EdgeId, InnerHistPtr> InnerMap;
-    typedef cuckoohash_map<EdgeId, InnerMap> StorageMap;
+    typedef libcuckoo::cuckoohash_map<EdgeId, InnerMap, EdgeIdHasher> StorageMap;
 
   public:
     ConcurrentPairedBuffer(const Graph &g)

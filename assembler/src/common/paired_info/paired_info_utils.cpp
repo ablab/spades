@@ -27,9 +27,10 @@ using EdgePairCounter = hll::hll_with_hasher<std::pair<EdgeId, EdgeId>>;
 
 class EdgePairCounterFiller : public SequenceMapperListener {
     static uint64_t EdgePairHash(const std::pair<EdgeId, EdgeId> &e) {
-        uint64_t h1 = e.first.hash();
-
-        return XXH3_64bits_withSeed(&h1, sizeof(h1), e.second.hash());
+        // Note that EdgeId::hash is essentially an identity function, so we'd need to
+        // combine them properly
+        std::array<uint64_t, 2> hashes = { e.first.hash(), e.second.hash() };
+        return XXH3_64bits(hashes.data(), sizeof(hashes));
     }
 
   public:
@@ -205,8 +206,10 @@ std::unique_ptr<PairedInfoFilter> FillEdgePairFilter(const Graph &graph,
                                                      size_t edgepairs) {
     auto filter = std::make_unique<paired_info::PairedInfoFilter>(
         [](const std::pair<EdgeId, EdgeId> &e, uint64_t seed) {
-            uint64_t h1 = e.first.hash();
-            return XXH3_64bits_withSeed(&h1, sizeof(h1), (e.second.hash() * seed) ^ seed);
+            // Note that EdgeId::hash is essentially an identity function, so we'd need to
+            // combine them properly
+            std::array<uint64_t, 2> hashes = { e.first.hash(), e.second.hash() };
+            return XXH3_64bits_withSeed(hashes.data(), sizeof(hashes), seed);
         },
         12 * edgepairs);
 
