@@ -113,10 +113,10 @@ class LongReadsAligner {
         while (!read_stream.eof()) {
             std::vector<io::SingleRead> read_buffer;
             read_buffer.reserve(read_buffer_size);
-            io::SingleRead read;
             for (size_t buf_size = 0; buf_size < read_buffer_size && !read_stream.eof(); ++buf_size) {
+                io::SingleRead read;                
                 read_stream >> read;
-                read_buffer.push_back(move(read));
+                read_buffer.emplace_back(std::move(read));
             }
             INFO("Prepared batch " << buffer_no << " of " << read_buffer.size() << " reads.");
             AlignBatch(read_buffer);
