@@ -99,48 +99,101 @@ std::string join(const Container &c,
 }
 
 template<typename Out>
-void split(const std::string &s, char delim, Out result) {
-    std::istringstream iss(s);
-    std::string item;
-    while (std::getline(iss, item, delim)) {
-        *result++ = item;
+void split(const std::string_view s, const std::string_view delims, Out result,
+           bool compress = false) {
+    size_t last_pos = 0;
+    for (size_t i = 0; i < s.size(); ++i) {
+        if (delims.find(s[i]) == delims.npos)
+            continue;
+        auto item = s.substr(last_pos, i - last_pos);
+        if (!compress || item.size() > 0)
+            *result++ = item;
+        last_pos = i + 1;
+    }
+
+    if (last_pos != s.size()) {
+        auto item = s.substr(last_pos);
+        if (!compress || item.size() > 0)
+            *result++ = item;
     }
 }
 
-template<typename Out, class F>
-void split(const std::string &s, char delim,
-           Out result, F f) {
-    std::istringstream iss(s);
+template<typename Out, class Mapper>
+void split(const std::string_view s, const std::string_view delims,
+           Out result, Mapper f) {
     std::string item;
-    while (std::getline(iss, item, delim)) {
-        *result++ = f(item);
+    size_t last_pos = 0;
+    for (size_t i = 0; i < s.size(); ++i) {
+        if (delims.find(s[i]) == delims.npos)
+            continue;
+        *result++ = f(s.substr(last_pos, i - last_pos));
+        last_pos = i + 1;
+    }
+
+    if (last_pos != s.size()) {
+        *result++ = f(s.substr(last_pos));
     }
 }
 
-static inline std::vector<std::string> split(const std::string &s, char delim) {
-    std::vector<std::string> elems;
-    split(s, delim, std::back_inserter(elems));
+static inline std::vector<std::string_view>
+split(const std::string &s, const std::string_view delim,
+      bool compress = false) {
+    std::vector<std::string_view> elems;
+    split(s, delim, std::back_inserter(elems), compress);
     return elems;
 }
 
-static inline bool starts_with(const std::string &s, const std::string &p) {
+static inline bool starts_with(const std::string_view s, const std::string_view p) {
     if (s.size() < p.size())
         return false;
 
     return (s.compare(0, p.size(), p) == 0);
 }
 
-static inline bool ends_with(const std::string &s, const std::string &p) {
+static inline bool ends_with(const std::string_view s, const std::string_view p) {
     if (s.size() < p.size())
         return false;
 
     return (s.compare(s.size() - p.size(), p.size(), p) == 0);
 }
 
-static inline std::string str_tolower(std::string s) {
-    std::transform(s.begin(), s.end(), s.begin(), 
+static inline std::string str_tolower(std::string_view s) {
+    std::string result(s);
+
+    std::transform(s.begin(), s.end(), result.begin(),
                    [](unsigned char c){ return std::tolower(c); });
-    return s;
+    return result;
+}
+
+static inline std::string str_toupper(std::string_view s) {
+    std::string result(s);
+
+    std::transform(s.begin(), s.end(), result.begin(),
+                   [](unsigned char c){ return std::toupper(c); });
+    return result;
+}
+
+// trim from start (in place)
+static inline void ltrim(std::string &s) {
+    s.erase(s.begin(),
+            std::find_if(s.begin(), s.end(),
+                         [](unsigned char ch) {
+                             return !std::isspace(ch);
+                         }));
+}
+
+// trim from end (in place)
+static inline void rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(),
+                         [](unsigned char ch) {
+                             return !std::isspace(ch);
+                         }).base(), s.end());
+}
+
+// trim from both ends (in place)
+static inline void trim(std::string &s) {
+    rtrim(s);
+    ltrim(s);
 }
 
 }
@@ -191,4 +244,3 @@ std::ostream &operator<<(std::ostream &os, const std::map<K, V> &map) {
 }
 
 }
-

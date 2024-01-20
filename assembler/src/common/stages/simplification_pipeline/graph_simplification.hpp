@@ -29,8 +29,6 @@
 
 #include "utils/perf/timetracer.hpp"
 
-#include <boost/algorithm/string.hpp>
-
 namespace debruijn {
 
 namespace simplification {
@@ -190,7 +188,7 @@ private:
             DEBUG("Creating max mismatches cond " << next_token_);
             return MismatchTipCondition<Graph>(g_, std::stod(next_token_));
         } else {
-            VERIFY(false);
+            FATAL_ERROR("Invalid token: " << next_token_);
             return func::AlwaysTrue<EdgeId>();
         }
     }
@@ -222,10 +220,10 @@ public:
               max_coverage_bound_(0.),
               requested_iterations_(1) {
         DEBUG("Creating parser for string " << input);
-        std::vector<std::string> tmp_tokenized_input;
-        boost::split(tmp_tokenized_input, input_, boost::is_any_of(" ,;"), boost::token_compress_on);
-        for (const auto &s : tmp_tokenized_input) {
-            tokenized_input_.push(s);
+        auto tokenized_input = utils::split(input_, " ,;", true);
+        for (const auto &s : tokenized_input) {
+            DEBUG("Token: " << s);
+            tokenized_input_.push(std::string(s));
         }
         ReadNext();
     }

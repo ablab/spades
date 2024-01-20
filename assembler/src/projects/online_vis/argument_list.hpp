@@ -11,8 +11,6 @@
 #include "history.hpp"
 #include "errors.hpp"
 
-#include <boost/tokenizer.hpp>
-
 namespace online_visualization {
 
   class ArgumentList {
@@ -145,11 +143,10 @@ namespace online_visualization {
         while (!args.eof()) {
           string arg;
           args >> arg;
-          boost::char_separator<char> sep (" ,;");
-          boost::tokenizer<boost::char_separator<char>> tokens(arg, sep);
-          for (auto I = tokens.begin(); I != tokens.end(); ++I) {
-            TRACE("Found argument " << *I);
-            answer.push_back(*I);
+          auto res = utils::split(arg, " ,;");
+          for (auto token : res) {
+              TRACE("Found argument " << token);
+              answer.emplace_back(token);
           }
         }
         return answer;

@@ -16,8 +16,6 @@
 #include "sequence/aa.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 
-#include <boost/algorithm/string.hpp>
-
 extern "C" {
     #include "easel.h"
     #include "esl_sqio.h"
@@ -165,8 +163,7 @@ ContigAlnInfo DomainMatcher::MatchDomains(graph_pack::GraphPack &gp,
     ContigAlnInfo res;
     hmmer::hmmer_cfg hcfg;
     hcfg.cut_ga = true;
-    std::vector<std::string> hmm_files;
-    boost::split(hmm_files, hmm_set, boost::is_any_of(",;"), boost::token_compress_on);
+    auto hmm_files = utils::split(hmm_set, ",;", true);
     path_extend::ScaffoldSequenceMaker scaffold_maker(gp.get<debruijn_graph::Graph>());
     path_extend::PathContainer broken_scaffolds;
     path_extend::ScaffoldBreaker(int(gp.k())).Break(gp.get<path_extend::PathContainer>("exSPAnder paths"), broken_scaffolds);

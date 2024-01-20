@@ -29,8 +29,6 @@
 #include "visualization/position_filler.hpp"
 #include "visualization/visualization.hpp"
 
-#include <boost/algorithm/string.hpp>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <cmath>
@@ -406,20 +404,18 @@ struct detail_info_printer {
         if (!config.components_for_genome_pos.empty()) {
             std::filesystem::path pos_loc_folder = pics_folder / "pos_loc";
             create_directory(pos_loc_folder);
-            std::vector<std::string> positions;
-            boost::split(positions, config.components_for_genome_pos,
-                         boost::is_any_of(" ,"), boost::token_compress_on);
+            auto positions = utils::split(config.components_for_genome_pos, " ,", true);
             const auto &genome = gp_.get<GenomeStorage>();
-            for (auto it = positions.begin(); it != positions.end(); ++it) {
-                auto close_kp1mer = FindCloseKP1mer(gp_, std::stoi(*it), gp_.k());
+            for (const auto pos : positions) {
+                auto close_kp1mer = FindCloseKP1mer(gp_, std::stoi(std::string(pos)), gp_.k());
                 if (close_kp1mer) {
-                    std::filesystem::path locality_folder = pos_loc_folder / *it;
+                    std::filesystem::path locality_folder = pos_loc_folder / pos;
                     create_directory(locality_folder);
                     WriteKmerComponent(gp_, *close_kp1mer, locality_folder / (pos_name + ".dot"), colorer, labeler_);
                 } else {
                     WARN("Failed to find genome kp1mer close to the one at position "
-                        << *it << " in the graph. Which is "
-                        << RtSeq (gp_.k() + 1, genome.GetSequence(), std::stoi(*it)));
+                         << pos << " in the graph. Which is "
+                         << RtSeq (gp_.k() + 1, genome.GetSequence(), std::stoi(std::string(pos))));
                 }
             }
         }

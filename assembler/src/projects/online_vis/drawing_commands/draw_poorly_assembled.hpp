@@ -16,9 +16,6 @@
 #include "io/reads/wrapper_collection.hpp"
 #include "pipeline/sequence_mapper_gp_api.hpp"
 
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-
 namespace online_visualization {
 
 //class RepeatProcessor {
@@ -180,7 +177,7 @@ private:
     vector<EdgePosition> GatherPositions(const graph_pack::GraphPack& gp, EdgeId e, const string& prefix) const {
         vector<EdgePosition> answer;
         for (EdgePosition pos : gp.get<EdgePos>().GetEdgePositions(e)) {
-            if (boost::starts_with(pos.contigId, prefix)) {
+            if (utils::starts_with(pos.contigId, prefix)) {
                 answer.push_back(pos);
             }
         }
@@ -541,7 +538,7 @@ private:
         for (EdgeId e : mapping_path.simple_path()) {
             auto positions = pos_handler.GetEdgePositions(e);
             for (EdgePosition pos : positions) {
-                if (boost::starts_with(pos.contigId, base_assembly_prefix)) {
+                if (utils::starts_with(pos.contigId, base_assembly_prefix)) {
                     base_ctg_2_len[pos.contigId] += pos.mr.mapped_range.size();
                 }
             }

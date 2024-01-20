@@ -13,8 +13,6 @@
 #include "io/reads/file_reader.hpp"
 #include "io/reads/single_read.hpp"
 
-#include <boost/algorithm/string.hpp>
-
 using namespace std;
 
 namespace corrector {
@@ -298,8 +296,8 @@ size_t ContigProcessor::ProcessMultipleSamFiles() {
     for (size_t i = 0; i < contig_.length(); i++) {
         total_changes += UpdateOneBase(i, s_new_contig, interesting_positions);
     }
-    vector<string> contig_name_splitted;
-    boost::split(contig_name_splitted, contig_name_, boost::is_any_of("_"));
+    auto res = utils::split( contig_name_, "_");
+    std::vector<std::string> contig_name_splitted(res.begin(), res.end());
     io::OFastaReadStream oss(output_contig_file_);
     for (size_t i = 0; i < contig_name_splitted.size(); i++) {
         if (contig_name_splitted[i] == "length" && i + 1 < contig_name_splitted.size()) {
@@ -307,9 +305,10 @@ size_t ContigProcessor::ProcessMultipleSamFiles() {
             break;
         }
     }
-    std::string new_header = contig_name_splitted[0];
+    std::string new_header(contig_name_splitted[0]);
     for (size_t i = 1; i < contig_name_splitted.size(); i++) {
-        new_header += "_" + contig_name_splitted[i];
+        new_header += "_";
+        new_header += contig_name_splitted[i];
     }
     oss << io::SingleRead(new_header, s_new_contig.str());
 

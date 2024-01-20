@@ -183,7 +183,7 @@ int main(int argc, char* argv[]) {
         std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
         std::unique_ptr<gfa::GFAReader> gfa;
         INFO("Loading de Bruijn graph from " << cfg.graph);
-        if (utils::ends_with(cfg.graph, ".gfa")) {
+        if (utils::ends_with(cfg.graph.string(), ".gfa")) {
             gfa.reset(new gfa::GFAReader(cfg.graph));
             INFO("GFA segments: " << gfa->num_edges() << ", links: " << gfa->num_links() << ", paths: " << gfa->num_paths());
             INFO("Detected k:" << gfa->k());

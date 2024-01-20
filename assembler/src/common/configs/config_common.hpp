@@ -7,9 +7,6 @@
 
 #pragma once
 
-#include "utils/stl_utils.hpp"
-#include "utils/verify.hpp"
-
 #include <boost/property_tree/info_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <cppformat/format.h>
@@ -17,7 +14,6 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <map>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -25,8 +21,8 @@
 namespace config_common {
 
 template<class T>
-typename boost::enable_if_c<std::is_convertible<T, std::string>::value ||
-                            boost::is_arithmetic<T>::value>::type
+typename std::enable_if<std::is_convertible_v<T, std::string> ||
+                        std::is_arithmetic_v<T>>::type
 load(T &value,
      boost::property_tree::ptree const &pt, std::string const &key,
      bool complete) {
@@ -35,8 +31,8 @@ load(T &value,
 }
 
 template<class T>
-typename boost::enable_if_c<std::is_convertible<T, std::string>::value ||
-                            boost::is_arithmetic<T>::value>::type
+typename std::enable_if<std::is_convertible_v<T, std::string> ||
+                        std::is_arithmetic_v<T>>::type
 load(std::optional<T> &value,
      boost::property_tree::ptree const &pt, std::string const &key,
      bool complete) {
@@ -45,8 +41,8 @@ load(std::optional<T> &value,
 }
 
 template<class T>
-typename boost::disable_if_c<std::is_convertible<T, std::string>::value ||
-                             boost::is_arithmetic<T>::value>::type
+typename std::enable_if<!std::is_convertible_v<T, std::string> &&
+                        !std::is_arithmetic_v<T>>::type
 load(T &value,
      boost::property_tree::ptree const &pt, std::string const &key,
      bool complete) {
@@ -55,8 +51,8 @@ load(T &value,
 }
 
 template<class T>
-typename boost::disable_if_c<std::is_convertible<T, std::string>::value ||
-                             boost::is_arithmetic<T>::value>::type
+typename std::enable_if<!std::is_convertible_v<T, std::string> &&
+                        !std::is_arithmetic_v<T>>::type
 load(std::optional<T> &value,
      boost::property_tree::ptree const &pt, std::string const &key,
      bool complete) {

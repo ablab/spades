@@ -5,7 +5,6 @@
 //***************************************************************************
 
 #include "assembly_graph/paths/bidirectional_path.hpp"
-#include <boost/algorithm/string.hpp>
 #include <vector>
 #include <string>
 
@@ -15,10 +14,11 @@ std::atomic<uint64_t> BidirectionalPath::path_id_{0};
 
 std::vector<std::string> BidirectionalPath::PrintLines() const {
     auto as_str = str();
-    boost::trim(as_str);
-    std::vector<std::string> result;
-    boost::split(result, as_str, boost::is_any_of("\n"), boost::token_compress_on);
-    return result;
+    utils::trim(as_str);
+    
+    auto res = utils::split(as_str, "\n", true);
+
+    return { res.begin(), res.end() };
 }
 
 void BidirectionalPath::PrintDEBUG() const {

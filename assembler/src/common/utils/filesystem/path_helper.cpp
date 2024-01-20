@@ -10,8 +10,6 @@
 #include "utils/logger/logger.hpp"
 #include "utils/verify.hpp"
 
-#include <boost/algorithm/string.hpp>
-
 #include <sys/stat.h>
 #include <sys/types.h>
 

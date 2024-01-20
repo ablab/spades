@@ -10,8 +10,8 @@
 #include "utils/memory_limit.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/perf/memory.hpp"
+#include "utils/stl_utils.hpp"
 
-#include <boost/algorithm/string.hpp>
 #include <cppformat/format.h>
 
 #include <fstream>
@@ -44,26 +44,23 @@ properties::properties(std::filesystem::path filename, level default_level)
     };
 
     while (!in.eof()) {
-        using namespace boost;
-
         char buf [0x400] = {};
         in.getline(buf, sizeof buf);
 
         std::string str(buf);
-        trim(str);
+        utils::trim(str);
 
-        if (str.empty() || boost::starts_with(str, "#"))
+        if (str.empty() || utils::starts_with(str, "#"))
             continue;
 
-        std::vector<std::string> entry;
-        split(entry, str, is_any_of("="));
-
-        if (entry.size() != 2)
+        auto res = utils::split(str, "=");
+        if (res.size() != 2)
             throw std::runtime_error("invalid log file property entry: " + str);
 
-        trim    (entry[0]);
-        trim    (entry[1]);
-        to_upper(entry[1]);
+        std::vector<std::string> entry(res.begin(), res.end());
+        utils::trim(entry[0]);
+        utils::trim(entry[1]);
+        entry[1] = utils::str_toupper(entry[1]);
 
         auto it = remap.find(entry[1]);
         if (it == remap.end())

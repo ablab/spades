@@ -15,8 +15,6 @@
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/filesystem/path_helper.hpp"
 
-#include <boost/algorithm/string.hpp>
-
 #include <iostream>
 #include <unistd.h>
 
@@ -56,12 +54,11 @@ void DatasetProcessor::SplitGenome(const filesystem::path &genome_splitted_dir) 
 
 //contigs - set of aligned contig names
 void DatasetProcessor::GetAlignedContigs(const string &read, set<string> &contigs) const {
-    vector<string> arr;
-    boost::split(arr, read, boost::is_any_of("\t"));
+    auto arr = utils::split(read, "\t");
     if (arr.size() > 5) {
-        if (arr[2] != "*" && stoi(arr[4]) > 0) {
+        if (arr[2] != "*" && stoi(std::string(arr[4])) > 0) {
 // here can be multuple aligned parsing if neeeded;
-            contigs.insert(arr[2]);
+            contigs.insert(std::string(arr[2]));
         }
     }
 

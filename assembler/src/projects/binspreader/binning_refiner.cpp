@@ -232,12 +232,12 @@ int main(int argc, char** argv) {
                           std::getline(pathfile_reader, segment, '\n');
                           DEBUG("Processing segment: " << segment);
                           std::vector<EdgeId> edges;
-                          utils::split(segment, ',', std::back_inserter(edges),
-                                       [&graph, &numeric, &id_mapper](const std::string &edgestr) {
+                          utils::split(segment, ",", std::back_inserter(edges),
+                                       [&graph, &numeric, &id_mapper](const std::string_view edgestr) {
                                            std::size_t idx = edgestr.find_first_not_of(numeric);
                                            VERIFY(idx != std::string::npos);
 
-                                           EdgeId e = (*id_mapper)[edgestr.substr(0, idx)];
+                                           EdgeId e = (*id_mapper)[std::string(edgestr.substr(0, idx))];
                                            if (edgestr[idx] == '-')
                                                e = graph.conjugate(e);
                                            else {
