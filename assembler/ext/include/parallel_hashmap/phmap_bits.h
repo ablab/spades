@@ -50,6 +50,11 @@
 #include <cstdint>
 #include "phmap_config.h"
 
+#ifdef _MSC_VER
+    #pragma warning(push)  
+    #pragma warning(disable : 4514) // unreferenced inline function has been removed
+#endif
+
 // -----------------------------------------------------------------------------
 // unaligned APIs
 // -----------------------------------------------------------------------------
@@ -152,166 +157,6 @@ inline void UnalignedStore64(void *p, uint64_t v) { memcpy(p, &v, sizeof v); }
 #endif
 
 // -----------------------------------------------------------------------------
-// File: bits.h
-// -----------------------------------------------------------------------------
-
-#if defined(_MSC_VER)
-    // We can achieve something similar to attribute((always_inline)) with MSVC by
-    // using the __forceinline keyword, however this is not perfect. MSVC is
-    // much less aggressive about inlining, and even with the __forceinline keyword.
-    #define PHMAP_BASE_INTERNAL_FORCEINLINE __forceinline
-#else
-    // Use default attribute inline.
-    #define PHMAP_BASE_INTERNAL_FORCEINLINE inline PHMAP_ATTRIBUTE_ALWAYS_INLINE
-#endif
-
-
-namespace phmap {
-namespace base_internal {
-
-PHMAP_BASE_INTERNAL_FORCEINLINE int CountLeadingZeros64Slow(uint64_t n) {
-    int zeroes = 60;
-    if (n >> 32) zeroes -= 32, n >>= 32;
-    if (n >> 16) zeroes -= 16, n >>= 16;
-    if (n >> 8) zeroes -= 8, n >>= 8;
-    if (n >> 4) zeroes -= 4, n >>= 4;
-    return "\4\3\2\2\1\1\1\1\0\0\0\0\0\0\0"[n] + zeroes;
-}
-
-PHMAP_BASE_INTERNAL_FORCEINLINE int CountLeadingZeros64(uint64_t n) {
-#if defined(_MSC_VER) && defined(_M_X64)
-    // MSVC does not have __buitin_clzll. Use _BitScanReverse64.
-    unsigned long result = 0;  // NOLINT(runtime/int)
-    if (_BitScanReverse64(&result, n)) {
-        return 63 - result;
-    }
-    return 64;
-#elif defined(_MSC_VER)
-    // MSVC does not have __buitin_clzll. Compose two calls to _BitScanReverse
-    unsigned long result = 0;  // NOLINT(runtime/int)
-    if ((n >> 32) && _BitScanReverse(&result, (unsigned long)(n >> 32))) {
-        return 31 - result;
-    }
-    if (_BitScanReverse(&result, (unsigned long)n)) {
-        return 63 - result;
-    }
-    return 64;
-#elif defined(__GNUC__)
-    // Use __builtin_clzll, which uses the following instructions:
-    //  x86: bsr
-    //  ARM64: clz
-    //  PPC: cntlzd
-    static_assert(sizeof(unsigned long long) == sizeof(n),  // NOLINT(runtime/int)
-                  "__builtin_clzll does not take 64-bit arg");
-
-    // Handle 0 as a special case because __builtin_clzll(0) is undefined.
-    if (n == 0) {
-        return 64;
-    }
-    return __builtin_clzll(n);
-#else
-    return CountLeadingZeros64Slow(n);
-#endif
-}
-
-PHMAP_BASE_INTERNAL_FORCEINLINE int CountLeadingZeros32Slow(uint64_t n) {
-    int zeroes = 28;
-    if (n >> 16) zeroes -= 16, n >>= 16;
-    if (n >> 8) zeroes -= 8, n >>= 8;
-    if (n >> 4) zeroes -= 4, n >>= 4;
-    return "\4\3\2\2\1\1\1\1\0\0\0\0\0\0\0"[n] + zeroes;
-}
-
-PHMAP_BASE_INTERNAL_FORCEINLINE int CountLeadingZeros32(uint32_t n) {
-#if defined(_MSC_VER)
-    unsigned long result = 0;  // NOLINT(runtime/int)
-    if (_BitScanReverse(&result, n)) {
-        return 31 - result;
-    }
-    return 32;
-#elif defined(__GNUC__)
-    // Use __builtin_clz, which uses the following instructions:
-    //  x86: bsr
-    //  ARM64: clz
-    //  PPC: cntlzd
-    static_assert(sizeof(int) == sizeof(n),
-                  "__builtin_clz does not take 32-bit arg");
-
-    // Handle 0 as a special case because __builtin_clz(0) is undefined.
-    if (n == 0) {
-        return 32;
-    }
-    return __builtin_clz(n);
-#else
-    return CountLeadingZeros32Slow(n);
-#endif
-}
-
-PHMAP_BASE_INTERNAL_FORCEINLINE int CountTrailingZerosNonZero64Slow(uint64_t n) {
-    int c = 63;
-    n &= ~n + 1;
-    if (n & 0x00000000FFFFFFFF) c -= 32;
-    if (n & 0x0000FFFF0000FFFF) c -= 16;
-    if (n & 0x00FF00FF00FF00FF) c -= 8;
-    if (n & 0x0F0F0F0F0F0F0F0F) c -= 4;
-    if (n & 0x3333333333333333) c -= 2;
-    if (n & 0x5555555555555555) c -= 1;
-    return c;
-}
-
-PHMAP_BASE_INTERNAL_FORCEINLINE int CountTrailingZerosNonZero64(uint64_t n) {
-#if defined(_MSC_VER) && defined(_M_X64)
-    unsigned long result = 0;  // NOLINT(runtime/int)
-    _BitScanForward64(&result, n);
-    return result;
-#elif defined(_MSC_VER)
-    unsigned long result = 0;  // NOLINT(runtime/int)
-    if (static_cast<uint32_t>(n) == 0) {
-        _BitScanForward(&result, (unsigned long)(n >> 32));
-        return result + 32;
-    }
-    _BitScanForward(&result, (unsigned long)n);
-    return result;
-#elif defined(__GNUC__)
-    static_assert(sizeof(unsigned long long) == sizeof(n),  // NOLINT(runtime/int)
-                  "__builtin_ctzll does not take 64-bit arg");
-    return __builtin_ctzll(n);
-#else
-    return CountTrailingZerosNonZero64Slow(n);
-#endif
-}
-
-PHMAP_BASE_INTERNAL_FORCEINLINE int CountTrailingZerosNonZero32Slow(uint32_t n) {
-    int c = 31;
-    n &= ~n + 1;
-    if (n & 0x0000FFFF) c -= 16;
-    if (n & 0x00FF00FF) c -= 8;
-    if (n & 0x0F0F0F0F) c -= 4;
-    if (n & 0x33333333) c -= 2;
-    if (n & 0x55555555) c -= 1;
-    return c;
-}
-
-PHMAP_BASE_INTERNAL_FORCEINLINE int CountTrailingZerosNonZero32(uint32_t n) {
-#if defined(_MSC_VER)
-    unsigned long result = 0;  // NOLINT(runtime/int)
-    _BitScanForward(&result, n);
-    return result;
-#elif defined(__GNUC__)
-    static_assert(sizeof(int) == sizeof(n),
-                  "__builtin_ctz does not take 32-bit arg");
-    return __builtin_ctz(n);
-#else
-    return CountTrailingZerosNonZero32Slow(n);
-#endif
-}
-
-#undef PHMAP_BASE_INTERNAL_FORCEINLINE
-
-}  // namespace base_internal
-}  // namespace phmap
-
-// -----------------------------------------------------------------------------
 // File: optimization.h
 // -----------------------------------------------------------------------------
 
@@ -337,9 +182,10 @@ PHMAP_BASE_INTERNAL_FORCEINLINE int CountTrailingZerosNonZero32(uint32_t n) {
 #endif
 
 #ifdef PHMAP_HAVE_INTRINSIC_INT128
+    __extension__ typedef unsigned __int128 phmap_uint128;
     inline uint64_t umul128(uint64_t a, uint64_t b, uint64_t* high) 
     {
-        auto result = static_cast<unsigned __int128>(a) * static_cast<unsigned __int128>(b);
+        auto result = static_cast<phmap_uint128>(a) * static_cast<phmap_uint128>(b);
         *high = static_cast<uint64_t>(result >> 64);
         return static_cast<uint64_t>(result);
     }
@@ -405,6 +251,166 @@ PHMAP_BASE_INTERNAL_FORCEINLINE int CountTrailingZerosNonZero32(uint32_t n) {
     #define PHMAP_PREDICT_FALSE(x) (x)
     #define PHMAP_PREDICT_TRUE(x) (x)
 #endif
+
+// -----------------------------------------------------------------------------
+// File: bits.h
+// -----------------------------------------------------------------------------
+
+#if defined(_MSC_VER)
+    // We can achieve something similar to attribute((always_inline)) with MSVC by
+    // using the __forceinline keyword, however this is not perfect. MSVC is
+    // much less aggressive about inlining, and even with the __forceinline keyword.
+    #define PHMAP_BASE_INTERNAL_FORCEINLINE __forceinline
+#else
+    // Use default attribute inline.
+    #define PHMAP_BASE_INTERNAL_FORCEINLINE inline PHMAP_ATTRIBUTE_ALWAYS_INLINE
+#endif
+
+
+namespace phmap {
+namespace base_internal {
+
+PHMAP_BASE_INTERNAL_FORCEINLINE uint32_t CountLeadingZeros64Slow(uint64_t n) {
+    int zeroes = 60;
+    if (n >> 32) zeroes -= 32, n >>= 32;
+    if (n >> 16) zeroes -= 16, n >>= 16;
+    if (n >> 8) zeroes -= 8, n >>= 8;
+    if (n >> 4) zeroes -= 4, n >>= 4;
+    return (uint32_t)("\4\3\2\2\1\1\1\1\0\0\0\0\0\0\0"[n] + zeroes);
+}
+
+PHMAP_BASE_INTERNAL_FORCEINLINE uint32_t CountLeadingZeros64(uint64_t n) {
+#if defined(_MSC_VER) && defined(_M_X64)
+    // MSVC does not have __buitin_clzll. Use _BitScanReverse64.
+    unsigned long result = 0;  // NOLINT(runtime/int)
+    if (_BitScanReverse64(&result, n)) {
+        return (uint32_t)(63 - result);
+    }
+    return 64;
+#elif defined(_MSC_VER) && !defined(__clang__)
+    // MSVC does not have __buitin_clzll. Compose two calls to _BitScanReverse
+    unsigned long result = 0;  // NOLINT(runtime/int)
+    if ((n >> 32) && _BitScanReverse(&result, (unsigned long)(n >> 32))) {
+        return  (uint32_t)(31 - result);
+    }
+    if (_BitScanReverse(&result, (unsigned long)n)) {
+        return (uint32_t)(63 - result);
+    }
+    return 64;
+#elif defined(__GNUC__) || defined(__clang__)
+    // Use __builtin_clzll, which uses the following instructions:
+    //  x86: bsr
+    //  ARM64: clz
+    //  PPC: cntlzd
+    static_assert(sizeof(unsigned long long) == sizeof(n),  // NOLINT(runtime/int)
+                  "__builtin_clzll does not take 64-bit arg");
+
+    // Handle 0 as a special case because __builtin_clzll(0) is undefined.
+    if (n == 0) {
+        return 64;
+    }
+    return  (uint32_t)__builtin_clzll(n);
+#else
+    return CountLeadingZeros64Slow(n);
+#endif
+}
+
+PHMAP_BASE_INTERNAL_FORCEINLINE uint32_t CountLeadingZeros32Slow(uint64_t n) {
+    uint32_t zeroes = 28;
+    if (n >> 16) zeroes -= 16, n >>= 16;
+    if (n >> 8) zeroes -= 8, n >>= 8;
+    if (n >> 4) zeroes -= 4, n >>= 4;
+    return "\4\3\2\2\1\1\1\1\0\0\0\0\0\0\0"[n] + zeroes;
+}
+
+PHMAP_BASE_INTERNAL_FORCEINLINE uint32_t CountLeadingZeros32(uint32_t n) {
+#if defined(_MSC_VER) && !defined(__clang__)
+    unsigned long result = 0;  // NOLINT(runtime/int)
+    if (_BitScanReverse(&result, n)) {
+        return (uint32_t)(31 - result);
+    }
+    return 32;
+#elif defined(__GNUC__) || defined(__clang__)
+    // Use __builtin_clz, which uses the following instructions:
+    //  x86: bsr
+    //  ARM64: clz
+    //  PPC: cntlzd
+    static_assert(sizeof(int) == sizeof(n),
+                  "__builtin_clz does not take 32-bit arg");
+
+    // Handle 0 as a special case because __builtin_clz(0) is undefined.
+    if (n == 0) {
+        return 32;
+    }
+    return __builtin_clz(n);
+#else
+    return CountLeadingZeros32Slow(n);
+#endif
+}
+
+PHMAP_BASE_INTERNAL_FORCEINLINE uint32_t CountTrailingZerosNonZero64Slow(uint64_t n) {
+    uint32_t c = 63;
+    n &= ~n + 1;
+    if (n & 0x00000000FFFFFFFF) c -= 32;
+    if (n & 0x0000FFFF0000FFFF) c -= 16;
+    if (n & 0x00FF00FF00FF00FF) c -= 8;
+    if (n & 0x0F0F0F0F0F0F0F0F) c -= 4;
+    if (n & 0x3333333333333333) c -= 2;
+    if (n & 0x5555555555555555) c -= 1;
+    return c;
+}
+
+PHMAP_BASE_INTERNAL_FORCEINLINE uint32_t CountTrailingZerosNonZero64(uint64_t n) {
+#if defined(_MSC_VER) && !defined(__clang__) && defined(_M_X64)
+    unsigned long result = 0;  // NOLINT(runtime/int)
+    _BitScanForward64(&result, n);
+    return (uint32_t)result;
+#elif defined(_MSC_VER) && !defined(__clang__)
+    unsigned long result = 0;  // NOLINT(runtime/int)
+    if (static_cast<uint32_t>(n) == 0) {
+        _BitScanForward(&result, (unsigned long)(n >> 32));
+        return result + 32;
+    }
+    _BitScanForward(&result, (unsigned long)n);
+    return result;
+#elif defined(__GNUC__) || defined(__clang__)
+    static_assert(sizeof(unsigned long long) == sizeof(n),  // NOLINT(runtime/int)
+                  "__builtin_ctzll does not take 64-bit arg");
+    return __builtin_ctzll(n);
+#else
+    return CountTrailingZerosNonZero64Slow(n);
+#endif
+}
+
+PHMAP_BASE_INTERNAL_FORCEINLINE uint32_t CountTrailingZerosNonZero32Slow(uint32_t n) {
+    uint32_t c = 31;
+    n &= ~n + 1;
+    if (n & 0x0000FFFF) c -= 16;
+    if (n & 0x00FF00FF) c -= 8;
+    if (n & 0x0F0F0F0F) c -= 4;
+    if (n & 0x33333333) c -= 2;
+    if (n & 0x55555555) c -= 1;
+    return c;
+}
+
+PHMAP_BASE_INTERNAL_FORCEINLINE uint32_t CountTrailingZerosNonZero32(uint32_t n) {
+#if defined(_MSC_VER) && !defined(__clang__)
+    unsigned long result = 0;  // NOLINT(runtime/int)
+    _BitScanForward(&result, n);
+    return (uint32_t)result;
+#elif defined(__GNUC__) || defined(__clang__)
+    static_assert(sizeof(int) == sizeof(n),
+                  "__builtin_ctz does not take 32-bit arg");
+    return __builtin_ctz(n);
+#else
+    return CountTrailingZerosNonZero32Slow(n);
+#endif
+}
+
+#undef PHMAP_BASE_INTERNAL_FORCEINLINE
+
+}  // namespace base_internal
+}  // namespace phmap
 
 // -----------------------------------------------------------------------------
 // File: endian.h
@@ -562,6 +568,7 @@ namespace little_endian {
 #endif /* ENDIAN */
 
 // Functions to do unaligned loads and stores in little-endian order.
+// ------------------------------------------------------------------
 inline uint16_t Load16(const void *p) {
   return ToHost16(PHMAP_INTERNAL_UNALIGNED_LOAD16(p));
 }
@@ -649,5 +656,9 @@ inline void Store64(void *p, uint64_t v) {
 }  // namespace big_endian
 
 }  // namespace phmap
+
+#ifdef _MSC_VER
+     #pragma warning(pop)  
+#endif
 
 #endif // phmap_bits_h_guard_

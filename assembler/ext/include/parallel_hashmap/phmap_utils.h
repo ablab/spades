@@ -4,7 +4,9 @@
 // ---------------------------------------------------------------------------
 // Copyright (c) 2019, Gregory Popovitch - greg7mdp@gmail.com
 //
-//       minimal header providing phmap::hash_combine
+//       minimal header providing phmap::HashState
+//
+//       use as:  phmap::HashState().combine(0, _first_name, _last_name, _age);
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,9 +21,24 @@
 // limitations under the License.
 // ---------------------------------------------------------------------------
 
+#ifdef _MSC_VER
+    #pragma warning(push)  
+    #pragma warning(disable : 4514) // unreferenced inline function has been removed
+    #pragma warning(disable : 4710) // function not inlined
+    #pragma warning(disable : 4711) // selected for automatic inline expansion
+#endif
+
 #include <cstdint>
 #include <functional>
+#include <tuple>
 #include "phmap_bits.h"
+
+// ---------------------------------------------------------------
+// Absl forward declaration requires global scope.
+// ---------------------------------------------------------------
+#if defined(PHMAP_USE_ABSL_HASH) && !defined(phmap_fwd_decl_h_guard_) && !defined(ABSL_HASH_HASH_H_)
+    namespace absl { template <class T> struct Hash; };
+#endif
 
 namespace phmap
 {
@@ -40,7 +57,6 @@ struct phmap_mix<4>
     inline size_t operator()(size_t a) const
     {
         static constexpr uint64_t kmul = 0xcc9e2d51UL;
-        // static constexpr uint64_t kmul = 0x3B9ACB93UL; // [greg] my own random prime
         uint64_t l = a * kmul;
         return static_cast<size_t>(l ^ (l >> 32));
     }
@@ -54,7 +70,6 @@ struct phmap_mix<4>
         inline size_t operator()(size_t a) const
         {
             static constexpr uint64_t k = 0xde5fb9d2630458e9ULL;
-            // static constexpr uint64_t k = 0x7C9D0BF0567102A5ULL; // [greg] my own random prime
             uint64_t h;
             uint64_t l = umul128(a, k, &h);
             return static_cast<size_t>(h + l);
@@ -113,14 +128,17 @@ private:
     typedef std::true_type yes;
     typedef std::false_type no;
 
-    template<typename U> static auto test(int) -> decltype(U::hash_value(std::declval<U&>()) == 1, yes());
+    template<typename U> static auto test(int) -> decltype(hash_value(std::declval<const U&>()) == 1, yes());
 
     template<typename> static no test(...);
 
 public:
     static constexpr bool value = std::is_same<decltype(test<T>(0)), yes>::value;
 };
- 
+
+#if defined(PHMAP_USE_ABSL_HASH) && !defined(phmap_fwd_decl_h_guard_)
+    template <class T> using Hash = ::absl::Hash<T>;
+#elif !defined(PHMAP_USE_ABSL_HASH)
 // ---------------------------------------------------------------
 //               phmap::Hash
 // ---------------------------------------------------------------
@@ -130,7 +148,7 @@ struct Hash
     template <class U, typename std::enable_if<has_hash_value<U>::value, int>::type = 0>
     size_t _hash(const T& val) const
     {
-        return U::hash_value(val);
+        return hash_value(val);
     }
  
     template <class U, typename std::enable_if<!has_hash_value<U>::value, int>::type = 0>
@@ -144,16 +162,7 @@ struct Hash
         return _hash<T>(val);
     }
 };
-
-template <class T>
-struct Hash<T *>
-{
-    inline size_t operator()(const T *val) const noexcept
-    {
-        return static_cast<size_t>(reinterpret_cast<const uintptr_t>(val)); 
-    }
-};
-
+ 
 template<class ArgumentType, class ResultType>
 struct phmap_unary_function
 {
@@ -189,12 +198,14 @@ struct Hash<unsigned char> : public phmap_unary_function<unsigned char, size_t>
     { return static_cast<size_t>(val); }
 };
 
+#ifdef PHMAP_HAS_NATIVE_WCHAR_T
 template <>
 struct Hash<wchar_t> : public phmap_unary_function<wchar_t, size_t>
 {
     inline size_t operator()(wchar_t val) const noexcept
     { return static_cast<size_t>(val); }
 };
+#endif
 
 template <>
 struct Hash<int16_t> : public phmap_unary_function<int16_t, size_t>
@@ -262,6 +273,15 @@ struct Hash<double> : public phmap_unary_function<double, size_t>
     }
 };
 
+#endif
+
+#if defined(_MSC_VER)
+#   define PHMAP_HASH_ROTL32(x, r) _rotl(x,r)
+#else
+#   define PHMAP_HASH_ROTL32(x, r) (x << r) | (x >> (32 - r))
+#endif
+
+
 template <class H, int sz> struct Combiner
 {
     H operator()(H seed, size_t value);
@@ -269,21 +289,53 @@ template <class H, int sz> struct Combiner
 
 template <class H> struct Combiner<H, 4>
 {
-    H operator()(H seed, size_t value)
+    H operator()(H h1, size_t k1)
     {
-        return seed ^ (value + 0x9e3779b9 + (seed << 6) + (seed >> 2));
+        // Copyright 2005-2014 Daniel James.
+        // Distributed under the Boost Software License, Version 1.0. (See accompanying
+        // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+        
+        const uint32_t c1 = 0xcc9e2d51;
+        const uint32_t c2 = 0x1b873593;
+
+        k1 *= c1;
+        k1 = PHMAP_HASH_ROTL32(k1,15);
+        k1 *= c2;
+
+        h1 ^= k1;
+        h1 = PHMAP_HASH_ROTL32(h1,13);
+        h1 = h1*5+0xe6546b64;
+
+        return h1;
     }
 };
 
 template <class H> struct Combiner<H, 8>
 {
-    H operator()(H seed, size_t value)
+    H operator()(H h, size_t k)
     {
-        return seed ^ (value + size_t(0xc6a4a7935bd1e995) + (seed << 6) + (seed >> 2));
+        // Copyright 2005-2014 Daniel James.
+        // Distributed under the Boost Software License, Version 1.0. (See accompanying
+        // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+        const uint64_t m = (uint64_t(0xc6a4a793) << 32) + 0x5bd1e995;
+        const int r = 47;
+
+        k *= m;
+        k ^= k >> r;
+        k *= m;
+
+        h ^= k;
+        h *= m;
+
+        // Completely arbitrary number, to prevent 0's
+        // from hashing to 0.
+        h += 0xe6546b64;
+
+        return h;
     }
 };
 
-
+// define HashState to combine member hashes... see example below
 // -----------------------------------------------------------------------------
 template <typename H>
 class HashStateBase {
@@ -299,12 +351,57 @@ template <typename T, typename... Ts>
 H HashStateBase<H>::combine(H seed, const T& v, const Ts&... vs)
 {
     return HashStateBase<H>::combine(Combiner<H, sizeof(H)>()(
-                                         seed, phmap::Hash<T>()(v)),  vs...);
+                                         seed, phmap::Hash<T>()(v)), 
+                                     vs...);
 }
 
 using HashState = HashStateBase<size_t>;
 
+// -----------------------------------------------------------------------------
+
+#if !defined(PHMAP_USE_ABSL_HASH)
+
+// define Hash for std::pair
+// -------------------------
+template<class T1, class T2> 
+struct Hash<std::pair<T1, T2>> {
+    size_t operator()(std::pair<T1, T2> const& p) const noexcept {
+        return phmap::HashState().combine(phmap::Hash<T1>()(p.first), p.second);
+    }
+};
+
+// define Hash for std::tuple
+// --------------------------
+template<class... T> 
+struct Hash<std::tuple<T...>> {
+    size_t operator()(std::tuple<T...> const& t) const noexcept {
+        size_t seed = 0;
+        return _hash_helper(seed, t);
+    }
+
+private:
+    template<size_t I = 0, class TUP>
+    typename std::enable_if<I == std::tuple_size<TUP>::value, size_t>::type
+    _hash_helper(size_t seed, const TUP &) const noexcept { return seed; }
+
+    template<size_t I = 0, class TUP>
+    typename std::enable_if<I < std::tuple_size<TUP>::value, size_t>::type
+    _hash_helper(size_t seed, const TUP &t) const noexcept {
+        const auto &el = std::get<I>(t);
+        using el_type = typename std::remove_cv<typename std::remove_reference<decltype(el)>::type>::type;
+        seed = Combiner<size_t, sizeof(size_t)>()(seed, phmap::Hash<el_type>()(el));
+        return _hash_helper<I + 1>(seed, t);
+    }
+};
+
+
+#endif
+
+
 }  // namespace phmap
 
+#ifdef _MSC_VER
+     #pragma warning(pop)  
+#endif
 
 #endif // phmap_utils_h_guard_
