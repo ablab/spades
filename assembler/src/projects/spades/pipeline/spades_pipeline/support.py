@@ -22,8 +22,6 @@ import traceback
 from platform import uname
 from os.path import abspath, expanduser, join
 
-from packaging.version import Version
-
 import options_storage
 from common import SeqIO
 
@@ -96,30 +94,12 @@ def sys_error(cmd, log, exit_code):
 
 
 def check_python_version():
-    def __next_version(version):
-        components = version.split('.')
-        for i in reversed(range(len(components))):
-            if components[i].isdigit():
-                components[i] = str(int(components[i]) + 1)
-                break
-        return '.'.join(components)
-
-    current_version = sys.version.split()[0]
-    supported_versions_msg = []
-    for supported_versions in options_storage.SUPPORTED_PYTHON_VERSIONS:
-        major = supported_versions[0]
-        if '-' in supported_versions:  # range
-            min_inc, max_inc = supported_versions.split('-')
-        elif supported_versions.endswith('+'):  # half open range
-            min_inc, max_inc = supported_versions[:-1], major
-        else:  # exact version
-            min_inc = max_inc = supported_versions
-        max_exc = __next_version(max_inc)
-        supported_versions_msg.append("Python%s: %s" % (major, supported_versions.replace('+', " and higher")))
-        if Version(min_inc) <= Version(current_version) < Version(max_exc):
-            return True
-    error("python version %s is not supported!\n"
-          "Supported versions are %s" % (current_version, ", ".join(supported_versions_msg)))
+    if sys.version_info < options_storage.MINIMAL_PYTHON_VERSION:
+        error("\nPython version %s is not supported!\n"
+              "Minimal supported version is %s" %
+              (sys.version.split()[0], ".".join(list(map(str, options_storage.MINIMAL_PYTHON_VERSION)))))
+        return False
+    return True
 
 
 def get_spades_binaries_info_message():
