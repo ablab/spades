@@ -9,7 +9,6 @@
 
 import os
 import shutil
-from distutils import dir_util
 
 import commands_parser
 import options_storage

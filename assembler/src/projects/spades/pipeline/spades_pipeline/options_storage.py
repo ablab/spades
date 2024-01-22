@@ -15,7 +15,7 @@ original_k_mers = None
 dict_of_prefixes = dict()
 dict_of_rel2abs = dict()
 
-SUPPORTED_PYTHON_VERSIONS = ["2.7", "3.2+"]  # major.minor format only, close ("-") and open ("+") ranges allowed
+SUPPORTED_PYTHON_VERSIONS = ["3.2+"]  # major.minor format only, close ("-") and open ("+") ranges allowed
 # allowed reads extensions for BayesHammer and for thw whole SPAdes pipeline
 BH_ALLOWED_READS_EXTENSIONS = [".fq", ".fastq", ".bam", ".fq.gz", ".fastq.gz"]
 IONTORRENT_ONLY_ALLOWED_READS_EXTENSIONS = [".bam"]
