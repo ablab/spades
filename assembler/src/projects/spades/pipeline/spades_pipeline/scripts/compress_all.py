@@ -28,12 +28,8 @@ def remove_not_corrected_reads(output_dir):
 def compress_dataset_files(input_file, ext_python_modules_home, max_threads, log, not_used_yaml_file, output_dir,
                            gzip_output):
     addsitedir(ext_python_modules_home)
-    if sys.version.startswith("2."):
-        import pyyaml2 as pyyaml
-        from joblib2 import Parallel, delayed
-    elif sys.version.startswith("3."):
-        import pyyaml3 as pyyaml
-        from joblib3 import Parallel, delayed
+    import pyyaml3 as pyyaml
+    from joblib3 import Parallel, delayed
 
     dataset_data = pyyaml.load(open(input_file))
     remove_not_corrected_reads(output_dir)

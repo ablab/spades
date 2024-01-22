@@ -44,10 +44,7 @@ class ECRunningToolStage(stage.Stage):
 
     def prepare_config_ih(self, filename, cfg, ext_python_modules_home):
         addsitedir(ext_python_modules_home)
-        if sys.version.startswith("2."):
-            import pyyaml2 as pyyaml
-        elif sys.version.startswith("3."):
-            import pyyaml3 as pyyaml
+        import pyyaml3 as pyyaml
         data = pyyaml.load(open(filename))
         data["dataset"] = cfg.dataset_yaml_filename
         data["working_dir"] = cfg.tmp_dir
@@ -139,10 +136,7 @@ class ErrorCorrectionStage(stage.Stage):
 
 
     def generate_config(self, cfg):
-        if sys.version.startswith("2."):
-            import pyyaml2 as pyyaml
-        elif sys.version.startswith("3."):
-            import pyyaml3 as pyyaml
+        import pyyaml3 as pyyaml
 
         self.cfg = merge_configs(cfg["error_correction"], cfg["common"])
         self.output_files["corrected_dataset_yaml_filename"] = os.path.join(self.cfg.output_dir, "corrected.yaml")

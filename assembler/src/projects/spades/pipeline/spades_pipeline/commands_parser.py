@@ -55,10 +55,7 @@ def write_commands_to_sh(commands, output_file):
 
 
 def write_commands_to_yaml(commands, output_file):
-    if sys.version.startswith("2."):
-        import pyyaml2 as yaml
-    elif sys.version.startswith("3."):
-        import pyyaml3 as yaml
+    import pyyaml3 as yaml
 
     data = [command.to_dict() for command in commands]
 
@@ -67,10 +64,7 @@ def write_commands_to_yaml(commands, output_file):
 
 
 def read_commands_from_yaml(yaml_fpath):
-    if sys.version.startswith("2."):
-        import pyyaml2 as yaml
-    elif sys.version.startswith("3."):
-        import pyyaml3 as yaml
+    import pyyaml3 as yaml
 
     with open(yaml_fpath) as stream:
         data = yaml.load(stream)

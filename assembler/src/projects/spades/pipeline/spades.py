@@ -28,10 +28,7 @@ import support
 support.check_python_version()
 
 addsitedir(ext_python_modules_home)
-if sys.version.startswith("2."):
-    import pyyaml2 as pyyaml
-elif sys.version.startswith("3."):
-    import pyyaml3 as pyyaml
+import pyyaml3 as pyyaml
 
 import options_storage
 options_storage.spades_version = spades_version

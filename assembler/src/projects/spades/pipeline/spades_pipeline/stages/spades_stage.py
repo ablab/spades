@@ -25,10 +25,7 @@ def get_read_length(output_dir, K, ext_python_modules_home, log):
     max_read_length = 0
     if os.path.isfile(est_params_filename):
         addsitedir(ext_python_modules_home)
-        if sys.version.startswith("2."):
-            import pyyaml2 as pyyaml
-        elif sys.version.startswith("3."):
-            import pyyaml3 as pyyaml
+        import pyyaml3 as pyyaml
         est_params_data = pyyaml.load(open(est_params_filename))
         max_read_length = int(est_params_data["nomerge max read length"])
         log.info("Max read length detected as %d" % max_read_length)

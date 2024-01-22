@@ -10,10 +10,7 @@
 import os
 import sys
 
-if sys.version.startswith("2."):
-    import pyyaml2 as pyyaml
-elif sys.version.startswith("3."):
-    import pyyaml3 as pyyaml
+import pyyaml3 as pyyaml
 
 import commands_parser
 from stages import stage

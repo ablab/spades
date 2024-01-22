@@ -22,10 +22,7 @@ import functools
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'conversion'))
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'stat'))
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../../../ext/src/python_libs'))
-if sys.version.startswith('2.'):
-    import pyyaml2 as pyyaml
-elif sys.version.startswith('3.'):
-    import pyyaml3 as pyyaml
+import pyyaml3 as pyyaml
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../../projects/spades/pipeline/spades_pipeline'))
 import support
 

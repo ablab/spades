@@ -286,8 +286,8 @@ def is_ascii_string(line):
         return True
 
 
-def process_readline(line, is_python3=sys.version.startswith("3.")):
-    if is_python3:
+def process_readline(line, utf8=True):
+    if utf8:
         return str(line, "utf-8").rstrip()
     return line.rstrip()
 
@@ -852,7 +852,7 @@ def read_fasta(filename, gzipped=False):
     else:
         file_handler = open(filename)
     for line in file_handler:
-        line = process_readline(line, gzipped and sys.version.startswith("3."))
+        line = process_readline(line, gzipped)
         if not line:
             continue
         if line[0] == '>':

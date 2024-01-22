@@ -20,17 +20,17 @@ sys.path.append(join(python_modules_home, ".."))
 import support
 
 
-def write_single_read(in_file, out_file, read_name=None, is_fastq=False, is_python3=False):
+def write_single_read(in_file, out_file, read_name=None, is_fastq=False, compressed=False):
     if read_name is None:
-        read_name = support.process_readline(in_file.readline(), is_python3)
+        read_name = support.process_readline(in_file.readline(), compressed)
     if not read_name:
         return ""  # no next read
-    read_value = support.process_readline(in_file.readline(), is_python3)
-    line = support.process_readline(in_file.readline(), is_python3)
+    read_value = support.process_readline(in_file.readline(), compressed)
+    line = support.process_readline(in_file.readline(), compressed)
     fpos = in_file.tell()
     while (is_fastq and not line.startswith('+')) or (not is_fastq and not line.startswith('>')):
         read_value += line
-        line = support.process_readline(in_file.readline(), is_python3)
+        line = support.process_readline(in_file.readline(), compressed)
         if not line:
             if fpos == in_file.tell():
                 break
@@ -39,11 +39,11 @@ def write_single_read(in_file, out_file, read_name=None, is_fastq=False, is_pyth
     out_file.write(read_value + '\n')
 
     if is_fastq:
-        read_quality = support.process_readline(in_file.readline(), is_python3)
-        line = support.process_readline(in_file.readline(), is_python3)
+        read_quality = support.process_readline(in_file.readline(), compressed)
+        line = support.process_readline(in_file.readline(), compressed)
         while not line.startswith('@'):
             read_quality += line
-            line = support.process_readline(in_file.readline(), is_python3)
+            line = support.process_readline(in_file.readline(), compressed)
             if not line:
                 if fpos == in_file.tell():
                     break
@@ -95,12 +95,10 @@ def main():
             log.info("== Splitting %s into left and right reads (in %s directory)" % (input_filename, args.dst))
             out_files = [open(out_left_filename, 'w'), open(out_right_filename, 'w')]
             i = 0
-            next_read_name = write_single_read(input_file, out_files[i], None, is_fastq,
-                                               sys.version.startswith("3.") and was_compressed)
+            next_read_name = write_single_read(input_file, out_files[i], None, is_fastq, was_compressed)
             while next_read_name:
                 i = (i + 1) % 2
-                next_read_name = write_single_read(input_file, out_files[i], next_read_name, is_fastq,
-                                                   sys.version.startswith("3.") and was_compressed)
+                next_read_name = write_single_read(input_file, out_files[i], next_read_name, is_fastq, was_compressed)
             if i == 0:
                 support.error(
                     "the number of reads in file with interlaced reads (%s) should be EVEN!" % (input_filename),

@@ -197,10 +197,7 @@ class PreprocessReadsStage(stage.Stage):
         for stage in self.stages:
             stage.generate_config(cfg)
 
-        if sys.version.startswith("2."):
-            import pyyaml2 as pyyaml
-        elif sys.version.startswith("3."):
-            import pyyaml3 as pyyaml
+        import pyyaml3 as pyyaml
 
         with open(options_storage.args.dataset_yaml_filename, 'w') as f:
             pyyaml.dump(self.dataset_data, f,

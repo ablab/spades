@@ -58,10 +58,7 @@ def parse_args():
 
 def load_info(info_filename):
     sys.path.append("./ext/src/python_libs/")
-    if sys.version.startswith('2.'):
-        import pyyaml2 as pyyaml
-    elif sys.version.startswith('3.'):
-        import pyyaml3 as pyyaml
+    import pyyaml3 as pyyaml
 
     info = pyyaml.load(open(info_filename, 'r'))
     return info

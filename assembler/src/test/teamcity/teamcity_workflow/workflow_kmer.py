@@ -18,10 +18,7 @@ from site import addsitedir
 spades_home = os.path.join(os.path.abspath(os.path.dirname(os.path.realpath(__file__))), "..", "..", "..", "..")
 ext_python_modules_home = os.path.join(spades_home, "ext", "src", "python_libs")
 addsitedir(ext_python_modules_home)
-if sys.version.startswith("2."):
-    import pyyaml2 as pyyaml
-elif sys.version.startswith("3."):
-    import pyyaml3 as pyyaml
+import pyyaml3 as pyyaml
 
 
 def get_kmer_list(path):

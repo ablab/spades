@@ -162,7 +162,7 @@ Notes:
 # Installation
 
 
-SPAdes requires a 64-bit Linux system or Mac OS and Python (supported versions are Python 2.7, and Python3: 3.2 and higher) to be pre-installed on it. To obtain SPAdes you can either download binaries or download source code and compile it yourself. []()
+SPAdes requires a 64-bit Linux system or Mac OS and Python (3.2 or higher) to be pre-installed on it. To obtain SPAdes you can either download binaries or download source code and compile it yourself. []()
 
 In case of successful installation the following files will be placed in the `bin` directory:
 

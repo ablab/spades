@@ -1011,10 +1011,7 @@ def add_to_cfg(cfg, log, bin_home, spades_home, args):
 
 
 def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dataset, restart_from, options=None):
-    if sys.version.startswith("2."):
-        import pyyaml2 as pyyaml
-    elif sys.version.startswith("3."):
-        import pyyaml3 as pyyaml
+    import pyyaml3 as pyyaml
 
     if args.test_mode:
         if args.plasmid:
