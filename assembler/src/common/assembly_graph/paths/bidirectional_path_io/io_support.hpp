@@ -77,6 +77,8 @@ public:
 
     virtual std::string MakeContigName(size_t index, const ScaffoldInfo &scaffold_info) = 0;
 
+    virtual void PrintStats() const {}
+
     virtual ~ContigNameGenerator() {}
 };
 
@@ -141,6 +143,23 @@ public:
                                              gene_ids_[parent_id], isoform_num_[parent_id]);
         isoform_num_[parent_id]++;
         return contig_id;
+    }
+
+    size_t gene_count() const {
+        return gene_num_;
+    }
+
+    size_t isoform_count() const {
+        size_t isoform_cnt = 0;
+        for (const auto& it: isoform_num_) {
+            isoform_cnt += it.second;
+        }
+        return isoform_cnt;
+    }
+
+    void PrintStats() const {
+        INFO("Total number of genes: " << gene_count())
+        INFO("Total number of isoforms: " << isoform_count())
     }
 };
 
