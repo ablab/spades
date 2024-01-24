@@ -50,6 +50,10 @@ class DeBruijnVertexData {
             links_.push_back(added_link);
         }
 
+        auto &links() {
+            return links_;
+        }
+
         const auto &links() const {
           return links_;
         }
@@ -103,6 +107,10 @@ public:
 
     unsigned overlap() const {
         return overlap_.get<ExplicitOverlap>();
+    }
+
+    auto &links() {
+        return overlap_.get<ComplexOverlap>()->links();
     }
 
     auto links() const {

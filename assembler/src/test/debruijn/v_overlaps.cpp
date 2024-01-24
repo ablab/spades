@@ -5,6 +5,7 @@
 //***************************************************************************
 
 #include "assembly_graph/core/construction_helper.hpp"
+#include "assembly_graph/graph_support/v_overlaps_support.hpp"
 #include "io/graph/gfa_reader.hpp"
 #include "io/reads/file_reader.hpp"
 
@@ -130,6 +131,9 @@ void PerformSplits(debruijn_graph::Graph &graph, std::ifstream &ops_stream, cons
             EXPECT_TRUE(link_found);
             std::vector<LinkId> links({split_link});
             new_vertex = helper.CreateVertex(debruijn_graph::DeBruijnVertexData(links));
+
+            graph.erase_links_with_outedge(vertex, out_edge);
+            graph.erase_links_with_inedge(vertex, in_edge);
         } else {
             auto overlap = static_cast<uint>(graph.link_length(vertex, in_edge, out_edge));
             new_vertex = helper.CreateVertex(debruijn_graph::DeBruijnVertexData(overlap));
@@ -196,6 +200,8 @@ void CheckGraphWithPaths(const std::filesystem::path &graph_basename) {
     gfa::GFAReader gfa_reader(gfa_path);
     Graph graph(0);
     gfa_reader.to_graph(graph, id_mapper.get());
+
+    omnigraph::OverlapHandler<Graph> overlap_handler(graph);
 
     std::ifstream graph_stream(graph_path.c_str());
     std::string graph_name;

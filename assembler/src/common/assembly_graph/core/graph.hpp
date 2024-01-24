@@ -96,9 +96,23 @@ public:
         data(v).clear_links();
     }
 
-    auto links(VertexId v) {
-        return data(v).links();
+    void erase_links_with_inedge(VertexId v, EdgeId e) {
+        auto &links = data(v).links();
+        links.erase(std::remove_if(links.begin(),
+                                   links.end(),
+                                   [this, &e](const LinkId &link_id) {
+                                     return link_storage_[link_id].link.first == e;
+                                   }), links.end());
     }
+
+  void erase_links_with_outedge(VertexId v, EdgeId e) {
+      auto &links = data(v).links();
+      links.erase(std::remove_if(links.begin(),
+                                 links.end(),
+                                 [this, &e](const LinkId &link_id) {
+                                   return link_storage_[link_id].link.second == e;
+                                 }), links.end());
+  }
 
     auto links(VertexId v) const {
         return data(v).links();
