@@ -156,7 +156,7 @@ void ScoreFunctionScaffoldGraphFilter::ConstructFromGraphAndScore(const Scaffold
             }
             TRACE("Edge added");
             ++counter;
-            if (counter % block_size == 0) {
+            if (block_size != 0 and counter % block_size == 0) {
                 DEBUG("Processed " << counter << " edges out of " << scaffold_edges.size());
             }
         }
@@ -193,7 +193,7 @@ void ScoreFunctionGraphConstructor::ConstructFromScore(std::shared_ptr<EdgePairS
                     }
                     TRACE("Edge added");
                     ++counter;
-                    if (counter % block_size == 0) {
+                    if (block_size != 0 and counter % block_size == 0) {
                         DEBUG("Processed " << counter << " chunks out of " << chunks_.size());
                     }
                 }
