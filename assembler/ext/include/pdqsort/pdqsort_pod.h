@@ -184,7 +184,7 @@ namespace pdqsort_pod_detail {
         if (use_swaps) {
             // This case is needed for the descending distribution, where we need
             // to have proper swapping for pdqsort to remain O(n).
-            for (int i = 0; i < num; ++i) {
+            for (size_t i = 0; i < num; ++i) {
                 array_swap(first + offsets_l[i], last - offsets_r[i], array_n);
             }
         } else if (num > 0) {
@@ -192,7 +192,7 @@ namespace pdqsort_pod_detail {
             T tmp[array_n];
             array_move(tmp, &*l, array_n);
             array_move(&*l, &*r, array_n);
-            for (int i = 1; i < num; ++i) {
+            for (size_t i = 1; i < num; ++i) {
                 l = first + offsets_l[i]; array_move(&*r, &*l, array_n);
                 r = last - offsets_r[i]; array_move(&*l, &*r, array_n);
             }
@@ -231,107 +231,91 @@ namespace pdqsort_pod_detail {
             array_swap(first, last, array_n);
             ++first;
 
-        // The following branchless partitioning is derived from "BlockQuicksort: How Branch
-        // Mispredictions don’t affect Quicksort" by Stefan Edelkamp and Armin Weiss.
-        unsigned char offsets_l_storage[block_size + cacheline_size];
-        unsigned char offsets_r_storage[block_size + cacheline_size];
-        unsigned char* offsets_l = align_cacheline(offsets_l_storage);
-        unsigned char* offsets_r = align_cacheline(offsets_r_storage);
-        int num_l, num_r, start_l, start_r;
-        num_l = num_r = start_l = start_r = 0;
+            // The following branchless partitioning is derived from "BlockQuicksort: How Branch
+            // Mispredictions don’t affect Quicksort" by Stefan Edelkamp and Armin Weiss, but
+            // heavily micro-optimized.
+            unsigned char offsets_l_storage[block_size + cacheline_size];
+            unsigned char offsets_r_storage[block_size + cacheline_size];
+            unsigned char* offsets_l = align_cacheline(offsets_l_storage);
+            unsigned char* offsets_r = align_cacheline(offsets_r_storage);
 
-        while (last - first > 2 * block_size) {
-            // Fill up offset blocks with elements that are on the wrong side.
-            if (num_l == 0) {
-                start_l = 0;
-                Iter it = first;
-                for (unsigned char i = 0; i < block_size;) {
-                    offsets_l[num_l] = i++; num_l += !comp(&*it, pivot, array_n); ++it;
-                    offsets_l[num_l] = i++; num_l += !comp(&*it, pivot, array_n); ++it;
-                    offsets_l[num_l] = i++; num_l += !comp(&*it, pivot, array_n); ++it;
-                    offsets_l[num_l] = i++; num_l += !comp(&*it, pivot, array_n); ++it;
-                    offsets_l[num_l] = i++; num_l += !comp(&*it, pivot, array_n); ++it;
-                    offsets_l[num_l] = i++; num_l += !comp(&*it, pivot, array_n); ++it;
-                    offsets_l[num_l] = i++; num_l += !comp(&*it, pivot, array_n); ++it;
-                    offsets_l[num_l] = i++; num_l += !comp(&*it, pivot, array_n); ++it;
+            Iter offsets_l_base = first;
+            Iter offsets_r_base = last;
+            size_t num_l, num_r, start_l, start_r;
+            num_l = num_r = start_l = start_r = 0;
+            
+            while (first < last) {
+                // Fill up offset blocks with elements that are on the wrong side.
+                // First we determine how much elements are considered for each offset block.
+                size_t num_unknown = last - first;
+                size_t left_split = num_l == 0 ? (num_r == 0 ? num_unknown / 2 : num_unknown) : 0;
+                size_t right_split = num_r == 0 ? (num_unknown - left_split) : 0;
+
+                // Fill the offset blocks.
+                if (left_split >= block_size) {
+                    for (size_t i = 0; i < block_size;) {
+                        offsets_l[num_l] = i++; num_l += !comp(&*first, pivot, array_n); ++first;
+                        offsets_l[num_l] = i++; num_l += !comp(&*first, pivot, array_n); ++first;
+                        offsets_l[num_l] = i++; num_l += !comp(&*first, pivot, array_n); ++first;
+                        offsets_l[num_l] = i++; num_l += !comp(&*first, pivot, array_n); ++first;
+                        offsets_l[num_l] = i++; num_l += !comp(&*first, pivot, array_n); ++first;
+                        offsets_l[num_l] = i++; num_l += !comp(&*first, pivot, array_n); ++first;
+                        offsets_l[num_l] = i++; num_l += !comp(&*first, pivot, array_n); ++first;
+                        offsets_l[num_l] = i++; num_l += !comp(&*first, pivot, array_n); ++first;
+                    }
+                } else {
+                    for (size_t i = 0; i < left_split;) {
+                        offsets_l[num_l] = i++; num_l += !comp(&*first, pivot, array_n); ++first;
+                    }
+                }
+
+                if (right_split >= block_size) {
+                    for (size_t i = 0; i < block_size;) {
+                        offsets_r[num_r] = ++i; num_r += comp(&*--last, pivot, array_n);
+                        offsets_r[num_r] = ++i; num_r += comp(&*--last, pivot, array_n);
+                        offsets_r[num_r] = ++i; num_r += comp(&*--last, pivot, array_n);
+                        offsets_r[num_r] = ++i; num_r += comp(&*--last, pivot, array_n);
+                        offsets_r[num_r] = ++i; num_r += comp(&*--last, pivot, array_n);
+                        offsets_r[num_r] = ++i; num_r += comp(&*--last, pivot, array_n);
+                        offsets_r[num_r] = ++i; num_r += comp(&*--last, pivot, array_n);
+                        offsets_r[num_r] = ++i; num_r += comp(&*--last, pivot, array_n);
+                    }
+                } else {
+                    for (size_t i = 0; i < right_split;) {
+                        offsets_r[num_r] = ++i; num_r += comp(&*--last, pivot, array_n);
+                    }
+                }
+
+                // Swap elements and update block sizes and first/last boundaries.
+                size_t num = std::min(num_l, num_r);
+                swap_offsets(offsets_l_base, offsets_r_base, array_n,
+                             offsets_l + start_l, offsets_r + start_r,
+                             num, num_l == num_r);
+                num_l -= num; num_r -= num;
+                start_l += num; start_r += num;
+
+                if (num_l == 0) {
+                    start_l = 0;
+                    offsets_l_base = first;
+                }
+                
+                if (num_r == 0) {
+                    start_r = 0;
+                    offsets_r_base = last;
                 }
             }
-            if (num_r == 0) {
-                start_r = 0;
-                Iter it = last;
-                for (unsigned char i = 0; i < block_size;) {
-                    offsets_r[num_r] = ++i; num_r += comp(&*--it, pivot, array_n);
-                    offsets_r[num_r] = ++i; num_r += comp(&*--it, pivot, array_n);
-                    offsets_r[num_r] = ++i; num_r += comp(&*--it, pivot, array_n);
-                    offsets_r[num_r] = ++i; num_r += comp(&*--it, pivot, array_n);
-                    offsets_r[num_r] = ++i; num_r += comp(&*--it, pivot, array_n);
-                    offsets_r[num_r] = ++i; num_r += comp(&*--it, pivot, array_n);
-                    offsets_r[num_r] = ++i; num_r += comp(&*--it, pivot, array_n);
-                    offsets_r[num_r] = ++i; num_r += comp(&*--it, pivot, array_n);
-                }
+
+            // We have now fully identified [first, last)'s proper position. Swap the last elements.
+            if (num_l) {
+                offsets_l += start_l;
+                while (num_l--) array_swap(offsets_l_base + offsets_l[num_l], --last, array_n);
+                first = last;
             }
-
-            // Swap elements and update block sizes and first/last boundaries.
-            int num = std::min(num_l, num_r);
-            swap_offsets(first, last, array_n,
-                         offsets_l + start_l, offsets_r + start_r,
-                         num, num_l == num_r);
-            num_l -= num; num_r -= num;
-            start_l += num; start_r += num;
-            if (num_l == 0) first += block_size;
-            if (num_r == 0) last -= block_size;
-        }
-
-        int l_size = 0, r_size = 0;
-        int unknown_left = (int)(last - first) - ((num_r || num_l) ? block_size : 0);
-        if (num_r) {
-            // Handle leftover block by assigning the unknown elements to the other block.
-            l_size = unknown_left;
-            r_size = block_size;
-        } else if (num_l) {
-            l_size = block_size;
-            r_size = unknown_left;
-        } else {
-            // No leftover block, split the unknown elements in two blocks.
-            l_size = unknown_left/2;
-            r_size = unknown_left - l_size;
-        }
-
-        // Fill offset buffers if needed.
-        if (unknown_left && !num_l) {
-            start_l = 0;
-            Iter it = first;
-            for (unsigned char i = 0; i < l_size;) {
-                offsets_l[num_l] = i++; num_l += !comp(&*it, pivot, array_n); ++it;
+            if (num_r) {
+                offsets_r += start_r;
+                while (num_r--) array_swap(offsets_r_base - offsets_r[num_r], first, array_n), ++first;
+                last = first;
             }
-        }
-        if (unknown_left && !num_r) {
-            start_r = 0;
-            Iter it = last;
-            for (unsigned char i = 0; i < r_size;) {
-                offsets_r[num_r] = ++i; num_r += comp(&*--it, pivot, array_n);
-            }
-        }
-
-        int num = std::min(num_l, num_r);
-        swap_offsets(first, last, array_n,
-                     offsets_l + start_l, offsets_r + start_r, num, num_l == num_r);
-        num_l -= num; num_r -= num;
-        start_l += num; start_r += num;
-        if (num_l == 0) first += l_size;
-        if (num_r == 0) last -= r_size;
-
-        // We have now fully identified [first, last)'s proper position. Swap the last elements.
-        if (num_l) {
-            offsets_l += start_l;
-            while (num_l--) array_swap(first + offsets_l[num_l], --last, array_n);
-            first = last;
-        }
-        if (num_r) {
-            offsets_r += start_r;
-            while (num_r--) array_swap(last - offsets_r[num_r], first, array_n), ++first;
-            last = first;
-        }
         }
 
         // Put the pivot in the right place.
