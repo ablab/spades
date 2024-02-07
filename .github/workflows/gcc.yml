@@ -46,22 +46,21 @@ jobs:
           -DCMAKE_C_COMPILER=gcc-9 -DCMAKE_CXX_COMPILER=g++-9 
           -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
+          -DCPACK_PACKAGE_FILE_NAME=SPAdes-GCC9-Linux
 
       - name: '🚧 Build'
         run: >
           cmake
           --build ${{env.BUILD_DIR}}
           -j16
-          -t package include_test debruijn_test
+          -t package
 
       - name: '📦 Package'
         uses: actions/upload-artifact@v3
         with:
-          name: build-artifacts
+          name: build-artifacts-gcc9
           path: |
             ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
-            ${{env.BUILD_DIR}}/bin/debruijn_test
-            ${{env.BUILD_DIR}}/bin/include_test
 
   spades-test-python38:
     name: 'E. coli 1k run with Python3.8'
@@ -79,7 +78,7 @@ jobs:
       - name: '📦 Download package'
         uses: actions/download-artifact@v3
         with:
-          name: build-artifacts
+          name: build-artifacts-gcc9
           path: ${{env.INSTALL_DIR}}
       - name: '📦 Unpack package'
         working-directory: ${{env.INSTALL_DIR}}
@@ -119,22 +118,21 @@ jobs:
           -DCMAKE_C_COMPILER=gcc-10 -DCMAKE_CXX_COMPILER=g++-10 
           -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
+          -DCPACK_PACKAGE_FILE_NAME=SPAdes-GCC10-Linux
 
       - name: '🚧 Build'
         run: >
           cmake
           --build ${{env.BUILD_DIR}}
           -j16
-          -t package include_test debruijn_test
+          -t package
 
       - name: '📦 Package'
         uses: actions/upload-artifact@v3
         with:
-          name: build-artifacts
+          name: build-artifacts-gcc10
           path: |
             ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
-            ${{env.BUILD_DIR}}/bin/debruijn_test
-            ${{env.BUILD_DIR}}/bin/include_test
 
   spades-test-python39:
     name: 'E. coli 1k run with Python3.9'
@@ -152,7 +150,7 @@ jobs:
       - name: '📦 Download package'
         uses: actions/download-artifact@v3
         with:
-          name: build-artifacts
+          name: build-artifacts-gcc10
           path: ${{env.INSTALL_DIR}}
       - name: '📦 Unpack package'
         working-directory: ${{env.INSTALL_DIR}}
@@ -192,22 +190,21 @@ jobs:
           -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ 
           -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
+          -DCPACK_PACKAGE_FILE_NAME=SPAdes-GCC11-Linux
 
       - name: '🚧 Build'
         run: >
           cmake
           --build ${{env.BUILD_DIR}}
           -j16
-          -t package include_test debruijn_test
+          -t package
 
       - name: '📦 Package'
         uses: actions/upload-artifact@v3
         with:
-          name: build-artifacts
+          name: build-artifacts-gcc11
           path: |
             ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
-            ${{env.BUILD_DIR}}/bin/debruijn_test
-            ${{env.BUILD_DIR}}/bin/include_test
 
   spades-test-python310:
     name: 'E. coli 1k run with Python3.10'
@@ -225,7 +222,7 @@ jobs:
       - name: '📦 Download package'
         uses: actions/download-artifact@v3
         with:
-          name: build-artifacts
+          name: build-artifacts-gcc11
           path: ${{env.INSTALL_DIR}}
       - name: '📦 Unpack package'
         working-directory: ${{env.INSTALL_DIR}}
@@ -265,25 +262,24 @@ jobs:
           -DCMAKE_C_COMPILER=/home/ubuntu/bin/gcc12/bin/gcc -DCMAKE_CXX_COMPILER=/home/ubuntu/bin/gcc12/bin/g++
           -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
+          -DCPACK_PACKAGE_FILE_NAME=SPAdes-GCC12-Linux
 
       - name: '🚧 Build'
         run: >
           cmake
           --build ${{env.BUILD_DIR}}
           -j16
-          -t package include_test debruijn_test
+          -t package
 
       - name: '📦 Package'
         uses: actions/upload-artifact@v3
         with:
-          name: build-artifacts
+          name: build-artifacts-gcc12
           path: |
             ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
-            ${{env.BUILD_DIR}}/bin/debruijn_test
-            ${{env.BUILD_DIR}}/bin/include_test
 
   spades-test-python311:
-    name: 'E. coli 1k run with Python3.12'
+    name: 'E. coli 1k run with Python3.11'
     runs-on:
       labels: [self-hosted, worker-1]
     needs: build-gcc12
@@ -298,13 +294,13 @@ jobs:
       - name: '📦 Download package'
         uses: actions/download-artifact@v3
         with:
-          name: build-artifacts
+          name: build-artifacts-gcc12
           path: ${{env.INSTALL_DIR}}
       - name: '📦 Unpack package'
         working-directory: ${{env.INSTALL_DIR}}
         run: >
           tar -zxf ${{env.PKG}}.tar.gz
-      - name: 'E.coli 1K RNA with Python 3.12'
+      - name: 'E.coli 1K RNA with Python 3.11'
         run: >
           python3.11 ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/spades.py --test --rna
 
@@ -338,22 +334,21 @@ jobs:
           -DCMAKE_C_COMPILER=/home/ubuntu/bin/gcc13/bin/gcc -DCMAKE_CXX_COMPILER=/home/ubuntu/bin/gcc13/bin/g++
           -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
+          -DCPACK_PACKAGE_FILE_NAME=SPAdes-GCC13-Linux
 
       - name: '🚧 Build'
         run: >
           cmake
           --build ${{env.BUILD_DIR}}
           -j16
-          -t package include_test debruijn_test
+          -t package
 
       - name: '📦 Package'
         uses: actions/upload-artifact@v3
         with:
-          name: build-artifacts
+          name: build-artifacts-gcc13
           path: |
             ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
-            ${{env.BUILD_DIR}}/bin/debruijn_test
-            ${{env.BUILD_DIR}}/bin/include_test
 
   spades-test-python312:
     name: 'E. coli 1k run with Python3.12'
@@ -371,7 +366,7 @@ jobs:
       - name: '📦 Download package'
         uses: actions/download-artifact@v3
         with:
-          name: build-artifacts
+          name: build-artifacts-gcc13
           path: ${{env.INSTALL_DIR}}
       - name: '📦 Unpack package'
         working-directory: ${{env.INSTALL_DIR}}
