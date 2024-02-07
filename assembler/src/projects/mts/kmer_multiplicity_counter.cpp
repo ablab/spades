@@ -6,11 +6,12 @@
 #include <iostream>
 #include <memory>
 #include <algorithm>
-#include <libcxx/sort.hpp>
 #include "getopt_pp/getopt_pp.h"
 #include "kmc_api/kmc_file.h"
+#include <pdqsort/pdqsort.h>
 //#include "omp.h"
 #include "io/kmers/mmapped_reader.hpp"
+#include "sequence/seq_common.hpp"
 #include "utils/stl_utils.hpp"
 #include "kmer_index/ph_map/perfect_hash_map_builder.hpp"
 #include "kmer_index/ph_map/storing_traits.hpp"
@@ -47,7 +48,7 @@ class KmerMultiplicityCounter {
 
     filesystem::path SortKmersCountFile(const filesystem::path& filename) {
         MMappedRecordArrayReader<seq_element_type> ins(filename, RtSeq::GetDataSize(k_) + 1, false);
-        libcxx::sort(ins.begin(), ins.end(), adt::array_less<seq_element_type>());
+        pdqsort_branchless(ins.begin(), ins.end(), adt::array_less<seq_element_type>());
         std::filesystem::path sorted_filename = filename.native() + KMER_SORTED_EXTENSION;
         std::ofstream out(sorted_filename);
         out.write((char*) ins.data(), ins.data_size());
