@@ -1,9 +1,9 @@
-[![TeamCity Simple Build Status](http://chihua.cab.spbu.ru:3000/app/rest/builds/buildType:(id:SPAdesBasicTests_RunAll)/statusIcon)](http://chihua.cab.spbu.ru:3000/buildConfiguration/SPAdesBasicTests_RunAll?mode=builds)
 [![License](https://img.shields.io/badge/licence-GPLv2-blue)](https://www.gnu.org/licenses/old-licenses/gpl-2.0)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/ablab/spades)](https://github.com/ablab/spades/releases/)
 [![GitHub Downloads](https://img.shields.io/github/downloads/ablab/spades/total.svg?style=social&logo=github&label=Download)](https://github.com/ablab/spades/releases)
 [![BioConda Downloads](https://anaconda.org/bioconda/spades/badges/downloads.svg)](https://anaconda.org/bioconda/spades)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](code_of_conduct.md)
+[![UnitTests](https://github.com/ablab/spades/actions/workflows/basic.yml/badge.svg)](https://github.com/ablab/spades/actions/workflows/basic.yml/badge.svg)
 
 
 <font size=20>__SPAdes 3.15.4 Manual__</font>
@@ -43,7 +43,7 @@
 <a name="sec1"></a>
 # About SPAdes
 
-SPAdes - St. Petersburg genome assembler - is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.15.4 was released under GPLv2 on February 1, 2021 and can be downloaded from <http://cab.spbu.ru/software/spades/>. 
+SPAdes - St. Petersburg genome assembler - is an assembly toolkit containing various assembly pipelines. This manual will help you to install and run SPAdes. SPAdes version 3.15.4 was released under GPLv2 on February 1, 2021 and can be downloaded from <https://github.com/ablab/spades>. 
 
 The latest SPAdes paper describing various pipelines in a protocol format is available [here](https://currentprotocols.onlinelibrary.wiley.com/doi/abs/10.1002/cpbi.102).
 
@@ -89,7 +89,7 @@ We recommend to run SPAdes with BayesHammer/IonHammer to obtain high-quality ass
 In this section we give approximate data about SPAdes performance on two data sets:
 
 -   [Standard isolate *E. coli*](https://www.ncbi.nlm.nih.gov/sra/?term=ERR008613); 6.2Gb, 28M reads, 2x100bp, insert size ~ 215bp
--   [MDA single-cell *E. coli*](http://cab.spbu.ru/files/spades_test_datasets/ecoli_sc/); 6.3 Gb, 29M reads, 2x100bp, insert size ~ 270bp (originally downloaded from [here](http://bix.ucsd.edu/projects/singlecell/nbt_data.html))
+-   MDA single-cell *E. coli*; 6.3 Gb, 29M reads, 2x100bp, insert size ~ 270bp
 
 We ran SPAdes with default parameters using 16 threads on a server with Intel Xeon 2.27GHz processors. BayesHammer runs in approximately half an hour and takes up to 8Gb of RAM to perform read error correction on each data set. Assembly takes about 10 minutes for the *E. coli* isolate data set and 20 minutes for the *E. coli* single-cell data set. Both data sets require about 8Gb of RAM (see notes below). MismatchCorrector runs for about 15 minutes on both data sets, and requires less than 2Gb of RAM. All modules also require additional disk space for storing results (corrected reads, contigs, etc) and temporary files. See the table below for more precise values.
 
@@ -186,11 +186,11 @@ In case of successful installation the following files will be placed in the `bi
 <a name="sec2.1"></a>
 ## Downloading SPAdes Linux binaries
 
-To download [SPAdes Linux binaries](http://cab.spbu.ru/files/release3.15.4/SPAdes-3.15.4-Linux.tar.gz) and extract them, go to the directory in which you wish SPAdes to be installed and run:
+To download [SPAdes Linux binaries](https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5-Linux.tar.gz) and extract them, go to the directory in which you wish SPAdes to be installed and run:
 
 ``` bash
 
-    wget http://cab.spbu.ru/files/release3.15.4/SPAdes-3.15.4-Linux.tar.gz
+    wget https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5-Linux.tar.gz
     tar -xzf SPAdes-3.15.4-Linux.tar.gz
     cd SPAdes-3.15.4-Linux/bin/
 ```
@@ -202,11 +202,11 @@ Note, that pre-build binaries do not work on new Linux kernels.
 <a name="sec2.2"></a>
 ## Downloading SPAdes binaries for Mac
 
-To obtain [SPAdes binaries for Mac](http://cab.spbu.ru/files/release3.15.4/SPAdes-3.15.4-Darwin.tar.gz), go to the directory in which you wish SPAdes to be installed and run:
+To obtain [SPAdes binaries for Mac](https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5-Darwin.tar.gz), go to the directory in which you wish SPAdes to be installed and run:
 
 ``` bash
 
-    curl http://cab.spbu.ru/files/release3.15.4/SPAdes-3.15.4-Darwin.tar.gz -o SPAdes-3.15.4-Darwin.tar.gz
+    curl https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5-Darwin.tar.gz
     tar -zxf SPAdes-3.15.4-Darwin.tar.gz
     cd SPAdes-3.15.4-Darwin/bin/
 ```
@@ -223,11 +223,11 @@ If you wish to compile SPAdes by yourself you will need the following libraries 
 -   zlib
 -   libbz2
 
-If you meet these requirements, you can download the [SPAdes source code](http://cab.spbu.ru/files/release3.15.4/SPAdes-3.15.4.tar.gz):
+If you meet these requirements, you can download the [SPAdes source code](https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5.tar.gz):
 
 ``` bash
 
-    wget http://cab.spbu.ru/files/release3.15.4/SPAdes-3.15.4.tar.gz
+    wget https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5.tar.gz
     tar -xzf SPAdes-3.15.4.tar.gz
     cd SPAdes-3.15.4
 ```
@@ -400,7 +400,7 @@ Note that we assume that `bin` forder from SPAdes installation directory is adde
 <a name="isolate"></a>
 `--isolate ` 
     This flag is highly recommended for high-coverage isolate and multi-cell Illumina data; improves the assembly quality and running time. 
-    We also recommend to trim your reads prior to the assembly. More details can be found [here](http://cab.spbu.ru/benchmarking-tools-for-de-novo-microbial-assembly/).
+    We also recommend to trim your reads prior to the assembly.
     This option is not compatible with `--only-error-correction` or `--careful` options. 
 
 <a name="sc"></a>
@@ -1070,7 +1070,7 @@ biosyntheticSPAdes outputs four files of interest:
 <a name="eval"></a>
 ## Assembly evaluation
 
-[QUAST](http://cab.spbu.ru/software/quast/) may be used to generate summary statistics (N50, maximum contig length, GC %, \# genes found in a reference list or with built-in gene finding tools, etc.) for a single assembly. It may also be used to compare statistics for multiple assemblies of the same data set (e.g., SPAdes run with different parameters, or several different assemblers).
+[QUAST](https://quast.sourceforge.net/) may be used to generate summary statistics (N50, maximum contig length, GC %, \# genes found in a reference list or with built-in gene finding tools, etc.) for a single assembly. It may also be used to compare statistics for multiple assemblies of the same data set (e.g., SPAdes run with different parameters, or several different assemblers).
 []()
 
 
@@ -1244,7 +1244,7 @@ Additional options are:
 `-tmpdir <dir_name>  `
     scratch directory to use
 
-While `spades-mapper` is a solution for those who work on hybridSPAdes assembly and want to get exactly its intermediate results, [SPAligner](#sec4.5.2) is an end-product application for sequence-to-graph alignment with tunable parameters and output types.  
+While `spades-mapper` is a solution for those who work on hybridSPAdes assembly and want to get exactly its intermediate results, [SPAligner](#sec4.5.2) is an end-product application for sequence-to-graph alignment with tunable parameters and output types.
 
 
 <a name="sec4.5.2"></a>
@@ -1297,13 +1297,11 @@ If you use other pipelines, please cite the following papers:
 
 You may also include older papers [Nurk, Bankevich et al., 2013](http://link.springer.com/chapter/10.1007%2F978-3-642-37195-0_13) or [Bankevich, Nurk et al., 2012](http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021), especially if you assemble single-cell data.
 
-In addition, we would like to list your publications that use our software on our website. Please email the reference, the name of your lab, department and institution to [spades.support@cab.spbu.ru](mailto:spades.support@cab.spbu.ru)
-
 <a name="sec6"></a>
 # Feedback and bug reports
 
 Your comments, bug reports, and suggestions are very welcomed. They will help us to further improve SPAdes. If you have any troubles running SPAdes, please send us `params.txt` and `spades.log` from the directory `<output_dir>`.
 
-You can leave your comments and bug reports at [our GitHub repository tracker](https://github.com/ablab/spades/issues) or sent it via e-mail: [spades.support@cab.spbu.ru](mailto:spades.support@cab.spbu.ru)
+You can leave your comments and bug reports at [our GitHub repository tracker](https://github.com/ablab/spades/issues).
 
 

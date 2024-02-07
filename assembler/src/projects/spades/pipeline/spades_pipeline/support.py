@@ -45,15 +45,13 @@ def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE, exit_code = -1):
     if log:
         log.info("\n\n%s %s" % (prefix, err_str))
         log_warnings(log, with_error=True)
-        log.info("\nIn case you have troubles running %s, you can write to spades.support@cab.spbu.ru" % binary_name)
-        log.info("or report an issue on our GitHub repository github.com/ablab/spades")
+        log.info("\nIn case you have troubles running %s, you can report an issue on our GitHub repository github.com/ablab/spades" % binary_name)
         log.info(
             "Please provide us with params.txt and %s.log files from the output directory." % binary_name.lower())
     else:
         sys.stderr.write("\n\n%s %s\n\n" % (prefix, err_str))
         sys.stderr.write(
-            "\nIn case you have troubles running %s, you can write to spades.support@cab.spbu.ru\n" % binary_name)
-        sys.stderr.write("or report an issue on our GitHub repository github.com/ablab/spades\n")
+            "\nIn case you have troubles running %s, you can report an issue on our GitHub repository github.com/ablab/spades\n" % binary_name)
         sys.stderr.write(
             "Please provide us with params.txt and %s.log files from the output directory.\n" % binary_name.lower())
         sys.stderr.flush()
@@ -104,7 +102,7 @@ def check_python_version():
 
 def get_spades_binaries_info_message():
     return "You can obtain SPAdes binaries in one of two ways:" + \
-           "\n1. Download them from http://cab.spbu.ru/software/spades/" + \
+           "\n1. Download them from https://github.com/ablab/spades/" + \
            "\n2. Build source code with ./spades_compile.sh script"
 
 

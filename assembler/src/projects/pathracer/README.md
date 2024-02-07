@@ -196,5 +196,5 @@ AlCoB 2019. Berkeley, California, USA, May 28&ndash;30, 2019,_ volume 11488 LNCS
 80&ndash;94, 2019.  
 <https://link.springer.com/chapter/10.1007/978-3-030-18174-1_6>
 
-In case of any problems running **PathRacer** please contact SPAdes support <spades.support@cab.spbu.ru> attaching the log file.
+In case of any problems running **PathRacer** please contact [SPAdes support](https://github.com/ablab/spades/issues)> attaching the log file.
 Your suggestions are also very welcome!
