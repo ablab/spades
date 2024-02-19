@@ -32,7 +32,7 @@ using namespace debruijn_graph;
 using namespace omnigraph::de;
 
 std::vector<std::shared_ptr<ConnectionCondition>>
-PathExtendLauncher::ConstructPairedConnectionConditions(const ScaffoldingUniqueEdgeStorage& edge_storage) const {
+PathExtendLauncher::ConstructPairedConnectionConditions(const ScaffoldingUniqueEdgeStorage &edge_storage) const {
 
     std::vector<std::shared_ptr<ConnectionCondition>> conditions;
     const pe_config::ParamSetT::ScaffoldGraphParamsT &params = params_.pset.scaffold_graph_params;
@@ -44,13 +44,16 @@ PathExtendLauncher::ConstructPairedConnectionConditions(const ScaffoldingUniqueE
             if (lib.is_mate_pair())
                 paired_lib = MakeNewLib(graph_, lib, gp_.get<UnclusteredPairedInfoIndicesT<Graph>>()[lib_index]);
             else if (lib.is_paired())
-                paired_lib = MakeNewLib(graph_, lib, gp_.get<PairedInfoIndicesT<Graph>>("clustered_indices")[lib_index]);
+                paired_lib =
+                    MakeNewLib(graph_, lib, gp_.get<PairedInfoIndicesT<Graph>>("clustered_indices")[lib_index]);
             else {
                 INFO("Unusable for scaffold graph paired lib #" << lib_index);
                 continue;
             }
-            conditions.push_back(std::make_shared<ScaffoldGraphPairedConnectionCondition>(graph_, edge_storage.unique_edges(),
-                                                                                          paired_lib, lib_index,
+            conditions.push_back(std::make_shared<ScaffoldGraphPairedConnectionCondition>(graph_,
+                                                                                          edge_storage.unique_edges(),
+                                                                                          paired_lib,
+                                                                                          lib_index,
                                                                                           params.always_add,
                                                                                           params.never_add,
                                                                                           params.relative_threshold));
@@ -60,7 +63,7 @@ PathExtendLauncher::ConstructPairedConnectionConditions(const ScaffoldingUniqueE
 }
 
 std::shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructScaffoldGraph(
-        const ScaffoldingUniqueEdgeStorage &edge_storage) const {
+    const ScaffoldingUniqueEdgeStorage &edge_storage) const {
     using namespace scaffolder;
 
     const pe_config::ParamSetT::ScaffoldGraphParamsT &params = params_.pset.scaffold_graph_params;
@@ -84,12 +87,12 @@ std::shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructScaf
     auto scaffold_graph = constructor.Construct();
 
     INFO("Scaffold graph contains " << scaffold_graph->VertexCount() << " vertices and " << scaffold_graph->EdgeCount()
-             << " edges");
+                                    << " edges");
     return scaffold_graph;
 }
 
 std::shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructPathScaffoldGraphForReadCloudLib(
-        const PathContainer &path_container, size_t lib_index) const {
+    const PathContainer &path_container, size_t lib_index) const {
     read_cloud::fragment_statistics::DistributionPack distribution_pack;
     const auto &cloud_lib = dataset_info_.reads[lib_index];
     VERIFY_DEV(cloud_lib.type() == io::LibraryType::Clouds10x or cloud_lib.type() == io::LibraryType::TellSeqReads);
@@ -131,7 +134,7 @@ void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph 
     using namespace scaffold_graph;
 
     std::set<scaffold_graph::ScaffoldVertex> scaff_vertex_set;
-    for (const auto& edge: main_edge_set) {
+    for (const auto &edge : main_edge_set) {
         EdgeId copy = edge;
         scaff_vertex_set.insert(copy);
     }
@@ -141,7 +144,7 @@ void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph 
 
     INFO("Visualizing scaffold graph");
     std::map<ScaffoldVertex, string> scaff_vertex_labels;
-    for (const auto& entry: genome_checker.EdgeLabels()) {
+    for (const auto &entry : genome_checker.EdgeLabels()) {
         scaff_vertex_labels.insert({entry.first, entry.second});
     }
     ScaffoldGraphVisualizer singleVisualizer(scaffold_graph, scaff_vertex_labels);
@@ -156,7 +159,6 @@ void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph 
     scaffold_graph.Print(data_stream);
     data_stream.close();
 }
-
 
 void PathExtendLauncher::MakeAndOutputScaffoldGraph() const {
     if (!params_.pset.scaffold_graph_params.construct)
@@ -187,14 +189,16 @@ void PathExtendLauncher::CountMisassembliesWithReference(const PathContainer &pa
     ScaffoldingUniqueEdgeStorage tmp_storage;
     if (!use_main_storage) {
         unresolvable_gap = params_.pset.genome_consistency_checker.unresolvable_jump;
-        ScaffoldingUniqueEdgeAnalyzer tmp_analyzer(gp_, params_.pset.genome_consistency_checker.unique_length, unique_data_.unique_variation_);
+        ScaffoldingUniqueEdgeAnalyzer
+            tmp_analyzer(gp_, params_.pset.genome_consistency_checker.unique_length, unique_data_.unique_variation_);
         tmp_analyzer.FillUniqueEdgeStorage(tmp_storage);
     }
     debruijn_graph::GenomeConsistenceChecker genome_checker(gp_,
                                                             params_.pset.genome_consistency_checker.max_gap,
                                                             params_.pset.genome_consistency_checker.relative_max_gap,
                                                             unresolvable_gap,
-                                                            use_main_storage ? unique_data_.main_unique_storage_ : tmp_storage,
+                                                            use_main_storage ? unique_data_.main_unique_storage_
+                                                                             : tmp_storage,
                                                             unique_data_.long_reads_cov_map_,
                                                             dataset_info_.reads);
 
@@ -240,9 +244,11 @@ void PathExtendLauncher::EstimateUniqueEdgesParams() {
 
         CoverageUniformityAnalyzer coverage_analyzer(graph_, unique_data_.min_unique_length_);
         double median_coverage = coverage_analyzer.CountMedianCoverage();
-        double uniformity_fraction = coverage_analyzer.UniformityFraction(unique_data_.unique_variation_, median_coverage);
-        INFO ("median coverage for edges longer than " << unique_data_.min_unique_length_ << " is " << median_coverage <<
-            " uniformity " << size_t(uniformity_fraction * 100) << "%");
+        double
+            uniformity_fraction = coverage_analyzer.UniformityFraction(unique_data_.unique_variation_, median_coverage);
+        INFO (
+            "median coverage for edges longer than " << unique_data_.min_unique_length_ << " is " << median_coverage <<
+                                                     " uniformity " << size_t(uniformity_fraction * 100) << "%");
         if (math::gr(uniformity_fraction, params_.pset.uniqueness_analyser.uniformity_fraction_threshold)) {
             uniform_coverage = true;
         }
@@ -253,13 +259,14 @@ void PathExtendLauncher::EstimateUniqueEdgesParams() {
 
     } else {
         INFO("Unique edge set constructed with parameters from config : length " << unique_data_.min_unique_length_
-                 << " variation " << unique_data_.unique_variation_);
+                                                                                 << " variation "
+                                                                                 << unique_data_.unique_variation_);
     }
 }
 
-
 void PathExtendLauncher::FillUniqueEdgeStorage() {
-    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp_, unique_data_.min_unique_length_, unique_data_.unique_variation_);
+    ScaffoldingUniqueEdgeAnalyzer
+        unique_edge_analyzer(gp_, unique_data_.min_unique_length_, unique_data_.unique_variation_);
     unique_edge_analyzer.FillUniqueEdgeStorage(unique_data_.main_unique_storage_);
 }
 
@@ -303,7 +310,7 @@ void PathExtendLauncher::RemoveOverlapsAndArtifacts(PathContainer &paths,
 
     INFO("Deduplicating paths");
     Deduplicate(graph_, paths, cover_map, params_.min_edge_len,
-                         params_.max_path_diff);
+                params_.max_path_diff);
 
     INFO("Paths deduplicated");
 
@@ -325,14 +332,16 @@ void PathExtendLauncher::RemoveOverlapsAndArtifacts(PathContainer &paths,
     INFO("Paths finalized");
 }
 
-
-void PathExtendLauncher::CleanPaths(PathContainer &paths, const pe_config::ParamSetT::PathFiltrationT &path_filtration) const {
+void PathExtendLauncher::CleanPaths(PathContainer &paths,
+                                    const pe_config::ParamSetT::PathFiltrationT &path_filtration) const {
     if (path_filtration.enabled) {
         paths.FilterPaths(LengthPathCondition(GetLengthCutoff(path_filtration.min_length, path_filtration.rel_cutoff)));
         paths.FilterPaths(func::And(CoveragePathCondition(graph_, path_filtration.min_coverage),
-                                    LengthPathCondition(GetLengthCutoff(path_filtration.min_length_for_low_covered, path_filtration.rel_low_covered_cutoff))));
+                                    LengthPathCondition(GetLengthCutoff(path_filtration.min_length_for_low_covered,
+                                                                        path_filtration.rel_low_covered_cutoff))));
         paths.FilterPaths(func::And(IsolatedPathCondition(graph_),
-                                    func::And(LengthPathCondition(GetLengthCutoff(path_filtration.isolated_min_length, path_filtration.rel_isolated_cutoff)),
+                                    func::And(LengthPathCondition(GetLengthCutoff(path_filtration.isolated_min_length,
+                                                                                  path_filtration.rel_isolated_cutoff)),
                                               CoveragePathCondition(graph_, path_filtration.isolated_min_cov))));
     }
 
@@ -375,7 +384,8 @@ Extenders PathExtendLauncher::ConstructMPExtenders(const ExtendersGenerator &gen
     const pe_config::ParamSetT &pset = params_.pset;
 
     size_t cur_length = unique_data_.min_unique_length_ - pset.scaffolding2015.unique_length_step;
-    size_t lower_bound = std::max(pset.scaffolding2015.unique_length_lower_bound, pset.scaffolding2015.unique_length_step);
+    size_t
+        lower_bound = std::max(pset.scaffolding2015.unique_length_lower_bound, pset.scaffolding2015.unique_length_step);
 
     while (cur_length > lower_bound) {
         INFO("Will add extenders for length " << cur_length);
@@ -409,8 +419,10 @@ void PathExtendLauncher::ConstructReadCloudStorages() {
             read_cloud::fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor(distribution_pack);
             size_t min_upper_bound = params_.pe_cfg.read_cloud.long_edge_length_min_upper_bound;
             size_t max_upper_bound = params_.pe_cfg.read_cloud.long_edge_length_max_upper_bound;
-            read_cloud::fragment_statistics::UpperLengthBoundEstimator length_bound_estimator(min_upper_bound, max_upper_bound);
-            const double ultralong_edge_length_percentile = params_.pe_cfg.read_cloud.scaff_con.ultralong_edge_length_percentile;
+            read_cloud::fragment_statistics::UpperLengthBoundEstimator
+                length_bound_estimator(min_upper_bound, max_upper_bound);
+            const double
+                ultralong_edge_length_percentile = params_.pe_cfg.read_cloud.scaff_con.ultralong_edge_length_percentile;
             size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
                                                                                   ultralong_edge_length_percentile);
             INFO("Length upper bound for lib " << lib_index << ": " << length_upper_bound);
@@ -431,8 +443,8 @@ Extenders PathExtendLauncher::ConstructReadCloudExtenders(const ExtendersGenerat
 void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_threshold) {
     INFO("filling path container");
     if (dataset_info_.reads[lib_index].type() == io::LibraryType::TrustedContigs) {
-        auto& trusted_paths = gp_.get_mutable<path_extend::TrustedPathsContainer>()[lib_index];
-        for (auto & path : trusted_paths)
+        auto &trusted_paths = gp_.get_mutable<path_extend::TrustedPathsContainer>()[lib_index];
+        for (auto &path : trusted_paths)
             unique_data_.long_reads_paths_[lib_index].Create(graph_, std::move(path));
 
         DebugOutputPaths(unique_data_.long_reads_paths_[lib_index], "trusted_contigs");
@@ -440,7 +452,7 @@ void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_thresho
     } else {
         std::vector<PathInfo<Graph>> paths;
         gp_.get_mutable<LongReadContainer<Graph>>()[lib_index].SaveAllPaths(paths);
-        for (const auto &path: paths) {
+        for (const auto &path : paths) {
             const auto &edges = path.path();
             if (edges.size() <= size_threshold)
                 continue;
@@ -454,7 +466,6 @@ void PathExtendLauncher::FillPathContainer(size_t lib_index, size_t size_thresho
     unique_data_.long_reads_cov_map_[lib_index].AddPaths(unique_data_.long_reads_paths_[lib_index]);
 }
 
-
 void PathExtendLauncher::FillLongReadsCoverageMaps() {
     DEBUG("long reads start ")
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
@@ -467,7 +478,7 @@ void PathExtendLauncher::FillLongReadsCoverageMaps() {
     }
 }
 
-void  PathExtendLauncher::FillPBUniqueEdgeStorages() {
+void PathExtendLauncher::FillPBUniqueEdgeStorages() {
     //FIXME magic constants
     //FIXME need to change for correct usage of prelimnary contigs in loops
     ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer_pb(gp_, 500, 0.5);
@@ -486,7 +497,8 @@ void  PathExtendLauncher::FillPBUniqueEdgeStorages() {
         INFO("Removing fake unique with paired-end libs");
         for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
             auto lib = cfg::get().ds.reads[lib_index];
-            if (lib.type() == io::LibraryType::Clouds10x or lib.type() == io::LibraryType::PairedEnd or lib.type() == io::LibraryType::TellSeqReads) {
+            if (lib.type() == io::LibraryType::Clouds10x or lib.type() == io::LibraryType::PairedEnd
+                or lib.type() == io::LibraryType::TellSeqReads) {
                 unique_edge_analyzer_pb.ClearLongEdgesWithPairedLib(lib_index, unique_data_.unique_pb_storage_);
             }
         }
@@ -503,11 +515,11 @@ Extenders PathExtendLauncher::ConstructPBExtenders(const ExtendersGenerator &gen
     return generator.MakePBScaffoldingExtenders();
 }
 
-
 Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_map,
                                                  UsedUniqueStorage &used_unique_storage) {
     INFO("Creating main extenders, unique edge length = " << unique_data_.min_unique_length_);
-    if (!config::PipelineHelper::IsPlasmidPipeline(params_.mode) &&  (support_.SingleReadsMapped() || support_.HasLongReads()))
+    if (!config::PipelineHelper::IsPlasmidPipeline(params_.mode)
+        && (support_.SingleReadsMapped() || support_.HasLongReads()))
         FillLongReadsCoverageMaps();
     ExtendersGenerator generator(dataset_info_, params_, gp_, cover_map,
                                  unique_data_, used_unique_storage, support_);
@@ -549,7 +561,7 @@ Extenders PathExtendLauncher::ConstructExtenders(const GraphCoverageMap &cover_m
 }
 
 void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &result,
-                                     const GraphCoverageMap& cover_map) const {
+                                     const GraphCoverageMap &cover_map) const {
     using read_cloud::fragment_statistics::DistributionPack;
     using read_cloud::fragment_statistics::ClusterStatisticsExtractor;
     //Fixes distances for paths gaps and tries to fill them in
@@ -591,9 +603,12 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
 
             const size_t scan_bound = read_cloud_configs.gap_closer_scan_bound;
             auto cloud_chooser_factory =
-                std::make_shared<ReadCloudGapExtensionChooserFactory>(gp_.get<Graph>(), unique_data_.main_unique_storage_,
-                                                                      barcode_extractor_ptr, tail_threshold,
-                                                                      count_threshold, length_threshold,
+                std::make_shared<ReadCloudGapExtensionChooserFactory>(gp_.get<Graph>(),
+                                                                      unique_data_.main_unique_storage_,
+                                                                      barcode_extractor_ptr,
+                                                                      tail_threshold,
+                                                                      count_threshold,
+                                                                      length_threshold,
                                                                       read_cloud_gap_closer_params,
                                                                       scan_bound);
             auto simple_chooser = generator.MakeSimpleExtensionChooser(i);
@@ -626,14 +641,13 @@ void PathExtendLauncher::PolishPaths(const PathContainer &paths, PathContainer &
     INFO("Gap closing completed")
 }
 
-
 void PathExtendLauncher::FilterPaths(PathContainer &contig_paths) {
     auto default_filtration = params_.pset.path_filtration.end();
     for (auto it = params_.pset.path_filtration.begin(); it != params_.pset.path_filtration.end(); ++it) {
         if (!it->second.enabled)
             continue;
 
-        const auto& filtration_name = it->first;
+        const auto &filtration_name = it->first;
         if (filtration_name == "default") {
             default_filtration = it;
         } else {
@@ -660,10 +674,10 @@ void PathExtendLauncher::AddFLPaths(PathContainer &paths) const {
     for (size_t lib_index = 0; lib_index < dataset_info_.reads.lib_count(); lib_index++) {
         if (dataset_info_.reads[lib_index].is_full_length_rna_lib()) {
             INFO("Extracting FL paths for lib #" << lib_index);
-            std::vector <PathInfo<Graph>> raw_paths;
+            std::vector<PathInfo<Graph>> raw_paths;
             single_long_reads[lib_index].SaveAllPaths(raw_paths);
-            for (const auto& path: raw_paths) {
-                const auto& edges = path.path();
+            for (const auto &path : raw_paths) {
+                const auto &edges = path.path();
 
                 auto new_paths = paths.CreatePair(graph_, edges);
                 new_paths.first.SetWeight((float) path.weight());
@@ -677,44 +691,44 @@ void PathExtendLauncher::AddFLPaths(PathContainer &paths) const {
     if (fl_paths_added) {
         INFO("Deduplicating FL paths");
         GraphCoverageMap cover_map(graph_, paths);
-        Deduplicate(graph_, paths, cover_map, params_.min_edge_len,  params_.max_path_diff);
+        Deduplicate(graph_, paths, cover_map, params_.min_edge_len, params_.max_path_diff);
         paths.SortByLength();
         INFO("FL Paths deduplicated");
     }
 }
 
 class PathContainerCoverageSwitcher {
-    const Graph& g_;
+  const Graph &g_;
 
-    const debruijn_graph::SSCoverageStorage& coverage_storage_;
+  const debruijn_graph::SSCoverageStorage &coverage_storage_;
 
-    bool antisense_;
+  bool antisense_;
 
-    double CalculateCoverage(const BidirectionalPath& p, bool reverse) const {
-        double res = 0.0;
-        double len = 0;
-        for (auto e : p) {
-            res += coverage_storage_.GetCoverage(e, reverse) * double(g_.length(e));
-            len += (double) g_.length(e);
-        }
-        return res / len;
-    }
+  double CalculateCoverage(const BidirectionalPath &p, bool reverse) const {
+      double res = 0.0;
+      double len = 0;
+      for (auto e : p) {
+          res += coverage_storage_.GetCoverage(e, reverse) * double(g_.length(e));
+          len += (double) g_.length(e);
+      }
+      return res / len;
+  }
 
-public:
-    PathContainerCoverageSwitcher(const Graph& g, const debruijn_graph::SSCoverageStorage& coverage_storage, bool antisense):
-        g_(g), coverage_storage_(coverage_storage), antisense_(antisense) {}
+ public:
+  PathContainerCoverageSwitcher(const Graph &g,
+                                const debruijn_graph::SSCoverageStorage &coverage_storage,
+                                bool antisense) :
+      g_(g), coverage_storage_(coverage_storage), antisense_(antisense) {}
 
-
-    void Apply(PathContainer& paths) const {
-        for (size_t i = 0; i < paths.size(); ++i) {
-            if (math::ls(CalculateCoverage(paths.Get(i), antisense_),
-                         CalculateCoverage(paths.GetConjugate(i), antisense_))) {
-                paths.Swap(i);
-            }
-        }
-    }
+  void Apply(PathContainer &paths) const {
+      for (size_t i = 0; i < paths.size(); ++i) {
+          if (math::ls(CalculateCoverage(paths.Get(i), antisense_),
+                       CalculateCoverage(paths.GetConjugate(i), antisense_))) {
+              paths.Swap(i);
+          }
+      }
+  }
 };
-
 
 void PathExtendLauncher::SelectStrandSpecificPaths(PathContainer &paths) const {
     if (!params_.ss.ss_enabled)
@@ -729,7 +743,7 @@ void PathExtendLauncher::SelectStrandSpecificPaths(PathContainer &paths) const {
     switcher.Apply(paths);
 }
 
-void MakeConjugateEdgePairsDump(ConjugateDeBruijnGraph const & graph) {
+void MakeConjugateEdgePairsDump(ConjugateDeBruijnGraph const &graph) {
     std::ofstream out(cfg::get().output_dir / "conjugate_edge_pairs_dump.info");
     if (!out.is_open()) {
         FATAL_ERROR("Cannot open conjugate_edge_pairs_dump.info for writing");
@@ -800,68 +814,68 @@ void PathExtendLauncher::Launch() {
         RemoveOverlapsAndArtifacts(paths, cover_map, resolver);
         DebugOutputPaths(paths, "before_path_polishing");
 
-    PathContainer polished_paths;
+        PathContainer polished_paths;
 
-    //TODO does path polishing correctly work with coverage map
-    PolishPaths(paths, polished_paths, cover_map);
-    DebugOutputPaths(polished_paths, "polished_paths");
+        //TODO does path polishing correctly work with coverage map
+        PolishPaths(paths, polished_paths, cover_map);
+        DebugOutputPaths(polished_paths, "polished_paths");
 
-    //TODO use move assignment to original map here
-    GraphCoverageMap polished_map(gp_.get<Graph>(), polished_paths, true);
-    RemoveOverlapsAndArtifacts(polished_paths, polished_map, resolver);
-    DebugOutputPaths(polished_paths, "overlap_removed");
+        //TODO use move assignment to original map here
+        GraphCoverageMap polished_map(gp_.get<Graph>(), polished_paths, true);
+        RemoveOverlapsAndArtifacts(polished_paths, polished_map, resolver);
+        DebugOutputPaths(polished_paths, "overlap_removed");
 
-    //todo discuss
+        //todo discuss
 
-    if (support_.HasReadClouds() and params_.pe_cfg.read_cloud.read_cloud_resolution_on and
+        if (support_.HasReadClouds() and params_.pe_cfg.read_cloud.read_cloud_resolution_on and
             params_.pe_cfg.read_cloud.path_scaffolding_on and params_.pset.sm != scaffolding_mode::sm_old) {
-        //fixme move this to separate class, make PathScaffolder analogous to Extender (construct for every lib)
-        read_cloud::fragment_statistics::DistributionPack distribution_pack;
-        std::vector<io::SequencingLibrary<debruijn_graph::config::LibraryData>> cloud_libs;
-        for (const auto &lib: dataset_info_.reads) {
-            if (lib.type() == io::LibraryType::Clouds10x or lib.type() == io::LibraryType::TellSeqReads) {
-                distribution_pack.length_distribution_ = lib.data().read_cloud_info.fragment_length_distribution;
-                cloud_libs.push_back(lib);
+            //fixme move this to separate class, make PathScaffolder analogous to Extender (construct for every lib)
+            read_cloud::fragment_statistics::DistributionPack distribution_pack;
+            std::vector<io::SequencingLibrary<debruijn_graph::config::LibraryData>> cloud_libs;
+            for (const auto &lib : dataset_info_.reads) {
+                if (lib.type() == io::LibraryType::Clouds10x or lib.type() == io::LibraryType::TellSeqReads) {
+                    distribution_pack.length_distribution_ = lib.data().read_cloud_info.fragment_length_distribution;
+                    cloud_libs.push_back(lib);
+                }
             }
+            VERIFY_DEV(cloud_libs.size() == 1);
+            auto cloud_lib = cloud_libs.front();
+            VERIFY_DEV(not distribution_pack.length_distribution_.empty());
+            const size_t small_path_length_threshold = params_.pe_cfg.read_cloud.long_edge_length_lower_bound;
+            size_t min_upper_bound = params_.pe_cfg.read_cloud.long_edge_length_min_upper_bound;
+            size_t max_upper_bound = params_.pe_cfg.read_cloud.long_edge_length_max_upper_bound;
+            read_cloud::fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor(distribution_pack);
+            read_cloud::fragment_statistics::UpperLengthBoundEstimator length_bound_estimator(min_upper_bound,
+                                                                                              max_upper_bound);
+            const double cluster_length_percentile = params_.pe_cfg.read_cloud.scaff_con.cluster_length_percentile;
+            size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
+                                                                                  cluster_length_percentile);
+            ScaffoldPaths(polished_paths);
+
+            PolishPaths(polished_paths, contig_paths, polished_map);
+            DebugOutputPaths(contig_paths, "merged_polished_paths");
+
+            GraphCoverageMap merged_polished_map(gp_.get<Graph>(), contig_paths, true);
+
+            DebugOutputPaths(contig_paths, "polished_paths");
+            TraverseLoops(contig_paths, polished_map);
+            DebugOutputPaths(contig_paths, "loop_traveresed");
+
+            RemoveOverlapsAndArtifacts(contig_paths, polished_map, resolver);
+            DebugOutputPaths(contig_paths, "overlap_removed");
         }
-        VERIFY_DEV(cloud_libs.size() == 1);
-        auto cloud_lib = cloud_libs.front();
-        VERIFY_DEV(not distribution_pack.length_distribution_.empty());
-        const size_t small_path_length_threshold = params_.pe_cfg.read_cloud.long_edge_length_lower_bound;
-        size_t min_upper_bound = params_.pe_cfg.read_cloud.long_edge_length_min_upper_bound;
-        size_t max_upper_bound = params_.pe_cfg.read_cloud.long_edge_length_max_upper_bound;
-        read_cloud::fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor(distribution_pack);
-        read_cloud::fragment_statistics::UpperLengthBoundEstimator length_bound_estimator(min_upper_bound,
-                                                                                          max_upper_bound);
-        const double cluster_length_percentile = params_.pe_cfg.read_cloud.scaff_con.cluster_length_percentile;
-        size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
-                                                                              cluster_length_percentile);
-        ScaffoldPaths(polished_paths);
-
-        PolishPaths(polished_paths, contig_paths, polished_map);
-        DebugOutputPaths(contig_paths, "merged_polished_paths");
-
-        GraphCoverageMap merged_polished_map(gp_.get<Graph>(), contig_paths, true);
-
-        GraphCoverageMap merged_polished_map(graph_, contig_paths, true);
-    DebugOutputPaths(contig_paths, "polished_paths");
-    TraverseLoops(contig_paths, polished_map);
-        DebugOutputPaths(contig_paths, "loop_traveresed");
-
-    RemoveOverlapsAndArtifacts(contig_paths, polished_map, resolver);
-    DebugOutputPaths(contig_paths, "overlap_removed");
 
 //    RemoveOverlapsAndArtifacts(contig_paths, polished_map, resolver);
 //    DebugOutputPaths(contig_paths, "overlap_removed");
 
-    AddFLPaths(contig_paths);
+        AddFLPaths(contig_paths);
 
-    SelectStrandSpecificPaths(contig_paths);
+        SelectStrandSpecificPaths(contig_paths);
 
-    CountMisassembliesWithReference(contig_paths);
+        CountMisassembliesWithReference(contig_paths);
 
-    INFO("ExSPAnder repeat resolving tool finished");
-}
+        INFO("ExSPAnder repeat resolving tool finished");
+    }
 
 }
 }

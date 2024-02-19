@@ -64,7 +64,7 @@ template <class Graph, class EdgeEntryT>
 class ConcurrentBarcodeIndexBuffer {
   public:
     typedef typename Graph::EdgeId EdgeId;
-    typedef cuckoohash_map<EdgeId, EdgeEntryT> StorageMap;
+    typedef libcuckoo::cuckoohash_map<EdgeId, EdgeEntryT> StorageMap;
 
     ConcurrentBarcodeIndexBuffer(const Graph &g) : g_(g), edge_to_entry_() {}
     virtual ~ConcurrentBarcodeIndexBuffer() {clear();}
