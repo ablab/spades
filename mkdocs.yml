@@ -1,0 +1,10 @@
+site_name: SPAdes Assembly Toolkit
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Running SPAdes: running.md
+  - SPAdes tools: standalone.md
+  - Citation: citation.md
+  - Feedback: feedback.md
+theme: material
+
