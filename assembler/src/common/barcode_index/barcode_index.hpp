@@ -13,7 +13,6 @@
 #include "io/reads/paired_readers.hpp"
 #include "sequence/range.hpp"
 
-#include <boost/dynamic_bitset.hpp>
 #include <cuckoo/cuckoohash_map.hh>
 #include <unordered_set>
 
