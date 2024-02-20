@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include <boost/test/tools/floating_point_comparison.hpp>
-
 #include "distribution_extractor.hpp"
 #include "configs/pe_config_struct.hpp"
 #include "modules/path_extend/read_cloud_path_extend/cluster_storage/initial_cluster_storage_builder.hpp"
