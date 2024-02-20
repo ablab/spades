@@ -21,11 +21,11 @@ public:
         : IOSingle<Type>("barcode index", ".bmap") {
     }
 
-    void Write(BinOStream &str, const Type &mapper) override {
+    void SaveImpl(BinOStream &str, const Type &mapper) override {
         str << mapper.GetFrameSize() << mapper;
     }
 
-    void Read(BinIStream &str, Type &mapper) override {
+    void LoadImpl(BinIStream &str, Type &mapper) override {
         size_t frame_size;
         str >> frame_size;
         mapper.SetFrameSize(frame_size);

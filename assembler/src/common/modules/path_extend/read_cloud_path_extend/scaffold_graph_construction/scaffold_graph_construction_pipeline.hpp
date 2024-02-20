@@ -38,7 +38,7 @@ class ScaffolderParamsConstructor {
         fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor,
         double score_percentile,
         double cluster_length_percentile,
-        size_t block_length) const;
+        size_t block_length, size_t initial_distance) const;
 
 };
 

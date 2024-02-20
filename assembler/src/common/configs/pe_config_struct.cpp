@@ -272,6 +272,7 @@ void load(pe_config::ReadCloud::scaffold_graph_construction& scaff_con,
     load(scaff_con.score_percentile, pt, "score_percentile");
     load(scaff_con.cluster_length_percentile, pt, "cluster_length_percentile");
     load(scaff_con.count_threshold, pt, "count_threshold");
+    load(scaff_con.initial_distance, pt, "initial_distance");
     load(scaff_con.relative_coverage_threshold, pt, "relative_coverage_threshold");
     load(scaff_con.connection_length_threshold, pt, "connection_length_threshold");
     load(scaff_con.connection_count_threshold, pt, "connection_count_threshold");

@@ -30,9 +30,18 @@ ScaffolderParams ScaffolderParamsConstructor::ConstructScaffolderParams(
     const double score_percentile = params.score_percentile;
 
     size_t initial_distance = primary_extractor.GetLengthPercentile(initial_distance_percentile);
+    if (initial_distance == 0) {
+        //Revert to default value if there are not enough fragments for estimation
+        WARN("Not enough fragments for distance estimation, reverting to default value " << params.initial_distance
+             << ". It is likely that assembly graph is too fragmented.");
+        initial_distance = params.initial_distance;
+    }
     auto gap_closer_params = ConstructGapCloserParams(params);
-    auto score_estimation_params = GetScoreEstimationParams(primary_extractor, score_percentile,
-                                                            initial_distance_percentile, min_length);
+    auto score_estimation_params = GetScoreEstimationParams(primary_extractor,
+                                                            score_percentile,
+                                                            initial_distance_percentile,
+                                                            min_length,
+                                                            params.initial_distance);
 
     ScaffolderParams result(length_threshold, tail_threshold, count_threshold, connection_length_threshold,
                             connection_count_threshold, initial_distance, split_procedure_strictness,
@@ -53,8 +62,11 @@ LongEdgePairGapCloserParams ScaffolderParamsConstructor::ConstructGapCloserParam
 }
 ScaffolderParams::ScoreEstimationParams ScaffolderParamsConstructor::GetScoreEstimationParams(
     fragment_statistics::ClusterStatisticsExtractor cluster_statistics_extractor,
-    double score_percentile, double cluster_length_percentile, size_t block_length) const {
+    double score_percentile, double cluster_length_percentile, size_t block_length, size_t initial_distance) const {
     size_t max_training_gap = cluster_statistics_extractor.GetLengthPercentile(cluster_length_percentile);
+    if (max_training_gap == 0) {
+        max_training_gap = initial_distance;
+    }
     size_t min_training_length = 2 * block_length + max_training_gap;
     DEBUG("Max training gap: " << max_training_gap);
     DEBUG("Min training length: " << min_training_length);

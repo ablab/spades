@@ -228,6 +228,7 @@ struct pe_config {
       double score_percentile;
       double cluster_length_percentile;
       size_t count_threshold;
+      size_t initial_distance;
       double relative_coverage_threshold;
       size_t connection_length_threshold;
       size_t connection_count_threshold;

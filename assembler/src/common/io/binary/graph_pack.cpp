@@ -15,6 +15,7 @@
 #include "ss_coverage.hpp"
 #include "paired_index.hpp"
 #include "positions.hpp"
+#include "read_cloud.hpp"
 #include "trusted_paths.hpp"
 
 namespace io {
@@ -283,6 +284,9 @@ void FullPackIO::Save(const std::string &basename, const Type &gp) {
     //4. Save scaffolding indices
     SaveComponent<PairedInfoIndicesT<Graph>>(basename + "_scf", gp, "scaffolding_indices");
 
+    //5. Save barcode index
+    SaveComponent<barcode_index::FrameBarcodeIndex<Graph>>(basename, gp);
+
     //5. Save long reads
     SaveComponent<LongReadContainer<Graph>>(basename, gp);
 
@@ -312,6 +316,9 @@ bool FullPackIO::Load(const std::string &basename, Type &gp) {
 
     //4. Load scaffolding indices
     LoadComponent<PairedInfoIndicesT<Graph>>(basename + "_scf", gp, "scaffolding_indices");
+
+    //5. Load barcode index
+    LoadComponent<barcode_index::FrameBarcodeIndex<Graph>>(basename, gp);
 
     //5. Load long reads
     LoadComponent<LongReadContainer<Graph>>(basename, gp);
@@ -345,13 +352,16 @@ void FullPackIO::BinWrite(std::ostream &os, const Type &gp) {
     //4. Write scaffolding indices
     BinWriteComponent<PairedInfoIndicesT<Graph>>(os, gp, "scaffolding_indices");
 
-    //5. Write long reads
+    //5. Write barcode index
+    BinWriteComponent<barcode_index::FrameBarcodeIndex<Graph>>(os, gp);
+
+    //6. Write long reads
     BinWriteComponent<LongReadContainer<Graph>>(os, gp);
 
-    //6. Write genomic info
+    //7. Write genomic info
     BinWriteComponent<GenomicInfo>(os, gp);
 
-    //7. Write SS coverage
+    //8. Write SS coverage
     BinWriteComponent<SSCoverageContainer>(os, gp);
 }
 
@@ -373,13 +383,16 @@ bool FullPackIO::BinRead(std::istream &is, Type &gp) {
     //4. Read scaffolding indices
     BinReadComponent<PairedInfoIndicesT<Graph>>(is, gp, "scaffolding_indices");
 
-    //5. Read long reads
+    //5. Read barcode index
+    BinReadComponent<barcode_index::FrameBarcodeIndex<Graph>>(is, gp);
+
+    //6. Read long reads
     BinReadComponent<LongReadContainer<Graph>>(is, gp);
 
-    //6. Read genomic info
+    //7. Read genomic info
     BinReadComponent<GenomicInfo>(is, gp);
 
-    //7. Read SS coverage
+    //8. Read SS coverage
     BinReadComponent<SSCoverageContainer>(is, gp);
 
     return true;
