@@ -1,0 +1,5 @@
+1
+split edge1	edge3
+2
+path1	2   edge1	edge3
+path2	2   edge2	edge4

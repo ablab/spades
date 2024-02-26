@@ -23,14 +23,14 @@ void LoadGraph::run(graph_pack::GraphPack &gp, const char*) {
     CHECK_FATAL_ERROR(exists(path), "File " << path << " doesn't exist or can't be read!");
     
     gfa::GFAReader gfa(path);
+    unsigned k = gfa.to_graph(gp.get_mutable<Graph>());
     INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-    if (gfa.k() == -1U)
+    if (k == -1U)
         FATAL_ERROR("Failed to determine GFA k-mer length");
-    if (gfa.k() % 2 != 1)
-        FATAL_ERROR("GFA used k-mer length must be odd (k=" << gfa.k() << ")");
-    if (gfa.k() != gp.k())
-        FATAL_ERROR("GFA used k-mer length (k=" << gfa.k() << ") must match the command line settings (k=" << gp.k() <<")");
-    gfa.to_graph(gp.get_mutable<Graph>());
+    if (k % 2 != 1)
+        FATAL_ERROR("GFA used k-mer length must be odd (k=" << k << ")");
+    if (k != gp.k())
+        FATAL_ERROR("GFA used k-mer length (k=" << k << ") must match the command line settings (k=" << gp.k() <<")");
 }
 
 }

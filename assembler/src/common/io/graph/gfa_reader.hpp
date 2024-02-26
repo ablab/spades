@@ -4,19 +4,18 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#pragma once
+
 // This one is temporary, until we will be able to untangle IDs from the graph
 #include "assembly_graph/core/graph.hpp"
 #include "io/utils/id_mapper.hpp"
 
 #include "adt/iterator_range.hpp"
 
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
-
-extern "C" {
-    typedef struct gfa_s gfa_t;
-};
 
 namespace debruijn_graph {
 class DeBruijnGraph;
@@ -28,6 +27,10 @@ class IdMapper;
 }
 
 namespace gfa {
+struct path;
+struct segment;
+struct link;
+struct cigarop;
 
 class GFAReader {
     typedef debruijn_graph::DeBruijnGraph Graph;
@@ -41,30 +44,35 @@ class GFAReader {
         std::string name;
         std::vector<EdgeId> edges;
     };
-    typedef std::vector<GFAPath>::const_iterator path_iterator;
+    typedef std::vector<GFAPath>::const_iterator path_const_iterator;
+    typedef std::vector<GFAPath>::iterator path_iterator;
 
-    GFAReader();
-    GFAReader(const std::filesystem::path &filename);
-    bool open(const std::filesystem::path &filename);
-    bool valid() const { return (bool)gfa_; }
-    gfa_t *get() const { return gfa_.get(); }
+    GFAReader(const std::filesystem::path &filename)
+            : filename_(filename) {}
 
-    uint32_t num_edges() const;
-    uint64_t num_links() const;
-
+    size_t num_edges() const { return num_edges_; }
+    size_t num_links() const { return num_links_; }
     size_t num_paths() const { return paths_.size(); }
-    path_iterator path_begin() const { return paths_.begin(); }
-    path_iterator path_end() const { return paths_.end(); }
-    adt::iterator_range<path_iterator> paths() const {
+
+    path_const_iterator path_begin() const { return paths_.begin(); }
+    path_const_iterator path_end() const { return paths_.end(); }
+    adt::iterator_range<path_const_iterator> paths() const {
         return adt::make_range(path_begin(), path_end());
     }
 
-    unsigned k() const;
-    void to_graph(debruijn_graph::DeBruijnGraph &g, io::IdMapper<std::string> *id_mapper = nullptr);
+    path_iterator path_begin() { return paths_.begin(); }
+    path_iterator path_end() { return paths_.end(); }
+    adt::iterator_range<path_iterator> paths() {
+        return adt::make_range(path_begin(), path_end());
+    }
+
+    unsigned to_graph(debruijn_graph::DeBruijnGraph &g, io::IdMapper<std::string> *id_mapper = nullptr);
 
   private:
-    std::unique_ptr<gfa_t, void(*)(gfa_t*)> gfa_;
+    std::filesystem::path filename_;
     std::vector<GFAPath> paths_;
+    size_t num_edges_ = 0;
+    size_t num_links_ = 0;
 };
 
 };

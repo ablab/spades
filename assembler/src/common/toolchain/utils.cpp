@@ -27,14 +27,14 @@ io::IdMapper<std::string> *LoadGraphFromGFA(debruijn_graph::Graph &graph,
     gfa::GFAReader gfa(filename);
     INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
 
-    if (gfa.k() == -1U)
+    unsigned gk = graph.k();
+    unsigned k = gfa.to_graph(graph, id_mapper);
+    if (k == -1U)
         FATAL_ERROR("Failed to determine GFA k-mer length");
-    if (gfa.k() % 2 != 1)
-        FATAL_ERROR("GFA used k-mer length must be odd (k=" << gfa.k() << ")");
-    if (gfa.k() != graph.k())
-        FATAL_ERROR("GFA used k-mer length (k=" << gfa.k() << ") must match the command line settings (k=" << graph.k() <<")");
-
-    gfa.to_graph(graph, id_mapper);
+    if (k % 2 != 1)
+        FATAL_ERROR("GFA used k-mer length must be odd (k=" << k << ")");
+    if (k != gk)
+        FATAL_ERROR("GFA used k-mer length (k=" << k << ") must match the command line settings (k=" << gk <<")");
 
     return id_mapper;
 }

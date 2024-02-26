@@ -140,18 +140,6 @@ static void ProcessContigs(const Graph &graph,
     notifier.ProcessLibrary(single_streams, mapper);
 }
 
-void LoadGraph(debruijn_graph::ConjugateDeBruijnGraph &graph, const std::filesystem::path &filename,
-               io::IdMapper<std::string> *id_mapper) {
-    using namespace debruijn_graph;
-    if (filename.extension() == ".gfa") {
-        gfa::GFAReader gfa(filename);
-        INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-        gfa.to_graph(graph, id_mapper);
-    } else {
-        io::binary::Load(filename, graph);
-    }
-}
-
 int main(int argc, char* argv[]) {
     utils::segfault_handler sh;
     gcfg cfg;
@@ -183,21 +171,25 @@ int main(int argc, char* argv[]) {
         std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
         std::unique_ptr<gfa::GFAReader> gfa;
         INFO("Loading de Bruijn graph from " << cfg.graph);
-        if (utils::ends_with(cfg.graph.string(), ".gfa")) {
+        if (utils::ends_with(cfg.graph.string(), ".gfa"))
             gfa.reset(new gfa::GFAReader(cfg.graph));
-            INFO("GFA segments: " << gfa->num_edges() << ", links: " << gfa->num_links() << ", paths: " << gfa->num_paths());
-            INFO("Detected k:" << gfa->k());
-            VERIFY_MSG(gfa->k() != -1U, "Failed to determine k-mer length");
-            VERIFY_MSG(gfa->k() == 0 || gfa->k() % 2 == 1, "k-mer length must be odd");
-            k = gfa->k();
-        } else if (cfg.k == -1U)
+        else if (cfg.k == -1U)
             FATAL_ERROR("k-mer length should be specified");
 
         Graph graph(k);
+        unsigned gfa_k = -1U;
         if (gfa) {
-            gfa->to_graph(graph, id_mapper.get());
+            gfa_k = gfa->to_graph(graph, id_mapper.get());
+            INFO("GFA segments: " << gfa->num_edges() << ", links: " << gfa->num_links() << ", paths: " << gfa->num_paths());
         } else {
             io::binary::Load(cfg.graph, graph);
+        }
+        if (gfa_k != -1U) {
+            INFO("Detected k: " << gfa_k);
+            VERIFY_MSG(gfa_k == 0 || gfa_k % 2 == 1, "k-mer length must be odd");
+            VERIFY(graph.k() == gfa_k);
+        } else {
+            INFO("Graph seems to be multiplexed")
         }
         INFO("Graph loaded. Total vertices: " << graph.size() << ", total edges: " << graph.e_size());
 

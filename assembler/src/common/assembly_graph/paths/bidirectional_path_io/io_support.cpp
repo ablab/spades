@@ -100,7 +100,8 @@ std::string path_extend::ScaffoldSequenceMaker::MakeSequence(const Bidirectional
     if (path.Empty())
         return "";
 
-    std::string answer = g_.EdgeNucls(path[0]).Subseq(0, k_).str();
+    uint32_t first_overlap = g_.data(g_.EdgeStart(path[0])).overlap();
+    std::string answer = g_.EdgeNucls(path[0]).Subseq(0, first_overlap).str();
     VERIFY(path.GapAt(0) == Gap());
 
     for (size_t i = 0; i < path.Size(); ++i) {
@@ -111,7 +112,11 @@ std::string path_extend::ScaffoldSequenceMaker::MakeSequence(const Bidirectional
         answer.erase((gap.trash.previous <= answer.length()) ?
                             answer.length() - gap.trash.previous : 0);
 
-        int overlap_after_trim = gap.OverlapAfterTrim(k_);
+        uint32_t overlap = g_.data(g_.EdgeStart(path[i])).overlap();
+        if (i > 0 and g_.is_complex(g_.EdgeStart(path[i]))) {
+            overlap = static_cast<uint32_t>(g_.link_length(g_.EdgeStart(path[i]), path[i - 1], path[i]));
+        }
+        int overlap_after_trim = gap.OverlapAfterTrim(overlap);
         TRACE("Overlap after trim " << overlap_after_trim);
         if (overlap_after_trim < 0) {
             if (!gap.gap_seq) {

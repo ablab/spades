@@ -57,7 +57,7 @@ private:
             if (graph.contains(typename Graph::VertexId(ids[0])))
                 return;
             TRACE("Vertex " << ids[0] << " ~ " << ids[1] << " .");
-            auto new_id = graph.AddVertex(typename Graph::VertexData(), ids[0], ids[1]);
+            auto new_id = graph.AddVertex(typename Graph::VertexData(graph.k()), ids[0], ids[1]);
             VERIFY(new_id == ids[0]);
             VERIFY(graph.conjugate(new_id) == ids[1]);
         };

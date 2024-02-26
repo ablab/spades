@@ -1,0 +1,32 @@
+triple_repeat
+8
+edge1_in	400
+edge2_in	400
+edge1_mid  300
+edge2_mid   600
+edge3_in	500
+edge1_out   400
+edge2_out   500
+edge3_out   301
+2
+vertex1    200
+vertex2   100
+10
+edge1_in    vertex1
+edge2_in    vertex1
+vertex1 edge1_mid
+vertex1 edge2_mid
+edge1_mid   vertex2
+edge2_mid   vertex2
+edge3_in    vertex2
+vertex2 edge1_out
+vertex2 edge2_out
+vertex2 edge3_out
+4
+edge1_in    edge1_mid  200
+edge2_in    edge2_mid  200
+edge1_mid   edge1_out   100
+edge3_in    edge3_out   100
+2
+path1   edge1_in    edge1_mid  edge1_out
+path2   edge2_in    edge2_mid

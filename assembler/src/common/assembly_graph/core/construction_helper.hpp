@@ -26,12 +26,12 @@ class ConstructionHelper {
 
 
     void MaybeAddVertex(Graph &clone,
-                        const VertexData &data,
+                        VertexData data,
                         VertexId id1, VertexId id2) const {
         if (clone.contains(id1))
             return;
         TRACE("Vertex " << id1 << " ~ " << id2 << " .");
-        auto new_id = clone.AddVertex(data, id1, id2);
+        auto new_id = clone.AddVertex(std::move(data), id1, id2);
         VERIFY(new_id == id1);
         VERIFY(clone.conjugate(new_id) == id2);
     }
@@ -43,6 +43,9 @@ public:
     Graph &graph() {
         return graph_;
     }
+
+    const DataMaster& master() const noexcept { return graph_.master_; }
+    DataMaster& master() noexcept { return graph_.master_; }
 
     Graph clone() const {
         return component(graph_.e_begin(), graph_.e_end());
@@ -72,12 +75,12 @@ public:
         return clone;
     }
 
-    EdgeId AddEdge(const EdgeData &data, EdgeId id = 0) {
-        return graph_.AddEdge(data, id);
+    EdgeId AddEdge(EdgeData data, EdgeId id = 0) {
+        return graph_.AddEdge(std::move(data), id);
     }
 
-    EdgeId AddEdge(const EdgeData &data, EdgeId id, EdgeId cid) {
-        return graph_.AddEdge(data, id, cid);
+    EdgeId AddEdge(EdgeData data, EdgeId id, EdgeId cid) {
+        return graph_.AddEdge(std::move(data), id, cid);
     }
 
     void LinkIncomingEdge(VertexId v, EdgeId e) {
@@ -94,8 +97,20 @@ public:
 
     void LinkEdges(EdgeId e1, EdgeId e2) {
         VertexId v = graph_.EdgeEnd(e1), w = graph_.EdgeStart(e2);
-        DeleteLink(w, e2);
-        LinkOutgoingEdge(v, e2);
+        std::vector<EdgeId> in_edges;
+        std::vector<EdgeId> out_edges;
+        auto in_edges_it = graph_.IncomingEdges(w);
+        auto out_edges_it = graph_.OutgoingEdges(w);
+        std::copy(in_edges_it.begin(), in_edges_it.end(), std::back_inserter(in_edges));
+        std::copy(out_edges_it.begin(), out_edges_it.end(), std::back_inserter(out_edges));
+        for (auto in_edge: in_edges) {
+            DeleteLink(graph_.conjugate(w), graph_.conjugate(in_edge));
+            LinkOutgoingEdge(graph_.conjugate(v), graph_.conjugate(in_edge));
+        }
+        for (auto out_edge: out_edges) {
+            DeleteLink(w, out_edge);
+            LinkOutgoingEdge(v, out_edge);
+        }
     }
 
     void DeleteLink(VertexId v, EdgeId e) {
@@ -113,12 +128,12 @@ public:
         graph_.DestroyVertex(v);
     }
 
-    VertexId CreateVertex(const VertexData &data, VertexId id = 0) {
-        return graph_.CreateVertex(data, id);
+    VertexId CreateVertex(VertexData data, VertexId id = 0) {
+        return graph_.CreateVertex(std::move(data), id);
     }
 
-    VertexId CreateVertex(const VertexData &data, VertexId id1, VertexId id2) {
-        return graph_.CreateVertex(data, id1, id2);
+    VertexId CreateVertex(VertexData data, VertexId id1, VertexId id2) {
+        return graph_.CreateVertex(std::move(data), id1, id2);
     }
 
 };

@@ -198,13 +198,20 @@ int main(int argc, char** argv) {
         CHECK_FATAL_ERROR(cfg.libindex < dataset.lib_count(), "invalid library index");
       }
 
-      gfa::GFAReader gfa(cfg.graph);
-      INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: " << gfa.num_paths());
-      VERIFY_MSG(gfa.k() != -1U, "Failed to determine k-mer length");
-//      VERIFY_MSG(gfa.k() % 2 == 1, "k-mer length must be odd");
+      debruijn_graph::Graph graph(0);
 
-      debruijn_graph::Graph graph(gfa.k());
-      gfa.to_graph(graph, id_mapper.get());
+      gfa::GFAReader gfa(cfg.graph);
+      unsigned gfa_k = gfa.to_graph(graph, id_mapper.get());
+
+      INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: " << gfa.num_paths());
+      if (gfa_k != -1U) {
+          INFO("Detected k: " << gfa_k);
+          VERIFY_MSG(gfa_k == 0 || gfa_k % 2 == 1, "k-mer length must be odd");
+          VERIFY(graph.k() == gfa_k);
+      } else {
+          INFO("Graph seems to be multiplexed");
+      }
+
       INFO("Graph loaded. Total vertices: " << graph.size() << ", total edges: " << graph.e_size());
 
       INFO("Gathering edge links");

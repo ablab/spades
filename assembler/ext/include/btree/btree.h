@@ -948,8 +948,8 @@ class btree : public Params::key_compare {
   typedef std::reverse_iterator<iterator> reverse_iterator;
 
   typedef typename Params::allocator_type allocator_type;
-  typedef typename allocator_type::template rebind<char>::other
-    internal_allocator_type;
+  using internal_allocator_type = typename
+      std::allocator_traits<allocator_type>::template rebind_alloc<char>;
 
  public:
   // Default constructor.

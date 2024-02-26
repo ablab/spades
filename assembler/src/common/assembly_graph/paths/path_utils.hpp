@@ -18,6 +18,7 @@
 #include "assembly_graph/core/basic_graph_stats.hpp"
 
 #include "sequence/sequence.hpp"
+#include "sequence/sequence_tools.hpp"
 
 namespace debruijn_graph {
 
@@ -110,14 +111,19 @@ namespace debruijn_graph {
     template<class Graph>
     Sequence MergeSequences(const Graph &g, const std::vector<typename Graph::EdgeId> &continuous_path) {
         std::vector<Sequence> path_sequences;
+        std::vector<uint32_t> overlaps;
         if (continuous_path.size() == 0)
             return Sequence();
         path_sequences.push_back(g.EdgeNucls(continuous_path[0]));
         for (size_t i = 1; i < continuous_path.size(); ++i) {
-            VERIFY(g.EdgeEnd(continuous_path[i - 1]) == g.EdgeStart(continuous_path[i]));
+            auto end = g.EdgeEnd(continuous_path[i - 1]);
+            auto start = g.EdgeStart(continuous_path[i]);
+            VERIFY(start == end);
+            uint32_t overlap = g.link_length(start, continuous_path[i - 1], continuous_path[i]);
+            overlaps.push_back(overlap);
             path_sequences.push_back(g.EdgeNucls(continuous_path[i]));
         }
-        return MergeOverlappingSequences(path_sequences, g.k(), /*no need to check again*/false);
+        return MergeOverlappingSequences(path_sequences, overlaps, /*no need to check again*/false);
     }
 
     template<class Graph>

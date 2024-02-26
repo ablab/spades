@@ -53,6 +53,22 @@ void GFAPathWriter::WritePath(const std::string &name, size_t segment_id,
     os_ << '\n';
 }
 
+void GFAPathWriter::WritePath(const std::string &name,
+                              const std::vector<std::string> &edge_strs,
+                              const std::string &flags) {
+    os_ << 'P' << '\t' ;
+    os_ << name << '\t';
+    std::string delimeter = "";
+    for (const auto& e : edge_strs) {
+        os_ << delimeter << e;
+        delimeter = ',';
+    }
+    os_ << "\t*";
+    if (flags.length())
+        os_ << '\t' << flags;
+    os_ << '\n';
+}
+
 GFAPathWriter::GFAPathWriter(const Graph &graph, std::ostream &os,
                              io::EdgeNamingF<Graph> naming_f,
                              Version version)
@@ -140,6 +156,16 @@ void GFAPathWriter::WritePaths(const ScaffoldStorage &scaffold_storage) {
         WritePaths11(scaffold_storage);
     else
         WritePaths12(scaffold_storage);
+}
+
+void GFAPathWriter::WritePaths(const gfa::GFAReader::GFAPath &path,
+                               const std::string &flags) {
+    std::vector<std::string> path_segment;
+
+    for (EdgeId e : path.edges)
+        path_segment.push_back(this->edge_namer_.EdgeOrientationString(e));
+
+    WritePath(path.name, path_segment, flags);
 }
 
 void GFAPathWriter::WritePaths12(const ScaffoldStorage &scaffold_storage) {

@@ -114,7 +114,7 @@ void stable_sort_by(Iter b, Iter e, const Key &key) {
 }
 
 template <typename Range, typename Sep>
-std::string join(const Range &range, const Sep &sep) {
+std::string join_sep(const Range &range, const Sep &sep) {
     std::stringstream ss;
     size_t inserted = 0;
     for (const auto &e : range) {

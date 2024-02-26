@@ -65,7 +65,7 @@ public:
                 size_t needed = std::max(vid, conj_vid);
                 if (graph.vreserved() <= needed)
                     graph.vreserve(needed * 2 + 1);
-                VertexId new_id = graph.AddVertex(typename Graph::VertexData(), vid, conj_vid);
+                VertexId new_id = graph.AddVertex(typename Graph::VertexData(graph.k()), vid, conj_vid);
                 VERIFY(new_id = vid);
                 VERIFY(graph.conjugate(new_id) = conj_vid);
             }

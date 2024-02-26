@@ -20,6 +20,7 @@
 
 #include "assembly_graph/core/graph.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
+#include "assembly_graph/paths/path_utils.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
 
 #include "sequence/aa.hpp"
@@ -448,18 +449,6 @@ void OutputMatches(const hmmer::HMM &hmm, const hmmer::HMMMatcher &matcher, cons
     fclose(fp);
 }
 
-template<class Graph>
-Sequence MergeSequences(const Graph &g,
-                        const std::vector<typename Graph::EdgeId> &continuous_path) {
-    std::vector<Sequence> path_sequences;
-    path_sequences.push_back(g.EdgeNucls(continuous_path[0]));
-    for (size_t i = 1; i < continuous_path.size(); ++i) {
-        VERIFY(g.EdgeEnd(continuous_path[i - 1]) == g.EdgeStart(continuous_path[i]));
-        path_sequences.push_back(g.EdgeNucls(continuous_path[i]));
-    }
-    return MergeOverlappingSequences(path_sequences, g.k());
-}
-
 std::vector<hmmer::HMM> ParseHMMFile(const std::string &filename) {
     /* Open the query profile HMM file */
     hmmer::HMMFile hmmfile(filename);
@@ -531,7 +520,7 @@ std::string edgepath2str(const Path &path,
     for (const auto &id : path) {
         mapped_ids.push_back(mapping_f(id));
     }
-    return join(mapped_ids, "_");
+    return join_sep(mapped_ids, "_");
 }
 
 template <typename Container>
@@ -541,7 +530,7 @@ auto EdgesToSequences(const Container &entries,
     std::vector<std::pair<std::string, std::string>> ids_n_seqs;
     for (const auto &entry : entries) {
         std::string id = edgepath2str(entry, mapping_f);
-        std::string seq = MergeSequences(graph, entry).str();
+        std::string seq = debruijn_graph::MergeSequences(graph, entry).str();
         ids_n_seqs.push_back({id, seq});
     }
 
@@ -559,7 +548,7 @@ std::string SuperPathInfo(const std::vector<EdgeId> &path,
         results.push_back(super_path_info.str());
     }
 
-    return join(results, ",");
+    return join_sep(results, ",");
 }
 
 template <typename Container>
@@ -575,7 +564,7 @@ void ExportEdges(const Container &entries,
 
     for (const auto &path : entries) {
         std::string id = edgepath2str(path, mapping_f);
-        std::string seq = MergeSequences(graph, path).str();
+        std::string seq = debruijn_graph::MergeSequences(graph, path).str();
         // FIXME return sorting like in EdgesToSequences
         o << ">" << id << "|ScaffoldSuperpaths=" << SuperPathInfo(path, scaffold_paths, mapping_f) << "\n";
         io::WriteWrapped(seq, o);
@@ -1157,7 +1146,7 @@ int pathracer_main(int argc, char* argv[]) {
     }
 
     START_BANNER("Graph HMM aligning engine");
-    std::string cmd_line = join(llvm::make_range(argv, argv + argc), " ");
+    std::string cmd_line = join_sep(adt::make_range(argv, argv + argc), " ");
     INFO("Command line: " << cmd_line);
 
     // Set memory limit
@@ -1181,12 +1170,17 @@ int pathracer_main(int argc, char* argv[]) {
     std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
     using namespace debruijn_graph;
 
+    debruijn_graph::ConjugateDeBruijnGraph graph(0);
     gfa::GFAReader gfa(cfg.load_from);
+    unsigned gfa_k = gfa.to_graph(graph, id_mapper.get());
     INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
-    VERIFY_MSG(gfa.k() != -1U, "Failed to determine k-mer length");
-    VERIFY_MSG(gfa.k() % 2 == 1 || gfa.k() == 0, "k-mer length must be odd");
-    debruijn_graph::ConjugateDeBruijnGraph graph(gfa.k());
-    gfa.to_graph(graph, id_mapper.get());
+    if (gfa_k != -1U) {
+        INFO("Detected k: " << gfa_k);
+        VERIFY_MSG(gfa_k == 0 || gfa_k % 2 == 1, "k-mer length must be odd");
+        VERIFY(graph.k() == gfa_k);
+    } else
+        FATAL_ERROR("Failed to determine k-mer length");
+
     scaffold_paths.reserve(gfa.num_paths());
     for (const auto &path : gfa.paths()) {
         scaffold_paths.push_back(path.edges);
@@ -1410,7 +1404,7 @@ int aling_fs(int argc, char* argv[]) {
     }
 
     START_BANNER("Sequence HMM aligning engine");
-    std::string cmd_line = join(llvm::make_range(argv, argv + argc), " ");
+    std::string cmd_line = join_sep(adt::make_range(argv, argv + argc), " ");
     INFO("Command line: " << cmd_line);
 
     // Set memory limit
@@ -1576,7 +1570,7 @@ int aling_fs(int argc, char* argv[]) {
                 // seq_without_gaps.erase(std::remove_if(seq_without_gaps.begin(), seq_without_gaps.end(), [](char ch) {return ch == '-' || ch == '=';}),
                 //                        seq_without_gaps.end());
                 //
-                std::string seq_without_gaps = join(subseqs, "");
+                std::string seq_without_gaps = join_sep(subseqs, "");
                 // VERIFY(seq_without_gaps == seq_without_gaps2);
                 float bitscore = max_bitscore(seq_without_gaps, matcher);
 

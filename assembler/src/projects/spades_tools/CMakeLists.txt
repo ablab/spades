@@ -23,6 +23,8 @@ add_executable(spades-read-filter
                read_filter.cpp)
 add_executable(spades-kmer-estimating
                kmer_estimating.cpp)
+add_executable(spades-gfa-split
+               gfa_split.cpp)
 
 target_link_libraries(spades-convert-bin-to-fasta common_modules ${COMMON_LIBRARIES})
 target_link_libraries(spades-gbuilder graphio common_modules ${COMMON_LIBRARIES})
@@ -31,6 +33,7 @@ target_link_libraries(spades-gsimplifier toolchain common_modules ${COMMON_LIBRA
 target_link_libraries(spades-kmercount common_modules ${COMMON_LIBRARIES})
 target_link_libraries(spades-read-filter common_modules ${COMMON_LIBRARIES})
 target_link_libraries(spades-kmer-estimating common_modules ${COMMON_LIBRARIES})
+target_link_libraries(spades-gfa-split graphio toolchain common_modules ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades-convert-bin-to-fasta PROPERTIES LINK_SEARCH_END_STATIC 1)
@@ -39,6 +42,7 @@ if (SPADES_STATIC_BUILD)
   set_target_properties(spades-gsimplifier PROPERTIES LINK_SEARCH_END_STATIC 1)
   set_target_properties(spades-kmercount PROPERTIES LINK_SEARCH_END_STATIC 1)
   set_target_properties(spades-read-filter PROPERTIES LINK_SEARCH_END_STATIC 1)
+  set_target_properties(spades-gfa-split PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 
 install(TARGETS spades-convert-bin-to-fasta
@@ -66,5 +70,9 @@ install(TARGETS spades-read-filter
         COMPONENT tools)
 
 install(TARGETS spades-kmer-estimating
+        DESTINATION bin
+        COMPONENT tools)
+
+install(TARGETS spades-gfa-split
         DESTINATION bin
         COMPONENT tools)

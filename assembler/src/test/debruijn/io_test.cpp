@@ -4,13 +4,17 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "graphio.hpp"
 #include "test_utils.hpp"
 #include "random_graph.hpp"
 #include "assembly_graph/handlers/id_track_handler.hpp"
 #include "io/binary/graph.hpp"
 #include "io/binary/kmer_mapper.hpp"
 #include "io/binary/paired_index.hpp"
+#include "io/graph/gfa_reader.hpp"
+#include "io/graph/gfa_writer.hpp"
 
+#include <filesystem>
 #include <gtest/gtest.h>
 
 using namespace debruijn_graph;
@@ -50,6 +54,33 @@ const Graph &CommonGraph() {
 
 using namespace io::binary;
 const char *file_name = "src/test/debruijn/graph_fragments/saves/test_save";
+
+void CheckGFAInOut(const std::string &path_to_save,
+                   const std::string &graph_name,
+                   const std::filesystem::path &gfa_basename) {
+    size_t K = 55;
+    Graph graph(K);
+    graphio::ScanBasicGraph(path_to_save, graph);
+    std::filesystem::path gfa_path = gfa_basename / std::filesystem::path(graph_name + ".gfa");
+    std::ofstream gfa_out(gfa_path);
+    gfa::GFAWriter gfa_writer(graph, gfa_out);
+    gfa_writer.WriteSegmentsAndLinks();
+    gfa_out.close();
+
+    std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
+    gfa::GFAReader gfa_reader(gfa_path);
+    Graph gfa_graph(K);
+    size_t local_k = gfa_reader.to_graph(gfa_graph, id_mapper.get());
+
+    auto other_gfa_path = gfa_basename / std::filesystem::path(graph_name + "_other.gfa");
+    std::ofstream other_out(other_gfa_path);
+    gfa::GFAWriter other_writer(gfa_graph, other_out, io::MapNamingF<debruijn_graph::ConjugateDeBruijnGraph>(*id_mapper));
+    other_writer.WriteSegmentsAndLinks();
+
+    EXPECT_EQ(K, local_k);
+    EXPECT_EQ(graph.size(), gfa_graph.size());
+    EXPECT_EQ(graph.e_size(), gfa_graph.e_size());
+}
 
 TEST(Io, Order) {
     const auto &graph = CommonGraph();
@@ -108,4 +139,13 @@ TEST(Io, KmerMapper) {
     Load(file_name, new_mapper);
 
     CompareContainers(kmer_mapper, new_mapper);
+}
+
+TEST(Io, GFADBG) {
+    std::filesystem::path gfa_out_base("src/test/debruijn/graph_fragments/gfa_saves");
+
+    CheckGFAInOut("src/test/debruijn/graph_fragments/tipobulge/tipobulge", "tipobulge", gfa_out_base);
+    CheckGFAInOut("src/test/debruijn/graph_fragments/topology_ec/self_comp", "self_comp", gfa_out_base);
+    //fixme support 0-in-2-out DBG vertices in GFAWriter
+//    CheckGFAInOut("src/test/debruijn/graph_fragments/topology_ec/big_bad", "big_bad", gfa_out_base);
 }
