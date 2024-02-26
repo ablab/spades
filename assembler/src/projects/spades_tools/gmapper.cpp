@@ -171,7 +171,7 @@ int main(int argc, char* argv[]) {
         std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
         std::unique_ptr<gfa::GFAReader> gfa;
         INFO("Loading de Bruijn graph from " << cfg.graph);
-        if (utils::ends_with(cfg.graph.string(), ".gfa")) {
+        if (utils::ends_with(cfg.graph.string(), ".gfa"))
             gfa.reset(new gfa::GFAReader(cfg.graph));
         else if (cfg.k == -1U)
             FATAL_ERROR("k-mer length should be specified");
