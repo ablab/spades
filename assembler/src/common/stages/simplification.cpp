@@ -139,7 +139,7 @@ public:
         if (use_restricted) {
             edge_callback_f = [this](EdgeId e) {
                 DEBUG("Checking if " << e << " is in restricted edge set");
-                return gp_.get<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>().count(e) > 0;
+                return gp_.get<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>("restricted_edges").count(e) > 0;
             };
         }
 
@@ -221,11 +221,11 @@ public:
         if (use_restricted) {
             edge_callback_f = [this](EdgeId e) {
                                    DEBUG("Checking if " << e << " is in restricted edge set");
-                                   return gp_.get<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>().count(e) > 0;
+                                   return gp_.get<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>("restricted_edges").count(e) > 0;
                                };
             bulge_callback_f = [this](EdgeId e, std::vector<EdgeId>) {
                 DEBUG("Checking if " << e << " is in restricted edge set");
-                return gp_.get<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>().count(e) > 0;
+                return gp_.get<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>("restricted_edges").count(e) > 0;
             };
 
         }
@@ -268,7 +268,7 @@ public:
                 "Complex tip clipper");
 
         algo.AddAlgo(
-            ComplexBRInstance(g_, simplif_cfg_.cbr, use_restricted ? &gp_.get<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>() : nullptr, info_container_),
+            ComplexBRInstance(g_, simplif_cfg_.cbr, use_restricted ? &gp_.get<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>("restricted_edges") : nullptr, info_container_),
                 "Complex bulge remover");
 
         algo.AddAlgo(
@@ -385,10 +385,10 @@ public:
 
         if (use_restricted) {
             bulge_callback_f = [this](EdgeId e, const std::vector<EdgeId>&) {
-                                   return gp_.get<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>().count(e) > 0;
+                                   return gp_.get<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>("restricted_edges").count(e) > 0;
                                };
             edge_callback_f = [this](EdgeId e) {
-                return gp_.get<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>().count(e) > 0;
+                return gp_.get<SmartEdgeSet<std::unordered_set<EdgeId>, Graph>>("restricted_edges").count(e) > 0;
             };
 
         }
