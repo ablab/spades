@@ -3,8 +3,14 @@ nav:
   - Home: index.md
   - Quick start: getting-started.md
   - Installation: installation.md
-  - Running SPAdes: running.md
-  - rnaSPAdes: rna.md
+  - SPAdes input data: 
+    - Basic input: input.md
+    - Hybrid assembly: hybrid.md
+    - Tips on the parameters: datatypes.md
+  - Command line options: running.md
+  - SPAdes output: output.md
+  - HMM-guided mode: hmm.md
+  - Trasncriptome assembly: rna.md
   - SPAdes tools: standalone.md
   - Citation: citation.md
   - Feedback: feedback.md

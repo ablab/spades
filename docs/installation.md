@@ -12,7 +12,7 @@ In case of successful installation the following files will be placed in the `bi
 -   `metaviralspades.py` (main executable script for [metaviralSPAdes](running.md#basic-options-and-modes))
 -   `rnaspades.py` (main executable script for [rnaSPAdes](rna.md))
 -   `rnaviralspades.py` (main executable script for rnaviralSPAdes)
--   `coronaspades.py` (wrapper script for coronaSPAdes mode)
+-   `coronaspades.py` (wrapper script for [coronaSPAdes mode](hmm.md#hmm-guided-mode))
 -   `spades-core`  (assembly module)
 -   `spades-gbuilder`  (standalone graph builder application)
 -   `spades-gmapper`  (standalone long read to graph aligner)
@@ -30,8 +30,8 @@ To download [SPAdes Linux binaries](https://github.com/ablab/spades/releases/dow
 ``` bash
 
     wget https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5-Linux.tar.gz
-    tar -xzf SPAdes-3.15.4-Linux.tar.gz
-    cd SPAdes-3.15.4-Linux/bin/
+    tar -xzf SPAdes-3.15.5-Linux.tar.gz
+    cd SPAdes-3.15.5-Linux/bin/
 ```
 
 In this case you do not need to run any installation scripts - SPAdes is ready to use. We also suggest adding SPAdes installation directory to the `PATH` variable.
@@ -46,8 +46,8 @@ To obtain [SPAdes binaries for Mac](https://github.com/ablab/spades/releases/dow
 ``` bash
 
     curl https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5-Darwin.tar.gz
-    tar -zxf SPAdes-3.15.4-Darwin.tar.gz
-    cd SPAdes-3.15.4-Darwin/bin/
+    tar -zxf SPAdes-3.15.5-Darwin.tar.gz
+    cd SPAdes-3.15.5-Darwin/bin/
 ```
 
 Just as in Linux, SPAdes is ready to use and no further installation steps are required. We also suggest adding SPAdes installation directory to the `PATH` variable.
@@ -67,8 +67,8 @@ If you meet these requirements, you can download the [SPAdes source code](https:
 ``` bash
 
     wget https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5.tar.gz
-    tar -xzf SPAdes-3.15.4.tar.gz
-    cd SPAdes-3.15.4
+    tar -xzf SPAdes-3.15.5.tar.gz
+    cd SPAdes-3.15.5
 ```
 
 and build it with the following script:
