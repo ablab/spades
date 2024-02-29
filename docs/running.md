@@ -1,74 +1,4 @@
-# Running SPAdes
-
-## SPAdes input
-
-SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ. For IonTorrent data SPAdes also supports unpaired reads in unmapped BAM format (like the one produced by Torrent Server). However, in order to run read error correction, reads should be in FASTQ or BAM format. Sanger, Oxford Nanopore and PacBio CLR reads can be provided in both formats since SPAdes does not run error correction for these types of data.
-
-To run SPAdes 3.15.4 you need at least one library of the following types:
-
--   Illumina paired-end/high-quality mate-pairs/unpaired reads
--   IonTorrent paired-end/high-quality mate-pairs/unpaired reads
--   PacBio CCS reads
-
-Illumina and IonTorrent libraries should not be assembled together. All other types of input data are compatible. SPAdes should not be used if only PacBio CLR, Oxford Nanopore, Sanger reads or additional contigs are available.
-
-SPAdes supports mate-pair only assembly. However, we recommend to use only high-quality mate-pair libraries in this case (e.g. that do not have a paired-end part). We tested mate-pair only pipeline using Illumina Nextera mate-pairs. See more [here](running.md#specifying-multiple-libraries).
-
-Notes:
-
--   It is strongly suggested to provide multiple paired-end and mate-pair libraries according to their insert size (from smallest to longest).
--   It is not recommended to run SPAdes on PacBio reads with low coverage (less than 5).
--   We suggest not to run SPAdes on PacBio reads for large genomes.
--   SPAdes accepts gzip-compressed files.
-
-### Read-pair libraries
-
-By using command line interface, you can specify up to nine different paired-end libraries, up to nine mate-pair libraries and also up to nine high-quality mate-pair ones. If you wish to use more, you can use [YAML data set file](running.md#specifying-multiple-libraries-with-yaml-data-set-file). We further refer to paired-end and mate-pair libraries simply as to read-pair libraries.
-
-By default, SPAdes assumes that paired-end and high-quality mate-pair reads have forward-reverse (fr) orientation and usual mate-pairs have reverse-forward (rf) orientation. However, different orientations can be set for any library by using SPAdes options.
-
-To distinguish reads in pairs we refer to them as left and right reads. For forward-reverse orientation, the forward reads correspond to the left reads and the reverse reads, to the right. Similarly, in reverse-forward orientation left and right reads correspond to reverse and forward reads, respectively, etc.
-
-Each read-pair library can be stored in several files or several pairs of files. Paired reads can be organized in two different ways:
-
--   In file pairs. In this case left and right reads are placed in different files and go in the same order in respective files.
--   In interleaved files. In this case, the reads are interlaced, so that each right read goes after the corresponding paired left read.
-
-For example, Illumina produces paired-end reads in two files: `R1.fastq` and `R2.fastq`. If you choose to store reads in file pairs make sure that for every read from `R1.fastq` the corresponding paired read from `R2.fastq` is placed in the respective paired file on the same line number. If you choose to use interleaved files, every read from `R1.fastq` should be followed by the corresponding paired read from `R2.fastq`.
-
-If adapter and/or quality trimming software has been used prior to assembly, files with the orphan reads can be provided as "single read files" for the corresponding read-pair library.
-
-If you have merged some of the reads from your paired-end (not mate-pair or high-quality mate-pair) library (using tools s.a. [BBMerge](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbmerge-guide/) or [STORM](https://bitbucket.org/yaoornl/align_test/overview)), you should provide the file with resulting reads as a "merged read file" for the corresponding library.
-Note that non-empty files with the remaining unmerged left/right reads (separate or interlaced) **must** be provided for the same library (for SPAdes to correctly detect the original read length).
-
-In an unlikely case some of the reads from your mate-pair (or high-quality mate-pair) library are "merged", you should provide the resulting reads as a SEPARATE single-read library.
-
-### Unpaired (single-read) libraries
-
-By using command line interface, you can specify up to nine different single-read libraries. To input more libraries, you can use [YAML data set file](running.md#specifying-multiple-libraries-with-yaml-data-set-file).
-
-Single librairies are assumed to have high quality and a reasonable coverage. For example, you can provide PacBio CCS reads as a single-read library.
-
-Note, that you should not specify PacBio CLR, Sanger reads or additional contigs as single-read libraries, each of them has a separate [option](running.md#input-data).
-
-### PacBio and Oxford Nanopore reads
-
-SPAdes can take as an input an unlimited number of PacBio and Oxford Nanopore libraries.
-
-PacBio CLR and Oxford Nanopore reads are used for hybrid assemblies (e.g. with Illumina or IonTorrent). There is no need to pre-correct this kind of data. SPAdes will use PacBio CLR and Oxford Nanopore reads for gap closure and repeat resolution.
-
-For PacBio you just need to have filtered subreads in FASTQ/FASTA format. Provide these filtered subreads using `--pacbio` option. Oxford Nanopore reads are provided with `--nanopore` option.
-
-PacBio CCS/Reads of Insert reads or pre-corrected (using third-party software) PacBio CLR / Oxford Nanopore reads can be simply provided as single reads to SPAdes.
-
-### Additional contigs
-
-In case you have contigs of the same genome generated by other assembler(s) and you wish to merge them into SPAdes assembly, you can specify additional contigs using `--trusted-contigs` or `--untrusted-contigs`. First option is used when high quality contigs are available. These contigs will be used for graph construction, gap closure and repeat resolution. Second option is used for less reliable contigs that may have more errors or contigs of unknown quality. These contigs will be used only for gap closure and repeat resolution. The number of additional contigs is unlimited.
-
-Note, that SPAdes does not perform assembly using genomes of closely-related species. Only contigs of the same genome should be specified.
-
-
-## SPAdes command line options
+# SPAdes command line options
 
 To run SPAdes from the command line, type
 
@@ -79,7 +9,7 @@ To run SPAdes from the command line, type
 
 Note that we assume that `bin` forder from SPAdes installation directory is added to the `PATH` variable (provide full path to SPAdes executable otherwise: `<spades installation dir>/bin/spades.py`).
 
-### Basic options and modes
+## Basic options and modes
 
 `-o <output_dir> `
     Specify the output directory. Required option.
@@ -99,7 +29,7 @@ Note that we assume that `bin` forder from SPAdes installation directory is adde
 `--plasmid `   (same as `plasmidspades.py`)
     This flag is required when assembling only plasmids from WGS data sets (runs plasmidSPAdes, see [paper](https://academic.oup.com/bioinformatics/article/32/22/3380/2525610) for the algorithm details). Note, that plasmidSPAdes is not compatible with single-cell mode (`--sc`). Additionally, we do not recommend to run plasmidSPAdes on more than one library.
 
-See [plasmidSPAdes output section](running.md#plasmidspades-output) for details.
+See [plasmidSPAdes output section](output.md#plasmidspades-output) for details.
 
 `--metaplasmid `   (same as `metaplasmidspades.py` and `--meta` `--plasmid`) and
 
@@ -108,7 +38,7 @@ See [plasmidSPAdes output section](running.md#plasmidspades-output) for details.
 These options works specially for extracting extrachromosomal elements from metagenomic assemblies. They run similar pipelines that slightly differ in the simplification step; another difference is that for metaviral mode we output linear putative extrachromosomal contigs and for metaplasmid mode we do not.
 See [metaplasmid paper](https://genome.cshlp.org/content/29/6/961.short) and [metaviral paper](https://academic.oup.com/bioinformatics/article-abstract/36/14/4126/5837667) for the algorithms details.
 
-See [metaplasmidSPAdes/metaviralSPAdes section](running.md#metaplasmidspades-and-metaviralspades-output) for details see.
+See [metaplasmidSPAdes/metaviralSPAdes section](output.md#metaplasmidspades-and-metaviralspades-output) for details see.
 
 
 
@@ -116,7 +46,7 @@ Additionally for plasmidSPAdes, metaplasmidSPAdes and metaviralSPAdes we recomme
 
 
 `--bio `
-    This flag is required when assembling only non-ribosomal and polyketide gene clusters from WGS data sets (runs biosyntheticSPAdes, see [paper](https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1) for the algorithm details). biosyntheticSPAdes is supposed to work on isolate or metagenomic WGS dataset. Note, that biosyntheticSPAdes is not compatible with any other modes. See [biosyntheticSPAdes output section](running.md#biosyntheticspades-output) for details.
+    This flag is required when assembling only non-ribosomal and polyketide gene clusters from WGS data sets (runs biosyntheticSPAdes, see [paper](https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1) for the algorithm details). biosyntheticSPAdes is supposed to work on isolate or metagenomic WGS dataset. Note, that biosyntheticSPAdes is not compatible with any other modes. See [biosyntheticSPAdes output section](output.md#biosyntheticspades-output) for details.
 
 `--rna `   (same as `rnaspades.py`)
     This flag should be used when assembling RNA-Seq data sets (runs rnaSPAdes). To learn more, see [rnaSPAdes manual](rna.md).
@@ -127,7 +57,7 @@ Additionally for plasmidSPAdes, metaplasmidSPAdes and metaviralSPAdes we recomme
     Not compatible with `--only-error-correction` or `--careful` options.
 
 `--iontorrent `
-    This flag is required when assembling IonTorrent data. Allows BAM files as input. Carefully read [IonTorrent section](running.md#assembling-iontorrent-reads) before using this option.
+    This flag is required when assembling IonTorrent data. Allows BAM files as input. Carefully read [IonTorrent section](datatypes.md#assembling-iontorrent-reads) before using this option.
 
 `--test`
     Runs SPAdes on the toy data set; see [installation](installation.md#verifying-your-installation) for details.
@@ -139,7 +69,7 @@ Additionally for plasmidSPAdes, metaplasmidSPAdes and metaviralSPAdes we recomme
     Prints SPAdes version.
 
 
-### Pipeline options
+## Pipeline options
 
 `--only-error-correction`
     Performs read error correction only.
@@ -183,9 +113,9 @@ Note:
     Forces read error correction module not to compress the corrected reads. If this options is not set, corrected reads will be in `*.fastq.gz` format.
 
 
-### Input data
+## Input data
 
-#### Specifying single library
+### Specifying single library
 
 `--12 <file_name> `
     File with interlaced forward and reverse paired-end reads.
@@ -204,15 +134,15 @@ Note:
 `-s <file_name> `
     File with unpaired reads.
 
-#### Specifying multiple libraries
+### Specifying multiple libraries
 
-##### Single-read libraries
+#### Single-read libraries
 
 `--s<#> <file_name> `
     File for single-read library number `<#>` (`<#>` = 1,2,..,9). For example, for the first paired-end library the option is: `--s1 <file_name> `
     Do not use `-s` options for single-read libraries, since it specifies unpaired reads for the first paired-end library.
 
-##### Paired-end libraries
+#### Paired-end libraries
 
 `--pe<#>-12 <file_name> `
     File with interlaced reads for paired-end library number `<#>` (`<#>` = 1,2,..,9). For example, for the first single-read library the option is: `--pe1-12 <file_name> `
@@ -236,7 +166,7 @@ Note:
     The default orientation for paired-end libraries is forward-reverse (`--> <--`). For example, to specify reverse-forward orientation for the second paired-end library, you should use the flag: `--pe2-rf `
     Should not be confused with FR and RF strand-specificity for RNA-Seq data (see [rnaSPAdes manual](rna.md)).
 
-##### Mate-pair libraries
+#### Mate-pair libraries
 
 `--mp<#>-12 <file_name> `
     File with interlaced reads for mate-pair library number `<#>` (`<#>` = 1,2,..,9).
@@ -251,7 +181,9 @@ Note:
     Orientation of reads for mate-pair library number `<#>` (`<#>` = 1,2,..,9; `<or>` = "fr","rf","ff").
     The default orientation for mate-pair libraries is reverse-forward (`<-- -->`). For example, to specify forward-forward orientation for the first mate-pair library, you should use the flag: `--mp1-ff `
 
-##### High-quality mate-pair libraries_** (can be used for mate-pair only assembly)
+#### High-quality mate-pair libraries
+
+High-quality MP data can be used for mate-pair only assembly.
 
 `--hqmp<#>-12 <file_name> `
     File with interlaced reads for high-quality mate-pair library number `<#>` (`<#>` = 1,2,..,9).
@@ -269,10 +201,10 @@ Note:
     Orientation of reads for high-quality mate-pair library number `<#>` (`<#>` = 1,2,..,9; `<or>` = "fr","rf","ff").
     The default orientation for high-quality mate-pair libraries is forward-reverse (`--> <--`). For example, to specify reverse-forward orientation for the first high-quality mate-pair library, you should use the flag: `--hqmp1-rf `
 
-##### Specifying data for hybrid assembly
+#### Specifying data for hybrid assembly
 
 `--pacbio <file_name> `
-    File with PacBio CLR reads. For PacBio CCS reads use `-s` option. More information on PacBio reads is provided [here](running.md#pacbio-and-oxford-nanopore-reads).
+    File with PacBio CLR reads. For PacBio CCS reads use `-s` option. More information on PacBio reads is provided [here](hybrid.md#pacbio-and-oxford-nanopore-reads).
 
 `--nanopore <file_name> `
     File with Oxford Nanopore reads.
@@ -286,13 +218,13 @@ Note:
 `--untrusted-contigs <file_name> `
     Contigs of the same genome, quality of which is average or unknown. Contigs of poor quality can be used but may introduce errors in the assembly. This option is also not intended for contigs of the related species.
 
-##### Other input
+#### Other input
 
 `--assembly-graph <file_name> `
     File with assembly graph. Could only be used in plasmid, metaplasmid, metaviral and biosynthetic mode. The primary purpose of this option to run these pipelines on already constructed and simplified assembly graph this way skipping a large part of SPAdes pipeline. Original reads the graph was constructed from need to be specified as well. Exact k-mer length (via `-k` option) should be provided. Note that the output would be different as compared to standalone runs of these pipelines as they setup graph simplification options as well.
 
 
-#### Specifying multiple libraries with YAML data set file
+### Specifying multiple libraries with YAML data set file
 
 An alternative way to specify an input data set for SPAdes is to create a [YAML](http://www.yaml.org/) data set file. By using a YAML file you can provide an unlimited number of paired-end, mate-pair and unpaired libraries. Basically, YAML data set file is a text file, in which input libraries are provided as a comma-separated list in square brackets. Each library is provided in braces as a comma-separated list of attributes. The following attributes are available:
 
@@ -302,7 +234,7 @@ An alternative way to specify an input data set for SPAdes is to create a [YAML]
 -   left reads (comma-separated list of files with left reads)
 -   right reads (comma-separated list of files with right reads)
 -   single reads (comma-separated list of files with single reads or unpaired reads from paired library)
--   merged reads (comma-separated list of files with [merged reads](running.md#read-pair-libraries))
+-   merged reads (comma-separated list of files with [merged reads](input.md#read-pair-libraries))
 
 To properly specify a library you should provide its type and at least one file with reads. Orientation is an optional attribute. Its default value is "fr" (forward-reverse) for paired-end libraries and "rf" (reverse-forward) for mate-pair libraries.
 
@@ -385,7 +317,7 @@ Notes:
 
 
 
-### Advanced options
+## Advanced options
 
 `-t <int>` (or `--threads <int>`)
     Number of threads. The default value is 16.
@@ -397,7 +329,7 @@ Notes:
     Set directory for temporary files from read error correction. The default value is `<output_dir>/corrected/tmp`
 
 `-k <int,int,...>`
-    Comma-separated list of k-mer sizes to be used (all values must be odd, less than 128 and listed in ascending order). If `--sc` is set the default values are 21,33,55. For multicell data sets K values are automatically selected using maximum read length ([see note for assembling long Illumina paired reads for details](running.md#assembling-long-illumina-paired-reads)). To properly select K values for IonTorrent data read [this section](running.md#assembling-iontorrent-reads).
+    Comma-separated list of k-mer sizes to be used (all values must be odd, less than 128 and listed in ascending order). If `--sc` is set the default values are 21,33,55. For multicell data sets K values are automatically selected using maximum read length ([see note for assembling long Illumina paired reads for details](datatypes.md#assembling-long-illumina-paired-reads)). To properly select K values for IonTorrent data read [this section](datatypes.md#assembling-iontorrent-reads).
 
 `--cov-cutoff <float>`
     Read coverage cutoff value. Must be a positive float value, or "auto", or "off". Default value is "off". When set to "auto" SPAdes automatically computes coverage threshold using conservative strategy. Note, that this option is not supported by metaSPAdes.
@@ -406,10 +338,10 @@ Notes:
     PHRED quality offset for the input reads, can be either 33 or 64. It will be auto-detected if it is not specified.
 
 `--custom-hmms <file or directory>`
-    File or directory with amino acid HMMs for [HMM-guided mode](running.md#hmm-guided-mode).
+    File or directory with amino acid HMMs for [HMM-guided mode](hmm.md#hmm-guided-mode).
 
 
-### Examples
+## Examples
 
 To test the toy data set, you can also run the following command from the SPAdes `bin` directory:
 
@@ -521,206 +453,3 @@ specify them as one library:
 
 All options for specifying input data can be mixed if needed, but make sure that files for each library are grouped and files with left and right paired reads are listed in the same order.
 
-## Assembling IonTorrent reads
-
-Only FASTQ or BAM files are supported as input.
-
-The selection of k-mer length is non-trivial for IonTorrent. If the dataset is more or less conventional (good coverage, not high GC, etc), then use our [recommendation for long reads](running.md#assembling-long-illumina-paired-reads) (e.g. assemble using k-mer lengths 21,33,55,77,99,127). However, due to increased error rate some changes of k-mer lengths (e.g. selection of shorter ones) may be required. For example, if you ran SPAdes with k-mer lengths 21,33,55,77 and then decided to assemble the same data set using more iterations and larger values of K, you can run SPAdes once again specifying the same output folder and the following options: `--restart-from k77 -k 21,33,55,77,99,127 --mismatch-correction -o <previous_output_dir>`. Do not forget to copy contigs and scaffolds from the previous run. We are planning to tackle issue of selecting k-mer lengths for IonTorrent reads in next versions.
-
-You may need no error correction for Hi-Q enzyme at all. However, we suggest trying to assemble your data with and without error correction and select the best variant.
-
-For non-trivial datasets (e.g. with high GC, low or uneven coverage) we suggest to enable single-cell mode (setting `--sc` option) and use k-mer lengths of 21,33,55.
-
-## Assembling long Illumina paired reads
-
-Recent advances in DNA sequencing technology have led to a rapid increase in read length. Nowadays, it is a common situation to have a data set consisting of 2x150 or 2x250 paired-end reads produced by Illumina MiSeq or HiSeq2500. However, the use of longer reads alone will not automatically improve assembly quality. An assembler that can properly take advantage of them is needed.
-
-SPAdes use of iterative k-mer lengths allows benefiting from the full potential of the long paired-end reads. Currently one has to set the assembler options up manually, but we plan to incorporate automatic calculation of necessary options soon.
-
-Please note that in addition to the read length, the insert length also matters a lot. It is not recommended to sequence a 300bp fragment with a pair of 250bp reads. We suggest using 350-500 bp fragments with 2x150 reads and 550-700 bp fragments with 2x250 reads.
-
-### Multi-cell data set with read length 2x150 bp
-
-Do not turn off SPAdes error correction (BayesHammer module), which is included in SPAdes default pipeline.
-
-If you have enough coverage (50x+), then you may want to try to set k-mer lengths of 21, 33, 55, 77 (selected by default for reads with length 150bp).
-
-Make sure you run assembler with the `--careful` option to minimize number of mismatches in the final contigs.
-
-We recommend that you check the SPAdes log file at the end of the each iteration to control the average coverage of the contigs.
-
-For reads corrected prior to running the assembler:
-
-``` bash
-
-    spades.py -k 21,33,55,77 --careful --only-assembler <your reads> -o spades_output
-```
-
-To correct and assemble the reads:
-
-``` bash
-
-    spades.py -k 21,33,55,77 --careful <your reads> -o spades_output
-```
-
-### Multi-cell data set with read lengths 2x250 bp
-
-Do not turn off SPAdes error correction (BayesHammer module), which is included in SPAdes default pipeline.
-
-By default we suggest to increase k-mer lengths in increments of 22 until the k-mer length reaches 127. The exact length of the k-mer depends on the coverage: k-mer length of 127 corresponds to 50x k-mer coverage and higher. For read length 250bp SPAdes automatically chooses K values equal to 21, 33, 55, 77, 99, 127.
-
-Make sure you run assembler with `--careful` option to minimize number of mismatches in the final contigs.
-
-We recommend you to check the SPAdes log file at the end of the each iteration to control the average coverage of the contigs.
-
-For reads corrected prior to running the assembler:
-
-``` bash
-
-    spades.py -k 21,33,55,77,99,127 --careful --only-assembler <your reads> -o spades_output
-```
-
-To correct and assemble the reads:
-
-``` bash
-
-    spades.py -k 21,33,55,77,99,127 --careful <your reads> -o spades_output
-```
-
-### Single-cell data set with read lengths 2 x 150 or 2 x 250
-
-The default k-mer lengths are recommended. For single-cell data sets SPAdes selects k-mer sizes 21, 33 and 55.
-
-However, it might be tricky to fully utilize the advantages of long reads you have. Consider contacting us for more information and to discuss assembly strategy.
-
-
-## HMM-guided mode
-The majority of SPAdes assembly modes (normal multicell, single-cell, rnaviral, meta and of course biosynthetic) also supports HMM-guided mode as implemented in biosyntheticSPAdes. The detailed description could be found in [biosyntheticSPAdes paper](https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118), but in short: amino acid profile HMMs are aligned to the edges of assembly graph. After this the subgraphs containing the set of matches ("domains") are extracted and all possible paths through the domains that are supported both by paired-end data (via scaffolds) and graph topology are obtained (putative biosynthetic gene clusters).
-
-HMM-guided mode could be enabled via providing a set of HMMs via `--custom-hmms` option. In HMM guided mode the set of contigs and scaffolds (see [SPAdes output](running.md#spades-output) section for more information about SPAdes output) is kept intact, however additional [biosyntheticSPAdes output](running.md#biosyntheticspades-output) represents the output of HMM-guided assembly.
-
-Note that normal biosyntheticSPAdes mode (via `--bio` option) is a bit different from HMM-guided mode: besides using the special set of profile HMMS representing a family of NRSP/PKS domains also includes a set of assembly graph simplification and processing settings aimed for fuller recovery of biosynthetic gene clusters.
-
-Given an increased interest in coronavirus research we developed a coronavirus assembly mode for SPAdes assembler (also known as coronaSPAdes). It allows to assemble full-length coronaviridae genomes from the transcriptomic and metatranscriptomic data. Algorithmically, coronaSPAdes is an rnaviralSPAdes that uses the set of HMMs from [Pfam SARS-CoV-2 2.0](ftp://ftp.ebi.ac.uk/pub/databases/Pfam/releases/Pfam_SARS-CoV-2_2.0/) set as well as additional HMMs as outlined by [(Phan et al, 2019)](https://doi.org/10.1093/ve/vey035). coronaSPAdes could be run via a dedicated `coronaspades.py` script. See [coronaSPAdes preprint](https://www.biorxiv.org/content/10.1101/2020.07.28.224584v1) for more information about rnaviralSPAdes,  coronaSPAdes and HMM-guided mode. Output for any HMM-related mode (--bio, --corona, or --custom-hmms flags) is the same with biosyntheticSPAdes' output.
-
-## SPAdes output
-
-SPAdes stores all output files in `<output_dir> `, which is set by the user.
-
--   `<output_dir>/corrected/` directory contains reads corrected by BayesHammer in `*.fastq.gz` files; if compression is disabled, reads are stored in uncompressed `*.fastq` files
--   `<output_dir>/scaffolds.fasta` contains resulting scaffolds (recommended for use as resulting sequences)
--   `<output_dir>/contigs.fasta` contains resulting contigs
--   `<output_dir>/assembly_graph_with_scaffolds.gfa` contains SPAdes assembly graph and scaffolds paths in [GFA 1.0 format](https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md)
--   `<output_dir>/assembly_graph.fastg` contains SPAdes assembly graph in [FASTG format](http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf)
--   `<output_dir>/contigs.paths` contains paths in the assembly graph corresponding to contigs.fasta (see details below)
--   `<output_dir>/scaffolds.paths` contains paths in the assembly graph corresponding to scaffolds.fasta (see details below)
-
-### Contigs and scaffolds format
-
-Contigs/scaffolds names in SPAdes output FASTA files have the following format:
-`>NODE_3_length_237403_cov_243.207`
-Here `3` is the number of the contig/scaffold, `237403` is the sequence length in nucleotides and `243.207` is the k-mer coverage for the last (largest) k value used. Note that the k-mer coverage is always lower than the read (per-base) coverage.
-
-In general, SPAdes uses two techniques for joining contigs into scaffolds. First one relies on read pairs and tries to estimate the size of the gap separating contigs. The second one relies on the assembly graph: e.g. if two contigs are separated by a complex tandem repeat, that cannot be resolved exactly, contigs are joined into scaffold with a fixed gap size of 100 bp. Contigs produced by SPAdes do not contain N symbols.
-
-### Assembly graph formats
-
-To view FASTG and GFA files we recommend to use [Bandage visualization tool](http://rrwick.github.io/Bandage/). Note that sequences stored in `assembly_graph.fastg` correspond to contigs before repeat resolution (edges of the assembly graph). Paths corresponding to contigs after repeat resolution (scaffolding) are stored in `contigs.paths` (`scaffolds.paths`) in the format accepted by Bandage (see [Bandage wiki](https://github.com/rrwick/Bandage/wiki/Graph-paths) for details). The example is given below.
-
-Let the contig with the name `NODE_5_length_100000_cov_215.651` consist of the following edges of the assembly graph:
-
-``` plain
-    >EDGE_2_length_33280_cov_199.702
-    >EDGE_5_length_84_cov_321.414"
-    >EDGE_3_length_111_cov_175.304
-    >EDGE_5_length_84_cov_321.414"
-    >EDGE_4_length_66661_cov_223.548
-```
-
-Then, `contigs.paths` will contain the following record:
-
-``` plain
-    NODE_5_length_100000_cov_215.651
-    2+,5-,3+,5-,4+
-```
-
-
-Since the current version of Bandage does not accept paths with gaps, paths corresponding contigs/scaffolds jumping over a gap in the assembly graph are split by semicolon at the gap positions. For example, the following record
-
-``` plain
-    NODE_3_length_237403_cov_243.207
-    21-,17-,15+,17-,16+;
-    31+,23-,22+,23-,4-
-```
-
-states that `NODE_3_length_237403_cov_243.207` corresponds to the path with 10 edges, but jumps over a gap between edges `EDGE_16_length_21503_cov_482.709` and `EDGE_31_length_140767_cov_220.239`.
-
-### Complete list of output files
-
-The full list of `<output_dir>` content is presented below:
-
-- scaffolds.fasta - resulting scaffolds (recommended for use as resulting sequences)
-- contigs.fasta - resulting contigs
-- assembly_graph.fastg - assembly graph
-- contigs.paths - contigs paths in the assembly graph
-- scaffolds.paths - scaffolds paths in the assembly graph
-- before_rr.fasta - contigs before repeat resolution
-
-- corrected/ - files from read error correction
-    - configs/ - configuration files for read error correction
-    - corrected.yaml - internal configuration file
-    - Output files with corrected reads
-
-- params.txt - information about SPAdes parameters in this run
-- spades.log - SPAdes log
-- dataset.info - internal configuration file
-- input_dataset.yaml - internal YAML data set file
-- K<##>/ - directory containing intermediate files from the run with K=<##>. These files should not be used as assembly results; use resulting contigs/scaffolds in files mentioned above.
-
-
-SPAdes will overwrite these files and directories if they exist in the specified `<output_dir>`.
-
-## plasmidSPAdes output
-
-plasmidSPAdes and metaplasmidSPAdes output only DNA sequences from putative plasmids. Output file names and formats remain the same as in SPAdes (see [previous](running.md#spades-output) section), with the following differences.
-
-For all plasmidSPAdes' contig names in `contigs.fasta`, `scaffolds.fasta` and `assembly_graph.fastg` we append suffix `_component_X`, where `X` is the id of the putative plasmid, which the contig belongs to. Note that plasmidSPAdes may not be able to separate similar plasmids and thus their contigs may appear with the same id.
-
-
-## metaplasmidSPAdes and metaviralSPAdes output
-The repeat resolution and extrachromosomal element detection in metaplasmidSPAdes/metaviralSPAdes is run independently for different coverage cutoffs values (see [paper](https://genome.cshlp.org/content/29/6/961.short) for details). In order to distinguish contigs with putative plasmids detected at different cutoff levels we extend the contig name in FASTA file with cutoff value used for this particular contig (in format `_cutoff_N`). This is why, in the contrast to regular SPAdes pipeline, there might be a contig with `NODE_1_` prefix for each cutoff with potential plasmids detected. In following example, there were detected two potential viruses using cutoff 0, one virus was detected with cutoff 5 and one with cutoff 10.
-Also, we add a suffix that shows the structure of the suspective extrachromosomal element.
-For metaplasmid mode we output only circular putative plasmids.
-For metaviral mode we also output linear putative viruses and linear viruses with simple repeats ('9'-shaped components in the assembly graph) sequences.
-
-``` 
->NODE_1_length_40003_cov_13.48_cutoff_0_type_circular
->NODE_2_length_30000_cov_4.20_cutoff_0_type_linear
->NODE_1_length_20000_cov_20.42_cutoff_5_type_circular
->NODE_1_length_10000_cov_198.4_cutoff_10_type_linearrepeat
-```
-
-
-## biosyntheticSPAdes output
-
-biosyntheticSPAdes outputs four files of interest:
-- scaffolds.fasta – contains DNA sequences from putative biosynthetic gene clusters (BGC). Since each sample may contain multiple BGCs and biosyntheticSPAdes can output several putative DNA sequences for eash cluster, for each contig name we append suffix `_cluster_X_candidate_Y`, where X is the id of the BGC and Y is the id of the candidate from the BGC.
-- raw_scaffolds.fasta – SPAdes scaffolds generated without domain-graph related algorithms. Very close to regular scaffolds.fasta file.
-- hmm_statistics.txt – contains statistics about BGC composition in the sample. First, it outputs number of domain hits in the sample. Then, for each BGC candidate we output domain order with positions on the corresponding DNA sequence from scaffolds.fasta.
-- domain_graph.dot – contains domain graph structure, that can be used to assess complexity of the sample and structure of BGCs. For more information about domain graph construction, please refer to the paper.
-
-## Assembly evaluation
-
-[QUAST](https://quast.sourceforge.net/) may be used to generate summary statistics (N50, maximum contig length, GC %, \# genes found in a reference list or with built-in gene finding tools, etc.) for a single assembly. It may also be used to compare statistics for multiple assemblies of the same data set (e.g., SPAdes run with different parameters, or several different assemblers).
-
-
-
-## wastewaterSPAdes mode
-
-SARS-CoV-2 wastewater samples are extensively collected and studied because it allows quantitative assessment of viral load in surrounding populations. We developed wastewaterSPAdes that solves SARS-CoV-2 deconvolution problem using assembly graph structure.
-To use wastewaterSPAdes, you'll need to:
-
-- Set `--sewage` flag to the `coronaspades.py`.
-- Provide the SARS-CoV-2 reference genome as trusted contigs.
-
-Results of wastewaterSPAdes are stored in `lineages.csv` file. First column contains strain name, and second column contains estimated abundance of this strain in the sample.
