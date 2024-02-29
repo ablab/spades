@@ -1,16 +1,16 @@
 # Installation
 
 
-SPAdes requires a 64-bit Linux system or Mac OS and Python (supported versions are Python 2.7, and Python3: 3.2 and higher) to be pre-installed on it. To obtain SPAdes you can either download binaries or download source code and compile it yourself. []()
+SPAdes requires a 64-bit Linux system or Mac OS and Python (3.8 or higher) to be pre-installed on it. To obtain SPAdes you can either download binaries or download source code and compile it yourself.
 
 In case of successful installation the following files will be placed in the `bin` directory:
 
 -   `spades.py` (main executable script)
--   `metaspades.py` (main executable script for [metaSPAdes](#meta))
--   `plasmidspades.py` (main executable script for [plasmidSPAdes](#plasmid))
--   `metaplasmidspades.py` (main executable script for [metaplasmidSPAdes](#metaextrachromosomal))
--   `metaviralspades.py` (main executable script for [metaviralSPAdes](#metaextrachromosomal))
--   `rnaspades.py` (main executable script for [rnaSPAdes](rnaspades_manual.html))
+-   `metaspades.py` (main executable script for [metaSPAdes](running.md#basic-options-and-modes))
+-   `plasmidspades.py` (main executable script for [plasmidSPAdes](running.md#basic-options-and-modes))
+-   `metaplasmidspades.py` (main executable script for [metaplasmidSPAdes](running.md#basic-options-and-modes))
+-   `metaviralspades.py` (main executable script for [metaviralSPAdes](running.md#basic-options-and-modes))
+-   `rnaspades.py` (main executable script for [rnaSPAdes](rna.md))
 -   `rnaviralspades.py` (main executable script for rnaviralSPAdes)
 -   `coronaspades.py` (wrapper script for coronaSPAdes mode)
 -   `spades-core`  (assembly module)
@@ -22,51 +22,51 @@ In case of successful installation the following files will be placed in the `bi
 -   `spades-bwa`  ([BWA](http://bio-bwa.sourceforge.net) alignment module which is required for mismatch correction)
 -   `spades-corrector-core`  (mismatch correction module)
 
-<a name="sec2.1"></a>
+
 ## Downloading SPAdes Linux binaries
 
-To download [SPAdes Linux binaries](http://cab.spbu.ru/files/release3.15.4/SPAdes-3.15.4-Linux.tar.gz) and extract them, go to the directory in which you wish SPAdes to be installed and run:
+To download [SPAdes Linux binaries](https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5-Linux.tar.gz) and extract them, go to the directory in which you wish SPAdes to be installed and run:
 
 ``` bash
 
-    wget http://cab.spbu.ru/files/release3.15.4/SPAdes-3.15.4-Linux.tar.gz
+    wget https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5-Linux.tar.gz
     tar -xzf SPAdes-3.15.4-Linux.tar.gz
     cd SPAdes-3.15.4-Linux/bin/
 ```
 
-In this case you do not need to run any installation scripts - SPAdes is ready to use. We also suggest adding SPAdes installation directory to the `PATH` variable. []()
+In this case you do not need to run any installation scripts - SPAdes is ready to use. We also suggest adding SPAdes installation directory to the `PATH` variable.
 
 Note, that pre-build binaries do not work on new Linux kernels.
 
-<a name="sec2.2"></a>
+
 ## Downloading SPAdes binaries for Mac
 
-To obtain [SPAdes binaries for Mac](http://cab.spbu.ru/files/release3.15.4/SPAdes-3.15.4-Darwin.tar.gz), go to the directory in which you wish SPAdes to be installed and run:
+To obtain [SPAdes binaries for Mac](https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5-Darwin.tar.gz), go to the directory in which you wish SPAdes to be installed and run:
 
 ``` bash
 
-    curl http://cab.spbu.ru/files/release3.15.4/SPAdes-3.15.4-Darwin.tar.gz -o SPAdes-3.15.4-Darwin.tar.gz
+    curl https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5-Darwin.tar.gz
     tar -zxf SPAdes-3.15.4-Darwin.tar.gz
     cd SPAdes-3.15.4-Darwin/bin/
 ```
 
-Just as in Linux, SPAdes is ready to use and no further installation steps are required. We also suggest adding SPAdes installation directory to the `PATH` variable. []()
+Just as in Linux, SPAdes is ready to use and no further installation steps are required. We also suggest adding SPAdes installation directory to the `PATH` variable.
 
-<a name="sec2.3"></a>
+
 ## Downloading and compiling SPAdes source code
 
 If you wish to compile SPAdes by yourself you will need the following libraries to be pre-installed:
 
--   g++ (version 5.3.1 or higher)
--   cmake (version 3.5 or higher)
+-   g++ (version 9 or higher)
+-   cmake (version 3.16 or higher)
 -   zlib
 -   libbz2
 
-If you meet these requirements, you can download the [SPAdes source code](http://cab.spbu.ru/files/release3.15.4/SPAdes-3.15.4.tar.gz):
+If you meet these requirements, you can download the [SPAdes source code](https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5.tar.gz):
 
 ``` bash
 
-    wget http://cab.spbu.ru/files/release3.15.4/SPAdes-3.15.4.tar.gz
+    wget https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5.tar.gz
     tar -xzf SPAdes-3.15.4.tar.gz
     cd SPAdes-3.15.4
 ```
@@ -94,9 +94,9 @@ for example:
 
 which will install SPAdes into `/usr/local/bin`.
 
-After installation you will get the same files (listed above) in `./bin` directory (or `<destination_dir>/bin` if you specified PREFIX). We also suggest adding `bin` directory to the `PATH` variable. []()
+After installation you will get the same files (listed above) in `./bin` directory (or `<destination_dir>/bin` if you specified PREFIX). We also suggest adding `bin` directory to the `PATH` variable.
 
-<a name="sec2.4"></a>
+
 ## Verifying your installation
 
 For testing purposes, SPAdes comes with a toy data set (reads that align to first 1000 bp of *E. coli*). To try SPAdes on this data set, run:
