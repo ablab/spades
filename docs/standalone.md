@@ -1,10 +1,9 @@
-<a name="sec4"></a>
 # Stand-alone binaries released within SPAdes package
 
-<a name="sec4.1"></a>
+
 ## k-mer counting
 
-To provide input data to SPAdes k-mer counting tool `spades-kmercounter ` you may just specify files in [SPAdes-supported formats](#sec3.1) without any flags (after all options) or provide dataset description file in [YAML format](#inputdata:yaml).
+To provide input data to SPAdes k-mer counting tool `spades-kmercounter ` you may just specify files in [SPAdes-supported formats](running.md#spades-input) without any flags (after all options) or provide dataset description file in [YAML format](running.md#specifying-multiple-libraries-with-yaml-data-set-file).
 
 Output: `<output_dir>/final_kmers` - unordered set of kmers in binary format. Kmers from both forward a
 nd reverse-complementary reads are taken into account.
@@ -13,13 +12,13 @@ Output format: All kmers are written sequentially without any separators. Each k
 mber of bits. One kmer of length K takes 2*K bits. Kmers are aligned by 64 bits. For example, one kme
 r with length=21 takes 8 bytes, with length=33 takes 16 bytes, and with length=55 takes 16 bytes. Eac
 h nucleotide is coded with 2 bits: 00 - A, 01 - C, 10 - G, 11 - T.
-                                                   
+                                                 
 Example:
 
         For kmer: AGCTCT
         Memory: 6 bits * 2 = 12, 64 bits (8 bytes)
         Let’s describe bytes:
-        data[0] = AGCT -> 11 01 10 00 -> 0xd8                                
+        data[0] = AGCT -> 11 01 10 00 -> 0xd8                              
         data[1] = CT00 -> 00 00 11 01 -> 0x0d
         data[2] = 0000 -> 00 00 00 00 -> 0x00
         data[3] = 0000 -> 00 00 00 00 -> 0x00
@@ -51,12 +50,11 @@ The options are:
     print help message
 
 
-<a name="sec4.2"></a>
 ## k-mer coverage read filter
 
 `spades-read-filter` is a tool for filtering reads with median kmer coverage less than threshold.
 
-To provide input data to SPAdes k-mer read filter tool `spades-read-filter ` you should provide dataset description file in [YAML format](#inputdata:yaml).
+To provide input data to SPAdes k-mer read filter tool `spades-read-filter ` you should provide dataset description file in [YAML format](running.md#specifying-multiple-libraries-with-yaml-data-set-file).
 
 Synopsis: `spades-read-filter [OPTION...] -d <yaml>`
 
@@ -80,12 +78,12 @@ The options are:
 `-h, --help `
     print help message
 
-<a name="sec4.3"></a>
+
 ## k-mer cardinality estimating
 
 `spades-kmer-estimating ` is a tool for estimating approximate number of unique k-mers in the provided reads. Kmers from reverse-complementary reads aren"t taken into account for k-mer cardinality estimating.
 
-To provide input data to SPAdes k-mer cardinality estimating tool `spades-kmer-estimating ` you should provide dataset description file in [YAML format](#inputdata:yaml).
+To provide input data to SPAdes k-mer cardinality estimating tool `spades-kmer-estimating ` you should provide dataset description file in [YAML format](running.md#specifying-multiple-libraries-with-yaml-data-set-file).
 
 Synopsis: `spades-kmer-estimating [OPTION...] -d <yaml>`
 
@@ -103,9 +101,9 @@ The options are:
 `-h, --help `
     print help message
 
-<a name="sec4.4"></a>
+
 ## Graph construction
-Graph construction tool `spades-gbuilder ` has two mandatory options: dataset description file in [YAML format](#inputdata:yaml) and an output file name.
+Graph construction tool `spades-gbuilder ` has two mandatory options: dataset description file in [YAML format](running.md#specifying-multiple-libraries-with-yaml-data-set-file) and an output file name.
 
 Synopsis: `spades-gbuilder <dataset description (in YAML)> <output filename> [-k <value>] [-t <value>] [-tmpdir <dir>] [-b <value>] [-unitigs|-fastg|-gfa|-spades]`
 
@@ -136,12 +134,12 @@ Additional options are:
     output graph in SPAdes internal format
 
 
-<a name="sec4.5"></a>
+
 ## Long read to graph alignment
 
-<a name="sec4.5.1"></a>
+
 ### hybridSPAdes aligner
-A tool `spades-gmapper ` gives opportunity to extract long read alignments generated with hybridSPAdes pipeline options. It has three mandatory options: dataset description file in [YAML format](#inputdata:yaml), graph file in GFA format and an output file name.
+A tool `spades-gmapper ` gives opportunity to extract long read alignments generated with hybridSPAdes pipeline options. It has three mandatory options: dataset description file in [YAML format](running.md#specifying-multiple-libraries-with-yaml-data-set-file), graph file in GFA format and an output file name.
 
 Synopsis: `spades-gmapper <dataset description (in YAML)> <graph (in GFA)> <output filename> [-k <value>] [-t <value>] [-tmpdir <dir>]`
 
@@ -156,10 +154,10 @@ Additional options are:
 `-tmpdir <dir_name>  `
     scratch directory to use
 
-While `spades-mapper` is a solution for those who work on hybridSPAdes assembly and want to get exactly its intermediate results, [SPAligner](#sec4.5.2) is an end-product application for sequence-to-graph alignment with tunable parameters and output types.  
+While `spades-mapper` is a solution for those who work on hybridSPAdes assembly and want to get exactly its intermediate results, [SPAligner](standalone.md#spaligner) is an end-product application for sequence-to-graph alignment with tunable parameters and output types.
 
 
-<a name="sec4.5.2"></a>
+
 ### SPAligner
 A tool for fast and accurate alignment of nucleotide sequences to assembly graphs. It takes file with sequences (in fasta/fastq format) and assembly in GFA format and outputs long read to graph alignment in various formats (such as tsv, fasta and [GPA](https://github.com/ocxtal/gpa "GPA-format spec")).
 

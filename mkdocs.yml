@@ -1,10 +1,12 @@
 site_name: SPAdes Assembly Toolkit
 nav:
   - Home: index.md
+  - Quick start: getting-started.md
   - Installation: installation.md
   - Running SPAdes: running.md
+  - rnaSPAdes: rna.md
   - SPAdes tools: standalone.md
   - Citation: citation.md
   - Feedback: feedback.md
 theme: material
-
+use_directory_urls: false
