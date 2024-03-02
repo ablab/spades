@@ -23,9 +23,9 @@ inline bool ClustersIntersect(omnigraph::de::Point p1, omnigraph::de::Point p2) 
 
 
 template<class Graph>
-bool TryToAddPairInfo(omnigraph::de::PairedInfoIndexT<Graph>& clustered_index,
-                      typename Graph::EdgeId e1, typename Graph::EdgeId e2,
-                      const omnigraph::de::Point& point_to_add) {
+bool AddNonIntersectingInfo(omnigraph::de::PairedInfoIndexT<Graph>& clustered_index,
+                            typename Graph::EdgeId e1, typename Graph::EdgeId e2,
+                            const omnigraph::de::Point& point_to_add) {
     auto histogram = clustered_index.Get(e1, e2);
     for (auto i : histogram) {
         if (ClustersIntersect(i, point_to_add))
@@ -159,7 +159,7 @@ class PairInfoImprover {
 
     size_t FillMissing(unsigned nthreads) {
         DEBUG("Fill missing: Creating indexes");
-        omnigraph::de::PairedInfoIndicesT<Graph> to_add(graph_, nthreads * 16);
+        omnigraph::de::PairedInfoIndicesT<Graph> to_add(graph_, nthreads);
 
         SplitPathConstructor<Graph> spc(graph_);
 
@@ -178,23 +178,26 @@ class PairInfoImprover {
                 for (const auto &path : paths) {
                     TRACE("Path " << path.PrintPath(graph_));
                     for (const auto &pi : path)
-                        TryToAddPairInfo(to_add[i], pi.first, pi.second, pi.point);
+                        to_add[omp_get_thread_num()].Add(pi.first, pi.second, pi.point);
                 }
             }
         }
         DEBUG("Fill missing: Threads finished");
 
-        size_t cnt = 0;
-        for (size_t i = 0; i < to_add.size(); ++i) {
-            DEBUG("Adding map #" << i);
-            for (auto I = omnigraph::de::half_pair_begin(to_add[i]);
-                 I != omnigraph::de::half_pair_end(to_add[i]);
-                 ++I) {
-                EdgeId e1 = I.first(), e2 = I.second();
-                for (auto p : *I)
-                    cnt += TryToAddPairInfo(index_, e1, e2, p);
-            }
+        DEBUG("Merging maps");
+        for (size_t i = 1; i < to_add.size(); ++i) {
+            to_add[0].Merge(to_add[i]);
             to_add[i].clear();
+        }
+        DEBUG("Resulting size " << to_add[0].size());
+
+        size_t cnt = 0;
+        for (auto I = omnigraph::de::half_pair_begin(to_add[0]);
+             I != omnigraph::de::half_pair_end(to_add[0]);
+             ++I) {
+            EdgeId e1 = I.first(), e2 = I.second();
+            for (auto p : *I)
+                cnt += AddNonIntersectingInfo(index_, e1, e2, p);
         }
 
         DEBUG("Size of paired index " << index_.size());
