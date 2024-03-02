@@ -90,6 +90,8 @@ class safe_btree_iterator {
   Iterator* mutable_iter() const {
     if (generation_ != tree_->generation()) {
       if (generation_ > 0) {
+        fprintf(stderr, "update\n");
+        abort();
         // This does the wrong thing for a multi{set,map}. If my iter was
         // pointing to the 2nd of 2 values with the same key, then this will
         // reset it to point to the first. This is why we don't provide a
