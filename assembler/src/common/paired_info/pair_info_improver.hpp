@@ -159,7 +159,7 @@ class PairInfoImprover {
 
     size_t FillMissing(unsigned nthreads) {
         DEBUG("Fill missing: Creating indexes");
-        omnigraph::de::PairedInfoIndicesT<Graph> to_add(graph_, nthreads);
+        omnigraph::de::PairedInfoIndicesT<Graph> to_add(graph_, nthreads * 16);
 
         SplitPathConstructor<Graph> spc(graph_);
 
@@ -178,7 +178,7 @@ class PairInfoImprover {
                 for (const auto &path : paths) {
                     TRACE("Path " << path.PrintPath(graph_));
                     for (const auto &pi : path)
-                        TryToAddPairInfo(to_add[omp_get_thread_num()], pi.first, pi.second, pi.point);
+                        TryToAddPairInfo(to_add[i], pi.first, pi.second, pi.point);
                 }
             }
         }
