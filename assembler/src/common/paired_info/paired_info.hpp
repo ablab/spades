@@ -563,12 +563,9 @@ class NoLockingAdapter : public T {
 
 //Aliases for common graphs
 template<typename K, typename V>
-using safe_btree_map = NoLockingAdapter<btree::safe_btree_map<K, V>>; //Two-parameters wrapper
-template<typename Graph>
-using PairedInfoIndexT = PairedIndex<Graph, PointTraits, safe_btree_map>;
-
-template<typename K, typename V>
 using btree_map = NoLockingAdapter<btree::btree_map<K, V>>; //Two-parameters wrapper
+template<typename Graph>
+using PairedInfoIndexT = PairedIndex<Graph, PointTraits, btree_map>;
 
 template<typename Graph>
 using UnclusteredPairedInfoIndexT = PairedIndex<Graph, RawPointTraits, btree_map>;
@@ -718,7 +715,7 @@ using PairedInfoIndicesT = PairedIndices<PairedInfoIndexT<Graph>>;
 
 
 template<typename Graph>
-using PairedInfoIndexHandlerT = PairedIndexHandler<Graph, PointTraits, safe_btree_map>;
+using PairedInfoIndexHandlerT = PairedIndexHandler<Graph, PointTraits, btree_map>;
 
 template<class Graph>
 using PairedInfoIndicesHandlerT = std::vector<PairedInfoIndexHandlerT<Graph>>;
