@@ -10,7 +10,6 @@
 #include "alignment/sequence_mapper.hpp"
 #include "alignment/sequence_mapper_notifier.hpp"
 #include "io/dataset_support/read_converter.hpp"
-#include "io/reads/read_stream_vector.hpp"
 #include "modules/simplification/compressor.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/graph_pack_helpers.h"
@@ -18,6 +17,7 @@
 #include "utils/logger/logger.hpp"
 
 #include <parallel_hashmap/phmap.h>
+#include <parallel_hashmap/btree.h>
 
 template <typename Iter>
 std::vector<Iter> split_iterator(size_t chunks, Iter b, Iter e, size_t n) {
@@ -365,22 +365,13 @@ private:
 
     size_t CorrectAllEdges(const MismatchStatistics &statistics) {
         size_t res = 0;
-        btree::btree_set<EdgeId> conjugate_fix;
-        //FIXME after checking saves replace with
-        //for (auto it = g_.ConstEdgeBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
+        phmap::btree_set<EdgeId> conjugate_fix;
 
-#if 0
-        for (EdgeId e : g_.edges()) {
-            if (!conjugate_fix.count(g_.conjugate(e)))
+        for (EdgeId e : graph_.edges()) {
+            if (!conjugate_fix.count(graph_.conjugate(e)))
                 conjugate_fix.insert(e);
         }
-#else
-        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            if (conjugate_fix.find(graph_.conjugate(*it)) == conjugate_fix.end()) {
-                conjugate_fix.insert(*it);
-            }
-        }
-#endif
+
         for (EdgeId e : conjugate_fix) {
             DEBUG("processing edge" << graph_.int_id(e));
 

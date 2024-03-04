@@ -14,10 +14,11 @@
 #include "paired_info/concurrent_pair_info_buffer.hpp"
 #include "pipeline/sequence_mapper_gp_api.hpp"
 
-#include <numeric>
 #include <parallel_hashmap/phmap.h>
+#include <parallel_hashmap/btree.h>
+
+#include <numeric>
 #include <stack>
-#include <unordered_set>
 #include <vector>
 
 namespace debruijn_graph {
@@ -348,11 +349,11 @@ class GapCloser {
         return false;
     }
 
-    btree::btree_map<EdgeId, std::vector<EdgeId>> CollectCandidates() const {
+    auto CollectCandidates() const {
         size_t nthreads = omp_get_max_threads();
         omnigraph::IterationHelper<Graph, EdgeId> edges(g_);
         auto ranges = edges.Ranges(nthreads);
-        btree::btree_map<EdgeId, std::vector<EdgeId>> candidates;
+        phmap::btree_map<EdgeId, std::vector<EdgeId>> candidates;
 #pragma omp parallel for
         for (size_t i = 0; i < ranges.size(); ++i) {
             for (EdgeId first_edge : ranges[i]) {

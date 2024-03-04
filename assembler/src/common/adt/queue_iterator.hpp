@@ -9,12 +9,13 @@
 #define QUEUE_ITERATOR_HPP_
 
 #include "utils/verify.hpp"
-#include "btree/btree_set.h"
-#include <set>
-#include <queue>
+
 #include <parallel_hashmap/phmap.h>
-#include <vector>
+#include <parallel_hashmap/btree.h>
+
 #include <algorithm>
+#include <queue>
+#include <vector>
 
 namespace {
 template<typename T>
@@ -194,7 +195,7 @@ template<typename T, typename Priority=identity>
 class erasable_priority_queue_key {
 private:
     using PriorityValue = std::decay_t<decltype(std::declval<Priority>()(T()))>;
-    btree::btree_set<std::pair<PriorityValue, T>> storage_;
+    phmap::btree_set<std::pair<PriorityValue, T>> storage_;
     Priority priority_;
 public:
     erasable_priority_queue_key() {}
@@ -255,7 +256,7 @@ template<typename T, typename Comparator = std::less<T>>
 class erasable_priority_queue {
 private:
     Comparator cmp_;
-    btree::btree_set<T, Comparator> storage_;
+    phmap::btree_set<T, Comparator> storage_;
 public:
     erasable_priority_queue()
             : cmp_(), storage_(cmp_) {}

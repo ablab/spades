@@ -11,7 +11,7 @@
 #include "paired_info.hpp"
 #include "paired_info_buffer.hpp"
 
-#include <btree/btree_map.h>
+#include <parallel_hashmap/btree.h>
 #include <cuckoo/cuckoohash_map.hh>
 
 #define XXH_INLINE_ALL

@@ -13,7 +13,7 @@
 #include "io/binary/binary.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 #include <boost/iterator/iterator_facade.hpp>
-#include <btree/btree_map.h>
+#include <parallel_hashmap/btree.h>
 #include <set>
 #include <type_traits>
 
@@ -597,13 +597,13 @@ class NoLockingConstAdapter : public T {
 
 //Aliases for common graphs
 template<typename K, typename V>
-using const_btree_map = NoLockingConstAdapter<btree::btree_map<K, V>>; //Two-parameters wrapper
+using const_btree_map = NoLockingConstAdapter<phmap::btree_map<K, V>>; //Two-parameters wrapper
 
 template<typename Graph>
 using PairedInfoIndexT = PairedIndex<Graph, PointTraits, const_btree_map>;
 
 template<typename K, typename V>
-using btree_map = NoLockingAdapter<btree::btree_map<K, V>>; //Two-parameters wrapper
+using btree_map = NoLockingAdapter<phmap::btree_map<K, V>>; //Two-parameters wrapper
 
 template<typename Graph>
 using UnclusteredPairedInfoIndexT = PairedIndex<Graph, RawPointTraits, btree_map>;
