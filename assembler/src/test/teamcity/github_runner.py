@@ -397,10 +397,10 @@ def cmp_misassemblies(quast_output_dir, old_ctgs, new_ctgs):
     new_contigs_report = os.path.join(quast_output_dir, "contigs_reports/contigs_report_" + new_ctgs + ".stdout")
 
     if not os.path.exists(old_contigs_report):
-        log.warning("Old contigs report was not found in " + old_contigs_report)
+        log.warning("Old contigs report was not found in " + str(old_contigs_report))
         return True
     if not os.path.exists(new_contigs_report):
-        log.warning("New contigs report was not found in " + new_contigs_report)
+        log.warning("New contigs report was not found in " + str(new_contigs_report))
         return True
 
     old_pos = find_mis_positions(old_contigs_report)
@@ -459,7 +459,7 @@ def compare_misassemblies(contigs, dataset_info, contig_storage_dir, output_dir)
                 continue
             fn = os.path.join(output_dir, file_name + "." + ext)
             if not os.path.exists(fn):
-                log.error('File for comparison is not found: ' + fn)
+                log.error('File for comparison is not found: ' + str(fn))
                 exit_code = 8
 
             latest_ctg = os.path.join(contig_storage_dir, "latest_" + name + "." + ext)
@@ -624,7 +624,7 @@ def save_contigs(args, output_dir, contig_storage_dir, contigs, rewrite_latest):
         saved_ctg_name = name_prefix + name + ctg_suffix + "." + ext
         spades_filename = os.path.join(output_dir, file_name + "." + ext)
         if not os.path.exists(spades_filename):
-            log.warning("File " + spades_filename + " do not exist ")
+            log.warning("File " + str(spades_filename) + " do not exist ")
             continue
         shutil.copy(spades_filename, os.path.join(contig_storage_dir, saved_ctg_name))
         log.info(name + " saved to " + os.path.join(contig_storage_dir, saved_ctg_name))
@@ -676,7 +676,7 @@ def save_quast_report(contigs, dataset_info, contig_storage_dir, output_dir, art
         if os.path.exists(compressed_report):
             os.remove(compressed_report)
 
-        log.info("Saving report of " + name + " to " + compressed_report)
+        log.info("Saving report of " + name + " to " + str(compressed_report))
         os.chdir(quast_output_dir)
         os.system("zip -9r " + compressed_report + " * > /dev/null")
         os.chdir(working_dir)
@@ -746,7 +746,7 @@ def main(args):
         ecode = quast_analysis(contigs, dataset_info, output_dir)
         if ecode != 0:
             rewrite_latest = False
-            log.error("QUAST analysis did not pass, exit code " + str(ecode), str(ecode))
+            log.error("QUAST analysis did not pass, exit code " + str(ecode))
             exit_code = 0 if args.ignore_checks else ecode
         log.debug('QUAST finished')
 
@@ -757,7 +757,7 @@ def main(args):
         ecode = os.system(os.path.join(script_dir, "detect_diffs.sh") + " " + output_dir + " " + dataset_info.etalon_saves)
         if ecode != 0:
             rewrite_latest = False
-            log.error("Comparing etalon saves did not pass, exit code " + str(ecode))
+            log.error("Comparing etalon saves did not pass, exit code: " + str(ecode))
             exit_code = 0 if args.ignore_checks else 12
         log.debug('End comparing etalon')
 
@@ -772,7 +772,7 @@ def main(args):
     ecode, rewrite = compare_misassemblies(contigs, dataset_info, contig_storage_dir, output_dir)
     rewrite_latest = rewrite_latest and rewrite
     if ecode != 0:
-        log.error('Failed to compare misassemblies', str(ecode))
+        log.error('Failed to compare misassemblies, exit code: ' + str(ecode))
     log.debug('End comparing misassemblies')
 
     # save contigs to storage
