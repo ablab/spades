@@ -18,11 +18,9 @@
 #include <boost/iterator/iterator_adaptor.hpp>
 #include <boost/iterator/filter_iterator.hpp>
 #include <boost/noncopyable.hpp>
-#include <btree/safe_btree_set.h>
 
 #include <atomic>
 #include <vector>
-#include <set>
 
 namespace omnigraph {
 

@@ -9,6 +9,7 @@
 #include "histogram.hpp"
 #include "histptr.hpp"
 
+#include "io/binary/binary.hpp"
 #include "utils/logger/logger.hpp"
 
 namespace omnigraph {

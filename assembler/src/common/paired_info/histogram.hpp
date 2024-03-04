@@ -11,10 +11,6 @@
 
 #include "adt/flat_set.hpp"
 #include "adt/small_pod_vector.hpp"
-#include "common/io/binary/binary.hpp"
-#include "common/io/binary/types/optional.hpp"
-
-#include <btree/btree_set.h>
 
 namespace omnigraph {
 
@@ -103,7 +99,7 @@ public:
 
     // Deletion routines.
     size_type erase(const key_type &key) { return tree_.erase(key); }
-    // Erase the specified iterator from the btree. The iterator must be valid
+    // Erase the specified iterator from the tree. The iterator must be valid
     // (i.e. not equal to end()).  Return an iterator pointing to the node after
     // the one that was erased (or end() if none exists).
     iterator erase(const iterator &iter) { return tree_.erase(iter); }

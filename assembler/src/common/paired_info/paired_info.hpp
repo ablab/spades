@@ -7,14 +7,15 @@
 
 #pragma once
 
-#include "adt/iterator_range.hpp"
-#include "assembly_graph/core/action_handlers.hpp"
-#include "utils/parallel/openmp_wrapper.h"
 #include "paired_info_buffer.hpp"
-#include <type_traits>
+
+#include "assembly_graph/core/action_handlers.hpp"
+#include "io/binary/binary.hpp"
+#include "utils/parallel/openmp_wrapper.h"
 #include <boost/iterator/iterator_facade.hpp>
-#include <btree/safe_btree_map.h>
+#include <btree/btree_map.h>
 #include <set>
+#include <type_traits>
 
 namespace omnigraph {
 
@@ -283,11 +284,11 @@ public:
         if (index_to_add.size() == 0)
             return;
 
-        auto locked_table = index_to_add.lock_table();
-        for (auto& kvpair : locked_table) {
-            EdgeId e1_to_add = kvpair.first; auto& map_to_add = kvpair.second;
+        const auto locked_table = index_to_add.lock_table();
+        for (const auto& kvpair : locked_table) {
+            EdgeId e1_to_add = kvpair.first; const auto& map_to_add = kvpair.second;
 
-            for (auto& to_add : map_to_add) {
+            for (const auto& to_add : map_to_add) {
                 EdgePair ep(e1_to_add, to_add.first), conj = this->ConjugatePair(e1_to_add, to_add.first);
                 if (ep > conj)
                     continue;
@@ -561,11 +562,48 @@ class NoLockingAdapter : public T {
     }
 };
 
+template<class T>
+class NoLockingConstAdapter : public T {
+  public:
+    class locked_table {
+      public:
+        using const_iterator = typename T::const_iterator;
+        using iterator = typename T::iterator;
+
+        locked_table(const T& table)
+                : table_(table) {}
+
+        const_iterator begin() const { return table_.begin(); }
+        const_iterator cbegin() const { return table_.begin(); }
+
+        const_iterator end() const { return table_.end(); }
+        const_iterator cend() const { return table_.end(); }
+
+        size_t size() const { return table_.size(); }
+
+      private:
+        iterator begin() = delete;
+        iterator end() = delete;
+
+        const T& table_;
+    };
+
+    // Nothing to lock here
+    locked_table lock_table() {
+        return locked_table(*this);
+    }
+};
+
+
 //Aliases for common graphs
 template<typename K, typename V>
-using btree_map = NoLockingAdapter<btree::btree_map<K, V>>; //Two-parameters wrapper
+using const_btree_map = NoLockingConstAdapter<btree::btree_map<K, V>>; //Two-parameters wrapper
+
 template<typename Graph>
-using PairedInfoIndexT = PairedIndex<Graph, PointTraits, btree_map>;
+using PairedInfoIndexT = PairedIndex<Graph, PointTraits, const_btree_map>;
+
+template<typename K, typename V>
+using btree_map = NoLockingAdapter<btree::btree_map<K, V>>; //Two-parameters wrapper
 
 template<typename Graph>
 using UnclusteredPairedInfoIndexT = PairedIndex<Graph, RawPointTraits, btree_map>;
@@ -610,7 +648,7 @@ public:
             for (EdgeId e : old_edges)
                 DEBUG(e << " " << paired_index_.graph().length(e));
         });
-        
+
         for (EdgeId e : old_edges) {
             DEBUG("trying " << e);
             typename BaseIndex::EdgeProxy old_e = paired_index_.Get(e);
@@ -715,7 +753,7 @@ using PairedInfoIndicesT = PairedIndices<PairedInfoIndexT<Graph>>;
 
 
 template<typename Graph>
-using PairedInfoIndexHandlerT = PairedIndexHandler<Graph, PointTraits, btree_map>;
+using PairedInfoIndexHandlerT = PairedIndexHandler<Graph, PointTraits, const_btree_map>;
 
 template<class Graph>
 using PairedInfoIndicesHandlerT = std::vector<PairedInfoIndexHandlerT<Graph>>;
