@@ -157,7 +157,7 @@ public:
         return isoform_cnt;
     }
 
-    void PrintStats() const {
+    void PrintStats() const override {
         INFO("Total number of genes: " << gene_count())
         INFO("Total number of isoforms: " << isoform_count())
     }
