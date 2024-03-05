@@ -854,23 +854,19 @@ void PathExtendLauncher::Launch() {
 
             PolishPaths(polished_paths, contig_paths, polished_map);
             DebugOutputPaths(contig_paths, "merged_polished_paths");
-
             GraphCoverageMap merged_polished_map(gp_.get<Graph>(), contig_paths, true);
 
-            DebugOutputPaths(contig_paths, "polished_paths");
-            TraverseLoops(contig_paths, polished_map);
-            DebugOutputPaths(contig_paths, "loop_traveresed");
+            TraverseLoops(contig_paths, merged_polished_map);
+            DebugOutputPaths(contig_paths, "loop_traversed");
 
-            RemoveOverlapsAndArtifacts(contig_paths, polished_map, resolver);
-            DebugOutputPaths(contig_paths, "overlap_removed");
+            RemoveOverlapsAndArtifacts(contig_paths, merged_polished_map, resolver);
+            DebugOutputPaths(contig_paths, "overlap_removed_merged");
         }
-
-//    RemoveOverlapsAndArtifacts(contig_paths, polished_map, resolver);
-//    DebugOutputPaths(contig_paths, "overlap_removed");
-
         AddFLPaths(contig_paths);
 
         SelectStrandSpecificPaths(contig_paths);
+
+        FilterPaths(contig_paths);
 
         CountMisassembliesWithReference(contig_paths);
 
