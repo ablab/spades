@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2023 Jonathan Müller and lexy contributors
+// Copyright (C) 2020-2024 Jonathan Müller and lexy contributors
 // SPDX-License-Identifier: BSL-1.0
 
 #ifndef LEXY_ACTION_PARSE_AS_TREE_HPP_INCLUDED
@@ -53,34 +53,37 @@ public:
 
         void on(_pth& handler, parse_events::production_start ev, iterator pos)
         {
-            if (handler._depth++ == 0)
-                return;
+            if (handler._depth++ > 0)
+                _marker = handler._builder->start_production(_validate.get_info());
 
-            _marker = handler._builder->start_production(_validate.get_info());
             _validate.on(handler._validate, ev, pos);
         }
 
-        void on(_pth& handler, parse_events::production_finish, iterator)
+        void on(_pth& handler, parse_events::production_finish ev, iterator pos)
         {
-            if (--handler._depth == 0)
-                return;
+            if (--handler._depth > 0)
+            {
+                if (handler._builder->current_child_count() == 0)
+                    handler._builder->token(lexy::position_token_kind, _validate.production_begin(),
+                                            _validate.production_begin());
+                handler._builder->finish_production(LEXY_MOV(_marker));
+            }
 
-            if (handler._builder->current_child_count() == 0)
-                handler._builder->token(lexy::position_token_kind, _validate.production_begin(),
-                                        _validate.production_begin());
-            handler._builder->finish_production(LEXY_MOV(_marker));
+            _validate.on(handler._validate, ev, pos);
         }
 
-        void on(_pth& handler, parse_events::production_cancel, iterator pos)
+        void on(_pth& handler, parse_events::production_cancel ev, iterator pos)
         {
-            if (--handler._depth == 0)
-                return;
+            if (--handler._depth > 0)
+            {
+                // Cancelling the production removes all nodes from the tree.
+                // To ensure that the parse tree remains lossless, we add everything consumed by it
+                // as an error token.
+                handler._builder->cancel_production(LEXY_MOV(_marker));
+                handler._builder->token(lexy::error_token_kind, _validate.production_begin(), pos);
+            }
 
-            // Cancelling the production removes all nodes from the tree.
-            // To ensure that the parse tree remains lossless, we add everything consumed by it
-            // as an error token.
-            handler._builder->cancel_production(LEXY_MOV(_marker));
-            handler._builder->token(lexy::error_token_kind, _validate.production_begin(), pos);
+            _validate.on(handler._validate, ev, pos);
         }
 
         auto on(_pth& handler, lexy::parse_events::operation_chain_start, iterator)
