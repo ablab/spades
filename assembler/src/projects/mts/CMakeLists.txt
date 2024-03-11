@@ -10,9 +10,6 @@ cmake_minimum_required(VERSION 2.8)
 project(kmer_count_filter CXX)
 
 include_directories(kmc_api)
-include_directories(${CMAKE_SOURCE_DIR}/include)
-include_directories(${EXT_DIR}/include)
-include_directories(${CMAKE_SOURCE_DIR}/debruijn)
 
 add_executable(kmer_multiplicity_counter
         kmc_api/kmc_file.cpp
@@ -26,6 +23,7 @@ if (SPADES_STATIC_BUILD)
   set_target_properties(kmer_multiplicity_counter PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 
+add_subdirectory(getopt_pp)
 add_executable(prop_binning
                annotation.cpp
                propagate.cpp
