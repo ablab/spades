@@ -133,7 +133,44 @@ Additional options are:
 `-spades `
     output graph in SPAdes internal format
 
+## Graph simplification
 
+Graph simplification tool `spades-gsimplifier` has four mandatory options: the first one is an input graph in GFA format, or a prefix of the SPAdes internal graph pack format created by setting [checkpoint options](running.md#pipeline-options). The second one is the prefix of the output simplified graph. The last two are the k-mer size and the read length.
+
+Synopsis: `spades-gsimplifier <graph. In GFA (ending with .gfa) or prefix to SPAdes graph pack> <output prefix> [--gfa] [--spades-gp] [--use-cov-ratios] -k <value> --read-length <value> [OPTION...]`
+
+Additional options are:
+
+`--gfa`
+    produce GFA output (default: true)
+
+`--spades-gp` 
+    produce output graph pack in the SPAdes internal format (default: false)
+
+`--use-cov-ratios` 
+    enable simplification procedures based on unitig coverage ratios (default: false)
+
+`-k <value>`
+    k-mer length to use
+
+`--read-length <value>`
+    read length to use
+
+`-c, --coverage <coverage>`
+    estimated average (k+1-mer) bin coverage (default: 0.) or 'auto' (works only with '-d/--dead-ends' provided)
+
+`-t, --threads <value>`
+    number of threads to use (default: max_threads / 2)
+
+`-p, --profile <file>`
+    file with edge coverage profiles across multiple samples
+
+`-s, --stop-codons <file>`
+    file with stop codon positions
+
+`-d, --dead-ends <file>`
+    while processing a subgraph -- file listing edges which are dead-ends in the
+    original graph
 
 ## Long read to graph alignment
 
@@ -189,7 +226,7 @@ Also if you want to align protein sequences please refer to our [pre-release ver
 
 Note that in order you use SPAligner one need either to use pre-built binaries or compiler SPAdes from sources using additional `-DSPADES_ENABLE_PROJECTS=spaligner` option.
 
-# Binning refining using assembly graphs
+## Binning refining using assembly graphs
 
 BinSPreader is a tool that attempts to refine metagenome-assembled genomes (MAGs) obtained from existing tools. BinSPreader exploits the assembly graph topology and other connectivity information, such as paired-end and Hi-C reads, to refine the existing binning, correct binning errors, propagate binning from longer contigs to shorter contigs, and infer contigs belonging to multiple bins.
 
