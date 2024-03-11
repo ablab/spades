@@ -1,5 +1,5 @@
 SPADES: SAINT-PETERSBURG GENOME ASSEMBLER
-Copyright (c) 2023 SPAdes team
+Copyright (c) 2023-2024 SPAdes team
 Copyright (c) 2015-2022 Saint Petersburg State University
 Copyright (c) 2011-2014 Saint Petersburg Academic University
 
@@ -22,7 +22,7 @@ SPAdes
 Genome, metagenome and transcriptome assembler for second-generation sequencing technologies
 Version: see VERSION
 
-Currently developed and maintained by the SPAdes team, an international group with no specific affiliation.
+Currently developed and maintained by the SPAdes team, an international group of researchers with no single affiliation or connections to previous development institutes.
 Previously developed at Center for Algorithmic Biotechnology, Institute of Translational Biomedicine, St. Petersburg State University.
 Previously developed at Algorithmic Biology Lab of St. Petersburg Academic University of the Russian Academy of Sciences.
 
