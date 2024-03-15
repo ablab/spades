@@ -4,7 +4,6 @@
 #include "construction.info"
 #include "distance_estimation.info"
 #include "detail_info_printer.info"
-#include "tsa.info"
 #include "pe_params.info"
 
 K		55
