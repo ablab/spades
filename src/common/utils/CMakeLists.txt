@@ -23,6 +23,10 @@ endif()
 add_library(utils STATIC
             ${utils_src})
 target_link_libraries(utils ${COMMON_LIBRARIES})
+# This is hack, but otherwise it is very hard to obtain additional library paths exposed via FindOpenMP
+if (OPENMP_FOUND)
+  target_link_libraries(utils OpenMP::OpenMP_CXX)
+endif()
 
 add_library(version STATIC
             version.cpp)

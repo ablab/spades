@@ -13,7 +13,7 @@ else()
   message(WARNING "Unsupported compiler is detected. SPAdes compilation was not tested on it and may fail")
 endif()
 
-find_package(OpenMP)
+find_package(OpenMP COMPONENTS CXX)
 find_package(BZip2 REQUIRED)
 find_package(Readline QUIET)
 set(CURSES_NEED_NCURSES TRUE)
