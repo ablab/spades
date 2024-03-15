@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 ############################################################################
 # Copyright (c) 2015-2020 Saint Petersburg State University
