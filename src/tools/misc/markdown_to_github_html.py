@@ -45,7 +45,7 @@ def make_github_request(in_file_name):
 
 # Substitute conversion artifacts and dump to file (non-ascii)
 def write_html_to_file(txt, out_file_name, version):
-    final_html = get_header(version) + txt.replace("<br><br>", "<br>").replace('<a name="user-content-', '<a name="').replace('<a href="assembler/', '<a href="').replace('<p><strong>SPAdes', ' <meta charset="UTF-8"> <p><strong>SPAdes') + FOOTER
+    final_html = get_header(version) + txt.replace("<br><br>", "<br>").replace('<a name="user-content-', '<a name="').replace('<p><strong>SPAdes', ' <meta charset="UTF-8"> <p><strong>SPAdes') + FOOTER
     outf = codecs.open(sys.argv[2], 'w', encoding='utf-8')
     outf.write(final_html)
     outf.write('\n')

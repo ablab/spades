@@ -13,7 +13,7 @@ export PATH=/hbb/share/cmake-3.19/bin/:$PATH
 
 set -x
 
-cd /spades/assembler
+cd /spades
 #./spades_compile.sh -DSPADES_STATIC_BUILD=1
 mkdir -p build_spades
 cd build_spades
