@@ -94,7 +94,7 @@ struct flat_set {
         auto mid = data_.begin() + size_before;
         std::stable_sort(mid, data_.end(), comp);
         std::inplace_merge(data_.begin(), mid, data_.end(), comp);
-        data_.erase(std::unique(data_.begin(), data_.end(), std::not2(comp)), data_.end());
+        data_.erase(std::unique(data_.begin(), data_.end(), std::not_fn(comp)), data_.end());
         // Make sure that we inserted at least one element before
         // recursing. Otherwise we'd recurse too often if we were to insert the
         // same element many times

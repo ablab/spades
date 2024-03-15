@@ -81,7 +81,7 @@ public:
    */
   template <typename Function, typename... Args>
   auto run(Function&& f, Args&&... args)
-    -> std::future<typename std::result_of<Function(Args...)>::type>;
+      -> std::future<typename std::invoke_result_t<std::decay_t<Function>, Args...>>;
 
   /*! \brief Stop the ThreadPool.
    *
@@ -317,9 +317,9 @@ inline ThreadPool::ThreadPool(ThreadPool &&that)
 
 template <typename Function, typename... Args>
 auto ThreadPool::run(Function&& f, Args&&... args)
-  -> std::future<typename std::result_of<Function(Args...)>::type>
+    -> std::future<typename std::invoke_result_t<std::decay_t<Function>, Args...>>
 {
-  using task_return_type = typename std::result_of<Function(Args...)>::type;
+  using task_return_type = typename std::invoke_result_t<std::decay_t<Function>, Args...>;
 
   // Create a packaged task from the callable object to fetch its result
   // with get_future()
