@@ -7,7 +7,7 @@ env:
   BUILD_TYPE: Release
   BUILD_DIR: ${{github.workspace}}/build
   INSTALL_DIR: ${{github.workspace}}/spades
-  SRC_DIR: ${{github.workspace}}/assembler/src
+  SRC_DIR: ${{github.workspace}}/src
   PKG: SPAdes-*-Linux
 
 jobs:
