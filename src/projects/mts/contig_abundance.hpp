@@ -1,3 +1,10 @@
+
+//***************************************************************************
+//* Copyright (c) 2023-2024 SPAdes team
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #pragma once
 
 #include "kmer_index/ph_map/perfect_hash_map_builder.hpp"

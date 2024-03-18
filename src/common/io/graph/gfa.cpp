@@ -1,3 +1,10 @@
+
+//***************************************************************************
+//* Copyright (c) 2023-2024 SPAdes team
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 // Copyright 2022 Anton Korobeynikov
 
 // This file is part of Bandage

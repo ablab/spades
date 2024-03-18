@@ -1,3 +1,10 @@
+
+//***************************************************************************
+//* Copyright (c) 2023-2024 SPAdes team
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 /* Copyright (C) 2013 Ion Torrent Systems, Inc. All Rights Reserved */
 
 //! @file       BaseHypothesisEvaluator.cpp

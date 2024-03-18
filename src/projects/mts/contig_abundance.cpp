@@ -1,3 +1,10 @@
+
+//***************************************************************************
+//* Copyright (c) 2023-2024 SPAdes team
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "contig_abundance.hpp"
 #include "kmer_index/kmer_mph/kmer_splitters.hpp"
 #include "math/xmath.h"

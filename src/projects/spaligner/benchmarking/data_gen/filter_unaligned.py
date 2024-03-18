@@ -1,3 +1,10 @@
+
+############################################################################
+# Copyright (c) 2023-2024 SPAdes team
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
 from Bio import SeqIO
 import sys
 import os

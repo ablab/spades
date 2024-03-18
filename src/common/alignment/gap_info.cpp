@@ -1,3 +1,10 @@
+
+//***************************************************************************
+//* Copyright (c) 2023-2024 SPAdes team
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "gap_info.hpp"
 
 #include "io/reads/single_read.hpp"

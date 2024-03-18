@@ -1,5 +1,4 @@
 //***************************************************************************
-//* Copyright (c) 2022 Saint-Petersburg State University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //****************************************************************************

@@ -1,3 +1,10 @@
+
+//***************************************************************************
+//* Copyright (c) 2023-2024 SPAdes team
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 // ============================================================================
 // gzstream, C++ iostream classes wrapping the zlib compression library.
 // Copyright (C) 2001  Deepak Bandyopadhyay, Lutz Kettner

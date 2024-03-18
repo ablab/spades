@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ############################################################################
-# Copyright (c) 2023 SPAdes team
+# Copyright (c) 2023-2024 SPAdes team
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################

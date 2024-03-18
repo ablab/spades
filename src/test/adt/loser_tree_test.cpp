@@ -1,3 +1,10 @@
+
+//***************************************************************************
+//* Copyright (c) 2023-2024 SPAdes team
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #define BOOST_TEST_MODULE loser_tree_test
 #include <boost/test/included/unit_test.hpp>
 

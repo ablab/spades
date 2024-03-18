@@ -1,3 +1,10 @@
+
+//***************************************************************************
+//* Copyright (c) 2023-2024 SPAdes team
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "connection_condition2015.hpp"
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
 

@@ -1,3 +1,10 @@
+
+//***************************************************************************
+//* Copyright (c) 2023-2024 SPAdes team
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #include "utils/logger/logger.hpp"
 #include "utils/logger/log_writers.hpp"
 #include "utils/stl_utils.hpp"

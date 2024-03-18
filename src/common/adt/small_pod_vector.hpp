@@ -1,3 +1,10 @@
+
+//***************************************************************************
+//* Copyright (c) 2023-2024 SPAdes team
+//* All Rights Reserved
+//* See file LICENSE for details.
+//***************************************************************************
+
 #ifndef __ADT_SMALL_POD_VECTOR__
 #define __ADT_SMALL_POD_VECTOR__
 

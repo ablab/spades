@@ -1,3 +1,10 @@
+
+############################################################################
+# Copyright (c) 2023-2024 SPAdes team
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
 #!/usr/bin/env python
 """Cut up fasta file in non-overlapping or overlapping parts of equal length.
 """

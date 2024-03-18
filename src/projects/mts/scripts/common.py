@@ -1,3 +1,10 @@
+
+############################################################################
+# Copyright (c) 2023-2024 SPAdes team
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
 from __future__ import print_function
 try:
     from future_builtins import zip
