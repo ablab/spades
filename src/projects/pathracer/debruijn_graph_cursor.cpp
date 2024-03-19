@@ -64,8 +64,7 @@ std::vector<DebruijnGraphCursor> DebruijnGraphCursor::next(DebruijnGraphCursor::
 
 std::vector<DebruijnGraphCursor> DebruijnGraphCursor::all(const ConjugateDeBruijnGraph &g) {
     std::vector<DebruijnGraphCursor> result;
-    for (auto it = g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-        EdgeId e = *it;
+    for (EdgeId e : g.edges()) {
         for (size_t pos = 0; pos < g.length(e) + g.k(); ++pos) {
             DebruijnGraphCursor cursor{e, pos};
             cursor.normalize_prefix_to_suffix(&g);

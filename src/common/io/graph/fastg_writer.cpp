@@ -35,8 +35,7 @@ static std::string FormHeader(const std::string &id,
 
 void FastgWriter::WriteSegmentsAndLinks() {
     io::OFastaReadStream os(fn_);
-    for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-        EdgeId e = *it;
+    for (EdgeId e : graph_.edges()) {
         std::set<std::string> next;
         for (EdgeId next_e : graph_.OutgoingEdges(graph_.EdgeEnd(e))) {
             next.insert(extended_namer_.EdgeOrientationString(next_e));

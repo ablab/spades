@@ -104,10 +104,12 @@ TEST(Io, PairedInfo) {
     RandomPairedIndex<Index>(pi, 100).Generate(100);
     //Add more self-conjugates
     RawPoint p(0, 42);
-    auto it = graph.ConstEdgeBegin(true);
-    for (size_t i = 0; i < 5; ++i, ++it)
-        pi.Add(*it, graph.conjugate(*it), p);
-
+    auto it = graph.e_begin<true>();
+    for (size_t i = 0; i < 5; ++i, ++it) {
+        EdgeId e = *it;
+        pi.Add(e, graph.conjugate(e), p);
+    }
+    
     Save(file_name, pi);
 
     Index ni(graph);

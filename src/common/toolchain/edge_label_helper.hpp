@@ -52,8 +52,8 @@ public:
     EdgeId edge(const std::string &label) const {
         if (id_mapper_ && !label_map_filled_) {
             DEBUG("Creating label -> int_id mapping");
-            for (auto it = element_finder_.g().ConstEdgeBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
-                size_t id = element_finder_.g().int_id(*it);
+            for (EdgeId e : element_finder_.g().canonical_edges()) {
+                size_t id = element_finder_.g().int_id(e);
                 DEBUG("Mapping " << (*id_mapper_)[id] << " to " << id);
                 label2id_[(*id_mapper_)[id]] = id;
             }

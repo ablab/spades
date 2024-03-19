@@ -18,10 +18,9 @@ namespace scaffold_graph {
 void BaseScaffoldGraphConstructor::ConstructFromEdgeConditions(func::TypedPredicate<typename Graph::EdgeId> edge_condition,
                                                                ConnectionConditions &connection_conditions,
                                                                bool use_terminal_vertices_only) {
-    for (auto e = graph_->AssemblyGraph().ConstEdgeBegin(); !e.IsEnd(); ++e) {
-        if (edge_condition(*e)) {
-            graph_->AddVertex(*e);
-        }
+    for (EdgeId e : graph_->AssemblyGraph().edges()) {
+        if (edge_condition(e))
+            graph_->AddVertex(e);
     }
     ConstructFromConditions(connection_conditions, use_terminal_vertices_only);
 }

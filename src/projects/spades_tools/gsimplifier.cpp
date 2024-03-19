@@ -124,8 +124,7 @@ static bool IsDeadEnd(const Graph &g, VertexId v) {
 //TODO check consistency between total sink/source coverage estimates and think about weird cases
 static double DetermineAvgCoverage(const Graph &g, const std::set<EdgeId> &/*undeadends*/) {
     double sum = 0.;
-    for (auto it = g.ConstEdgeBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
-        EdgeId e = *it;
+    for (EdgeId e : g.canonical_edges()) {
         if (IsDeadEnd(g, g.EdgeStart(e))) {
             sum += g.coverage(e);
         }
@@ -180,8 +179,7 @@ int main(int argc, char** argv) {
         auto & edge_qual = gp.get_mutable<EdgeQuality<Graph>>();
         if (!cfg.deadends_fn.empty()) {
             auto deadend_names = ReadDeadendNames(cfg.deadends_fn);
-            for (auto it = graph.ConstEdgeBegin(/*canonical only*/true); !it.IsEnd(); ++it) {
-                EdgeId e = *it;
+            for (EdgeId e : graph.canonical_edges()) {
                 if (IsDeadEnd(graph, graph.EdgeStart(e)) || IsDeadEnd(graph, graph.EdgeEnd(e))) {
                     if (!deadend_names.count(label_helper.label(e))) {
                         undeadends.insert(e);
@@ -289,8 +287,7 @@ int main(int argc, char** argv) {
             INFO("Saving deadends");
             VERIFY_MSG(edge_qual.IsAttached(), "Edge quality got detached");
             std::ofstream deadends_os(cfg.outfile.concat(".deadends"));
-            for (auto it = graph.ConstEdgeBegin(/*canonical_only*/true); !it.IsEnd(); ++it) {
-                EdgeId e = *it;
+            for (EdgeId e : graph.canonical_edges()) {
                 if (IsDeadEnd(graph, graph.EdgeStart(e)) || IsDeadEnd(graph, graph.EdgeEnd(e))) {
                     if (edge_qual.IsPositiveQuality(e))
                         continue;

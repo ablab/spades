@@ -77,8 +77,8 @@ public:
     template<class SingleStreamList, class Mapper>
     void Fill(SingleStreamList &streams, const Mapper &mapper) {
         //Initialize profiles
-        for (auto it = g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            profiles_[*it] = RawAbundanceVector(sample_cnt_, 0);
+        for (EdgeId e : g().edges()) {
+            profiles_[e] = RawAbundanceVector(sample_cnt_, 0);
         }
 
 #       pragma omp parallel for

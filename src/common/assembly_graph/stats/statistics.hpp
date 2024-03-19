@@ -73,6 +73,7 @@ public:
 template<class Graph>
 class VertexEdgeStat : public AbstractStatCounter {
 private:
+    typedef typename Graph::EdgeId EdgeId;    
     const Graph &graph_;
 public:
     VertexEdgeStat(const Graph &graph) :
@@ -89,11 +90,10 @@ public:
     size_t edges() {
         size_t edgeNumber = 0;
         size_t sum_edge_length = 0;
-        for (auto iterator = graph_.ConstEdgeBegin(); !iterator.IsEnd();
-             ++iterator) {
+        for (EdgeId e : graph_.edges()) {
             edgeNumber++;
             //      if (graph_.coverage(*iterator) > 30) {
-            sum_edge_length += graph_.length(*iterator);
+            sum_edge_length += graph_.length(e);
             //      }
         }
         return edgeNumber;
@@ -101,10 +101,9 @@ public:
 
     size_t edge_length() {
         size_t sum_edge_length = 0;
-        for (auto iterator = graph_.ConstEdgeBegin(); !iterator.IsEnd();
-             ++iterator) {
-            if (graph_.coverage(*iterator) > 30) {
-                sum_edge_length += graph_.length(*iterator);
+        for (EdgeId e : graph_.edges()) {
+            if (graph_.coverage(e) > 30) {
+                sum_edge_length += graph_.length(e);
             }
         }
         return sum_edge_length;
@@ -142,11 +141,11 @@ public:
         colored_edges.insert(path_edges1.begin(), path_edges1.end());
         colored_edges.insert(path_edges2.begin(), path_edges2.end());
         size_t sum_length = 0;
-        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+        for (EdgeId e : graph_.edges()) {
             edge_count++;
-            if (colored_edges.count(*it) == 0) {
+            if (colored_edges.count(e) == 0) {
                 black_count++;
-                sum_length += graph_.length(*it);
+                sum_length += graph_.length(e);
             }
         }
         if (edge_count > 0) {
@@ -207,9 +206,9 @@ private:
 public:
     IsolatedEdgesStat(const Graph &graph, const Path<EdgeId> &path1, const Path<EdgeId> &path2) :
             graph_(graph) {
-        for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            black_edges_.insert(*it);
-        }
+        for (auto e : graph_.edges())        
+            black_edges_.insert(e);
+
         for (size_t i = 0; i < path1.size(); i++) {
             black_edges_.erase(path1[i]);
         }
@@ -223,8 +222,7 @@ public:
 
     virtual void Count() {
         lengths.clear();
-        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            EdgeId edge = *it;
+        for (EdgeId edge : graph_.edges()) {
             if (graph_.IsDeadEnd(graph_.EdgeEnd(edge))
                 && graph_.IsDeadStart(graph_.EdgeStart(edge))
                 && black_edges_.count(edge) == 0) {
@@ -265,9 +263,8 @@ public:
 
     virtual void Count() {
         size_t sc_number = 0;
-        for (auto iterator = graph_.ConstEdgeBegin(); !iterator.IsEnd();
-             ++iterator)
-            if (graph_.conjugate(*iterator) == (*iterator))
+        for (EdgeId e : graph_.edges())
+            if (graph_.conjugate(e) == (e))
                 sc_number++;
         //    INFO("Self-complement count failed!!! ");
         INFO("Self-complement count=" << sc_number);

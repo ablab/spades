@@ -53,8 +53,7 @@ void Launch(size_t K, string saves_path, size_t edge_length_bound,
 
     io::OFastaReadStream oss(fastg_output);
     const auto& graph = gp.get<Graph>();
-    for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-        EdgeId e = *it;
+    for (EdgeId e : graph.edges()) {
         if (graph.length(e) > edge_length_bound) {
             DEBUG("Processing edge " << graph.str(e));
 

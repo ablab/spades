@@ -295,8 +295,7 @@ public:
     void Init() {
         storage_.clear();
         first_bin_size_.clear();
-        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-            EdgeId e = *iter;
+        for (EdgeId e : g_.edges()) {
             if (!IsEdgeValid(e))
                 continue;
             storage_.emplace(e, std::vector<size_t>(g_.length(e) / bin_size_ + 1, 0));

@@ -86,8 +86,8 @@ void DistanceEstimator::Estimate(PairedInfoIndexT<Graph> &result, size_t nthread
 
     DEBUG("Collecting edge infos");
     std::vector<EdgeId> edges;
-    for (auto it = this->graph().ConstEdgeBegin(); !it.IsEnd(); ++it)
-        edges.push_back(*it);
+    for (EdgeId e : this->graph().edges())
+        edges.push_back(e);
 
     DEBUG("Processing");
     PairedInfoBuffersT<Graph> buffer(this->graph(), nthreads);

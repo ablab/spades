@@ -33,7 +33,6 @@ public:
     typedef HandlerApplier<VertexId, EdgeId> Applier;
     typedef SmartVertexIterator<ObservableGraph> SmartVertexIt;
     typedef SmartEdgeIterator<ObservableGraph> SmartEdgeIt;
-    typedef ConstEdgeIterator<ObservableGraph> ConstEdgeIt;
     typedef ActionHandler<VertexId, EdgeId> Handler;
 
 private:
@@ -102,10 +101,6 @@ public:
 
     SmartEdgeIterator<ObservableGraph> SmartEdgeBegin(bool canonical_only = false) const {
         return SmartEdgeIterator<ObservableGraph>(*this, adt::identity(), canonical_only);
-    }
-
-    ConstEdgeIterator<ObservableGraph> ConstEdgeBegin(bool canonical_only = false) const {
-        return ConstEdgeIterator<ObservableGraph>(*this, canonical_only);
     }
 
     void FireDeletePath(const std::vector<EdgeId>& edges_to_delete, const std::vector<VertexId>& vertices_to_delete) const;

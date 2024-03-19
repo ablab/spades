@@ -226,8 +226,7 @@ public:
         int long_gapped = 0;
         int continued = 0;
         if (need_log) {
-            for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-                EdgeId e = *iter;
+            for (EdgeId e : g_.edges()) {
                 if (g_.length(e) > kLongEdgeForStats) {
                     if (!g_.IsDeadEnd(g_.EdgeEnd(e))) {
                         if (continued_edges.find(e) == continued_edges.end()) {
@@ -276,11 +275,10 @@ public:
         auto filestr = fs::open_file(s);
         INFO("loading from " << s);
         std::map<size_t, EdgeId> tmp_map;
-        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-            tmp_map[g_.int_id(*iter)] = *iter;
-        }
-        int fl;
+        for (EdgeId e : g_.edges())
+            tmp_map[g_.int_id(e)] = e;
 
+        int fl;
         file = fopen(s.c_str(), "r");
         char ss[14];
         while (!feof(file)) {

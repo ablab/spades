@@ -24,43 +24,46 @@ void ConnectedComponentCounter::CalculateComponents() const {
     std::vector<std::pair<size_t, size_t>> to_sort;
     std::map<size_t, size_t> comp_size;
     size_t cur_id = 0;
-    for (auto e = g_.ConstEdgeBegin(); !e.IsEnd(); ++e) {
-        if (component_ids.find(*e) == component_ids.end()) {
-            std::unordered_set <EdgeId> next;
-            next.insert(*e);
-            std::set <EdgeId> used;
-            size_t ans = 0;
-            while (!next.empty()) {
-                auto cur = *next.begin();
-                next.erase(next.begin());
-                if (used.find(cur) != used.end()) {
-                    continue;
-                }
-                ans += g_.length(cur);
-                used.insert(cur);
-                std::vector<EdgeId> neighbours;
-                neighbours.push_back(g_.conjugate(cur));
-                auto start = g_.EdgeStart(cur);
-                auto tmp = g_.IncidentEdges(start);
+    for (EdgeId e : g_.edges()) {
+        if (component_ids.find(e) != component_ids.end())
+            continue;
+        
+        std::unordered_set <EdgeId> next;
+        next.insert(e);
+        std::set<EdgeId> used;
+        size_t ans = 0;
+        while (!next.empty()) {
+            auto cur = *next.begin();
+            next.erase(next.begin());
+            if (used.find(cur) != used.end())
+                continue;
 
-                neighbours.insert(neighbours.end(), tmp.begin(), tmp.end());
-                auto end = g_.EdgeEnd(cur);
-                tmp = g_.IncidentEdges(end);
-                neighbours.insert(neighbours.end(), tmp.begin(), tmp.end());
-                for (auto ee:neighbours) {
-                    if (used.find(ee) == used.end()) {
-                        next.insert(ee);
-                    }
+            ans += g_.length(cur);
+            used.insert(cur);
+            std::vector<EdgeId> neighbours;
+            neighbours.push_back(g_.conjugate(cur));
+            auto start = g_.EdgeStart(cur);
+            auto tmp = g_.IncidentEdges(start);
+
+            neighbours.insert(neighbours.end(), tmp.begin(), tmp.end());
+            auto end = g_.EdgeEnd(cur);
+            tmp = g_.IncidentEdges(end);
+            neighbours.insert(neighbours.end(), tmp.begin(), tmp.end());
+            for (auto ee:neighbours) {
+                if (used.find(ee) == used.end()) {
+                    next.insert(ee);
                 }
             }
-            for (auto edge: used) {
-                component_ids[edge] = cur_id;
-            }
-            to_sort.push_back(std::make_pair(ans, cur_id));
-            comp_size[cur_id] = ans;
-            cur_id ++;
         }
+        
+        for (auto edge: used)
+            component_ids[edge] = cur_id;
+
+        to_sort.push_back(std::make_pair(ans, cur_id));
+        comp_size[cur_id] = ans;
+        cur_id ++;
     }
+    
     //TODO: sort in descending order
     std::sort(to_sort.begin(), to_sort.end());
     std::reverse(to_sort.begin(), to_sort.end());

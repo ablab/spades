@@ -98,9 +98,8 @@ public:
         abundance_counter_(abundance_counter){}
 
     void Fill() {
-        for (auto it = this->g().ConstEdgeBegin(true); !it.IsEnd(); ++it) {
-            HandleAdd(*it);
-        }
+        for (EdgeId e : this->g().canonical_edges())
+            HandleAdd(e);
     }
 
     virtual void HandleAdd(EdgeId e) override {
@@ -221,8 +220,7 @@ std::optional<AbundanceVector> InferAbundance(const std::filesystem::path& bin_m
 
 void PrintEdgeFragmentProfiles(const Graph &graph, const ContigAbundanceCounter &abundance_counter,
                                size_t split_length, size_t min_len, std::ostream &os) {
-    for (auto it = graph.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
-        EdgeId e = *it;
+    for (EdgeId e : graph.canonical_edges()) {
         io::SingleRead full_contig(std::to_string(graph.int_id(e)), graph.EdgeNucls(e).str());
         for (size_t i = 0; i < full_contig.size(); i += split_length) {
             if (full_contig.size() - i < min_len) {
@@ -271,8 +269,7 @@ void SeriesAnalysis::run(graph_pack::GraphPack &gp, const char *) {
     const auto &graph = gp.get<Graph>();
     if (!config.edges_sqn.empty()) {
         io::OFastaReadStream oss(config.edges_sqn);
-        for (auto it = graph.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
-            EdgeId e = *it;
+        for (EdgeId e : graph.canonical_edges()) {
             auto s = graph.EdgeNucls(e).str();
             oss << io::SingleRead(io::MakeContigId(graph.int_id(e), s.size()), s);
         }

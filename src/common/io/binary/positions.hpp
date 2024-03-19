@@ -30,9 +30,9 @@ public:
         size_t edges_cnt = edge_pos.g().e_size();
         str << edges_cnt;
 
-        for (auto it = edge_pos.g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            auto pos_it = edge_pos.GetEdgePositions(*it);
-            str << (*it).int_id() << pos_it.size();
+        for (debruijn_graph::EdgeId e : edge_pos.g().edges()) {
+            auto pos_it = edge_pos.GetEdgePositions(e);
+            str << e.int_id() << pos_it.size();
             for (const auto &i : pos_it) {
                 str << i.contigId << i.mr.initial_range << i.mr.mapped_range;
             }

@@ -42,8 +42,7 @@ void EdgeProfileStorage::HandleSplit(EdgeId old_edge, EdgeId new_edge1, EdgeId n
 }
 
 void EdgeProfileStorage::Save(std::ostream &os, const io::EdgeNamingF<Graph> &edge_namer) const {
-    for (auto it = g().ConstEdgeBegin(true); !it.IsEnd(); ++it) {
-        EdgeId e = *it;
+    for (EdgeId e : g().edges()) {
         os << edge_namer(g(), e) << '\t';
         auto prof = profile(e);
         std::copy(prof.begin(), prof.end(), std::ostream_iterator<double>(os, "\t"));
@@ -66,8 +65,7 @@ void EdgeProfileStorage::Load(std::istream &is,
     }
 
     if (check_consistency) {
-        for (auto it = g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            EdgeId e = *it;
+        for (EdgeId e : g().edges()) {
             CHECK_FATAL_ERROR(profiles_.count(e) > 0, "Failed to load profile for one of the edges");
         }
     }

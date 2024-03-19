@@ -30,12 +30,11 @@ public:
         index_.resize(SIZE);
         k_ = k;
         size_t count = 0;
-        for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+        for (EdgeId edge : graph.edges()) {
             if (count % 100000 == 0) {
                 INFO(count << " edges processed");
             }
             ++count;
-            EdgeId edge = *it;
             std::string seq = graph.EdgeNucls(edge).str();
             size_t len = seq.length();
             VERIFY(len >= k);
@@ -51,12 +50,11 @@ public:
         index_.resize(SIZE);
         k_ = k;
         size_t count = 0;
-        for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+        for (EdgeId edge : graph.edges()) {
             if (count % 100000 == 0) {
                 INFO(count << " edges processed");
             }
             ++count;
-            EdgeId edge = *it;
             std::string seq = graph.EdgeNucls(edge).str();
             for (int shift : {0, 1, 2}) {
                 std::string seq_aa = aa::translate(seq.c_str() + shift);

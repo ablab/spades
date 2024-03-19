@@ -413,30 +413,6 @@ private:
     }
 };
 
-template<class Graph>
-class ConstEdgeIterator {
-    typedef typename Graph::EdgeId EdgeId;
-    GraphEdgeIterator<Graph> begin_, end_;
-
-  public:
-    ConstEdgeIterator(const Graph &g, bool canonical_only = false)
-            : begin_(g, g.begin(), canonical_only), end_(g, g.end(), canonical_only) {
-    }
-
-    bool IsEnd() const {
-        return begin_ == end_;
-    }
-
-    EdgeId operator*() const {
-        return *begin_;
-    }
-
-    const ConstEdgeIterator& operator++() {
-        begin_++;
-        return *this;
-    }
-};
-
 /**
  * SmartEdgeIterator iterates through edges of graph. It listens to AddEdge/DeleteEdge graph events
  * and correspondingly edits the set of edges to iterate through. Note: high level event handlers are

@@ -509,8 +509,8 @@ public:
      */
     void Init() {
         //VERIFY(size() == 0);
-        for (auto it = this->graph_.ConstEdgeBegin(); !it.IsEnd(); ++it)
-            this->Add(*it, *it, Point());
+        for (EdgeId e : this->graph_.edges()) 
+            this->Add(e, e, Point());
     }
 
     void VerifyIndex() {

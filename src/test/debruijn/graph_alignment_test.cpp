@@ -148,9 +148,9 @@ TEST(GraphAligner, DijkstraOneEdgeTest ) {
     int path_maxlen = 100500;
     int eid_int = 17572;
     EdgeId eid;
-    for (auto it = g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-        if (g.int_id(*it) == eid_int){
-            eid = *it;
+    for (EdgeId e : g.edges()) {
+        if (g.int_id(e) == eid_int) {
+            eid = e;
             break;
         }
     }
@@ -178,9 +178,9 @@ TEST(GraphAligner, DijkstraGrowEndsTest ) {
     int path_maxlen = 100500;
     int eid_int = 17572;
     EdgeId eid;
-    for (auto it = g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-        if (g.int_id(*it) == eid_int){
-            eid = *it;
+    for (EdgeId e : g.edges()) {
+        if (g.int_id(e) == eid_int) {
+            eid = e;
             break;
         }
     }

@@ -179,8 +179,7 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e,
 
 
 void ScaffoldingUniqueEdgeAnalyzer::CheckCorrectness(ScaffoldingUniqueEdgeStorage& unique_storage_pb) {
-    for (auto iter = graph_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-        EdgeId e = *iter;
+    for (EdgeId e : graph_.edges()) {
         bool e_unique = unique_storage_pb.IsUnique(e);
         bool e_conj_unique = unique_storage_pb.IsUnique(graph_.conjugate(e));
         VERIFY_MSG(!((e_unique && !e_conj_unique) || (!e_unique && e_conj_unique)), "Edge " << graph_.int_id(e) << " is not symmetrically unique with it conjugate");
@@ -290,8 +289,7 @@ void ScaffoldingUniqueEdgeAnalyzer::ClearLongEdgesWithPairedLib(size_t lib_index
 void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgesWithLongReads(GraphCoverageMap &long_reads_cov_map,
                                                                  ScaffoldingUniqueEdgeStorage &unique_storage_pb,
                                                                  const pe_config::LongReads &lr_config) {
-    for (auto iter = graph_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-        EdgeId e = *iter;
+    for (EdgeId e : graph_.edges()) {
         if (ConservativeByLength(e) && ConservativeByPaths(e, long_reads_cov_map, lr_config)) {
             unique_storage_pb.unique_edges_.insert(e);
         }
