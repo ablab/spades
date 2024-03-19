@@ -42,7 +42,7 @@ void EdgeProfileStorage::HandleSplit(EdgeId old_edge, EdgeId new_edge1, EdgeId n
 }
 
 void EdgeProfileStorage::Save(std::ostream &os, const io::EdgeNamingF<Graph> &edge_namer) const {
-    for (EdgeId e : g().edges()) {
+    for (EdgeId e : g().canonical_edges()) {
         os << edge_namer(g(), e) << '\t';
         auto prof = profile(e);
         std::copy(prof.begin(), prof.end(), std::ostream_iterator<double>(os, "\t"));

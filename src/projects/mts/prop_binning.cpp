@@ -29,7 +29,7 @@ std::filesystem::path add_suffix(const std::filesystem::path& path, const std::s
 void DumpEdges(const Graph& g, const filesystem::path& out_edges) {
     INFO("Dumping edges to " << out_edges);
     io::OFastaReadStream oss(out_edges);
-    for (EdgeId e : g.edges()) {
+    for (EdgeId e : g.canonical_edges()) {
         oss << io::SingleRead("NODE_" + std::to_string(g.int_id(e)), g.EdgeNucls(e).str());
     }
 }
@@ -37,7 +37,7 @@ void DumpEdges(const Graph& g, const filesystem::path& out_edges) {
 void DumpAnnotation(const Graph& g, const EdgeAnnotation& edge_annotation, const filesystem::path& out_annotation) {
     INFO("Dumping annotation to " << out_annotation);
     AnnotationOutStream annotation_out(out_annotation);
-    for (EdgeId e : g.edges()) {
+    for (EdgeId e : g.canonical_edges()) {
         auto relevant_bins = edge_annotation.Annotation(e);
         if (!relevant_bins.empty()) {
             annotation_out << ContigAnnotation("NODE_" + std::to_string(g.int_id(e)),
