@@ -143,9 +143,16 @@ CorrectionStats CorrectReadFile(const KMerData &data,
 }
 
 CorrectionStats CorrectPairedReadFiles(const KMerData &data,
-                            const std::filesystem::path &fnamel, const std::filesystem::path &fnamer,
-                            ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr,
-                            ofstream * ofunp) {
+                                       const std::filesystem::path &fnamel,
+                                       const std::filesystem::path &fnamer,
+                                       const std::filesystem::path &fnamea,
+                                       ofstream *ofbadl,
+                                       ofstream *ofcorl,
+                                       ofstream *ofbadr,
+                                       ofstream *ofcorr,
+                                       ofstream *ofunp,
+                                       ofstream *ofcora,
+                                       bool has_aux) {
   int qvoffset = cfg::get().input_qvoffset;
   int trim_quality = cfg::get().input_trim_quality;
 
@@ -153,6 +160,7 @@ CorrectionStats CorrectPairedReadFiles(const KMerData &data,
   size_t read_buffer_size = correct_nthreads * cfg::get().correct_readbuffer;
   std::vector<Read> l(read_buffer_size);
   std::vector<Read> r(read_buffer_size);
+  std::vector<Read> a(read_buffer_size);
   std::vector<bool> left_res(read_buffer_size, false);
   std::vector<bool> right_res(read_buffer_size, false);
 
@@ -160,6 +168,10 @@ CorrectionStats CorrectPairedReadFiles(const KMerData &data,
 
   ireadstream irsl(fnamel, qvoffset), irsr(fnamer, qvoffset);
   VERIFY(irsl.is_open()); VERIFY(irsr.is_open());
+  ireadstream irsa(fnamea, qvoffset);
+  if (has_aux) {
+      VERIFY(irsa.is_open());
+  }
   CorrectionStats stats;
 
   while (!irsl.eof() && !irsr.eof()) {
@@ -168,6 +180,9 @@ CorrectionStats CorrectPairedReadFiles(const KMerData &data,
       irsl >> l[buf_size]; irsr >> r[buf_size];
       l[buf_size].trimNsAndBadQuality(trim_quality);
       r[buf_size].trimNsAndBadQuality(trim_quality);
+      if (has_aux) {
+          irsa >> a[buf_size];
+      }
     }
     INFO("Prepared batch " << buffer_no << " of " << buf_size << " reads.");
 
@@ -181,6 +196,9 @@ CorrectionStats CorrectPairedReadFiles(const KMerData &data,
       if (left_res[i] && right_res[i]) {
         l[i].print(*ofcorl, qvoffset);
         r[i].print(*ofcorr, qvoffset);
+        if (has_aux) {
+          a[i].print(*ofcora, qvoffset);
+        }
       } else {
         l[i].print(*(left_res[i] ? ofunp : ofbadl), qvoffset);
         r[i].print(*(right_res[i] ? ofunp : ofbadr), qvoffset);
@@ -234,6 +252,7 @@ size_t CorrectAllReads() {
     outlib.clear();
 
     size_t iread = 0;
+    auto aux_iter = lib.aux_begin();
     for (auto I = lib.paired_begin(), E = lib.paired_end(); I != E; ++I, ++iread) {
       INFO("Correcting pair of reads: " << I->first << " and " << I->second);
       std::filesystem::path usuffix =  std::to_string(ilib) + "_" +
@@ -253,11 +272,22 @@ size_t CorrectAllReads() {
                            std::ios::out | std::ios::ate);
       std::ofstream ofunp (outcoru);
 
+      std::filesystem::path aux_path = getLargestPrefix(I->first, I->second) + "_mock.fastq";
+      if (lib.has_aux()) {
+        aux_path = *aux_iter;
+        ++aux_iter;
+      }
+      std::filesystem::path outcora = getReadsFilename(cfg::get().output_dir, aux_path,  Globals::iteration_no, usuffix);
+      std::ofstream ofcora(outcora);
+
       stats += CorrectPairedReadFiles(*Globals::kmer_data,
-                             I->first, I->second,
-                             &ofbadl, &ofcorl, &ofbadr, &ofcorr, &ofunp);
+                             I->first, I->second, aux_path,
+                             &ofbadl, &ofcorl, &ofbadr, &ofcorr, &ofunp, &ofcora, lib.has_aux());
       outlib.push_back_paired(outcorl, outcorr);
       outlib.push_back_single(outcoru);
+      if (lib.has_aux()) {
+          outlib.push_back_aux(outcora);
+      }
     }
 
     for (auto I = lib.merged_begin(), E = lib.merged_end(); I != E; ++I, ++iread) {
@@ -269,7 +299,6 @@ size_t CorrectAllReads() {
       INFO("Correcting single reads: " << *I);
       outlib.push_back_single(CorrectSingleReadSet(ilib, iread, *I, stats));
     }
-
     outdataset.push_back(outlib);
     ilib += 1;
   }
