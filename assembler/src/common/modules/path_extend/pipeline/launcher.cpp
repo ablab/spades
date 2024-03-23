@@ -850,7 +850,16 @@ void PathExtendLauncher::Launch() {
             const double cluster_length_percentile = params_.pe_cfg.read_cloud.scaff_con.cluster_length_percentile;
             size_t length_upper_bound = length_bound_estimator.EstimateUpperBound(cluster_statistics_extractor,
                                                                                   cluster_length_percentile);
-            ScaffoldPaths(polished_paths);
+            size_t max_scaffolding_iterations = 5;
+            size_t prev_path_number = polished_paths.size();
+            size_t curr_path_number = 0;
+            size_t curr_scaffolding_iter = 1;
+            while (prev_path_number != curr_path_number and curr_scaffolding_iter < max_scaffolding_iterations) {
+                INFO("Starting scaffolding iteration " << curr_scaffolding_iter << " for " << prev_path_number << " paths");
+                ScaffoldPaths(polished_paths);
+                curr_path_number = polished_paths.size();
+                ++curr_scaffolding_iter;
+            }
 
             PolishPaths(polished_paths, contig_paths, polished_map);
             DebugOutputPaths(contig_paths, "merged_polished_paths");
