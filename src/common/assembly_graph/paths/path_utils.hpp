@@ -120,7 +120,7 @@ namespace debruijn_graph {
             auto end = g.EdgeEnd(continuous_path[i - 1]);
             auto start = g.EdgeStart(continuous_path[i]);
             VERIFY(start == end);
-            uint32_t overlap = g.link_length(start, continuous_path[i - 1], continuous_path[i]);
+            uint32_t overlap = static_cast<uint32_t>(g.link_length(start, continuous_path[i - 1], continuous_path[i]));
             overlaps.push_back(overlap);
             path_sequences.push_back(g.EdgeNucls(continuous_path[i]));
         }

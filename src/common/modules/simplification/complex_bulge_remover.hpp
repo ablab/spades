@@ -597,11 +597,9 @@ class SkeletonTreeFinder {
 
     void Init() {
         current_level_ = (int) level_heights_.size() - 1;
-        size_t end_cnt = 0;
         for (VertexId v : component_.end_vertices()) {
             good_vertices_.insert(v);
             subtree_coverage_[v] = 0;
-            end_cnt++;
         }
     }
 
