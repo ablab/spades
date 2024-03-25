@@ -19,7 +19,7 @@ using namespace debruijn_graph;
 TEST( PathExtend, BidirectionalPathConstructor ) {
     Graph g(13);
     ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g));
-    EdgeId start = *g.e_begin();
+    EdgeId start = 99;
 
     auto path1 = BidirectionalPath::create(g);
     EXPECT_EQ(path1->Size(), 0);
@@ -67,7 +67,7 @@ TEST( PathExtend, BidirectionalPathConstructor ) {
 TEST( PathExtend, BidirectionalPathAddRemove ) {
     Graph g(13);
     ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g));
-    EdgeId start = *g.e_begin();
+    EdgeId start = 99;
 
     auto path1 = BidirectionalPath::create(g);
     EXPECT_EQ(path1->Size(), 0);
@@ -215,7 +215,7 @@ TEST( PathExtend, BidirectionalPathAddRemove ) {
 TEST( PathExtend, BidirectionalPathAddRemoveGaps ) {
     Graph g(13);
     ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g));
-    EdgeId start = *g.e_begin();
+    EdgeId start = 99;
 
     auto path1 = BidirectionalPath::create(g);
 
@@ -386,7 +386,7 @@ TEST( PathExtend, BidirectionalPathAddRemoveGaps ) {
 TEST( PathExtend, BidirectionalPathEquals ) {
     Graph g(13);
     ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g));
-    EdgeId start = *g.e_begin();
+    EdgeId start = 99;
 
     auto path1 = BidirectionalPath::create(g);
     auto path2 = BidirectionalPath::create(g);
@@ -440,7 +440,7 @@ TEST( PathExtend, BidirectionalPathEquals ) {
 TEST( PathExtend, BidirectionalPathSubpaths ) {
     Graph g(13);
     ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g));
-    EdgeId start = *g.e_begin();
+    EdgeId start = 99;
 
     auto path1 = BidirectionalPath::create(g);
     auto path2 = BidirectionalPath::create(g);
@@ -505,7 +505,7 @@ TEST( PathExtend, BidirectionalPathSubpaths ) {
 TEST( PathExtend, BidirectionalPathAddRemoveConjugate ) {
     Graph g(13);
     ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g));
-    EdgeId start = *g.e_begin();
+    EdgeId start = 99;
 
     auto p = BidirectionalPath::create(g);
     // 98 26 145 70
@@ -585,7 +585,7 @@ TEST( PathExtend, BidirectionalPathAddRemoveConjugate ) {
 TEST( PathExtend, BidirectionalPathSearch ) {
     Graph g(13);
     ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g));
-    EdgeId start = *g.e_begin();
+    EdgeId start = 99;
 
     auto path1 = BidirectionalPath::create(g);
 
@@ -683,7 +683,7 @@ TEST( PathExtend, BidirectionalPathSearch ) {
 TEST( PathExtend, BidirectionalPathLoopDetector ) {
     Graph g(13);
     ASSERT_TRUE(graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g));
-    EdgeId start = *g.e_begin();
+    EdgeId start = 99;
 
     auto path1 = BidirectionalPath::create(g);
     GraphCoverageMap cover_map(g);
