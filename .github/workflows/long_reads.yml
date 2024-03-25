@@ -38,6 +38,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           variant: sccache
+          key: sccache-${{env.BUILD_TYPE}}
 
       - name: '⚙️ Configure CMake'
         run: >

@@ -39,6 +39,7 @@ jobs:
           -S ${{env.SRC_DIR}}
           -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
+          key: sccache-${{env.BUILD_TYPE}}
 
       - name: '🚧 Build'
         run: >

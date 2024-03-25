@@ -39,6 +39,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           variant: sccache
+          key: sccache-${{env.BUILD_TYPE}}
 
       - name: '⚙️ Configure CMake'
         run: >
@@ -75,7 +76,7 @@ jobs:
           set -e &&
           shopt -s dotglob &&
           rm -rf *
-      
+
       - name: '📦 Download package'
         uses: actions/download-artifact@v3
         with:
@@ -120,18 +121,18 @@ jobs:
           set -e &&
           shopt -s dotglob &&
           rm -rf *
-      
+
       - name: '🧰 Checkout'
         uses: actions/checkout@v3
         with:
           fetch-depth: 1
-      
+
       - name: '📦 Download package'
         uses: actions/download-artifact@v3
         with:
           name: build-artifacts
           path: ${{env.BUILD_DIR}}
-          
+
 
       - name: '🔎 Include tests'
         working-directory: ${{github.workspace}}
@@ -144,4 +145,3 @@ jobs:
         run: >
           chmod +x ${{env.BUILD_DIR}}/bin/debruijn_test &&
           ${{env.BUILD_DIR}}/bin/debruijn_test
-

@@ -37,6 +37,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           variant: sccache
+          key: sccache-${{env.BUILD_TYPE}}-gcc9
 
       - name: '⚙️ Configure CMake'
         run: >
@@ -109,6 +110,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           variant: sccache
+          key: sccache-${{env.BUILD_TYPE}}-gcc10
 
       - name: '⚙️ Configure CMake'
         run: >
@@ -181,6 +183,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           variant: sccache
+          key: sccache-${{env.BUILD_TYPE}}-gcc11
 
       - name: '⚙️ Configure CMake'
         run: >
@@ -253,6 +256,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           variant: sccache
+          key: sccache-${{env.BUILD_TYPE}}-gcc12
 
       - name: '⚙️ Configure CMake'
         run: >
@@ -325,6 +329,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           variant: sccache
+          key: sccache-${{env.BUILD_TYPE}}-gcc13
 
       - name: '⚙️ Configure CMake'
         run: >
