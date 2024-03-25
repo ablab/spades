@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - master
+      - main
+      - next
     tags:
       - '*'
   pull_request:
