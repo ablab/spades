@@ -52,8 +52,6 @@ cp metaplasmidspades.py $TARGET_DIR/
 cp coronaspades.py $TARGET_DIR/
 cp spades_compile.sh $TARGET_DIR/
 cp spades_init.py $TARGET_DIR/
-cp manual.html $TARGET_DIR/
-cp rnaspades_manual.html $TARGET_DIR/
 cp changelog.html $TARGET_DIR/
 cp GPLv2.txt $TARGET_DIR/
 

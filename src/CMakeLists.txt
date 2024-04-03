@@ -116,13 +116,7 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../VERSION"
         DESTINATION share/spades
         COMPONENT common)
 # manual, LICENSE, and GPLv2
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../manual.html"
-        DESTINATION share/spades
-        COMPONENT spades-docs)
 install(FILES "${README_MD_PATH}"
-        DESTINATION share/spades
-        COMPONENT spades-docs)
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../rnaspades_manual.html"
         DESTINATION share/spades
         COMPONENT spades-docs)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../LICENSE"
