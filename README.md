@@ -75,5 +75,5 @@ You may also include older papers [Nurk, Bankevich et al., 2013](http://link.spr
 
 # Feedback and bug reports
 
-Please, leave your comments and bug reports at [our GitHub repository tracker](https://github.com/ablab/spades/issues). If you have any troubles running SPAdes, please attach us `params.txt` and `spades.log` from the output folder.
+Please, leave your comments and bug reports at [our GitHub repository tracker](https://github.com/ablab/spades/issues). If you have any troubles running SPAdes, please attach `params.txt` and `spades.log` from the output folder.
 
