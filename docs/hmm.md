@@ -12,10 +12,11 @@ Given an increased interest in coronavirus research we developed a coronavirus a
 
 ## wastewaterSPAdes mode
 
-SARS-CoV-2 wastewater samples are extensively collected and studied because it allows quantitative assessment of viral load in surrounding populations. We developed wastewaterSPAdes that solves SARS-CoV-2 deconvolution problem using assembly graph structure.
+SARS-CoV-2 wastewater samples are extensively collected and studied because it allows quantitative assessment of viral load in surrounding populations. We developed wastewaterSPAdes that solves the SARS-CoV-2 deconvolution problem using assembly graph structure.
 To use wastewaterSPAdes, you'll need to:
 
 - Set `--sewage` flag to the `coronaspades.py`.
 - Provide the SARS-CoV-2 reference genome as trusted contigs.
 
-Results of wastewaterSPAdes are stored in `lineages.csv` file. First column contains strain name, and second column contains estimated abundance of this strain in the sample.
+Results of wastewaterSPAdes are stored in `lineages.csv` file. First column contains the strain name, and second column contains estimated abundance of this strain in the sample.
+

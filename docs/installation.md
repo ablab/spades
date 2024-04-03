@@ -113,7 +113,7 @@ If you added `bin` folder from SPAdes installation directory to the `PATH` varia
     spades.py --test
 ```
 
-For the simplicity we further assume that `bin` folder from SPAdes installation directory is added to the `PATH` variable.
+For simplicity we further assume that the `bin` folder from SPAdes installation directory is added to the `PATH` variable.
 
 If the installation is successful, you will find the following information at the end of the log:
 

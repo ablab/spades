@@ -13,7 +13,7 @@ rnaSPAdes take as an input at least one paired-end or single-end library. For hy
 ## Assembling multiple RNA-Seq libraries
 In case you have sequenced several RNA-Seq libraries using the same protocol from different tissues / conditions, and the goal as to assemble a total transcriptome, we suggest to provide all files as a single library (see [SPAdes input options](running.md#input-data)). Note, that sequencing using the same protocol implies that the resulting reads have the same length, insert size and strand-specificity. Transcript quantification for each sample can be done afterwards by separately mapping reads from each library to the assembled transcripts.
 
-When assembling multiple strand-specific libraries, only the first one will be used to determine strand of each transcript. Thus, we suggest not to mix data with different strand-specificity.
+When assembling multiple strand-specific libraries, only the first one will be used to determine the strand of each transcript. Thus, we suggest not to mix data with different strand-specificity.
 
 
 ## rnaSPAdes-specific options
@@ -23,7 +23,7 @@ When assembling multiple strand-specific libraries, only the first one will be u
 rnaSPAdes supports strand-specific RNA-Seq datasets. You can set strand-specific type using the following option:
 
 `--ss <type>`
-    Use `<type> = rf` when first read in pair corresponds to reverse gene strand (antisense data, e.g. obtained via dUTP protocol) and `<type> = fr` otherwise (forward). 
+    Use `<type> = rf` when first read in a pair corresponds to reverse gene strand (antisense data, e.g. obtained via dUTP protocol) and `<type> = fr` otherwise (forward). 
 
 Note, that strand-specificity is not related and should not be confused with FR and RF orientation of paired reads. RNA-Seq paired-end reads typically have forward-reverse orientation (--> <--), which is assumed by default and no additional options are needed (see [SPAdes input options](running.md#input-data)).
 
@@ -41,17 +41,16 @@ rnaSPAdes outputs one main FASTA file named transcripts.fasta. The corresponding
 
 In addition rnaSPAdes outputs transcripts with different level of filtration into <output_dir>/:
 - `hard_filtered_transcripts.fasta` - includes only long and reliable transcripts with rather high expression.
-- `soft_filtered_transcripts.fasta` - includes short and low-expressed transcipts, likely to contain junk sequences.
+- `soft_filtered_transcripts.fasta` - includes short and low-expressed transcripts, likely to contain junk sequences.
 
-We reccomend to use main `transcripts.fasta` file in case you don't have any specific needs for you projects. 
+We recommend using the main `transcripts.fasta` file in case you don't have any specific needs for your projects. 
 
 Contigs/scaffolds names in rnaSPAdes output FASTA files have the following format:
 `>NODE_97_length_6237_cov_11.9819_g8_i2`
 
 Similarly to SPAdes, 97 is the number of the contig, 6237 is its sequence length in nucleotides and 11.9819 is the k-mer coverage. Note that the k-mer coverage is always lower than the read (per-base) coverage. 
-g8_i2 correspond to the gene number 8 and isoform number 2 within this gene. Transcripts with the same gene number are presumably received from same or somewhat similar (e.g. paralogous) genes. Note, that the prediction is based on the presence of shared sequences in the transcripts and is very approximate.
+g8_i2 corresponds to the gene number 8 and isoform number 2 within this gene. Transcripts with the same gene number are presumably received from same or somewhat similar (e.g. paralogous) genes. Note, that the prediction is based on the presence of shared sequences in the transcripts and is very approximate.
 
 ## Assembly evaluation
-[rnaQUAST](https://github.com/ablab/rnaquast) may be used for transcriptome assembly quality assessment for model organisms when reference genome and gene database are available. rnaQUAST also includes [BUSCO](https://busco.ezlab.org/) and [GeneMarkS-T](http://topaz.gatech.edu/GeneMark/) tools for _de novo_ evaluation.
-
+[rnaQUAST](https://github.com/ablab/rnaquast) may be used for transcriptome assembly quality assessment for model organisms when a reference genome and a gene annotation are available. rnaQUAST also includes [BUSCO](https://busco.ezlab.org/) and [GeneMarkS-T](http://topaz.gatech.edu/GeneMark/) tools for _de novo_ evaluation.
 

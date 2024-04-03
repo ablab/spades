@@ -4,11 +4,11 @@
 
 Only FASTQ or BAM files are supported as input.
 
-The selection of k-mer length is non-trivial for IonTorrent. If the dataset is more or less conventional (good coverage, moderate or low GC, etc), then use our [recommendation for long reads](datatypes.md#assembling-long-illumina-paired-reads) (e.g. assemble using k-mer lengths 21,33,55,77,99,127). However, due to increased error rate some changes of k-mer lengths (e.g. selection of shorter ones) may be required. For example, if you ran SPAdes with k-mer lengths 21,33,55,77 and then decided to assemble the same data set using more iterations and larger values of K, you can run SPAdes once again specifying the same output folder and the following options: `--restart-from k77 -k 21,33,55,77,99,127 --mismatch-correction -o <previous_output_dir>`. Do not forget to copy contigs and scaffolds from the previous run. We are planning to tackle issue of selecting k-mer lengths for IonTorrent reads in next versions.
+The selection of k-mer length is non-trivial for IonTorrent. If the dataset is more or less conventional (good coverage, moderate or low GC, etc), then use our [recommendation for long reads](datatypes.md#assembling-long-illumina-paired-reads) (e.g. assemble using k-mer lengths 21,33,55,77,99,127). However, due to increased error rate some changes of k-mer lengths (e.g. selection of shorter ones) may be required. For example, if you ran SPAdes with k-mer lengths 21,33,55,77 and then decided to assemble the same data set using more iterations and larger values of K, you can run SPAdes once again specifying the same output folder and the following options: `--restart-from k77 -k 21,33,55,77,99,127 --mismatch-correction -o <previous_output_dir>`. Do not forget to copy contigs and scaffolds from the previous run.
 
 You may need no error correction for Hi-Q enzyme at all. However, we suggest trying to assemble your data with and without error correction and select the best variant.
 
-For non-trivial datasets (e.g. with high GC, low or uneven coverage) we suggest to enable single-cell mode (setting `--sc` option) and use k-mer lengths of 21,33,55.
+For non-trivial datasets (e.g. with high GC, low or uneven coverage) we suggest enabling single-cell mode (setting `--sc` option) and use k-mer lengths of 21,33,55.
 
 ## Assembling long Illumina paired reads
 
@@ -24,7 +24,7 @@ Do not turn off SPAdes error correction (BayesHammer module), which is included 
 
 If you have enough coverage (50x+), then you may want to try to set k-mer lengths of 21, 33, 55, 77 (selected by default for reads with length 150bp).
 
-Make sure you run assembler with the `--careful` option to minimize number of mismatches in the final contigs.
+Make sure you run assembler with the `--careful` option to minimize the number of mismatches in the final contigs.
 
 We recommend that you check the SPAdes log file at the end of the each iteration to control the average coverage of the contigs.
 
@@ -46,11 +46,11 @@ To correct and assemble the reads:
 
 Do not turn off SPAdes error correction (BayesHammer module), which is included in SPAdes default pipeline.
 
-By default we suggest to increase k-mer lengths in increments of 22 until the k-mer length reaches 127. The exact length of the k-mer depends on the coverage: k-mer length of 127 corresponds to 50x k-mer coverage and higher. For read length 250bp SPAdes automatically chooses K values equal to 21, 33, 55, 77, 99, 127.
+By default we suggest increasing k-mer lengths in increments of 22 until the k-mer length reaches 127. The exact length of the k-mer depends on the coverage: k-mer length of 127 corresponds to 50x k-mer coverage and higher. For read length 250bp SPAdes automatically chooses K values equal to 21, 33, 55, 77, 99, 127.
 
-Make sure you run assembler with `--careful` option to minimize number of mismatches in the final contigs.
+Make sure you run assembler with `--careful` option to minimize the number of mismatches in the final contigs.
 
-We recommend you to check the SPAdes log file at the end of the each iteration to control the average coverage of the contigs.
+We recommend you to check the SPAdes log file at the end of each iteration to control the average coverage of the contigs.
 
 For reads corrected prior to running the assembler:
 

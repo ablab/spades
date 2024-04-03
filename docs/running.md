@@ -7,24 +7,23 @@ To run SPAdes from the command line, type
     spades.py [options] -o <output_dir>
 ```
 
-Note that we assume that `bin` forder from SPAdes installation directory is added to the `PATH` variable (provide full path to SPAdes executable otherwise: `<spades installation dir>/bin/spades.py`).
+Note that we assume that the `bin` folder from SPAdes installation directory is added to the `PATH` variable (provide full path to SPAdes executable otherwise: `<spades installation dir>/bin/spades.py`).
 
 ## Basic options and modes
 
 `-o <output_dir> `
     Specify the output directory. Required option.
 
-
 `--isolate `
     This flag is highly recommended for high-coverage isolate and multi-cell Illumina data; improves the assembly quality and running time.
-    We also recommend to trim your reads prior to the assembly.
+    We also recommend trimming your reads prior to the assembly.
     This option is not compatible with `--only-error-correction` or `--careful` options.
 
 `--sc `
     This flag is required for MDA (single-cell) data.
 
 `--meta `   (same as `metaspades.py`)
-    This flag is recommended when assembling metagenomic data sets (runs metaSPAdes, see [paper](https://genome.cshlp.org/content/27/5/824.short) for more details). Currently metaSPAdes supports only a **_single_** short-read library which has to be **_paired-end_** (we hope to remove this restriction soon). In addition, you can provide long reads (e.g. using `--pacbio` or `--nanopore` options), but hybrid assembly for metagenomes remains an experimental pipeline and optimal performance is not guaranteed. It does not support [careful mode](running.md#pipeline-options) (mismatch correction is not available). In addition, you cannot specify coverage cutoff for metaSPAdes. Note that metaSPAdes might be very sensitive to presence of the technical sequences remaining in the data (most notably adapter readthroughs), please run quality control and pre-process your data accordingly.
+    This flag is recommended when assembling metagenomic data sets (runs metaSPAdes, see [paper](https://genome.cshlp.org/content/27/5/824.short) for more details). Currently metaSPAdes supports only a **_single_** short-read library which has to be **_paired-end_** (we hope to remove this restriction soon). In addition, you can provide long reads (e.g. using `--pacbio` or `--nanopore` options), but hybrid assembly for metagenomes remains an experimental pipeline and optimal performance is not guaranteed. It does not support [careful mode](running.md#pipeline-options) (mismatch correction is not available). In addition, you cannot specify coverage cutoff for metaSPAdes. Note that metaSPAdes might be very sensitive to the presence of the technical sequences remaining in the data (most notably adapter readthroughs), please run quality control and pre-process your data accordingly.
 
 `--plasmid `   (same as `plasmidspades.py`)
     This flag is required when assembling only plasmids from WGS data sets (runs plasmidSPAdes, see [paper](https://academic.oup.com/bioinformatics/article/32/22/3380/2525610) for the algorithm details). Note, that plasmidSPAdes is not compatible with single-cell mode (`--sc`). Additionally, we do not recommend to run plasmidSPAdes on more than one library.
@@ -35,18 +34,15 @@ See [plasmidSPAdes output section](output.md#plasmidspades-output) for details.
 
 `--metaviral `   (same as `metaviralspades.py`)
 
-These options works specially for extracting extrachromosomal elements from metagenomic assemblies. They run similar pipelines that slightly differ in the simplification step; another difference is that for metaviral mode we output linear putative extrachromosomal contigs and for metaplasmid mode we do not.
+These options work specially for extracting extrachromosomal elements from metagenomic assemblies. They run similar pipelines that slightly differ in the simplification step; another difference is that for metaviral mode we output linear putative extrachromosomal contigs and for metaplasmid mode we do not.
 See [metaplasmid paper](https://genome.cshlp.org/content/29/6/961.short) and [metaviral paper](https://academic.oup.com/bioinformatics/article-abstract/36/14/4126/5837667) for the algorithms details.
 
 See [metaplasmidSPAdes/metaviralSPAdes section](output.md#metaplasmidspades-and-metaviralspades-output) for details see.
 
-
-
-Additionally for plasmidSPAdes, metaplasmidSPAdes and metaviralSPAdes we recommend to additionally verify resulting contigs with [viralVerify tool](https://github.com/ablab/viralVerify).
-
+Additionally for plasmidSPAdes, metaplasmidSPAdes and metaviralSPAdes we recommend verifying resulting contigs with [viralVerify tool](https://github.com/ablab/viralVerify).
 
 `--bio `
-    This flag is required when assembling only non-ribosomal and polyketide gene clusters from WGS data sets (runs biosyntheticSPAdes, see [paper](https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1) for the algorithm details). biosyntheticSPAdes is supposed to work on isolate or metagenomic WGS dataset. Note, that biosyntheticSPAdes is not compatible with any other modes. See [biosyntheticSPAdes output section](output.md#biosyntheticspades-output) for details.
+    This flag is required when assembling only non-ribosomal and polyketide gene clusters from WGS data sets (runs biosyntheticSPAdes, see [paper](https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1) for the algorithm details). biosyntheticSPAdes is supposed to work on isolated or metagenomic WGS dataset. Note, that biosyntheticSPAdes is not compatible with any other modes. See [biosyntheticSPAdes output section](output.md#biosyntheticspades-output) for details.
 
 `--rna `   (same as `rnaspades.py`)
     This flag should be used when assembling RNA-Seq data sets (runs rnaSPAdes). To learn more, see [rnaSPAdes manual](rna.md).
@@ -78,7 +74,7 @@ Additionally for plasmidSPAdes, metaplasmidSPAdes and metaviralSPAdes we recomme
     Runs assembly module only.
 
 `--careful`
-    Tries to reduce the number of mismatches and short indels. Also runs MismatchCorrector - a post processing tool, which uses [BWA](http://bio-bwa.sourceforge.net) tool (comes with SPAdes). This option is recommended only for assembly of small genomes. We strongly recommend not to use it for large and medium-size eukaryotic genomes. Note, that this options is is not supported by metaSPAdes and rnaSPAdes.
+    Tries to reduce the number of mismatches and short indels. Also runs MismatchCorrector - a post processing tool, which uses [BWA](http://bio-bwa.sourceforge.net) tool (comes with SPAdes). This option is recommended only for assembly of small genomes. We strongly recommend not to use it for large and medium-size eukaryotic genomes. Note that this option is not supported by metaSPAdes and rnaSPAdes.
 
 `--continue`
     Continues SPAdes run from the specified output folder starting from the last available check-point. Check-points are made after:
@@ -107,7 +103,7 @@ Since all files will be overwritten, do not forget to copy your assembly from th
 
 Note:
 - this option is NOT mandatory for using `--restart-from` and `--continue` options, but may speed them up;
-- making checkpoints may take more time and significant amount of disc space.
+- making checkpoints may take more time and a significant amount of disk space.
 
 `--disable-gzip-output`
     Forces read error correction module not to compress the corrected reads. If this options is not set, corrected reads will be in `*.fastq.gz` format.
@@ -221,12 +217,12 @@ High-quality MP data can be used for mate-pair only assembly.
 #### Other input
 
 `--assembly-graph <file_name> `
-    File with assembly graph. Could only be used in plasmid, metaplasmid, metaviral and biosynthetic mode. The primary purpose of this option to run these pipelines on already constructed and simplified assembly graph this way skipping a large part of SPAdes pipeline. Original reads the graph was constructed from need to be specified as well. Exact k-mer length (via `-k` option) should be provided. Note that the output would be different as compared to standalone runs of these pipelines as they setup graph simplification options as well.
+    File with assembly graph. Could only be used in plasmid, metaplasmid, metaviral and biosynthetic mode. The primary purpose of this option is to run these pipelines on already constructed and simplified assembly graphs, thus skipping a large part of SPAdes pipeline. Original reads the graph was constructed from need to be specified as well. Exact k-mer length (via `-k` option) should be provided. Note that the output would be different as compared to standalone runs of these pipelines as they set up graph simplification options as well.
 
 
 ### Specifying multiple libraries with YAML data set file
 
-An alternative way to specify an input data set for SPAdes is to create a [YAML](http://www.yaml.org/) data set file. By using a YAML file you can provide an unlimited number of paired-end, mate-pair and unpaired libraries. Basically, YAML data set file is a text file, in which input libraries are provided as a comma-separated list in square brackets. Each library is provided in braces as a comma-separated list of attributes. The following attributes are available:
+An alternative way to specify an input data set for SPAdes is to create a [YAML](http://www.yaml.org/) data set file. By using a YAML file you can provide an unlimited number of paired-end, mate-pair and unpaired libraries. Basically, a YAML data set file is a text file, in which input libraries are provided as a comma-separated list in square brackets. Each library is provided in braces as a comma-separated list of attributes. The following attributes are available:
 
 -   orientation ("fr", "rf", "ff")
 -   type ("paired-end", "mate-pairs", "hq-mate-pairs", "single", "pacbio", "nanopore", "sanger", "trusted-contigs", "untrusted-contigs")
@@ -323,7 +319,7 @@ Notes:
     Number of threads. The default value is 16.
 
 `-m <int>` (or `--memory <int>`)
-    Set memory limit in Gb. SPAdes terminates if it reaches this limit. The default value is 250 Gb. Actual amount of consumed RAM will be below this limit. Make sure this value is correct for the given machine. SPAdes uses the limit value to automatically determine the sizes of various buffers, etc.
+    Set memory limit in Gb. SPAdes terminates if it reaches this limit. The default value is 250 Gb. Actual amount of RAM consumed will be below this limit. Make sure this value is correct for the given machine. SPAdes uses the limit value to automatically determine the sizes of various buffers, etc.
 
 `--tmp-dir <dir_name>`
     Set directory for temporary files from read error correction. The default value is `<output_dir>/corrected/tmp`

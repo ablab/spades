@@ -10,7 +10,7 @@ To run SPAdes you need at least one library of the following types:
 
 Illumina and IonTorrent libraries should not be assembled together. All other types of input data are compatible. SPAdes should not be used if only PacBio CLR, Oxford Nanopore, Sanger reads or additional contigs are available.
 
-SPAdes supports mate-pair only assembly. However, we recommend to use only high-quality mate-pair libraries in this case (e.g. that do not have a paired-end part). We tested mate-pair only pipeline using Illumina Nextera mate-pairs. See more [here](running.md#specifying-multiple-libraries).
+SPAdes supports mate-pair only assembly. However, we recommend to use only high-quality mate-pair libraries in this case (e.g. that do not have a paired-end part). We tested the mate-pair-only pipeline using Illumina Nextera mate-pairs. See more [here](running.md#specifying-multiple-libraries).
 
 Notes:
 
@@ -43,10 +43,9 @@ In an unlikely case some of the reads from your mate-pair (or high-quality mate-
 
 ## Unpaired (single-read) libraries
 
-By using command line interface, you can specify up to nine different single-read libraries. To input more libraries, you can use [YAML data set file](running.md#specifying-multiple-libraries-with-yaml-data-set-file).
+By using the command line interface, you can specify up to nine different single-read libraries. To input more libraries, you can use [YAML data set file](running.md#specifying-multiple-libraries-with-yaml-data-set-file).
 
-Single librairies are assumed to have high quality and a reasonable coverage. For example, you can provide PacBio CCS reads as a single-read library.
+Single libraries are assumed to have high quality and reasonable coverage. For example, you can provide PacBio CCS reads as a single-read library.
 
 Note, that you should not specify PacBio CLR, Sanger reads or additional contigs as single-read libraries, each of them has a separate [option](running.md#input-data).
-
 

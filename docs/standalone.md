@@ -5,17 +5,13 @@
 
 To provide input data to SPAdes k-mer counting tool `spades-kmercounter ` you may just specify files in [SPAdes-supported formats](running.md#spades-input) without any flags (after all options) or provide dataset description file in [YAML format](running.md#specifying-multiple-libraries-with-yaml-data-set-file).
 
-Output: `<output_dir>/final_kmers` - unordered set of kmers in binary format. Kmers from both forward a
-nd reverse-complementary reads are taken into account.
+Output: `<output_dir>/final_kmers` - unordered set of kmers in binary format. Kmers from both forward and reverse-complementary reads are taken into account.
 
-Output format: All kmers are written sequentially without any separators. Each kmer takes the same nu
-mber of bits. One kmer of length K takes 2*K bits. Kmers are aligned by 64 bits. For example, one kme
-r with length=21 takes 8 bytes, with length=33 takes 16 bytes, and with length=55 takes 16 bytes. Eac
-h nucleotide is coded with 2 bits: 00 - A, 01 - C, 10 - G, 11 - T.
+Output format: All kmers are written sequentially without any separators. Each k-mer takes the same number of bits. One k-mer of length K takes 2*K bits. Kmers are aligned by 64 bits. For example, one kmer with length=21 takes 8 bytes, with length=33 takes 16 bytes, and with length=55 takes 16 bytes. Each nucleotide is coded with 2 bits: 00 - A, 01 - C, 10 - G, 11 - T.
                                                  
 Example:
 
-        For kmer: AGCTCT
+        For k-mer: AGCTCT
         Memory: 6 bits * 2 = 12, 64 bits (8 bytes)
         Let’s describe bytes:
         data[0] = AGCT -> 11 01 10 00 -> 0xd8                              
@@ -81,7 +77,7 @@ The options are:
 
 ## k-mer cardinality estimating
 
-`spades-kmer-estimating ` is a tool for estimating approximate number of unique k-mers in the provided reads. Kmers from reverse-complementary reads aren"t taken into account for k-mer cardinality estimating.
+`spades-kmer-estimating` is a tool for estimating the approximate number of unique k-mers in the provided reads. Kmers from reverse-complementary reads aren"t taken into account for k-mer cardinality estimating.
 
 To provide input data to SPAdes k-mer cardinality estimating tool `spades-kmer-estimating ` you should provide dataset description file in [YAML format](running.md#specifying-multiple-libraries-with-yaml-data-set-file).
 
@@ -172,11 +168,12 @@ Additional options are:
     while processing a subgraph -- file listing edges which are dead-ends in the
     original graph
 
+
 ## Long read to graph alignment
 
 
 ### hybridSPAdes aligner
-A tool `spades-gmapper ` gives opportunity to extract long read alignments generated with hybridSPAdes pipeline options. It has three mandatory options: dataset description file in [YAML format](running.md#specifying-multiple-libraries-with-yaml-data-set-file), graph file in GFA format and an output file name.
+A tool `spades-gmapper ` gives the opportunity to extract long read alignments generated with hybridSPAdes pipeline options. It has three mandatory options: dataset description file in [YAML format](running.md#specifying-multiple-libraries-with-yaml-data-set-file), graph file in GFA format and an output file name.
 
 Synopsis: `spades-gmapper <dataset description (in YAML)> <graph (in GFA)> <output filename> [-k <value>] [-t <value>] [-tmpdir <dir>]`
 
@@ -192,7 +189,6 @@ Additional options are:
     scratch directory to use
 
 While `spades-mapper` is a solution for those who work on hybridSPAdes assembly and want to get exactly its intermediate results, [SPAligner](standalone.md#spaligner) is an end-product application for sequence-to-graph alignment with tunable parameters and output types.
-
 
 
 ### SPAligner
@@ -220,11 +216,11 @@ Parameters are:
 `-o, --outdir <dir> `
     output directory to use (default: spaligner_result/)
 
-For more information on parameters and options please refer to main SPAligner manual (assembler/src/projects/spaligner/README.md).
+For more information on parameters and options please refer to the main SPAligner manual (assembler/src/projects/spaligner/README.md).
 
 Also if you want to align protein sequences please refer to our [pre-release version](https://github.com/ablab/spades/releases/tag/spaligner-paper).
 
-Note that in order you use SPAligner one need either to use pre-built binaries or compiler SPAdes from sources using additional `-DSPADES_ENABLE_PROJECTS=spaligner` option.
+Note that in order you use SPAligner one needs either to use pre-built binaries or compile SPAdes from sources using the additional `-DSPADES_ENABLE_PROJECTS=spaligner` option.
 
 ## Binning refining using assembly graphs
 
@@ -251,7 +247,7 @@ Main options:
     Number of threads to use (default: 1/2 of available threads)
 
  `-m` 
-    Allow multiple bin assignment (defalut: false)
+    Allow multiple bin assignment (default: false)
     
  `-Smax|-Smle` 
      Simple maximum or maximum likelihood binning assignment strategy (default: max likelihood)
@@ -275,7 +271,7 @@ Main options:
     Labels correction regularization parameter for labeled data (default: 0.6)
 
 
-BinSPreader stores all output files in output directory `<output_dir> ` set by the user.
+BinSPreader stores all output files in the output directory `<output_dir> ` set by the user.
 
 - `<output_dir>/binning.tsv` contains refined binning in `.tsv` format
 - `<output_dir>/bin_stats.tsv` contains various per-bin statistics

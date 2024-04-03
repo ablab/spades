@@ -16,7 +16,7 @@ Contigs/scaffolds names in SPAdes output FASTA files have the following format:
 `>NODE_3_length_237403_cov_243.207`
 Here `3` is the number of the contig/scaffold, `237403` is the sequence length in nucleotides and `243.207` is the k-mer coverage for the last (largest) k value used. Note that the k-mer coverage is always lower than the read (per-base) coverage.
 
-In general, SPAdes uses two techniques for joining contigs into scaffolds. First one relies on read pairs and tries to estimate the size of the gap separating contigs. The second one relies on the assembly graph: e.g. if two contigs are separated by a complex tandem repeat, that cannot be resolved exactly, contigs are joined into scaffold with a fixed gap size of 100 bp. Contigs produced by SPAdes do not contain N symbols.
+In general, SPAdes uses two techniques for joining contigs into scaffolds. First one relies on read pairs and tries to estimate the size of the gap separating contigs. The second one relies on the assembly graph: e.g. if two contigs are separated by a complex tandem repeat that cannot be resolved exactly, contigs are joined into a scaffold with a fixed gap size of 100 bp. Contigs produced by SPAdes do not contain N symbols.
 
 ## Assembly graph formats
 
@@ -83,10 +83,10 @@ For all plasmidSPAdes' contig names in `contigs.fasta`, `scaffolds.fasta` and `a
 
 
 ## metaplasmidSPAdes and metaviralSPAdes output
-The repeat resolution and extrachromosomal element detection in metaplasmidSPAdes/metaviralSPAdes is run independently for different coverage cutoffs values (see [paper](https://genome.cshlp.org/content/29/6/961.short) for details). In order to distinguish contigs with putative plasmids detected at different cutoff levels we extend the contig name in FASTA file with cutoff value used for this particular contig (in format `_cutoff_N`). This is why, in the contrast to regular SPAdes pipeline, there might be a contig with `NODE_1_` prefix for each cutoff with potential plasmids detected. In following example, there were detected two potential viruses using cutoff 0, one virus was detected with cutoff 5 and one with cutoff 10.
-Also, we add a suffix that shows the structure of the suspective extrachromosomal element.
-For metaplasmid mode we output only circular putative plasmids.
-For metaviral mode we also output linear putative viruses and linear viruses with simple repeats ('9'-shaped components in the assembly graph) sequences.
+The repeat resolution and extrachromosomal element detection in metaplasmidSPAdes/metaviralSPAdes is run independently for different coverage cutoffs values (see [paper](https://genome.cshlp.org/content/29/6/961.short) for details). In order to distinguish contigs with putative plasmids detected at different cutoff levels we extend the contig name in FASTA file with cutoff value used for this particular contig (in format `_cutoff_N`). This is why, in the contrast to regular SPAdes pipeline, there might be a contig with `NODE_1_` prefix for each cutoff with potential plasmids detected. In the following example, there were detected two potential viruses using cutoff 0, one virus was detected with cutoff 5 and one with cutoff 10. We also add a suffix that shows the structure of the suspective extrachromosomal element.
+
+In the metaplasmid mode SPAdes outputs only circular putative plasmids.
+In the metaviral mode SPAdes also outputs linear putative viruses and linear viruses with simple repeats ('9'-shaped components in the assembly graph) sequences.
 
 ``` 
 >NODE_1_length_40003_cov_13.48_cutoff_0_type_circular
@@ -98,14 +98,16 @@ For metaviral mode we also output linear putative viruses and linear viruses wit
 ## biosyntheticSPAdes output
 
 biosyntheticSPAdes outputs four files of interest:
-- scaffolds.fasta – contains DNA sequences from putative biosynthetic gene clusters (BGC). Since each sample may contain multiple BGCs and biosyntheticSPAdes can output several putative DNA sequences for eash cluster, for each contig name we append suffix `_cluster_X_candidate_Y`, where X is the id of the BGC and Y is the id of the candidate from the BGC.
-- raw_scaffolds.fasta – SPAdes scaffolds generated without domain-graph related algorithms. Very close to regular scaffolds.fasta file.
-- hmm_statistics.txt – contains statistics about BGC composition in the sample. First, it outputs number of domain hits in the sample. Then, for each BGC candidate we output domain order with positions on the corresponding DNA sequence from scaffolds.fasta.
-- domain_graph.dot – contains domain graph structure, that can be used to assess complexity of the sample and structure of BGCs. For more information about domain graph construction, please refer to the paper.
+- scaffolds.fasta – contains DNA sequences from putative biosynthetic gene clusters (BGC). Since each sample may contain multiple BGCs and biosyntheticSPAdes can output several putative DNA sequences for each cluster, for each contig name we append suffix `_cluster_X_candidate_Y`, where X is the id of the BGC and Y is the id of the candidate from the BGC.
+- raw_scaffolds.fasta - SPAdes scaffolds generated without domain-graph related algorithms. Very close to the regular scaffolds.fasta file.
+- hmm_statistics.txt - contains statistics about BGC composition in the sample. First, it outputs the number of domain hits in the sample. Then, for each BGC candidate we output domain order with positions on the corresponding DNA sequence from scaffolds.fasta.
+- domain_graph.dot - contains domain graph structure that can be used to assess complexity of the sample and structure of BGCs. For more information about domain graph construction, please refer to the paper.
+
 
 ## rnaSPades output
 
 See [rnaSPAdes section](rna.md#rnaspades-output).
+
 
 ## Genome assembly evaluation
 

@@ -10,7 +10,7 @@ nav:
   - Command line options: running.md
   - SPAdes output: output.md
   - HMM-guided mode: hmm.md
-  - Trasncriptome assembly: rna.md
+  - Transcriptome assembly: rna.md
   - SPAdes tools: standalone.md
   - Citation: citation.md
   - Feedback: feedback.md
