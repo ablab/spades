@@ -63,10 +63,10 @@ private:
         return unique[mask];
     }
 
-    static constexpr int8_t GetUnique(uint8_t mask) {
-        constexpr int8_t next[] =
-                { -1,  0,  1, -1,  2, -1, -1, -1,
-                  3, -1, -1, -1, -1, -1, -1, -1 };
+     static constexpr char GetUnique(uint8_t mask) {
+        constexpr char next[] =
+            {  UINT8_C(0xFF),  0,  1, UINT8_C(0xFF),  2, UINT8_C(0xFF), UINT8_C(0xFF), UINT8_C(0xFF),
+            3, UINT8_C(0xFF), UINT8_C(0xFF), UINT8_C(0xFF), UINT8_C(0xFF), UINT8_C(0xFF), UINT8_C(0xFF), UINT8_C(0xFF) };
         return next[mask];
     }
 
