@@ -1,9 +1,10 @@
 site_name: SPAdes Assembly Toolkit
+
 nav:
   - Home: index.md
   - Quick start: getting-started.md
   - Installation: installation.md
-  - SPAdes input data: 
+  - SPAdes input data:
     - Basic input: input.md
     - Hybrid assembly: hybrid.md
     - Tips on the parameters: datatypes.md
@@ -14,5 +15,20 @@ nav:
   - SPAdes tools: standalone.md
   - Citation: citation.md
   - Feedback: feedback.md
-theme: material
+
 use_directory_urls: false
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+
+markdown_extensions:
+  - pymdownx.highlight:
+      use_pygments: true
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences

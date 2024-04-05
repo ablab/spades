@@ -3,7 +3,6 @@
 To run SPAdes from the command line, type
 
 ``` bash
-
     spades.py [options] -o <output_dir>
 ```
 
@@ -238,8 +237,7 @@ The value for each attribute is given after a colon. Comma-separated lists of fi
 
 For example, if you have one paired-end library split into two pairs of files:
 
-``` bash
-
+``` plain
     lib_pe1_left_1.fastq
     lib_pe1_right_1.fastq
     lib_pe1_left_2.fastq
@@ -248,24 +246,21 @@ For example, if you have one paired-end library split into two pairs of files:
 
 one mate-pair library:
 
-``` bash
-
+``` plain
     lib_mp1_left.fastq
     lib_mp1_right.fastq
 ```
 
 and PacBio CCS and CLR reads:
 
-``` bash
-
+``` plain
     pacbio_ccs.fastq
     pacbio_clr.fastq
 ```
 
 YAML file should look like this:
 
-``` bash
-
+``` yaml
     [
       {
         orientation: "fr",
@@ -342,15 +337,13 @@ Notes:
 To test the toy data set, you can also run the following command from the SPAdes `bin` directory:
 
 ``` bash
-
     spades.py --pe1-1 ../share/spades/test_dataset/ecoli_1K_1.fq.gz \
     --pe1-2 ../share/spades/test_dataset/ecoli_1K_2.fq.gz -o spades_test
 ```
 
 If you have your library separated into several pairs of files, for example:
 
-``` bash
-
+``` plain
     lib1_forward_1.fastq
     lib1_reverse_1.fastq
     lib1_forward_2.fastq
@@ -360,7 +353,6 @@ If you have your library separated into several pairs of files, for example:
 make sure that corresponding files are given in the same order:
 
 ``` bash
-
     spades.py --pe1-1 lib1_forward_1.fastq --pe1-2 lib1_reverse_1.fastq \
     --pe1-1 lib1_forward_2.fastq --pe1-2 lib1_reverse_2.fastq \
     -o spades_output
@@ -369,7 +361,6 @@ make sure that corresponding files are given in the same order:
 Files with interlacing paired-end reads or files with unpaired reads can be specified in any order with one file per option, for example:
 
 ``` bash
-
     spades.py --pe1-12 lib1_1.fastq --pe1-12 lib1_2.fastq \
     --pe1-s lib1_unpaired_1.fastq --pe1-s lib1_unpaired_2.fastq \
     -o spades_output
@@ -379,24 +370,21 @@ If you have several paired-end and mate-pair reads, for example:
 
 paired-end library 1
 
-``` bash
-
+``` plain
     lib_pe1_left.fastq
     lib_pe1_right.fastq
 ```
 
 mate-pair library 1
 
-``` bash
-
+``` plain
     lib_mp1_left.fastq
     lib_mp1_right.fastq
 ```
 
 mate-pair library 2
 
-``` bash
-
+``` plain
     lib_mp2_left.fastq
     lib_mp2_right.fastq
 ```
@@ -404,7 +392,6 @@ mate-pair library 2
 make sure that files corresponding to each library are grouped together:
 
 ``` bash
-
     spades.py --pe1-1 lib_pe1_left.fastq --pe1-2 lib_pe1_right.fastq \
     --mp1-1 lib_mp1_left.fastq --mp1-2 lib_mp1_right.fastq \
     --mp2-1 lib_mp2_left.fastq --mp2-2 lib_mp2_right.fastq \
@@ -413,8 +400,7 @@ make sure that files corresponding to each library are grouped together:
 
 If you have IonTorrent unpaired reads, PacBio CLR and additional reliable contigs:
 
-``` bash
-
+``` plain
     it_reads.fastq
     pacbio_clr.fastq
     contigs.fasta
@@ -423,7 +409,6 @@ If you have IonTorrent unpaired reads, PacBio CLR and additional reliable contig
 run SPAdes with the following command:
 
 ``` bash
-
     spades.py --iontorrent -s it_reads.fastq \
     --pacbio pacbio_clr.fastq --trusted-contigs contigs.fastq \
     -o spades_output
@@ -431,8 +416,7 @@ run SPAdes with the following command:
 
 If a single-read library is split into several files:
 
-``` bash
-
+``` plain
     unpaired1_1.fastq
     unpaired1_2.fastq
     unpaired1_3.fasta
@@ -441,7 +425,6 @@ If a single-read library is split into several files:
 specify them as one library:
 
 ``` bash
-
     spades.py --s1 unpaired1_1.fastq \
     --s1 unpaired1_2.fastq --s1 unpaired1_3.fastq \
     -o spades_output

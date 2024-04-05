@@ -6,36 +6,36 @@
 
 - Test your SPAdes installation by running
 
-```
+``` bash
     bin/spades.py --test
 ```
 
 - A single paired-end library (separate files, gzipped):
 
-```
+``` bash
     bin/spades.py -1 left.fastq.gz -2 right.fastq.gz -o output_folder
 ```
 
 - A single paired-end library (interlaced reads):
 
-```
+``` bash
     bin/spades.py --12 interlaced.fastq -o output_folder
 ```
 
 - Two paired-end libraries (separate files):
 
-```
+``` bash
     bin/spades.py --pe1-1 1_left.fastq --pe1-2 1_right.fastq --pe2-1 2_left.fastq --pe2-2 2_right.fastq -o output_folder
 ```
 
 - IonTorrent data:
-```
+``` bash
     bin/spades.py --iontorrent -s it_reads.fastq -o output_folder
 ```
 
 - A paired-end library coupled with long PacBio reads:
 
-```
+``` bash
     bin/spades.py -1 left.fastq.gz -2 right.fastq.gz --pacbio pb.fastq -o output_folder
 ```
 

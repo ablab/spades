@@ -31,14 +31,12 @@ We recommend that you check the SPAdes log file at the end of the each iteration
 For reads corrected prior to running the assembler:
 
 ``` bash
-
     spades.py -k 21,33,55,77 --careful --only-assembler <your reads> -o spades_output
 ```
 
 To correct and assemble the reads:
 
 ``` bash
-
     spades.py -k 21,33,55,77 --careful <your reads> -o spades_output
 ```
 
@@ -55,14 +53,12 @@ We recommend you to check the SPAdes log file at the end of each iteration to co
 For reads corrected prior to running the assembler:
 
 ``` bash
-
     spades.py -k 21,33,55,77,99,127 --careful --only-assembler <your reads> -o spades_output
 ```
 
 To correct and assemble the reads:
 
 ``` bash
-
     spades.py -k 21,33,55,77,99,127 --careful <your reads> -o spades_output
 ```
 

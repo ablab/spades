@@ -14,7 +14,7 @@ Example:
         For k-mer: AGCTCT
         Memory: 6 bits * 2 = 12, 64 bits (8 bytes)
         Let’s describe bytes:
-        data[0] = AGCT -> 11 01 10 00 -> 0xd8                              
+        data[0] = AGCT -> 11 01 10 00 -> 0xd8
         data[1] = CT00 -> 00 00 11 01 -> 0x0d
         data[2] = 0000 -> 00 00 00 00 -> 0x00
         data[3] = 0000 -> 00 00 00 00 -> 0x00

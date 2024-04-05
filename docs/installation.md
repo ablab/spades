@@ -28,7 +28,6 @@ In case of successful installation the following files will be placed in the `bi
 To download [SPAdes Linux binaries](https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5-Linux.tar.gz) and extract them, go to the directory in which you wish SPAdes to be installed and run:
 
 ``` bash
-
     wget https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5-Linux.tar.gz
     tar -xzf SPAdes-3.15.5-Linux.tar.gz
     cd SPAdes-3.15.5-Linux/bin/
@@ -44,7 +43,6 @@ Note, that pre-build binaries do not work on new Linux kernels.
 To obtain [SPAdes binaries for Mac](https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5-Darwin.tar.gz), go to the directory in which you wish SPAdes to be installed and run:
 
 ``` bash
-
     curl https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5-Darwin.tar.gz
     tar -zxf SPAdes-3.15.5-Darwin.tar.gz
     cd SPAdes-3.15.5-Darwin/bin/
@@ -65,7 +63,6 @@ If you wish to compile SPAdes by yourself you will need the following libraries 
 If you meet these requirements, you can download the [SPAdes source code](https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5.tar.gz):
 
 ``` bash
-
     wget https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5.tar.gz
     tar -xzf SPAdes-3.15.5.tar.gz
     cd SPAdes-3.15.5
@@ -74,21 +71,18 @@ If you meet these requirements, you can download the [SPAdes source code](https:
 and build it with the following script:
 
 ``` bash
-
     ./spades_compile.sh
 ```
 
 SPAdes will be built in the directory `./bin`. If you wish to install SPAdes into another directory, you can specify full path of destination folder by running the following command in `bash` or `sh`:
 
 ``` bash
-
     PREFIX=<destination_dir> ./spades_compile.sh
 ```
 
 for example:
 
 ``` bash
-
     PREFIX=/usr/local ./spades_compile.sh
 ```
 
@@ -102,14 +96,12 @@ After installation you will get the same files (listed above) in `./bin` directo
 For testing purposes, SPAdes comes with a toy data set (reads that align to first 1000 bp of *E. coli*). To try SPAdes on this data set, run:
 
 ``` bash
-
     <spades installation dir>/bin/spades.py --test
 ```
 
 If you added `bin` folder from SPAdes installation directory to the `PATH` variable, you can run:
 
 ``` bash
-
     spades.py --test
 ```
 
@@ -118,7 +110,6 @@ For simplicity we further assume that the `bin` folder from SPAdes installation 
 If the installation is successful, you will find the following information at the end of the log:
 
 ``` plain
-
 ===== Assembling finished. Used k-mer sizes: 21, 33, 55
 
  * Corrected reads are in spades_test/corrected/
