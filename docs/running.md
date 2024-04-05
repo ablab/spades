@@ -3,56 +3,104 @@
 To run SPAdes from the command line, type
 
 ``` bash
-    spades.py [options] -o <output_dir>
+spades.py [options] -o <output_dir>
 ```
 
 Note that we assume that the `bin` folder from SPAdes installation directory is added to the `PATH` variable (provide full path to SPAdes executable otherwise: `<spades installation dir>/bin/spades.py`).
 
-## Basic options and modes
+## Running modes
+#### `--isolate`
 
-`-o <output_dir> `
-    Specify the output directory. Required option.
+This flag is highly recommended for high-coverage isolate and multi-cell
+Illumina data; improves the assembly quality and running time.  We also
+recommend trimming your reads prior to the assembly.  This option is not
+compatible with `--only-error-correction` or `--careful` options.
 
-`--isolate `
-    This flag is highly recommended for high-coverage isolate and multi-cell Illumina data; improves the assembly quality and running time.
-    We also recommend trimming your reads prior to the assembly.
-    This option is not compatible with `--only-error-correction` or `--careful` options.
+#### `--sc`
 
-`--sc `
-    This flag is required for MDA (single-cell) data.
+This flag is required for MDA amplified (single-cell) data. Assumes highly
+uneven coverage and presence of amplification artifacts.
 
-`--meta `   (same as `metaspades.py`)
-    This flag is recommended when assembling metagenomic data sets (runs metaSPAdes, see [paper](https://genome.cshlp.org/content/27/5/824.short) for more details). Currently metaSPAdes supports only a **_single_** short-read library which has to be **_paired-end_** (we hope to remove this restriction soon). In addition, you can provide long reads (e.g. using `--pacbio` or `--nanopore` options), but hybrid assembly for metagenomes remains an experimental pipeline and optimal performance is not guaranteed. It does not support [careful mode](running.md#pipeline-options) (mismatch correction is not available). In addition, you cannot specify coverage cutoff for metaSPAdes. Note that metaSPAdes might be very sensitive to the presence of the technical sequences remaining in the data (most notably adapter readthroughs), please run quality control and pre-process your data accordingly.
+#### `--meta` (same as `metaspades.py`)
 
-`--plasmid `   (same as `plasmidspades.py`)
-    This flag is required when assembling only plasmids from WGS data sets (runs plasmidSPAdes, see [paper](https://academic.oup.com/bioinformatics/article/32/22/3380/2525610) for the algorithm details). Note, that plasmidSPAdes is not compatible with single-cell mode (`--sc`). Additionally, we do not recommend to run plasmidSPAdes on more than one library.
+This flag is recommended when assembling metagenomic data sets (runs metaSPAdes,
+see [paper](https://genome.cshlp.org/content/27/5/824.short) for more
+details). Currently metaSPAdes supports only a **_single_** short-read library
+which has to be **_paired-end_** (we hope to remove this restriction soon). In
+addition, you can provide long reads (e.g. using `--pacbio` or `--nanopore`
+options), but hybrid assembly for metagenomes remains an experimental pipeline
+and optimal performance is not guaranteed. It does not support [careful
+mode](running.md#pipeline-options) (mismatch correction is not available). In
+addition, you cannot specify coverage cutoff for metaSPAdes. Note that
+metaSPAdes might be very sensitive to the presence of the technical sequences
+remaining in the data (most notably adapter readthroughs), please run quality
+control and pre-process your data accordingly.
+
+#### `--plasmid`   (same as `plasmidspades.py`)
+
+This flag enables plasmidSPAdes mode that assembles only
+plasmids from WGS data sets (see
+[paper](https://academic.oup.com/bioinformatics/article/32/22/3380/2525610) for
+the algorithm details). Note, that plasmidSPAdes is not compatible with
+single-cell mode (`--sc`). Additionally, we do not recommend to run
+plasmidSPAdes on more than one library.
 
 See [plasmidSPAdes output section](output.md#plasmidspades-output) for details.
 
-`--metaplasmid `   (same as `metaplasmidspades.py` and `--meta` `--plasmid`) and
+#### `--metaplasmid` and `--metaviral`
+(same as `metaplasmidspades.py` and `--meta` `--plasmid` and `metaviralspades.py`)
 
-`--metaviral `   (same as `metaviralspades.py`)
+These options work specially for extracting extrachromosomal elements from
+metagenomic assemblies. They run similar pipelines that slightly differ in the
+simplification step; another difference is that for metaviral mode we output
+linear putative extrachromosomal contigs and for metaplasmid mode we do not.
+See [metaplasmid paper](https://genome.cshlp.org/content/29/6/961.short) and
+[metaviral
+paper](https://academic.oup.com/bioinformatics/article-abstract/36/14/4126/5837667)
+for the algorithms details.
 
-These options work specially for extracting extrachromosomal elements from metagenomic assemblies. They run similar pipelines that slightly differ in the simplification step; another difference is that for metaviral mode we output linear putative extrachromosomal contigs and for metaplasmid mode we do not.
-See [metaplasmid paper](https://genome.cshlp.org/content/29/6/961.short) and [metaviral paper](https://academic.oup.com/bioinformatics/article-abstract/36/14/4126/5837667) for the algorithms details.
+See [metaplasmidSPAdes/metaviralSPAdes
+section](output.md#metaplasmidspades-and-metaviralspades-output) for details of
+the output.
 
-See [metaplasmidSPAdes/metaviralSPAdes section](output.md#metaplasmidspades-and-metaviralspades-output) for details see.
+Additionally for plasmidSPAdes, metaplasmidSPAdes and metaviralSPAdes we
+recommend verifying resulting contigs with [viralVerify
+tool](https://github.com/ablab/viralVerify).
 
-Additionally for plasmidSPAdes, metaplasmidSPAdes and metaviralSPAdes we recommend verifying resulting contigs with [viralVerify tool](https://github.com/ablab/viralVerify).
+#### `--bio `
 
-`--bio `
-    This flag is required when assembling only non-ribosomal and polyketide gene clusters from WGS data sets (runs biosyntheticSPAdes, see [paper](https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1) for the algorithm details). biosyntheticSPAdes is supposed to work on isolated or metagenomic WGS dataset. Note, that biosyntheticSPAdes is not compatible with any other modes. See [biosyntheticSPAdes output section](output.md#biosyntheticspades-output) for details.
+This flag enables biosyntheticSPAdes mode that assembles non-ribosomal and
+polyketide gene clusters from WGS data sets (see
+[paper](https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1)
+for the algorithm details). biosyntheticSPAdes is supposed to work on isolated
+or metagenomic WGS dataset. Note, that biosyntheticSPAdes is not compatible with
+any other modes. See [biosyntheticSPAdes output
+section](output.md#biosyntheticspades-output) for details of the output.
 
-`--rna `   (same as `rnaspades.py`)
-    This flag should be used when assembling RNA-Seq data sets (runs rnaSPAdes). To learn more, see [rnaSPAdes manual](rna.md).
-    Not compatible with `--only-error-correction` or `--careful` options.
+#### `--rna `   (same as `rnaspades.py`)
 
-`--rnaviral`   (same as `rnaviralspades.py`)
-    This flag should be used when assembling viral RNA-Seq data sets (runs rnaviralSPAdes).
-    Not compatible with `--only-error-correction` or `--careful` options.
+This flag should be used when assembling RNA-Seq data sets (runs rnaSPAdes). To
+learn more, see dedicated [rnaSPAdes manual](rna.md).  Not compatible with
+`--only-error-correction` or `--careful` options.
 
-`--iontorrent `
-    This flag is required when assembling IonTorrent data. Allows BAM files as input. Carefully read [IonTorrent section](datatypes.md#assembling-iontorrent-reads) before using this option.
+#### `--rnaviral`   (same as `rnaviralspades.py`)
+This flag should be used when assembling viral RNA-Seq data sets (runs rnaviralSPAdes).
+Not compatible with `--only-error-correction` or `--careful` options.
+
+#### `--corona`   (same as `coronaspades.py`)
+Enables dedicated HMM-guided coronaviral assembly module. See [HMM-guided
+mode](hmm.md) page for details.
+
+#### `--iontorrent `
+
+This flag is required when assembling IonTorrent data. Allows BAM files as
+input. Carefully read [IonTorrent section](datatypes.md#assembling-iontorrent-reads)
+before using this option.
+
+## Basic options
+
+`-o <output_dir> `
+    Specify the output directory. Required option.
 
 `--test`
     Runs SPAdes on the toy data set; see [installation](installation.md#verifying-your-installation) for details.
@@ -337,33 +385,34 @@ Notes:
 To test the toy data set, you can also run the following command from the SPAdes `bin` directory:
 
 ``` bash
-    spades.py --pe1-1 ../share/spades/test_dataset/ecoli_1K_1.fq.gz \
-    --pe1-2 ../share/spades/test_dataset/ecoli_1K_2.fq.gz -o spades_test
+spades.py --pe1-1 ../share/spades/test_dataset/ecoli_1K_1.fq.gz \
+          --pe1-2 ../share/spades/test_dataset/ecoli_1K_2.fq.gz \
+          -o spades_test
 ```
 
 If you have your library separated into several pairs of files, for example:
 
 ``` plain
-    lib1_forward_1.fastq
-    lib1_reverse_1.fastq
-    lib1_forward_2.fastq
-    lib1_reverse_2.fastq
+lib1_forward_1.fastq
+lib1_reverse_1.fastq
+lib1_forward_2.fastq
+lib1_reverse_2.fastq
 ```
 
 make sure that corresponding files are given in the same order:
 
 ``` bash
-    spades.py --pe1-1 lib1_forward_1.fastq --pe1-2 lib1_reverse_1.fastq \
-    --pe1-1 lib1_forward_2.fastq --pe1-2 lib1_reverse_2.fastq \
-    -o spades_output
+spades.py --pe1-1 lib1_forward_1.fastq --pe1-2 lib1_reverse_1.fastq \
+          --pe1-1 lib1_forward_2.fastq --pe1-2 lib1_reverse_2.fastq \
+          -o spades_output
 ```
 
 Files with interlacing paired-end reads or files with unpaired reads can be specified in any order with one file per option, for example:
 
 ``` bash
-    spades.py --pe1-12 lib1_1.fastq --pe1-12 lib1_2.fastq \
-    --pe1-s lib1_unpaired_1.fastq --pe1-s lib1_unpaired_2.fastq \
-    -o spades_output
+spades.py --pe1-12 lib1_1.fastq --pe1-12 lib1_2.fastq \
+          --pe1-s lib1_unpaired_1.fastq --pe1-s lib1_unpaired_2.fastq \
+          -o spades_output
 ```
 
 If you have several paired-end and mate-pair reads, for example:
@@ -371,64 +420,63 @@ If you have several paired-end and mate-pair reads, for example:
 paired-end library 1
 
 ``` plain
-    lib_pe1_left.fastq
-    lib_pe1_right.fastq
+lib_pe1_left.fastq
+lib_pe1_right.fastq
 ```
 
 mate-pair library 1
 
 ``` plain
-    lib_mp1_left.fastq
-    lib_mp1_right.fastq
+lib_mp1_left.fastq
+lib_mp1_right.fastq
 ```
 
 mate-pair library 2
 
 ``` plain
-    lib_mp2_left.fastq
-    lib_mp2_right.fastq
+lib_mp2_left.fastq
+lib_mp2_right.fastq
 ```
 
 make sure that files corresponding to each library are grouped together:
 
 ``` bash
-    spades.py --pe1-1 lib_pe1_left.fastq --pe1-2 lib_pe1_right.fastq \
-    --mp1-1 lib_mp1_left.fastq --mp1-2 lib_mp1_right.fastq \
-    --mp2-1 lib_mp2_left.fastq --mp2-2 lib_mp2_right.fastq \
-    -o spades_output
+spades.py --pe1-1 lib_pe1_left.fastq --pe1-2 lib_pe1_right.fastq \
+          --mp1-1 lib_mp1_left.fastq --mp1-2 lib_mp1_right.fastq \
+          --mp2-1 lib_mp2_left.fastq --mp2-2 lib_mp2_right.fastq \
+          -o spades_output
 ```
 
 If you have IonTorrent unpaired reads, PacBio CLR and additional reliable contigs:
 
 ``` plain
-    it_reads.fastq
-    pacbio_clr.fastq
-    contigs.fasta
+it_reads.fastq
+pacbio_clr.fastq
+contigs.fasta
 ```
 
 run SPAdes with the following command:
 
 ``` bash
-    spades.py --iontorrent -s it_reads.fastq \
-    --pacbio pacbio_clr.fastq --trusted-contigs contigs.fastq \
-    -o spades_output
+spades.py --iontorrent -s it_reads.fastq \
+          --pacbio pacbio_clr.fastq --trusted-contigs contigs.fastq \
+          -o spades_output
 ```
 
 If a single-read library is split into several files:
 
 ``` plain
-    unpaired1_1.fastq
-    unpaired1_2.fastq
-    unpaired1_3.fasta
+unpaired1_1.fastq
+unpaired1_2.fastq
+unpaired1_3.fasta
 ```
 
 specify them as one library:
 
 ``` bash
-    spades.py --s1 unpaired1_1.fastq \
-    --s1 unpaired1_2.fastq --s1 unpaired1_3.fastq \
-    -o spades_output
+spades.py --s1 unpaired1_1.fastq \
+          --s1 unpaired1_2.fastq --s1 unpaired1_3.fastq \
+          -o spades_output
 ```
 
 All options for specifying input data can be mixed if needed, but make sure that files for each library are grouped and files with left and right paired reads are listed in the same order.
-

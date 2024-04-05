@@ -12,6 +12,7 @@ nav:
   - SPAdes output: output.md
   - HMM-guided mode: hmm.md
   - Transcriptome assembly: rna.md
+  - Binning refining: binspreader.md
   - SPAdes tools: standalone.md
   - Citation: citation.md
   - Feedback: feedback.md

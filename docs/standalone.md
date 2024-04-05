@@ -1,7 +1,7 @@
-# Stand-alone binaries released within SPAdes package
+# Stand-alone tools released within SPAdes package
 
 
-## k-mer counting
+## k-mer counter
 
 To provide input data to SPAdes k-mer counting tool `spades-kmercounter ` you may just specify files in [SPAdes-supported formats](running.md#spades-input) without any flags (after all options) or provide dataset description file in [YAML format](running.md#specifying-multiple-libraries-with-yaml-data-set-file).
 
@@ -221,66 +221,3 @@ For more information on parameters and options please refer to the main SPAligne
 Also if you want to align protein sequences please refer to our [pre-release version](https://github.com/ablab/spades/releases/tag/spaligner-paper).
 
 Note that in order you use SPAligner one needs either to use pre-built binaries or compile SPAdes from sources using the additional `-DSPADES_ENABLE_PROJECTS=spaligner` option.
-
-## Binning refining using assembly graphs
-
-BinSPreader is a tool that attempts to refine metagenome-assembled genomes (MAGs) obtained from existing tools. BinSPreader exploits the assembly graph topology and other connectivity information, such as paired-end and Hi-C reads, to refine the existing binning, correct binning errors, propagate binning from longer contigs to shorter contigs, and infer contigs belonging to multiple bins.
-
-The tool requires initial binning to refine, as well as an assembly graph as a source of information for refining. Optionally, BinSPreader can be provided with multiple Hi-C and/or paired-end libraries.
-
-Required positional arguments: 
-
-- Assembly graph file in [GFA 1.0 format](https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md), with scaffolds included as path lines. Alternatively, scaffold paths can be provided separately using `--path` option in the `.paths` format accepted by Bandage (see [Bandage wiki](https://github.com/rrwick/Bandage/wiki/Graph-paths) for details). 
-- Binning output from an existing tool (in `.tsv` format)
-
-Synopsis: `binspreader <graph (in GFA)> <binning (in .tsv)> <output directory> [OPTION...]`
-
-Main options:
-
-`--paths`
-    provide contigs paths from file separately from GFA
-
-`--dataset` 
-    Dataset in [YAML format](running.md#specifying-multiple-libraries-with-yaml-data-set-file) describing Hi-C and paired-end reads
-
- `-t` 
-    Number of threads to use (default: 1/2 of available threads)
-
- `-m` 
-    Allow multiple bin assignment (default: false)
-    
- `-Smax|-Smle` 
-     Simple maximum or maximum likelihood binning assignment strategy (default: max likelihood)
-     
- `-Rcorr|-Rprop` 
-     Select propagation or correction mode (default: correction)
-     
-`--cami` 
-    Use CAMI bioboxes binning format
-    
-`--zero-bin` 
-    Emit zero bin for unbinned sequences
-    
-`--tall-multi` 
-    Use tall table for multiple binning result
-    
-`--bin-dist` 
-    Estimate pairwise bin distance (could be slow on large graphs!)
-    
-`-la` 
-    Labels correction regularization parameter for labeled data (default: 0.6)
-
-
-BinSPreader stores all output files in the output directory `<output_dir> ` set by the user.
-
-- `<output_dir>/binning.tsv` contains refined binning in `.tsv` format
-- `<output_dir>/bin_stats.tsv` contains various per-bin statistics
-- `<output_dir>/bin_weights.tsv` contains soft bin weights per contig
-- `<output_dir>/edge_weights.tsv` contains soft bin weights per edge
-
-In addition
-
-- `<output_dir>/bin_dist.tsv` contains refined bin distance matrix (if `--bin-dist` was used)
-- `<output_dir>/bin_label_1.fastq, <output_dir>/bin_label_2.fastq` read set for bin labeled by `bin_label` (if `--reads` was used)
-- `<output_dir>/pe_links.tsv` list of paired-end links between assembly graph edges with weights (if `--debug` was used)
-- `<output_dir>/graph_links.tsv` list of graph links between assembly graph edges with weights (if `--debug` was used)
