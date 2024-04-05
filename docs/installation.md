@@ -90,6 +90,27 @@ which will install SPAdes into `/usr/local/bin`.
 
 After installation you will get the same files (listed above) in `./bin` directory (or `<destination_dir>/bin` if you specified PREFIX). We also suggest adding `bin` directory to the `PATH` variable.
 
+## Building additional tools
+SPAdes toolkit includes a number of standalone tools that are built using core
+SPAdes algorithms. This includes:
+
+ - Binning refining tool BinSPreader
+ - HMM-to-graph aligning tool Pathracer
+ - Sequence-to-graph aligning tool SPAligner
+
+These tools are not built by default and therefore must be built separately. One
+can pass `-SPADES_ENABLE_PROJECTS="semicolon-separated list of projects"` to enable building only
+subset of SPAdes components. The components are:
+
+  - `spades`
+  - `spades_tools` [standalone SPAdes tools](standalone.md)
+  - `binspareader` [BinSPreader](binspreader.md)
+  - `pathracer`
+  - `spaligner`
+
+By default only SPAdes and SPAdes tools are enabled (so
+`-DSPADES_ENABLE_PROJECTS="spades;spades_tools"` is the default). Alternatively,
+one can simply enable building everything via specifying `SPADES_ENABLE_PROJECTS="all"`.
 
 ## Verifying your installation
 
