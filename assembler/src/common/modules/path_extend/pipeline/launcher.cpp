@@ -855,8 +855,9 @@ void PathExtendLauncher::Launch() {
             size_t curr_path_number = 0;
             size_t curr_scaffolding_iter = 1;
             while (prev_path_number != curr_path_number and curr_scaffolding_iter < max_scaffolding_iterations) {
-                INFO("Starting scaffolding iteration " << curr_scaffolding_iter << " for " << prev_path_number << " paths");
+                INFO("Starting scaffolding iteration " << curr_scaffolding_iter << " for " << polished_paths.size() << " paths");
                 ScaffoldPaths(polished_paths);
+                polished_paths.FilterEmptyPaths();
                 curr_path_number = polished_paths.size();
                 ++curr_scaffolding_iter;
             }
