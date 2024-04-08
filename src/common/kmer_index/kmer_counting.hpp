@@ -7,11 +7,16 @@
 
 #pragma once
 
+#include "ph_map/storing_traits.hpp"
+#include "io/reads/read_processor.hpp" // FIXME: remove use of ReadProcessor
+
+#include "sequence/rtseq.hpp"
+#include "sequence/sequence.hpp"
+
 #include "adt/cyclichash.hpp"
 #include "adt/hll.hpp"
 #include "adt/cqf.hpp"
-#include "ph_map/storing_traits.hpp"
-#include "io/reads/read_processor.hpp"
+
 #include "utils/parallel/openmp_wrapper.h"
 #include "utils/logger/logger.hpp"
 

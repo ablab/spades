@@ -10,10 +10,11 @@
 #define __HAMMER_KMER_DATA_HPP__
 
 #include "kmer_stat.hpp"
-#include "adt/array_vector.hpp"
 
 #include "kmer_index/kmer_mph/kmer_index.hpp"
+#include "kmer_index/kmer_mph/kmer_index_traits.hpp"
 #include "utils/logger/logger.hpp"
+#include "adt/array_vector.hpp"
 
 #include <vector>
 

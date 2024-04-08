@@ -9,7 +9,9 @@
 #pragma once
 
 #include "kmer_splitter.hpp"
-#include "io/reads/io_helper.hpp"
+#include "io/reads/read_stream_vector.hpp"
+#include "sequence/rtseq.hpp"
+#include "sequence/sequence.hpp"
 #include "adt/iterator_range.hpp"
 
 namespace kmers {

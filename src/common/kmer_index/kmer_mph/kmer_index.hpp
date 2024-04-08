@@ -7,7 +7,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "kmer_index_traits.hpp"
 #include "kmer_buckets.hpp"
 
 #include <boomphf/BooPHF.h>
