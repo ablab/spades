@@ -56,24 +56,36 @@ class InOutMask {
 private:
     uint8_t mask_;
 
+    /// @returns true if the extension mask corresponds to a unique continuation
+    /// (so, contains a single bit on positions 0-3)
     static constexpr bool CheckUnique(uint8_t mask) {
         constexpr bool unique[] =
-                { 0, 1, 1, 0, 1, 0, 0, 0,
-                  1, 0, 0, 0, 0, 0, 0, 0 };
+                { false, true,  true,  false,
+                  true,  false, false, false,
+                  true,  false, false, false,
+                  false, false, false, false };
         return unique[mask];
     }
 
+    /// @returns a unique continuation nucl from the extension mask. Assumes
+    /// that CheckUnique() is true for `mask`. While the return value is
+    /// undefined for non-unique masks, we return 8, so it could be detected if
+    /// needed.
     static constexpr char GetUnique(uint8_t mask) {
         constexpr char next[] =
-                { -1,  0,  1, -1,  2, -1, -1, -1,
-                  3, -1, -1, -1, -1, -1, -1, -1 };
+                { 8, 0, 1, 8,
+                  2, 8, 8, 8,
+                  3, 8, 8, 8,
+                  8, 8, 8, 8 };
         return next[mask];
     }
 
     static constexpr size_t Count(uint8_t mask) {
         constexpr char count[] =
-                { 0, 1, 1, 2, 1, 2, 2, 3,
-                  1, 2, 2, 3, 2, 3, 3, 4 };
+                { 0, 1, 1, 2,
+                  1, 2, 2, 3,
+                  1, 2, 2, 3,
+                  2, 3, 3, 4 };
         return count[mask];
     }
 
