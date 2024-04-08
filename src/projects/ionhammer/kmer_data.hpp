@@ -12,6 +12,7 @@
 
 #include "config_struct.hpp"
 #include "kmer_index/kmer_mph/kmer_index.hpp"
+#include "kmer_index/kmer_mph/kmer_index_traits.hpp"
 #include "utils/logger/logger.hpp"
 
 #include "hkmer.hpp"

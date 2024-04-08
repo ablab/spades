@@ -1,4 +1,3 @@
-#pragma once
 //***************************************************************************
 //* Copyright (c) 2023-2024 SPAdes team
 //* Copyright (c) 2015-2022 Saint Petersburg State University
@@ -7,15 +6,18 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#pragma once
+
 #include "key_with_hash.hpp"
 #include "storing_traits.hpp"
 #include "kmer_index/kmer_mph/kmer_index.hpp"
+#include "kmer_index/kmer_mph/kmer_index_traits.hpp"
+
 #include "io/binary/binary.hpp"
-#include "utils/verify.hpp"
 #include "utils/parallel/openmp_wrapper.h"
+
 #include <vector>
 #include <cstdlib>
-#include <cstdint>
 
 namespace kmers {
 

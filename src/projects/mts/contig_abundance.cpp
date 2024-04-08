@@ -6,8 +6,8 @@
 //***************************************************************************
 
 #include "contig_abundance.hpp"
-#include "kmer_index/kmer_mph/kmer_splitters.hpp"
 #include "math/xmath.h"
+#include "utils/stl_utils.hpp"
 
 namespace debruijn_graph {
 
