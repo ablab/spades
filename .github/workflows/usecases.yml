@@ -9,7 +9,11 @@ on:
       - next
     tags:
       - '*'
+    paths-ignore:
+      - 'docs/**'
   pull_request:
+    paths-ignore:
+      - 'docs/**'
 
 env:
   BUILD_TYPE: Release

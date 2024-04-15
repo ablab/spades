@@ -2,6 +2,9 @@ name: SPAdes GCC & Python versions
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
   push:
     tags:
       - '*'
@@ -44,7 +47,7 @@ jobs:
           cmake
           -B ${{env.BUILD_DIR}}
           -S ${{env.SRC_DIR}}
-          -DCMAKE_C_COMPILER=gcc-9 -DCMAKE_CXX_COMPILER=g++-9 
+          -DCMAKE_C_COMPILER=gcc-9 -DCMAKE_CXX_COMPILER=g++-9
           -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
           -DCPACK_PACKAGE_FILE_NAME=SPAdes-GCC9-Linux
@@ -75,7 +78,7 @@ jobs:
           set -e &&
           shopt -s dotglob &&
           rm -rf *
-      
+
       - name: '📦 Download package'
         uses: actions/download-artifact@v3
         with:
@@ -117,7 +120,7 @@ jobs:
           cmake
           -B ${{env.BUILD_DIR}}
           -S ${{env.SRC_DIR}}
-          -DCMAKE_C_COMPILER=gcc-10 -DCMAKE_CXX_COMPILER=g++-10 
+          -DCMAKE_C_COMPILER=gcc-10 -DCMAKE_CXX_COMPILER=g++-10
           -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
           -DCPACK_PACKAGE_FILE_NAME=SPAdes-GCC10-Linux
@@ -148,7 +151,7 @@ jobs:
           set -e &&
           shopt -s dotglob &&
           rm -rf *
-      
+
       - name: '📦 Download package'
         uses: actions/download-artifact@v3
         with:
@@ -190,7 +193,7 @@ jobs:
           cmake
           -B ${{env.BUILD_DIR}}
           -S ${{env.SRC_DIR}}
-          -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ 
+          -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
           -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
           -DCPACK_PACKAGE_FILE_NAME=SPAdes-GCC11-Linux
@@ -221,7 +224,7 @@ jobs:
           set -e &&
           shopt -s dotglob &&
           rm -rf *
-      
+
       - name: '📦 Download package'
         uses: actions/download-artifact@v3
         with:
@@ -294,7 +297,7 @@ jobs:
           set -e &&
           shopt -s dotglob &&
           rm -rf *
-      
+
       - name: '📦 Download package'
         uses: actions/download-artifact@v3
         with:
@@ -367,7 +370,7 @@ jobs:
           set -e &&
           shopt -s dotglob &&
           rm -rf *
-      
+
       - name: '📦 Download package'
         uses: actions/download-artifact@v3
         with:
@@ -380,4 +383,3 @@ jobs:
       - name: 'E.coli 1K Isolate with Python 3.13'
         run: >
           python3.12 ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/spades.py --test --isolate
-

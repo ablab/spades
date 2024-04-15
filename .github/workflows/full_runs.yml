@@ -123,4 +123,3 @@ jobs:
           --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
           --no_contig_archive
           /data/spades_tests/FR_E.coli_UCSD_lane1.info
-

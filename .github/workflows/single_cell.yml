@@ -3,6 +3,8 @@ name: SPAdes single-cell datasets tests
 on:
   workflow_dispatch:
   pull_request:
+    paths-ignore:
+      - 'docs/**'
   push:
     tags:
       - '*'
@@ -348,4 +350,3 @@ jobs:
           --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
           --no_contig_archive
           /data/spades_tests/SC_SE_P.marinus.info
-
