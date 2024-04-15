@@ -3,12 +3,18 @@
 BinSPreader is a tool that attempts to refine metagenome-assembled genomes
 (MAGs) obtained from existing tools. BinSPreader exploits the assembly graph
 topology and other connectivity information, such as paired-end and Hi-C reads,
-to refine the existing binning, correct binning errors, propagate binning from
-longer contigs to shorter contigs, and infer contigs belonging to multiple bins.
+to refine the existing binning, correct binning errors, and propagate binning from
+longer contigs to shorter contigs, and infer contigs belonging to multiple MAGs. 
+Please refer to the [BinSPreader paper](https://www.sciencedirect.com/science/article/pii/S2589004222010422)
+for more details. In addition to increasing the completeness of the bins, refinement 
+also enriches bins with contigs containing important conservative genes using the 
+short assembly graph edges which are typically underrepresented in state-of-the-art
+contig binning methods.
 
 The tool requires initial binning to refine, as well as an assembly graph as a
 source of information for refining. Optionally, BinSPreader can be provided with
-multiple Hi-C and/or paired-end libraries.
+multiple Hi-C and/or paired-end libraries. The [BinSPreader protocol](https://star-protocols.cell.com/protocols/2802) contains more detailed
+instructions on installing and running BinSPreader.
 
 ## Command line options
 
