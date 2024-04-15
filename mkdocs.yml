@@ -21,6 +21,9 @@ use_directory_urls: false
 
 theme:
   name: material
+  logo: spades.png
+  palette:
+    primary: white
   features:
     - content.code.copy
 
