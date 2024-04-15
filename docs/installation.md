@@ -25,12 +25,12 @@ In case of successful installation the following files will be placed in the `bi
 
 ## Downloading SPAdes Linux binaries
 
-To download [SPAdes Linux binaries](https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5-Linux.tar.gz) and extract them, go to the directory in which you wish SPAdes to be installed and run:
+To download [SPAdes Linux binaries](https://github.com/ablab/spades/releases/download/v{{ spades_version() }}/SPAdes-{{ spades_version() }}-Linux.tar.gz) and extract them, go to the directory in which you wish SPAdes to be installed and run:
 
 ``` bash
-    wget https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5-Linux.tar.gz
-    tar -xzf SPAdes-3.15.5-Linux.tar.gz
-    cd SPAdes-3.15.5-Linux/bin/
+    wget https://github.com/ablab/spades/releases/download/v{{ spades_version() }}/SPAdes-{{ spades_version() }}-Linux.tar.gz
+    tar -xzf SPAdes-{{ spades_version() }}-Linux.tar.gz
+    cd SPAdes-{{ spades_version() }}-Linux/bin/
 ```
 
 In this case you do not need to run any installation scripts - SPAdes is ready to use. We also suggest adding SPAdes installation directory to the `PATH` variable.
@@ -40,12 +40,12 @@ Note, that pre-build binaries do not work on new Linux kernels.
 
 ## Downloading SPAdes binaries for Mac
 
-To obtain [SPAdes binaries for Mac](https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5-Darwin.tar.gz), go to the directory in which you wish SPAdes to be installed and run:
+To obtain [SPAdes binaries for Mac](https://github.com/ablab/spades/releases/download/v{{ spades_version() }}/SPAdes-{{ spades_version() }}-Darwin.tar.gz), go to the directory in which you wish SPAdes to be installed and run:
 
 ``` bash
-    curl https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5-Darwin.tar.gz
-    tar -zxf SPAdes-3.15.5-Darwin.tar.gz
-    cd SPAdes-3.15.5-Darwin/bin/
+    curl https://github.com/ablab/spades/releases/download/v{{ spades_version() }}/SPAdes-{{ spades_version() }}-Darwin.tar.gz
+    tar -zxf SPAdes-{{ spades_version() }}-Darwin.tar.gz
+    cd SPAdes-{{ spades_version() }}-Darwin/bin/
 ```
 
 Just as in Linux, SPAdes is ready to use and no further installation steps are required. We also suggest adding SPAdes installation directory to the `PATH` variable.
@@ -60,12 +60,12 @@ If you wish to compile SPAdes by yourself you will need the following libraries 
 -   zlib
 -   libbz2
 
-If you meet these requirements, you can download the [SPAdes source code](https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5.tar.gz):
+If you meet these requirements, you can download the [SPAdes source code](https://github.com/ablab/spades/releases/download/v{{ spades_version() }}/SPAdes-{{ spades_version() }}.tar.gz):
 
 ``` bash
-    wget https://github.com/ablab/spades/releases/download/v3.15.5/SPAdes-3.15.5.tar.gz
-    tar -xzf SPAdes-3.15.5.tar.gz
-    cd SPAdes-3.15.5
+    wget https://github.com/ablab/spades/releases/download/v{{ spades_version() }}/SPAdes-{{ spades_version() }}.tar.gz
+    tar -xzf SPAdes-{{ spades_version() }}.tar.gz
+    cd SPAdes-{{ spades_version() }}
 ```
 
 and build it with the following script:
