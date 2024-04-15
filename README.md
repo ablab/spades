@@ -64,7 +64,7 @@ If you use other pipelines, please cite the following papers:
 -   metaviralSPAdes / viralVerify: [Antipov et al., 2020](https://academic.oup.com/bioinformatics/article-abstract/36/14/4126/5837667)
 -   rnaSPAdes: [Bushmanova et al., 2019](https://academic.oup.com/gigascience/article/8/9/giz100/5559527).
 -   biosyntheticSPAdes: [Meleshko et al., 2019](https://genome.cshlp.org/content/early/2019/06/03/gr.243477.118?top=1).
--   coronaSPAdes paper is currently available at [bioRxiv](https://www.biorxiv.org/content/10.1101/2020.07.28.224584v1.abstract).
+-   coronaSPAdes: [Meleshko et al., 2022](https://academic.oup.com/bioinformatics/article/38/1/1/6354349).
 
 You may also include older papers [Nurk, Bankevich et al., 2013](http://link.springer.com/chapter/10.1007%2F978-3-642-37195-0_13) or [Bankevich, Nurk et al., 2012](http://online.liebertpub.com/doi/abs/10.1089/cmb.2012.0021), especially if you assemble single-cell data.
 

@@ -97,6 +97,15 @@ This flag is required when assembling IonTorrent data. Allows BAM files as
 input. Carefully read [IonTorrent section](datatypes.md#assembling-iontorrent-reads)
 before using this option.
 
+#### `--sewage`
+This flag is used to run wastewaterSPAdes. 
+SARS-CoV-2 wastewater samples are extensively collected and studied because it allows quantitative assessment of viral load in surrounding populations. 
+wastewaterSPAdes solves the SARS-CoV-2 deconvolution problem using assembly graph structure. To run wastewaterSPAdes you need to provide SARS-CoV-2 reference genome as trusted contigs.
+
+Results of wastewaterSPAdes are stored in `lineages.csv` file. First column contains the strain name, and second column contains estimated abundance of this strain in the sample.
+
+
+
 ## Basic options
 
 `-o <output_dir> `
