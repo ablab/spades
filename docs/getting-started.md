@@ -12,6 +12,7 @@ SPAdes is an assembler for second-generation sequencing data (Illumina or IonTor
 ```
 
 ## Useful one-liners
+
 - A single paired-end library (separate files, gzipped):
 ``` bash
 bin/spades.py -1 left.fastq.gz -2 right.fastq.gz -o output_folder
@@ -56,8 +57,45 @@ bin/spades.py --rna -1 left.fastq.gz -2 right.fastq.gz -o output_folder
 bin/spades.py --rnaviral -1 left.fastq.gz -2 right.fastq.gz -o output_folder
 ```
 
-- Available assembly modes: `--isolate`, `--sc`, `--plasmid`, `--meta`, `--metaplasmid`, `--metaviral`, `--rna`, `--rnaviral`, `--corona`, `--bio`.
+## Available assembly modes
+
+- `--isolate` - converntional bacterial data;
+
+- `--sc` - single-cell bacterial data;
+
+- `--meta` - metagenome assembly;
+
+- `--plasmid` / `--metaplasmid` - plasmid discovery in conventional bacterial / metagenomic data;
+
+- `--metaviral` - viral assembly from metagenomic data;
+
+- `--rna` - transcriptome assembly (RNA-Seq);
+
+- `--rnaviral` - assembling viral RNA-Seq data;
+
+- `--bio` - assembly of non-ribosomal and polyketide gene clusters;
+
+- `--corona` - coronaviridae genome assembly;
+
+- `--sewage` - wastewater samples analysis.
 
 
+## Standalone SPAdes tools
+
+- `spades-kmercount` - k-mer counting;
+
+- `spades-read-filter` - read filtering using k-mer coverage;
+
+- `spades-kmer-estimating` - estimating number of unique k-mers;
+
+- `spades-gbuilder` - assembly graph construction;
+
+- `spades-gsimplifier` - assembly graph simplification;
+
+- `spalgner` - alignment of long reads to assembly graph;
+
+- `spades-gmapper` - specific alignment of long reads to assembly graph used in hybrid assembly pipeline;
+
+- `binspreader` - refinement of metagenome-assembled genomes.
 
 
