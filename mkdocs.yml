@@ -22,6 +22,7 @@ use_directory_urls: false
 theme:
   name: material
   logo: spades.png
+  favicon: spades.png
   palette:
     primary: white
   features:
@@ -38,3 +39,8 @@ markdown_extensions:
   - pymdownx.superfences
   - attr_list
   - md_in_html
+
+plugins:
+  - macros:
+        module_name: docs/getversion
+
