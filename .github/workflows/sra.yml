@@ -2,6 +2,9 @@ name: SPAdes SRA input
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
   push:
     tags:
       - '*'
@@ -92,4 +95,3 @@ jobs:
           --spades_path ${{env.INSTALL_DIR}}/${{env.PKG}}/bin
           --no_contig_archive
           /data/pipeline_tests/SRA_C.trachomatis.info
-

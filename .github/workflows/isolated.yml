@@ -3,6 +3,8 @@ name: SPAdes isolated datasets tests
 on:
   workflow_dispatch:
   pull_request:
+    paths-ignore:
+      - 'docs/**'
   push:
     tags:
       - '*'
