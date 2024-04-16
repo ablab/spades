@@ -8,6 +8,7 @@ on:
       - next
     paths:
       - 'docs/**'
+      - 'mkdocs.yml'
 
 permissions:
   contents: write
