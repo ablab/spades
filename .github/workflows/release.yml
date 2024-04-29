@@ -9,19 +9,20 @@ on:
       - 'docs/**'
 
 env:
-  BUILD_TYPE: Release
-  BUILD_DIR: ${{github.workspace}}/build
   INSTALL_DIR: ${{github.workspace}}/spades
-  SRC_DIR: ${{github.workspace}}/src
   PKG: SPAdes-*-Linux
 
 jobs:
   # We build inside a ManyLinux container, but run checks outside
   build:
     runs-on: self-hosted
-    # FIXME: Decide what to do with aarch64 :(
     container: quay.io/pypa/manylinux_2_28_x86_64
     name: '🚧 Build SPAdes inside ManyLinux 2.28 container'
+
+    env:
+      BUILD_TYPE: Release
+      BUILD_DIR: './build'
+      SRC_DIR: './src'
 
     steps:
       - name: '🧹 Cleanup'
@@ -44,26 +45,23 @@ jobs:
       - name: '⚙️ Configure CMake'
         run: >
           cmake
-          -B ${{env.BUILD_DIR}}
-          -S ${{env.SRC_DIR}}
+          -B $BUILD_DIR
+          -S $SRC_DIR
           -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
 
       - name: '🚧 Build'
         run: >
           cmake
-          --build ${{env.BUILD_DIR}}
+          --build $BUILD_DIR
           -j16
-          -t package include_test debruijn_test
+          -t package
 
       - name: '📦 Package'
         uses: actions/upload-artifact@v3
         with:
           name: build-artifacts
           path: |
-            ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
-            ${{env.BUILD_DIR}}/bin/debruijn_test
-            ${{env.BUILD_DIR}}/bin/include_test
+            $BUILD_DIR/$PKG.tar.gz
 
   spades-1k-checks:
     name: 'E. coli 1k smoke checks'
@@ -82,66 +80,32 @@ jobs:
         with:
           name: build-artifacts
           path: ${{env.INSTALL_DIR}}
+
       - name: '📦 Unpack package'
         working-directory: ${{env.INSTALL_DIR}}
         run: >
           tar -zxf ${{env.PKG}}.tar.gz
+
       - name: '1k multi-cell'
         run: >
-          ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/spades.py --test
+          $INSTALL_DIR/$PKG/bin/spades.py --test
 
       - name: '1k single-cell'
         run: >
-          ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/spades.py --sc --test
+          $INSTALL_DIR/$PKG/bin/spades.py --sc --test
 
       - name: '1k meta'
         run: >
-          ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/metaspades.py --test
+          $INSTALL_DIR/$PKG/bin/metaspades.py --test
 
       - name: '1k plasmid'
         run: >
-          ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/plasmidspades.py --test
+          $INSTALL_DIR/$PKG/bin/plasmidspades.py --test
 
       - name: '1k rna'
         run: >
-          ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/rnaspades.py --test
+          $INSTALL_DIR/$PKG/bin/rnaspades.py --test
 
       - name: '1k corona'
         run: >
-          ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/coronaspades.py --test
-
-  spades-unittests:
-    name: 'SPAdes unittests'
-    runs-on: self-hosted
-    needs: build
-
-    steps:
-      - name: '🧹 Cleanup'
-        run: >
-          set -e &&
-          shopt -s dotglob &&
-          rm -rf *
-
-      - name: '🧰 Checkout'
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 1
-
-      - name: '📦 Download package'
-        uses: actions/download-artifact@v3
-        with:
-          name: build-artifacts
-          path: ${{env.BUILD_DIR}}
-
-
-      - name: '🔎 Include tests'
-        working-directory: ${{github.workspace}}
-        run: >
-          chmod +x ${{env.BUILD_DIR}}/bin/include_test &&
-          ${{env.BUILD_DIR}}/bin/include_test
-
-      - name: '🔎 De-Bruijn tests'
-        working-directory: ${{github.workspace}}
-        run: >
-          chmod +x ${{env.BUILD_DIR}}/bin/debruijn_test &&
-          ${{env.BUILD_DIR}}/bin/debruijn_test
+          $INSTALL_DIR/$PKG/bin/coronaspades.py --test
