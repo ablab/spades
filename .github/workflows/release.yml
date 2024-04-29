@@ -16,7 +16,10 @@ jobs:
   # We build inside a ManyLinux container, but run checks outside
   build:
     runs-on: self-hosted
-    container: quay.io/pypa/manylinux_2_28_x86_64
+    # We use userns-remap on VM side
+    container:
+      image: quay.io/pypa/manylinux_2_28_x86_64
+
     name: '🚧 Build SPAdes inside ManyLinux 2.28 container'
 
     env:
@@ -32,15 +35,9 @@ jobs:
           rm -rf *
 
       - name: '🧰 Checkout'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
-
-      - name: '⚙️ Install ccache'
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          variant: sccache
-          key: sccache-${{env.BUILD_TYPE}}
 
       - name: '⚙️ Install dependencies'
         run: >
@@ -51,7 +48,6 @@ jobs:
           cmake
           -B $BUILD_DIR
           -S $SRC_DIR
-          -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       - name: '🚧 Build'
         run: >
@@ -65,7 +61,7 @@ jobs:
         with:
           name: build-artifacts
           path: |
-            $BUILD_DIR/$PKG.tar.gz
+            ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
 
   spades-1k-checks:
     name: 'E. coli 1k smoke checks'
