@@ -1,4 +1,4 @@
-name: SPAdes basic tests
+name: SPAdes release snapshot
 
 on:
   workflow_dispatch:
