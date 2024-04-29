@@ -42,6 +42,10 @@ jobs:
           variant: sccache
           key: sccache-${{env.BUILD_TYPE}}
 
+      - name: '⚙️ Install dependencies'
+        run: >
+          dnf install -y bzip2-devel
+
       - name: '⚙️ Configure CMake'
         run: >
           cmake
