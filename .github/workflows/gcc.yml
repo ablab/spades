@@ -32,7 +32,7 @@ jobs:
           rm -rf *
 
       - name: '🧰 Checkout'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
@@ -60,7 +60,7 @@ jobs:
           -t package
 
       - name: '📦 Package'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifacts-gcc9
           path: |
@@ -80,7 +80,7 @@ jobs:
           rm -rf *
 
       - name: '📦 Download package'
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: build-artifacts-gcc9
           path: ${{env.INSTALL_DIR}}
@@ -105,7 +105,7 @@ jobs:
           rm -rf *
 
       - name: '🧰 Checkout'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
@@ -133,7 +133,7 @@ jobs:
           -t package
 
       - name: '📦 Package'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifacts-gcc10
           path: |
@@ -153,7 +153,7 @@ jobs:
           rm -rf *
 
       - name: '📦 Download package'
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: build-artifacts-gcc10
           path: ${{env.INSTALL_DIR}}
@@ -178,7 +178,7 @@ jobs:
           rm -rf *
 
       - name: '🧰 Checkout'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
@@ -206,7 +206,7 @@ jobs:
           -t package
 
       - name: '📦 Package'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifacts-gcc11
           path: |
@@ -226,7 +226,7 @@ jobs:
           rm -rf *
 
       - name: '📦 Download package'
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: build-artifacts-gcc11
           path: ${{env.INSTALL_DIR}}
@@ -251,7 +251,7 @@ jobs:
           rm -rf *
 
       - name: '🧰 Checkout'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
@@ -279,7 +279,7 @@ jobs:
           -t package
 
       - name: '📦 Package'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifacts-gcc12
           path: |
@@ -299,7 +299,7 @@ jobs:
           rm -rf *
 
       - name: '📦 Download package'
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: build-artifacts-gcc12
           path: ${{env.INSTALL_DIR}}
@@ -324,7 +324,7 @@ jobs:
           rm -rf *
 
       - name: '🧰 Checkout'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
@@ -352,7 +352,7 @@ jobs:
           -t package
 
       - name: '📦 Package'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifacts-gcc13
           path: |
@@ -372,7 +372,7 @@ jobs:
           rm -rf *
 
       - name: '📦 Download package'
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: build-artifacts-gcc13
           path: ${{env.INSTALL_DIR}}
