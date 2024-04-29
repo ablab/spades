@@ -21,7 +21,7 @@ jobs:
     runs-on: self-hosted
     # FIXME: Decide what to do with aarch64 :(
     container: quay.io/pypa/manylinux_2_28_x86_64
-    name: '🚧 Build SPAdes'
+    name: '🚧 Build SPAdes inside ManyLinux 2.28 container'
 
     steps:
       - name: '🧹 Cleanup'
