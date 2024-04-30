@@ -190,6 +190,10 @@ jobs:
           shopt -s dotglob &&
           rm -rf *
 
+      - name: '⚙️ Install dependencies'
+        run: >
+          brew install llvm libomp bzip2
+
       - name: '📦 Download package'
         uses: actions/download-artifact@v4
         with:
