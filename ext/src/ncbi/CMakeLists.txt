@@ -20,7 +20,7 @@ include(ExternalProject)
 
 ExternalProject_Add(ncbi_vdb_ext
                     GIT_REPOSITORY "https://github.com/ncbi/ncbi-vdb.git"
-                    GIT_TAG "3.0.8"
+                    GIT_TAG "3.1.0"
                     GIT_SHALLOW 1
                     PATCH_COMMAND patch -p1 < ${CMAKE_CURRENT_LIST_DIR}/vdb.patch
                     BUILD_ALWAYS OFF
@@ -34,7 +34,7 @@ set(NCBI_VDB_LIB     ${NCBI_VDB_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 
 ExternalProject_Add(ncbi_sratools_ext
                     GIT_REPOSITORY "https://github.com/ncbi/sra-tools.git"
-                    GIT_TAG "3.0.8"
+                    GIT_TAG "3.1.0"
                     GIT_SHALLOW 1
                     PATCH_COMMAND patch -p1 < ${CMAKE_CURRENT_LIST_DIR}/sratools.patch
                     BUILD_ALWAYS OFF
