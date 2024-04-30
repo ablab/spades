@@ -5,7 +5,10 @@ After this the subgraphs containing the set of matches ("domains") are extracted
 
 HMM-guided mode is enabled via providing a set of HMMs (`*.hmm.gz` file) via `--custom-hmms` option. In HMM-guided mode the set of contigs and scaffolds (see [SPAdes output](output.md#spades-output) section for more information ) is kept intact, however additional [biosyntheticSPAdes output](output.md#biosyntheticspades-output) represents the output of HMM-guided assembly.
 
+We provide an example of HMM utility in viral assembly, along with general advice on constructing HMM profile sets for various purposes, in our [paper on noroviral assembly](https://www.mdpi.com/2079-7737/12/8/1066).
+
 Note that normal biosyntheticSPAdes mode (via `--bio` option) is a bit different from HMM-guided mode: besides using the special set of profile HMMS representing a family of NRSP/PKS domains also includes a set of assembly graph simplification and processing settings aimed for fuller recovery of biosynthetic gene clusters.
+
 
 ## coronaSPAdes mode
 
