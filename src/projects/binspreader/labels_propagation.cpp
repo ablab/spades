@@ -6,10 +6,11 @@
 //***************************************************************************
 
 #include "labels_propagation.hpp"
-#include <omp.h>
-#include "adt/iterator_range.hpp"
 #include "binning.hpp"
 #include "link_index.hpp"
+
+#include "adt/iterator_range.hpp"
+#include "utils/parallel/openmp_wrapper.h"
 
 #include "blaze/math/DynamicVector.h"
 #include "blaze/math/expressions/DMatNormExpr.h"
