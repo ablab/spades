@@ -111,3 +111,118 @@ jobs:
       - name: '1k corona'
         run: >
           $INSTALL_DIR/$PKG_LINUX/bin/coronaspades.py --test
+
+  build-mac:
+    strategy:
+      matrix:
+        include:
+          - os: macos-13
+            arch: x86_64
+          - os: macos-14
+            arch: arm64
+
+    env:
+      BUILD_TYPE: Release
+      BUILD_DIR: './build'
+      SRC_DIR: './src'
+
+    name: '🍎 Build SPAdes for macOS'
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: '⚙️ Install dependencies'
+        run: >
+          brew install bzip2
+
+      - name: '⚙️ Configure CMake'
+        run: >
+          cmake
+          -B $BUILD_DIR
+          -S $SRC_DIR
+          -DSPADES_USE_NCBISDK=ON -DSPADES_ENABLE_PROJECTS=all
+          -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_CXX_COMPILER=g++-13
+          -DSPADES_STATIC_BUILD=ON
+          -DOpenMP_CXX_FLAGS:STRING=-fopenmp -DOpenMP_CXX_LIB_NAMES:STRING=gomp -DOpenMP_C_FLAGS:STRING=-fopenmp -DOpenMP_C_LIB_NAMES:STRING=gomp -DOpenMP_gomp_LIBRARY=libgomp.a
+          -DCMAKE_EXE_LINKER_FLAGS="-Wl,-ld_classic" -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-ld_classic" -DCMAKE_MODULE_LINKER_FLAGS="-Wl,-ld_classic"
+          -DBZIP2_LIBRARIES=$(brew --prefix bzip2)/lib/libbz2.a
+
+      - name: '🚧 Build'
+        run: >
+          cmake
+          --build $BUILD_DIR
+          -j16
+          -t package
+
+      - name: '📦 Package'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-mac-${{ matrix.arch }}
+          path: |
+            ${{env.BUILD_DIR}}/${{env.PKG_MAC}}.tar.gz
+
+  spades-1k-checks-mac:
+    name: '🚬 E. coli 1k smoke checks'
+    strategy:
+      matrix:
+        include:
+          - os: macos-13
+            arch: x86_64
+          - os: macos-14
+            arch: arm64
+
+    runs-on: ${{ matrix.os }}
+
+    needs: build-mac
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-mac-${{ matrix.arch }}
+          path: ${{env.INSTALL_DIR}}
+
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG_MAC}}.tar.gz
+
+      - name: '1k multi-cell'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/spades.py --test
+
+      - name: '1k single-cell'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/spades.py --sc --test
+
+      - name: '1k meta'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/metaspades.py --test
+
+      - name: '1k plasmid'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/plasmidspades.py --test
+
+      - name: '1k rna'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/rnaspades.py --test
+
+      - name: '1k corona'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/coronaspades.py --test
