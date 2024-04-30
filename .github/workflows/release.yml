@@ -137,12 +137,18 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: '⚙️ Install dependencies'
+        run: >
+          brew install llvm libomp
+
       - name: '⚙️ Configure CMake'
         run: >
           cmake
           -B $BUILD_DIR
           -S $SRC_DIR
           -DSPADES_USE_NCBISDK=ON -DSPADES_ENABLE_PROJECTS=all
+          -DCMAKE_C_COMPILER=$(brew --prefix llvm)/bin/clang
+          -DCMAKE_CXX_COMPILER=$(brew --prefix llvm)/bin/clang++
 
       - name: '🚧 Build'
         run: >
