@@ -26,7 +26,7 @@ env:
 jobs:
   build-linux:
     runs-on: self-hosted
-    name: '🚧 Build SPAdes'
+    name: '🐧 Build SPAdes for Linux'
 
     steps:
       - name: '🧹 Cleanup'
@@ -44,7 +44,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1.2
         with:
           variant: sccache
-          key: sccache-${{env.BUILD_TYPE}}
+          key: sccache-${{env.BUILD_TYPE}}-linux
 
       - name: '⚙️ Configure CMake'
         run: >
@@ -87,6 +87,7 @@ jobs:
         with:
           name: build-artifacts-linux
           path: ${{env.INSTALL_DIR}}
+
       - name: '📦 Unpack package'
         working-directory: ${{env.INSTALL_DIR}}
         run: >
@@ -116,7 +117,7 @@ jobs:
         run: >
           $INSTALL_DIR/$PKG_LINUX/bin/coronaspades.py --test
 
-  spades-unittests:
+  spades-unittests-linux:
     name: 'SPAdes unittests'
     runs-on: self-hosted
     needs: build-linux
@@ -138,6 +139,177 @@ jobs:
         with:
           name: build-artifacts-linux
           path: ${{env.BUILD_DIR}}
+
+      - name: '🔎 Include tests'
+        working-directory: ${{github.workspace}}
+        run: >
+          chmod +x $BUILD_DIR/bin/include_test &&
+          $BUILD_DIR/bin/include_test
+
+      - name: '🔎 De-Bruijn tests'
+        working-directory: ${{github.workspace}}
+        run: >
+          chmod +x $BUILD_DIR/bin/debruijn_test &&
+          $BUILD_DIR/bin/debruijn_test
+
+  build-mac:
+    strategy:
+      matrix:
+        include:
+          - os: macos-13
+            arch: x86_64
+          - os: macos-14
+            arch: arm64
+
+    name: '🍎 Build SPAdes for macOS'
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: '⚙️ Install dependencies'
+        run: >
+          brew install llvm libomp bzip2
+
+      - name: '⚙️ Install ccache'
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+          key: sccache-${{env.BUILD_TYPE}}-${{ matrix.os }}
+
+      - name: '⚙️ Configure CMake'
+        run: >
+          cmake
+          -B $BUILD_DIR
+          -S $SRC_DIR
+          -DSPADES_USE_NCBISDK=ON -DSPADES_ENABLE_PROJECTS=all
+          -DCMAKE_C_COMPILER=$(brew --prefix llvm)/bin/clang
+          -DCMAKE_CXX_COMPILER=$(brew --prefix llvm)/bin/clang++
+          -DCMAKE_EXE_LINKER_FLAGS=-L$(brew --prefix llvm)/lib/c++
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+      - name: '🚧 Build'
+        run: >
+          cmake
+          --build $BUILD_DIR
+          -j16
+          -t package include_test debruijn_test
+
+      - name: '📦 Package'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-mac-${{ matrix.arch }}
+          path: |
+            ${{env.BUILD_DIR}}/${{env.PKG_MAC}}.tar.gz
+            ${{env.BUILD_DIR}}/bin/debruijn_test
+            ${{env.BUILD_DIR}}/bin/include_test
+
+  spades-1k-checks-mac:
+    name: '🚬 E. coli 1k smoke checks'
+    strategy:
+      matrix:
+        include:
+          - os: macos-13
+            arch: x86_64
+          - os: macos-14
+            arch: arm64
+
+    runs-on: ${{ matrix.os }}
+
+    needs: build-mac
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '⚙️ Install dependencies'
+        run: >
+          brew install llvm libomp bzip2
+
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-mac-${{ matrix.arch }}
+          path: ${{env.INSTALL_DIR}}
+
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG_MAC}}.tar.gz
+
+      - name: '1k multi-cell'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/spades.py --test
+
+      - name: '1k single-cell'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/spades.py --sc --test
+
+      - name: '1k meta'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/metaspades.py --test
+
+      - name: '1k plasmid'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/plasmidspades.py --test
+
+      - name: '1k rna'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/rnaspades.py --test
+
+      - name: '1k corona'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/coronaspades.py --test
+
+
+  spades-unittests-mac:
+    name: 'SPAdes unittests'
+
+    strategy:
+      matrix:
+        include:
+          - os: macos-13
+            arch: x86_64
+          - os: macos-14
+            arch: arm64
+
+    runs-on: ${{ matrix.os }}
+
+    needs: build-mac
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-mac-${{ matrix.arch }}
+          path: ${{env.BUILD_DIR}}
+
+      - name: '⚙️ Install dependencies'
+        run: >
+          brew install llvm libomp bzip2
 
       - name: '🔎 Include tests'
         working-directory: ${{github.workspace}}
