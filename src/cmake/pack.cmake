@@ -3,9 +3,9 @@
 # Binary stuff
 set(CPACK_CMAKE_GENERATOR "Unix Makefiles")
 if (APPLE)
-  set(CPACK_GENERATOR "STGZ;TGZ;PackageMaker")
+  set(CPACK_GENERATOR "TGZ")
 else()
-  set(CPACK_GENERATOR "STGZ;TGZ")
+  set(CPACK_GENERATOR "TGZ")
 endif()
 
 set(CPACK_PACKAGE_NAME "SPAdes")

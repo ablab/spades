@@ -11,18 +11,17 @@ on:
 env:
   INSTALL_DIR: ${{github.workspace}}/spades
   PKG_LINUX: SPAdes-*-Linux
+  PKG_MAC: SPAdes-*-Darwin
 
 jobs:
   # We build inside a ManyLinux container, but run checks outside
   build-linux:
-    name: '🐧 ManyLinux 2.28 x86-64'
+    name: '🐧 Build SPAdes inside ManyLinux 2.28 x86-64 container'
 
     runs-on: self-hosted
     # We use userns-remap on VM side
     container:
       image: quay.io/pypa/manylinux_2_28_x86_64
-
-    name: '🚧 Build SPAdes inside ManyLinux 2.28 container'
 
     env:
       BUILD_TYPE: Release
@@ -62,7 +61,7 @@ jobs:
       - name: '📦 Package'
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
+          name: build-artifacts-linux
           path: |
             ${{env.BUILD_DIR}}/${{env.PKG_LINUX}}.tar.gz
 
@@ -81,7 +80,7 @@ jobs:
       - name: '📦 Download package'
         uses: actions/download-artifact@v4
         with:
-          name: build-artifacts
+          name: build-artifacts-linux
           path: ${{env.INSTALL_DIR}}
 
       - name: '📦 Unpack package'
@@ -112,3 +111,101 @@ jobs:
       - name: '1k corona'
         run: >
           $INSTALL_DIR/$PKG_LINUX/bin/coronaspades.py --test
+
+  build-mac:
+    strategy:
+      matrix:
+        os: [macos-13, macos-14]
+
+    name: '🍎 Build SPAdes for macOS'
+    runs-on: ${{ matrix.os }}
+
+    env:
+      BUILD_TYPE: Release
+      BUILD_DIR: './build'
+      SRC_DIR: './src'
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: '⚙️ Configure CMake'
+        run: >
+          cmake
+          -B $BUILD_DIR
+          -S $SRC_DIR
+          -DSPADES_USE_NCBISDK=ON -DSPADES_ENABLE_PROJECTS=all
+
+      - name: '🚧 Build'
+        run: >
+          cmake
+          --build $BUILD_DIR
+          -j16
+          -t package
+
+      - name: '📦 Package'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-mac-$${{ matrix.os }}
+          path: |
+            ${{env.BUILD_DIR}}/${{env.PKG_MAC}}.tar.gz
+
+  spades-1k-checks-mac:
+    name: 'E. coli 1k smoke checks'
+    strategy:
+      matrix:
+        os: [macos-13, macos-14]
+
+    runs-on: ${{ matrix.os }}
+        
+    needs: build-mac
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-mac-$${{ matrix.os }}
+          path: ${{env.INSTALL_DIR}}
+
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf ${{env.PKG_MAC}}.tar.gz
+
+      - name: '1k multi-cell'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/spades.py --test
+
+      - name: '1k single-cell'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/spades.py --sc --test
+
+      - name: '1k meta'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/metaspades.py --test
+
+      - name: '1k plasmid'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/plasmidspades.py --test
+
+      - name: '1k rna'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/rnaspades.py --test
+
+      - name: '1k corona'
+        run: >
+          $INSTALL_DIR/$PKG_MAC/bin/coronaspades.py --test
