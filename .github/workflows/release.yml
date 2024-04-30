@@ -66,7 +66,7 @@ jobs:
             ${{env.BUILD_DIR}}/${{env.PKG_LINUX}}.tar.gz
 
   spades-1k-checks-linux:
-    name: 'E. coli 1k smoke checks'
+    name: '🚬 E. coli 1k smoke checks'
     runs-on: self-hosted
     needs: build-linux
 
@@ -154,12 +154,12 @@ jobs:
       - name: '📦 Package'
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts-mac-$${{ matrix.os }}
+          name: build-artifacts-mac-${{ matrix.os }}
           path: |
             ${{env.BUILD_DIR}}/${{env.PKG_MAC}}.tar.gz
 
   spades-1k-checks-mac:
-    name: 'E. coli 1k smoke checks'
+    name: '🚬 E. coli 1k smoke checks'
     strategy:
       matrix:
         os: [macos-13, macos-14]
@@ -178,7 +178,7 @@ jobs:
       - name: '📦 Download package'
         uses: actions/download-artifact@v4
         with:
-          name: build-artifacts-mac-$${{ matrix.os }}
+          name: build-artifacts-mac-${{ matrix.os }}
           path: ${{env.INSTALL_DIR}}
 
       - name: '📦 Unpack package'
