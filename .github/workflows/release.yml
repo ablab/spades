@@ -10,11 +10,13 @@ on:
 
 env:
   INSTALL_DIR: ${{github.workspace}}/spades
-  PKG: SPAdes-*-Linux
+  PKG_LINUX: SPAdes-*-Linux
 
 jobs:
   # We build inside a ManyLinux container, but run checks outside
-  build:
+  build-linux:
+    name: '🐧 ManyLinux 2.28 x86-64'
+
     runs-on: self-hosted
     # We use userns-remap on VM side
     container:
@@ -62,12 +64,12 @@ jobs:
         with:
           name: build-artifacts
           path: |
-            ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
+            ${{env.BUILD_DIR}}/${{env.PKG_LINUX}}.tar.gz
 
-  spades-1k-checks:
+  spades-1k-checks-linux:
     name: 'E. coli 1k smoke checks'
     runs-on: self-hosted
-    needs: build
+    needs: build-linux
 
     steps:
       - name: '🧹 Cleanup'
@@ -85,28 +87,28 @@ jobs:
       - name: '📦 Unpack package'
         working-directory: ${{env.INSTALL_DIR}}
         run: >
-          tar -zxf ${{env.PKG}}.tar.gz
+          tar -zxf ${{env.PKG_LINUX}}.tar.gz
 
       - name: '1k multi-cell'
         run: >
-          $INSTALL_DIR/$PKG/bin/spades.py --test
+          $INSTALL_DIR/$PKG_LINUX/bin/spades.py --test
 
       - name: '1k single-cell'
         run: >
-          $INSTALL_DIR/$PKG/bin/spades.py --sc --test
+          $INSTALL_DIR/$PKG_LINUX/bin/spades.py --sc --test
 
       - name: '1k meta'
         run: >
-          $INSTALL_DIR/$PKG/bin/metaspades.py --test
+          $INSTALL_DIR/$PKG_LINUX/bin/metaspades.py --test
 
       - name: '1k plasmid'
         run: >
-          $INSTALL_DIR/$PKG/bin/plasmidspades.py --test
+          $INSTALL_DIR/$PKG_LINUX/bin/plasmidspades.py --test
 
       - name: '1k rna'
         run: >
-          $INSTALL_DIR/$PKG/bin/rnaspades.py --test
+          $INSTALL_DIR/$PKG_LINUX/bin/rnaspades.py --test
 
       - name: '1k corona'
         run: >
-          $INSTALL_DIR/$PKG/bin/coronaspades.py --test
+          $INSTALL_DIR/$PKG_LINUX/bin/coronaspades.py --test
