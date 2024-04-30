@@ -29,8 +29,8 @@ ExternalProject_Add(ncbi_vdb_ext
                     CMAKE_CACHE_ARGS ${CL_ARGS})
 ExternalProject_Get_property(ncbi_vdb_ext INSTALL_DIR)
 set(NCBI_VDB_PREFIX  ${INSTALL_DIR})
-set(NCBI_VDB_INCLUDE ${NCBI_VDB_PREFIX}/include)
-set(NCBI_VDB_LIB     ${NCBI_VDB_PREFIX}/lib)
+set(NCBI_VDB_INCLUDE ${NCBI_VDB_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
+set(NCBI_VDB_LIB     ${NCBI_VDB_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 
 ExternalProject_Add(ncbi_sratools_ext
                     GIT_REPOSITORY "https://github.com/ncbi/sra-tools.git"
@@ -43,12 +43,12 @@ ExternalProject_Add(ncbi_sratools_ext
                                -DVDB_INCDIR=${NCBI_VDB_INCLUDE}
                                -DVDB_LIBDIR=${NCBI_VDB_LIB}
                                -DNO_JAVA=ON
-                               CMAKE_CACHE_ARGS ${CL_ARGS})
-                             add_dependencies(ncbi_sratools_ext ncbi_vdb_ext)                             
+                    CMAKE_CACHE_ARGS ${CL_ARGS})
+add_dependencies(ncbi_sratools_ext ncbi_vdb_ext)
 ExternalProject_Get_property(ncbi_sratools_ext INSTALL_DIR)
 set(NCBI_SRATOOLS_PREFIX  ${INSTALL_DIR})
-set(NCBI_SRATOOLS_INCLUDE ${NCBI_SRATOOLS_PREFIX}/include)
-set(NCBI_SRATOOLS_LIB     ${NCBI_SRATOOLS_PREFIX}/lib)
+set(NCBI_SRATOOLS_INCLUDE ${NCBI_SRATOOLS_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
+set(NCBI_SRATOOLS_LIB     ${NCBI_SRATOOLS_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 
 add_library(ncbi-sdk INTERFACE)
 
