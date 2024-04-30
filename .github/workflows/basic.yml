@@ -17,13 +17,14 @@ on:
 
 env:
   BUILD_TYPE: Release
-  BUILD_DIR: ${{github.workspace}}/build
+  BUILD_DIR: './build'
+  SRC_DIR: './src'
   INSTALL_DIR: ${{github.workspace}}/spades
-  SRC_DIR: ${{github.workspace}}/src
-  PKG: SPAdes-*-Linux
+  PKG_LINUX: SPAdes-*-Linux
+  PKG_MAC: SPAdes-*-Darwin
 
 jobs:
-  build:
+  build-linux:
     runs-on: self-hosted
     name: '🚧 Build SPAdes'
 
@@ -48,10 +49,10 @@ jobs:
       - name: '⚙️ Configure CMake'
         run: >
           cmake
-          -B ${{env.BUILD_DIR}}
-          -S ${{env.SRC_DIR}}
+          -B $BUILD_DIR
+          -S $SRC_DIR
+          -DSPADES_USE_NCBISDK=ON -DSPADES_ENABLE_PROJECTS=all
           -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_DIR}}
 
       - name: '🚧 Build'
         run: >
@@ -63,16 +64,16 @@ jobs:
       - name: '📦 Package'
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
+          name: build-artifacts-linux
           path: |
-            ${{env.BUILD_DIR}}/${{env.PKG}}.tar.gz
+            ${{env.BUILD_DIR}}/${{env.PKG_LINUX}}.tar.gz
             ${{env.BUILD_DIR}}/bin/debruijn_test
             ${{env.BUILD_DIR}}/bin/include_test
 
-  spades-1k-checks:
-    name: 'E. coli 1k smoke checks'
+  spades-1k-checks-linux:
+    name: '🚬 E. coli 1k smoke checks'
     runs-on: self-hosted
-    needs: build
+    needs: build-linux
 
     steps:
       - name: '🧹 Cleanup'
@@ -84,40 +85,41 @@ jobs:
       - name: '📦 Download package'
         uses: actions/download-artifact@v4
         with:
-          name: build-artifacts
+          name: build-artifacts-linux
           path: ${{env.INSTALL_DIR}}
       - name: '📦 Unpack package'
         working-directory: ${{env.INSTALL_DIR}}
         run: >
-          tar -zxf ${{env.PKG}}.tar.gz
+          tar -zxf $PKG_LINUX.tar.gz
+
       - name: '1k multi-cell'
         run: >
-          ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/spades.py --test
+          $INSTALL_DIR/$PKG_LINUX/bin/spades.py --test
 
       - name: '1k single-cell'
         run: >
-          ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/spades.py --sc --test
+          $INSTALL_DIR/$PKG_LINUX/bin/spades.py --sc --test
 
       - name: '1k meta'
         run: >
-          ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/metaspades.py --test
+          $INSTALL_DIR/$PKG_LINUX/bin/metaspades.py --test
 
       - name: '1k plasmid'
         run: >
-          ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/plasmidspades.py --test
+          $INSTALL_DIR/$PKG_LINUX/bin/plasmidspades.py --test
 
       - name: '1k rna'
         run: >
-          ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/rnaspades.py --test
+          $INSTALL_DIR/$PKG_LINUX/bin/rnaspades.py --test
 
       - name: '1k corona'
         run: >
-          ${{env.INSTALL_DIR}}/${{env.PKG}}/bin/coronaspades.py --test
+          $INSTALL_DIR/$PKG_LINUX/bin/coronaspades.py --test
 
   spades-unittests:
     name: 'SPAdes unittests'
     runs-on: self-hosted
-    needs: build
+    needs: build-linux
 
     steps:
       - name: '🧹 Cleanup'
@@ -134,18 +136,17 @@ jobs:
       - name: '📦 Download package'
         uses: actions/download-artifact@v4
         with:
-          name: build-artifacts
+          name: build-artifacts-linux
           path: ${{env.BUILD_DIR}}
-
 
       - name: '🔎 Include tests'
         working-directory: ${{github.workspace}}
         run: >
-          chmod +x ${{env.BUILD_DIR}}/bin/include_test &&
-          ${{env.BUILD_DIR}}/bin/include_test
+          chmod +x $BUILD_DIR/bin/include_test &&
+          $BUILD_DIR/bin/include_test
 
       - name: '🔎 De-Bruijn tests'
         working-directory: ${{github.workspace}}
         run: >
-          chmod +x ${{env.BUILD_DIR}}/bin/debruijn_test &&
-          ${{env.BUILD_DIR}}/bin/debruijn_test
+          chmod +x $BUILD_DIR/bin/debruijn_test &&
+          $BUILD_DIR/bin/debruijn_test
