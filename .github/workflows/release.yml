@@ -226,3 +226,25 @@ jobs:
       - name: '1k corona'
         run: >
           $INSTALL_DIR/$PKG_MAC/bin/coronaspades.py --test
+
+  # Upload continuous build
+  upload:
+      name: '🗂  Create release and upload artifacts'
+      needs:
+        - build-linux
+        - build-mac
+      runs-on: ubuntu-20.04
+      steps:
+      - name: '⚙️ Install dependencies'
+        run: sudo apt-get install -y libfuse2
+      - name: '📥 Download artifacts'
+        uses: actions/download-artifact@v3
+      - name: '🗂  Inspect directory after downloading artifacts'
+        run: ls -alFR
+      - name: '🚀 Create release and upload artifacts'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+            wget -q https://github.com/TheAssassin/pyuploadtool/releases/download/continuous/pyuploadtool-x86_64.AppImage
+            chmod +x pyuploadtool-x86_64.AppImage
+            ./pyuploadtool-x86_64.AppImage ${{env.PKG_MAC}}.tar.gz ${{env.PKG_LINUX}}.tar.gz
