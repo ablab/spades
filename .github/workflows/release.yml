@@ -143,7 +143,7 @@ jobs:
 
       - name: '⚙️ Install dependencies'
         run: >
-          brew install bzip2
+          brew install bzip2 mmv
 
       - name: '⚙️ Configure CMake'
         run: >
@@ -162,14 +162,18 @@ jobs:
           cmake
           --build $BUILD_DIR
           -j16
-          -t package
+          -t package && mmv '${{env.BUILD_DIR}}/SPAdes-*-Darwin.tar.gz' '${{env.BUILD_DIR}}/SPAdes-#1-Darwin-${{ matrix.arch }}.tar.gz'
 
+      - name: '🗂  Inspect directory before downloading artifacts'
+        run: >
+          ls -alFR ${{env.BUILD_DIR}}/*.tar.gz
+                    
       - name: '📦 Package'
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts-mac-${{ matrix.arch }}
           path: |
-            ${{env.BUILD_DIR}}/${{env.PKG_MAC}}.tar.gz
+            ${{env.BUILD_DIR}}/${{env.PKG_MAC}}-${{ matrix.arch }}.tar.gz
 
   spades-1k-checks-mac:
     name: '🚬 E. coli 1k smoke checks'
@@ -201,7 +205,7 @@ jobs:
       - name: '📦 Unpack package'
         working-directory: ${{env.INSTALL_DIR}}
         run: >
-          tar -zxf ${{env.PKG_MAC}}.tar.gz
+          tar -zxf ${{env.PKG_MAC}}*.tar.gz
 
       - name: '1k multi-cell'
         run: >
@@ -231,14 +235,14 @@ jobs:
   upload:
       name: '🗂  Create release and upload artifacts'
       needs:
-        - build-linux
-        - build-mac
+        - spades-1k-checks-mac
+        - spades-1k-checks-linux
       runs-on: ubuntu-20.04
       steps:
       - name: '⚙️ Install dependencies'
         run: sudo apt-get install -y libfuse2
       - name: '📥 Download artifacts'
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
       - name: '🗂  Inspect directory after downloading artifacts'
         run: ls -alFR
       - name: '🚀 Create release and upload artifacts'
@@ -247,4 +251,4 @@ jobs:
         run: |
             wget -q https://github.com/TheAssassin/pyuploadtool/releases/download/continuous/pyuploadtool-x86_64.AppImage
             chmod +x pyuploadtool-x86_64.AppImage
-            ./pyuploadtool-x86_64.AppImage ${{env.PKG_MAC}}.tar.gz ${{env.PKG_LINUX}}.tar.gz
+            ./pyuploadtool-x86_64.AppImage **/${{env.PKG_MAC}}*.tar.gz **/${{env.PKG_LINUX}}*.tar.gz
