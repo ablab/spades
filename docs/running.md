@@ -388,6 +388,8 @@ Notes:
 `--custom-hmms <file or directory>`
     File or directory with amino acid HMMs for [HMM-guided mode](hmm.md#hmm-guided-mode).
 
+`--gfa11`
+    Use GFA v1.1/1.0 [assembly graph output format](output.md#gfa) used in previous SPAdes versions instead of default GFA v1.2.
 
 ## Examples
 
