@@ -1,27 +1,21 @@
 # -*- cmake -*-
 
-# Binary stuff
 set(CPACK_CMAKE_GENERATOR "Unix Makefiles")
-if (APPLE)
-  set(CPACK_GENERATOR "TGZ")
-else()
-  set(CPACK_GENERATOR "TGZ")
-endif()
 
-set(CPACK_PACKAGE_NAME "SPAdes")
-set(CPACK_PACKAGE_VENDOR "Saint Petersburg State University")
+# Binary stuff
+set(CPACK_GENERATOR "TGZ")
+set(CPACK_PACKAGE_NAME "${SPADES_FLAVOUR}")
+set(CPACK_PACKAGE_VENDOR "SPAdes Team")
 #set(CPACK_PACKAGE_DESCRIPTION_FILE "${SPADES_MAIN_SRC_DIR}/../README")
 set(CPACK_RESOURCE_FILE_LICENSE "${SPADES_MAIN_SRC_DIR}/../LICENSE")
-set(CPACK_PACKAGE_VERSION "3.16.0-dev")
-set(CPACK_PACKAGE_VERSION_MAJOR "3")
-set(CPACK_PACKAGE_VERSION_MINOR "16")
-set(CPACK_PACKAGE_VERSION_PATCH "0")
-set(CPACK_STRIP_FILES bin/spades-bwa bin/spades-core bin/spades-corrector-core bin/spades-gbuilder bin/spades-gmapper bin/spades-hammer bin/spades-ionhammer bin/spades-kmercount)
-
+set(CPACK_PACKAGE_VERSION "${SPADES_PACKAGE_VERSION}")
+set(CPACK_PACKAGE_VERSION_MAJOR "${SPADES_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${SPADES_VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${SPADES_VERSION_PATCH}")
 
 # Source stuff
 set(CPACK_SOURCE_GENERATOR "TBZ2")
-set(CPACK_SOURCE_IGNORE_FILES tools test web_service online_vis cap)
+set(CPACK_SOURCE_IGNORE_FILES tools test online_vis)
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}")
 
 include(CPack)
