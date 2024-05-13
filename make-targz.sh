@@ -5,7 +5,7 @@
 # See file LICENSE for details.
 ############################################################################
 
-VERSION="$(cat assembler/VERSION)"
+VERSION="$(cat VERSION)"
 : "${TARGET_DIR:=SPAdes-$VERSION}"
 rm -rf $TARGET_DIR
 SRC_DIR=$TARGET_DIR/src
@@ -15,11 +15,10 @@ cp -r src/common $SRC_DIR/
 cp -r src/projects $SRC_DIR/
 cp -r src/include $SRC_DIR/
 cp -r src/cmake $SRC_DIR/
-cp -r src/spades_pipeline $SRC_DIR/
 cp src/CMakeLists.txt $SRC_DIR/
 
-cp -r configs $TARGET_DIR/configs
 cp -r ext $TARGET_DIR/ext
+cp -r docs $TARGET_DIR/docs
 
 # cleaning .pyc and .pyo
 rm -f $SRC_DIR/*.pyc
@@ -35,23 +34,10 @@ rm -f $TARGET_DIR/ext/src/python_libs/*/*.pyc
 rm -f $TARGET_DIR/ext/src/python_libs/*/*.pyo
 rm -rf $TARGET_DIR/ext/src/python_libs/*/__pycache__/
 
-cp -r biosynthetic_spades_hmms $TARGET_DIR/
-cp -r coronaspades_hmms $TARGET_DIR/
-cp -r test_dataset $TARGET_DIR/test_dataset
-cp -r test_dataset_plasmid $TARGET_DIR/test_dataset_plasmid
 cp LICENSE $TARGET_DIR/
 cp README.md $TARGET_DIR/
 cp VERSION $TARGET_DIR/
-cp spades.py $TARGET_DIR/
-cp rnaviralspades.py $TARGET_DIR/
-cp rnaspades.py $TARGET_DIR/
-cp metaspades.py $TARGET_DIR/
-cp plasmidspades.py $TARGET_DIR/
-cp metaviralspades.py $TARGET_DIR/
-cp metaplasmidspades.py $TARGET_DIR/
-cp coronaspades.py $TARGET_DIR/
 cp spades_compile.sh $TARGET_DIR/
-cp spades_init.py $TARGET_DIR/
 cp changelog.html $TARGET_DIR/
 cp GPLv2.txt $TARGET_DIR/
 
