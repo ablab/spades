@@ -23,7 +23,7 @@ SPAdes produces assembly graph in GFA 1.2 and legacy FASTG formats.
 To view GFA and FASTG files we recommend to use [Bandage-NG visualization tool](https://github.com/asl/BandageNG).
 
 ### GFA
-SPAdes encodes contigs before repeat resolution as [segments](https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md#s-segment-line) in the GFA assembly graph. Their overlaps and corresponding connections are represented as [links](https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md#l-link-line) in the graph. Each segment is complemented with two tags: `DP`, which represents the average k-mer coverage depths, and `KC`, which encodes essentially the same value but in the raw number of k-mers from which this segment was assembled. Both coverages are calculated using the last used k-mer length.
+SPAdes encodes assembly graph edges as [segments](https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md#s-segment-line) in the GFA assembly graph. Their overlaps (assembly graph vertices) and corresponding connections are represented as [links](https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md#l-link-line) in the graph. Each segment is complemented with two tags: `DP`, which represents the average k-mer coverage depth, and `KC`, which encodes essentially the same value but in the raw number of k-mers from which this segment was assembled. Both coverages are calculated using the last used k-mer length.
 
 In addition to segments and links, SPAdes encodes scaffold paths through the assembly graph using GFA [path records](https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md#p-path-line). The path name is same as a scaffold name. Also, if the scaffold is circular, the `TP:Z:circular` tag is added.
 
