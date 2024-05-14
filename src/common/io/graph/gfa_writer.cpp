@@ -112,7 +112,5 @@ void GFAWriter::WriteVertexLinks(const VertexId &vertex, const Component &gc) {
 
 void GFAWriter::WriteHeader() {
     os_ << "H\t"
-        << "sp:Z:" << version::flavour() << '-' << version::package() << '\t'
-        << "sg:Z:" << version::gitrev() << '\t'
-        << "sr:Z:" << version::refspec() << '\n';
+        << "sp:Z:" << version::flavour() << '-' << version::package() << '\n';
 }
