@@ -76,6 +76,9 @@ class GFAPathWriter : public gfa::GFAWriter {
     using JumpLinks = std::unordered_set<std::pair<EdgeId, EdgeId>>;
     void WriteJumpLinks(const JumpLinks &links);
 
+protected:
+    void WriteHeader() override;
+
 public:
     enum class Version {
         GFAv11, // Split gapped paths into segments
