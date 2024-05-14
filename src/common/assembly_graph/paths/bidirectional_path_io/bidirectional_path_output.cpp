@@ -142,6 +142,15 @@ void GFAPathWriter::WritePaths12(const std::vector<EdgeId> &edges,
     os_ << '\n';
 }
 
+void GFAPathWriter::WriteHeader() {
+    os_ << "H\t"
+        << "VN:Z:" << (version_ == Version::GFAv11 ? "1.1" : "1.2") << '\t'
+        << "sp:Z:" << version::flavour() << '-' << version::package() << '\t'
+        << "sg:Z:" << version::gitrev() << '\t'
+        << "sr:Z:" << version::refspec() << '\n';
+}
+
+
 void GFAPathWriter::WritePaths(const std::vector<EdgeId> &edges,
                                const std::string &name,
                                const std::string &flags) {

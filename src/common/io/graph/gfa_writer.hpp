@@ -10,17 +10,13 @@
 #include "assembly_graph/components/graph_component.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include "io/utils/edge_namer.hpp"
-#include "io/utils/id_mapper.hpp"
 
-#include <memory>
-#include <string>
 #include <ostream>
 
 namespace omnigraph {
 
 template <class Graph>
 class GraphComponent;
-
 }
 
 namespace gfa {
@@ -36,14 +32,19 @@ public:
               io::EdgeNamingF<Graph> naming_f = io::IdNamingF<Graph>())
             : graph_(graph),
               edge_namer_(graph_, naming_f),
-              os_(os) {
-    }
+              os_(os) {}
+
+    virtual ~GFAWriter() = default;
 
     void WriteSegmentsAndLinks() {
+        WriteHeader();
         WriteSegments();
         WriteLinks();
     }
     void WriteSegmentsAndLinks(const Component &gc);
+
+  protected:
+    virtual void WriteHeader();
 
   private:
     void WriteSegments();
@@ -62,4 +63,3 @@ public:
 };
 
 }
-

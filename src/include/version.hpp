@@ -6,6 +6,11 @@
 //***************************************************************************
 
 namespace version {
+const char *major();
+const char *minor();
+const char *patch();
+const char *package();
+const char *flavour();
 const char *refspec();
 const char *gitrev();
 };
