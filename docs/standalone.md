@@ -3,7 +3,7 @@
 
 ## k-mer counter
 
-To provide input data to SPAdes k-mer counting tool `spades-kmercounter ` you may just specify files in [SPAdes-supported formats](running.md#spades-input) without any flags (after all options) or provide dataset description file in [YAML format](running.md#specifying-multiple-libraries-with-yaml-data-set-file).
+To provide input data to SPAdes k-mer counting tool `spades-kmercount` you may just specify files in [SPAdes-supported formats](running.md#spades-input) without any flags (after all options) or provide dataset description file in [YAML format](running.md#specifying-multiple-libraries-with-yaml-data-set-file).
 
 Output: `<output_dir>/final_kmers` - unordered set of kmers in binary format. Kmers from both forward and reverse-complementary reads are taken into account.
 
