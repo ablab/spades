@@ -1,6 +1,6 @@
 # SPAdes basic input
 
-SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ. For IonTorrent data SPAdes also supports unpaired reads in unmapped BAM format (like the one produced by Torrent Server). However, in order to run read error correction, reads should be in FASTQ or BAM format. Sanger, Oxford Nanopore and PacBio CLR reads can be provided in both formats since SPAdes does not run error correction for these types of data.
+SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ (can be gzipped). For IonTorrent data SPAdes also supports unpaired reads in unmapped BAM format (like the one produced by Torrent Server). However, in order to run read error correction, reads should be in FASTQ or BAM format. Sanger, Oxford Nanopore and PacBio CLR reads can be provided in both formats since SPAdes does not run error correction for these types of data.
 
 To run SPAdes you need at least one library of the following types:
 
@@ -14,10 +14,9 @@ SPAdes supports mate-pair only assembly. However, we recommend to use only high-
 
 Notes:
 
--   It is strongly suggested to provide multiple paired-end and mate-pair libraries according to their insert size (from smallest to longest).
+-   It is strongly recommended to provide multiple paired-end and mate-pair libraries according to their insert size (from smallest to longest).
 -   It is not recommended to run SPAdes on PacBio reads with low coverage (less than 5).
 -   We suggest not to run SPAdes on PacBio reads for large genomes.
--   SPAdes accepts gzip-compressed files.
 
 ## Paired read libraries
 

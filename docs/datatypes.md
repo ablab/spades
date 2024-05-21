@@ -4,7 +4,7 @@
 
 ### Isolated and multi-cell datasets
 
-When assembling conventional multi-cell and bacterial isolated datasets with decent coverage (say 50x or higher), we strongly recommend to use `--isolate` option. 
+When assembling multi-cell and bacterial isolated datasets with decent coverage (say 50x or higher), we strongly recommend to use `--isolate` option. 
 
 SPAdes is capable of detecting optimal k-mer sizes automatically. Thus, if the assembly went smoothly without any errors or warnings, there is nothing to worry about.
 For example, for read length 100bp the default k values are 21, 33, 55; for 150bp reads SPAdes uses k-mer sizes 21, 33, 55, 77; and for 250bp reads six iterations are used by default: 21, 33, 55, 77, 99, 127.

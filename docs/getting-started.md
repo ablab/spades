@@ -1,6 +1,12 @@
 # Quick start
 
-SPAdes is an assembler for second-generation sequencing data (Illumina or IonTorrent). PacBio and Nanopore reads are supported *only* as supplementary data. SPAdes can assemble genomes, metagenomes, transcriptomes, viral genomes etc.
+
+- SPAdes assembler supports:
+  - Assembly of second-generation sequencing data (Illumina or IonTorrent);
+  - PacBio and Nanopore reads that are used as supplementary data only.
+
+- SPAdes allows to assemble genomes, metagenomes, transcriptomes, viral genomes etc.
+
 
 1. Download SPAdes binaries for
    [Linux](https://github.com/ablab/spades/releases/latest/) or [MacOS](https://github.com/ablab/spades/releases/latest/). 
@@ -59,13 +65,13 @@ bin/spades.py --rnaviral -1 left.fastq.gz -2 right.fastq.gz -o output_folder
 
 ## Available assembly modes
 
-- `--isolate` - converntional bacterial data;
+- `--isolate` - isolate (standard) bacterial data;
 
 - `--sc` - single-cell bacterial data;
 
 - `--meta` - metagenome assembly;
 
-- `--plasmid` / `--metaplasmid` - plasmid discovery in conventional bacterial / metagenomic data;
+- `--plasmid` / `--metaplasmid` - plasmid discovery in standard bacterial / metagenomic data;
 
 - `--metaviral` - viral assembly from metagenomic data;
 
