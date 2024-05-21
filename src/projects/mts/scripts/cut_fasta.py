@@ -5,7 +5,7 @@
 # See file LICENSE for details.
 ############################################################################
 
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """Cut up fasta file in non-overlapping or overlapping parts of equal length.
 """
 from __future__ import print_function

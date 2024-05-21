@@ -5,7 +5,7 @@
 # See file LICENSE for details.
 ############################################################################
 
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''
 A simple Python wrapper for the bh_tsne binary that makes it easier to use it

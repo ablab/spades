@@ -5,7 +5,7 @@
 # See file LICENSE for details.
 ############################################################################
 
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 import json
 import unicodedata
