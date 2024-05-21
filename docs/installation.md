@@ -108,13 +108,13 @@ subset of SPAdes components. The components are:
   - `pathracer`
   - `spaligner`
 
-By default only SPAdes and SPAdes tools are enabled (so
+By default, only SPAdes and SPAdes tools are enabled (so
 `-DSPADES_ENABLE_PROJECTS="spades;spades_tools"` is the default). Alternatively,
 one can simply enable building everything via specifying `SPADES_ENABLE_PROJECTS="all"`.
 
 ## Verifying your installation
 
-For testing purposes, SPAdes comes with a toy data set (reads that align to first 1000 bp of *E. coli*). To try SPAdes on this data set, run:
+For testing purposes, SPAdes comes with a toy data set (reads that align to the first 1000 bp of [*E. coli*](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000005845.2/)). To try SPAdes on this data set, run:
 
 ``` bash
     <spades installation dir>/bin/spades.py --test

@@ -18,7 +18,11 @@ Besides, SPAdes package includes supplementary tools for efficient k-mer countin
 
 - Complete user manual can be found [here](https://ablab.github.io/spades/). Information below is provided merely for your convenience and cannot be considered as the user guide.
 
-- SPAdes is an assembler for second-generation sequencing data (Illumina or IonTorrent). PacBio and Nanopore reads are supported *only* as supplementary data. SPAdes can assemble genomes, metagenomes, transcriptomes, viral genomes etc. 
+- SPAdes assembler supports: 
+  - Assembly of second-generation sequencing data (Illumina or IonTorrent);
+  - PacBio and Nanopore reads that are used as supplementary data only.
+
+- SPAdes allows to assemble genomes, metagenomes, transcriptomes, viral genomes etc.
 
 - Download SPAdes binaries for Linux or MacOS [here](https://github.com/ablab/spades/releases/latest/). You can also compile SPAdes from [source](https://github.com/ablab/spades/releases/latest/) (requires g++ 9.0+, cmake 3.16+, zlib and libbz2). SPAdes requires only Python 3.8+ to be installed.
 
