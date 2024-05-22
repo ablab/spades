@@ -18,7 +18,7 @@ Besides, SPAdes package includes supplementary tools for efficient k-mer countin
 
 - Complete user manual can be found [here](https://ablab.github.io/spades/). Information below is provided merely for your convenience and cannot be considered as the user guide.
 
-- SPAdes assembler supports: 
+- SPAdes assembler supports:
   - Assembly of second-generation sequencing data (Illumina or IonTorrent);
   - PacBio and Nanopore reads that are used as supplementary data only.
 
