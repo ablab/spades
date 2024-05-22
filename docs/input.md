@@ -1,9 +1,9 @@
-# SPAdes basic input
+# SPAdes input
 
-SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ (can be gzipped).
+SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ (can be gzipped) formats. Additionally, SPAdes could read NCBI SRA files directly, if their support was enabled during SPAdes build (see [corresponding section](input.md#reading-ncbi-sra-files) for more information).
 For IonTorrent data SPAdes also supports unpaired reads in unmapped BAM format (like the one produced by Torrent Server).
 However, in order to run read error correction, reads should be in FASTQ or BAM format.
-Sanger, Oxford Nanopore and PacBio CLR reads can be provided in both formats since SPAdes does not run error correction for these types of data.
+Sanger, Oxford Nanopore and PacBio CLR reads can be provided in any formats since SPAdes does not run error correction for these types of data.
 
 To run SPAdes you need at least one library of the following types:
 
@@ -60,3 +60,14 @@ Single libraries are assumed to have high quality and reasonable coverage. For e
 Note, that you should not specify PacBio CLR, Sanger reads or additional contigs as single-read libraries, each of them has a separate [option](running.md#input-data).
 
 See [examples](running.md#examples).
+
+## Reading NCBI SRA files
+
+NCBI SRA uses a binary format to store reads. SPAdes has an ability to read these files directly, so there is no need to convert them into intermediate FASTQ files. However, this brings additional dependency on NCBI SDK and therefore there might be compatibility issues. Overall, the following is required:
+
+  - SPAdes should be compiled with NCBI SDK support enabled (pass `-DSPADES_USE_NCBISDK=ON` to `spades_compile.sh`, disabled by default, enabled in release binaries).
+  - Input file should have `.sra` extension.
+  - Input file should be passed as interlaced (in case of paired-end reads) or single-end library.
+  - Read error correction does not support reading SRA files (so one should use `--only-assembler` command line option).
+
+SRA files could contain reads that were aligned to a reference. Reading of such files without a reference could be slow and SPAdes will produce a warning. For such files it is advised to  convert to FASTQ first.
