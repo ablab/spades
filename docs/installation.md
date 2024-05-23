@@ -114,7 +114,10 @@ one can simply enable building everything via specifying `SPADES_ENABLE_PROJECTS
 
 ## Enabling NCBI SRA input file support
 
-SPAdes could be configured to read NCBI SRA files directly. For this it needs to have NCBI SDK support compiled in. For this one needs to pass `-DSPADES_USE_NCBISDK=ON` option to `spades_compile.sh`. This option is disabled by default due to possible compatibility issues. Pre-built release binaries have NCBI SRA support enabled.
+SPAdes can be configured to read [NCBI SRA](https://www.ncbi.nlm.nih.gov/sra/docs/sra-data-formats) files directly (via NCBI SDK).
+To enable NCBI SDK support pass `-DSPADES_USE_NCBISDK=ON` option to `spades_compile.sh`.
+This option is disabled by default due to possible compatibility issues. All pre-built release binaries support NCBI SRA input.
+
 
 ## Verifying your installation
 
