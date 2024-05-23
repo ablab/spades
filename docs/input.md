@@ -1,7 +1,9 @@
 # SPAdes input
 
-SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ (can be gzipped) formats. Additionally, SPAdes could read NCBI SRA files directly, if their support was enabled during SPAdes build (see [corresponding section](input.md#reading-ncbi-sra-files) for more information).
+SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ (can be gzipped) formats. Additionally, SPAdes can read [NCBI SRA](https://www.ncbi.nlm.nih.gov/sra/docs/sra-data-formats/) files directly. If you're compiling SPAdes from sources, make sure to read [corresponding section](input.md#reading-ncbi-sra-files) for more information.
+
 For IonTorrent data SPAdes also supports unpaired reads in unmapped BAM format (like the one produced by Torrent Server).
+
 However, in order to run read error correction, reads should be in FASTQ or BAM format.
 Sanger, Oxford Nanopore and PacBio CLR reads can be provided in any formats since SPAdes does not run error correction for these types of data.
 
@@ -63,11 +65,11 @@ See [examples](running.md#examples).
 
 ## Reading NCBI SRA files
 
-NCBI SRA uses a binary format to store reads. SPAdes has an ability to read these files directly, so there is no need to convert them into intermediate FASTQ files. However, this brings additional dependency on NCBI SDK and therefore there might be compatibility issues. Overall, the following is required:
+[NCBI SRA](https://www.ncbi.nlm.nih.gov/sra/docs/sra-data-formats) uses a binary format to store reads. SPAdes has an ability to read these files directly, so there is no need to convert them into intermediate FASTQ files. However, this brings additional dependency on NCBI SDK, which may cause compatibility issues. Overall, to assemble reads from SRA files make sure that:
 
-  - SPAdes should be compiled with NCBI SDK support enabled (pass `-DSPADES_USE_NCBISDK=ON` to `spades_compile.sh`, disabled by default, enabled in release binaries).
-  - Input file should have `.sra` extension.
-  - Input file should be passed as interlaced (in case of paired-end reads) or single-end library.
-  - Read error correction does not support reading SRA files (so one should use `--only-assembler` command line option).
+  - SPAdes is compiled with NCBI SDK support enabled (pass `-DSPADES_USE_NCBISDK=ON` to `spades_compile.sh`, disabled by default). No action is required if you use pre-compiled release binaries.
+  - Input files have `.sra` extension.
+  - Input files are provided as interlaced (in case of paired-end reads) or as single-end library.
+  - Read error correction does not support reading SRA files, `--only-assembler` command line option is mandatory.
 
-SRA files could contain reads that were aligned to a reference. Reading of such files without a reference could be slow and SPAdes will produce a warning. For such files it is advised to  convert to FASTQ first.
+SRA files can contain reads that were aligned to a reference genome. Reading such files without a reference can be slow and SPAdes will produce a warning in this case. We recommend to convert such files to FASTQ first.
