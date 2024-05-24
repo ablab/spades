@@ -65,7 +65,7 @@ See [examples](running.md#examples).
 
 ## Reading NCBI SRA files
 
-[NCBI SRA](https://www.ncbi.nlm.nih.gov/sra/docs/sra-data-formats) uses a binary format to store reads. SPAdes has an ability to read these files directly, so there is no need to convert them into intermediate FASTQ files. However, this brings additional dependency on NCBI SDK, which may cause compatibility issues. Overall, to assemble reads from SRA files make sure that:
+[NCBI SRA](https://www.ncbi.nlm.nih.gov/sra/docs/sra-data-formats) uses a binary format to store reads. SPAdes has the ability to read these files directly, so there is no need to convert them into intermediate FASTQ files. However, this brings additional dependency on NCBI SDK, which may cause compatibility issues. Overall, to assemble reads from SRA files make sure that:
 
   - SPAdes is compiled with NCBI SDK support enabled (pass `-DSPADES_USE_NCBISDK=ON` to `spades_compile.sh`, disabled by default). No action is required if you use pre-compiled release binaries.
   - Input files have `.sra` extension.
