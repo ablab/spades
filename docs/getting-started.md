@@ -1,12 +1,13 @@
 # Quick start
 
+SPAdes assembler supports:
 
-- SPAdes assembler supports:
-  - Assembly of second-generation sequencing data (Illumina or IonTorrent);
-  - PacBio and Nanopore reads that are used as supplementary data only.
+- Assembly of second-generation sequencing data (Illumina or IonTorrent);
+- PacBio and Nanopore reads that are used as supplementary data only.
 
-- SPAdes allows to assemble genomes, metagenomes, transcriptomes, viral genomes etc.
+SPAdes allows to assemble genomes, metagenomes, transcriptomes, viral genomes etc.
 
+Current SPAdes version: {{ spades_version() }}.
 
 1. Download SPAdes binaries for
    [Linux](https://github.com/ablab/spades/releases/latest/) or [MacOS](https://github.com/ablab/spades/releases/latest/). 

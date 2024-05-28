@@ -1,5 +1,27 @@
 # SPAdes Genome Assembler changelog
 
+## SPAdes 4.0.0, 3 June 2024
+- Python3.8 is now a minimal required version, python2 is deprecated;
+- SPAdes now supports SRA files as input;
+- PathRacer is now released as a part of SPAdes package;
+- [BinSPreader](https://ablab.github.io/spades/binspreader.html) is also along with SPAdes package;
+- New gfa-split tool;
+- New [wasterwaterSPAdes](https://ablab.github.io/spades/running.html#-sewage) mode;
+- Native support for running on Apple Silicon processors;
+- Native support for running  on aarch64/linux;
+- Binaries are now built using ManyLinux 2.28;
+- Parallel & improved GapCloser algorithm;
+- Faster graph simplification;
+- Allow external projects integration with SPAdes;
+- Use SPOA for long reads consensus;
+- SPAdes outputs assembly graph in GFA v1.2 format by default, older v1.1 format is also available;
+- SPAdes tags circular paths in assembly graph with `TP:Z:circular` flag;
+- SPAdes now uses `zlib-ng` for faster gzip decompression of input files;
+- Fixed compilation with gcc 13;
+- Removed deprecated truSPAdes functionality;
+- Reworked and improved documentation;
+- Lots of other fixes and improvements.
+
 
 ## SPAdes 3.15.5, 14 July 2022
 

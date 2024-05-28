@@ -13,6 +13,7 @@ Besides, SPAdes package includes supplementary tools for efficient k-mer countin
 
 - [Latest SPAdes publication](https://currentprotocols.onlinelibrary.wiley.com/doi/abs/10.1002/cpbi.102)
 
+Current version: see `VERSION` file.
 
 # Quick start
 

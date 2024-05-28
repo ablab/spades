@@ -12,6 +12,6 @@ perform HMM-guided assembly and more. SPAdes package also includes supplementary
 k-mer counting and k-mer-based read filtering, assembly graph construction and simplification,
 sequence-to-graph alignment and metagenomic binning refinement.
 
-SPAdes version {{ spades_version() }} was released under GPLv2 on July 14th, 2022 and can be downloaded [here](https://github.com/ablab/spades/releases/latest/).
+SPAdes version {{ spades_version() }} was released under GPLv2 on June 3rd, 2024 and can be downloaded [here](https://github.com/ablab/spades/releases/latest/).
 
 The latest SPAdes paper describing various pipelines in a protocol format is available [here](https://currentprotocols.onlinelibrary.wiley.com/doi/abs/10.1002/cpbi.102).
