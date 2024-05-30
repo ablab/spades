@@ -14,6 +14,7 @@ nav:
   - Transcriptome assembly: rna.md
   - Binning refining: binspreader.md
   - HMM mapping on assembly graph: pathracer.md
+  - Sequence to graph alignment: spaligner.md
   - SPAdes tools: standalone.md
   - Citation: citation.md
   - Feedback: feedback.md

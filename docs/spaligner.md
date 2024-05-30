@@ -1,31 +1,57 @@
-# SPAligner
+# SPAligner: long read to graph aligner
 
-Tool for fast and accurate alignment of nucleotide sequences (s.a. long reads, coding sequences, etc.) to assembly graphs. 
-
-## Running SPAligner
-
-    spaligner spaligner_config.yaml \    # config file 
-              -d pacbio \                # data type: pacbio, nanopore
-              -g assembly_graph.gfa \    # gfa-file with assembly graph 
-              -k 77 \                    # graph K-mer size
-              -s pacbio_reads.fastq.gz \ # sequences to align in fasta/fastq formats
-              -t 8                       # number of threads, 8 by default
-
-By default, spaligner_config.yaml will be installed into /usr/share/spaligner/ or can be found in assembler/projects/spaligner/.
-
-Alignments will be saved to spaligner_result/alignment.tsv by default.
+SPAligner is a tool for fast and accurate alignment of nucleotide sequences to assembly graphs.
+It takes file with sequences (in fasta/fastq format) and assembly in GFA format and outputs long read
+to graph alignment in various formats (such as tsv, fasta and [GPA](https://github.com/ocxtal/gpa "GPA-format spec")).
 
 
 ## Compilation
 
-    git clone https://github.com/ablab/spades.git
-    cd spades/assembler/
-    mkdir build && cd build && cmake ../src
-    make spaligner
+To compile SPAligner, run
 
-Now to run SPAligner move to folder `assembler/` and execute
+```
+./spades_compile -SPADES_ENABLE_PROJECTS=spaligner
+```
 
-    build/bin/spaligner
+After the compilation is complete, `spaligner` executable will be located in the `bin/` folder.
+
+
+## Running SPAligner
+
+Synopsis: 
+
+    spaligner spaligner_config.yaml \    # config file
+              -d pacbio \                # data type: pacbio, nanopore
+              -g assembly_graph.gfa \    # assembly graph 
+              -k 77 \                    # graph k-mer size
+              -s pacbio_reads.fastq.gz \ # input sequences / reads
+              -t 8                       # number of threads
+
+By default, `spaligner_config.yaml` can be found in `src/projects/spaligner/`.
+
+Alignments will be saved to `spaligner_result/alignment.tsv` by default.
+
+
+### Command line options
+
+`-d <type> `
+    long reads type: `nanopore` or `pacbio`
+
+`-s <filename> `
+    file with sequences in FASTA or FASTQ formats (can be gzipped)
+
+`-g <filename> `
+    file with an assembly graph in GFA format
+
+`-k <int> `
+    k-mer length that was used for graph construction
+
+`-t <int> `
+    number of threads (default: 8)
+
+`-o, --outdir <dir> `
+    output directory to use (default: `spaligner_result/`)
+
 
 ## Output
 
@@ -102,7 +128,7 @@ If a sequence was not fully aligned, SPAligner tries to prolong the longest alig
 
 Overview of the alignment of the nucleotide query sequence *S* (orange bar) to assembly graph *G*. Assembly graph edges are considered directed left-to-right (explicit edge orientation was omitted to improve the clarity).
 
-![pipeline](pipeline.jpg)
+![pipeline](spaligner.jpg)
 
 1. **Anchor search.** Anchors (regions of high similarity) between the query and the edge labels are identified with [BWA-MEM](http://bio-bwa.sourceforge.net/). 
 2. **Anchor filtering.** Anchors shorter than *K*, assembly graph *K*-mer size,(anchors 2, 6, 11), anchors “in the middle” of long edge (anchor 7) or ambiguous anchors (anchor 10 mostly covered by anchor 9, both anchors 4 and 5) are discarded.
@@ -146,6 +172,10 @@ Increase of `max_gs_states`, `max_restorable_length`, `queue_limit`, `iteration_
 Turning off restore_ends or run_dijkstra in nucleotide sequence alignment mode leads to shorter alignments, but considerable speed-up.
 
 
-## Contacts
+## References
+
+If you are using **SPAligner** in your research, please cite:
+
+[Dvorkina et al., 2020](https://link.springer.com/article/10.1186/s12859-020-03590-7)
 
 For any questions or suggestions please do not hesitate to contact Tatiana Dvorkina <tedvorkina@gmail.com>.
