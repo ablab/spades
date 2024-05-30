@@ -13,6 +13,7 @@ nav:
   - HMM-guided mode: hmm.md
   - Transcriptome assembly: rna.md
   - Binning refining: binspreader.md
+  - HMM mapping on assembly graph: pathracer.md
   - SPAdes tools: standalone.md
   - Citation: citation.md
   - Feedback: feedback.md

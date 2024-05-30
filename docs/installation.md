@@ -103,10 +103,10 @@ can pass `-SPADES_ENABLE_PROJECTS="semicolon-separated list of projects"` to ena
 subset of SPAdes components. The components are:
 
   - `spades`
-  - `spades_tools` [standalone SPAdes tools](standalone.md)
-  - `binspareader` [BinSPreader](binspreader.md)
-  - `pathracer`
-  - `spaligner`
+  - [`spades_tools`](standalone.md)
+  - [`binspareader`](binspreader.md)
+  - [`pathracer`](pathracer.md)
+  - [`spaligner`](standalone.md#spaligner)
 
 By default, only SPAdes and SPAdes tools are enabled (so
 `-DSPADES_ENABLE_PROJECTS="spades;spades_tools"` is the default). Alternatively,

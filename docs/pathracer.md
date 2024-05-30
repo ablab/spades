@@ -1,14 +1,11 @@
-PathRacer: racing profile HMM paths on assembly graph
-=====================================================
-MANUAL
-------
+# PathRacer: racing profile HMM paths on assembly graph
 
-### Overview
-<!-- PathRacer is assembly graph against profile HMM aligning tool supporting -->
-<!-- both _local-local_ and _global-local_ (aka _glocal_) alignment and both nucleotide and amino acid profile HMMs. -->
-<!-- The tool finds all proper alignments rather than only the best one. -->
-<!-- That allows extracting all genes satisfying HMM gene model from the assembly. -->
-<!--  -->
+## Overview
+PathRacer is assembly graph against profile HMM aligning tool supporting
+both _local-local_ and _global-local_ (aka _glocal_) alignment and both nucleotide and amino acid profile HMMs.
+The tool finds all proper alignments rather than only the best one.
+That allows extracting all genes satisfying HMM gene model from the assembly.
+
 
 **PathRacer** is a tool for alignment of assembly graph against pHMM. It provides
 the set of _k_ most probable paths traversed by a HMM through the whole assembly
@@ -22,21 +19,23 @@ translation on-fly walking through frameshifts.
 
 Both tool use extended pHMM model allowing frame shifts:
 
-![Scheme of extended pHMM](./extra/pHMM_with_frameshifts.svg)
+![Scheme of extended pHMM](./pHMM_with_frameshifts.svg)
 
 but for `pathracer-seq-fs` this extension is crucial: for aligning amino-acid pHMMs without allowing indels in the nucleotide space
 six frame translation + `hmmsearch` from **HMMer** package is more than enough.
 
-### Input
-Currently the tool supports only _de Bruijn_ graphs in GFA format as produced by **SPAdes** or compatible assembler in this matter (e.g., **MEGAHIT**).
+## Input
+Currently, the tool supports only _de Bruijn_ graphs in GFA format as produced by **SPAdes** or compatible assembler in this matter (e.g., **MEGAHIT**).
 Contact us if you need some other format support. Input sequences are supposed to be in FASTA/FASTQ format.
 
 Profile HMM should be in **HMMer3** format, but one can pass nucleotide or amino acid sequences as well.
 These sequences will be converted to proxy pHMMs.
 Aligning of these pHMMs would be equivalent to performing alignment using Levenshtein distance for each input sequence.
 
+## pathracer tool
 
-### `pathracer` command line options
+### pathracer command line options
+
 Required positional arguments:
 
 1. Query file (.hmm file or .fasta)
@@ -72,7 +71,7 @@ Debug output control:
 
 _In addition:_ Some other developer options that are not supposed to be tuned by the end-user. Could be removed in further releases.
 
-### `pathracer` output
+### pathracer output
 For each input pHMM (gene model) `pathracer` reports:
 
 - **&lt;gene\_name&gt;.seqs.fa**: sequences correspondent to _N_ best scored paths ordered by score along with their alignment in CIGAR format
@@ -89,7 +88,11 @@ In addition:
 - **pathracer.log**: log file
 - **graph\_with\_hmm\_paths.gfa**: _(optional)_ input graph with top scored paths added
 
-### `pathracer-seq-fs` command line options
+
+## pathracer-seq-fs tool
+
+### pathracer-seq-fs command line options
+
 Required positional arguments:
 
 1. Query .hmm file (.fasta is not supported yet)
@@ -106,11 +109,11 @@ Main options:
 Heuristics options:
 _The same as in main `pathracer`_
 
-### `pathracer-seq-fs` output
+### pathracer-seq-fs output
 For each input pHMM (gene model): **&lt;gene\_name&gt;.seqs.fa** and **&lt;gene\_name&gt;.nucls.fa**, the same as in main `pathracer`
 
 
-### Output files format
+## Output files format
 **&lt;gene\_name&gt;.seqs.fa** and **&lt;gene\_name&gt;.nucls.fa** files contain metainformation in FASTA headers.
 For main `pathracer` the header format is:
 ><code>
@@ -143,7 +146,7 @@ For alignment with frameshifts the extemded CIGAR/FASTA is used:
 P/"-" &mdash; one nucleotide insertion, G/"=" &mdash; two nucleotides insertion
 
 
-### Examples
+## Examples
 One can download example datasets from <http://cab.spbu.ru/software/pathracer/>
 
 - **urban_strain.gfa**: strain assembly graph of Singapore clinical isolation ward wastewater metagenome (SRA accession SRR5997548, dataset H1)
@@ -188,7 +191,7 @@ export OMP_STACKSIZE=1G
 pathracer bac.hmm synth_strain_gbuilder.gfa --queries 16S_rRNA -m 250 --top 1000000 --output pathracer_synth_strain_gbuilder_16s --no-top-score-filter
 ```
 
-### References
+## References
 If you are using **PathRacer** in your research, please cite:  
 A. Shlemov and A. Korobeynikov. PathRacer: racing profile HMM paths on assembly
 graph. In _Proceedings of International Conference on Algorithms for Computational Biology,
@@ -196,5 +199,5 @@ AlCoB 2019. Berkeley, California, USA, May 28&ndash;30, 2019,_ volume 11488 LNCS
 80&ndash;94, 2019.  
 <https://link.springer.com/chapter/10.1007/978-3-030-18174-1_6>
 
-In case of any problems running **PathRacer** please contact [SPAdes support](https://github.com/ablab/spades/issues)> attaching the log file.
+In case of any problems running **PathRacer** please contact [SPAdes support](https://github.com/ablab/spades/issues) attaching the log file.
 Your suggestions are also very welcome!
