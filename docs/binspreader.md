@@ -16,6 +16,16 @@ source of information for refining. Optionally, BinSPreader can be provided with
 multiple Hi-C and/or paired-end libraries. The [BinSPreader protocol](https://star-protocols.cell.com/protocols/2802) contains more detailed
 instructions on installing and running BinSPreader.
 
+## Compilation
+
+To compile SPAligner, run
+
+```
+./spades_compile -SPADES_ENABLE_PROJECTS=binspreader
+```
+
+After the compilation is complete, `binspreader` executable will be located in the `bin/` folder.
+
 ## Command line options
 
 Required positional arguments: 
@@ -69,7 +79,7 @@ binspreader <graph (in GFA)> <binning (in .tsv)> <output directory> [OPTION...]
     Labels correction regularization parameter for labeled data (default: 0.6)
 
 
-### Output
+## Output
 BinSPreader stores all output files in the output directory `<output_dir> ` set by the user.
 
 - `<output_dir>/binning.tsv` contains refined binning in `.tsv` format
@@ -83,3 +93,11 @@ In addition
 - `<output_dir>/bin_label_1.fastq, <output_dir>/bin_label_2.fastq` read set for bin labeled by `bin_label` (if `--reads` was used)
 - `<output_dir>/pe_links.tsv` list of paired-end links between assembly graph edges with weights (if `--debug` was used)
 - `<output_dir>/graph_links.tsv` list of graph links between assembly graph edges with weights (if `--debug` was used)
+
+
+## References
+
+If you are using **BinSPreader** in your research, please cite:
+
+[Tolstoganov et al., 2022](https://www.cell.com/iscience/pdf/S2589-0042(22)01042-2.pdf) and
+[Ochkalova et al., 2023](https://www.sciencedirect.com/science/article/pii/S2666166723003842). 

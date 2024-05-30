@@ -89,20 +89,20 @@ bin/spades.py --rnaviral -1 left.fastq.gz -2 right.fastq.gz -o output_folder
 
 ## Standalone SPAdes tools
 
-- `spades-kmercount` - k-mer counting;
+- [`spades-kmercount`](standalone.md#k-mer-counter) - k-mer counting;
 
-- `spades-read-filter` - read filtering using k-mer coverage;
+- [`spades-read-filter`](standalone.md#k-mer-coverage-read-filter) - read filtering using k-mer coverage;
 
-- `spades-kmer-estimating` - estimating number of unique k-mers;
+- [`spades-kmer-estimating`](standalone.md#k-mer-cardinality-estimating) - estimating number of unique k-mers;
 
-- `spades-gbuilder` - assembly graph construction;
+- [`spades-gbuilder`](standalone.md#graph-construction) - assembly graph construction;
 
-- `spades-gsimplifier` - assembly graph simplification;
+- [`spades-gsimplifier`](standalone.md#graph-simplification) - assembly graph simplification;
 
-- `spalgner` - alignment of long reads to assembly graph;
+- [`spalgner`](spaligner.md) - alignment of long reads to assembly graph;
 
-- `spades-gmapper` - specific alignment of long reads to assembly graph used in hybrid assembly pipeline;
+- [`spades-gmapper`](standalone.md#long-read-to-graph-alignment) - specific alignment of long reads to assembly graph used in hybrid assembly pipeline;
 
-- `binspreader` - refinement of metagenome-assembled genomes;
+- [`binspreader`](binspreader.md) - refinement of metagenome-assembled genomes;
 
-- `pathracer` - alignment of profile HMMs to assembly graph.
+- [`pathracer`](pathracer.md) - alignment of profile HMMs to assembly graph.

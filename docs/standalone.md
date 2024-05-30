@@ -169,11 +169,16 @@ Additional options are:
     original graph
 
 
-## Long read to graph alignment
 
+## hybridSPAdes aligner
 
-### hybridSPAdes aligner
+_Not to be confused with [SPAligner](spaligner.md)._
+
 A tool `spades-gmapper ` gives the opportunity to extract long read alignments generated with hybridSPAdes pipeline options. It has three mandatory options: dataset description file in [YAML format](running.md#specifying-multiple-libraries-with-yaml-data-set-file), graph file in GFA format and an output file name.
+
+While `spades-gmapper` is a solution for those who work on hybridSPAdes assembly and
+want to get exactly its intermediate results, [SPAligner](spaligner.md) is an end-product application for sequence-to-graph alignment with tunable parameters and output types.
+
 
 Synopsis: `spades-gmapper <dataset description (in YAML)> <graph (in GFA)> <output filename> [-k <value>] [-t <value>] [-tmpdir <dir>]`
 
@@ -188,13 +193,11 @@ Additional options are:
 `-tmpdir <dir_name>  `
     scratch directory to use
 
-While `spades-gmapper` is a solution for those who work on hybridSPAdes assembly and want to get exactly its intermediate results, [SPAligner](standalone.md#spaligner) is an end-product application for sequence-to-graph alignment with tunable parameters and output types.
 
 
 ### SPAligner
 A tool for fast and accurate alignment of nucleotide sequences to assembly graphs. It takes file with sequences (in fasta/fastq format) and assembly in GFA format and outputs long read to graph alignment in various formats (such as tsv, fasta and [GPA](https://github.com/ocxtal/gpa "GPA-format spec")).
 
-Synopsis: `spaligner src/projects/spaligner_config.yaml -d <value> -s <value> -g <value> -k <value> [-t <value>] [-o <value>]`
 
 Parameters are:
 
@@ -215,8 +218,6 @@ Parameters are:
 
 `-o, --outdir <dir> `
     output directory to use (default: spaligner_result/)
-
-For more information on parameters and options please refer to the main SPAligner manual (assembler/src/projects/spaligner/README.md).
 
 Also if you want to align protein sequences please refer to our [pre-release version](https://github.com/ablab/spades/releases/tag/spaligner-paper).
 

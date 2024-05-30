@@ -24,6 +24,16 @@ Both tool use extended pHMM model allowing frame shifts:
 but for `pathracer-seq-fs` this extension is crucial: for aligning amino-acid pHMMs without allowing indels in the nucleotide space
 six frame translation + `hmmsearch` from **HMMer** package is more than enough.
 
+## Compilation
+
+To compile SPAligner, run
+
+```
+./spades_compile -SPADES_ENABLE_PROJECTS=pathracer
+```
+
+After the compilation is complete, `pathracer` executable will be located in the `bin/` folder.
+
 ## Input
 Currently, the tool supports only _de Bruijn_ graphs in GFA format as produced by **SPAdes** or compatible assembler in this matter (e.g., **MEGAHIT**).
 Contact us if you need some other format support. Input sequences are supposed to be in FASTA/FASTQ format.
@@ -192,12 +202,9 @@ pathracer bac.hmm synth_strain_gbuilder.gfa --queries 16S_rRNA -m 250 --top 1000
 ```
 
 ## References
-If you are using **PathRacer** in your research, please cite:  
-A. Shlemov and A. Korobeynikov. PathRacer: racing profile HMM paths on assembly
-graph. In _Proceedings of International Conference on Algorithms for Computational Biology,
-AlCoB 2019. Berkeley, California, USA, May 28&ndash;30, 2019,_ volume 11488 LNCS, pages
-80&ndash;94, 2019.  
-<https://link.springer.com/chapter/10.1007/978-3-030-18174-1_6>
+
+If you are using **PathRacer** in your research, please cite:
+
+[Shlemov and Korobeynikov, 2019](https://link.springer.com/chapter/10.1007/978-3-030-18174-1_6)
 
 In case of any problems running **PathRacer** please contact [SPAdes support](https://github.com/ablab/spades/issues) attaching the log file.
-Your suggestions are also very welcome!
