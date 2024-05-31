@@ -1045,7 +1045,8 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
         if unknown_args:
             support.error("you cannot specify any option except -o with --continue option! "
                           "Please use '--restart-from last' if you need to change some "
-                          "of the options from the initial run and continue from the last available checkpoint.", log)
+                          "of the options from the initial run and continue from the last available checkpoint.\n"
+                          "Extra options: %s" % unknown_args, log)
     if args.meta:
         if args.careful or args.mismatch_corrector or (args.cov_cutoff != "off" and args.cov_cutoff is not None):
             support.error("you cannot specify --careful, --mismatch-correction or --cov-cutoff in metagenomic mode!",
