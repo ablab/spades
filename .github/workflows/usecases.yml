@@ -11,9 +11,11 @@ on:
       - '*'
     paths-ignore:
       - 'docs/**'
+      - 'mkdocs.yml'
   pull_request:
     paths-ignore:
       - 'docs/**'
+      - 'mkdocs.yml'
 
 env:
   BUILD_TYPE: Release
