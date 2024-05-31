@@ -35,8 +35,10 @@ To download [SPAdes Linux binaries](https://github.com/ablab/spades/releases/dow
 
 In this case you do not need to run any installation scripts - SPAdes is ready to use. We also suggest adding SPAdes installation directory to the `PATH` variable.
 
-Note, that pre-build binaries do not work on new Linux kernels.
-
+SPAdes Linux binaries are built using [ManyLinux 2.28](https://peps.python.org/pep-0600).
+SPAdes binaries should be compatible with systems using glibc 2.28 and newer including
+ALT Linux 10+, RHEL 9+, Debian 11+, Fedora 34+, Mageia 8+, Photon OS 3.0 with updates, Ubuntu 21.04+.
+In case of any problems we recommend [building from sources](installation.md#downloading-and-compiling-spades-source-code).
 
 ## Downloading SPAdes binaries for Mac
 

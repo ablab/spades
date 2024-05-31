@@ -2,7 +2,7 @@
 
 ## SPAdes 4.0.0, 3 June 2024
 - SPAdes now supports NCBI SRA files as input;
-- Reworked and improved documentation: [ablab.github.io](https://ablab.github.io);
+- Reworked and improved documentation: [ablab.github.io](https://ablab.github.io/spades/);
 - [PathRacer](https://ablab.github.io/spades/pathracer.html) - a tool for mapping HMMs to assembly grpah - is now released as a part of SPAdes package;
 - [BinSPreader](https://ablab.github.io/spades/binspreader.html) (metagenomic binning refiner) is also released inside SPAdes package;
 - New [gfa-split tool](https://ablab.github.io/spades/standalone.html#graph-splitting) for splitting assembly graph into components;
