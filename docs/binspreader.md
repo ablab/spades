@@ -18,13 +18,13 @@ instructions on installing and running BinSPreader.
 
 ## Compilation
 
-To compile SPAligner, run
+To compile BinSPreader, run
 
 ```
 ./spades_compile -SPADES_ENABLE_PROJECTS=binspreader
 ```
 
-After the compilation is complete, `binspreader` executable will be located in the `bin/` folder.
+After the compilation is complete, `binspreader` executable will be located in the `bin` folder.
 
 ## Command line options
 

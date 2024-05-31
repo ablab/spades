@@ -88,7 +88,7 @@ for example:
 
 which will install SPAdes into `/usr/local/bin`.
 
-After installation, you will get the same files (listed above) in `./bin` directory (or `<destination_dir>/bin` if you specified PREFIX). We also suggest adding `bin` directory to the `PATH` variable.
+After installation, you will get the same files (listed above) in `bin` directory (or `<destination_dir>/bin` if you specified PREFIX). We also suggest adding `bin` directory to the `PATH` environment variable.
 
 ## Building additional tools
 SPAdes toolkit includes a number of standalone tools that are built using core
