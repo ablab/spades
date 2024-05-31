@@ -169,6 +169,12 @@ Additional options are:
     original graph
 
 
+## Graph splitting
+Graph splitting tool `spades-gfa-split` partitions input assembly graph (provided in GFA format) into subgraphs corresponding to its undirected components (i.e. the components of the undirected graphs that is obtained by ignoring the orientations of edges). GFA paths, if present, are preserved and splitted as well.
+
+Synopsis: `spades-gfa-split  <graph (in GFA)> <output base>`
+
+The components will be emitted as `subgraph_NNN.gfa` files inside `<output base>` directory.
 
 ## hybridSPAdes aligner
 
