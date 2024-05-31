@@ -13,7 +13,7 @@ To compile SPAligner, run
 ./spades_compile -SPADES_ENABLE_PROJECTS=spaligner
 ```
 
-After the compilation is complete, `spaligner` executable will be located in the `bin/` folder.
+After the compilation is complete, `spaligner` executable will be located in the `bin` folder.
 
 
 ## Running SPAligner

@@ -26,13 +26,13 @@ six frame translation + `hmmsearch` from **HMMer** package is more than enough.
 
 ## Compilation
 
-To compile SPAligner, run
+To compile PathRacer, run
 
 ```
 ./spades_compile -SPADES_ENABLE_PROJECTS=pathracer
 ```
 
-After the compilation is complete, `pathracer` executable will be located in the `bin/` folder.
+After the compilation is complete, `pathracer` executable will be located in the `bin` folder.
 
 ## Input
 Currently, the tool supports only _de Bruijn_ graphs in GFA format as produced by **SPAdes** or compatible assembler in this matter (e.g., **MEGAHIT**).
