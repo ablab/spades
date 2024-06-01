@@ -198,33 +198,3 @@ Additional options are:
 
 `-tmpdir <dir_name>  `
     scratch directory to use
-
-
-
-### SPAligner
-A tool for fast and accurate alignment of nucleotide sequences to assembly graphs. It takes file with sequences (in fasta/fastq format) and assembly in GFA format and outputs long read to graph alignment in various formats (such as tsv, fasta and [GPA](https://github.com/ocxtal/gpa "GPA-format spec")).
-
-
-Parameters are:
-
-`-d <type> `
-    long reads type: nanopore, pacbio
-
-`-s <filename> `
-    file with sequences (in fasta/fastq)
-
-`-g <filename> `
-    file with graph (in GFA)
-
-`-k <int> `
-    k-mer length that was used for graph construction
-
-`-t <int> `
-    number of threads (default: 8)
-
-`-o, --outdir <dir> `
-    output directory to use (default: spaligner_result/)
-
-Also if you want to align protein sequences please refer to our [pre-release version](https://github.com/ablab/spades/releases/tag/spaligner-paper).
-
-Note that in order you use SPAligner one needs either to use pre-built binaries or compile SPAdes from sources using the additional `-DSPADES_ENABLE_PROJECTS=spaligner` option.

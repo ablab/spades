@@ -99,6 +99,8 @@ bin/spades.py --rnaviral -1 left.fastq.gz -2 right.fastq.gz -o output_folder
 
 - [`spades-gsimplifier`](standalone.md#graph-simplification) - assembly graph simplification;
 
+- [`spades-gfa-split`](standalone.md#graph-splitting) - splitting assembly graph into components;
+
 - [`spalgner`](spaligner.md) - alignment of long reads to assembly graph;
 
 - [`spades-gmapper`](standalone.md#long-read-to-graph-alignment) - specific alignment of long reads to assembly graph used in hybrid assembly pipeline;
