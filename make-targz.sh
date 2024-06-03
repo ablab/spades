@@ -23,9 +23,9 @@ cp -r docs $TARGET_DIR/docs
 
 # cleaning .pyc and .pyo
 shopt -s globstar
-rm -f $SRC_DIR/**/*.pyc
-rm -f $SRC_DIR/**/*.pyo
-rm -fr $SRC_DIR/**/__pycache__/
+rm -f $TARGET_DIR/**/*.pyc
+rm -f $TARGET_DIR/**/*.pyo
+rm -fr $TARGET_DIR/**/__pycache__/
 
 cp LICENSE $TARGET_DIR/
 cp README.md $TARGET_DIR/
