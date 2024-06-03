@@ -15,24 +15,17 @@ cp -r src/common $SRC_DIR/
 cp -r src/projects $SRC_DIR/
 cp -r src/include $SRC_DIR/
 cp -r src/cmake $SRC_DIR/
+cp -r src/test $SRC_DIR/
 cp src/CMakeLists.txt $SRC_DIR/
 
 cp -r ext $TARGET_DIR/ext
 cp -r docs $TARGET_DIR/docs
 
 # cleaning .pyc and .pyo
-rm -f $SRC_DIR/*.pyc
-rm -f $SRC_DIR/*.pyo
-rm -rf $SRC_DIR/__pycache__/
-rm -f $SRC_DIR/spades_pipeline/*.pyc
-rm -f $SRC_DIR/spades_pipeline/*.pyo
-rm -rf $SRC_DIR/spades_pipeline/__pycache__/
-rm -f $SRC_DIR/spades_pipeline/*/*.pyo
-rm -f $SRC_DIR/spades_pipeline/*/*.pyc
-rm -rf $SRC_DIR/spades_pipeline/*/__pycache__/
-rm -f $TARGET_DIR/ext/src/python_libs/*/*.pyc
-rm -f $TARGET_DIR/ext/src/python_libs/*/*.pyo
-rm -rf $TARGET_DIR/ext/src/python_libs/*/__pycache__/
+shopt -s globstar
+rm -f $SRC_DIR/**/*.pyc
+rm -f $SRC_DIR/**/*.pyo
+rm -fr $SRC_DIR/**/__pycache__/
 
 cp LICENSE $TARGET_DIR/
 cp README.md $TARGET_DIR/
