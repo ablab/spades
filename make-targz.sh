@@ -38,7 +38,7 @@ cp LICENSE $TARGET_DIR/
 cp README.md $TARGET_DIR/
 cp VERSION $TARGET_DIR/
 cp spades_compile.sh $TARGET_DIR/
-cp changelog.html $TARGET_DIR/
+cp changelog.md $TARGET_DIR/
 cp GPLv2.txt $TARGET_DIR/
 
 cd $TARGET_DIR
