@@ -146,6 +146,11 @@ jobs:
         run: >
           brew install bzip2 mmv
 
+      - name: '💩 Fix gcc / MacSDK trash'
+        run: >
+          rm -f /opt/homebrew/Cellar/gcc@13/*/lib/gcc/13/gcc/aarch64-apple*/13/include-fixed/AvailabilityInternal.h
+          rm -f /usr/local/Cellar/gcc@13/*/lib/gcc/13/gcc/x86_64-apple*/13/include-fixed/AvailabilityInternal.h
+          
       - name: '⚙️ Configure CMake'
         run: >
           cmake
@@ -168,7 +173,7 @@ jobs:
       - name: '🗂  Inspect directory before downloading artifacts'
         run: >
           ls -alFR ${{env.BUILD_DIR}}/*.tar.gz
-                    
+
       - name: '📦 Package'
         uses: actions/upload-artifact@v4
         with:
