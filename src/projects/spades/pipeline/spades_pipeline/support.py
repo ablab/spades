@@ -485,7 +485,7 @@ def get_latest_dir(pattern):
         return text
 
     def natural_keys(text):
-        return [atoi(c) for c in re.split("(\d+)", text)]
+        return [atoi(c) for c in re.split("(\\d+)", text)]
 
     latest_dir = None
     for dir_to_test in sorted(glob.glob(pattern), key=natural_keys, reverse=True):
