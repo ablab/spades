@@ -7,13 +7,9 @@ LABEL    software="spades" \
     about.summary="genome assembler for single-cell and isolates data sets" \ 
     about.home="https://ablab.github.io/spades/" \ 
     software.version="4.0.0" \ 
-    upstream.version="4.0.0" \ 
-    version="1" \ 
     extra.identifiers.biotools="spades" \ 
-    about.copyright="2011-2014 Saint-Petersburg Academic University" \ 
+    about.paper="Prjibelski A, Antipov D, Meleshko D, Lapidus A, Korobeynikov A (2020) Using SPAdes de novo assembler. Current Protocols in Bioinformatics 70(1): e102. https://doi.org/10.1002/cpbi.102" \ 
     about.license="GPL-2+" \ 
-    about.license_file="/usr/share/doc/spades/copyright" \ 
-    extra.binaries="/usr/bin/metaspades,/usr/bin/metaspades.py,/usr/bin/plasmidspades,/usr/bin/plasmidspades.py,/usr/bin/rnaspades,/usr/bin/rnaspades.py,/usr/bin/spades,/usr/bin/spades.py,/usr/bin/truspades,/usr/bin/truspades.py" \ 
     about.tags="biology::nucleic-acids, field::biology, field::biology:bioinformatics,:c++,:python, interface::commandline,:program, scope::utility, works-with::biological-sequence,:file" 
 
 USER root
