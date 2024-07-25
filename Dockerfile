@@ -14,10 +14,14 @@ LABEL    software="spades" \
 
 USER root
 
-RUN apt-get update && apt-get install -y build-essential cmake wget libbz2-dev
+RUN apt-get update && apt-get install -y build-essential cmake wget libbz2-dev git
 
 RUN wget https://github.com/ablab/spades/releases/download/v4.0.0/SPAdes-4.0.0.tar.gz
 
-RUN tar xfz SPAdes-4.0.0.tar.gz && rm SPAdes-4.0.0.tar.gz && cd SPAdes-4.0.0/ && ./spades_compile.sh
+RUN tar xfz SPAdes-4.0.0.tar.gz && rm SPAdes-4.0.0.tar.gz && cd SPAdes-4.0.0/ && \ 
+    cmake -B build/ -S src/ -DSPADES_USE_NCBISDK=ON -DSPADES_ENABLE_PROJECTS=all && \
+    cmake --build build/ && cmake --install build/ && cd .. && rm -rf SPAdes-4.0.0/
 
-# ./SPAdes-4.0.0/bin/spades.py --test
+CMD ["/bin/bash"]
+
+# spades.py --test
