@@ -75,7 +75,7 @@ public:
         // FIXME: exit earlier
         if (only_simple && result.size() > 1)
             result = MappingPath<EdgeId>();
-
+        
         DEBUG(read.name() << " is mapped, only simple mode: " << only_simple);
         DEBUG("Number of edges is " << result.size());
 
@@ -115,7 +115,7 @@ bool SpuriousMappingFilter(const Graph& /*g*/,
                            size_t min_flank) {
     if (mapping_path.size() != 1)
         return true;
-
+    
     Range read_range = mapping_path[0].second.initial_range;
     if (read_range.size() <= max_range &&
         read_range.start_pos >= min_flank &&
@@ -368,7 +368,7 @@ class BasicSequenceMapper: public AbstractSequenceMapper<Graph> {
                                   bool only_simple = false) const {
     std::vector<EdgeId> passed_edges;
     RangeMappings range_mapping;
-
+    
     if (sequence.size() < k_) {
       return MappingPath<EdgeId>();
     }

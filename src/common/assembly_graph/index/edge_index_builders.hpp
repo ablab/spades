@@ -29,12 +29,12 @@ class DeBruijnGraphKMerSplitter : public kmers::DeBruijnKMerSplitter<KmerFilter>
 
     size_t FillBufferFromEdges(EdgeRange &r, unsigned thread_id);
 
-  public:
+public:
     DeBruijnGraphKMerSplitter(fs::TmpDir work_dir,
                               unsigned K, const Graph &g,
                               size_t read_buffer_size = 0)
-        : kmers::DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size),
-          g_(g) {}
+            : kmers::DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size),
+              g_(g) {}
 
     RawKMers Split(size_t num_files, unsigned nthreads) override;
 };
@@ -93,7 +93,7 @@ class DeBruijnEdgeKMerSplitter : public kmers::DeBruijnKMerSplitter<KmerFilter> 
     const Graph &g_;
     const std::vector<EdgeId> &edges_;
 
-  public:
+ public:
     DeBruijnEdgeKMerSplitter(fs::TmpDir work_dir,
                              unsigned K, const Graph &g, const std::vector<EdgeId> &edges,
                              size_t read_buffer_size = 0)
@@ -153,7 +153,7 @@ DeBruijnEdgeKMerSplitter<Graph, KmerFilter>::Split(size_t num_files, unsigned nt
 
 template<class Index>
 class GraphPositionFillingIndexBuilder {
-  public:
+public:
     typedef Index IndexT;
     typedef typename Index::KMer Kmer;
 
@@ -162,7 +162,7 @@ class GraphPositionFillingIndexBuilder {
       public:
         KMerGraphStorage(const Graph &g, unsigned k,
                          std::vector<EdgeRange> buckets)
-            : k_(k), g_(g), buckets_(std::move(buckets)) {
+                : k_(k), g_(g), buckets_(std::move(buckets)) {
             segment_policy_.reset(1);
 
             sizes_.resize(buckets_.size());
@@ -210,7 +210,7 @@ class GraphPositionFillingIndexBuilder {
 
       public:
         KMerFullGraphStorage(const Graph &g, unsigned k, unsigned num_buckets)
-            : base(g, k, IterationHelper(g).Ranges(num_buckets)) {}
+                : base(g, k, IterationHelper(g).Ranges(num_buckets)) {}
     };
 
     class KMerPartialGraphStorage : public KMerGraphStorage<adt::iterator_range<std::vector<EdgeId>::const_iterator>> {
@@ -239,7 +239,7 @@ class GraphPositionFillingIndexBuilder {
       public:
         KMerPartialGraphStorage(const Graph &g, unsigned k,
                                 const std::vector<EdgeId> &edges, unsigned num_buckets)
-            : base(g, k, ranges(edges, num_buckets)) {}
+                : base(g, k, ranges(edges, num_buckets)) {}
     };
 
     void BuildIndexFromGraph(Index &index, const Graph &g) const {

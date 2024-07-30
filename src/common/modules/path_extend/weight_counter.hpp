@@ -59,10 +59,10 @@ struct EdgeWithDistance {
     EdgeWithDistance(EdgeId e, int d, GapSeqType && gep_sequence = nullptr)
         : e_(e)
         , d_(d)
-        , gap_sequence_(std::move(gep_sequence))
+        , gap_sequence_(std::move(gep_sequence)) 
     {}
 
-    EdgeWithDistance(const EdgeWithDistance& other)
+    EdgeWithDistance(const EdgeWithDistance& other) 
         : EdgeWithDistance(other.e_, other.d_, other.CopyGapSeq())
     {}
 
@@ -108,10 +108,8 @@ protected:
 class BasicIdealInfoProvider : public IdealInfoProvider {
     const std::shared_ptr<PairedInfoLibrary> lib_;
 public:
-    BasicIdealInfoProvider(const std::shared_ptr<PairedInfoLibrary> lib) : lib_(lib) {
+    BasicIdealInfoProvider(const std::shared_ptr<PairedInfoLibrary> &lib) : lib_(lib) {
     }
-
-    virtual ~BasicIdealInfoProvider() {}
 
     std::vector<EdgeWithPairedInfo> FindCoveredEdges(const BidirectionalPath &path,
                                                      EdgeId candidate, int gap) const override {
@@ -183,7 +181,7 @@ class ReadCountWeightCounter: public WeightCounter {
 
 public:
 
-    ReadCountWeightCounter(const Graph &g, const std::shared_ptr<PairedInfoLibrary> lib,
+    ReadCountWeightCounter(const Graph &g, const std::shared_ptr<PairedInfoLibrary> &lib,
                            bool normalize_weight = true,
                            std::shared_ptr<IdealInfoProvider> ideal_provider = nullptr) :
             WeightCounter(g, lib, normalize_weight, ideal_provider) {
@@ -268,7 +266,7 @@ class PathCoverWeightCounter: public WeightCounter {
 
 public:
 
-    PathCoverWeightCounter(const Graph &g, std::shared_ptr<PairedInfoLibrary> lib,
+    PathCoverWeightCounter(const Graph &g, const std::shared_ptr<PairedInfoLibrary> &lib,
                            bool normalize_weight,
                            double single_threshold,
                            std::shared_ptr<IdealInfoProvider> ideal_provider = nullptr) :
@@ -318,8 +316,6 @@ class CoverageAwareIdealInfoProvider : public BasicIdealInfoProvider {
     size_t read_length_; 
 
 public:
-    virtual ~CoverageAwareIdealInfoProvider() = default;
-
     //works for single lib only!!!
     virtual double EstimatePathCoverage(const BidirectionalPath& path) const  {
         VERIFY(path.Size() > 0);
@@ -330,7 +326,7 @@ public:
         return answer;
     }
 
-    CoverageAwareIdealInfoProvider(const Graph &g, const std::shared_ptr<PairedInfoLibrary> lib,
+    CoverageAwareIdealInfoProvider(const Graph &g, const std::shared_ptr<PairedInfoLibrary> &lib,
                                    size_t read_length) :
                 BasicIdealInfoProvider(lib), g_(g), read_length_(read_length) {}
 
@@ -358,7 +354,7 @@ class GlobalCoverageAwareIdealInfoProvider : public CoverageAwareIdealInfoProvid
 
 public:
 
-    GlobalCoverageAwareIdealInfoProvider(const Graph &g, const std::shared_ptr<PairedInfoLibrary> lib,
+    GlobalCoverageAwareIdealInfoProvider(const Graph &g, const std::shared_ptr<PairedInfoLibrary> &lib,
                                          size_t read_length, double lib_coverage):
         CoverageAwareIdealInfoProvider(g, lib, read_length),
         lib_coverage_(lib_coverage) {

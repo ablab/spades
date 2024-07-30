@@ -55,7 +55,7 @@ private:
     void ProcessPath(BidirectionalPath &path, bool subscribe) {
         if (subscribe)
             path.Subscribe(*this);
-
+        
         for (size_t i = 0; i < path.Size(); ++i) {
             EdgeAdded(path.At(i), path);
         }
@@ -69,8 +69,7 @@ public:
 
     explicit GraphCoverageMap(const Graph& g) : g_(g) {
         //FIXME heavy constructor
-        //todo discuss
-//        edge_coverage_.reserve(g_.e_size());
+        edge_coverage_.reserve(g_.e_size());
     }
 
     GraphCoverageMap(const Graph& g, const PathContainer& paths, bool subscribe = false) :

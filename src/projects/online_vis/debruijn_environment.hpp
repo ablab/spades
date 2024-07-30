@@ -13,10 +13,8 @@
 #include "vis_logger.hpp"
 
 #include "alignment/kmer_mapper.hpp"
-#include "barcode_index/barcode_index.hpp"
 #include "configs/config_struct.hpp"
 #include "io/binary/graph_pack.hpp"
-#include "io/binary/read_cloud.hpp"
 #include "pipeline/sequence_mapper_gp_api.hpp"
 #include "sequence/genome_storage.hpp"
 
@@ -36,11 +34,10 @@ class DebruijnEnvironment : public Environment {
         GraphElementFinder<Graph> element_finder_;
         std::shared_ptr<MapperClass> mapper_;
         FillerClass filler_;
-        visualization::graph_labeler::DefaultLabeler<Graph> default_labeler_;
-        visualization::graph_labeler::ReadCloudLabeler <Graph> barcode_labeler_;
-        visualization::graph_labeler::CompositeLabeler <Graph> labeler_;
+        visualization::graph_labeler::DefaultLabeler<Graph> labeler_;
         debruijn_graph::ReadPathFinder<Graph> path_finder_;
         ColoringClass coloring_;
+        //CompositeLabeler<Graph> labeler_;
 
     public :
 
@@ -59,19 +56,13 @@ class DebruijnEnvironment : public Environment {
               element_finder_(gp_.get<Graph>()),
               mapper_(debruijn_graph::MapperInstance(gp_)),
               filler_(gp_.get<Graph>(), mapper_, gp_.get_mutable<EdgePos>()),
-              pos_labeler_(gp_.get<Graph>(), gp_.get<EdgePos>()),
-              barcode_labeler_(gp_.g, gp_.barcode_mapper_ptr),
-              labeler_(pos_labeler_, barcode_labeler_),
+              labeler_(gp_.get<Graph>(), gp_.get<EdgePos>()),
               path_finder_(gp_.get<Graph>()) {
             DEBUG("Environment constructor");
             gp_.get_mutable<debruijn_graph::KmerMapper<Graph>>().Attach();
             io::binary::BasePackIO().Load(path_, gp_);
-            auto &barcode_mapper = gp_.get_mutable<barcode_index::FrameBarcodeIndex<Graph>>();
-            io::binary::Load(path_, barcode_mapper);
 //            debruijn_graph::graphio::ScanGraphPack(path_, gp_);
-            io::binary::Load(path_, gp_.barcode_mapper);
-            DEBUG("Graph pack created");
-            barcode_labeler_.UpdateExtractor(gp_.barcode_mapper, gp_.g);
+            DEBUG("Graph pack created")
             LoadFromGP();
         }
 
@@ -180,10 +171,6 @@ class DebruijnEnvironment : public Environment {
 
         const KmerMapperClass& kmer_mapper() const {
             return gp_.get<KmerMapperClass>();
-        }
-
-        const barcode_index::FrameBarcodeIndex<Graph>& GetBarcodeExtractor() const {
-            return gp_.get<barcode_index::FrameBarcodeIndex<Graph>>();
         }
 
         const ElementFinder& finder() const {

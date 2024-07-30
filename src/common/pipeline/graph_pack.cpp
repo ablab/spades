@@ -29,7 +29,7 @@ using namespace debruijn_graph;
 
 GraphPack::GraphPack(unsigned k, const std::filesystem::path &workdir, size_t lib_count,
                      const std::vector<std::string> &genome,
-                     size_t flanking_range, size_t max_mapping_gap, size_t max_gap_diff, size_t barcode_frame_size,
+                     size_t flanking_range, size_t max_mapping_gap, size_t max_gap_diff,
                      bool detach_indices) : k_(k), workdir_(workdir) {
     using namespace omnigraph::de;
     Graph &g = emplace<Graph>(k);
@@ -39,7 +39,6 @@ GraphPack::GraphPack(unsigned k, const std::filesystem::path &workdir, size_t li
     emplace<UnclusteredPairedInfoIndicesT<Graph>>(g, lib_count);
     emplace_with_key<PairedInfoIndicesT<Graph>>("clustered_indices", g, lib_count);
     emplace_with_key<PairedInfoIndicesT<Graph>>("scaffolding_indices", g, lib_count);
-    emplace<barcode_index::FrameBarcodeIndex<Graph>>(g, barcode_frame_size);
     emplace<LongReadContainer<Graph>>(g, lib_count);
     emplace<path_extend::TrustedPathsContainer>(lib_count);
     emplace<SSCoverageContainer>(g, lib_count);

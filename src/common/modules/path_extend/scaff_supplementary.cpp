@@ -178,27 +178,6 @@ bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByPaths(EdgeId e,
 }
 
 
-
-//Primitive topology check. Consider the edge non-unique if
-//there are multiple incoming and outgoing edges
-bool ScaffoldingUniqueEdgeAnalyzer::ConservativeByTopology(EdgeId e) {
-    size_t incoming = graph_.IncomingEdgeCount(graph_.EdgeStart(e));
-    size_t outcoming = graph_.OutgoingEdgeCount(graph_.EdgeEnd(e));
-    return incoming < 2 and outcoming < 2;
-}
-
-
-void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgesWithTopology(ScaffoldingUniqueEdgeStorage &storage_) {
-    for (auto iter = graph_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-        EdgeId e = *iter;
-        if (ConservativeByLength(e) && ConservativeByTopology(e)) {
-            storage_.unique_edges_.insert(e);
-        }
-    }
-    CheckCorrectness(storage_);
-}
-
-
 void ScaffoldingUniqueEdgeAnalyzer::CheckCorrectness(ScaffoldingUniqueEdgeStorage& unique_storage_pb) {
     for (EdgeId e : graph_.edges()) {
         bool e_unique = unique_storage_pb.IsUnique(e);
@@ -317,11 +296,6 @@ void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgesWithLongReads(GraphCoverageMa
     }
     CheckCorrectness(unique_storage_pb);
 }
-void ScaffoldingUniqueEdgeAnalyzer::AddUniqueEdgesFromSet(ScaffoldingUniqueEdgeStorage &storage,
-                                                          const std::set<EdgeId> &edges) const {
-    for (const auto &edge: edges) {
-        storage.unique_edges_.insert(edge);
-    }
-}
+
 
 }
