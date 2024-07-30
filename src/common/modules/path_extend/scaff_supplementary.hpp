@@ -103,7 +103,6 @@ class ScaffoldingUniqueEdgeAnalyzer {
     bool ConservativeByPaths(EdgeId e, const GraphCoverageMap &long_reads_cov_map,
                              const pe_config::LongReads &lr_config, int direction) const;
     bool ConservativeByLength(EdgeId e);
-    bool ConservativeByTopology(EdgeId e);
     void CheckCorrectness(ScaffoldingUniqueEdgeStorage& unique_storage_pb);
 protected:
     DECL_LOGGER("ScaffoldingUniqueEdgeAnalyzer")
@@ -118,8 +117,6 @@ public:
     void FillUniqueEdgesWithLongReads(GraphCoverageMap &long_reads_cov_map,
                                       ScaffoldingUniqueEdgeStorage &unique_storage_pb,
                                       const pe_config::LongReads &lr_config);
-    void FillUniqueEdgesWithTopology(ScaffoldingUniqueEdgeStorage &storage_);
-    void AddUniqueEdgesFromSet(ScaffoldingUniqueEdgeStorage &storage, const std::set<EdgeId> &edges) const;
 };
 
 class UsedUniqueStorage {
@@ -137,7 +134,7 @@ public:
     explicit UsedUniqueStorage(const ScaffoldingUniqueEdgeStorage& unique,
                                const debruijn_graph::ConjugateDeBruijnGraph &g)
         : unique_(unique)
-        , g_(g)
+        , g_(g) 
     {}
 
     void insert(EdgeId e, size_t path_id) {
@@ -199,13 +196,7 @@ struct UniqueData {
     ScaffoldingUniqueEdgeStorage main_unique_storage_;
     std::vector<ScaffoldingUniqueEdgeStorage> unique_storages_;
 
-  ScaffoldingUniqueEdgeStorage unique_pb_storage_;
-  struct ReadCloudStorages {
-    ScaffoldingUniqueEdgeStorage small_unique_storage_;
-    std::unordered_map<size_t, ScaffoldingUniqueEdgeStorage> lib_to_large_storage_;
-  };
-  ReadCloudStorages read_cloud_storages_;
-
+    ScaffoldingUniqueEdgeStorage unique_pb_storage_;
     std::vector<PathContainer> long_reads_paths_;
     std::vector<GraphCoverageMap> long_reads_cov_map_;
 };

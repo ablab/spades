@@ -163,38 +163,38 @@ class TrivialScaffoldPutChecker {
     DECL_LOGGER("TrivialScaffoldPutChecker");
 };
 
-typedef ComposedDijkstraSettings<scaffold_graph::ScaffoldGraph,
-                                 DistanceBasedScaffoldGraphLengthCalculator<scaffold_graph::ScaffoldGraph>,
-                                 StartPredicateProcessChecker<scaffold_graph::ScaffoldGraph>,
-                                 TrivialScaffoldPutChecker<scaffold_graph::ScaffoldGraph>,
-                                 ForwardNeighbourIteratorFactory<scaffold_graph::ScaffoldGraph> >
+typedef omnigraph::ComposedDijkstraSettings<scaffold_graph::ScaffoldGraph,
+                                            DistanceBasedScaffoldGraphLengthCalculator<scaffold_graph::ScaffoldGraph>,
+                                            StartPredicateProcessChecker<scaffold_graph::ScaffoldGraph>,
+                                            TrivialScaffoldPutChecker<scaffold_graph::ScaffoldGraph>,
+                                            omnigraph::ForwardNeighbourIteratorFactory<scaffold_graph::ScaffoldGraph> >
     PredicateBasedScaffoldDijkstraSettings;
 
-typedef Dijkstra<scaffold_graph::ScaffoldGraph, PredicateBasedScaffoldDijkstraSettings>
+typedef omnigraph::Dijkstra<scaffold_graph::ScaffoldGraph, PredicateBasedScaffoldDijkstraSettings>
     PredicateBasedScaffoldDijkstra;
 
 //forward scaffold dijkstra
 
-typedef ComposedDijkstraSettings<scaffold_graph::ScaffoldGraph,
-                                 SimpleScaffoldGraphLengthCalculator<scaffold_graph::ScaffoldGraph>,
-                                 BoundedVertexTargetedProcessChecker<scaffold_graph::ScaffoldGraph>,
-                                 ScaffoldBarcodedPathPutChecker<scaffold_graph::ScaffoldGraph>,
-                                 ForwardNeighbourIteratorFactory<scaffold_graph::ScaffoldGraph> >
+typedef omnigraph::ComposedDijkstraSettings<scaffold_graph::ScaffoldGraph,
+                                            SimpleScaffoldGraphLengthCalculator<scaffold_graph::ScaffoldGraph>,
+                                            omnigraph::BoundedVertexTargetedProcessChecker<scaffold_graph::ScaffoldGraph>,
+                                            ScaffoldBarcodedPathPutChecker<scaffold_graph::ScaffoldGraph>,
+                                            omnigraph::ForwardNeighbourIteratorFactory<scaffold_graph::ScaffoldGraph> >
     ForwardBoundedScaffoldDijkstraSettings;
 
-typedef Dijkstra<scaffold_graph::ScaffoldGraph, ForwardBoundedScaffoldDijkstraSettings>
+typedef omnigraph::Dijkstra<scaffold_graph::ScaffoldGraph, ForwardBoundedScaffoldDijkstraSettings>
     ForwardBoundedScaffoldDijkstra;
 
 //backward scaffold dijkstra
 
-typedef ComposedDijkstraSettings<scaffold_graph::ScaffoldGraph,
-                                 SimpleScaffoldGraphLengthCalculator<scaffold_graph::ScaffoldGraph>,
-                                 BoundedVertexTargetedProcessChecker<scaffold_graph::ScaffoldGraph>,
-                                 ScaffoldBarcodedPathPutChecker<scaffold_graph::ScaffoldGraph>,
-                                 BackwardNeighbourIteratorFactory<scaffold_graph::ScaffoldGraph> >
+typedef omnigraph::ComposedDijkstraSettings<scaffold_graph::ScaffoldGraph,
+                                            SimpleScaffoldGraphLengthCalculator<scaffold_graph::ScaffoldGraph>,
+                                            omnigraph::BoundedVertexTargetedProcessChecker<scaffold_graph::ScaffoldGraph>,
+                                            ScaffoldBarcodedPathPutChecker<scaffold_graph::ScaffoldGraph>,
+                                            omnigraph::BackwardNeighbourIteratorFactory<scaffold_graph::ScaffoldGraph> >
     BackwardBoundedScaffoldDijkstraSettings;
 
-typedef Dijkstra<scaffold_graph::ScaffoldGraph, BackwardBoundedScaffoldDijkstraSettings>
+typedef omnigraph::Dijkstra<scaffold_graph::ScaffoldGraph, BackwardBoundedScaffoldDijkstraSettings>
     BackwardBoundedScaffoldDijkstra;
 
 class ScaffoldDijkstraHelper {
@@ -208,9 +208,9 @@ class ScaffoldDijkstraHelper {
         size_t max_vertex_number = -1ul) {
         return BackwardBoundedScaffoldDijkstra(graph, BackwardBoundedScaffoldDijkstraSettings(
             SimpleScaffoldGraphLengthCalculator<scaffold_graph::ScaffoldGraph>(),
-            BoundedVertexTargetedProcessChecker<scaffold_graph::ScaffoldGraph>(first, length_bound),
+            omnigraph::BoundedVertexTargetedProcessChecker<scaffold_graph::ScaffoldGraph>(first, length_bound),
             ScaffoldBarcodedPathPutChecker<scaffold_graph::ScaffoldGraph>(graph, first, second, predicate),
-            BackwardNeighbourIteratorFactory<scaffold_graph::ScaffoldGraph>(graph)),
+            omnigraph::BackwardNeighbourIteratorFactory<scaffold_graph::ScaffoldGraph>(graph)),
                                                max_vertex_number);
     }
 
@@ -223,9 +223,9 @@ class ScaffoldDijkstraHelper {
         size_t max_vertex_number = -1ul) {
         return ForwardBoundedScaffoldDijkstra(graph, ForwardBoundedScaffoldDijkstraSettings(
             SimpleScaffoldGraphLengthCalculator<scaffold_graph::ScaffoldGraph>(),
-            BoundedVertexTargetedProcessChecker<scaffold_graph::ScaffoldGraph>(second, length_bound),
+            omnigraph::BoundedVertexTargetedProcessChecker<scaffold_graph::ScaffoldGraph>(second, length_bound),
             ScaffoldBarcodedPathPutChecker<scaffold_graph::ScaffoldGraph>(graph, first, second, predicate),
-            ForwardNeighbourIteratorFactory<scaffold_graph::ScaffoldGraph>(graph)),
+            omnigraph::ForwardNeighbourIteratorFactory<scaffold_graph::ScaffoldGraph>(graph)),
                                               max_vertex_number);
     }
 
@@ -238,7 +238,7 @@ class ScaffoldDijkstraHelper {
             DistanceBasedScaffoldGraphLengthCalculator<scaffold_graph::ScaffoldGraph>(graph),
             StartPredicateProcessChecker<scaffold_graph::ScaffoldGraph>(graph, vertex, predicate),
             TrivialScaffoldPutChecker<scaffold_graph::ScaffoldGraph>(),
-            ForwardNeighbourIteratorFactory<scaffold_graph::ScaffoldGraph>(graph)),
+            omnigraph::ForwardNeighbourIteratorFactory<scaffold_graph::ScaffoldGraph>(graph)),
                                               max_vertex_number);
     }
 };

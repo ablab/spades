@@ -1,2 +1,0 @@
-link:{{ relref . (.Get 0) }}[`lexy/{{ .Get 0 }}.hpp`]
-{{- printf "" -}}

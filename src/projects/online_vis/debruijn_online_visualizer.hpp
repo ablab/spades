@@ -44,9 +44,6 @@ class DebruijnOnlineVisualizer : public OnlineVisualizer<DebruijnEnvironment> {
     AddCommand(make_shared<JunctionSequenceCommand>());
     AddCommand(make_shared<PrintEdgeCommand>());
     AddCommand(make_shared<ClipTipsCommand>());
-    AddCommand(make_shared<DrawGapWithinContigCommand>());
-    AddCommand(make_shared<PrintBarcodesCommand>());
-    AddCommand(make_shared<PrintLongEdgesCommand>());
   }
 
  public:

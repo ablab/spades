@@ -11,13 +11,13 @@
 #include "extenders_logic.hpp"
 #include "launch_support.hpp"
 
-#include "modules/path_extend/pe_resolver.hpp"
 #include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
+#include "modules/path_extend/pe_resolver.hpp"
+#include "modules/path_extend/scaffolder2015/connection_condition2015.hpp"
 #include "modules/genome_consistance_checker.hpp"
 
 #include "alignment/rna/ss_coverage.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
-#include "modules/path_extend/scaffolder2015/connection_condition2015.hpp"
 
 namespace path_extend {
 
