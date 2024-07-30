@@ -1,3 +1,0 @@
-.`{{ .Page.Params.header }}`
-[source,cpp,subs="+quotes"]
-

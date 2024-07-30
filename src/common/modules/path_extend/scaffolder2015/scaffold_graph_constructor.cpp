@@ -9,8 +9,7 @@
 // Created by andrey on 04.12.15.
 //
 
-#include <common/assembly_graph/dijkstra/read_cloud_dijkstra/scaffold_graph_dijkstra.hpp>
-#include "common/assembly_graph/dijkstra/read_cloud_dijkstra/read_cloud_dijkstras.hpp"
+#include "common/modules/path_extend/scaffolder2015/scaffold_graph_dijkstra.hpp"
 #include "scaffold_graph_constructor.hpp"
 #include "scaffold_graph_dijkstra.hpp"
 

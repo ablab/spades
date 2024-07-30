@@ -1,5 +1,6 @@
 //***************************************************************************
-//* Copyright (c) 2020 Saint Petersburg State University
+//* Copyright (c) 2023-2024 SPAdes team
+//* Copyright (c) 2020-2022 Saint Petersburg State University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
@@ -25,6 +26,7 @@ namespace path_extend {
 
 using namespace debruijn_graph;
 using namespace omnigraph::de;
+using namespace path_extend::scaffolder;
 
 std::vector<std::shared_ptr<ConnectionCondition>>
 PathExtendLauncher::ConstructPairedConnectionConditions(const ScaffoldingUniqueEdgeStorage& edge_storage) const {
@@ -56,7 +58,6 @@ PathExtendLauncher::ConstructPairedConnectionConditions(const ScaffoldingUniqueE
 
 std::shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructScaffoldGraph(const ScaffoldingUniqueEdgeStorage &edge_storage) const {
     using namespace scaffold_graph;
-    using namespace scaffolder;
 
     const pe_config::ParamSetT::ScaffoldGraphParamsT &params = params_.pset.scaffold_graph_params;
 
@@ -304,9 +305,9 @@ size_t PathExtendLauncher::GetLengthCutoff(size_t abs_cutoff, double rel_cutoff)
     int abs_len = int(abs_cutoff) - int(cfg::get().K);
     size_t result = (size_t) std::max(0, std::max(rel_len, abs_len));
 
-    INFO("Read length relative cutoff " << rel_cutoff << " converted to " << rel_len);
-    INFO("Read length absolute cutoff " << abs_cutoff << " bp converted to " << result);
-    INFO("Length cutoff: " << result);
+    DEBUG("Read length relative cutoff " << rel_cutoff << " converted to " << rel_len);
+    DEBUG("Read length absolute cutoff " << abs_cutoff << " bp converted to " << result);
+    DEBUG("Length cutoff: " << result);
     return result;
 }
 
@@ -506,17 +507,20 @@ void PathExtendLauncher::FilterPaths(PathContainer &contig_paths) {
         if (filtration_name == "default") {
             default_filtration = it;
         } else {
-            INFO("Finalizing paths - " + filtration_name);
+            auto file_name = filtration_name + "_filtered_final_paths.fasta";
+            INFO("Finalizing paths - " << filtration_name << ", will be saved to " << file_name);
             PathContainer to_clean(contig_paths.begin(), contig_paths.end());
             CleanPaths(to_clean, it->second);
             DebugOutputPaths(to_clean, filtration_name + "_final_paths");
-            writer_.OutputPaths(to_clean, params_.output_dir / (filtration_name + "_filtered_final_paths.fasta"));
+            writer_.OutputPaths(to_clean, params_.output_dir / file_name);
+            contig_name_generator_->PrintStats();
         }
     }
     if (default_filtration != params_.pset.path_filtration.end()) {
         INFO("Finalizing main paths");
         CleanPaths(contig_paths, default_filtration->second);
         DebugOutputPaths(contig_paths, "final_paths");
+        contig_name_generator_->PrintStats();
     }
 }
 
@@ -656,7 +660,6 @@ void PathExtendLauncher::Launch() {
     
     GraphCoverageMap polished_map(graph_, contig_paths, true);
     DebugOutputPaths(contig_paths, "polished_paths");
-
     TraverseLoops(contig_paths, polished_map);
     DebugOutputPaths(contig_paths, "loop_traveresed");
 
