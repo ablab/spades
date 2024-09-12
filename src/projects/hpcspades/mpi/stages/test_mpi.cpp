@@ -4,8 +4,8 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "projects/hpcspades/common/pipeline/mpi_stage.hpp"
-#include "projects/hpcspades/common/pipeline/partask_mpi.hpp"
+#include "mpi/pipeline/mpi_stage.hpp"
+#include "mpi/pipeline/partask_mpi.hpp"
 
 #include <array>
 #include <algorithm>

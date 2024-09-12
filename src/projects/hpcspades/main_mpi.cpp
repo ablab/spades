@@ -7,9 +7,9 @@
 //***************************************************************************
 
 #include "configs/config_struct.hpp"
-#include "common/pipeline/partask_mpi.hpp"
+#include "mpi/pipeline/partask_mpi.hpp"
 
-#include "common/utils/logger/mpi_log_writers.hpp"
+#include "mpi/utils/logger/mpi_log_writers.hpp"
 #include "utils/memory_limit.hpp"
 #include "utils/segfault_handler.hpp"
 #include "utils/perf/timetracer.hpp"

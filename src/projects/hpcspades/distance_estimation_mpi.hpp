@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "common/pipeline/mpi_stage.hpp"
+#include "mpi/pipeline/mpi_stage.hpp"
 #include "projects/spades/distance_estimation.hpp"
 
 namespace debruijn_graph {
