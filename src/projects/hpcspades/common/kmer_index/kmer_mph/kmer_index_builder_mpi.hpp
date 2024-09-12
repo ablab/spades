@@ -8,7 +8,7 @@
 #include "kmer_index/kmer_mph/kmer_index_builder.hpp"
 #include "kmer_index/kmer_mph/kmer_buckets.hpp"
 
-#include "pipeline/partask_mpi.hpp"
+#include "projects/hpcspades/common/pipeline/partask_mpi.hpp"
 
 namespace kmers {
 template<class Index>

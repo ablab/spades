@@ -23,7 +23,6 @@
 #include "io/binary/binary.hpp"
 #include "io/binary/types/phmap.hpp"
 #include "io/binary/graph_pack.hpp"
-#include "pipeline/partask_mpi.hpp"
 
 template <typename Iter>
 std::vector<Iter> split_iterator(size_t chunks, Iter b, Iter e, size_t n) {
@@ -468,7 +467,7 @@ namespace mismatches {
 void MismatchCorrection::run(graph_pack::GraphPack &gp, const char*) {
     EnsureBasicMapping(gp);
     size_t corrected =
-            mismatches::MismatchShallNotPass(MapLibFunc(), gp, 2, partask::overall_num_threads())
+            mismatches::MismatchShallNotPass(MapLibFunc(), gp, 2)
             .ParallelStopAllMismatches(1);
     INFO("Corrected " << corrected << " nucleotides");
 }

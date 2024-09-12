@@ -22,7 +22,6 @@
 #include "library/library.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/stage.hpp"
-#include "pipeline/mpi_stage.hpp"
 #include "alignment/kmer_mapper.hpp"
 #include "wastewater_disentangle.hpp"
 
@@ -237,11 +236,7 @@ void assemble_genome(bool mpi = false) {
     std::unique_ptr<StageManager> SPAdes;
     SavesPolicy saves_policy(cfg::get().checkpoints,
                              cfg::get().output_saves, cfg::get().load_from);
-    if (mpi) {
-        SPAdes.reset(new MPIStageManager(saves_policy));
-    } else {
-        SPAdes.reset(new StageManager(saves_policy));
-    }
+    SPAdes.reset(new StageManager(saves_policy));
 
     if (SPAdes->saves_policy().EnabledAnyCheckpoint())
         create_directory(cfg::get().output_saves);

@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "stage.hpp"
+#include "pipeline/stage.hpp"
 
 #include <vector>
 #include <memory>

@@ -20,8 +20,8 @@
 #include "modules/graph_construction.hpp"
 #include "pipeline/genomic_info.hpp"
 #include "pipeline/graph_pack.hpp"
-#include "pipeline/mpi_stage.hpp"
-#include "pipeline/partask_mpi.hpp"
+#include "projects/hpcspades/common/pipeline/mpi_stage.hpp"
+#include "projects/hpcspades/common/pipeline/partask_mpi.hpp"
 #include "utils/filesystem/temporary.hpp"
 
 namespace debruijn_graph {

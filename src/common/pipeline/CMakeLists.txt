@@ -14,14 +14,5 @@ set(pipeline_src
   sequence_mapper_gp_api.cpp
   stage.cpp)
 
-if (MPI_FOUND)
-  set(pipeline_src ${pipeline_src} mpi_stage.cpp)
-endif()
-
 add_library(pipeline STATIC ${pipeline_src})
-
-if (MPI_FOUND)
-  target_link_libraries(pipeline binary_io path_extend input llvm-support library configs alignment ${MPI_LIBRARIES})
-else()
-  target_link_libraries(pipeline binary_io path_extend input llvm-support library configs alignment)
-endif()
+target_link_libraries(pipeline binary_io path_extend input llvm-support library configs alignment)

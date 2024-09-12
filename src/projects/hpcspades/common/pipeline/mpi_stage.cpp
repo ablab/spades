@@ -4,10 +4,11 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "pipeline/stage.hpp"
-#include "pipeline/mpi_stage.hpp"
-
+#include "mpi_stage.hpp"
 #include "partask_mpi.hpp"
+
+#include "pipeline/stage.hpp"
+
 #include "io/binary/graph_pack.hpp"
 #include "io/dataset_support/read_converter.hpp"
 #include "utils/logger/log_writers.hpp"
