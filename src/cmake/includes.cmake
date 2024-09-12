@@ -13,7 +13,3 @@ endif()
 if (SPADES_USE_JEMALLOC)
   include_directories("$<TARGET_FILE_DIR:jemalloc-static>/../include")
 endif()
-
-if (MPI_FOUND)
-  include_directories("${MPI_INCLUDE_PATH}")
-endif()
