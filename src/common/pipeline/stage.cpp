@@ -9,7 +9,6 @@
 #include "stage.hpp"
 
 #include "graph_pack_helpers.h"
-#include "partask_mpi.hpp"
 
 #include "io/binary/graph_pack.hpp"
 #include "io/dataset_support/read_converter.hpp"
@@ -36,10 +35,8 @@ void AssemblyStage::load(graph_pack::GraphPack& gp,
     io::binary::FullPackIO().Load(p, gp);
     debruijn_graph::config::load_lib_data(p);
 
-    // FIXME: Should not be here
-    partask::critical_ordered([] { io::ConvertIfNeeded(cfg::get_writable().ds.reads, cfg::get().max_threads); });
+    io::ConvertIfNeeded(cfg::get_writable().ds.reads, cfg::get().max_threads);
 }
-
 
 void AssemblyStage::save(const graph_pack::GraphPack& gp,
                          const std::filesystem::path &save_to,

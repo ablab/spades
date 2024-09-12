@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "pipeline/mpi_stage.hpp"
+#include "projects/hpcspades/common/pipeline/mpi_stage.hpp"
 
 namespace debruijn_graph {
 

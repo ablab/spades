@@ -8,7 +8,7 @@
 #define MPI_DISTANCE_ESTIMATION_HPP_
 
 #include "common/paired_info/distance_estimation.hpp"
-#include "pipeline/partask_mpi.hpp"
+#include "projects/hpcspades/common/pipeline/partask_mpi.hpp"
 
 namespace omnigraph {
     namespace de {

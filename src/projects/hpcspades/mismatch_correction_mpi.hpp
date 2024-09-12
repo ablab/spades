@@ -8,7 +8,7 @@
 
 #include "projects/spades/mismatch_correction.hpp"
 #include "common/alignment/sequence_mapper_notifier_mpi.hpp"
-#include "pipeline/mpi_stage.hpp"
+#include "common/pipeline/mpi_stage.hpp"
 #include "pipeline/graph_pack_helpers.h"
 
 namespace debruijn_graph {
