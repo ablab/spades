@@ -5,9 +5,9 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "projects/hpcspades/common/pipeline/partask_mpi.hpp"
+#include "mpi/pipeline/partask_mpi.hpp"
 #include "io/binary/graph.hpp"
-#include "common/assembly_graph/construction/debruijn_graph_constructor.hpp"
+#include "assembly_graph/construction/debruijn_graph_constructor.hpp"
 
 namespace debruijn_graph {
 template<class Graph>

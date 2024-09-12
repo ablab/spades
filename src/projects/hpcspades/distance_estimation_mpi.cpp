@@ -6,7 +6,7 @@
 
 #include "distance_estimation_mpi.hpp"
 
-#include "common/paired_info/distance_estimation_utils.hpp"
+#include "mpi/paired_info/distance_estimation_utils.hpp"
 
 namespace debruijn_graph {
 void DistanceEstimationMPI::run(graph_pack::GraphPack &gp, const char* s) {

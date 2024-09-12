@@ -9,7 +9,7 @@
 #include "kmer_index/ph_map/kmer_maps.hpp"
 #include "kmer_index/ph_map/cqf_hash_map.hpp"
 
-#include "..//kmer_mph/kmer_index_builder_mpi.hpp"
+#include "mpi/kmer_index/kmer_mph/kmer_index_builder_mpi.hpp"
 #include "kmer_index/kmer_mph/kmer_index_builder.hpp"
 #include "kmer_index/kmer_mph/kmer_splitters.hpp"
 #include "common/utils/perf/timetracer.hpp"
