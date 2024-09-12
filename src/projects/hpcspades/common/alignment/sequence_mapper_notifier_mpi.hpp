@@ -16,7 +16,7 @@
 #include "io/reads/read_stream_vector.hpp"
 
 #include "utils/perf/timetracer.hpp"
-#include "pipeline/partask_mpi.hpp"
+#include "projects/hpcspades/common/pipeline/partask_mpi.hpp"
 
 #include <string>
 #include <vector>
