@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "projects/hpcspades/common/pipeline/mpi_stage.hpp"
+#include "mpi/pipeline/mpi_stage.hpp"
 
 namespace debruijn_graph {
 struct ConstructionStorage;

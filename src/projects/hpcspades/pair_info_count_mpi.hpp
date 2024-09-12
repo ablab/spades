@@ -8,8 +8,8 @@
 #pragma once
 
 #include "projects/spades/pair_info_count.hpp"
-#include "common/alignment/sequence_mapper_notifier_mpi.hpp"
-#include "common/pipeline/mpi_stage.hpp"
+#include "mpi/alignment/sequence_mapper_notifier_mpi.hpp"
+#include "mpi/pipeline/mpi_stage.hpp"
 
 namespace debruijn_graph {
 class PairInfoCountMPI : public PairInfoCountBase, public spades_mpi::MPIAssemblyStage {

@@ -43,7 +43,8 @@ if (MPI_FOUND)
   include_directories("${MPI_INCLUDE_PATH}")
 endif()
 
-add_subdirectory(common)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+add_subdirectory(mpi)
 
 add_library(spades-stages-hpc STATIC distance_estimation_mpi.cpp)
 
