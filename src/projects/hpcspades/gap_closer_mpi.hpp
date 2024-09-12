@@ -10,7 +10,7 @@
 
 #include "projects/spades/gap_closer.hpp"
 #include "common/alignment/sequence_mapper_notifier_mpi.hpp"
-#include "pipeline/mpi_stage.hpp"
+#include "common/pipeline/mpi_stage.hpp"
 #include "io/reads/io_helper.hpp"
 
 namespace debruijn_graph {

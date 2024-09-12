@@ -23,7 +23,7 @@
 #include "library/library.hpp"
 #include "pipeline/graph_pack.hpp"
 #include "pipeline/stage.hpp"
-#include "pipeline/mpi_stage.hpp"
+#include "common/pipeline/mpi_stage.hpp"
 #include "alignment/kmer_mapper.hpp"
 
 #include "stages/genomic_info_filler.hpp"

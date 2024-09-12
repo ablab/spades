@@ -5,7 +5,7 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "pipeline/partask_mpi.hpp"
+#include "projects/hpcspades/common/pipeline/partask_mpi.hpp"
 #include "io/binary/graph.hpp"
 #include "common/assembly_graph/construction/debruijn_graph_constructor.hpp"
 
