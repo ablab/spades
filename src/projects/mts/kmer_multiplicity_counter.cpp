@@ -13,6 +13,7 @@
 #include <iostream>
 #include <memory>
 #include <algorithm>
+#include <optional>
 #include "getopt_pp/getopt_pp.h"
 #include "kmc_api/kmc_file.h"
 #include <pdqsort/pdqsort.h>
