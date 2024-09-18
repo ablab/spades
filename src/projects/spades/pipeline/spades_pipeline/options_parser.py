@@ -799,6 +799,66 @@ def add_hidden_args(pgroup_hidden):
                                if show_help_hidden else argparse.SUPPRESS,
                                action="help")
 
+def add_cluster_args(pgroup_cluster):
+    pgroup_cluster.add_argument("--grid-engine",
+                                metavar="<ge>",
+                                dest="grid_engine",
+                                default="local",
+                                help="run under grid control\n"
+                                     "('lsf', 'slurm', 'local', 'mpi', save_yaml') "
+                                     "[default: 'local']",
+                                action="store")
+    pgroup_cluster.add_argument("--grid-queue",
+                                metavar="<string>",
+                                dest="grid_queue",
+                                default="mpi-rh74",
+                                help="submits the jobs to one of the specified queues",
+                                action="store")
+    pgroup_cluster.add_argument("--grid-nnodes",
+                                metavar="<int>",
+                                dest="grid_nnodes",
+                                type=int,
+                                default=2,
+                                help="specifies the number of processors",
+                                action="store")
+    pgroup_cluster.add_argument("--grid-wait",
+                                dest="grid_wait",
+                                help="wait for job finish",
+                                action="store_true")
+    pgroup_cluster.add_argument("--grid-qos",
+                                dest="grid_qos",
+                                default="lr_normal",
+                                help="quality of service for the jobs (for SLURM grid engine)",
+                                metavar="<string>",
+                                action="store")
+    pgroup_cluster.add_argument("--grid-partition",
+                                dest="grid_partition",
+                                default="lr3",
+                                help="partition for the resource allocation (for SLURM grid enging)",
+                                metavar="<string>",
+                                action="store")
+    pgroup_cluster.add_argument("--grid-account",
+                                dest="grid_account",
+                                default="ac_scsguest",
+                                help="charge resources used by this run to specified account (for SLURM grid engine)",
+                                metavar="<string>",
+                                action="store")
+
+    show_help_hidden = ("--help-hidden" in sys.argv)
+
+    pgroup_cluster.add_argument("--grid-profile",
+                                dest="grid_profile",
+                                action="store_true",
+                                help="enable mpi task profiling (for SLURM grid engine, for developers only)" if show_help_hidden else argparse.SUPPRESS)
+    pgroup_cluster.add_argument("--grid-valgrind",
+                                dest="grid_valgrind",
+                                action="store_true",
+                                help="run mpi tasks with valgrind (for SLURM grid engine, for developers only" if show_help_hidden else argparse.SUPPRESS)
+    pgroup_cluster.add_argument("--grid-coredump",
+                                dest="grid_coredump",
+                                action="store_true",
+                                help="enable core dumps for mpi tasks (for SLURM cluster, for developers only" if show_help_hidden else argparse.SUPPRESS)
+
 
 def create_parser():
     parser = argparse.ArgumentParser(prog="spades.py", formatter_class=SpadesHelpFormatter,
@@ -809,12 +869,14 @@ def create_parser():
     pgroup_input_data = parser.add_argument_group("Input data")
     pgroup_pipeline = parser.add_argument_group("Pipeline options")
     pgroup_advanced = parser.add_argument_group("Advanced options")
+    pgroup_cluster = parser.add_argument_group('Cluster execution options')
     pgroup_hidden = parser.add_argument_group("Hidden options")
 
     add_basic_args(pgroup_basic)
     add_input_data_args(pgroup_input_data)
     add_pipeline_args(pgroup_pipeline)
     add_advanced_args(pgroup_advanced)
+    add_cluster_args(pgroup_cluster)
     add_hidden_args(pgroup_hidden)
 
     return parser

@@ -177,8 +177,9 @@ class IterationStage(stage.Stage):
 
         command = [commands_parser.Command(
             STAGE="K%d" % self.K,
-            path=os.path.join(self.bin_home, "spades-core"),
+            path=os.path.join(self.bin_home, "{spades_core}"),
             args=args,
             config_dir=os.path.relpath(data_dir, options_storage.args.output_dir),
-            short_name=self.short_name)]
+            short_name=self.short_name,
+            mpi_support=True)]
         return command
