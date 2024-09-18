@@ -15,16 +15,19 @@ add_library(path_extend STATIC
             path_extenders.cpp
             pe_resolver.cpp
             overlap_remover.cpp
+            path_scaffolder.cpp
             pipeline/launch_support.cpp
             pipeline/launcher.cpp
             pipeline/extenders_logic.cpp
             scaffolder2015/extension_chooser2015.cpp
-            scaffolder2015/scaffold_graph.cpp
             scaffolder2015/scaffold_graph_constructor.cpp
             scaffolder2015/scaffold_graph_visualizer.cpp
-            scaffolder2015/connection_condition2015.cpp 
-            scaffolder2015/path_polisher.cpp)
+            scaffolder2015/connection_condition2015.cpp
+            scaffolder2015/path_polisher.cpp
+            read_cloud_path_extend/scaffold_graph_extractor.cpp
+            read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.cpp
+        )
 
-target_link_libraries(path_extend assembly_graph ssw configs)
+target_link_libraries(path_extend assembly_graph auxiliary_graphs ssw configs)
 
 

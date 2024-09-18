@@ -55,6 +55,12 @@ struct LibraryData {
         size_t chunk_num = 0;
     } binary_reads_info;
 
+    struct ReadCloudInfo {
+        ReadCloudInfo()
+            : fragment_length_distribution() {}
+        std::map<uint64_t, size_t> fragment_length_distribution;
+    } read_cloud_info;
+
     void clear() {
         unmerged_read_length = merged_read_length = 0;
         mean_insert_size = insert_size_deviation
@@ -68,6 +74,7 @@ struct LibraryData {
         total_nucls = read_count = 0;
         pi_threshold = 0.0;
         binary_reads_info = BinaryReadsInfo();
+        read_cloud_info = ReadCloudInfo();
     }
 
     LibraryData() {
@@ -84,6 +91,11 @@ namespace llvm { namespace yaml {
 template<>
 struct MappingTraits<debruijn_graph::config::LibraryData::BinaryReadsInfo> {
     static void mapping(IO &io, debruijn_graph::config::LibraryData::BinaryReadsInfo &info);
+};
+
+template<>
+struct MappingTraits<debruijn_graph::config::LibraryData::ReadCloudInfo> {
+  static void mapping(IO &io, debruijn_graph::config::LibraryData::ReadCloudInfo &info);
 };
 
 template<>

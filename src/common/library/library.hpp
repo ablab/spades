@@ -197,7 +197,8 @@ public:
     bool is_graph_constructable() const {
         return type_ == io::LibraryType::PairedEnd ||
                type_ == io::LibraryType::SingleReads ||
-               type_ == io::LibraryType::HQMatePairs;
+               type_ == io::LibraryType::HQMatePairs ||
+               type_ == io::LibraryType::Clouds10x;
     }
 
     bool is_bwa_alignable() const {
@@ -215,7 +216,8 @@ public:
     bool is_paired() const {
         return type_ == io::LibraryType::PairedEnd ||
                type_ == io::LibraryType::MatePairs ||
-               type_ == io::LibraryType::HQMatePairs;
+               type_ == io::LibraryType::HQMatePairs ||
+               type_ == io::LibraryType::Clouds10x;
     }
 
     bool is_single() const {
