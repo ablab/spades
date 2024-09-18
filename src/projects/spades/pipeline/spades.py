@@ -36,7 +36,6 @@ options_storage.spades_version = spades_version
 
 import options_parser
 from stages.pipeline import Pipeline
-import executor_local
 import executor_save_yaml
 
 def print_used_values(cfg, log):
@@ -561,6 +560,20 @@ def build_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, l
     terminating_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
                                          ext_python_modules_home, python_modules_home)
 
+def get_executor(log):
+    import importlib
+    module_name = "executor_" + options_storage.args.grid_engine
+    executor_module = importlib.import_module(module_name)
+    return executor_module.Executor(log)
+
+
+def get_sh_dump_executor(log):
+    if options_storage.args.grid_engine == "local":
+        return executor_save_yaml.Executor(log)
+    else:
+        import executor_save_mpi_sh
+        return executor_save_mpi_sh.Executor(log)
+
 
 def check_dir_is_empty(dir_name):
     if dir_name is not None and \
@@ -577,7 +590,7 @@ def init_parser(args):
         output_dir = options_parser.get_output_dir_from_args()
         if output_dir is None:
             support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).")
-            
+
         command_line, options, script, err_msg = get_options_from_params(
             os.path.join(output_dir, "params.txt"),
             args[0])
@@ -597,6 +610,8 @@ def main(args):
         options_parser.usage(spades_version)
         sys.exit(0)
 
+    jobs = []
+    executor = None
     pipeline = Pipeline()
 
     log = create_logger()
@@ -624,17 +639,45 @@ def main(args):
         pipeline.generate_configs(cfg, spades_home, tmp_configs_dir)
         commands = pipeline.get_commands(cfg)
 
-        executor = executor_save_yaml.Executor(log)
+        executor = get_sh_dump_executor(log)
         executor.execute(commands)
 
-        if not options_storage.args.only_generate_config:
-            executor = executor_local.Executor(log)
-            executor.execute(commands)
+        executor = get_executor(log)
+        if options_storage.args.grid_engine != "local":
+            executor.dump_commands(commands, os.path.join(options_storage.args.output_dir, "run_spades_on_cluster.sh"))
+
+        if options_storage.args.only_generate_config:
+            jobs = None
+        else:
+            jobs = executor.execute(commands)
+
+        if jobs is not None and len(jobs):
+            last_job = jobs[-1]
+            if options_storage.args.grid_wait:
+                log.info("Waiting for the last job: " + last_job)
+                executor.join(last_job)
+            else:
+                log.info("Last job name: " + last_job)
+
+        is_result = (options_storage.args.grid_engine != "save_yaml" and (
+            not options_storage.args.only_generate_config)) and \
+                    (options_storage.args.grid_wait or options_storage.args.grid_engine == "local")
+        if is_result:
+            # TODO make it executor method executor.is_fake()
             print_info_about_output_files(cfg, log, output_files)
 
         if not support.log_warnings(log):
-            log.info("\n======= SPAdes pipeline finished.")
+            if is_result:
+                log.info("\n======= SPAdes pipeline finished.")  # otherwise it finished WITH WARNINGS
+            else:
+                log.info("\n======= SPAdes pipeline submitted.")
 
+    except KeyboardInterrupt:
+        log.info("Ctrl + C pressed, killing jobs...")
+        if executor is not None:
+            for job in jobs:
+                log.info("Killing " + job)
+                executor.kill(job)
     except Exception:
         exc_type, exc_value, _ = sys.exc_info()
         if exc_type == SystemExit:
