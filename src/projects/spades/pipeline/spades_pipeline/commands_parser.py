@@ -16,11 +16,16 @@ import sys
 
 class Command(object):
     def __init__(self, STAGE, path, args, short_name, config_dir="",
+                 mpi_support=False, job_uuid="",
                  del_after=None, output_files=None):
         self.STAGE = STAGE
         self.path = path
         self.args = args
         self.short_name = short_name
+        self.mpi_support = mpi_support
+        self.job_uuid = self.generate_job_uuid()
+        if job_uuid != "":
+            self.job_uuid = job_uuid
         self.config_dir = config_dir
         self.del_after = del_after
         if self.del_after is None:
@@ -30,10 +35,32 @@ class Command(object):
             self.output_files = []
 
     def to_list(self):
-        return [self.path] + self.args
+        return [self.path.format(spades_core="spades-core")] + self.args
+
+    def to_sh_list(self):
+        if self.path == sys.executable:
+            return ["$PYTHON"] + self.args
+        return [self.path.format(spades_core="spades-core")] + self.args
+
+    def to_mpi_list(self):
+        return [self.path.format(spades_core="spades-hpc")] + self.args
+
+    def to_mpi_sh_list(self):
+        if self.path == sys.executable:
+            return ["$PYTHON"] + self.args
+        return [self.path.format(spades_core="spades-hpc")] + self.args
 
     def __str__(self):
         return ' '.join(self.to_list())
+
+    def sh_str(self):
+        return ' '.join(self.to_sh_list())
+
+    def mpi_str(self):
+        return ' '.join(self.to_mpi_list())
+
+    def mpi_sh_str(self):
+        return ' '.join(self.to_mpi_sh_list())
 
     def run(self, log):
         support.sys_call(self.to_list(), log)
@@ -43,9 +70,16 @@ class Command(object):
                 "path": self.path,
                 "args": self.args,
                 "short_name": self.short_name,
+                "mpi_support": self.mpi_support,
+                "job_uuid": self.job_uuid,
                 "config_dir": self.config_dir,
                 "output_files": self.output_files,
                 "del_after": self.del_after}
+
+    def generate_job_uuid(self):
+        return self.STAGE.replace(' ', '_') + "_" + \
+               ''.join([random.choice(string.ascii_uppercase + string.digits) for k in range(32)])
+
 
 
 def write_commands_to_sh(commands, output_file):
@@ -53,6 +87,13 @@ def write_commands_to_sh(commands, output_file):
         fw.write("set -e\n")
         for command in commands:
             fw.write(command.__str__() + "\n")
+
+
+def write_commands_to_mpi_sh(commands, output_file):
+    with open(output_file, 'w') as fw:
+        fw.write("set -e\n")
+        for command in commands:
+            fw.write(command.mpi_str() + "\n")
 
 
 def write_commands_to_yaml(commands, output_file):
