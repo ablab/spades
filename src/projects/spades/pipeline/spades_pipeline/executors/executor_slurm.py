@@ -53,7 +53,7 @@ class Executor(executors.ExecutorCluster):
         return preambula
 
     def get_sh_command(self, command, prev_id, mpi):
-        cmd_str = "#=== STAGE " + command.STAGE + ("(MPI) ===\n" if mpi else "(not MPI) ===\n")
+        cmd_str = "#=== STAGE " + command.STAGE + (" (MPI) ===\n" if mpi else " (not MPI) ===\n")
         cmd_str += "CMD=\"" + command.mpi_sh_str() + "\"\n"
         cmd_str += "SID1=$(" + self.grid_engine_submit_command + " $SLURM_ARGS " + \
                    self.grid_engine_job_name.format(JOB_NAME=command.job_uuid)  + " $LOG_OUT $ERR_OUT "
