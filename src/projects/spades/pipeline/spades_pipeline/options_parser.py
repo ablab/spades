@@ -811,7 +811,7 @@ def add_cluster_args(pgroup_cluster):
     pgroup_cluster.add_argument("--grid-queue",
                                 metavar="<string>",
                                 dest="grid_queue",
-                                default="mpi-rh74",
+                                default="standard",
                                 help="submits the jobs to one of the specified queues",
                                 action="store")
     pgroup_cluster.add_argument("--grid-nnodes",
@@ -825,22 +825,16 @@ def add_cluster_args(pgroup_cluster):
                                 dest="grid_wait",
                                 help="wait for job finish",
                                 action="store_true")
-    pgroup_cluster.add_argument("--grid-qos",
-                                dest="grid_qos",
-                                default="lr_normal",
-                                help="quality of service for the jobs (for SLURM grid engine)",
+    pgroup_cluster.add_argument("--grid-extra",
+                                dest="grid_extra",
+                                default="",
+                                help="any extra commands",
                                 metavar="<string>",
                                 action="store")
-    pgroup_cluster.add_argument("--grid-partition",
-                                dest="grid_partition",
-                                default="lr3",
-                                help="partition for the resource allocation (for SLURM grid enging)",
-                                metavar="<string>",
-                                action="store")
-    pgroup_cluster.add_argument("--grid-account",
-                                dest="grid_account",
-                                default="ac_scsguest",
-                                help="charge resources used by this run to specified account (for SLURM grid engine)",
+    pgroup_cluster.add_argument("--grid-time",
+                                dest="grid_time",
+                                default="1:00:00",
+                                help="time limit",
                                 metavar="<string>",
                                 action="store")
 
