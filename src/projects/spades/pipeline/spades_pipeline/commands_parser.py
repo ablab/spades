@@ -77,7 +77,8 @@ class Command(object):
                 "del_after": self.del_after}
 
     def generate_job_uuid(self):
-        return self.STAGE.replace(' ', '_') + "_" + \
+        return ('hpcSPAdes_' if self.mpi_support else 'SPAdes_') + \
+            self.STAGE.replace(' ', '_') + "_" + \
                ''.join([random.choice(string.ascii_uppercase + string.digits) for k in range(32)])
 
 
