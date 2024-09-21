@@ -16,7 +16,7 @@ import support
 class Executor(executors.ExecutorCluster):
     grid_engine = "SLURM"
     grid_engine_submit_command = "sbatch"
-    grid_engine_slurm_args = "--hint=compute_bound --mem-bind=verbose,none --exclusive --cpus-per-task {NCPUS} --open-mode=append --kill-on-invalid-dep=yes --mem {MEMORY_MB}M --partition={PARTITION} --account={ACCOUNT} --qos={QOS}"
+    grid_engine_slurm_args = "--hint=compute_bound --mem-bind=verbose,none --cpus-per-task {NCPUS} --open-mode=append --kill-on-invalid-dep=yes --mem {MEMORY_MB}M --time {TIME} {EXTRA}"
     grid_engine_output_option = "-o {OUT}"
     grid_engine_err_output_option = "-e {ERR}"
     grid_engine_job_name = "--job-name {JOB_NAME}"
@@ -30,10 +30,7 @@ class Executor(executors.ExecutorCluster):
         log_file = options_storage.args.output_dir + "/spades.log"
         cmd = self.grid_engine_submit_command.format(COMMAND="true", JOB_NAME="wait", OUT=log_file, ERR=log_file, NCPUS=1)
         cmd += " " + self.grid_engine_dependency_option.format(WAIT_TAG=job_name)
-        cmd += " " + self.grid_engine_credentials.format(PARTITION=options_storage.args.grid_partition,
-                                                         ACCOUNT=options_storage.args.grid_account,
-                                                         QOS=options_storage.args.grid_qos,
-                                                         QUEUE=options_storage.args.grid_queue)
+        cmd += " " + self.grid_engine_credentials.format(QUEUE=options_storage.args.grid_queue)
         cmd += " --wait"
         support.sys_call(cmd, log=self.log)
 
@@ -41,9 +38,8 @@ class Executor(executors.ExecutorCluster):
         memory_mb = int(options_storage.args.memory * 1024)
         preambula = "SLURM_ARGS=\"" + self.grid_engine_slurm_args.format(NCPUS=options_storage.args.threads,
                                                                          MEMORY_MB=memory_mb,
-                                                                         PARTITION=options_storage.args.grid_partition,
-                                                                         ACCOUNT=options_storage.args.grid_account,
-                                                                         QOS=options_storage.args.grid_qos,
+                                                                         TIME=options_storage.args.grid_time,
+                                                                         EXTRA=options_storage.args.grid_extra,
                                                                          QUEUE=options_storage.args.grid_queue) + "\"\n"
         preambula += "MPIRUN_ARGS=\"" + self.grid_engine_mpirun_args.format(NCPUS=options_storage.args.threads) + "\"\n"
         log_file = options_storage.args.output_dir + "/spades.log"
@@ -99,9 +95,8 @@ class Executor(executors.ExecutorCluster):
         memory_mb = int(options_storage.args.memory * 1024)
         cmd += self.grid_engine_slurm_args.format(NCPUS=options_storage.args.threads,
                                                   MEMORY_MB=memory_mb,
-                                                  PARTITION=options_storage.args.grid_partition,
-                                                  ACCOUNT=options_storage.args.grid_account,
-                                                  QOS=options_storage.args.grid_qos,
+                                                  TIME=options_storage.args.grid_time,
+                                                  EXTRA=options.storage.args.grid_extra,
                                                   QUEUE=options_storage.args.grid_queue) + " "
         cmd += self.grid_engine_job_name.format(JOB_NAME=command.job_uuid) + " "
         cmd += self.grid_engine_err_output_option.format(ERR=log_file) + " "
