@@ -23,9 +23,13 @@ class Executor(executors.ExecutorBase):
         commands_parser.write_commands_to_yaml(commands,
                                                os.path.join(options_storage.args.output_dir,
                                                "run_spades.yaml"))
+        return None
 
     def dump_commands(self, commands, outputfile):
         commands_parser.write_commands_to_sh(commands, outputfile)
 
-    def touch_file(self, command):
-        pass
+    def join(self, job_name):
+        assert (job_name is None)
+
+    def kill(self, job_name):
+        assert (job_name is None)

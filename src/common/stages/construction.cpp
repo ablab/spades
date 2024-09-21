@@ -39,7 +39,7 @@ struct ConstructionStorage {
     fs::TmpDir workdir;
 };
 
-bool add_trusted_contigs(io::DataSet<config::LibraryData> &libraries,
+static bool add_trusted_contigs(io::DataSet<config::LibraryData> &libraries,
                        io::ReadStreamList<io::SingleReadSeq> &trusted_list) {
     std::vector<size_t> trusted_contigs;
     for (size_t i = 0; i < libraries.lib_count(); ++i) {
@@ -55,7 +55,7 @@ bool add_trusted_contigs(io::DataSet<config::LibraryData> &libraries,
     return !trusted_contigs.empty();
 }
 
-void merge_read_streams(io::ReadStreamList<io::SingleReadSeq> &streams1,
+static void merge_read_streams(io::ReadStreamList<io::SingleReadSeq> &streams1,
                         io::ReadStreamList<io::SingleReadSeq> &streams2) {
     for (size_t i = 0; i < streams2.size(); ++i) {
         if (i < streams1.size()) {
@@ -66,7 +66,7 @@ void merge_read_streams(io::ReadStreamList<io::SingleReadSeq> &streams1,
     }
 }
 
-io::ReadStreamList<io::SingleReadSeq> temp_merge_read_streams(io::ReadStreamList<io::SingleReadSeq> &streams1,
+static io::ReadStreamList<io::SingleReadSeq> temp_merge_read_streams(io::ReadStreamList<io::SingleReadSeq> &streams1,
                                                               io::ReadStreamList<io::SingleReadSeq> &streams2) {
     io::ReadStreamList<io::SingleReadSeq> merge_stream_list;
 
@@ -86,7 +86,7 @@ io::ReadStreamList<io::SingleReadSeq> temp_merge_read_streams(io::ReadStreamList
 
 
 
-void add_additional_contigs_to_lib(std::filesystem::path path_to_additional_contigs_dir, size_t max_threads,
+static void add_additional_contigs_to_lib(std::filesystem::path path_to_additional_contigs_dir, size_t max_threads,
                                    io::ReadStreamList<io::SingleReadSeq> &trusted_list) {
     io::SequencingLibraryT seq_lib;
     seq_lib.set_type(io::LibraryType::TrustedContigs);
@@ -364,33 +364,6 @@ public:
               const std::filesystem::path &,
               const char*) const override {
         //FIXME why commented here and others
-        // VERIFY_MSG(false, "implement me");
-    }
-};
-
-//FIXME unused?
-class EdgeIndexFiller : public Construction::Phase {
-public:
-    EdgeIndexFiller()
-            : Construction::Phase("Edge index filling", "initial_edge_index_filling") { }
-
-    virtual ~EdgeIndexFiller() = default;
-
-    void run(graph_pack::GraphPack &gp, const char*) override {
-        auto &index = gp.get_mutable<EdgeIndex<Graph>>();
-        index.Refill();
-        index.Attach();
-    }
-
-    void load(graph_pack::GraphPack&,
-              const std::filesystem::path &,
-              const char*) override {
-        VERIFY_MSG(false, "implement me");
-    }
-
-    void save(const graph_pack::GraphPack&,
-              const std::filesystem::path &,
-              const char*) const override {
         // VERIFY_MSG(false, "implement me");
     }
 };

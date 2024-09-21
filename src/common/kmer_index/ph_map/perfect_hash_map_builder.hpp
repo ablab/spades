@@ -11,7 +11,6 @@
 #include "kmer_maps.hpp"
 #include "cqf_hash_map.hpp"
 #include "kmer_index/kmer_mph/kmer_index_builder.hpp"
-
 #include "utils/perf/timetracer.hpp"
 
 namespace kmers {
@@ -20,13 +19,13 @@ struct PerfectHashMapBuilder {
     template<class K, class V, class traits, class StoringType, class Counter>
     kmers::KMerDiskStorage<typename Counter::Seq>
     BuildIndex(PerfectHashMap<K, V, traits, StoringType> &index,
-               Counter& counter, size_t bucket_num,
+               Counter &counter, size_t bucket_num,
                size_t thread_num, bool save_final = false) const {
         TIME_TRACE_SCOPE("PerfectHashMapBuilder::BuildIndex<Counter>");
 
         using KMerIndex = typename PerfectHashMap<K, V, traits, StoringType>::KMerIndexT;
 
-        kmers::KMerIndexBuilder<KMerIndex> builder((unsigned)bucket_num, (unsigned)thread_num);
+        kmers::KMerIndexBuilder<KMerIndex> builder((unsigned) bucket_num, (unsigned) thread_num);
         auto res = builder.BuildIndex(*index.index_ptr_, counter, save_final);
         index.resize(res.total_kmers());
 
@@ -35,12 +34,12 @@ struct PerfectHashMapBuilder {
 
     template<class K, class V, class traits, class StoringType, class KMerStorage>
     void BuildIndex(PerfectHashMap<K, V, traits, StoringType> &index,
-                    const KMerStorage& storage, size_t thread_num) const {
+                    const KMerStorage &storage, size_t thread_num) const {
         TIME_TRACE_SCOPE("PerfectHashMapBuilder::BuildIndex<Storage>");
 
         using KMerIndex = typename PerfectHashMap<K, V, traits, StoringType>::KMerIndexT;
 
-        kmers::KMerIndexBuilder<KMerIndex> builder(0, (unsigned)thread_num);
+        kmers::KMerIndexBuilder<KMerIndex> builder(0, (unsigned) thread_num);
         builder.BuildIndex(*index.index_ptr_, storage);
         index.resize(storage.total_kmers());
     }
@@ -94,7 +93,7 @@ struct CQFHashMapBuilder {
 struct KeyStoringIndexBuilder {
     template<class K, class V, class traits, class StoringType, class Counter>
     void BuildIndex(KeyStoringMap<K, V, traits, StoringType> &index,
-                    Counter& counter, size_t bucket_num,
+                    Counter &counter, size_t bucket_num,
                     size_t thread_num) const {
         auto res = phm_builder_.BuildIndex(index, counter, bucket_num, thread_num, true);
         VERIFY(!index.kmers_.get());
@@ -102,20 +101,20 @@ struct KeyStoringIndexBuilder {
         index.SortUniqueKMers();
     }
 
-  private:
+private:
     PerfectHashMapBuilder phm_builder_;
 };
 
 struct KeyIteratingIndexBuilder {
     template<class K, class V, class traits, class StoringType, class Counter>
     void BuildIndex(KeyIteratingMap<K, V, traits, StoringType> &index,
-                    Counter& counter, size_t bucket_num,
+                    Counter &counter, size_t bucket_num,
                     size_t thread_num) const {
         auto res = phm_builder_.BuildIndex(index, counter, bucket_num, thread_num, true);
         index.kmers_ = res.final_kmers();
     }
 
-  private:
+private:
     PerfectHashMapBuilder phm_builder_;
 };
 
@@ -145,5 +144,4 @@ void BuildIndex(PerfectHashMap<K, V, traits, StoringType> &index,
                 const KMerStorage& storage, size_t thread_num) {
     PerfectHashMapBuilder().BuildIndex(index, storage, thread_num);
 }
-
 }

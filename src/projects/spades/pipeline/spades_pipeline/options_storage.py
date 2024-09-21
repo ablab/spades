@@ -95,6 +95,8 @@ original_dataset_data = None
 def get_stage_filename(stage_num, stage_short_name):
     stage_file_name = "stage_%d_%s" % (stage_num, stage_short_name)
     stage_checkpoint_path = os.path.join(args.output_dir, pipeline_state_dir, stage_file_name)
+    if not os.path.exists(os.path.dirname(stage_checkpoint_path)):
+        os.makedirs(os.path.dirname(stage_checkpoint_path))
     return stage_checkpoint_path
 
 
