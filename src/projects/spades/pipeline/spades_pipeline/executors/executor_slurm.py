@@ -24,7 +24,7 @@ class Executor(executors.ExecutorCluster):
     grid_engine_dependency_option = "--dependency afterok:{WAIT_TAG}"
     grid_engine_nodes = "--nodes={NNODES} --ntasks={NNODES}"
     grid_engine_kill_command = "scancel {JOB_NAME}"
-    grid_engine_mpirun_args = "--use-hwthread-cpus --display-devel-allocation --display-devel-map  --report-bindings --map-by  ppr:1:NODE:PE={NCPUS} --rank-by NODE -x OMP_NUM_THREADS={NCPUS}"
+    grid_engine_srun_args = "--cpus-per-task {NCPUS}"
 
     def join(self, job_name):
         log_file = options_storage.args.output_dir + "/spades.log"
@@ -41,7 +41,7 @@ class Executor(executors.ExecutorCluster):
                                                                          TIME=options_storage.args.grid_time,
                                                                          EXTRA=options_storage.args.grid_extra,
                                                                          QUEUE=options_storage.args.grid_queue) + "\"\n"
-        preambula += "MPIRUN_ARGS=\"" + self.grid_engine_mpirun_args.format(NCPUS=options_storage.args.threads) + "\"\n"
+        preambula += "SRUN_ARGS=\"" + self.grid_engine_srun_args.format(NCPUS=options_storage.args.threads) + "\"\n"
         log_file = options_storage.args.output_dir + "/spades.log"
         preambula += "LOG_OUT=\"" + self.grid_engine_output_option.format(OUT=log_file) + "\"\n"
         preambula += "ERR_OUT=\"" + self.grid_engine_err_output_option.format(ERR=log_file) + "\"\n"
@@ -54,7 +54,7 @@ class Executor(executors.ExecutorCluster):
         cmd_str += "SID1=$(" + self.grid_engine_submit_command + " $SLURM_ARGS " + \
                    self.grid_engine_job_name.format(JOB_NAME=command.job_uuid)  + " $LOG_OUT $ERR_OUT "
         if mpi:
-            cmd_str += self.grid_engine_set_command.format(COMMAND="mpirun $MPIRUN_ARGS $CMD")
+            cmd_str += self.grid_engine_set_command.format(COMMAND="srun $SRUN_ARGS $CMD")
         else:
             cmd_str += self.grid_engine_set_command.format(COMMAND="$CMD")
 
@@ -87,7 +87,7 @@ class Executor(executors.ExecutorCluster):
                 coredump_line = "ulimit -c unlimited;"
             else:
                 coredump_line = ""
-            command_line = "{COREDUMP} mpirun ".format(COREDUMP=coredump_line) + self.grid_engine_mpirun_args.format(NCPUS=options_storage.args.threads) + \
+            command_line = "{COREDUMP} srun ".format(COREDUMP=coredump_line) + self.grid_engine_srun_args.format(NCPUS=options_storage.args.threads) + \
                            " {VALGRIND} {PROFILE}".format(PROFILE=profile_line, VALGRIND=valgrind_line) + " " + command.mpi_str()
         else:
             command_line = command.mpi_str()
