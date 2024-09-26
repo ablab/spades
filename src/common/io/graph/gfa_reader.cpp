@@ -159,6 +159,8 @@ static std::pair<unsigned, bool> ProcessLinks(DeBruijnGraph &g, const Links &lin
         }
     }
 
+    INFO("Overlaps: " << (simple ? "simple" : "complex"));
+
     auto helper = g.GetConstructionHelper();
     for (const auto &link: links) {
         EdgeId e1 = std::get<0>(link), e2 = std::get<1>(link);
@@ -173,7 +175,10 @@ static std::pair<unsigned, bool> ProcessLinks(DeBruijnGraph &g, const Links &lin
         if (simple) {
             g.set_overlap(v1, ovl);
             g.set_overlap(v2, ovl);
+            g.set_overlap(g.conjugate(v1), ovl);
+            g.set_overlap(g.conjugate(v2), ovl);
         } else {
+            // FIXME: Correctly add conjugate links
             LinkId link_idx = g.add_link(e1, e2, ovl);
             g.add_link(v1, link_idx);
             if (v1 != v2) {

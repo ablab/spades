@@ -110,20 +110,20 @@ public:
         return overlap_.get<ExplicitOverlap>();
     }
 
-    auto &links() {
+    [[nodiscard]] auto &links() {
         return overlap_.get<ComplexOverlap>()->links();
     }
 
-    auto links() const {
+    [[nodiscard]] auto links() const {
         return overlap_.get<ComplexOverlap>()->links();
     }
 
-    auto move_links() {
+    [[nodiscard]] auto move_links() {
         return overlap_.get<ComplexOverlap>()->move();
     }
 
-    auto clear_links() {
-        return overlap_.get<ComplexOverlap>()->clear();
+    void clear_links() {
+        overlap_.get<ComplexOverlap>()->clear();
     }
 
     void add_link(LinkId link) {
