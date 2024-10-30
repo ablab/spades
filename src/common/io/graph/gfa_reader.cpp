@@ -219,7 +219,7 @@ unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
         if (read <= 1)
             continue; // skip empty lines
 
-        auto result = gfa::parse_record(line, read - 1);
+        auto result = gfa::parseRecord(line, read - 1);
         if (!result)
             continue;
 
