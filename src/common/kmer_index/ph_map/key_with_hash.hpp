@@ -62,7 +62,7 @@ public:
     bool operator==(const SimpleKeyWithHash &that) const {
         VERIFY_DEV(&this->hash_ == &that.hash_);
         if (this->ready_ && that.ready_)
-            return this->idx_ == that.idx_ && this->is_minimal_ == that.is_minimal_;
+            return this->idx_ == that.idx_;
         return this->key_ == that.key_;
     }
 
