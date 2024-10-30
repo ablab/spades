@@ -180,7 +180,7 @@ struct flat_map {
     }
 
     void swap(flat_map &other) {
-        data_.swap(other.data);
+        data_.swap(other.data_);
     }
 
     void clear() {

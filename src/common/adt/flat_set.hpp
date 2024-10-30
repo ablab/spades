@@ -131,7 +131,7 @@ struct flat_set {
         return data_.erase(iterator_const_cast(first), iterator_const_cast(last));
     }
 
-    void swap(flat_set &other) { data_.swap(other.data); }
+    void swap(flat_set &other) { data_.swap(other.data_); }
 
     void clear() { data_.clear(); }
 
