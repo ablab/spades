@@ -31,7 +31,6 @@ namespace gfa {
 struct path;
 struct segment;
 struct link;
-struct cigarop;
 
 class GFAReader {
     typedef debruijn_graph::DeBruijnGraph Graph;
