@@ -10,6 +10,8 @@
 
 #include "index_point.hpp"
 
+#include "utils/verify.hpp"
+
 #include "adt/flat_set.hpp"
 #include "adt/small_pod_vector.hpp"
 

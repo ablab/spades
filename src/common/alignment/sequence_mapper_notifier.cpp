@@ -13,9 +13,8 @@
 #include "io/reads/read_stream_vector.hpp"
 
 namespace debruijn_graph {
-
 SequenceMapperNotifier::SequenceMapperNotifier(size_t lib_count)
-    : listeners_(lib_count) 
+    : listeners_(lib_count)
 {}
 
 void SequenceMapperNotifier::Subscribe(SequenceMapperListener* listener, size_t lib_index) {

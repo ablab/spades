@@ -244,6 +244,7 @@ int main(int argc, char* argv[]) {
                 io::ReadConverter::ConvertToBinary(lib, pool.get());
 
             paired_info::FillPairedIndex(graph,
+                                         MapLibFunc(),
                                          mapper,
                                          lib, index, { }, 0, std::numeric_limits<unsigned>::max());
 

@@ -432,42 +432,24 @@ public:
     }
 };
 
-// std::tuple
-namespace detail {
-template <class F, class Tuple, std::size_t... I>
-constexpr decltype(auto) apply_impl(F &&f, Tuple &&t, std::index_sequence<I...>) {
-    return std::forward<F>(f)(std::get<I>(std::forward<Tuple>(t))...);
-}
-
-template <class T>
-constexpr std::size_t tuple_size_v = std::tuple_size<T>::value;
-}  // namespace detail
-
-// Just std::apply from C++17
-template <class F, class Tuple>
-constexpr decltype(auto) apply(F &&f, Tuple &&t) {
-    return detail::apply_impl(std::forward<F>(f), std::forward<Tuple>(t),
-                              std::make_index_sequence<detail::tuple_size_v<std::remove_reference_t<Tuple>>>{});
-}
-
 template <typename... Ts>
 class Serializer<std::tuple<Ts...>, std::enable_if_t<is_serializable<Ts...>>> {
 public:
     static void Write(std::ostream &os, const std::tuple<Ts...> &t) {
         auto binwriter = [&os](auto&& ...v) { BinWrite(os, v...); };
-        apply(binwriter, t);
+        std::apply(binwriter, t);
     }
 
     static void Read(std::istream &is, std::tuple<Ts...> &t) {
         auto binreader = [&is](auto&& ...v) { BinRead(is, v...); };
-        apply(binreader, t);
+        std::apply(binreader, t);
     }
 };
 
 template<typename... Ts>
 std::enable_if_t<is_serializable<Ts...>> BinRead(std::istream &is, std::tuple<Ts&...> t) {
     auto binreader = [&is](auto&& ...v) { BinRead(is, v...); };
-    apply(binreader, t);
+    std::apply(binreader, t);
 }
 
 template <typename... Ts>
@@ -475,12 +457,12 @@ class Serializer<std::tuple<Ts&...>, std::enable_if_t<is_serializable<Ts...>>> {
 public:
     static void Write(std::ostream &os, const std::tuple<Ts&...> &t) {
         auto binwriter = [&os](auto&& ...v) { BinWrite(os, v...); };
-        apply(binwriter, t);
+        std::apply(binwriter, t);
     }
 
     static void Read(std::istream &is, std::tuple<Ts&...> t) {
         auto binreader = [&is](auto&& ...v) { BinRead(is, v...); };
-        apply(binreader, t);
+        std::apply(binreader, t);
     }
 };
 
