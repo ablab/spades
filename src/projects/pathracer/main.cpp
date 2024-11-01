@@ -1184,8 +1184,25 @@ int pathracer_main(int argc, char* argv[]) {
 
     scaffold_paths.reserve(gfa.num_paths());
     for (const auto &path : gfa.paths()) {
-        scaffold_paths.push_back(path.edges);
-        scaffold_paths.push_back(conjugate_path(path.edges, graph));
+        VERIFY_MSG(!path.edges.empty(), "empty scaffold path in GFA");
+        // We do not support jumps as we need proper graph path,
+        // split scaffold into contigs
+        std::vector<EdgeId> contig_paths{path.edges.front()};
+        for (size_t i = 1; i < path.edges.size(); ++i) {
+            EdgeId last = contig_paths.back();
+            EdgeId next = path.edges[i];
+            if (graph.EdgeEnd(last) == graph.EdgeStart(next)) {
+                contig_paths.push_back(next);
+            } else {
+                scaffold_paths.push_back(contig_paths);
+                scaffold_paths.push_back(conjugate_path(contig_paths, graph));
+                contig_paths.clear();
+                contig_paths.push_back(next);
+            }
+        }
+
+        scaffold_paths.push_back(contig_paths);
+        scaffold_paths.push_back(conjugate_path(contig_paths, graph));
     }
 
     size_t letters = 0;
@@ -1193,7 +1210,7 @@ int pathracer_main(int argc, char* argv[]) {
         letters += (graph.length(edge) + graph.k()) * (graph.conjugate(edge) == edge ? 1 : 2);
     INFO("Graph loaded. Total vertices: " << graph.size() << ", edges: " << graph.e_size() << ", letters: " << letters);
 
-    INFO("Total paths " << scaffold_paths.size());
+    INFO("Total graph paths " << gfa.num_paths() << ", to score: " << scaffold_paths.size() << " paths");
 
     // Collect all the edges
     std::vector<EdgeId> edges;
