@@ -74,7 +74,7 @@ constexpr size_t cacheSize = BLAZE_CACHE_SIZE;
 /*! \cond BLAZE_INTERNAL */
 namespace {
 
-BLAZE_STATIC_ASSERT( blaze::cacheSize > 100000UL && blaze::cacheSize < 100000000UL );
+BLAZE_STATIC_ASSERT( blaze::cacheSize > 100000UL && blaze::cacheSize < UINT64_C(10000000000) );
 
 }
 /*! \endcond */
