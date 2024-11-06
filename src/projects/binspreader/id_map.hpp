@@ -13,6 +13,7 @@
 #include <functional>
 #include <type_traits>
 #include <vector>
+#include <cstdint>
 
 namespace adt {
 template<typename V, typename K = uint64_t>
