@@ -1,0 +1,6 @@
+2
+split edge1_in	edge1_mid
+split edge1_mid    edge1_out
+2
+path1	3   edge1_in    edge1_mid  edge1_out
+path2	2   edge2_in    edge2_mid
