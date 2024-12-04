@@ -33,7 +33,7 @@
 /**
  * @param T is max number of nucleotides, type for storage
  */
-template<size_t size_, typename T = seq_element_type>
+template<size_t size_, typename T = seq::seq_element_type>
 class SimpleSeq {
 public:
   /**

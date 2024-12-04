@@ -33,7 +33,7 @@
 #define XXH_INLINE_ALL
 #include "xxh/xxhash.h"
 
-template<size_t max_size_, typename T = seq_element_type>
+template<size_t max_size_, typename T = seq::seq_element_type>
 class RuntimeSeq {
 public:
     /**
@@ -738,7 +738,7 @@ public:
     };
 };
 
-template<size_t max_size_, typename T = seq_element_type>
+template<size_t max_size_, typename T = seq::seq_element_type>
 bool operator<(const RuntimeSeq<max_size_, T> &l, const RuntimeSeq<max_size_, T> &r) {
     for (size_t i = 0; i < l.size(); ++i) {
         if (l[i] != r[i]) {
@@ -765,6 +765,6 @@ struct hash<RuntimeSeq<max_size, T>> {
 
 }
 
-typedef RuntimeSeq<UPPER_BOUND> RtSeq;
+typedef RuntimeSeq<seq::UPPER_BOUND> RtSeq;
 
 #endif /* RTSEQ_HPP_ */
