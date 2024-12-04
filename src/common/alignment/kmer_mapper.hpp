@@ -31,19 +31,17 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
     KMerMap mapping_;
     bool normalized_;
 
-    bool CheckAllDifferent(const Sequence &old_s, const Sequence &new_s) const {
-        std::set<Kmer> kmers;
-        Kmer kmer = old_s.start<Kmer>(k_) >> 0;
-        for (size_t i = k_ - 1; i < old_s.size(); ++i) {
-            kmer <<= old_s[i];
-            kmers.insert(kmer);
+    const RawSeqData* GetRoot(const Kmer &kmer) const {
+        const RawSeqData *answer = nullptr;
+        const RawSeqData *rawval = mapping_.find(kmer);
+
+        while (rawval != nullptr) {
+            Seq val(k_, rawval);
+
+            answer = rawval;
+            rawval = mapping_.find(val);
         }
-        kmer = new_s.start<Kmer>(k_) >> 0;
-        for (size_t i = k_ - 1; i < new_s.size(); ++i) {
-            kmer <<= new_s[i];
-            kmers.insert(kmer);
-        }
-        return kmers.size() == old_s.size() - k_ + 1 + new_s.size() - k_ + 1;
+        return answer;
     }
 
 public:
@@ -149,20 +147,6 @@ public:
         VERIFY(this->g().EdgeNucls(new_edge) == this->g().EdgeNucls(edge2));
         RemapKmers(this->g().EdgeNucls(edge1), this->g().EdgeNucls(edge2));
     }
-
-    const RawSeqData* GetRoot(const Kmer &kmer) const {
-        const RawSeqData *answer = nullptr;
-        const RawSeqData *rawval = mapping_.find(kmer);
-
-        while (rawval != nullptr) {
-            Seq val(k_, rawval);
-
-            answer = rawval;
-            rawval = mapping_.find(val);
-        }
-        return answer;
-    }
-
 
     Kmer Substitute(const Kmer &kmer) const {
         VERIFY(this->IsAttached());
