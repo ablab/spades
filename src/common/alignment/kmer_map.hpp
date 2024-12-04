@@ -69,6 +69,7 @@ class KMerMap {
     KMerMap(unsigned k)
             : k_(k) {
         rawcnt_ = (unsigned)Seq::GetDataSize(k_);
+        key_size_ = rawcnt_ * sizeof(RawSeqData);
     }
 
     ~KMerMap() {
@@ -76,7 +77,7 @@ class KMerMap {
     }
 
     void erase(const Kmer &key) {
-        auto res = mapping_.find_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData));
+        auto res = mapping_.find_ks((const char*)key.data(), key_size_);
         if (res == mapping_.end())
             return;
 
@@ -86,22 +87,22 @@ class KMerMap {
 
     void set(const Kmer &key, const Seq &value) {
         RawSeqData *rawvalue = nullptr;
-        auto res = mapping_.find_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData));
+        auto res = mapping_.find_ks((const char*)key.data(), key_size_);
         if (res == mapping_.end()) {
             rawvalue = new RawSeqData[rawcnt_];
-            mapping_.insert_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData), rawvalue);
+            mapping_.insert_ks((const char*)key.data(), key_size_, rawvalue);
         } else {
             rawvalue = res.value();
         }
-        memcpy(rawvalue, value.data(), rawcnt_ * sizeof(RawSeqData));
+        memcpy(rawvalue, value.data(), key_size_);
     }
 
     bool count(const Kmer &key) const {
-        return mapping_.count_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData));
+        return mapping_.count_ks((const char*)key.data(), key_size_);
     }
 
     const RawSeqData *find(const Kmer &key) const {
-        auto res = mapping_.find_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData));
+        auto res = mapping_.find_ks((const char*)key.data(), key_size_);
         if (res == mapping_.end())
             return nullptr;
 
@@ -109,7 +110,7 @@ class KMerMap {
     }
 
     const RawSeqData *find(const RawSeqData *key) const {
-        auto res = mapping_.find_ks((const char*)key, rawcnt_ * sizeof(RawSeqData));
+        auto res = mapping_.find_ks((const char*)key, key_size_);
         if (res == mapping_.end())
             return nullptr;
 
@@ -143,6 +144,7 @@ class KMerMap {
   private:
     unsigned k_;
     unsigned rawcnt_;
+    unsigned key_size_;
     HTMap mapping_;
 };
 
