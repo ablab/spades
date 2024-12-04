@@ -14,6 +14,8 @@
 #include <cstdint>
 #include <cstdlib>
 
+namespace seq {
+
 typedef uint64_t seq_element_type;
 
 constexpr size_t t_size(void) {
@@ -32,10 +34,14 @@ constexpr size_t get_upper_bound(size_t value) {
     return get_k_by_ts(get_t_elements_number(value));
 }
 
-const size_t UPPER_BOUND = get_upper_bound(runtime_k::MAX_K); //((MAX_K - 1) / (sizeof(seq_element_type) << 2) + 1) * (sizeof(seq_element_type) << 2);
+static constexpr size_t UPPER_BOUND = get_upper_bound(runtime_k::MAX_K); //((MAX_K - 1) / (sizeof(seq_element_type) << 2) + 1) * (sizeof(seq_element_type) << 2);
 
-const size_t MAX_TS = get_t_elements_number(runtime_k::MAX_K);
+static constexpr size_t MAX_TS = get_t_elements_number(runtime_k::MAX_K);
 
-const size_t MIN_TS = get_t_elements_number(runtime_k::MIN_K);
+static constexpr size_t MIN_TS = get_t_elements_number(runtime_k::MIN_K);
+
+static constexpr size_t SEQ_SIZE = MAX_TS * t_size();
+
+}
 
 #endif /* SEQ_COMMON_HPP_ */

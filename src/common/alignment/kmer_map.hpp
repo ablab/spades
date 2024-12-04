@@ -9,9 +9,11 @@
 #define __KMER_MAP_HPP__
 
 #include "sequence/rtseq.hpp"
+#include "sequence/seq_common.hpp"
 
 #include <tsl/htrie_map.h>
 #include <boost/iterator/iterator_facade.hpp>
+#include <limits>
 
 #define XXH_INLINE_ALL
 #include "xxh/xxhash.h"
@@ -27,7 +29,10 @@ class KMerMap {
     typedef RtSeq Kmer;
     typedef RtSeq Seq;
     typedef typename Seq::DataType RawSeqData;
-    typedef typename tsl::htrie_map<char, RawSeqData*, str_hash> HTMap;
+
+    typedef typename std::conditional_t<seq::SEQ_SIZE <= std::numeric_limits<uint8_t>::max(),
+                                        tsl::htrie_map<char, RawSeqData*, str_hash, uint8_t>,
+                                        tsl::htrie_map<char, RawSeqData*, str_hash, uint16_t>> HTMap;
 
     class iterator : public boost::iterator_facade<iterator,
                                                    const std::pair<Kmer, Seq>,

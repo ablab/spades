@@ -27,7 +27,7 @@
 
 class Sequence {
     // Type to store Seq in Sequences
-    typedef seq_element_type ST;
+    typedef seq::seq_element_type ST;
     // Number of bits in ST
     const static size_t STBits = sizeof(ST) << 3;
     // Number of nucleotides in ST
