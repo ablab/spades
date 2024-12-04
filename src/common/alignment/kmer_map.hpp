@@ -85,16 +85,34 @@ class KMerMap {
         mapping_.erase(res);
     }
 
-    void set(const Kmer &key, const Seq &value) {
+    bool set(const Kmer &key, const Seq &value) {
         RawSeqData *rawvalue = nullptr;
+        bool inserted = false;
         auto res = mapping_.find_ks((const char*)key.data(), key_size_);
         if (res == mapping_.end()) {
             rawvalue = new RawSeqData[rawcnt_];
             mapping_.insert_ks((const char*)key.data(), key_size_, rawvalue);
+            inserted = true;
         } else {
             rawvalue = res.value();
         }
         memcpy(rawvalue, value.data(), key_size_);
+        return inserted;
+    }
+
+    bool set(const RawSeqData *key, const RawSeqData *value) {
+        RawSeqData *rawvalue = nullptr;
+        bool inserted = false;
+        auto res = mapping_.find_ks((const char*)key, key_size_);
+        if (res == mapping_.end()) {
+            rawvalue = new RawSeqData[rawcnt_];
+            mapping_.insert_ks((const char*)key, key_size_, rawvalue);
+            inserted = true;
+        } else {
+            rawvalue = res.value();
+        }
+        memcpy(rawvalue, value, key_size_);
+        return inserted;
     }
 
     bool count(const Kmer &key) const {

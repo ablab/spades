@@ -31,17 +31,25 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
     KMerMap mapping_;
     bool normalized_;
 
-    const RawSeqData* GetRoot(const Kmer &kmer) const {
+    const RawSeqData* GetNonTrivialRoot(const RawSeqData *kmer) const {
         const RawSeqData *answer = nullptr;
         const RawSeqData *rawval = mapping_.find(kmer);
 
+        size_t step = 0;
         while (rawval != nullptr) {
-            Seq val(k_, rawval);
-
             answer = rawval;
-            rawval = mapping_.find(val);
+            rawval = mapping_.find(rawval);
+            step += 1;
         }
-        return answer;
+        return step > 1 ? answer : nullptr;
+    }
+
+    bool HasNonTrivialRoot(const RawSeqData *kmer) const {
+        const RawSeqData *rawval = mapping_.find(kmer);
+        if (rawval == nullptr)
+            return false;
+
+        return mapping_.find(rawval) != nullptr;
     }
 
 public:
@@ -66,23 +74,27 @@ public:
         if (normalized_)
             return;
 
-        adt::KMerVector<Kmer> all(k_, size());
-        for (auto it = begin(); it != end(); ++it)
+        // Preallocate 5% of size
+        adt::KMerVector<Kmer> all(k_, size() / 20);
+        size_t sz = 0;
+        for (auto it = begin(); it != end(); ++it) {
+            if (!HasNonTrivialRoot(it->first.data()))
+                continue;
+
             all.push_back(it->first);
-
-        std::vector<const RawSeqData*> roots(all.size(), nullptr);
-
-#       pragma omp parallel for
-        for (size_t i = 0; i < all.size(); ++i) {
-            Seq val(k_, all[i]);
-            roots[i] = GetRoot(val);
+            sz += 1;
         }
+        INFO("Total " << sz << " kmers with non-trivial roots");
 
 #       pragma omp parallel for
         for (size_t i = 0; i < all.size(); ++i) {
-            if (roots[i] != nullptr) {
-                Seq kmer(k_, all[i]);
-                mapping_.set(kmer, Seq(k_, roots[i]));
+            const RawSeqData *kmer = all[i];
+            if (const RawSeqData *root = GetNonTrivialRoot(kmer)) {
+                // This is potentially racy, however we do not insert new values, we
+                // only change values of the existing ones in a pre-determined way
+                // (root), the final result is ok.
+                bool inserted = mapping_.set(kmer, root);
+                VERIFY_MSG(!inserted, "should never insert new kmers here");
             }
         }
 
