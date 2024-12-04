@@ -172,6 +172,10 @@ public:
         return vector_[idx];
     }
 
+    unsigned K() const {
+        return K_;
+    }
+
 private:
     unsigned K_;
     size_t size_;

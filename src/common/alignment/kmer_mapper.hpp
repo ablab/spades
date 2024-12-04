@@ -14,8 +14,8 @@
 #include "assembly_graph/core/action_handlers.hpp"
 #include "sequence/sequence.hpp"
 #include "sequence/sequence_tools.hpp"
+#include "utils/verify.hpp"
 
-#include <set>
 #include <cstdlib>
 
 namespace debruijn_graph {
@@ -31,19 +31,18 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
     KMerMap mapping_;
     bool normalized_;
 
-    bool CheckAllDifferent(const Sequence &old_s, const Sequence &new_s) const {
-        std::set<Kmer> kmers;
-        Kmer kmer = old_s.start<Kmer>(k_) >> 0;
-        for (size_t i = k_ - 1; i < old_s.size(); ++i) {
-            kmer <<= old_s[i];
-            kmers.insert(kmer);
+    template<class Kmer>
+    const RawSeqData* GetNonTrivialRoot(const Kmer &kmer) const {
+        const RawSeqData *answer = nullptr;
+        const RawSeqData *rawval = mapping_.find(kmer);
+
+        size_t step = 0;
+        while (rawval != nullptr) {
+            answer = rawval;
+            rawval = mapping_.find(rawval);
+            step += 1;
         }
-        kmer = new_s.start<Kmer>(k_) >> 0;
-        for (size_t i = k_ - 1; i < new_s.size(); ++i) {
-            kmer <<= new_s[i];
-            kmers.insert(kmer);
-        }
-        return kmers.size() == old_s.size() - k_ + 1 + new_s.size() - k_ + 1;
+        return step > 1 ? answer : nullptr;
     }
 
 public:
@@ -54,38 +53,28 @@ public:
             normalized_(false) {
     }
 
-    virtual ~KmerMapper() {}
+    virtual ~KmerMapper() = default;
 
-    auto begin() const -> decltype(mapping_.begin()) {
-        return mapping_.begin();
-    }
-
-    auto end() const -> decltype(mapping_.end()) {
-        return mapping_.end();
-    }
+    auto begin() const { return mapping_.begin(); }
+    auto end() const { return mapping_.end();  }
 
     void Normalize() {
         if (normalized_)
             return;
 
-        adt::KMerVector<Kmer> all(k_, size());
-        for (auto it = begin(); it != end(); ++it)
-            all.push_back(it->first);
-
-        std::vector<const RawSeqData*> roots(all.size(), nullptr);
-
-#       pragma omp parallel for
+        const adt::KMerVector<Kmer> &all = mapping_.kmers();
+        #pragma omp parallel for
         for (size_t i = 0; i < all.size(); ++i) {
-            Seq val(k_, all[i]);
-            roots[i] = GetRoot(val);
-        }
+            const RawSeqData *kmer = all[i];
+            const RawSeqData *root = GetNonTrivialRoot(kmer);
+            if (!root)
+                continue;
 
-#       pragma omp parallel for
-        for (size_t i = 0; i < all.size(); ++i) {
-            if (roots[i] != nullptr) {
-                Seq kmer(k_, all[i]);
-                mapping_.set(kmer, Seq(k_, roots[i]));
-            }
+            // This is potentially racy, however we do not insert new values, we
+            // only change values of the existing ones in a pre-determined way
+            // (root), the final result is ok.
+            bool inserted = mapping_.set(kmer, root);
+            VERIFY_MSG(!inserted, "should never insert new kmers here");
         }
 
         normalized_ = true;
@@ -94,15 +83,6 @@ public:
     unsigned k() const {
         return k_;
     }
-
-//    void Revert(const Kmer &kmer) {
-//        Kmer old_value = Substitute(kmer);
-//        if (old_value != kmer) {
-//            mapping_.erase(kmer);
-//            mapping_.set(old_value, kmer);
-//            normalized_ = false;
-//        }
-//    }
 
     void RemapKmers(const Sequence &old_s, const Sequence &new_s) {
         VERIFY(this->IsAttached());
@@ -149,20 +129,6 @@ public:
         VERIFY(this->g().EdgeNucls(new_edge) == this->g().EdgeNucls(edge2));
         RemapKmers(this->g().EdgeNucls(edge1), this->g().EdgeNucls(edge2));
     }
-
-    const RawSeqData* GetRoot(const Kmer &kmer) const {
-        const RawSeqData *answer = nullptr;
-        const RawSeqData *rawval = mapping_.find(kmer);
-
-        while (rawval != nullptr) {
-            Seq val(k_, rawval);
-
-            answer = rawval;
-            rawval = mapping_.find(val);
-        }
-        return answer;
-    }
-
 
     Kmer Substitute(const Kmer &kmer) const {
         VERIFY(this->IsAttached());

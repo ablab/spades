@@ -334,7 +334,7 @@ public:
     RuntimeSeq start(size_t K) const {
         return RuntimeSeq(K, data_.data());
     }
-    
+
     /**
      *  Reads sequence from the file (in the same format as BinWrite writes it)
      *  and returns false if error occured, true otherwise.
@@ -693,6 +693,19 @@ public:
 
     size_t GetHash(uint64_t seed = 0) const {
         return GetHash(data_.data(), GetDataSize(size_), seed);
+    }
+
+    static bool Eq(const DataType *lhs, const DataType *rhs, size_t sz) {
+        for (size_t i = 0; i < sz; ++i)
+            if (lhs[i] != rhs[i])
+                return false;
+
+        return true;
+    }
+
+    bool Eq(const DataType *data) const {
+        size_t data_size = GetDataSize(size_);
+        return Eq(data_.data(), data, data_size);
     }
 
     struct hash {

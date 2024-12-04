@@ -10,135 +10,213 @@
 
 #include "sequence/rtseq.hpp"
 
+#include "adt/kmer_vector.hpp"
+
+#include <parallel_hashmap/phmap.h>
 #include <tsl/htrie_map.h>
 #include <boost/iterator/iterator_facade.hpp>
-
-#define XXH_INLINE_ALL
-#include "xxh/xxhash.h"
+#include <cstdint>
+#include <iterator>
 
 namespace debruijn_graph {
 class KMerMap {
-    struct str_hash {
-        std::size_t operator()(const char* key, std::size_t key_size) const {
-            return XXH3_64bits(key, key_size);
+    typedef RtSeq Kmer;
+    typedef typename Kmer::DataType RawSeqData;
+
+    static constexpr uint64_t kThombstone = UINT64_MAX;
+
+    struct RawKMerHash {
+        using is_transparent = void;
+
+        size_t operator()(const Kmer &k) const noexcept {
+            return k.GetHash();
         }
+
+        size_t operator()(const RawSeqData *k) const noexcept {
+            return Kmer::GetHash(k, kmers_.el_size());
+        }
+
+        size_t operator()(size_t idx) const noexcept {
+            return Kmer::GetHash(kmers_[idx], kmers_.el_size());
+        }
+
+        RawKMerHash(const adt::KMerVector<Kmer> &kmers) noexcept
+                : kmers_(kmers) {}
+
+        const adt::KMerVector<Kmer> &kmers_;
     };
 
-    typedef RtSeq Kmer;
-    typedef RtSeq Seq;
-    typedef typename Seq::DataType RawSeqData;
-    typedef typename tsl::htrie_map<char, RawSeqData*, str_hash> HTMap;
+    struct RawKMerEq {
+        using is_transparent = void;
+
+        bool operator()(size_t lhs, size_t rhs) const noexcept {
+            return lhs == rhs;
+        }
+
+        bool operator()(size_t lhs, const Kmer &rhs) const noexcept {
+            return rhs.Eq(kmers_[lhs]);
+        }
+
+        bool operator()(size_t lhs, const RawSeqData *rhs) const noexcept {
+            return Kmer::Eq(kmers_[lhs], rhs, kmers_.el_size());
+        }
+
+        RawKMerEq(const adt::KMerVector<Kmer> &kmers) noexcept
+                : kmers_(kmers) {}
+
+        const adt::KMerVector<Kmer> &kmers_;
+    };
+
+
+    using Mapping = phmap::parallel_flat_hash_map<size_t, size_t, RawKMerHash, RawKMerEq>;
 
     class iterator : public boost::iterator_facade<iterator,
-                                                   const std::pair<Kmer, Seq>,
+                                                   const std::pair<Kmer, Kmer>,
                                                    std::forward_iterator_tag,
-                                                   const std::pair<Kmer, Seq>> {
+                                                   const std::pair<Kmer, Kmer>> {
       public:
-        iterator(unsigned k, HTMap::const_iterator iter)
-                : k_(k), iter_(iter) {}
+        iterator(const adt::KMerVector<Kmer> &kmers,
+                 Mapping::const_iterator iter, Mapping::const_iterator end)
+                : kmers_(kmers), iter_(iter), end_(end) { skip(); }
 
       private:
         friend class boost::iterator_core_access;
 
-        void increment() {
-            ++iter_;
+        void skip() {
+            // Skip over singletons (values)
+            while (iter_ != end_ && iter_->second == kThombstone)
+                ++iter_;
         }
-
+        void increment() { ++iter_; skip(); }
         bool equal(const iterator &other) const {
             return iter_ == other.iter_;
         }
 
-        const std::pair<Kmer, Seq> dereference() const {
-            iter_.key(key_out_);
-            Kmer k(k_, (const RawSeqData*)key_out_.data());
-            Seq s(k_, (const RawSeqData*)iter_.value());
-            return std::make_pair(k, s);
+        const std::pair<Kmer, Kmer> dereference() const {
+            VERIFY(iter_->second != kThombstone);
+            const adt::KMerVector<Kmer> &ref = kmers_;
+            return std::pair(Kmer(ref.K(), ref[iter_->first]),
+                             Kmer(ref.K(), ref[iter_->second]));
         }
 
-        unsigned k_;
-        HTMap::const_iterator iter_;
-        mutable std::string key_out_;
+        // So we can easily copy the stuff
+        std::reference_wrapper<const adt::KMerVector<Kmer>> kmers_;
+        Mapping::const_iterator iter_;
+        Mapping::const_iterator end_;
     };
 
   public:
     KMerMap(unsigned k)
-            : k_(k) {
-        rawcnt_ = (unsigned)Seq::GetDataSize(k_);
+            : kmers_(k),
+              mapping_(0, RawKMerHash(kmers_), RawKMerEq(kmers_)) {
     }
 
     ~KMerMap() {
         clear();
     }
 
-    void erase(const Kmer &key) {
-        auto res = mapping_.find_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData));
-        if (res == mapping_.end())
-            return;
-
-        delete[] res.value();
-        mapping_.erase(res);
+    template<class Key>
+    bool erase(const Key &key) {
+        return mapping_.erase(key);
     }
 
-    void set(const Kmer &key, const Seq &value) {
-        RawSeqData *rawvalue = nullptr;
-        auto res = mapping_.find_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData));
-        if (res == mapping_.end()) {
-            rawvalue = new RawSeqData[rawcnt_];
-            mapping_.insert_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData), rawvalue);
+    template<class Key1, class Key2>
+    bool set(const Key1 &key, const Key2 &value) {
+        // Ok, this is a little bit tricky. First of all, we need to see, if we
+        // know the indices for both key and value. We start from value, so we
+        // can save on lookups.
+
+        bool inserted = false;
+        size_t vhash = mapping_.hash(value);
+        auto vit = mapping_.find(value, vhash);
+        size_t vidx = kThombstone;
+        if (vit == mapping_.end()) {
+            // We have not seen the value yet, put it into the vector
+            kmers_.push_back(value);
+            vidx = kmers_.size() - 1;
+            // Save the mapping, hash ensures that hash(value) == hash(vidx)
+            // since hash(vidx) == hash(kmers_[vidx])
+            auto [it, emplaced] = mapping_.emplace_with_hash(vhash, vidx, kThombstone);
+            VERIFY(emplaced); inserted |= emplaced;
         } else {
-            rawvalue = res.value();
+            vidx = vit->first;
         }
-        memcpy(rawvalue, value.data(), rawcnt_ * sizeof(RawSeqData));
+
+        // Check, if we know the key
+        size_t khash = mapping_.hash(key);
+        auto kit = mapping_.find(key, khash);
+        size_t kidx = kThombstone;
+        if (kit == mapping_.end()) {
+            // Key is not known, put into the vector
+            // We have not seen the value yet, put it into the vector
+            kmers_.push_back(key);
+            kidx = kmers_.size() - 1;
+            auto [it, emplaced] = mapping_.emplace_with_hash(khash, kidx, vidx);
+            VERIFY(emplaced); inserted |= emplaced;
+        } else {
+            // Key is known, just update the value index
+            // kidx = kit->first;
+            kit->second = vidx;
+        }
+
+        return inserted;
     }
 
-    bool count(const Kmer &key) const {
-        return mapping_.count_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData));
+    template<class Key>
+    bool count(const Key &key) const {
+        auto res = mapping_.find(key);
+        if (res == mapping_.end())
+            return false;
+
+        return res->second != kThombstone;
     }
 
-    const RawSeqData *find(const Kmer &key) const {
-        auto res = mapping_.find_ks((const char*)key.data(), rawcnt_ * sizeof(RawSeqData));
+    template<class Key>
+    bool idx(const Key &key) const {
+        auto it = mapping_.find(key);
+        VERIFY(it != mapping_.end());
+        return it->first;
+    }
+
+    template<class Key>
+    const RawSeqData *find(const Key &key) const {
+        auto res = mapping_.find(key);
         if (res == mapping_.end())
             return nullptr;
 
-        return res.value();
-    }
-
-    const RawSeqData *find(const RawSeqData *key) const {
-        auto res = mapping_.find_ks((const char*)key, rawcnt_ * sizeof(RawSeqData));
-        if (res == mapping_.end())
-            return nullptr;
-
-        return res.value();
+        return res->second != kThombstone ? kmers_[res->second] : nullptr;
     }
 
     void clear() {
         // Delete all the values
-        for (auto it = mapping_.begin(); it != mapping_.end(); ++it) {
-            VERIFY(it.value() != nullptr);
-            delete[] it.value();
-            it.value() = nullptr;
-        }
+        kmers_.clear();
 
         // Delete the mapping and all the keys
         mapping_.clear();
     }
 
     size_t size() const {
-        return mapping_.size();
+        size_t sz = 0;
+        for (const auto &entry : mapping_)
+            sz += entry.second != kThombstone;
+        return sz;
     }
 
     iterator begin() const {
-        return iterator(k_, mapping_.begin());
+        return iterator(kmers_, mapping_.begin(), mapping_.end());
     }
 
     iterator end() const {
-        return iterator(k_, mapping_.end());
+        return iterator(kmers_, mapping_.end(), mapping_.end());
+    }
+
+    const auto &kmers() const {
+        return kmers_;
     }
 
   private:
-    unsigned k_;
-    unsigned rawcnt_;
-    HTMap mapping_;
+    adt::KMerVector<Kmer> kmers_;
+    Mapping mapping_;
 };
 
 }
