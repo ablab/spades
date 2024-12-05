@@ -120,6 +120,8 @@ static void HandleLink(Links &links,
         e2 = g.conjugate(e2);
 
     links.emplace_back(e1, e2, record.overlap);
+    if (e1 != g.conjugate(e2))
+        links.emplace_back(g.conjugate(e2), g.conjugate(e1), record.overlap);
 }
 
 static void HandlePath(std::vector<GFAReader::GFAPath> &paths,
@@ -175,10 +177,7 @@ static std::pair<unsigned, bool> ProcessLinks(DeBruijnGraph &g, const Links &lin
         if (simple) {
             g.set_overlap(v1, ovl);
             g.set_overlap(v2, ovl);
-            g.set_overlap(g.conjugate(v1), ovl);
-            g.set_overlap(g.conjugate(v2), ovl);
         } else {
-            // FIXME: Correctly add conjugate links
             LinkId link_idx = g.add_link(e1, e2, ovl);
             g.add_link(v1, link_idx);
             if (v1 != v2) {
