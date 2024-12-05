@@ -12,9 +12,10 @@
 #include "adt/small_pod_vector.hpp"
 #include "io/binary/binary.hpp"
 
+#include <rdsl/devector.hpp>
+
 #include <algorithm>
 #include <atomic>
-#include <deque>
 #include <vector>
 
 namespace path_extend {
@@ -161,8 +162,8 @@ public:
 class SimpleBidirectionalPath {
 protected:
     using EdgeId = debruijn_graph::EdgeId;
-    std::deque<EdgeId> edges_;
-    std::deque<Gap> gaps_; // gap0 -> e0 -> gap1 -> e1 -> ... -> gapN -> eN; gap0 = 0
+    rdsl::devector<EdgeId> edges_;
+    rdsl::devector<Gap> gaps_; // gap0 -> e0 -> gap1 -> e1 -> ... -> gapN -> eN; gap0 = 0
 
 public:
     SimpleBidirectionalPath() = default;
@@ -380,7 +381,7 @@ class BidirectionalPath : public PathListener, public SimpleBidirectionalPath {
     const debruijn_graph::Graph& g_;
     BidirectionalPath* conj_path_;
     // Length from beginning of i-th edge to path end: L(e_i + gap_(i+1) + e_(i+1) + ... + gap_N + e_N)
-    std::deque<size_t> cumulative_len_;
+    rdsl::devector<size_t> cumulative_len_;
     adt::SmallPODVector<PathListener*,
                         adt::impl::HybridAllocatedStorage<PathListener*, 2>> listeners_;
     const uint64_t id_;  //Unique ID
