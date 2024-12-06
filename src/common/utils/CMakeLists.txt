@@ -15,7 +15,8 @@ set(utils_src
     filesystem/glob.cpp
     logger/logger_impl.cpp
     logger/log_writers.cpp
-    logger/log_writers_thread.cpp)
+    logger/log_writers_thread.cpp
+    )
 
 if (READLINE_FOUND)
   set(utils_src ${utils_src} autocompletion.cpp)

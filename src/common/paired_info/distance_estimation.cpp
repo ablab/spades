@@ -26,7 +26,7 @@ std::vector<size_t> GraphDistanceFinder::GetGraphDistancesLengths(EdgeId e1, Edg
 void GraphDistanceFinder::FillGraphDistancesLengths(EdgeId e1, LengthMap &second_edges) const {
     std::vector<size_t> path_lower_bounds;
     size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(), insert_size_, delta_);
-    PathProcessor <Graph> paths_proc(graph_, graph_.EdgeEnd(e1), path_upper_bound);
+    PathProcessor<Graph> paths_proc(graph_, graph_.EdgeEnd(e1), path_upper_bound);
 
     for (auto &entry : second_edges) {
         EdgeId e2 = entry.first;
@@ -64,7 +64,7 @@ AbstractDistanceEstimator::OutHistogram AbstractDistanceEstimator::ClusterResult
         size_t left = i;
         DEWeight weight = DEWeight(estimated[i].second);
         while (i + 1 < estimated.size() &&
-               (estimated[i + 1].first - estimated[i].first) <= (int) linkage_distance_) {
+            (estimated[i + 1].first - estimated[i].first) <= (int) linkage_distance_) {
             ++i;
             weight += estimated[i].second;
         }
@@ -76,11 +76,11 @@ AbstractDistanceEstimator::OutHistogram AbstractDistanceEstimator::ClusterResult
 }
 
 void AbstractDistanceEstimator::AddToResult(const OutHistogram &clustered, EdgePair ep,
-                                            PairedInfoBuffer<Graph> &result) const  {
+                                            PairedInfoBuffer<Graph> &result) const {
     result.AddMany(ep.first, ep.second, clustered);
 }
 
-void DistanceEstimator::Estimate(PairedInfoIndexT<Graph> &result, size_t nthreads) const  {
+void DistanceEstimator::Estimate(PairedInfoIndexT<Graph> &result, size_t nthreads) const {
     this->Init();
     const auto &index = this->index();
 
@@ -138,7 +138,7 @@ DistanceEstimator::EstimHist DistanceEstimator::EstimateEdgePairDistances(EdgePa
             if (le(abs(forward[cur_dist] - point.d), max_distance_))
                 weights[cur_dist] += point.weight;
         } else if (cur_dist + 1 < forward.size() &&
-                   eq(forward[cur_dist + 1] - point.d, point.d - forward[cur_dist])) {
+            eq(forward[cur_dist + 1] - point.d, point.d - forward[cur_dist])) {
             if (le(abs(forward[cur_dist] - point.d), max_distance_))
                 weights[cur_dist] += point.weight * 0.5;
             ++cur_dist;

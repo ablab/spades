@@ -28,21 +28,22 @@ add_library(spades-stages STATIC
 
 target_link_libraries(spades-stages hmmercpp spoa easel)
 
+set(SPADES_SRC pipeline.cpp series_analysis.cpp ../mts/contig_abundance.cpp)
+set(SPADES_LIB spades-stages graphio common_modules ${COMMON_LIBRARIES})
 add_executable(spades-core
-               pipeline.cpp
                main.cpp
-               series_analysis.cpp
-               ../mts/contig_abundance.cpp)
-
-target_link_libraries(spades-core spades-stages graphio common_modules ${COMMON_LIBRARIES})
+               ${SPADES_SRC})
+target_link_libraries(spades-core ${SPADES_LIB})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades-core PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 
+
 install(TARGETS spades-core
         DESTINATION bin
         COMPONENT spades)
+
 # Configs
 install(DIRECTORY "configs/" # Trailing / is important
         DESTINATION share/spades/configs/debruijn

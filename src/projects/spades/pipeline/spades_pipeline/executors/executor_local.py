@@ -20,10 +20,9 @@ class Executor(executors.ExecutorBase):
         super(Executor, self).__init__(log)
 
     def execute(self, commands):
-        for num in range(len(commands)):
-            command = commands[num]
+        for num, command in enumerate(commands):
+            stage_checkpoint_path = options_storage.get_stage_filename(num, command.short_name)
             if options_storage.args.continue_mode:
-                stage_checkpoint_path = options_storage. get_stage_filename(num, command.short_name)
                 if os.path.isfile(stage_checkpoint_path) and \
                         ("_start" not in command.short_name) and \
                         ("_finish" not in command.short_name):
@@ -51,7 +50,8 @@ class Executor(executors.ExecutorBase):
                               "pipeline (--stop-after was set to '%s'). "
                               "You can continue later with --continue or "
                               "--restart-from options\n" % options_storage.args.stop_after)
-                break
+                return None
+        return None
 
     def rm_files(self, command):
         if options_storage.args.no_clear_after:
@@ -77,3 +77,9 @@ class Executor(executors.ExecutorBase):
         if not os.path.exists(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
         open(path, 'a').close()
+
+    def join(self, job_name):
+        assert (job_name is None)
+
+    def kill(self, job_name):
+        assert (job_name is None)

@@ -8,10 +8,11 @@
 
 project(pipeline CXX)
 
-add_library(pipeline STATIC
-            graph_pack.cpp
-            graph_pack_helpers.cpp
-            sequence_mapper_gp_api.cpp
-            stage.cpp)
+set(pipeline_src
+  graph_pack.cpp
+  graph_pack_helpers.cpp
+  sequence_mapper_gp_api.cpp
+  stage.cpp)
 
+add_library(pipeline STATIC ${pipeline_src})
 target_link_libraries(pipeline binary_io path_extend input llvm-support library configs alignment)
