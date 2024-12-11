@@ -151,6 +151,27 @@ void ReadConverter::ConvertEdgeSequencesToBinary(const debruijn_graph::Graph &g,
     WriteBinaryInfo(contigs_output_dir / "contigs_info", data);
 }
 
+void ReadConverter::ConvertComponentEdgeSequencesToBinary(const omnigraph::GraphComponent<debruijn_graph::Graph> &c,
+                                                          const std::filesystem::path &contigs_output_dir, unsigned nthreads) {
+    INFO("Outputting edge sequences to " << contigs_output_dir);
+
+    std::unique_ptr<ThreadPool::ThreadPool> pool;
+    if (nthreads > 1)
+        pool = std::make_unique<ThreadPool::ThreadPool>(nthreads);
+
+    io::BinaryWriter single_converter(contigs_output_dir / "edges");
+    io::ReadStream<io::SingleReadSeq> single_reader = io::ComponentEdgeSequencesStream(c);
+    ReadStreamStat read_stat = single_converter.ToBinary(single_reader, pool.get());
+
+    LibraryData data;
+    data.lib_index = size_t(-1);
+    data.unmerged_read_length = read_stat.max_len;
+    data.merged_read_length = 0;
+    data.read_count = read_stat.read_count;
+    data.total_nucls = read_stat.total_len;
+    WriteBinaryInfo(contigs_output_dir / "edges_info", data);
+}
+
 void ReadConverter::WriteBinaryInfo(const std::filesystem::path &filename, LibraryData &data) {
     std::ofstream info;
     info.open(filename, std::ios_base::out);

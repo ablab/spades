@@ -10,6 +10,9 @@
 
 #include "dataset_readers.hpp"
 
+#include "assembly_graph/core/graph.hpp"
+#include "assembly_graph/components/graph_component.hpp"
+
 #include "io/reads/single_read.hpp"
 #include "io/reads/binary_converter.hpp"
 #include "io/reads/io_helper.hpp"
@@ -33,6 +36,7 @@ class ReadConverter {
 
     static bool CheckBinaryReadsExist(SequencingLibraryT& lib);
     static void WriteBinaryInfo(const std::filesystem::path& filename, LibraryData& data);
+
 public:
     struct TrivialTagger {
         uint64_t operator()(const io::SingleRead &) const { return 0; }
@@ -44,8 +48,12 @@ public:
                                 FileReadFlags flags = FileReadFlags::empty(),
                                 ReadTagger<io::SingleRead> tagger = TrivialTagger());
 
-    static void ConvertEdgeSequencesToBinary(const debruijn_graph::Graph &g, const std::filesystem::path &contigs_output_dir,
+    static void ConvertEdgeSequencesToBinary(const debruijn_graph::Graph &g,
+                                             const std::filesystem::path &contigs_output_dir,
                                              unsigned nthreads);
+    static void ConvertComponentEdgeSequencesToBinary(const omnigraph::GraphComponent<debruijn_graph::Graph> &c,
+                                                      const std::filesystem::path &contigs_output_dir,
+                                                      unsigned nthreads);
 };
 
 void ConvertIfNeeded(DataSet<LibraryData> &data, unsigned nthreads = 1,
