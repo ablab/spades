@@ -138,6 +138,27 @@ public:
                                        max_vertex_number);
     }
 
+    typedef ComposedDijkstraSettings<Graph,
+            LengthCalculator<Graph>,
+            BoundProcessChecker<Graph>,
+            VertexPutChecker<Graph>,
+            UnorientedNeighbourIteratorFactory<Graph> > UnorientedEdgeBoundedDijkstraSettings;
+
+    typedef Dijkstra<Graph, UnorientedEdgeBoundedDijkstraSettings> UnorientedEdgeBoundedDijkstra;
+
+    static UnorientedEdgeBoundedDijkstra
+    CreateUnorientedEdgeBoundedDijkstra(const Graph &graph,
+                                        size_t bound,
+                                        size_t max_vertex_number = size_t(-1)) {
+        return UnorientedEdgeBoundedDijkstra(graph,
+                                             UnorientedEdgeBoundedDijkstraSettings(
+                                                 LengthCalculator<Graph>(graph),
+                                                 BoundProcessChecker<Graph>(bound),
+                                                 VertexPutChecker<Graph>(),
+                                                 UnorientedNeighbourIteratorFactory<Graph>(graph)),
+                                             max_vertex_number);
+    }
+
 
     typedef ComposedDijkstraSettings<Graph,
                                      LengthCalculator<Graph>,
@@ -327,6 +348,18 @@ template<class Graph>
 typename DijkstraHelper<Graph>::BackwardEdgeBoundedDijkstra CreateBackwardEdgeBoundedDijkstra(const Graph &graph, size_t length_bound,
                                                                                               size_t max_vertex_number = -1ul) {
     return DijkstraHelper<Graph>::CreateBackwardEdgeBoundedDijkstra(graph, length_bound, max_vertex_number);
+}
+
+template<class Graph>
+typename DijkstraHelper<Graph>::UnorientedBoundedDijkstra CreateUnorientedBoundedDijkstra(const Graph &graph, size_t length_bound,
+                                                                                          size_t max_vertex_number = -1ul) {
+    return DijkstraHelper<Graph>::CreateUnorientedBoundedDijkstra(graph, length_bound, max_vertex_number);
+}
+
+template<class Graph>
+typename DijkstraHelper<Graph>::UnorientedEdgeBoundedDijkstra CreateUnorientedEdgeBoundedDijkstra(const Graph &graph, size_t length_bound,
+                                                                                                  size_t max_vertex_number = -1ul) {
+    return DijkstraHelper<Graph>::CreateUnorientedEdgeBoundedDijkstra(graph, length_bound, max_vertex_number);
 }
 
 }
