@@ -137,7 +137,7 @@ void split(const std::string_view s, const std::string_view delims,
 }
 
 static inline std::vector<std::string_view>
-split(const std::string &s, const std::string_view delim,
+split(const std::string_view s, const std::string_view delim,
       bool compress = false) {
     std::vector<std::string_view> elems;
     split(s, delim, std::back_inserter(elems), compress);
