@@ -13,7 +13,9 @@
 
 #include "toolchain/utils.hpp"
 #include "io/dataset_support/read_converter.hpp"
+#include "io/reads/async_read_stream.hpp"
 #include "io/reads/io_helper.hpp"
+#include "io/reads/file_reader.hpp"
 #include "io/reads/osequencestream.hpp"
 #include "io/utils/id_mapper.hpp"
 #include "io/graph/gfa_writer.hpp"
@@ -21,6 +23,7 @@
 #include "utils/segfault_handler.hpp"
 #include "utils/parallel/openmp_wrapper.h"
 
+#include "threadpool/threadpool.hpp"
 #include <clipp/clipp.h>
 #include <filesystem>
 #include <iostream>
@@ -209,9 +212,15 @@ int main(int argc, char** argv) {
 
       {
           auto helper = graph->GetConstructionHelper();
-          auto unitigs = io::EasyStream(cfg.unitigs,
-                                        false, false,
-                                        io::FileReadFlags::names_and_comments());
+          std::unique_ptr<ThreadPool::ThreadPool> pool;
+          if (nthreads > 1)
+              pool = std::make_unique<ThreadPool::ThreadPool>(nthreads);
+
+          auto flags = io::FileReadFlags::names_and_comments();
+          auto unitigs = (pool ?
+                          io::make_async_stream<io::FileReadStream>(*pool, cfg.unitigs, flags) :
+                          io::FileReadStream(cfg.unitigs, flags));
+
           Links links;
           while (!unitigs.eof()) {
               io::SingleRead read;
