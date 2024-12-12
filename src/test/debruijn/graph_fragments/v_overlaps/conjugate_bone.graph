@@ -1,0 +1,21 @@
+bone
+4
+edge1	200
+edge2	200
+edge3	400
+edge4	300
+1
+vertex1	100
+4
+edge1	vertex1
+edge2	vertex1
+vertex1	edge3
+vertex1	edge4
+4
+edge1	edge3	100
+edge1	edge4	100
+edge2	edge3	100
+edge2	edge4	100
+2
+path1	edge1	edge3
+path2	edge2	edge4

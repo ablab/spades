@@ -229,6 +229,7 @@ void CheckGraphWithPaths(const std::filesystem::path &graph_basename) {
 
 TEST(VariableOverlaps, BasicOperations) {
     CheckGraphWithPaths("src/test/debruijn/graph_fragments/v_overlaps/bone");
-    CheckGraphWithPaths("src/test/debruijn/graph_fragments/v_overlaps/conjugate");
+    CheckGraphWithPaths("src/test/debruijn/graph_fragments/v_overlaps/conjugate_bone");
+    CheckGraphWithPaths("src/test/debruijn/graph_fragments/v_overlaps/conjugate_triple");
     CheckGraphWithPaths("src/test/debruijn/graph_fragments/v_overlaps/triple_repeat");
 }
