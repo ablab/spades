@@ -148,6 +148,8 @@ public:
     auto links() { return adt::make_range(link_begin(), link_end()); }
     auto links() const { return adt::make_range(link_begin(), link_end()); }
 
+    size_t link_size() const {return link_storage_.size(); }
+
     using base::AddVertex;
     using base::AddEdge;
 
