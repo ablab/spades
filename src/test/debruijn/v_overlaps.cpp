@@ -82,29 +82,42 @@ std::unordered_map<VertexId, std::string> CheckStructure(std::ifstream &graph_st
 void CheckLinks(std::ifstream &graph_stream, const Graph &graph, const IdMapper &id_mapper) {
     int num_links;
     graph_stream >> num_links;
-    size_t checked_links = 0;
+    bool is_complex = false;
     for (int i = 0; i < num_links; ++i) {
         std::string first_edge_name, second_edge_name;
         int overlap;
         graph_stream >> first_edge_name >> second_edge_name >> overlap;
-        EdgeId first_edge = id_mapper[first_edge_name];
-        EdgeId second_edge = id_mapper[second_edge_name];
-        VertexId vertex = graph.EdgeEnd(first_edge);
-        EXPECT_EQ(vertex, graph.EdgeStart(second_edge));
+        EdgeId in_edge = id_mapper[first_edge_name];
+        EdgeId out_edge = id_mapper[second_edge_name];
+        EdgeId in_conjugate = graph.conjugate(in_edge);
+        EdgeId out_conjugate = graph.conjugate(out_edge);
+        VertexId vertex = graph.EdgeEnd(in_edge);
+        EXPECT_EQ(vertex, graph.EdgeStart(out_edge));
+        EXPECT_EQ(graph.conjugate(vertex), graph.EdgeEnd(out_conjugate));
         if (graph.is_complex(vertex)) {
             bool link_found = false;
+            bool conj_link_found = false;
             for (const auto &link: graph.links(vertex)) {
-                if (graph.link(link).link.first == first_edge and graph.link(link).link.second == second_edge) {
+                auto link_in_edge = graph.link(link).link.first;
+                auto link_out_edge = graph.link(link).link.second;
+                if (link_in_edge == in_edge and link_out_edge == out_edge) {
                     link_found = true;
                 }
             }
-            EXPECT_TRUE(link_found);
-            ++checked_links;
-        } else {
-            checked_links++;
+            for (const auto &link: graph.links(graph.conjugate(vertex))) {
+                auto link_in_edge = graph.link(link).link.first;
+                auto link_out_edge = graph.link(link).link.second;
+                if (link_in_edge == out_conjugate and link_out_edge == in_conjugate) {
+                    conj_link_found = true;
+                }
+            }
+            EXPECT_TRUE(link_found && conj_link_found);
+            is_complex = true;
         }
     }
-    EXPECT_EQ(num_links, checked_links);
+    if (is_complex) {
+        EXPECT_EQ(num_links * 2, graph.link_size());
+    }
 }
 
 void PerformSplits(debruijn_graph::Graph &graph, std::ifstream &ops_stream, const IdMapper &id_mapper) {
