@@ -11,9 +11,13 @@ project(input CXX)
 add_subdirectory(binary)
 add_subdirectory(sam)
 set(IO_LIBS samio binary_io)
+
 if (SPADES_USE_NCBISDK)
   add_subdirectory(sra)
   set(IO_LIBS ${IO_LIBS} sraio)
+endif()
+if (SPADES_USE_ZSTD)
+  set(IO_LIBS ${IO_LIBS} zstd::libzstd_static)
 endif()
 
 add_library(input STATIC

@@ -18,6 +18,10 @@ find_package(BZip2 REQUIRED)
 find_package(Readline QUIET)
 set(CURSES_NEED_NCURSES TRUE)
 find_package(Curses QUIET)
+find_package(zstd QUIET)
+if (zstd_FOUND)
+  set(SPADES_USE_ZSTD ON)
+endif()
 
 # Use included boost unless explicitly specified
 if (NOT SPADES_BOOST_ROOT)

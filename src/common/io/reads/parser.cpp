@@ -30,8 +30,8 @@
 #include "parser.hpp"
 
 #include "file_read_flags.hpp"
-#include "single_read.hpp"
 #include "fasta_fastq_gz_parser.hpp"
+#include "fasta_fastq_zstd_parser.hpp"
 #include "io/sam/bam_parser.hpp"
 #ifdef SPADES_USE_NCBISDK
 # include "io/sra/sra_parser.hpp"
@@ -54,7 +54,11 @@ Parser* SelectParser(const std::filesystem::path& filename,
       return new BAMParser(filename, flags);
 #ifdef SPADES_USE_NCBISDK
   else if (filename.extension() == ".sra")
-      return new SRAParser(filename, flags);    
+      return new SRAParser(filename, flags);
+#endif
+#ifdef SPADES_USE_ZSTD
+  else if (filename.extension() == ".zst")
+      return new FastaFastqZstdParser(filename, flags);
 #endif
 
   return new FastaFastqGzParser(filename, flags);

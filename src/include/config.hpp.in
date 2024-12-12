@@ -7,5 +7,6 @@
 #cmakedefine SPADES_DEBUG_LOGGING
 #cmakedefine SPADES_ENABLE_EXPENSIVE_CHECKS
 #cmakedefine SPADES_USE_NCBISDK
+#cmakedefine SPADES_USE_ZSTD
 
 #endif // __SPADES_CONFIG_HPP__
