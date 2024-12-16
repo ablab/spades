@@ -7,6 +7,10 @@ project(logan-extract CXX)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+if (!SPADES_USE_ZSTD)
+  message(FATAL_ERROR "logan-extract requires zstd")
+endif()
+
 add_executable(logan-extract main.cpp)
 
 target_link_libraries(logan-extract common_modules toolchain ${COMMON_LIBRARIES})
