@@ -18,9 +18,24 @@ find_package(BZip2 REQUIRED)
 find_package(Readline QUIET)
 set(CURSES_NEED_NCURSES TRUE)
 find_package(Curses QUIET)
+
+# See if we can find zstd via cmake config
 find_package(zstd QUIET)
 if (zstd_FOUND)
   set(SPADES_USE_ZSTD ON)
+  if (TARGET zstd::libzstd_shared)
+    set(ZSTD_LIB zstd::libzstd_shared)
+  else()
+    set(ZSTD_LIB zstd::libzstd_static)
+  endif()
+else()
+  # No luck, let's try pkg
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(ZSTD REQUIRED libzstd)
+  if (LIBZSTD_FOUND)
+    set(SPADES_USE_ZSTD ON)
+    set(ZSTD_LIB ${ZSTD_LINK_LIBRARIES})
+  endif()
 endif()
 
 # Use included boost unless explicitly specified
