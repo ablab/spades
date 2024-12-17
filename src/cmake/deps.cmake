@@ -31,10 +31,10 @@ if (zstd_FOUND)
 else()
   # No luck, let's try pkg
   find_package(PkgConfig REQUIRED)
-  pkg_check_modules(ZSTD REQUIRED libzstd)
+  pkg_check_modules(ZSTD REQUIRED libzstd IMPORTED_TARGET)
   if (LIBZSTD_FOUND)
     set(SPADES_USE_ZSTD ON)
-    set(ZSTD_LIB ${ZSTD_LINK_LIBRARIES})
+    set(ZSTD_LIB PkgConfig::ZSTD)
   endif()
 endif()
 
