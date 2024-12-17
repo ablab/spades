@@ -32,10 +32,13 @@ else()
   # No luck, let's try pkg
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(ZSTD REQUIRED libzstd IMPORTED_TARGET)
-  if (LIBZSTD_FOUND)
+  if (ZSTD_FOUND)
     set(SPADES_USE_ZSTD ON)
     set(ZSTD_LIB PkgConfig::ZSTD)
   endif()
+endif()
+if (SPADES_USE_ZSTD)
+  message(STATUS "SPAdes will use zstd for input")
 endif()
 
 # Use included boost unless explicitly specified
