@@ -9,6 +9,8 @@
 #pragma once
 
 #include "library/library_data.hpp"
+#include "paired_info/concurrent_pair_info_buffer.hpp"
+#include "paired_info/paired_info.hpp"
 #include "split_path_constructor.hpp"
 #include "paired_info/paired_info_helpers.hpp"
 #include "assembly_graph/paths/path_utils.hpp"
@@ -17,7 +19,7 @@
 
 namespace debruijn_graph {
 
-inline bool ClustersIntersect(omnigraph::de::Point p1, omnigraph::de::Point p2) {
+static inline bool ClustersIntersect(omnigraph::de::Point p1, omnigraph::de::Point p2) {
     return math::le(p1.d, p2.d + p1.var + p2.var) &&
            math::le(p2.d, p1.d + p1.var + p2.var);
 }
@@ -43,6 +45,7 @@ class PairInfoImprover {
     typedef std::vector<omnigraph::de::PairInfo<EdgeId> > PairInfos;
     typedef std::pair<EdgeId, EdgeId> EdgePair;
     typedef omnigraph::de::PairedInfoIndexT<Graph> Index;
+    typedef omnigraph::de::ConcurrentPairedInfoBuffer<Graph> Buffer;
 
   public:
     PairInfoImprover(const Graph& g,
@@ -99,7 +102,7 @@ class PairInfoImprover {
     }
 
     // Checking the consistency of two edge pairs (e, e_1) and (e, e_2) for all pairs (base_edge, <some_edge>)
-    void FindInconsistent(EdgeId base_edge, Index& to_remove) const {
+    void FindInconsistent(EdgeId base_edge, Buffer& to_remove) const {
         for (auto i1 : index_.Get(base_edge)) {
             auto e1 = i1.first;
             for (auto i2 : index_.Get(base_edge)) {
@@ -120,7 +123,7 @@ class PairInfoImprover {
     }
 
     size_t RemoveContradictional(unsigned nthreads) {
-        omnigraph::de::PairedInfoIndicesT<Graph> to_remove(graph_, nthreads);
+        omnigraph::de::ConcurrentPairedInfoBuffer<Graph> buf(graph_);
 
         omnigraph::IterationHelper<Graph, EdgeId> edges(graph_);
         auto ranges = edges.Ranges(nthreads * 16);
@@ -131,36 +134,34 @@ class PairInfoImprover {
                 if (graph_.length(e) < max_repeat_length_ || !index_.contains(e))
                     continue;
 
-                FindInconsistent(e, to_remove[omp_get_thread_num()]);
+                FindInconsistent(e, buf);
             }
         }
 
         DEBUG("ParallelRemoveContraditional: Threads finished");
-
         DEBUG("Merging maps");
-        for (size_t i = 1; i < to_remove.size(); ++i) {
-            to_remove[0].Merge(to_remove[i]);
-            to_remove[i].clear();
-        }
-        DEBUG("Resulting size " << to_remove[0].size());
+        // FIXME: This is a bit crazy, but we do not have a sane way to iterate
+        // over buffer. In any case, this is better than it used to be before
+        omnigraph::de::UnclusteredPairedInfoIndexT<Graph> to_remove(graph_);
+        to_remove.MoveAssign(buf);
+
+        DEBUG("Resulting size " << to_remove.size());
 
         DEBUG("Deleting paired infos, liable to removing");
         size_t cnt = 0;
-        for (auto I = omnigraph::de::half_pair_begin(to_remove[0]);
-            I != omnigraph::de::half_pair_end(to_remove[0]); ++I) {
+        for (auto I = omnigraph::de::half_pair_begin(to_remove);
+            I != omnigraph::de::half_pair_end(to_remove); ++I) {
             cnt += DeleteIfExist(I.first(), I.second(), *I);
         }
-        to_remove[0].clear();
 
         DEBUG("Size of index " << index_.size());
         DEBUG("ParallelRemoveContraditional: Clean finished");
         return cnt;
-
     }
 
     size_t FillMissing(unsigned nthreads) {
         DEBUG("Fill missing: Creating indexes");
-        omnigraph::de::PairedInfoIndicesT<Graph> to_add(graph_, nthreads);
+        omnigraph::de::ConcurrentPairedInfoBuffer<Graph> buf(graph_);
 
         SplitPathConstructor<Graph> spc(graph_);
 
@@ -179,22 +180,23 @@ class PairInfoImprover {
                 for (const auto &path : paths) {
                     TRACE("Path " << path.PrintPath(graph_));
                     for (const auto &pi : path)
-                        to_add[omp_get_thread_num()].Add(pi.first, pi.second, pi.point);
+                        buf.Add(pi.first, pi.second, pi.point);
                 }
             }
         }
         DEBUG("Fill missing: Threads finished");
 
         DEBUG("Merging maps");
-        for (size_t i = 1; i < to_add.size(); ++i) {
-            to_add[0].Merge(to_add[i]);
-            to_add[i].clear();
-        }
-        DEBUG("Resulting size " << to_add[0].size());
+        // FIXME: This is a bit crazy, but we do not have a sane way to iterate
+        // over buffer. In any case, this is better than it used to be before
+        omnigraph::de::UnclusteredPairedInfoIndexT<Graph> to_add(graph_);
+        to_add.MoveAssign(buf);
+
+        DEBUG("Resulting size " << to_add.size());
 
         size_t cnt = 0;
-        for (auto I = omnigraph::de::half_pair_begin(to_add[0]);
-             I != omnigraph::de::half_pair_end(to_add[0]);
+        for (auto I = omnigraph::de::half_pair_begin(to_add);
+             I != omnigraph::de::half_pair_end(to_add);
              ++I) {
             EdgeId e1 = I.first(), e2 = I.second();
             for (auto p : *I)
@@ -208,7 +210,8 @@ class PairInfoImprover {
         return cnt;
     }
 
-    size_t DeleteIfExist(EdgeId e1, EdgeId e2, const typename Index::HistProxy& infos) {
+    template<class Histogram>
+    size_t DeleteIfExist(EdgeId e1, EdgeId e2, const Histogram &infos) {
         size_t cnt = 0;
         for (auto point : infos) {
             cnt += index_.Remove(e1, e2, point);
