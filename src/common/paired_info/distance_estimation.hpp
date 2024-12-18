@@ -52,7 +52,7 @@ protected:
     typedef typename InPairedIndex::HistProxy InHistogram;
     typedef typename OutPairedIndex::Histogram OutHistogram;
 
-public:
+ public:
     AbstractDistanceEstimator(const debruijn_graph::Graph &graph,
                               const InPairedIndex &index,
                               const GraphDistanceFinder &distance_finder,
@@ -62,6 +62,10 @@ public:
 
     virtual void Estimate(PairedInfoIndexT<debruijn_graph::Graph> &result, size_t nthreads) const = 0;
 
+    virtual const std::string Name() const = 0;
+
+    const debruijn_graph::Graph &graph() const { return graph_; }
+
     virtual ~AbstractDistanceEstimator() { }
 
 protected:
@@ -69,8 +73,6 @@ protected:
     typedef std::vector<std::pair<int, double>> EstimHist;
     typedef std::vector<size_t> GraphLengths;
     typedef std::map<debruijn_graph::EdgeId, GraphLengths> LengthMap;
-
-    const debruijn_graph::Graph &graph() const { return graph_; }
 
     const InPairedIndex &index() const { return index_; }
 
@@ -85,8 +87,6 @@ private:
     const InPairedIndex &index_;
     const GraphDistanceFinder &distance_finder_;
     const size_t linkage_distance_;
-
-    virtual const std::string Name() const = 0;
 
     DECL_LOGGER("AbstractDistanceEstimator");
 };
@@ -103,7 +103,7 @@ protected:
     typedef typename base::InHistogram InHistogram;
     typedef typename base::OutHistogram OutHistogram;
 
-public:
+ public:
     DistanceEstimator(const debruijn_graph::Graph &graph,
                       const InPairedIndex &index,
                       const GraphDistanceFinder &distance_finder,
@@ -118,6 +118,15 @@ public:
 
     virtual void Estimate(OutPairedIndex &result, size_t nthreads) const;
 
+    virtual const std::string Name() const {
+        static const std::string my_name = "SIMPLE";
+        return my_name;
+    }
+
+    virtual void ProcessEdge(debruijn_graph::EdgeId e1,
+                             const InPairedIndex &pi,
+                             PairedInfoBuffer<debruijn_graph::Graph> &result) const;
+
 protected:
     const DEDistance max_distance_;
 
@@ -125,18 +134,9 @@ protected:
                                                 const InHistogram &histogram,
                                                 const GraphLengths &raw_forward) const;
 
-private:
-    virtual void ProcessEdge(debruijn_graph::EdgeId e1,
-                             const InPairedIndex &pi,
-                             PairedInfoBuffer<debruijn_graph::Graph> &result) const;
-
-    virtual const std::string Name() const {
-        static const std::string my_name = "SIMPLE";
-        return my_name;
-    }
-
     DECL_LOGGER("DistanceEstimator");
 };
+
 
 }
 

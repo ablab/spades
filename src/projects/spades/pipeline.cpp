@@ -138,9 +138,9 @@ static void AddPreliminarySimplificationStages(StageManager &SPAdes) {
         SPAdes.add<debruijn_graph::GapClosing>("prelim_gapcloser");
 
     if (cfg::get().use_intermediate_contigs) {
-        SPAdes.add<debruijn_graph::PairInfoCount>(true)
-              .add<debruijn_graph::DistanceEstimation>(true)
-              .add<debruijn_graph::RepeatResolution>(true);
+        SPAdes.add<debruijn_graph::PairInfoCount>(true);
+        SPAdes.add<debruijn_graph::DistanceEstimation>(true);
+        SPAdes.add<debruijn_graph::RepeatResolution>(true);
 
         if (cfg::get().hm)
             SPAdes.add<debruijn_graph::ExtractDomains>();
@@ -176,6 +176,7 @@ static void AddSimplificationStages(StageManager &SPAdes) {
         SPAdes.add<debruijn_graph::GapClosing>("late_gapcloser");
     if (cfg::get().sewage)
         SPAdes.add<debruijn_graph::WastewaterDisentangle>();
+
     SPAdes.add<debruijn_graph::SimplificationCleanup>();
 
     if (cfg::get().correct_mismatches)
@@ -205,6 +206,14 @@ static void AddRepeatResolutionStages(StageManager &SPAdes) {
           .add<debruijn_graph::RepeatResolution>();
 }
 
+class FakeStageOnlyforDataSyncDoesNothingElse : public spades::AssemblyStage {
+public:
+    FakeStageOnlyforDataSyncDoesNothingElse()
+            : AssemblyStage("Fake Stage Only for Data Sync", "fake_stage_sync_data") { }
+
+    void run(graph_pack::GraphPack&, const char *) {}
+};
+
 void assemble_genome() {
     using namespace debruijn_graph::config;
     pipeline_type mode = cfg::get().mode;
@@ -224,10 +233,12 @@ void assemble_genome() {
 
     INFO("Starting from stage: " << cfg::get().entry_point);
 
-    StageManager SPAdes(SavesPolicy(cfg::get().checkpoints,
-                                    cfg::get().output_saves, cfg::get().load_from));
+    std::unique_ptr<StageManager> SPAdes;
+    SavesPolicy saves_policy(cfg::get().checkpoints,
+                             cfg::get().output_saves, cfg::get().load_from);
+    SPAdes.reset(new StageManager(saves_policy));
 
-    if (SPAdes.saves_policy().EnabledAnyCheckpoint())
+    if (SPAdes->saves_policy().EnabledAnyCheckpoint())
         create_directory(cfg::get().output_saves);
 
     bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable;
@@ -247,44 +258,44 @@ void assemble_genome() {
     }
 
     // Build the pipeline
-    SPAdes.add<ReadConversion>();
+    SPAdes->add<ReadConversion>();
 
     if (!AssemblyGraphPresent()) {
-        AddConstructionStages(SPAdes);
+        AddConstructionStages(*SPAdes);
         if (cfg::get().sewage)
-            SPAdes.add<debruijn_graph::RestrictedEdgesFilling>();
+            SPAdes->add<debruijn_graph::RestrictedEdgesFilling>();
 
-        AddSimplificationStages(SPAdes);
+        AddSimplificationStages(*SPAdes);
 
-        SPAdes.add<debruijn_graph::ContigOutput>(cfg::get().main_iteration ?
-                                                 GetBeforeRROutput() : GetNonFinalStageOutput());
+        SPAdes->add<debruijn_graph::ContigOutput>(cfg::get().main_iteration ?
+                                                  GetBeforeRROutput() : GetNonFinalStageOutput());
     } else {
-        SPAdes.add<debruijn_graph::LoadGraph>();
+        SPAdes->add<debruijn_graph::LoadGraph>();
     }
     
     if (cfg::get().main_iteration) {
         // Not metaextrachromosomal!
         if (mode == pipeline_type::plasmid)
-            SPAdes.add<debruijn_graph::ChromosomeRemoval>();
+            SPAdes->add<debruijn_graph::ChromosomeRemoval>();
 
         if (HybridLibrariesPresent())
-            SPAdes.add<debruijn_graph::HybridLibrariesAligning>();
+            SPAdes->add<debruijn_graph::HybridLibrariesAligning>();
 
         // No graph modification allowed after HybridLibrariesAligning stage!
 
         if (cfg::get().rr_enable)
-            AddRepeatResolutionStages(SPAdes);
+            AddRepeatResolutionStages(*SPAdes);
 
         if (mode == pipeline_type::metaextrachromosomal)
-            AddMetaplasmidStages(SPAdes);
+            AddMetaplasmidStages(*SPAdes);
         else
-            SPAdes.add<debruijn_graph::ContigOutput>(GetFinalStageOutput());
+            SPAdes->add<debruijn_graph::ContigOutput>(GetFinalStageOutput());
 
         if (cfg::get().hm)
-            SPAdes.add<debruijn_graph::DomainGraphConstruction>();
+            SPAdes->add<debruijn_graph::DomainGraphConstruction>();
     }
 
-    SPAdes.run(conj_gp, cfg::get().entry_point.c_str());
+    SPAdes->run(conj_gp, cfg::get().entry_point.c_str());
 
     // For informing spades.py about estimated params
     write_lib_data(cfg::get().output_dir / "final");

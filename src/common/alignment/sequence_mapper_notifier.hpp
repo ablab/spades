@@ -16,6 +16,7 @@
 #include "io/reads/paired_read.hpp"
 #include "io/reads/read_stream_vector.hpp"
 #include "utils/perf/timetracer.hpp"
+#include "utils/stl_utils.hpp"
 
 #include <string>
 #include <vector>
@@ -36,7 +37,23 @@ public:
     virtual void ProcessSingleRead(size_t /* thread_index */, const io::SingleReadSeq& /* r */, const omnigraph::MappingPath<EdgeId>& /* read */) {}
 
     virtual void MergeBuffer(size_t /* thread_index */) {}
-    
+
+    virtual void Serialize(std::ostream&) const {
+        VERIFY_MSG(false, "Serialize() is not implemented");
+    }
+
+    virtual void Deserialize(std::istream&) {
+        VERIFY_MSG(false, "Deserialize() is not implemented");
+    }
+
+    virtual void MergeFromStream(std::istream&) {
+        VERIFY_MSG(false, "MergeFromStream() is not implemented");
+    }
+
+    virtual const std::string name() const {
+        return utils::type_name(typeid(*this).name());
+    }
+
     virtual ~SequenceMapperListener() {}
 };
 
@@ -56,8 +73,7 @@ public:
                         const SequenceMapperT& mapper, size_t threads_count = 0) {
         return ProcessLibrary(streams, 0, mapper, threads_count);
     }
-
-  private:
+    
     template<class ReadType>
     void ProcessLibrary(io::ReadStreamList<ReadType>& streams,
                         size_t lib_index, const SequenceMapperT& mapper, size_t threads_count = 0) {
@@ -68,7 +84,7 @@ public:
             threads_count = streams.size();
 
         streams.reset();
-        NotifyStartProcessLibrary(lib_index, threads_count);
+        NotifyStartProcessLibrary(lib_index, streams.size());
         size_t counter = 0, n = 15;
 
         #pragma omp parallel for num_threads(threads_count) shared(counter)
@@ -97,9 +113,10 @@ public:
             counter += size;
         }
 
-        for (size_t i = 0; i < threads_count; ++i)
+        for (size_t i = 0; i < streams.size(); ++i)
             NotifyMergeBuffer(lib_index, i);
 
+        streams.close();
         INFO("Total " << counter << " reads processed");
         NotifyStopProcessLibrary(lib_index);
     }
@@ -114,7 +131,47 @@ private:
 
     void NotifyMergeBuffer(size_t ilib, size_t ithread) const;
 
-    std::vector<std::vector<SequenceMapperListener*> > listeners_;  //first vector's size = count libs
+protected:
+    std::vector<ListenersContainer> listeners_;  //first vector's size = count libs
+};
+
+class MapLibBase {
+public:
+    virtual void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::PairedRead>& streams) const = 0;
+    virtual void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::SingleRead>& streams) const = 0;
+    virtual void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::SingleReadSeq>& streams) const = 0;
+    virtual void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::PairedReadSeq>& streams) const = 0;
+
+    template<class Streams>
+    void operator() (SequenceMapperListener* listener, const SequenceMapper<Graph>& mapper, Streams& streams) const {
+        this->operator() (std::vector<SequenceMapperListener*>(1, listener), mapper, streams);
+    }
+};
+
+class MapLibFunc : public MapLibBase {
+public:
+    void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::PairedRead>& streams) const override {
+        MapLib(listeners, mapper, streams);
+    }
+    void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::SingleRead>& streams) const override {
+        MapLib(listeners, mapper, streams);
+    }
+    void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::SingleReadSeq>& streams) const override {
+        MapLib(listeners, mapper, streams);
+    }
+    void operator() (const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<io::PairedReadSeq>& streams) const override {
+        MapLib(listeners, mapper, streams);
+    }
+
+private:
+    template<class ReadType>
+    void MapLib(const std::vector<SequenceMapperListener*>& listeners, const SequenceMapper<Graph>& mapper, io::ReadStreamList<ReadType>& streams) const {
+        SequenceMapperNotifier notifier;
+        for (auto listener: listeners) {
+            notifier.Subscribe(listener);
+        }
+        notifier.ProcessLibrary(streams, mapper);
+    }
 };
 
 } // namespace debruijn_graph

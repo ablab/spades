@@ -732,7 +732,7 @@ public:
         using io::binary::BinWrite;
         BinWrite<size_t>(str, data_.size());
 
-        for (int i = 0; i < data_.size(); ++i) {
+        for (size_t i = 0; i < data_.size(); ++i) {
             data_[i].BinWrite(str);
         }
     }
@@ -743,7 +743,7 @@ public:
 
         VERIFY(size == data_.size());
 
-        for (int i = 0; i < size; ++i) {
+        for (size_t i = 0; i < size; ++i) {
             data_[i].BinRead(str);
         }
     }
