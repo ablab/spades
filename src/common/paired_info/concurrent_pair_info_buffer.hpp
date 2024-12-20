@@ -128,6 +128,12 @@ class ConcurrentPairedBuffer : public PairedBufferBase<ConcurrentPairedBuffer<G,
 template<class Graph>
 using ConcurrentPairedInfoBuffer = ConcurrentPairedBuffer<Graph, RawPointTraits, btree_map>;
 
+template<class Graph>
+using ConcurrentClusteredPairedInfoBuffer = ConcurrentPairedBuffer<Graph, PointTraits, btree_map>;
+
+template<class Graph>
+using ConcurrentUnorderedClusteredPairedInfoBuffer = ConcurrentPairedBuffer<Graph, PointTraits, phmap_map>;
+
 } // namespace de
 
 } // namespace omnigraph

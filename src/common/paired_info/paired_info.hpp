@@ -604,6 +604,12 @@ template<typename Graph>
 using PairedInfoIndexT = PairedIndex<Graph, PointTraits, const_btree_map>;
 
 template<typename K, typename V>
+using phmap_map = NoLockingAdapter<phmap::parallel_flat_hash_map<K, V>>; //Two-parameters wrapper
+
+template<typename Graph>
+using UnorderedPairedInfoIndexT = PairedIndex<Graph, PointTraits, phmap_map>;
+
+template<typename K, typename V>
 using btree_map = NoLockingAdapter<phmap::btree_map<K, V>>; //Two-parameters wrapper
 
 template<typename Graph>
