@@ -7,10 +7,10 @@
 //***************************************************************************
 
 #include "distance_estimation.hpp"
+#include "pair_info_bounds.hpp"
 #include "assembly_graph/paths/path_processor.hpp"
 
-namespace omnigraph {
-namespace de {
+namespace omnigraph::de {
 
 using namespace debruijn_graph;
 
@@ -75,32 +75,26 @@ AbstractDistanceEstimator::OutHistogram AbstractDistanceEstimator::ClusterResult
     return result;
 }
 
-void AbstractDistanceEstimator::AddToResult(const OutHistogram &clustered, EdgePair ep,
-                                            PairedInfoBuffer<Graph> &result) const  {
-    result.AddMany(ep.first, ep.second, clustered);
-}
-
 void DistanceEstimator::Estimate(PairedInfoIndexT<Graph> &result, size_t nthreads) const  {
     this->Init();
     const auto &index = this->index();
+    ConcurrentUnorderedClusteredPairedInfoBuffer<Graph> buffer(graph());
 
-    DEBUG("Collecting edge infos");
-    std::vector<EdgeId> edges;
-    for (EdgeId e : this->graph().edges())
-        edges.push_back(e);
+    omnigraph::IterationHelper<Graph, EdgeId> edges(graph());
+    auto ranges = edges.Ranges(nthreads * 16);
 
     DEBUG("Processing");
-    PairedInfoBuffersT<Graph> buffer(this->graph(), nthreads);
-#   pragma omp parallel for num_threads(nthreads) schedule(guided, 10)
-    for (size_t i = 0; i < edges.size(); ++i) {
-        EdgeId edge = edges[i];
-        ProcessEdge(edge, index, buffer[omp_get_thread_num()]);
+#   pragma omp parallel for schedule(guided) num_threads(nthreads)
+    for (size_t i = 0; i < ranges.size(); ++i) {
+        TRACE("Processing chunk #" << i);
+
+        for (EdgeId e : ranges[i]) {
+            TRACE("Estimating for edge " << e);
+            ProcessEdge(e, index, buffer);
+        }
     }
 
-    for (size_t i = 0; i < nthreads; ++i) {
-        result.Merge(buffer[i]);
-        buffer[i].clear();
-    }
+    result.Merge(buffer);
 }
 
 DistanceEstimator::EstimHist DistanceEstimator::EstimateEdgePairDistances(EdgePair ep, const InHistogram &histogram,
@@ -158,7 +152,7 @@ DistanceEstimator::EstimHist DistanceEstimator::EstimateEdgePairDistances(EdgePa
     return result;
 }
 
-void DistanceEstimator::ProcessEdge(EdgeId e1, const InPairedIndex &pi, PairedInfoBuffer<Graph> &result) const {
+void DistanceEstimator::ProcessEdge(EdgeId e1, const InPairedIndex &pi, Buffer &result) const {
     typename base::LengthMap second_edges;
     auto inner_map = pi.GetHalf(e1);
     for (auto i : inner_map)
@@ -181,5 +175,6 @@ void DistanceEstimator::ProcessEdge(EdgeId e1, const InPairedIndex &pi, PairedIn
         this->AddToResult(res, ep, result);
     }
 }
-}
-}
+
+} // namespace omnigraph::de
+

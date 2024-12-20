@@ -21,13 +21,13 @@ using namespace omnigraph::de;
 void EstimateWithEstimator(PairedInfoIndexT<Graph> &clustered_index,
                            const AbstractDistanceEstimator &estimator,
                            AbstractPairInfoChecker<Graph> &checker) {
-    DEBUG("Estimating distances");
+    INFO("Estimating distances");
 
     estimator.Estimate(clustered_index, omp_get_max_threads());
 
     INFO("Filtering info");
     PairInfoFilter<Graph>(checker).Filter(clustered_index);
-    DEBUG("Info Filtered");
+    INFO("Info Filtered");
 }
 
 // Postprocessing, checking that clusters do not intersect
@@ -129,8 +129,6 @@ void EstimatePairedDistances(PairedInfoIndexT<Graph> &clustered_index,
     size_t max_distance = size_t(de_config.max_distance_coeff * lib.data().insert_size_deviation);
 
     PairInfoWeightChecker<Graph> checker(graph, de_config.clustered_filter_threshold);
-
-    INFO("Weight Filter Done");
 
     DistanceEstimator estimator(graph, paired_index, dist_finder, linkage_distance, max_distance);
 
