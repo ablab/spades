@@ -32,6 +32,7 @@ public:
     SmoothingDistanceEstimator(const debruijn_graph::Graph &graph,
                                const InPairedIndex &histogram,
                                const GraphDistanceFinder &dist_finder,
+                               const PairInfoChecker &checker,
                                std::function<double(int)> weight_f,
                                size_t linkage_distance, size_t max_distance, size_t threshold,
                                double range_coeff, double delta_coeff,
@@ -39,7 +40,7 @@ public:
                                size_t min_peak_points,
                                double percentage,
                                double derivative_threshold) :
-            base(graph, histogram, dist_finder, weight_f, linkage_distance, max_distance),
+            base(graph, histogram, dist_finder, checker, weight_f, linkage_distance, max_distance),
             threshold_(threshold),
             range_coeff_(range_coeff),
             delta_coeff_(delta_coeff),
@@ -83,7 +84,7 @@ private:
 
     void ProcessEdge(debruijn_graph::EdgeId e1,
                      const InPairedIndex &pi,
-                     PairedInfoBuffer<debruijn_graph::Graph> &result) const override;
+                     Buffer &result) const override;
 
     bool IsTipTip(debruijn_graph::EdgeId e1, debruijn_graph::EdgeId e2) const;
 

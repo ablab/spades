@@ -83,7 +83,7 @@ SmoothingDistanceEstimator::EstimHist SmoothingDistanceEstimator::FindEdgePairDi
 }
 
 void SmoothingDistanceEstimator::ProcessEdge(EdgeId e1, const InPairedIndex &pi,
-                                             PairedInfoBuffer<Graph> &result) const {
+                                             Buffer &result) const {
     typename base::LengthMap second_edges;
     auto inner_map = pi.GetHalf(e1);
     for (auto I : inner_map)

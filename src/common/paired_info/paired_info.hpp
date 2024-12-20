@@ -596,7 +596,7 @@ class NoLockingConstAdapter : public T {
 };
 
 
-//Aliases for common graphs
+// Aliases for common graphs
 template<typename K, typename V>
 using const_btree_map = NoLockingConstAdapter<phmap::btree_map<K, V>>; //Two-parameters wrapper
 
@@ -604,11 +604,16 @@ template<typename Graph>
 using PairedInfoIndexT = PairedIndex<Graph, PointTraits, const_btree_map>;
 
 template<typename K, typename V>
+using phmap_map = NoLockingAdapter<phmap::parallel_flat_hash_map<K, V>>; //Two-parameters wrapper
+
+template<typename Graph>
+using UnorderedPairedInfoIndexT = PairedIndex<Graph, PointTraits, phmap_map>;
+
+template<typename K, typename V>
 using btree_map = NoLockingAdapter<phmap::btree_map<K, V>>; //Two-parameters wrapper
 
 template<typename Graph>
 using UnclusteredPairedInfoIndexT = PairedIndex<Graph, RawPointTraits, btree_map>;
-
 
 template<typename G, typename Traits, template<typename, typename> class Container>
 class PairedIndexHandler : public omnigraph::GraphActionHandler<G> {
@@ -752,7 +757,6 @@ public:
 template<class Graph>
 using PairedInfoIndicesT = PairedIndices<PairedInfoIndexT<Graph>>;
 
-
 template<typename Graph>
 using PairedInfoIndexHandlerT = PairedIndexHandler<Graph, PointTraits, const_btree_map>;
 
@@ -761,14 +765,6 @@ using PairedInfoIndicesHandlerT = std::vector<PairedInfoIndexHandlerT<Graph>>;
 
 template<class Graph>
 using UnclusteredPairedInfoIndicesT = PairedIndices<UnclusteredPairedInfoIndexT<Graph>>;
-
-template<typename K, typename V>
-using unordered_map = NoLockingAdapter<std::unordered_map<K, V>>; //Two-parameters wrapper
-template<class Graph>
-using PairedInfoBuffer = PairedBuffer<Graph, RawPointTraits, unordered_map>;
-
-template<class Graph>
-using PairedInfoBuffersT = PairedIndices<PairedInfoBuffer<Graph>>;
 
 }
 
