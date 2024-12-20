@@ -83,7 +83,7 @@ private:
 
     void ProcessEdge(debruijn_graph::EdgeId e1,
                      const InPairedIndex &pi,
-                     PairedInfoBuffer<debruijn_graph::Graph> &result) const override;
+                     Buffer &result) const override;
 
     bool IsTipTip(debruijn_graph::EdgeId e1, debruijn_graph::EdgeId e2) const;
 

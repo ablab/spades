@@ -10,7 +10,7 @@
 #define DISTANCE_ESTIMATION_HPP_
 
 #include "paired_info.hpp"
-#include "pair_info_bounds.hpp"
+#include "concurrent_pair_info_buffer.hpp"
 
 #include "assembly_graph/core/graph.hpp"
 #include "utils/parallel/openmp_wrapper.h"
@@ -78,7 +78,10 @@ protected:
 
     OutHistogram ClusterResult(EdgePair /*ep*/, const EstimHist &estimated) const;
 
-    void AddToResult(const OutHistogram &clustered, EdgePair ep, PairedInfoBuffer<debruijn_graph::Graph> &result) const;
+    template<class Buffer>
+    void AddToResult(const OutHistogram &clustered, EdgePair ep, Buffer &result) const {
+        result.AddMany(ep.first, ep.second, clustered);
+    }
 
 private:
     const debruijn_graph::Graph &graph_;
@@ -102,6 +105,7 @@ protected:
     typedef typename base::OutPairedIndex OutPairedIndex;
     typedef typename base::InHistogram InHistogram;
     typedef typename base::OutHistogram OutHistogram;
+    typedef ConcurrentUnorderedClusteredPairedInfoBuffer<debruijn_graph::Graph> Buffer;
 
 public:
     DistanceEstimator(const debruijn_graph::Graph &graph,
@@ -128,7 +132,7 @@ protected:
 private:
     virtual void ProcessEdge(debruijn_graph::EdgeId e1,
                              const InPairedIndex &pi,
-                             PairedInfoBuffer<debruijn_graph::Graph> &result) const;
+                             Buffer &result) const;
 
     virtual const std::string Name() const {
         static const std::string my_name = "SIMPLE";
