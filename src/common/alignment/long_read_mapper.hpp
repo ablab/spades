@@ -55,6 +55,20 @@ class LongReadMapper: public SequenceMapperListener {
         return g_;
     }
 
+    void Serialize(std::ostream &os) const override {
+        storage_.BinWrite(os);
+    }
+
+    void Deserialize(std::istream &is) override {
+        storage_.BinRead(is);
+    }
+
+    void MergeFromStream(std::istream &is) override {
+        PathStorage<Graph> remote(g_);
+        remote.BinRead(is);
+        storage_.AddStorage(remote);
+    }
+
 private:
 
     void ProcessSingleRead(size_t thread_index, const omnigraph::MappingPath<EdgeId>& mapping, const io::SingleRead& r);

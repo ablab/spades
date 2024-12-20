@@ -103,12 +103,15 @@ bool ShouldObtainSingleReadsPaths(size_t ilib) {
 }
 
 size_t ProcessSingleReads(graph_pack::GraphPack &gp, size_t ilib,
-                          bool use_binary = true, bool map_paired = false) {
+                          const MapLibBase & map_lib_func,
+                          size_t num_readers = 0,
+                          bool use_binary = true,
+                          bool map_paired = false) {
     //FIXME make const
     auto& reads = cfg::get_writable().ds.reads[ilib];
     const auto &graph = gp.get<Graph>();
 
-    SequenceMapperNotifier notifier;
+    std::vector<SequenceMapperListener*> listeners;
 
     auto &single_long_reads = gp.get_mutable<LongReadContainer<Graph>>()[ilib];
     auto& trusted_paths = gp.get_mutable<path_extend::TrustedPathsContainer>()[ilib];
@@ -116,7 +119,7 @@ size_t ProcessSingleReads(graph_pack::GraphPack &gp, size_t ilib,
 
     if (ShouldObtainSingleReadsPaths(ilib) || reads.is_contig_lib()) {
         //FIXME pretty awful, would be much better if listeners were shared ptrs
-        notifier.Subscribe(&read_mapper);
+        listeners.push_back(&read_mapper);
         cfg::get_writable().ds.reads[ilib].data().single_reads_mapped = true;
     }
 
@@ -125,25 +128,30 @@ size_t ProcessSingleReads(graph_pack::GraphPack &gp, size_t ilib,
     if (cfg::get().calculate_coverage_for_each_lib) {
         INFO("Will calculate lib coverage as well");
         map_paired = true;
-        notifier.Subscribe(&ss_coverage_filler);
+        listeners.push_back(&ss_coverage_filler);
     }
 
     auto mapper_ptr = ChooseProperMapper(gp, reads);
     if (use_binary) {
-        auto single_streams = single_binary_readers(reads, false, map_paired);
-        notifier.ProcessLibrary(single_streams, *mapper_ptr);
+        auto single_streams = single_binary_readers(reads, false, map_paired, num_readers);
+        map_lib_func(listeners, *mapper_ptr, single_streams);
     } else {
         auto single_streams = single_easy_readers(reads, false,
                                                   map_paired, /*handle Ns*/false);
-        notifier.ProcessLibrary(single_streams, *mapper_ptr);
+        map_lib_func(listeners, *mapper_ptr, single_streams);
     }
 
     return single_long_reads.size();
 }
-
 } // namespace
 
-void PairInfoCount::run(graph_pack::GraphPack &gp, const char *) {
+void PairInfoCount::run(graph_pack::GraphPack &gp, const char *s) {
+    execute(gp, s, MapLibFunc());
+}
+
+void PairInfoCountBase::execute(graph_pack::GraphPack &gp, const char *,
+                                const MapLibBase &map_lib_func,
+                                size_t num_readers) {
     InitRRIndices(gp);
     EnsureBasicMapping(gp);
 
@@ -162,7 +170,7 @@ void PairInfoCount::run(graph_pack::GraphPack &gp, const char *) {
             continue;
         } else if (lib.is_contig_lib()) {
             INFO("Mapping contigs library #" << i);
-            ProcessSingleReads(gp, i, false);
+            ProcessSingleReads(gp, i, map_lib_func, num_readers, false);
         } else {
             if (lib.is_paired()) {
                 INFO("Estimating insert size for library #" << i);
@@ -171,8 +179,8 @@ void PairInfoCount::run(graph_pack::GraphPack &gp, const char *) {
                 size_t k = cfg::get().K;
 
                 size_t edgepairs = 0;
-                if (!paired_info::CollectLibInformation(graph, *ChooseProperMapper(gp, lib),
-                                                        edgepairs, lib, edge_length_threshold)) {
+                if (!paired_info::CollectLibInformation(graph, map_lib_func, *ChooseProperMapper(gp, lib),
+                                                        edgepairs, lib, edge_length_threshold, num_readers)) {
                     cfg::get_writable().ds.reads[i].data().mean_insert_size = 0.0;
                     WARN("Unable to estimate insert size for paired library #" << i);
                     if (rl > 0 && rl <= k) {
@@ -186,14 +194,14 @@ void PairInfoCount::run(graph_pack::GraphPack &gp, const char *) {
                 }
 
                 INFO("  Insert size = " << lib_data.mean_insert_size <<
-                     ", deviation = " << lib_data.insert_size_deviation <<
-                     ", left quantile = " << lib_data.insert_size_left_quantile <<
-                     ", right quantile = " << lib_data.insert_size_right_quantile <<
-                     ", read length = " << lib_data.unmerged_read_length);
+                                        ", deviation = " << lib_data.insert_size_deviation <<
+                                        ", left quantile = " << lib_data.insert_size_left_quantile <<
+                                        ", right quantile = " << lib_data.insert_size_right_quantile <<
+                                        ", read length = " << lib_data.unmerged_read_length);
 
                 if (lib_data.mean_insert_size < 1.1 * (double) rl)
                     WARN("Estimated mean insert size " << lib_data.mean_insert_size
-                         << " is very small compared to read length " << rl);
+                                                       << " is very small compared to read length " << rl);
 
                 std::unique_ptr<paired_info::PairedInfoFilter> filter;
                 unsigned filter_threshold = cfg::get().de.raw_filter_threshold;
@@ -201,7 +209,8 @@ void PairInfoCount::run(graph_pack::GraphPack &gp, const char *) {
                 // Only filter paired-end libraries
                 if (filter_threshold && lib.type() == io::LibraryType::PairedEnd) {
                     INFO("Filtering data for library #" << i);
-                    filter = paired_info::FillEdgePairFilter(graph, *ChooseProperMapper(gp, lib), lib, edgepairs);
+                    filter = paired_info::FillEdgePairFilter(graph, *ChooseProperMapper(gp, lib), lib, edgepairs,
+                                                             map_lib_func, num_readers);
                 }
 
                 INFO("Mapping library #" << i);
@@ -215,20 +224,21 @@ void PairInfoCount::run(graph_pack::GraphPack &gp, const char *) {
                         round_thr = unsigned(std::min(cfg::get().de.max_distance_coeff * lib.data().insert_size_deviation * cfg::get().de.rounding_coeff,
                                                       cfg::get().de.rounding_thr));
 
-                    paired_info::FillPairedIndex(graph, *ChooseProperMapper(gp, lib),
+                    paired_info::FillPairedIndex(graph, map_lib_func,*ChooseProperMapper(gp, lib),
                                                  lib, gp.get_mutable<Indices>()[i],
-                                                 std::move(filter), filter_threshold, round_thr);
+                                                 std::move(filter), filter_threshold, round_thr, true, num_readers);
                 }
             }
 
             if (ShouldObtainSingleReadsPaths(i) || ShouldObtainLibCoverage()) {
                 cfg::get_writable().use_single_reads |= ShouldObtainSingleReadsPaths(i);
                 INFO("Mapping single reads of library #" << i);
-                size_t n = ProcessSingleReads(gp, i, /*use_binary*/true, /*map_paired*/true);
+                size_t n = ProcessSingleReads(gp, i, map_lib_func, num_readers, /*use_binary*/true, /*map_paired*/true);
                 INFO("Total paths obtained from single reads: " << n);
             }
         }
     }
-}
 
+    DetachEdgeIndex(gp);
+}
 } // namespace debruijn_graph

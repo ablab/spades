@@ -51,6 +51,10 @@ public:
 
     virtual ~SmoothingDistanceEstimator() { }
 
+    const std::string Name() const override {
+        return "SMOOTHING";
+    }
+
 protected:
     typedef std::pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId> EdgePair;
     typedef std::vector<std::pair<int, double>> EstimHist;
@@ -83,7 +87,7 @@ private:
 
     void ProcessEdge(debruijn_graph::EdgeId e1,
                      const InPairedIndex &pi,
-                     PairedInfoBuffer<debruijn_graph::Graph> &result) const override;
+                     Buffer &result) const override;
 
     bool IsTipTip(debruijn_graph::EdgeId e1, debruijn_graph::EdgeId e2) const;
 
@@ -96,10 +100,6 @@ private:
 
     void ExtendRightDFS(const debruijn_graph::EdgeId &first, debruijn_graph::EdgeId current, TempHistogram &data,
                         int shift, size_t max_shift) const;
-
-    const std::string Name() const override {
-        return "SMOOTHING";
-    }
 
     DECL_LOGGER("SmoothingDistanceEstimator")
 };

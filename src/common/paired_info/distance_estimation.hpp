@@ -10,7 +10,7 @@
 #define DISTANCE_ESTIMATION_HPP_
 
 #include "paired_info.hpp"
-#include "pair_info_bounds.hpp"
+#include "concurrent_pair_info_buffer.hpp"
 
 #include "assembly_graph/core/graph.hpp"
 #include "utils/parallel/openmp_wrapper.h"
@@ -52,7 +52,7 @@ protected:
     typedef typename InPairedIndex::HistProxy InHistogram;
     typedef typename OutPairedIndex::Histogram OutHistogram;
 
-public:
+ public:
     AbstractDistanceEstimator(const debruijn_graph::Graph &graph,
                               const InPairedIndex &index,
                               const GraphDistanceFinder &distance_finder,
@@ -62,6 +62,10 @@ public:
 
     virtual void Estimate(PairedInfoIndexT<debruijn_graph::Graph> &result, size_t nthreads) const = 0;
 
+    virtual const std::string Name() const = 0;
+
+    const debruijn_graph::Graph &graph() const { return graph_; }
+
     virtual ~AbstractDistanceEstimator() { }
 
 protected:
@@ -70,23 +74,22 @@ protected:
     typedef std::vector<size_t> GraphLengths;
     typedef std::map<debruijn_graph::EdgeId, GraphLengths> LengthMap;
 
-    const debruijn_graph::Graph &graph() const { return graph_; }
-
     const InPairedIndex &index() const { return index_; }
 
     void FillGraphDistancesLengths(debruijn_graph::EdgeId e1, LengthMap &second_edges) const;
 
     OutHistogram ClusterResult(EdgePair /*ep*/, const EstimHist &estimated) const;
 
-    void AddToResult(const OutHistogram &clustered, EdgePair ep, PairedInfoBuffer<debruijn_graph::Graph> &result) const;
+    template<class Buffer>
+    void AddToResult(const OutHistogram &clustered, EdgePair ep, Buffer &result) const {
+        result.AddMany(ep.first, ep.second, clustered);
+    }
 
 private:
     const debruijn_graph::Graph &graph_;
     const InPairedIndex &index_;
     const GraphDistanceFinder &distance_finder_;
     const size_t linkage_distance_;
-
-    virtual const std::string Name() const = 0;
 
     DECL_LOGGER("AbstractDistanceEstimator");
 };
@@ -102,8 +105,9 @@ protected:
     typedef typename base::OutPairedIndex OutPairedIndex;
     typedef typename base::InHistogram InHistogram;
     typedef typename base::OutHistogram OutHistogram;
+    typedef ConcurrentUnorderedClusteredPairedInfoBuffer<debruijn_graph::Graph> Buffer;
 
-public:
+ public:
     DistanceEstimator(const debruijn_graph::Graph &graph,
                       const InPairedIndex &index,
                       const GraphDistanceFinder &distance_finder,
@@ -118,22 +122,21 @@ public:
 
     virtual void Estimate(OutPairedIndex &result, size_t nthreads) const;
 
+    virtual const std::string Name() const {
+        static const std::string my_name = "SIMPLE";
+        return my_name;
+    }
+
+    virtual void ProcessEdge(debruijn_graph::EdgeId e1,
+                             const InPairedIndex &pi,
+                             Buffer &result) const;
+
 protected:
     const DEDistance max_distance_;
 
     virtual EstimHist EstimateEdgePairDistances(EdgePair ep,
                                                 const InHistogram &histogram,
                                                 const GraphLengths &raw_forward) const;
-
-private:
-    virtual void ProcessEdge(debruijn_graph::EdgeId e1,
-                             const InPairedIndex &pi,
-                             PairedInfoBuffer<debruijn_graph::Graph> &result) const;
-
-    virtual const std::string Name() const {
-        static const std::string my_name = "SIMPLE";
-        return my_name;
-    }
 
     DECL_LOGGER("DistanceEstimator");
 };

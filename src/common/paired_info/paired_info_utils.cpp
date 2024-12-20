@@ -76,27 +76,42 @@ class EdgePairCounterFiller : public SequenceMapperListener {
         }
     }
 
+    void Serialize(std::ostream &os) const override {
+        io::binary::BinWrite(os, counter_);
+    }
+
+    void Deserialize(std::istream &is) override {
+        io::binary::BinRead(is, counter_);
+    }
+
+    void MergeFromStream(std::istream &is) override {
+        EdgePairCounterFiller remote(*this);
+        remote.Deserialize(is);
+        counter_.merge(remote.counter_);
+    }
+
     std::vector<EdgePairCounter> buf_;
     EdgePairCounter counter_;
 };
 
-bool CollectLibInformation(const Graph &graph,
+bool CollectLibInformation(const Graph &graph, const MapLibBase &process_libs,
                            const SequenceMapperNotifier::SequenceMapperT &mapper,
                            size_t &edgepairs, SequencingLib &reads,
-                           size_t edge_length_threshold) {
+                           size_t edge_length_threshold,
+                           size_t num_readers) {
     INFO("Estimating insert size (takes a while)");
     InsertSizeCounter hist_counter(graph, edge_length_threshold);
     EdgePairCounterFiller pcounter(omp_get_max_threads());
 
-    SequenceMapperNotifier notifier;
-    notifier.Subscribe(&hist_counter);
-    notifier.Subscribe(&pcounter);
+    std::vector<SequenceMapperListener *> listeners;
+    listeners.push_back(&hist_counter);
+    listeners.push_back(&pcounter);
 
     auto &data = reads.data();
     auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, /*insert_size*/0,
-                                                /*include_merged*/true);
+                                                /*include_merged*/true, num_readers);
+    process_libs(listeners, mapper, paired_streams);
 
-    notifier.ProcessLibrary(paired_streams, mapper);
     //Check read length after lib processing since mate pairs a not used until this step
     VERIFY(reads.data().unmerged_read_length != 0);
 
@@ -126,15 +141,14 @@ bool CollectLibInformation(const Graph &graph,
     return !data.insert_size_distribution.empty();
 }
 
-void FillPairedIndex(const Graph &graph,
+void FillPairedIndex(const Graph &graph, const MapLibBase &process_lib,
                      const SequenceMapperNotifier::SequenceMapperT &mapper,
                      SequencingLib &reads,
                      PairedIndex &index,
                      std::unique_ptr<PairedInfoFilter> filter, unsigned filter_threshold,
-                     unsigned round_thr, bool use_binary) {
+                     unsigned round_thr, bool use_binary, size_t num_readers) {
     const auto &data = reads.data();
 
-    SequenceMapperNotifier notifier;
     INFO("Left insert size quantile " << data.insert_size_left_quantile <<
          ", right insert size quantile " << data.insert_size_right_quantile <<
          ", filtering threshold " << filter_threshold <<
@@ -154,39 +168,56 @@ void FillPairedIndex(const Graph &graph,
     }
 
     LatePairedIndexFiller pif(graph, weight, round_thr, index);
-    notifier.Subscribe(&pif);
+    std::vector<SequenceMapperListener *> listeners;
+    listeners.push_back(&pif);
 
     if (use_binary) {
         auto paired_streams = paired_binary_readers(reads, /*followed by rc*/false, (size_t) data.mean_insert_size,
-                                                    /*include merged*/true);
-        notifier.ProcessLibrary(paired_streams, mapper);
+                                                    /*include merged*/true, num_readers);
+        process_lib(listeners, mapper, paired_streams);
     } else {
         auto paired_streams = paired_easy_readers(reads, /*followed by rc*/false,
                                                   (size_t)data.mean_insert_size, /*use_orientation*/false);
-        notifier.ProcessLibrary(paired_streams, mapper);
+        process_lib(listeners, mapper, paired_streams);
     }
 }
 
 class DEFilter : public SequenceMapperListener {
-  public:
+public:
     DEFilter(paired_info::PairedInfoFilter &filter, const Graph &g)
             : bf_(filter), g_(g) {}
 
     void ProcessPairedRead(size_t,
-                           const io::PairedRead&,
-                           const MappingPath<EdgeId>& read1,
-                           const MappingPath<EdgeId>& read2) override {
+                           const io::PairedRead &,
+                           const MappingPath<EdgeId> &read1,
+                           const MappingPath<EdgeId> &read2) override {
         ProcessPairedRead(read1, read2);
     }
+
     void ProcessPairedRead(size_t,
-                           const io::PairedReadSeq&,
-                           const MappingPath<EdgeId>& read1,
-                           const MappingPath<EdgeId>& read2) override {
+                           const io::PairedReadSeq &,
+                           const MappingPath<EdgeId> &read1,
+                           const MappingPath<EdgeId> &read2) override {
         ProcessPairedRead(read1, read2);
     }
-  private:
-    void ProcessPairedRead(const MappingPath<EdgeId>& path1,
-                           const MappingPath<EdgeId>& path2) {
+
+    void Serialize(std::ostream &os) const override {
+        io::binary::BinWrite(os, bf_);
+    }
+
+    void Deserialize(std::istream &is) override {
+        io::binary::BinRead(is, bf_);
+    }
+
+    void MergeFromStream(std::istream &is) override {
+        paired_info::PairedInfoFilter remote;
+        io::binary::BinRead(is, remote);
+        bf_.merge(remote);
+    }
+
+private:
+    void ProcessPairedRead(const MappingPath<EdgeId> &path1,
+                           const MappingPath<EdgeId> &path2) {
         for (size_t i = 0; i < path1.size(); ++i) {
             EdgeId edge1 = path1.edge_at(i);
             for (size_t j = 0; j < path2.size(); ++j) {
@@ -204,7 +235,9 @@ class DEFilter : public SequenceMapperListener {
 std::unique_ptr<PairedInfoFilter> FillEdgePairFilter(const Graph &graph,
                                                      const SequenceMapperNotifier::SequenceMapperT &mapper,
                                                      SequencingLib &reads,
-                                                     size_t edgepairs) {
+                                                     size_t edgepairs,
+                                                     const MapLibBase& map_lib_fun,
+                                                     size_t num_readers) {
     auto filter = std::make_unique<paired_info::PairedInfoFilter>(
         [](const std::pair<EdgeId, EdgeId> &e, uint64_t seed) {
             // Note that EdgeId::hash is essentially an identity function, so we'd need to
@@ -214,16 +247,12 @@ std::unique_ptr<PairedInfoFilter> FillEdgePairFilter(const Graph &graph,
         },
         12 * edgepairs);
 
-    SequenceMapperNotifier notifier;
     DEFilter filter_counter(*filter, graph);
-    notifier.Subscribe(&filter_counter);
-
     VERIFY(reads.data().unmerged_read_length != 0);
-    auto stream = paired_binary_readers(reads, /*followed by rc*/false, 0, /*include merged*/true);
-    notifier.ProcessLibrary(stream, mapper);
+    auto stream = paired_binary_readers(reads, /*followed by rc*/false, 0, /*include merged*/true, num_readers);
+
+    map_lib_fun(&filter_counter, mapper, stream);
 
     return filter;
 }
-
 }
-

@@ -34,11 +34,7 @@ void AssemblyStage::load(graph_pack::GraphPack& gp,
     auto p = dir / BASE_NAME;
     io::binary::FullPackIO().Load(p, gp);
     debruijn_graph::config::load_lib_data(p);
-
-    io::ConvertIfNeeded(cfg::get_writable().ds.reads, cfg::get().max_threads);
-
 }
-
 
 void AssemblyStage::save(const graph_pack::GraphPack& gp,
                          const std::filesystem::path &save_to,
@@ -62,7 +58,7 @@ class StageIdComparator {
         len_ = (pos != NULL ? pos - id : strlen(id));
     }
 
-    bool operator()(const std::unique_ptr<AssemblyStage> &stage) const {
+    bool operator()(const std::unique_ptr<spades::AssemblyStage> &stage) const {
         const char* sid = stage->id();
         return (0 == strncmp(id_, sid, len_) && sid[len_] == 0);
     }
@@ -80,13 +76,17 @@ class PhaseIdComparator {
         id_ = pos + 1;
     }
 
-    bool operator()(const std::unique_ptr<CompositeStageBase::PhaseBase> &phase) const {
+    bool operator()(const std::unique_ptr<spades::CompositeStageBase::PhaseBase> &phase) const {
         return 0 == strcmp(id_, phase->id());
     }
 
   private:
     const char* id_;
 };
+}
+
+
+namespace spades {
 
 void CompositeStageBase::run(graph_pack::GraphPack& gp,
                              const char* started_from) {
@@ -144,8 +144,9 @@ void AssemblyStage::prepare(graph_pack::GraphPack& g,
     PrepareForStage(g, stage);
 }
 
-void StageManager::run(graph_pack::GraphPack& g,
-                       const char* start_from) {
+std::vector<std::unique_ptr<AssemblyStage>>::iterator
+StageManager::prepare_run(graph_pack::GraphPack& g,
+                          const char* start_from) {
     auto start_stage = stages_.begin();
     if (start_from) {
         if (strcmp(start_from, "last") == 0) {
@@ -155,7 +156,7 @@ void StageManager::run(graph_pack::GraphPack& g,
                 auto last_stage = std::find_if(stages_.begin(), stages_.end(), StageIdComparator(last_saves.c_str()));
                 if (last_stage == stages_.end()) {
                     WARN("Nothing to continue");
-                    return;
+                    // return; FIXME: check it out
                 }
                 start_stage = std::next(last_stage);
             } else {
@@ -183,11 +184,36 @@ void StageManager::run(graph_pack::GraphPack& g,
         }
     }
 
+    return start_stage;
+}
+
+void StageManager::run(graph_pack::GraphPack& g,
+                       const char* start_from) {
+    auto start_stage = prepare_run(g, start_from);
+
+    for (auto cur_stage = stages_.begin(); cur_stage != start_stage; ++cur_stage) {
+        AssemblyStage *stage = cur_stage->get();
+        if (stage->run_on_load()) {
+            INFO("STAGE == " << stage->name() << " (id: " << stage->id() << ")");
+            {
+                TIME_TRACE_SCOPE("prepare", stage->name());
+                stage->prepare(g, start_from);
+            }
+            {
+                TIME_TRACE_SCOPE(stage->name());
+                stage->run(g);
+            }
+        }
+    }
+
     for (; start_stage != stages_.end(); ++start_stage) {
         AssemblyStage *stage = start_stage->get();
 
         INFO("STAGE == " << stage->name() << " (id: " << stage->id() << ")");
-        stage->prepare(g, start_from);        
+        {
+            TIME_TRACE_SCOPE("prepare", stage->name());
+            stage->prepare(g, start_from);
+        }
         {
             TIME_TRACE_SCOPE(stage->name());
             stage->run(g, start_from);
@@ -206,5 +232,4 @@ void StageManager::run(graph_pack::GraphPack& g,
         }
     }
 }
-
 }
