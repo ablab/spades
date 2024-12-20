@@ -13,7 +13,6 @@ CMakeCache.txt
 cmake_install.cmake
 assembler/src/tools/quality/results*
 __pycache__
-.clangd
 .DS_Store
 compile_commands.json
 .cache
