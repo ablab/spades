@@ -177,4 +177,3 @@ void DistanceEstimator::ProcessEdge(EdgeId e1, const InPairedIndex &pi, Buffer &
 }
 
 } // namespace omnigraph::de
-
