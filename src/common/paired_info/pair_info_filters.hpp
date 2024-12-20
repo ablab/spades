@@ -10,13 +10,14 @@
 #define PAIR_INFO_FILTERS_HPP_
 
 #include "paired_info_helpers.hpp"
+#include "sequence/sequence.hpp"
 
 namespace omnigraph {
 
 namespace de {
 
 template<class Graph>
-class AbstractPairInfoChecker{
+class AbstractPairInfoChecker {
 private:
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
@@ -28,15 +29,15 @@ protected:
 public:
     AbstractPairInfoChecker(const Graph &graph) : graph_(graph) { }
 
-    virtual bool Check(const PairInfoT&) {
+    virtual bool Check(EdgeId, EdgeId, Point) const {
         return true;
     }
 
-    virtual bool Check(EdgeId, EdgeId) {
+    virtual bool Check(EdgeId, EdgeId) const {
         return true;
     }
 
-    virtual ~AbstractPairInfoChecker() {    }
+    virtual ~AbstractPairInfoChecker() = default;
 };
 
 template<class Graph>
@@ -44,36 +45,35 @@ class PairInfoWeightChecker : public AbstractPairInfoChecker<Graph>{
  private:
   typedef typename Graph::EdgeId EdgeId;
   typedef PairInfo<EdgeId> PairInfoT;
-  double weight_threshold_;
+  DEWeight weight_threshold_;
 
  public:
   PairInfoWeightChecker(const Graph& graph, double weight_threshold) :
     AbstractPairInfoChecker<Graph>(graph), weight_threshold_(weight_threshold) {
   }
 
-  bool Check(const PairInfoT& info) {
-    return math::ge(info.weight(), weight_threshold_);
+  bool Check(EdgeId, EdgeId, Point p) const override {
+    return math::ge(p.weight, weight_threshold_);
   }
 };
 
 template<class Graph>
 class PairInfoWeightCheckerWithCoverage: public AbstractPairInfoChecker<Graph> {
- private:
+private:
   typedef typename Graph::EdgeId EdgeId;
   typedef PairInfo<EdgeId> PairInfoT;
-  double weight_threshold_;
+  DEWeight weight_threshold_;
 
- public:
-  PairInfoWeightCheckerWithCoverage(const Graph& graph, double weight_threshold) :
-    AbstractPairInfoChecker<Graph>(graph), weight_threshold_(weight_threshold){
-  }
+public:
+    PairInfoWeightCheckerWithCoverage(const Graph& graph, double weight_threshold)
+            : AbstractPairInfoChecker<Graph>(graph), weight_threshold_(weight_threshold) { }
 
-  bool Check(const PairInfoT& info) {
-    double info_weight = info.weight();
+ bool Check(EdgeId e1, EdgeId e2, Point p) const override {
+    double info_weight = p.weight;
     return math::ge(info_weight, weight_threshold_)
-       || (math::ge(info_weight, 0.1 * this->graph_.coverage(info.first)))
-       || (math::ge(info_weight, 0.1 * this->graph_.coverage(info.second)));
-  }
+       || (math::ge(info_weight, 0.1 * this->graph_.coverage(e1)))
+       || (math::ge(info_weight, 0.1 * this->graph_.coverage(e2)));
+ }
 };
 
 template <class Graph>
@@ -148,7 +148,6 @@ class AmbiguousPairInfoChecker : public AbstractPairInfoChecker<Graph> {
   }
 
   bool InnerCheck(const PairInfoT& info){
-
       EdgeId edge1 = info.first;
       EdgeId edge2 = info.second;
 
@@ -182,14 +181,15 @@ public:
         relative_length_threshold_(relative_length_threshold),
         relative_seq_threshold_(relative_seq_threshold) { }
 
-  bool Check(const PairInfoT& info) {
-      TRACE(this->graph_.int_id(info.first) << " " << this->graph_.int_id(info.second));
+    bool Check(EdgeId e1, EdgeId e2, Point p) const override {
+      PairInfoT info(e1, e2, p);
+      TRACE(this->graph_.int_id(e1) << " " << this->graph_.int_id(e2));
       if (EdgesAreFromSimpleBulgeWithAmbPI(info)){
         TRACE("Forward directed edges form a simple bulge");
         return InnerCheck(info);
       }
 
-      if (EdgesAreFromSimpleBulgeWithAmbPI(BackwardInfo(info))){
+      if (EdgesAreFromSimpleBulgeWithAmbPI(BackwardInfo(info))) {
           TRACE("Backward directed edges form a simple bulge");
           return InnerCheck(BackwardInfo(info));
       }

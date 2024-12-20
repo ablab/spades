@@ -19,15 +19,9 @@ using namespace debruijn_graph;
 using namespace omnigraph::de;
 
 void EstimateWithEstimator(PairedInfoIndexT<Graph> &clustered_index,
-                           const AbstractDistanceEstimator &estimator,
-                           AbstractPairInfoChecker<Graph> &checker) {
+                           const AbstractDistanceEstimator &estimator) {
     INFO("Estimating distances");
-
     estimator.Estimate(clustered_index, omp_get_max_threads());
-
-    INFO("Filtering info");
-    PairInfoFilter<Graph>(checker).Filter(clustered_index);
-    INFO("Info Filtered");
 }
 
 // Postprocessing, checking that clusters do not intersect
@@ -106,7 +100,7 @@ void EstimateScaffoldingDistances(PairedInfoIndexT<Graph> &scaffolding_index,
     PairInfoWeightChecker<Graph> checker(graph, 0.);
     DEBUG("Weight Filter Done");
 
-    SmoothingDistanceEstimator estimator(graph, paired_index, dist_finder,
+    SmoothingDistanceEstimator estimator(graph, paired_index, dist_finder, checker,
                                          [&] (int i) {return wrapper.CountWeight(i);},
                                          linkage_distance, max_distance,
                                          ade.threshold, ade.range_coeff,
@@ -114,7 +108,7 @@ void EstimateScaffoldingDistances(PairedInfoIndexT<Graph> &scaffolding_index,
                                          ade.min_peak_points,
                                          ade.percentage,
                                          ade.derivative_threshold);
-    EstimateWithEstimator(scaffolding_index, estimator, checker);
+    EstimateWithEstimator(scaffolding_index, estimator);
 }
 
 void EstimatePairedDistances(PairedInfoIndexT<Graph> &clustered_index,
@@ -130,9 +124,9 @@ void EstimatePairedDistances(PairedInfoIndexT<Graph> &clustered_index,
 
     PairInfoWeightChecker<Graph> checker(graph, de_config.clustered_filter_threshold);
 
-    DistanceEstimator estimator(graph, paired_index, dist_finder, linkage_distance, max_distance);
+    DistanceEstimator estimator(graph, paired_index, dist_finder, checker, linkage_distance, max_distance);
 
-    EstimateWithEstimator(clustered_index, estimator, checker);
+    EstimateWithEstimator(clustered_index, estimator);
 
     INFO("Refining clustered pair information ");                             // this procedure checks, whether index
     RefinePairedInfo(clustered_index, graph);                                 // contains intersecting paired info clusters,

@@ -10,10 +10,10 @@
 #define DISTANCE_ESTIMATION_HPP_
 
 #include "paired_info.hpp"
+#include "pair_info_filters.hpp"
 #include "concurrent_pair_info_buffer.hpp"
 
 #include "assembly_graph/core/graph.hpp"
-#include "utils/parallel/openmp_wrapper.h"
 
 #include "math/xmath.h"
 
@@ -51,14 +51,18 @@ protected:
     typedef PairedInfoIndexT<debruijn_graph::Graph> OutPairedIndex;
     typedef typename InPairedIndex::HistProxy InHistogram;
     typedef typename OutPairedIndex::Histogram OutHistogram;
+    typedef AbstractPairInfoChecker<debruijn_graph::Graph> PairInfoChecker;
+
 
 public:
     AbstractDistanceEstimator(const debruijn_graph::Graph &graph,
                               const InPairedIndex &index,
                               const GraphDistanceFinder &distance_finder,
+                              const PairInfoChecker &pair_info_checker,
                               size_t linkage_distance = 0)
             : graph_(graph), index_(index),
-              distance_finder_(distance_finder), linkage_distance_(linkage_distance) { }
+              distance_finder_(distance_finder), pair_info_checker_(pair_info_checker),
+              linkage_distance_(linkage_distance) { }
 
     virtual void Estimate(PairedInfoIndexT<debruijn_graph::Graph> &result, size_t nthreads) const = 0;
 
@@ -80,13 +84,19 @@ protected:
 
     template<class Buffer>
     void AddToResult(const OutHistogram &clustered, EdgePair ep, Buffer &result) const {
-        result.AddMany(ep.first, ep.second, clustered);
+        OutHistogram filtered;
+        for (Point p : clustered)
+            if (pair_info_checker_.Check(ep.first, ep.second, p))
+                filtered.insert(p);
+
+        result.AddMany(ep.first, ep.second, filtered);
     }
 
 private:
     const debruijn_graph::Graph &graph_;
     const InPairedIndex &index_;
     const GraphDistanceFinder &distance_finder_;
+    const PairInfoChecker &pair_info_checker_;
     const size_t linkage_distance_;
 
     virtual const std::string Name() const = 0;
@@ -111,10 +121,12 @@ public:
     DistanceEstimator(const debruijn_graph::Graph &graph,
                       const InPairedIndex &index,
                       const GraphDistanceFinder &distance_finder,
+                      const PairInfoChecker &checker,
                       size_t linkage_distance, size_t max_distance)
-            : base(graph, index, distance_finder, linkage_distance), max_distance_(max_distance) { }
+            : base(graph, index, distance_finder, checker, linkage_distance),
+              max_distance_(max_distance) { }
 
-    virtual ~DistanceEstimator() { }
+    virtual ~DistanceEstimator() = default;
 
     void Init() const {
         INFO("Using " << this->Name() << " distance estimator");
