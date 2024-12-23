@@ -115,7 +115,7 @@ protected:
     typedef typename base::OutPairedIndex OutPairedIndex;
     typedef typename base::InHistogram InHistogram;
     typedef typename base::OutHistogram OutHistogram;
-    typedef ConcurrentUnorderedClusteredPairedInfoBuffer<debruijn_graph::Graph> Buffer;
+    typedef ConcurrentClusteredPairedInfoBuffer<debruijn_graph::Graph> Buffer;
 
 public:
     DistanceEstimator(const debruijn_graph::Graph &graph,

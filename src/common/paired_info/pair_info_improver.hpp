@@ -45,7 +45,7 @@ class PairInfoImprover {
     typedef std::vector<omnigraph::de::PairInfo<EdgeId> > PairInfos;
     typedef std::pair<EdgeId, EdgeId> EdgePair;
     typedef omnigraph::de::PairedInfoIndexT<Graph> Index;
-    typedef omnigraph::de::ConcurrentUnorderedClusteredPairedInfoBuffer<Graph> Buffer;
+    typedef omnigraph::de::ConcurrentClusteredPairedInfoBuffer<Graph> Buffer;
 
   public:
     PairInfoImprover(const Graph& g,
@@ -142,7 +142,7 @@ class PairInfoImprover {
         DEBUG("Merging maps");
         // FIXME: This is a bit crazy, but we do not have a sane way to iterate
         // over buffer. In any case, this is better than it used to be before
-        omnigraph::de::UnorderedPairedInfoIndexT<Graph> to_remove(graph_);
+        omnigraph::de::MutablePairedInfoIndexT<Graph> to_remove(graph_);
         to_remove.MoveAssign(buf);
 
         DEBUG("Resulting size " << to_remove.size());
@@ -189,7 +189,7 @@ class PairInfoImprover {
         DEBUG("Merging maps");
         // FIXME: This is a bit crazy, but we do not have a sane way to iterate
         // over buffer. In any case, this is better than it used to be before
-        omnigraph::de::UnorderedPairedInfoIndexT<Graph> to_add(graph_);
+        omnigraph::de::MutablePairedInfoIndexT<Graph> to_add(graph_);
         to_add.MoveAssign(buf);
 
         DEBUG("Resulting size " << to_add.size());
