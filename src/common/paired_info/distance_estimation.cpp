@@ -78,7 +78,7 @@ AbstractDistanceEstimator::OutHistogram AbstractDistanceEstimator::ClusterResult
 void DistanceEstimator::Estimate(PairedInfoIndexT<Graph> &result, size_t nthreads) const  {
     this->Init();
     const auto &index = this->index();
-    ConcurrentUnorderedClusteredPairedInfoBuffer<Graph> buffer(graph());
+    Buffer buffer(graph());
 
     omnigraph::IterationHelper<Graph, EdgeId> edges(graph());
     auto ranges = edges.Ranges(nthreads * 16);
