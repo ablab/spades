@@ -301,6 +301,28 @@ public:
     }
 
     template<class Buffer>
+    void MergeAssign(Buffer& index_to_add) {
+        if (index_to_add.size() == 0)
+            return;
+
+        auto locked_table = index_to_add.lock_table();
+        for (auto& kvpair : locked_table) {
+            EdgeId e1_to_add = kvpair.first; auto& map_to_move = kvpair.second;
+
+            for (const auto& to_add : map_to_move) {
+                EdgePair ep(e1_to_add, to_add.first), conj = this->ConjugatePair(e1_to_add, to_add.first);
+                if (ep > conj)
+                    continue;
+
+                base::Merge(ep.first, ep.second, *to_add.second);
+            }
+
+            map_to_move.clear();
+        }
+        VERIFY(this->size() >= index_to_add.size());
+    }
+
+    template<class Buffer>
     typename std::enable_if<std::is_convertible<typename Buffer::InnerMap, InnerMap>::value,
         void>::type MoveAssign(Buffer& from) {
         auto& base_index = this->storage_;

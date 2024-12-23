@@ -24,16 +24,26 @@ static inline bool ClustersIntersect(omnigraph::de::Point p1, omnigraph::de::Poi
            math::le(p2.d, p1.d + p1.var + p2.var);
 }
 
+template<class Graph>
+bool CheckNonIntersectingInfo(omnigraph::de::PairedInfoIndexT<Graph>& clustered_index,
+                              typename Graph::EdgeId e1, typename Graph::EdgeId e2,
+                              const omnigraph::de::Point& p) {
+    auto histogram = clustered_index.Get(e1, e2);
+    for (auto i : histogram) {
+        if (ClustersIntersect(i, p))
+            return false;
+    }
+
+    return true;
+}
+
 
 template<class Graph>
 bool AddNonIntersectingInfo(omnigraph::de::PairedInfoIndexT<Graph>& clustered_index,
                             typename Graph::EdgeId e1, typename Graph::EdgeId e2,
                             const omnigraph::de::Point& point_to_add) {
-    auto histogram = clustered_index.Get(e1, e2);
-    for (auto i : histogram) {
-        if (ClustersIntersect(i, point_to_add))
-            return false;
-    }
+    if (!CheckNonIntersectingInfo(clustered_index, e1, e2, point_to_add))
+        return false;
 
     clustered_index.Add(e1, e2, point_to_add);
     return true;
@@ -180,28 +190,16 @@ class PairInfoImprover {
                 for (const auto &path : paths) {
                     TRACE("Path " << path.PrintPath(graph_));
                     for (const auto &pi : path)
-                        buf.Add(pi.first, pi.second, pi.point);
+                        if (CheckNonIntersectingInfo(index_, pi.first, pi.second, pi.point))
+                            buf.Add(pi.first, pi.second, pi.point);
                 }
             }
         }
         DEBUG("Fill missing: Threads finished");
 
         DEBUG("Merging maps");
-        // FIXME: This is a bit crazy, but we do not have a sane way to iterate
-        // over buffer. In any case, this is better than it used to be before
-        omnigraph::de::MutablePairedInfoIndexT<Graph> to_add(graph_);
-        to_add.MoveAssign(buf);
-
-        DEBUG("Resulting size " << to_add.size());
-
-        size_t cnt = 0;
-        for (auto I = omnigraph::de::half_pair_begin(to_add);
-             I != omnigraph::de::half_pair_end(to_add);
-             ++I) {
-            EdgeId e1 = I.first(), e2 = I.second();
-            for (auto p : *I)
-                cnt += AddNonIntersectingInfo(index_, e1, e2, p);
-        }
+        size_t cnt = buf.size();
+        index_.MergeAssign(buf);
 
         DEBUG("Size of paired index " << index_.size());
 
