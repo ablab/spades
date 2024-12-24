@@ -301,6 +301,28 @@ public:
     }
 
     template<class Buffer>
+    void MergeAssign(Buffer& index_to_add) {
+        if (index_to_add.size() == 0)
+            return;
+
+        auto locked_table = index_to_add.lock_table();
+        for (auto& kvpair : locked_table) {
+            EdgeId e1_to_add = kvpair.first; auto& map_to_move = kvpair.second;
+
+            for (const auto& to_add : map_to_move) {
+                EdgePair ep(e1_to_add, to_add.first), conj = this->ConjugatePair(e1_to_add, to_add.first);
+                if (ep > conj)
+                    continue;
+
+                base::Merge(ep.first, ep.second, *to_add.second);
+            }
+
+            map_to_move.clear();
+        }
+        VERIFY(this->size() >= index_to_add.size());
+    }
+
+    template<class Buffer>
     typename std::enable_if<std::is_convertible<typename Buffer::InnerMap, InnerMap>::value,
         void>::type MoveAssign(Buffer& from) {
         auto& base_index = this->storage_;
@@ -596,7 +618,7 @@ class NoLockingConstAdapter : public T {
 };
 
 
-//Aliases for common graphs
+// Aliases for common graphs
 template<typename K, typename V>
 using const_btree_map = NoLockingConstAdapter<phmap::btree_map<K, V>>; //Two-parameters wrapper
 
@@ -607,8 +629,10 @@ template<typename K, typename V>
 using btree_map = NoLockingAdapter<phmap::btree_map<K, V>>; //Two-parameters wrapper
 
 template<typename Graph>
-using UnclusteredPairedInfoIndexT = PairedIndex<Graph, RawPointTraits, btree_map>;
+using MutablePairedInfoIndexT = PairedIndex<Graph, PointTraits, btree_map>;
 
+template<typename Graph>
+using UnclusteredPairedInfoIndexT = PairedIndex<Graph, RawPointTraits, btree_map>;
 
 template<typename G, typename Traits, template<typename, typename> class Container>
 class PairedIndexHandler : public omnigraph::GraphActionHandler<G> {
@@ -732,7 +756,7 @@ public:
         using io::binary::BinWrite;
         BinWrite<size_t>(str, data_.size());
 
-        for (int i = 0; i < data_.size(); ++i) {
+        for (size_t i = 0; i < data_.size(); ++i) {
             data_[i].BinWrite(str);
         }
     }
@@ -743,7 +767,7 @@ public:
 
         VERIFY(size == data_.size());
 
-        for (int i = 0; i < size; ++i) {
+        for (size_t i = 0; i < size; ++i) {
             data_[i].BinRead(str);
         }
     }
@@ -751,7 +775,6 @@ public:
 
 template<class Graph>
 using PairedInfoIndicesT = PairedIndices<PairedInfoIndexT<Graph>>;
-
 
 template<typename Graph>
 using PairedInfoIndexHandlerT = PairedIndexHandler<Graph, PointTraits, const_btree_map>;
@@ -761,14 +784,6 @@ using PairedInfoIndicesHandlerT = std::vector<PairedInfoIndexHandlerT<Graph>>;
 
 template<class Graph>
 using UnclusteredPairedInfoIndicesT = PairedIndices<UnclusteredPairedInfoIndexT<Graph>>;
-
-template<typename K, typename V>
-using unordered_map = NoLockingAdapter<std::unordered_map<K, V>>; //Two-parameters wrapper
-template<class Graph>
-using PairedInfoBuffer = PairedBuffer<Graph, RawPointTraits, unordered_map>;
-
-template<class Graph>
-using PairedInfoBuffersT = PairedIndices<PairedInfoBuffer<Graph>>;
 
 }
 

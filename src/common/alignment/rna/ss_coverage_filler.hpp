@@ -13,6 +13,8 @@
 #include "alignment/sequence_mapper_notifier.hpp"
 #include "assembly_graph/paths/mapping_path.hpp"
 
+#include "io/binary/binary.hpp"
+
 namespace debruijn_graph {
 
 class SSCoverageFiller: public SequenceMapperListener {
@@ -64,6 +66,22 @@ public:
         for (const auto& it : tmp_storages_[thread_index])
             storage_.IncreaseKmerCount(it.first, size_t(it.second));
         tmp_storages_[thread_index].Clear();
+    }
+
+    void Serialize(std::ostream &os) const override {
+        io::binary::BinWrite(os, storage_);
+    }
+
+    void Deserialize(std::istream &is) override {
+        io::binary::BinRead(is, storage_);
+    }
+
+    void MergeFromStream(std::istream &is) override {
+        SSCoverageStorage remote(g_);
+        io::binary::BinRead(is, remote);
+        for (const auto& it : remote) {
+            storage_.IncreaseKmerCount(it.first, size_t(it.second));
+        }
     }
 };
 

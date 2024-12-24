@@ -104,6 +104,7 @@ class KMerDiskStorage {
   }
 
   KMerDiskStorage(KMerDiskStorage &&) = default;
+  KMerDiskStorage(const KMerDiskStorage &) = default;
   KMerDiskStorage &operator=(KMerDiskStorage &&) = default;
 
   fs::DependentTmpFile create() {
@@ -140,6 +141,24 @@ class KMerDiskStorage {
     return fsize / (Seq::GetDataSize(k_) * sizeof(typename Seq::DataType));
   }
 
+  /*
+   * Stop owning all files. After this object dies the bucket,
+   * the files will not be deleted. Files will need to be deleted manually.
+   *
+   * TmpFiles contain some counter and it is deleted when counter = 0. In this function
+   * we don't decrement counter, but don't decrement it even when this object is freed. If we owning file
+   * we will decrement counter on deletion.
+   */
+  void release_all() {
+      if (all_kmers_) {
+          all_kmers_->release();
+      } else {
+          for (auto &file : buckets_) {
+              file->release();
+          }
+      }
+  }
+
   fs::TmpFile final_kmers() {
     VERIFY_MSG(all_kmers_, "k-mers were not merged yet");
     return all_kmers_;
@@ -159,6 +178,10 @@ class KMerDiskStorage {
 
   auto bucket(size_t i) const {
     return adt::make_range(bucket_begin(i), bucket_end(i));
+  }
+
+  auto bucket_file(size_t i) const {
+      return buckets_[i];
   }
 
   size_t num_buckets() const { return buckets_.size(); }
@@ -194,6 +217,33 @@ class KMerDiskStorage {
                          work_dir_,
                          kmer_prefix_, all_kmers_);
     io::binary::BinWrite(os, buckets_);
+  }
+
+  //helper function for verification
+  //all kmers in all buckets are sorted and unique
+  bool is_unique_and_sorted() const {
+      if (all_kmers_) {
+          return true;
+      }
+      bool is_good = true;
+
+#pragma omp parallel for
+      for (size_t bid = 0; bid < this->num_buckets(); ++bid) {
+          MMappedRecordArrayReader<typename Seq::DataType> ins(*buckets_[bid], Seq::GetDataSize(k_), /* unlink */ false);
+          for (size_t i = 1; i < ins.size(); ++i) {
+              if (!adt::array_less<typename Seq::DataType>()(*(ins.begin() + i - 1), *(ins.begin() + i))) {
+#pragma omp critical
+                  is_good = false;
+              }
+          }
+      }
+
+      if (is_good) {
+          INFO("Storage contain only sorted and unique kmers");
+      } else {
+          INFO("Kmers in storage aren't sorted or aren't unique");
+      }
+      return is_good;
   }
 
  private:
@@ -273,10 +323,10 @@ public:
         }
     }
     INFO("K-mer counting done. There are " << kmers << " kmers in total. ");
-    if (!kmers) {
+    /*if (!kmers) {
       FATAL_ERROR("No kmers were extracted from reads. Check the read lengths and k-mer length settings");
       exit(-1);
-    }
+    }*/
 
     return res;
   }

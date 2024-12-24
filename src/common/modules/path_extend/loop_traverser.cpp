@@ -93,6 +93,8 @@ bool LoopTraverser::IsEndInsideComponent(const BidirectionalPath &path, EdgeId c
 }
 
 bool LoopTraverser::TraverseLoop(EdgeId start, EdgeId end, const std::set<VertexId> &component_set) {
+    TIME_TRACE_SCOPE("LoopTraverser::TraverseLoop");
+    
     DEBUG("start " << g_.int_id(start) << " end " << g_.int_id(end));
     BidirectionalPathSet start_cover_paths = cov_map_.GetCoveringPaths(start);
     BidirectionalPathSet end_cover_paths = cov_map_.GetCoveringPaths(end);

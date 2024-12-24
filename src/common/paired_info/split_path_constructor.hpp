@@ -106,7 +106,7 @@ public:
                                                            (size_t) (cur_info.d() + cur_info.var()),
                                                            dijkstra);
             DEBUG("Found common part of size " << common_part.size());
-            PathInfoClass<Graph> sub_res(cur_edge);
+            PathInfo sub_res(cur_edge);
             if (common_part.size() > 0) {
                 size_t total_length = 0;
                 for (size_t j = 0; j < common_part.size(); ++j)

@@ -5,30 +5,36 @@
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
-//***************************************************************************
-//* Copyright (c) 2015 Saint Petersburg State University
-//* Copyright (c) 2011-2014 Saint Petersburg Academic University
-//* All Rights Reserved
-//* See file LICENSE for details.
-//***************************************************************************
 
-#ifndef GAP_CLOSER_HPP_
-#define GAP_CLOSER_HPP_
+#pragma once
 
+#include "alignment/sequence_mapper_notifier.hpp"
 #include "pipeline/stage.hpp"
+#include "io/reads/io_helper.hpp"
 
 namespace debruijn_graph {
 
-class GapClosing : public spades::AssemblyStage {
+class GapClosingBase {
+  protected:
+    size_t num_readers = 0;
+    virtual void ProcessLibrary(SequenceMapperListener* listener, const SequenceMapper<Graph>& mapper, io::BinaryPairedStreams& paired_streams) = 0;
+  public:
+    void execute(graph_pack::GraphPack &gp, const char *);
+};
+
+class GapClosing : public GapClosingBase, public spades::AssemblyStage {
+  protected:
+    void ProcessLibrary(SequenceMapperListener* listener, const SequenceMapper<Graph>& mapper, io::BinaryPairedStreams& paired_streams) override {
+        SequenceMapperNotifier notifier;
+        notifier.Subscribe(listener);
+        notifier.ProcessLibrary(paired_streams, mapper);
+    }
+
   public:
     GapClosing(const char* id)
-        : AssemblyStage("Gap Closer", id) {}
+            : AssemblyStage("Gap Closer", id) {}
 
     void run(graph_pack::GraphPack &gp, const char*) override;
 };
 
 }
-
-
-
-#endif /* GAP_CLOSER_HPP_ */

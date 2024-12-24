@@ -27,11 +27,17 @@ public:
     WeightedDistanceEstimator(const debruijn_graph::Graph &graph,
                               const InPairedIndex &histogram,
                               const GraphDistanceFinder &distance_finder,
+                              const PairInfoChecker &checker,
                               std::function<double(int)> weight_f,
                               size_t linkage_distance, size_t max_distance) :
-            base(graph, histogram, distance_finder, linkage_distance, max_distance), weight_f_(weight_f) { }
+            base(graph, histogram, distance_finder, checker, linkage_distance, max_distance),
+            weight_f_(weight_f) { }
 
-    virtual ~WeightedDistanceEstimator() { }
+    virtual ~WeightedDistanceEstimator() = default;
+
+    const std::string Name() const override {
+        return "WEIGHTED";
+    }
 
 protected:
 
@@ -44,10 +50,6 @@ protected:
     virtual EstimHist EstimateEdgePairDistances(EdgePair ep,
                                                 const InHistogram &histogram,
                                                 const GraphLengths &raw_forward) const override;
-
-    const std::string Name() const override {
-        return "WEIGHTED";
-    }
 
 private:
     DECL_LOGGER("WeightedDistanceEstimator");
