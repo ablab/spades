@@ -25,6 +25,6 @@ add_library(path_extend STATIC
             scaffolder2015/connection_condition2015.cpp 
             scaffolder2015/path_polisher.cpp)
 
-target_link_libraries(path_extend assembly_graph ssw configs)
+target_link_libraries(path_extend modules assembly_graph ssw configs)
 
 
