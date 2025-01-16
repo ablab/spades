@@ -32,6 +32,14 @@ private:
 
         for (auto v1 : graph) {
             str << v1.int_id() << graph.conjugate(v1).int_id();
+            bool complex = graph.is_complex(v1);
+            if (!complex) {
+                unsigned ovl = unsigned(graph.link_length(v1, typename Graph::EdgeId(), typename Graph::EdgeId()));
+                str << complex << ovl;
+            } else {
+                FATAL_ERROR("Cannot save complex overlaps yet");
+            }
+
             for (auto e1 : graph.OutgoingEdges(v1)) {
                 auto e2 = graph.conjugate(e1);
                 if (e2 < e1)
@@ -58,7 +66,16 @@ private:
             if (graph.contains(typename Graph::VertexId(ids[0])))
                 return;
             TRACE("Vertex " << ids[0] << " ~ " << ids[1] << " .");
-            auto new_id = graph.AddVertex(typename Graph::VertexData(graph.k()), ids[0], ids[1]);
+            bool complex;
+            typename Graph::VertexId new_id;
+            str >> complex;
+            if (!complex) {
+                unsigned ovl;
+                str >> ovl;
+                new_id = graph.AddVertex(typename Graph::VertexData(ovl), ids[0], ids[1]);
+            } else {
+                FATAL_ERROR("Cannot restore complex overlaps yet");
+            }
             VERIFY(new_id == ids[0]);
             VERIFY(graph.conjugate(new_id) == ids[1]);
         };
