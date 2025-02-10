@@ -1,3 +1,11 @@
+[![UnitTests](https://github.com/ablab/spades/actions/workflows/basic.yml/badge.svg)](https://github.com/ablab/IsoQuant/actions/workflows/Unit_tests.yml)
+[![License](https://img.shields.io/badge/licence-GPLv2-blue)](https://www.gnu.org/licenses/old-licenses/gpl-2.0)
+[![GitHub release (latest)](https://img.shields.io/github/v/release/ablab/spades)](https://github.com/ablab/spades/releases/)
+[![GitHub Downloads](https://img.shields.io/github/downloads/ablab/spades/total.svg?style=social&logo=github&label=Download)](https://github.com/ablab/spades/releases)
+[![BioConda Downloads](https://anaconda.org/bioconda/spades/badges/downloads.svg)](https://anaconda.org/bioconda/spades)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](code_of_conduct.md)
+
+
 # About SPAdes
 
 SPAdes is a versatile toolkit designed for assembly and analysis of sequencing data.
