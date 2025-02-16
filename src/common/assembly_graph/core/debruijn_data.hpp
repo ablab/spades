@@ -255,8 +255,11 @@ public:
         return EdgeData(!(data.nucls()));
     }
 
+    //fixme support complex overlaps
     VertexData conjugate(const VertexData &data) const {
-        return data.clone();
+        if (!data.has_complex_overlap() or data.links().empty())
+            return data.clone();
+        VERIFY_MSG(false, "Conjugation of complex overlap data is not implemented")
     }
 
     size_t length(const EdgeData& data) const {
