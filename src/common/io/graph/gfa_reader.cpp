@@ -95,14 +95,6 @@ static void HandleSegment(const gfa::segment &record,
         DEBUG("Map ids: " << ce.int_id() << ":" << name << "'");
         mapper.map(name + '\'', ce.int_id());
     }
-    std::vector<LinkId> empty_links;
-    VertexId v1 = helper.CreateVertex(DeBruijnVertexData(empty_links));
-    helper.LinkIncomingEdge(v1, e);
-
-    if (e != ce) {
-        VertexId v2 = helper.CreateVertex(DeBruijnVertexData(empty_links));
-        helper.LinkIncomingEdge(v2, ce);
-    }
 }
 
 typedef std::vector<std::tuple<EdgeId, EdgeId, gfa::cigar_string>> Links;
@@ -172,6 +164,16 @@ static std::pair<unsigned, bool> ProcessLinks(DeBruijnGraph &g, const Links &lin
                                        [](size_t sum, const auto &cigar) {
                                            return sum + cigar.count;
                                        });
+
+        if (!g.EdgeEnd(e1)) {
+            std::vector<LinkId> empty_links;
+            helper.LinkIncomingEdge(helper.CreateVertex(DeBruijnVertexData(empty_links)), e1);
+        }
+        if (!g.EdgeEnd(g.conjugate(e2))) {
+            std::vector<LinkId> empty_links;
+            helper.LinkOutgoingEdge(helper.CreateVertex(DeBruijnVertexData(empty_links)), e2);
+        }
+
         VertexId v1 = g.EdgeEnd(e1);
         VertexId v2 = g.EdgeStart(e2);
         if (simple) {
