@@ -7,6 +7,7 @@
 
 #include "assembly_graph/core/construction_helper.hpp"
 #include "assembly_graph/graph_support/v_overlaps_support.hpp"
+#include "io/binary/graph.hpp"
 #include "io/graph/gfa_reader.hpp"
 #include "io/reads/file_reader.hpp"
 
@@ -134,17 +135,28 @@ void PerformSplits(debruijn_graph::Graph &graph, std::ifstream &ops_stream, cons
                                                                  " are not incident, operations are not consistent with the graph");
         VertexId new_vertex;
         if (graph.is_complex(vertex)) {
-            LinkId split_link;
+            LinkId split_link, conj_split_link;
             bool link_found = false;
+            bool conj_link_found = false;
             for (auto &link_id: graph.links(vertex)) {
-                if (graph.link(link_id).link.first == in_edge and graph.link(link_id).link.second == out_edge) {
+                if (graph.link(link_id).link.first == in_edge && graph.link(link_id).link.second == out_edge) {
                     split_link = link_id;
                     link_found = true;
                 }
             }
-            EXPECT_TRUE(link_found);
-            std::vector<LinkId> links({split_link});
-            new_vertex = helper.CreateVertex(debruijn_graph::DeBruijnVertexData(links));
+            for (auto &link_id: graph.links(graph.conjugate(vertex))) {
+                if (graph.link(link_id).link.first == graph.conjugate(out_edge) &&
+                    graph.link(link_id).link.second == graph.conjugate(in_edge)) {
+                    conj_split_link = link_id;
+                    conj_link_found = true;
+                }
+            }
+
+            EXPECT_TRUE(link_found && conj_link_found);
+            std::vector<debruijn_graph::LinkId> empty;
+            new_vertex = helper.CreateVertex(debruijn_graph::DeBruijnVertexData(empty));
+            graph.add_link(new_vertex, split_link);
+            graph.add_link(graph.conjugate(new_vertex), conj_split_link);
 
             graph.erase_links_with_outedge(vertex, out_edge);
             graph.erase_links_with_inedge(vertex, in_edge);
@@ -165,9 +177,11 @@ void CheckPathOperations(debruijn_graph::Graph &graph,
                          const std::string &fasta_path,
                          const IdMapper &id_mapper) {
     std::ifstream ops_stream(operations_path);
+    INFO("Performing splits");
     PerformSplits(graph, ops_stream, id_mapper);
     int num_merges = 0;
     ops_stream >> num_merges;
+    INFO("Performed splits");
 
     std::unordered_map<std::string, EdgeId> merged_id_map;
     for (int i = 0; i < num_merges; ++i) {
@@ -227,9 +241,40 @@ void CheckGraphWithPaths(const std::filesystem::path &graph_basename) {
     CheckPathOperations(graph, operations_path, fasta_path, *id_mapper);
 }
 
+void CheckBinaryIO(const std::string &path_to_save,
+                   const std::filesystem::path &graph_basename) {
+    auto gfa_path = graph_basename;
+    auto graph_path = graph_basename;
+    gfa_path += ".gfa";
+    graph_path += ".graph";
+
+    size_t K = 55;
+    std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
+    gfa::GFAReader gfa_reader(gfa_path);
+    Graph graph(0);
+    gfa_reader.to_graph(graph, id_mapper.get());
+    size_t local_k = gfa_reader.to_graph(graph, id_mapper.get());
+
+    io::binary::Save(path_to_save, graph);
+    io::binary::Load(path_to_save, graph);
+
+    std::ifstream graph_stream(graph_path.c_str());
+    std::string graph_name;
+    graph_stream >> graph_name;
+    CheckSegmentLen(graph_stream, graph, *id_mapper);
+    CheckStructure(graph_stream, graph, *id_mapper);
+}
+
 TEST(VariableOverlaps, BasicOperations) {
     CheckGraphWithPaths("src/test/debruijn/graph_fragments/v_overlaps/bone");
     CheckGraphWithPaths("src/test/debruijn/graph_fragments/v_overlaps/conjugate_bone");
     CheckGraphWithPaths("src/test/debruijn/graph_fragments/v_overlaps/conjugate_triple");
     CheckGraphWithPaths("src/test/debruijn/graph_fragments/v_overlaps/triple_repeat");
+}
+
+TEST(VariableOverlaps, BinaryIO) {
+    std::string save_path = "src/test/debruijn/graph_fragments/saves/test_save";
+    CheckBinaryIO(save_path, "src/test/debruijn/graph_fragments/v_overlaps/bone");
+    CheckBinaryIO(save_path, "src/test/debruijn/graph_fragments/v_overlaps/conjugate_triple");
+    CheckBinaryIO(save_path, "src/test/debruijn/graph_fragments/v_overlaps/triple_repeat");
 }
