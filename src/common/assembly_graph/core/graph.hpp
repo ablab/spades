@@ -141,7 +141,7 @@ public:
         VERIFY_MSG(false, "Link " << in.int_id() << " -> " << out.int_id() << " was not found for vertex " << v.int_id());
     }
 
-    void lreserve(size_t size) {link_storage_.reserve(size);}
+    void lreserve(size_t size) { link_storage_.reserve(size); }
 
     auto link_begin() { return link_storage_.begin(); }
     auto link_end() { return link_storage_.end(); }
