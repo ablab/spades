@@ -255,7 +255,7 @@ public:
         return EdgeData(!(data.nucls()));
     }
 
-    //fixme support complex overlaps
+    // FIXME: support complex overlaps
     VertexData conjugate(const VertexData &data) const {
         if (!data.has_complex_overlap() or data.links().empty())
             return data.clone();
