@@ -1,5 +1,13 @@
 # SPAdes Genome Assembler changelog
 
+## SPAdes 4.1.0, 21 February 2025
+- Reduced RAM consumption in pared-read links distance estimation algorithm;
+- Improved k-mer mapper perfomance (used in read-to-graph mapping);
+- Reduced RAM consumption in repeat resolving module;
+- PathRacer and BinSPreader now support GFA 1.2 as input;
+- Fixed GFA loading;
+- Minor bugfixes (thanks to @douglasgscofield and @bzizou).
+
 ## SPAdes 4.0.0, 3 June 2024
 - SPAdes now supports NCBI SRA files as input;
 - Reworked and improved documentation: [ablab.github.io](https://ablab.github.io/spades/);
