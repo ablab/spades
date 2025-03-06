@@ -181,7 +181,7 @@ int main(int argc, char** argv) {
 
   if (!std::filesystem::exists(cfg.binning_file))
       FATAL_ERROR("Input binning file " << cfg.binning_file << " does not exist");
-  
+
   if (!std::filesystem::create_directories(cfg.tmpdir))
       FATAL_ERROR("Failed to create temporary directory: " << cfg.tmpdir);
 
@@ -204,7 +204,8 @@ int main(int argc, char** argv) {
       gfa::GFAReader gfa(cfg.graph);
       unsigned gfa_k = gfa.to_graph(graph, id_mapper.get());
 
-      INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: " << gfa.num_paths());
+      INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() <<
+           ", paths: " << gfa.num_paths() << ", jumps: " << gfa.num_gaplinks());
       if (gfa_k != -1U) {
           INFO("Detected k: " << gfa_k);
           VERIFY_MSG(gfa_k == 0 || gfa_k % 2 == 1, "k-mer length must be odd");
@@ -217,6 +218,10 @@ int main(int argc, char** argv) {
 
       INFO("Gathering edge links");
       binning::GraphLinkIndex links(graph);
+
+      INFO("Adding jump links");
+      for (const auto &jump : gfa.jumps())
+          links.add(jump.first, jump.second);
 
       // TODO: For now the edges is a set, we need to decide what to do with
       // repeats (so, we may want to count multiplicity here somehow)
@@ -279,9 +284,23 @@ int main(int argc, char** argv) {
               EdgeId last;
               for (const auto &path : gfa.paths()) {
                   const std::string &name = path.name;
-                  // SPAdes outputs paths of scaffolds in the file, so we need to strip the path segment id from the end
-                  std::string cname = (utils::starts_with(name, "NODE_") ?
-                                       name.substr(0, name.find_last_of('_')) : name);
+                  // SPAdes outputs paths of scaffolds in the file, so we need
+                  // to strip the path segment id from the end However, this
+                  // only applies to scaffold names emitted in GFA v1.1 graphs
+                  // and not for GFA v1.2
+                  std::string cname;
+                  if (utils::starts_with(name, "NODE_")) {
+                      auto upos = name.find_last_of('_');
+                      // GFA v1.1 format: NODE_123_length_56_cov_2.000000_0
+                      // GFA v1.2 format: NODE_123_length_56_cov_2.000000
+
+                      // As coverage is always float we also checking for
+                      // position of dot symbol. For GFA v1.2 names it will be
+                      // after the last underscore and before for GFA v1.1.
+                      auto dpos = name.find_last_of('.');
+                      cname = dpos < upos ? name.substr(0, upos) : name;
+                  } else
+                      cname = name;
                   if (cname != scaffold_name) {
                       scaffold_name = cname;
                       scaffolds_paths.emplace_back(scaffold_name, Binning::ScaffoldPath{});
