@@ -116,6 +116,24 @@ static void HandleLink(Links &links,
         links.emplace_back(g.conjugate(e2), g.conjugate(e1), record.overlap);
 }
 
+static void HandleGapLink(GFAReader::GapLinks &links,
+                          const gfa::gaplink &record,
+                          const io::IdMapper<std::string> &mapper,
+                          const ConjugateDeBruijnGraph &g) {
+    EdgeId e1 = mapper[std::string(record.lhs)];
+    if (record.lhs_revcomp)
+        e1 = g.conjugate(e1);
+
+    EdgeId e2 = mapper[std::string(record.rhs)];
+    if (record.rhs_revcomp)
+        e2 = g.conjugate(e2);
+
+    links.emplace_back(e1, e2);
+    if (e1 != g.conjugate(e2))
+        links.emplace_back(g.conjugate(e2), g.conjugate(e1));
+}
+
+
 static void HandlePath(std::vector<GFAReader::GFAPath> &paths,
                        const gfa::path &record,
                        const io::IdMapper<std::string> &mapper,
@@ -234,6 +252,8 @@ unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
                 HandleLink(links, record, *id_mapper, g);
             } else if constexpr (std::is_same_v<T, gfa::path>) {
                 HandlePath(paths_, record, *id_mapper, g);
+            } else if constexpr (std::is_same_v<T, gfa::gaplink>) {
+                HandleGapLink(gap_links_, record, *id_mapper, g);
             }
         },
             *result);
