@@ -26,6 +26,7 @@ enum class LibraryType {
     MatePairs,
     TrustedContigs,
     TSLReads,
+    Clouds10x,
     PathExtendContigs,
     UntrustedContigs,
     FLRNAReads,
