@@ -123,7 +123,7 @@ def check_etalons(args, workdir):
     class mut:
         res = 0
 
-    re_num = re.compile("-?\d+(?:\.\d+)?")
+    re_num = re.compile(r"-?\d+(?:\.\d+)?")
     def read_cell(str):
         maybe_num = re_num.search(str)
         if not maybe_num:

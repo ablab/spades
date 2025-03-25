@@ -38,26 +38,26 @@ def cmp_folder(output_dir, etalon_dir, ignore, allowed_substring):
     log.log("cmp folder " + output_dir + " with etalon")
 
     #delete lines with tmp folders from logs (tmp folders have a different name each time)
-    os.system("find " + output_dir + " -type f -exec sed -i '/_dir/d' {} \;")
-    os.system("find " + etalon_dir + " -type f -exec sed -i '/_dir/d' {} \;")
+    os.system("find " + output_dir + " -type f -exec sed -i '/_dir/d' {} \\;")
+    os.system("find " + etalon_dir + " -type f -exec sed -i '/_dir/d' {} \\;")
 
-    os.system("find " + output_dir + " -type f -exec sed -i '/corrector_/d' {} \;")
-    os.system("find " + etalon_dir + " -type f -exec sed -i '/corrector_/d' {} \;")
+    os.system("find " + output_dir + " -type f -exec sed -i '/corrector_/d' {} \\;")
+    os.system("find " + etalon_dir + " -type f -exec sed -i '/corrector_/d' {} \\;")
 
-    os.system("find " + output_dir + " -type f -exec sed -i '/tmp/d' {} \;")
-    os.system("find " + etalon_dir + " -type f -exec sed -i '/tmp/d' {} \;")
+    os.system("find " + output_dir + " -type f -exec sed -i '/tmp/d' {} \\;")
+    os.system("find " + etalon_dir + " -type f -exec sed -i '/tmp/d' {} \\;")
 
-    os.system("find " + output_dir + " -type f -exec sed -i '/agent/d' {} \;")
-    os.system("find " + etalon_dir + " -type f -exec sed -i '/agent/d' {} \;")
+    os.system("find " + output_dir + " -type f -exec sed -i '/agent/d' {} \\;")
+    os.system("find " + etalon_dir + " -type f -exec sed -i '/agent/d' {} \\;")
 
-    os.system("find " + output_dir + " -type f -exec sed -i '/hammer_/d' {} \;")
-    os.system("find " + etalon_dir + " -type f -exec sed -i '/hammer_/d' {} \;")
+    os.system("find " + output_dir + " -type f -exec sed -i '/hammer_/d' {} \\;")
+    os.system("find " + etalon_dir + " -type f -exec sed -i '/hammer_/d' {} \\;")
 
-    os.system("find " + output_dir + " -type f -exec sed -i '/spades_/d' {} \;")
-    os.system("find " + etalon_dir + " -type f -exec sed -i '/spades_/d' {} \;")
+    os.system("find " + output_dir + " -type f -exec sed -i '/spades_/d' {} \\;")
+    os.system("find " + etalon_dir + " -type f -exec sed -i '/spades_/d' {} \\;")
 
-    os.system("find " + output_dir + " -type f -exec sed -i '/version/d' {} \;")
-    os.system("find " + etalon_dir + " -type f -exec sed -i '/version/d' {} \;")
+    os.system("find " + output_dir + " -type f -exec sed -i '/version/d' {} \\;")
+    os.system("find " + etalon_dir + " -type f -exec sed -i '/version/d' {} \\;")
 
     ignore_list = ignore
     ignore_list += create_ignore_list_of_files_in_dir(output_dir, ignore + allowed_substring)

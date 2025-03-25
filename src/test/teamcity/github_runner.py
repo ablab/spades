@@ -76,7 +76,7 @@ class MetricEntry:
             return float(s.split()[0])
         else:
             #E.g. reads aligned 100 (100%)
-            p = re.search('\((.+)%\)', s).group(1)
+            p = re.search(r'\((.+)%\)', s).group(1)
             return float(p)
 
 

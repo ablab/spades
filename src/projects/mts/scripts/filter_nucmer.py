@@ -32,9 +32,9 @@ if not path.exists(nucmer_output_fn):
     sys.exit(2)
 
 with open(nucmer_output_fn, "r") as nucmer_output:
-    contig_data = re.compile("CONTIG: ([\w.-]+) \((\d+)bp\)")
-    align_data = re.compile("Best alignment score: ([\d.]+)")
-    split_format = re.compile("^([\w.-]+_)_(\d+_\d+)_$") #Replace brackets back
+    contig_data = re.compile(r"CONTIG: ([\w.-]+) \((\d+)bp\)")
+    align_data = re.compile(r"Best alignment score: ([\d.]+)")
+    split_format = re.compile(r"^([\w.-]+_)_(\d+_\d+)_$") #Replace brackets back
     while True:
         line = nucmer_output.readline()
         if not line or line.startswith("Analyzing coverage"):

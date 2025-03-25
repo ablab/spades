@@ -41,7 +41,7 @@ class ProfileFormatter:
                 self.header(params[1:])
             self.format(params[0], params[1:])
 
-extract_num = re.compile("\d+")
+extract_num = re.compile(r"\d+")
 
 class BinningParser:
     def __init__(self, sep=",", filter=None):
