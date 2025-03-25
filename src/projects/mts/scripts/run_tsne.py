@@ -83,7 +83,7 @@ def form_points(df):
     return points, names
 
 import re
-extract_num = re.compile("\d+")
+extract_num = re.compile(r"\d+")
 
 def run_tsne(features_file, colors_file, output_prefix
              , filter_sample=[]

@@ -83,8 +83,8 @@ def get_id(internal_id, sample):
     res = internal_id.split("_", 2)[1]
     return sample + "-" + res
 
-id_re = re.compile("\\d+")
-split_format = re.compile("^([\w.-]+)_\(\d+_\d+\)$")
+id_re = re.compile(r"\d+")
+split_format = re.compile(r"^([\w.-]+)_\(\d+_\d+\)$")
 
 def extract_id(name):
     bin_id = None
@@ -114,7 +114,7 @@ def load_annotation(file, normalize=True):
 
 def contig_length(name):
     # Length of contig split
-    split = re.search("\((\d+)_(\d+)\)", name)
+    split = re.search(r"\((\d+)_(\d+)\)", name)
     if split:
         return int(split.group(2)) - int(split.group(1))
     #Default format
