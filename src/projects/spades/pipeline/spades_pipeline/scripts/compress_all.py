@@ -30,7 +30,7 @@ def compress_dataset_files(input_file, ext_python_modules_home, max_threads, log
                            gzip_output):
     addsitedir(ext_python_modules_home)
     import pyyaml3 as pyyaml
-    from joblib3 import Parallel, delayed
+    from concurrent.futures import ProcessPoolExecutor
 
     dataset_data = pyyaml.load(open(input_file))
     remove_not_corrected_reads(output_dir)
@@ -65,8 +65,17 @@ def compress_dataset_files(input_file, ext_python_modules_home, max_threads, log
                     support.sys_call([pigz_path, "-f", "-7", "-p", str(max_threads), reads_file], log)
             else:
                 n_jobs = min(len(to_compress), max_threads)
-                outputs = Parallel(n_jobs=n_jobs)(
-                    delayed(support.sys_call)(["gzip", "-f", "-7", reads_file]) for reads_file in to_compress)
+                gzip_iterator = (
+                    support.sys_call,
+                    [["gzip", "-f", "-7", reads_file] for reads_file in to_compress]
+                )
+
+                if n_jobs > 1:
+                    with ProcessPoolExecutor(max_workers=n_jobs) as proc:
+                        outputs = proc.map(*gzip_iterator, chunksize=1)
+                else:
+                    outputs = map(*gzip_iterator)
+
                 for output in outputs:
                     if output:
                         log.info(output)
