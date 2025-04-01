@@ -22,7 +22,6 @@ if (NOT zlib_ng_POPULATED)
 endif()
 
 add_subdirectory(nlopt)
-add_subdirectory(python_libs/joblib3)
 add_subdirectory(python_libs/pyyaml3)
 add_subdirectory(bamtools)
 add_subdirectory(samtools)
