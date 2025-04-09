@@ -144,7 +144,7 @@ jobs:
 
       - name: '⚙️ Install dependencies'
         run: >
-          brew install bzip2 mmv
+          brew install bzip2 mmv openmpi
 
       - name: '💩 Fix gcc / MacSDK trash'
         run: >

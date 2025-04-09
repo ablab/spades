@@ -180,7 +180,7 @@ jobs:
 
       - name: '⚙️ Install dependencies'
         run: >
-          brew install llvm libomp bzip2
+          brew install llvm libomp bzip2 openmpi
 
       - name: '⚙️ Install ccache'
         uses: hendrikmuhs/ccache-action@v1.2
