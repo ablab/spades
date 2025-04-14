@@ -12,6 +12,7 @@ nav:
   - SPAdes output: output.md
   - HMM-guided mode: hmm.md
   - Transcriptome assembly: rna.md
+  - Running SPAdes across multiple nodes of a cluster: hpc.md
   - Binning refining: binspreader.md
   - HMM mapping on assembly graph: pathracer.md
   - Sequence to graph alignment: spaligner.md
