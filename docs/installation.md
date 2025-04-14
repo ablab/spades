@@ -6,10 +6,10 @@ SPAdes requires a 64-bit Linux system or Mac OS and Python (3.8 or higher) to be
 In case of successful installation the following files will be placed in the `bin` directory:
 
 -   `spades.py` (main executable script)
--   `metaspades.py` (main executable script for [metaSPAdes](running.md#--meta-same-as-metaspadespy))
--   `plasmidspades.py` (main executable script for [plasmidSPAdes](running.md#--plasmid-same-as-plasmidspadespy))
--   `metaplasmidspades.py` (main executable script for [metaplasmidSPAdes](running.md#--metaplasmid-and---metaviral))
--   `metaviralspades.py` (main executable script for [metaviralSPAdes](running.md#--metaplasmid-and---metaviral))
+-   `metaspades.py` (main executable script for [metaSPAdes](running.md#-meta-same-as-metaspadespy))
+-   `plasmidspades.py` (main executable script for [plasmidSPAdes](running.md#-plasmid-same-as-plasmidspadespy))
+-   `metaplasmidspades.py` (main executable script for [metaplasmidSPAdes](running.md#-metaplasmid-and-metaviral))
+-   `metaviralspades.py` (main executable script for [metaviralSPAdes](running.md#-metaplasmid-and-metaviral))
 -   `rnaspades.py` (main executable script for [rnaSPAdes](rna.md))
 -   `rnaviralspades.py` (main executable script for rnaviralSPAdes)
 -   `coronaspades.py` (wrapper script for [coronaSPAdes mode](hmm.md#hmm-guided-mode))
