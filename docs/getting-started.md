@@ -103,7 +103,7 @@ bin/spades.py --rnaviral -1 left.fastq.gz -2 right.fastq.gz -o output_folder
 
 - [`spalgner`](spaligner.md) - alignment of long reads to assembly graph;
 
-- [`spades-gmapper`](standalone.md#long-read-to-graph-alignment) - specific alignment of long reads to assembly graph used in hybrid assembly pipeline;
+- [`spades-gmapper`](standalone.md#hybridspades-aligner) - specific alignment of long reads to assembly graph used in hybrid assembly pipeline;
 
 - [`binspreader`](binspreader.md) - refinement of metagenome-assembled genomes;
 

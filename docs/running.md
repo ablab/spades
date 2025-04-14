@@ -36,7 +36,7 @@ metaSPAdes might be very sensitive to the presence of the technical sequences
 remaining in the data (most notably adapter readthroughs), please run quality
 control and pre-process your data accordingly.
 
-#### `--plasmid`   (same as `plasmidspades.py`)
+#### `--plasmid` (same as `plasmidspades.py`)
 
 This flag enables plasmidSPAdes mode that assembles only
 plasmids from WGS data sets (see
@@ -286,7 +286,7 @@ An alternative way to specify an input data set for SPAdes is to create a [YAML]
 -   left reads (comma-separated list of files with left reads)
 -   right reads (comma-separated list of files with right reads)
 -   single reads (comma-separated list of files with single reads or unpaired reads from paired library)
--   merged reads (comma-separated list of files with [merged reads](input.md#read-pair-libraries))
+-   merged reads (comma-separated list of files with [merged reads](input.md#paired-read-libraries))
 
 To properly specify a library you should provide its type and at least one file with reads. Orientation is an optional attribute. Its default value is "fr" (forward-reverse) for paired-end libraries and "rf" (reverse-forward) for mate-pair libraries.
 
@@ -377,7 +377,7 @@ Notes:
     Set directory for temporary files from read error correction. The default value is `<output_dir>/corrected/tmp`
 
 `-k <int,int,...>`
-    Comma-separated list of k-mer sizes to be used (all values must be odd, less than 128 and listed in ascending order). If `--sc` is set the default values are 21,33,55. For multicell data sets K values are automatically selected using maximum read length ([see note for assembling long Illumina paired reads for details](datatypes.md#assembling-long-illumina-paired-reads)). To properly select K values for IonTorrent data read [this section](datatypes.md#assembling-iontorrent-reads).
+    Comma-separated list of k-mer sizes to be used (all values must be odd, less than 128 and listed in ascending order). If `--sc` is set the default values are 21,33,55. For multicell data sets K values are automatically selected using maximum read length ([see note for assembling long Illumina paired reads for details](datatypes.md#assembling-illumina-genomic-data)). To properly select K values for IonTorrent data read [this section](datatypes.md#assembling-iontorrent-reads).
 
 `--cov-cutoff <float>`
     Read coverage cutoff value. Must be a positive float value, or "auto", or "off". Default value is "off". When set to "auto" SPAdes automatically computes coverage threshold using conservative strategy. Note, that this option is not supported by metaSPAdes.
