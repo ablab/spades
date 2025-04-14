@@ -805,7 +805,7 @@ def add_cluster_args(pgroup_cluster):
                                 dest="grid_engine",
                                 default="local",
                                 help="run under grid control\n"
-                                     "('lsf', 'slurm', 'local', 'mpi', save_yaml') "
+                                     "('slurm', 'local', 'mpi', save_yaml') "
                                      "[default: 'local']",
                                 action="store")
     pgroup_cluster.add_argument("--grid-queue",
