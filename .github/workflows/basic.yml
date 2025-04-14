@@ -154,6 +154,33 @@ jobs:
           chmod +x $BUILD_DIR/bin/debruijn_test &&
           $BUILD_DIR/bin/debruijn_test
 
+  spades-mpi-1k-checks-linux:
+    name: '🚬 E. coli 1k smoke checks (MPI)'
+    runs-on: self-hosted
+    needs: build-linux
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '📦 Download package'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-linux
+          path: ${{env.INSTALL_DIR}}
+
+      - name: '📦 Unpack package'
+        working-directory: ${{env.INSTALL_DIR}}
+        run: >
+          tar -zxf $PKG_LINUX.tar.gz
+
+      - name: '1k meta'
+        run: >
+          $INSTALL_DIR/$PKG_LINUX/bin/spades.py --test --grid-engine=mpi
+
   build-mac:
     strategy:
       matrix:
