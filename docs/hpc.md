@@ -63,10 +63,10 @@ The options specific to SPAdes support for computational clusters are:
 `--grid-engine <engine>` The grid engine to use. `engine` might be one of:
 
 * `local`: run everything locally, no grid engine / job submission is involved
-* `mpi`: save as `local`, but `mpiexec` is used to run the applications that
+* `mpi`: same as `local`, but `mpiexec` is used to run the applications that
   support MPI
 * `slurm`: job submission via SLURM
-* `save_yaml`: save all the steps of SPAdes pipeline one after another into
+* `save_yaml`: dry run, save all the steps of SPAdes pipeline one after another into
   `run_spades.yaml` file.
 
 All executors also save `run_spades.sh` shell script. The execution of this
