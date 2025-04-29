@@ -99,6 +99,7 @@ SPAdes algorithms. This includes:
  - Binning refining tool BinSPreader
  - HMM-to-graph aligning tool Pathracer
  - Sequence-to-graph aligning tool SPAligner
+ - MPI-aware version of SPAdes pipeline hpcSPAdes
 
 These tools are not built by default and therefore must be built separately. One
 can pass `-SPADES_ENABLE_PROJECTS="semicolon-separated list of projects"` to enable building only
@@ -109,6 +110,7 @@ subset of SPAdes components. The components are:
   - [`binspareader`](binspreader.md)
   - [`pathracer`](pathracer.md)
   - [`spaligner`](spaligner.md)
+  - [`hpcspades`](hpc.md)
 
 By default, only SPAdes and SPAdes tools are enabled (so
 `-DSPADES_ENABLE_PROJECTS="spades;spades_tools"` is the default). Alternatively,
