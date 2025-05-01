@@ -1,4 +1,4 @@
-[![UnitTests](https://github.com/ablab/spades/actions/workflows/basic.yml/badge.svg)](https://github.com/ablab/IsoQuant/actions/workflows/Unit_tests.yml)
+[![UnitTests](https://github.com/ablab/spades/actions/workflows/basic.yml/badge.svg)](https://github.com/ablab/spades/actions/workflows/basic.yml)
 [![License](https://img.shields.io/badge/licence-GPLv2-blue)](https://www.gnu.org/licenses/old-licenses/gpl-2.0)
 [![GitHub release (latest)](https://img.shields.io/github/v/release/ablab/spades)](https://github.com/ablab/spades/releases/)
 [![GitHub Downloads](https://img.shields.io/github/downloads/ablab/spades/total.svg?style=social&logo=github&label=Download)](https://github.com/ablab/spades/releases)
