@@ -1,5 +1,11 @@
 # SPAdes Genome Assembler changelog
 
+## SPAdes 4.2.0, 2 May 2025
+
+- New [hpcSPAdes](https://ablab.github.io/spades/hpc.html) for high-performance computational clusters; 
+- Fix GFA v1.2 in BinSPreader;
+- Minor fixes in Python code (thanks to @Simon-Brandt).
+
 ## SPAdes 4.1.0, 21 February 2025
 - Reduced RAM consumption in pared-read links distance estimation algorithm;
 - Improved k-mer mapper perfomance (used in read-to-graph mapping);
