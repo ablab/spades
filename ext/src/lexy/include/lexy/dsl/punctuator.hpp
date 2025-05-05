@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2024 Jonathan Müller and lexy contributors
+// Copyright (C) 2020-2025 Jonathan Müller and lexy contributors
 // SPDX-License-Identifier: BSL-1.0
 
 #ifndef LEXY_DSL_PUNCTUATOR_HPP_INCLUDED
@@ -12,7 +12,7 @@ namespace lexyd
 #define LEXY_PUNCT(Name, String)                                                                   \
     struct _##Name : LEXY_NTTP_STRING(_lit, String)                                                \
     {};                                                                                            \
-    inline constexpr auto(Name) = _##Name {}
+    inline constexpr auto Name /* NOLINT */ = _##Name {}
 
 LEXY_PUNCT(period, ".");
 LEXY_PUNCT(comma, ",");

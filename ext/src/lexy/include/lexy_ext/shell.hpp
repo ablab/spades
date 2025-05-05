@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2024 Jonathan Müller and lexy contributors
+// Copyright (C) 2020-2025 Jonathan Müller and lexy contributors
 // SPDX-License-Identifier: BSL-1.0
 
 #ifndef LEXY_EXT_SHELL_HPP_INCLUDED
@@ -14,7 +14,7 @@
 
 namespace lexy_ext
 {
-#if 0
+#if 0 // NOLINT
 /// Controls how the shell performs I/O.
 class Prompt
 {

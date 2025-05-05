@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2024 Jonathan Müller and lexy contributors
+// Copyright (C) 2020-2025 Jonathan Müller and lexy contributors
 // SPDX-License-Identifier: BSL-1.0
 
 #ifndef LEXY_DETAIL_CODE_POINT_HPP_INCLUDED
@@ -101,7 +101,7 @@ constexpr std::size_t encode_code_point(char32_t cp, typename Encoding::char_typ
     {
         LEXY_PRECONDITION(size >= 1);
 
-        *buffer = char32_t(cp);
+        *buffer = cp;
         return 1;
     }
     else

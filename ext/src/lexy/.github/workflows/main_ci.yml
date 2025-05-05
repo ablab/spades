@@ -16,6 +16,8 @@ jobs:
           - "gcc:10"
           - "gcc:11"
           - "gcc:12"
+          - "gcc:13"
+          - "gcc:14"
           - "clang:6"
           - "clang:7"
           - "clang:8"
@@ -27,6 +29,8 @@ jobs:
           - "clang:14"
           - "clang:15"
           - "clang:16"
+          - "clang:17"
+          - "clang:18"
         build_type: [Debug, Release]
 
     runs-on: ubuntu-latest
@@ -52,13 +56,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        xcode:
-            - '11'
-            - '12'
-            - '13'
+        xcode: ['15', '16']
         build_type: [Debug, Release]
 
-    runs-on: macos-11
+    runs-on: macos-14
 
     steps:
     - uses: actions/checkout@v2
@@ -84,10 +85,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toolset: ['v142', 'ClangCL']
+        toolset: ['v142', 'v143', 'ClangCL']
         build_type: [Debug, Release]
+        arch: [Win32, x64]
 
-    runs-on: windows-2019
+    runs-on: windows-2022
 
     steps:
     - uses: actions/checkout@v2
@@ -97,7 +99,7 @@ jobs:
     - name: Configure
       shell: bash
       working-directory: build/
-      run: cmake $GITHUB_WORKSPACE -G"Visual Studio 16 2019" -T ${{matrix.toolset}}
+      run: cmake $GITHUB_WORKSPACE -G"Visual Studio 17 2022" -T ${{matrix.toolset}} -A ${{matrix.arch}}
     - name: Build
       working-directory: build/
       run: cmake --build . --config ${{matrix.build_type}} -j 2

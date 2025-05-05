@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2024 Jonathan Müller and lexy contributors
+// Copyright (C) 2020-2025 Jonathan Müller and lexy contributors
 // SPDX-License-Identifier: BSL-1.0
 
 #ifndef LEXY_DSL_SCAN_HPP_INCLUDED
@@ -18,7 +18,9 @@ struct _prd;
 template <typename Rule, typename Tag>
 struct _peek;
 template <typename Token>
-struct _capt;
+struct _cap;
+template <typename Rule>
+struct _capr;
 template <typename T, typename Base>
 struct _int_dsl;
 
@@ -379,25 +381,18 @@ public:
         return result;
     }
 
-    template <typename Rule>
-    constexpr auto capture(Rule rule) -> scan_result<lexeme<Reader>>
-    {
-        static_assert(lexy::is_rule<Rule>);
-
-        auto begin = _reader.position();
-        parse(rule);
-        auto end = _reader.position();
-
-        if (*this)
-            return lexeme<Reader>(begin, end);
-        else
-            return scan_failed;
-    }
     template <typename Token>
-    constexpr auto capture_token(Token)
+    constexpr auto capture(Token)
     {
         scan_result<lexeme<Reader>> result;
-        parse(result, lexyd::_capt<Token>{});
+        parse(result, lexyd::_cap<Token>{});
+        return result;
+    }
+    template <typename Production>
+    constexpr auto capture(lexyd::_prd<Production>)
+    {
+        scan_result<lexeme<Reader>> result;
+        parse(result, lexyd::_capr<lexyd::_prd<Production>>{});
         return result;
     }
 
@@ -464,8 +459,9 @@ private:
 
 namespace lexyd
 {
-template <typename Context, typename Scanner, typename StatePtr>
-using _detect_scan_state = decltype(Context::production::scan(LEXY_DECLVAL(Scanner&), *StatePtr()));
+template <typename Context, typename Scanner, typename StatePtr, typename... Args>
+using _detect_scan_state = decltype(Context::production::scan(LEXY_DECLVAL(Scanner&), *StatePtr(),
+                                                              LEXY_DECLVAL(Args)...));
 
 struct _scan : rule_base
 {
@@ -479,7 +475,7 @@ struct _scan : rule_base
             typename Context::production::scan_result result = [&] {
                 if constexpr (lexy::_detail::is_detected<
                                   _detect_scan_state, Context, decltype(scanner),
-                                  decltype(context.control_block->parse_state)>)
+                                  decltype(context.control_block->parse_state), Args&&...>)
                     return Context::production::scan(scanner, *context.control_block->parse_state,
                                                      LEXY_FWD(args)...);
                 else
