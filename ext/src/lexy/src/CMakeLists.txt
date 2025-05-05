@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2024 Jonathan Müller and lexy contributors
+# Copyright (C) 2020-2025 Jonathan Müller and lexy contributors
 # SPDX-License-Identifier: BSL-1.0
 
 get_filename_component(include_dir ${CMAKE_CURRENT_SOURCE_DIR}/../include/lexy ABSOLUTE)
@@ -177,10 +177,13 @@ target_include_directories(lexy_dev INTERFACE
     )
 
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    if("${CMAKE_CXX_SIMULATE_ID}" STREQUAL "MSVC")
+    if("${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}" STREQUAL "MSVC")
         target_compile_options(lexy_dev INTERFACE /WX /W3 /D _CRT_SECURE_NO_WARNINGS)
     else()
         target_compile_options(lexy_dev INTERFACE -pedantic-errors -Werror -Wall -Wextra -Wconversion -Wsign-conversion)
+        if("${CMAKE_CXX_SIMULATE_ID}" STREQUAL "MSVC")
+            target_compile_options(lexy_dev INTERFACE -D_CRT_SECURE_NO_WARNINGS)
+        endif()
     endif()
     # clang doesn't like operator precedence rules we're using for the DSL.
     target_compile_options(lexy_dev INTERFACE -Wno-shift-op-parentheses -Wno-parentheses-equality)
@@ -190,8 +193,13 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
     target_compile_options(lexy_dev INTERFACE -Wno-parentheses)
     # GCC doesn't properly detect when local typedefs escape via the return type.
     target_compile_options(lexy_dev INTERFACE -Wno-unused-local-typedefs)
-    # GCC's arry bounds, maybe uninitialized, and restrict warning seems to have false positives.
+    # GCC's array bounds, maybe uninitialized, dangling pointer, and restrict warning seems to have false positives.
     target_compile_options(lexy_dev INTERFACE -Wno-array-bounds -Wno-maybe-uninitialized -Wno-restrict)
+    if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 12)
+        target_compile_options(lexy_dev INTERFACE -Wno-dangling-pointer)
+    endif()
+    # GCC doesn't like it when rules depend on `static` objects.
+    target_compile_options(lexy_dev INTERFACE -Wno-subobject-linkage)
 elseif(MSVC)
     target_compile_options(lexy_dev INTERFACE /WX /W3 /D _CRT_SECURE_NO_WARNINGS /wd5105 /utf-8)
 endif()

@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2024 Jonathan Müller and lexy contributors
+// Copyright (C) 2020-2025 Jonathan Müller and lexy contributors
 // SPDX-License-Identifier: BSL-1.0
 
 #ifndef LEXY_CALLBACK_BIND_HPP_INCLUDED
@@ -346,7 +346,7 @@ struct _bound_sink
     LEXY_EMPTY_MEMBER _detail::tuple<BoundArgs...> _bound;
 
     template <typename... Args>
-    constexpr auto operator()(Args... args) const -> decltype(_sink(LEXY_FWD(args)...))
+    constexpr auto operator()(Args&&... args) const -> decltype(_sink(LEXY_FWD(args)...))
     {
         return _sink(LEXY_FWD(args)...);
     }

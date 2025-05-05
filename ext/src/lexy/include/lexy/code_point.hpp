@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2024 Jonathan Müller and lexy contributors
+// Copyright (C) 2020-2025 Jonathan Müller and lexy contributors
 // SPDX-License-Identifier: BSL-1.0
 
 #ifndef LEXY_CODE_POINT_HPP_INCLUDED
@@ -85,7 +85,7 @@ public:
         LEXY_UNICODE_CATEGORY(Lo, other_letter),
 
         LEXY_UNICODE_CATEGORY(Mn, nonspacing_mark),
-        LEXY_UNICODE_CATEGORY(Mc, spaing_mark),
+        LEXY_UNICODE_CATEGORY(Mc, spacing_mark),
         LEXY_UNICODE_CATEGORY(Me, enclosing_mark),
 
         LEXY_UNICODE_CATEGORY(Nd, decimal_number),

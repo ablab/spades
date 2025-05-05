@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2024 Jonathan Müller and lexy contributors
+// Copyright (C) 2020-2025 Jonathan Müller and lexy contributors
 // SPDX-License-Identifier: BSL-1.0
 
 #ifndef LEXY_DETAIL_CONFIG_HPP_INCLUDED
@@ -50,7 +50,7 @@ template <typename T>
 std::add_rvalue_reference_t<T> declval();
 
 template <typename T>
-constexpr void swap(T& lhs, T& rhs)
+constexpr void swap(T& lhs, T& rhs) noexcept
 {
     T tmp = LEXY_MOV(lhs);
     lhs   = LEXY_MOV(rhs);
