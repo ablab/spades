@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: ["gcc:7", "gcc:13", "clang:6", "clang:16"]
+        image: ["gcc:7", "gcc:14", "clang:6", "clang:18"]
 
     runs-on: ubuntu-latest
     container:
@@ -35,9 +35,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        xcode: ['11', '13']
+        xcode: ['15', '16']
 
-    runs-on: macos-11
+    runs-on: macos-14
 
     steps:
     - uses: actions/checkout@v2
@@ -60,7 +60,12 @@ jobs:
       run: ctest --output-on-failure
 
   windows:
-    runs-on: windows-2019
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [Win32, x64]
+
+    runs-on: windows-2022
 
     steps:
     - uses: actions/checkout@v2
@@ -70,7 +75,7 @@ jobs:
     - name: Configure
       shell: bash
       working-directory: build/
-      run: cmake $GITHUB_WORKSPACE -G"Visual Studio 16 2019"
+      run: cmake $GITHUB_WORKSPACE -G"Visual Studio 17 2022" -A ${{matrix.arch}}
     - name: Build
       working-directory: build/
       run: cmake --build . --config Debug -j 2

@@ -4,11 +4,14 @@
 
 === Potential breaking changes
 
+* `scanner-common::capture_token` was renamed to `scanner-common::capture`, and old `scanner-common::capture` removed.
+  Previously, `capture_token` was a linker error anyway, but if you're calling `scanner-common::capture` it will no longer work for arbitrary rules and instead only like `dsl::capture`.
 * `lexy::parse_as_tree` will add a position token to production nodes that would otherwise be empty.
   That way, no production node will be empty, unless the builder API is used directly.
 * Change `lexy::dsl::try_()` error recovery behavior:
   It will now skip whitespace after the (optional) error recovery rule.
 * Deprecate the `lexy::parse_tree::builder::finish()` overload that does not take a `remaining_input`.
+* The typo `lexy::code_point::spaing_mark` was fixed to `spacing_mark`.
 
 === New Features
 
@@ -19,7 +22,8 @@
 * Add `lexy::parse_tree::node::position()` and `::covering_lexeme()`.
 * Add default argument to `lexy::dsl::flag()`.
 * Add `lexy::callback_with_state`.
-* Pass the parse state to the tag of `lexy::dsl::op` if required (#172).
+* Pass the parse state to the tag of `lexy::dsl::op` if required (#172) and to `lexy::dsl::error` (#211).
+* Enable CMake install rule for subdirectory builds (#205).
 
 === Bug fixes
 
@@ -27,11 +31,12 @@
 * Fix infinite loop in `dsl::delimited` when dealing with invalid code points (#173).
 * Fix swallowed errors from case-folding rules (#149).
 * Fix `lexy::production_name` for productions in an anonymous namespace.
-* Fix bugs in `dsl::scan` (#133, #135, #142, #154).
+* Fix bugs in `dsl::scan` (#133, #135, #142, #154, #209).
 * Fix bug with the position passed to the tag constructor of `lexy::dsl::op` (#170).
 * Fix bug where `lexy_ext::report_error` unconditionally wrote to `stderr`, ignoring the output iterator.
 * Fix bug with missing `lexy::error_context::position` in `lexy::parse_as_tree` (#184).
 * Fix `static_assert` in `lexy::parse_tree` (#190).
+* Add missing `&&` in `lexy::bind_sink` (#221).
 * Workaround compiler bugs and improve documentation.
 
 == Release 2022.12.1
