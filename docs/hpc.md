@@ -56,7 +56,7 @@ are known to contain important bugs resulting in deadlocks. OpenMPI 4.x and
 After the compilation is complete, `spades-hpc` executable will be located in 
 the `bin` folder.
 
-Tt is recommended to always build hpcSPAdes using local MPI runtime, therefore
+It is recommended to always build hpcSPAdes using local MPI runtime, therefore
 hpcSPAdes binaries are excluded from binary release snapshots.
 
 ## Command line options
