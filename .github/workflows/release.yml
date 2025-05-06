@@ -50,7 +50,7 @@ jobs:
           cmake
           -B $BUILD_DIR
           -S $SRC_DIR
-          -DSPADES_USE_NCBISDK=ON -DSPADES_ENABLE_PROJECTS=all
+          -DSPADES_USE_NCBISDK=ON -DSPADES_ENABLE_PROJECTS=release
 
       - name: '🚧 Build'
         run: >
@@ -156,7 +156,7 @@ jobs:
           cmake
           -B $BUILD_DIR
           -S $SRC_DIR
-          -DSPADES_USE_NCBISDK=ON -DSPADES_ENABLE_PROJECTS=all
+          -DSPADES_USE_NCBISDK=ON -DSPADES_ENABLE_PROJECTS=release
           -DCMAKE_C_COMPILER=gcc-13 -DCMAKE_CXX_COMPILER=g++-13
           -DSPADES_STATIC_BUILD=ON
           -DOpenMP_CXX_FLAGS:STRING=-fopenmp -DOpenMP_CXX_LIB_NAMES:STRING=gomp -DOpenMP_C_FLAGS:STRING=-fopenmp -DOpenMP_C_LIB_NAMES:STRING=gomp -DOpenMP_gomp_LIBRARY=libgomp.a
