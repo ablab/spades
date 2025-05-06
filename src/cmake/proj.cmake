@@ -17,6 +17,11 @@ set(SPADES_ENABLE_PROJECTS "" CACHE STRING
 # Make sure expansion happens first to not handle "all" in rest of the checks.
 if (SPADES_ENABLE_PROJECTS STREQUAL "all")
   set(SPADES_ENABLE_PROJECTS "${SPADES_ALL_PROJECTS}")
+elseif(SPADES_ENABLE_PROJECTS STREQUAL "release")
+  # Exclude hpcSPAdes from release snapshots by default
+  set(SPADES_RELEASE_PROJECTS "${SPADES_ALL_PROJECTS}")
+  list(REMOVE_ITEM SPADES_RELEASE_PROJECTS "hpcspades")
+  set(SPADES_ENABLE_PROJECTS "${SPADES_RELEASE_PROJECTS}")
 endif()
 
 # Always include SPAdes by default
