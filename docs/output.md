@@ -124,6 +124,7 @@ In the metaviral mode SPAdes also outputs linear putative viruses and linear vir
 ## biosyntheticSPAdes output
 
 biosyntheticSPAdes outputs four files of interest:
+
 - scaffolds.fasta – contains DNA sequences from putative biosynthetic gene clusters (BGC). Since each sample may contain multiple BGCs and biosyntheticSPAdes can output several putative DNA sequences for each cluster, for each contig name we append suffix `_cluster_X_candidate_Y`, where X is the id of the BGC and Y is the id of the candidate from the BGC.
 - raw_scaffolds.fasta - SPAdes scaffolds generated without domain-graph related algorithms. Very close to the regular scaffolds.fasta file.
 - hmm_statistics.txt - contains statistics about BGC composition in the sample. First, it outputs the number of domain hits in the sample. Then, for each BGC candidate we output domain order with positions on the corresponding DNA sequence from scaffolds.fasta.
