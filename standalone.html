@@ -1,0 +1,967 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="spaligner.html">
+      
+      
+        <link rel="next" href="citation.html">
+      
+      
+      <link rel="icon" href="spades.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.12">
+    
+    
+      
+        <title>SPAdes tools - SPAdes Assembly Toolkit</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.2afb09e1.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#stand-alone-tools-released-within-spades-package" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="index.html" title="SPAdes Assembly Toolkit" class="md-header__button md-logo" aria-label="SPAdes Assembly Toolkit" data-md-component="logo">
+      
+  <img src="spades.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SPAdes Assembly Toolkit
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              SPAdes tools
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="index.html" title="SPAdes Assembly Toolkit" class="md-nav__button md-logo" aria-label="SPAdes Assembly Toolkit" data-md-component="logo">
+      
+  <img src="spades.png" alt="logo">
+
+    </a>
+    SPAdes Assembly Toolkit
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="index.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="getting-started.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quick start
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="installation.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Installation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    SPAdes input data
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            SPAdes input data
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="input.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Basic input
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="hybrid.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Hybrid assembly
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="datatypes.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Tips on the parameters
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="running.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Command line options
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="output.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    SPAdes output
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="hmm.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    HMM-guided mode
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="rna.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Transcriptome assembly
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="hpc.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Running SPAdes across multiple nodes of a cluster
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="binspreader.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Binning refining
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="pathracer.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    HMM mapping on assembly graph
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="spaligner.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Sequence to graph alignment
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    SPAdes tools
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="standalone.html" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    SPAdes tools
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#k-mer-counter" class="md-nav__link">
+    <span class="md-ellipsis">
+      k-mer counter
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#k-mer-coverage-read-filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      k-mer coverage read filter
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#k-mer-cardinality-estimating" class="md-nav__link">
+    <span class="md-ellipsis">
+      k-mer cardinality estimating
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#graph-construction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Graph construction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#graph-simplification" class="md-nav__link">
+    <span class="md-ellipsis">
+      Graph simplification
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#graph-splitting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Graph splitting
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hybridspades-aligner" class="md-nav__link">
+    <span class="md-ellipsis">
+      hybridSPAdes aligner
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="citation.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Citation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="feedback.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Feedback
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#k-mer-counter" class="md-nav__link">
+    <span class="md-ellipsis">
+      k-mer counter
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#k-mer-coverage-read-filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      k-mer coverage read filter
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#k-mer-cardinality-estimating" class="md-nav__link">
+    <span class="md-ellipsis">
+      k-mer cardinality estimating
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#graph-construction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Graph construction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#graph-simplification" class="md-nav__link">
+    <span class="md-ellipsis">
+      Graph simplification
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#graph-splitting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Graph splitting
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hybridspades-aligner" class="md-nav__link">
+    <span class="md-ellipsis">
+      hybridSPAdes aligner
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="stand-alone-tools-released-within-spades-package">Stand-alone tools released within SPAdes package</h1>
+<h2 id="k-mer-counter">k-mer counter</h2>
+<p>To provide input data to SPAdes k-mer counting tool <code>spades-kmercount</code> you may just specify files in <a href="input.html#spades-input">SPAdes-supported formats</a> without any flags (after all options) or provide dataset description file in <a href="running.html#specifying-multiple-libraries-with-yaml-data-set-file">YAML format</a>.</p>
+<p>Output: <code>&lt;output_dir&gt;/final_kmers</code> - unordered set of kmers in binary format. Kmers from both forward and reverse-complementary reads are taken into account.</p>
+<p>Output format: All kmers are written sequentially without any separators. Each k-mer takes the same number of bits. One k-mer of length K takes 2*K bits. Kmers are aligned by 64 bits. For example, one kmer with length=21 takes 8 bytes, with length=33 takes 16 bytes, and with length=55 takes 16 bytes. Each nucleotide is coded with 2 bits: 00 - A, 01 - C, 10 - G, 11 - T.</p>
+<p>Example:</p>
+<div class="language-text highlight"><pre><span></span><code>    For k-mer: AGCTCT
+    Memory: 6 bits * 2 = 12, 64 bits (8 bytes)
+    Let’s describe bytes:
+    data[0] = AGCT -&gt; 11 01 10 00 -&gt; 0xd8
+    data[1] = CT00 -&gt; 00 00 11 01 -&gt; 0x0d
+    data[2] = 0000 -&gt; 00 00 00 00 -&gt; 0x00
+    data[3] = 0000 -&gt; 00 00 00 00 -&gt; 0x00
+    data[4] = 0000 -&gt; 00 00 00 00 -&gt; 0x00
+    data[5] = 0000 -&gt; 00 00 00 00 -&gt; 0x00
+    data[6] = 0000 -&gt; 00 00 00 00 -&gt; 0x00
+    data[7] = 0000 -&gt; 00 00 00 00 -&gt; 0x00
+</code></pre></div>
+<p>Synopsis: <code>spades-kmercount [OPTION...] &lt;input files&gt;</code></p>
+<p>The options are:</p>
+<p><code>-d, --dataset file &lt;file name&gt;</code>
+    dataset description (in YAML format), input files ignored</p>
+<p><code>-k, --kmer &lt;int&gt;</code>
+    k-mer length (default: 21)</p>
+<p><code>-t, --threads &lt;int&gt;</code>
+    number of threads to use (default: number of CPUs)</p>
+<p><code>-w, --workdir &lt;dir name&gt;</code>
+    working directory to use (default: current directory)</p>
+<p><code>-b, --bufsize &lt;int&gt;</code>
+    sorting buffer size in bytes, per thread (default 536870912)</p>
+<p><code>-h, --help</code>
+    print help message</p>
+<h2 id="k-mer-coverage-read-filter">k-mer coverage read filter</h2>
+<p><code>spades-read-filter</code> is a tool for filtering reads with median kmer coverage less than threshold.</p>
+<p>To provide input data to SPAdes k-mer read filter tool <code>spades-read-filter</code> you should provide dataset description file in <a href="running.html#specifying-multiple-libraries-with-yaml-data-set-file">YAML format</a>.</p>
+<p>Synopsis: <code>spades-read-filter [OPTION...] -d &lt;yaml&gt;</code></p>
+<p>The options are:</p>
+<p><code>-d, --dataset file &lt;file name&gt;</code>
+    dataset description (in YAML format)</p>
+<p><code>-k, --kmer &lt;int&gt;</code>
+    k-mer length (default: 21)</p>
+<p><code>-t, --threads &lt;int&gt;</code>
+    number of threads to use (default: number of CPUs)</p>
+<p><code>-o, --outdir &lt;dir&gt;</code>
+    output directory to use (default: current directory)</p>
+<p><code>-c, --cov &lt;value&gt;</code>
+    median kmer count threshold (read pairs, s.t. kmer count median for BOTH reads LESS OR EQUAL to this value will be ignored)</p>
+<p><code>-h, --help</code>
+    print help message</p>
+<h2 id="k-mer-cardinality-estimating">k-mer cardinality estimating</h2>
+<p><code>spades-kmer-estimating</code> is a tool for estimating the approximate number of unique k-mers in the provided reads. Kmers from reverse-complementary reads aren"t taken into account for k-mer cardinality estimating.</p>
+<p>To provide input data to SPAdes k-mer cardinality estimating tool <code>spades-kmer-estimating</code> you should provide dataset description file in <a href="running.html#specifying-multiple-libraries-with-yaml-data-set-file">YAML format</a>.</p>
+<p>Synopsis: <code>spades-kmer-estimating [OPTION...] -d &lt;yaml&gt;</code></p>
+<p>The options are:</p>
+<p><code>-d, --dataset file &lt;file name&gt;</code>
+    dataset description (in YAML format)</p>
+<p><code>-k, --kmer &lt;int&gt;</code>
+    k-mer length (default: 21)</p>
+<p><code>-t, --threads &lt;int&gt;</code>
+    number of threads to use (default: number of CPUs)</p>
+<p><code>-h, --help</code>
+    print help message</p>
+<h2 id="graph-construction">Graph construction</h2>
+<p>Graph construction tool <code>spades-gbuilder</code> has two mandatory options: dataset description file in <a href="running.html#specifying-multiple-libraries-with-yaml-data-set-file">YAML format</a> and an output file name.</p>
+<p>Synopsis: <code>spades-gbuilder &lt;dataset description (in YAML)&gt; &lt;output filename&gt; [-k &lt;value&gt;] [-t &lt;value&gt;] [-tmpdir &lt;dir&gt;] [-b &lt;value&gt;] [-unitigs|-fastg|-gfa|-spades]</code></p>
+<p>Additional options are:</p>
+<p><code>-k &lt;int&gt;</code>
+    k-mer length used for construction (must be odd)</p>
+<p><code>-t &lt;int&gt;</code>
+    number of threads</p>
+<p><code>-tmp-dir &lt;dir_name&gt;</code>
+    scratch directory to use</p>
+<p><code>-b &lt;int&gt;</code>
+    sorting buffer size (per thread, in bytes)</p>
+<p><code>-unitigs</code>
+    k-mer length used for construction (must be odd)</p>
+<p><code>-fastg</code>
+    output graph in FASTG format</p>
+<p><code>-gfa</code>
+    output graph in GFA1 format</p>
+<p><code>-spades</code>
+    output graph in SPAdes internal format</p>
+<h2 id="graph-simplification">Graph simplification</h2>
+<p>Graph simplification tool <code>spades-gsimplifier</code> has four mandatory options: the first one is an input graph in GFA format, or a prefix of the SPAdes internal graph pack format created by setting <a href="running.html#pipeline-options">checkpoint options</a>. The second one is the prefix of the output simplified graph. The last two are the k-mer size and the read length.</p>
+<p>Synopsis: <code>spades-gsimplifier &lt;graph. In GFA (ending with .gfa) or prefix to SPAdes graph pack&gt; &lt;output prefix&gt; [--gfa] [--spades-gp] [--use-cov-ratios] -k &lt;value&gt; --read-length &lt;value&gt; [OPTION...]</code></p>
+<p>Additional options are:</p>
+<p><code>--gfa</code>
+    produce GFA output (default: true)</p>
+<p><code>--spades-gp</code> 
+    produce output graph pack in the SPAdes internal format (default: false)</p>
+<p><code>--use-cov-ratios</code> 
+    enable simplification procedures based on unitig coverage ratios (default: false)</p>
+<p><code>-k &lt;value&gt;</code>
+    k-mer length to use</p>
+<p><code>--read-length &lt;value&gt;</code>
+    read length to use</p>
+<p><code>-c, --coverage &lt;coverage&gt;</code>
+    estimated average (k+1-mer) bin coverage (default: 0.) or 'auto' (works only with '-d/--dead-ends' provided)</p>
+<p><code>-t, --threads &lt;value&gt;</code>
+    number of threads to use (default: max_threads / 2)</p>
+<p><code>-p, --profile &lt;file&gt;</code>
+    file with edge coverage profiles across multiple samples</p>
+<p><code>-s, --stop-codons &lt;file&gt;</code>
+    file with stop codon positions</p>
+<p><code>-d, --dead-ends &lt;file&gt;</code>
+    while processing a subgraph -- file listing edges which are dead-ends in the
+    original graph</p>
+<h2 id="graph-splitting">Graph splitting</h2>
+<p>Graph splitting tool <code>spades-gfa-split</code> partitions input assembly graph (provided in GFA format) into subgraphs corresponding to its undirected components (i.e. the components of the undirected graph that is obtained by ignoring the orientations of edges). GFA paths, if present, are preserved and splitted as well.</p>
+<p>Synopsis: <code>spades-gfa-split  &lt;graph (in GFA)&gt; &lt;output base&gt;</code></p>
+<p>The components will be emitted as <code>subgraph_NNN.gfa</code> files inside <code>&lt;output base&gt;</code> directory.</p>
+<h2 id="hybridspades-aligner">hybridSPAdes aligner</h2>
+<p><em>Not to be confused with <a href="spaligner.html">SPAligner</a>.</em></p>
+<p>A tool <code>spades-gmapper</code> gives the opportunity to extract long read alignments generated with hybridSPAdes pipeline options. It has three mandatory options: dataset description file in <a href="running.html#specifying-multiple-libraries-with-yaml-data-set-file">YAML format</a>, graph file in GFA format and an output file name.</p>
+<p>While <code>spades-gmapper</code> is a solution for those who work on hybridSPAdes assembly and
+want to get exactly its intermediate results, <a href="spaligner.html">SPAligner</a> is an end-product application for sequence-to-graph alignment with tunable parameters and output types.</p>
+<p>Synopsis: <code>spades-gmapper &lt;dataset description (in YAML)&gt; &lt;graph (in GFA)&gt; &lt;output filename&gt; [-k &lt;value&gt;] [-t &lt;value&gt;] [-tmpdir &lt;dir&gt;]</code></p>
+<p>Additional options are:</p>
+<p><code>-k &lt;int&gt;</code>
+    k-mer length that was used for graph construction</p>
+<p><code>-t &lt;int&gt;</code>
+    number of threads</p>
+<p><code>-tmpdir &lt;dir_name&gt;</code>
+    scratch directory to use</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": ".", "features": ["content.code.copy"], "search": "assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="assets/javascripts/bundle.c8b220af.min.js"></script>
+      
+    
+  </body>
+</html>
