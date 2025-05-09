@@ -584,7 +584,7 @@ class SimpleEdgeEntry : public EdgeEntry<Graph, SimpleBarcodeInfo> {
     friend class BarcodeIndexInfoExtractor<Graph, SimpleEdgeEntry>;
 protected:
     typedef typename Graph::EdgeId EdgeId;
-    using EdgeEntry<Graph, SimpleBarcodeInfo>::barcode_distribution_t;
+    typedef typename EdgeEntry<Graph, SimpleBarcodeInfo>::barcode_distribution_t barcode_distribution_t;
     using EdgeEntry<Graph, SimpleBarcodeInfo>::barcode_distribution_;
     using EdgeEntry<Graph, SimpleBarcodeInfo>::edge_;
 
@@ -636,7 +636,7 @@ class FrameEdgeEntry : public EdgeEntry<Graph, FrameBarcodeInfo> {
     friend class ConcurrentBarcodeIndexBuffer<Graph, FrameEdgeEntry>;
 protected:
     typedef typename Graph::EdgeId EdgeId;
-    using EdgeEntry<Graph, FrameBarcodeInfo>::barcode_distribution_t;
+    typedef typename EdgeEntry<Graph, FrameBarcodeInfo>::barcode_distribution_t barcode_distribution_t;
     using EdgeEntry<Graph, FrameBarcodeInfo>::barcode_distribution_;
     using EdgeEntry<Graph, FrameBarcodeInfo>::edge_;
     size_t edge_length_;
