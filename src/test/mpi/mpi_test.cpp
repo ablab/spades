@@ -11,9 +11,9 @@
 #include <vector>
 #include <mutex>
 
-#include "pipeline/partask_mpi.hpp"
+#include "mpi/pipeline/partask_mpi.hpp"
 
-#include "mpi/common/utils/logger/mpi_log_writers.hpp"
+#include "mpi/utils/logger/mpi_log_writers.hpp"
 
 void create_console_logger() {
     using namespace logging;
