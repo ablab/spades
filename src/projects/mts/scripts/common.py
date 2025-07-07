@@ -38,7 +38,7 @@ def fill_default_values(config):
     local_dir = config.get("LOCAL_DIR")
     if local_dir:
         default_values["bin"] = os.path.join(local_dir, "build/release/bin")
-        default_values["scripts"] = os.path.join(local_dir, "src/projects/mts/scripts")
+        default_values["supplemetary"] = os.path.join(local_dir, "src/projects/mts/supplemetary")
         default_values["assembly"]["dir"] = os.path.join(local_dir, "bin")
     setdefault_recursively(config)
     config["reassembly"].setdefault("dir", config["assembly"].get("dir"))

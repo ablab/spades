@@ -13,7 +13,7 @@ import sys
 
 from ..options_storage import OptionStorage
 options_storage = OptionStorage()
-import stage
+from . import stage
 from ..commands_parser import Command
 
 
@@ -21,7 +21,7 @@ class BreakingScaffoldsStage(stage.Stage):
     STAGE_NAME = "Breaking scaffolds"
 
     def get_command(self, cfg):
-        args = [os.path.join(self.python_modules_home, "spades_pipeline", "scripts", "breaking_scaffolds_script.py"),
+        args = [os.path.join(self.python_modules_home, "spades_pipeline", "supplemetary", "breaking_scaffolds_script.py"),
                 "--result_scaffolds_filename", self.output_files["result_scaffolds_filename"],
                 "--misc_dir", self.output_files["misc_dir"],
                 "--threshold_for_breaking_scaffolds", str(options_storage.THRESHOLD_FOR_BREAKING_SCAFFOLDS)]

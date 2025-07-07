@@ -233,7 +233,7 @@ if [ $RUN_TESTS = "y" ]; then
     "$WORK_DIR/bin/include_test"   ; set -e
     "$WORK_DIR/bin/debruijn_test"  ; set -e
   fi
-  SPADES="$BASEDIR"/spades.py
+  SPADES="$BASEDIR"/bin/spades.py
   "$SPADES" -t $AMOUNT_OF_THREADS --test              ; set -e
   "$SPADES" -t $AMOUNT_OF_THREADS --test --isolate    ; set -e
   "$SPADES" -t $AMOUNT_OF_THREADS --test --sc         ; set -e

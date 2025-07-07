@@ -8,7 +8,6 @@
 ############################################################################
 
 import os
-import sys
 
 from . import stage
 from .. import commands_parser

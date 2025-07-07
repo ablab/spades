@@ -13,7 +13,7 @@ import os
 from ..commands_parser import Command
 from ..process_cfg import process_spaces, bool_to_str, substitute_params
 from ..support import copy_tree
-import stage
+from . import stage
 from ..options_storage import OptionStorage
 options_storage = OptionStorage()
 

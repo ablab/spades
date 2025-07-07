@@ -15,8 +15,9 @@ import logging
 
 from ..commands_parser import Command
 from ..process_cfg import process_spaces, merge_configs
-from ..support import get_reads_length, get_primary_max_reads_length, warning, get_tmp_dir
-import stage
+from ..support import warning
+from ..file_operations import get_tmp_dir, get_reads_length, get_primary_max_reads_length
+from . import stage
 from .spades_iteration_stage import IterationStage
 from ..options_storage import OptionStorage
 options_storage = OptionStorage()
@@ -169,7 +170,7 @@ class PlasmidGlueFileStage(stage.Stage):
 
     def get_command(self, cfg):
         self.cfg = cfg
-        args = [os.path.join(self.python_modules_home, "spades_pipeline", "scripts", "plasmid_glue.py")]
+        args = [os.path.join(self.python_modules_home, "spades_pipeline", "supplemetary", "plasmid_glue.py")]
         args.append(self.latest)
         command = [Command(STAGE=self.STAGE_NAME,
                            path=sys.executable,
@@ -252,7 +253,7 @@ class SpadesCopyFileStage(stage.Stage):
     def get_command(self, cfg):
         self.cfg = cfg
         self.set_output_files()
-        args = [os.path.join(self.python_modules_home, "spades_pipeline", "scripts", "copy_files.py")]
+        args = [os.path.join(self.python_modules_home, "spades_pipeline", "supplemetary", "copy_files.py")]
         for outputfile in self.output:
             if outputfile.need_to_copy(outputfile, self.latest, self.cfg):
                 filename = os.path.join(self.latest, outputfile.tmp_file)

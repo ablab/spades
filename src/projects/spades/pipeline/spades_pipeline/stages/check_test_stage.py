@@ -13,7 +13,7 @@ import sys
 
 from ..options_storage import OptionStorage
 options_storage = OptionStorage()
-import stage
+from . import stage
 from ..commands_parser import Command
 
 
@@ -21,7 +21,7 @@ class CheckStageStage(stage.Stage):
     STAGE_NAME = "Check test"
 
     def get_command(self, cfg):
-        args = [os.path.join(self.python_modules_home, "spades_pipeline", "scripts", "check_test_script.py")]
+        args = [os.path.join(self.python_modules_home, "spades_pipeline", "supplemetary", "check_test_script.py")]
         if options_storage.args.rna:
             args += ["--mode", "rna", "--result_transcripts_filename", self.output_files["result_transcripts_filename"]]
         else:
