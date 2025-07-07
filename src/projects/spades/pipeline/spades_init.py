@@ -15,6 +15,7 @@ from os.path import abspath, dirname, realpath, join, isfile
 source_dirs = ["", "stages", "common", "executors", "scripts"]
 
 # developers configuration
+# FIXME doesn't really work
 spades_home = abspath(dirname(realpath(__file__)))
 spades_root = abspath(join(spades_home, "../../../../"))
 bin_home = join(spades_root, "bin")

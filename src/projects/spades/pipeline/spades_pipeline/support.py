@@ -168,14 +168,6 @@ def check_path_is_ascii(path, message=""):
         error("path contains non-ASCII characters: %s (%s)" % (path, message))
 
 
-# FIXME: "isfile" for dirname looks strange.
-def ensure_dir_existence(dirname):
-    if os.path.isfile(dirname):
-        os.remove(dirname)
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-
-
 def recreate_dir(dirname):
     if os.path.isdir(dirname):
         shutil.rmtree(dirname)
@@ -467,18 +459,6 @@ def log_warnings(logger_instance, with_error=False):
                 logger_instance.info(line)
         return True
     return False
-
-
-# FIXME: unused function?
-def continue_from_here(logger_instnace):
-    if options_storage.args.continue_mode:
-        options_storage.args.continue_mode = False
-        log_filename = get_logger_filename(logger_instnace)
-        if log_filename:
-            log_file = open(log_filename)
-            log_file.seek(0, 2)  # seek to the end of file
-            global continue_logfile_offset
-            continue_logfile_offset = log_file.tell()
 
 
 def get_latest_dir(pattern):
