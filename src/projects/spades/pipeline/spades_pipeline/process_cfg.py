@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import logging
 
 ############################################################################
 # Copyright (c) 2023-2024 SPAdes team
@@ -83,13 +84,13 @@ def vars_from_lines(lines):
     return vars
 
 
-def substitute_params(filename, var_dict, log):
+def substitute_params(filename, var_dict):
     lines = file_lines(filename)
     vars_in_file = vars_from_lines(lines)
 
     for var, value in var_dict.items():
         if var not in vars_in_file:
-            support.error("Couldn't find %s in %s" % (var, filename), log)
+            support.error("Couldn't find %s in %s" % (var, filename), logging.getLogger("spades"))
 
         meta = vars_in_file[var]
         lines[meta.line_num] = meta.indent + str(var) + " " + str(value) + "\n"

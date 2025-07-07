@@ -26,6 +26,9 @@ from os.path import abspath, expanduser, join
 import options_storage
 from common import SeqIO
 
+
+log = logging.getLogger("spades")
+
 # constants to print and detect warnings and errors in logs
 SPADES_PY_ERROR_MESSAGE = "== Error == "
 SPADES_PY_WARN_MESSAGE = "== Warning == "
@@ -40,19 +43,21 @@ only_old_style_options = True
 old_style_single_reads = False
 
 
-def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE, exit_code = -1):
+def error(err_str, logger_instance=None, prefix=SPADES_PY_ERROR_MESSAGE, exit_code=-1):
     binary_name = "SPAdes"
 
-    if log:
-        log.info("\n\n%s %s" % (prefix, err_str))
-        log_warnings(log, with_error=True)
-        log.info("\nIn case you have troubles running %s, you can report an issue on our GitHub repository github.com/ablab/spades" % binary_name)
-        log.info(
+    if logger_instance:
+        logger_instance.error("\n\n%s %s" % (prefix, err_str))
+        log_warnings(logger_instance, with_error=True)
+        logger_instance.info("\nIn case you have troubles running %s, you can report an issue on our GitHub repository "
+                             "github.com/ablab/spades" % binary_name)
+        logger_instance.info(
             "Please provide us with params.txt and %s.log files from the output directory." % binary_name.lower())
     else:
         sys.stderr.write("\n\n%s %s\n\n" % (prefix, err_str))
         sys.stderr.write(
-            "\nIn case you have troubles running %s, you can report an issue on our GitHub repository github.com/ablab/spades\n" % binary_name)
+            "\nIn case you have troubles running %s, you can report an issue on our GitHub repository "
+            "github.com/ablab/spades\n" % binary_name)
         sys.stderr.write(
             "Please provide us with params.txt and %s.log files from the output directory.\n" % binary_name.lower())
         sys.stderr.flush()
@@ -61,9 +66,9 @@ def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE, exit_code = -1):
     sys.exit(exit_code)
 
 
-def warning(warn_str, log=None, prefix="== Warning == "):
-    if log:
-        log.info("\n\n%s %s\n\n" % (prefix, warn_str))
+def warning(warn_str, logger_instance=None, prefix=SPADES_PY_WARN_MESSAGE):
+    if logger_instance:
+        logger_instance.warning("\n\n%s %s\n\n" % (prefix, warn_str))
     else:
         sys.stdout.write("\n\n%s %s\n\n\n" % (prefix, warn_str))
         sys.stdout.flush()
@@ -71,7 +76,6 @@ def warning(warn_str, log=None, prefix="== Warning == "):
 
 def wsl_check():
     def in_wsl():
-        #[2] -> .release in python3, but doesn't work in python2
         return 'microsoft' in uname()[2].lower()
 
     if in_wsl():
@@ -86,10 +90,10 @@ def get_error_hints(exit_code):
         return wsl_check()
 
 
-def sys_error(cmd, log, exit_code):
+def sys_error(cmd, logger_instance, exit_code):
     hints_str = get_error_hints(exit_code)
     err_msg = "system call for: \"%s\" finished abnormally, OS return value: %d\n%s" % (cmd, exit_code, hints_str)
-    error(err_msg, log, exit_code=exit_code)
+    error(err_msg, logger_instance, exit_code=exit_code)
 
 
 def check_python_version():
@@ -107,23 +111,23 @@ def get_spades_binaries_info_message():
            "\n2. Build source code with ./spades_compile.sh script"
 
 
-def check_binaries(binary_dir, log):
+def check_binaries(binary_dir):
     for binary in ["spades-hammer", "spades-ionhammer", "spades-core", "spades-bwa"]:
         binary_path = os.path.join(binary_dir, binary)
         if not os.path.isfile(binary_path):
             error("SPAdes binaries not found: %s\n%s" % (binary_path, get_spades_binaries_info_message()), log)
 
 
-def check_file_existence(input_filename, message="", log=None):
+def check_file_existence(input_filename, message="", logger_instance=None):
     filename = abspath(expanduser(input_filename))
     check_path_is_ascii(filename, message)
     if not os.path.isfile(filename):
-        error("file not found: %s (%s)" % (filename, message), log=log)
+        error("file not found: %s (%s)" % (filename, message), logger_instance=logger_instance)
     options_storage.dict_of_rel2abs[input_filename] = filename
     return filename
 
 
-def get_read_file_type(input_filename, log=None):
+def get_read_file_type(input_filename, logger_instance=None):
     if input_filename in options_storage.dict_of_prefixes:
         ext = options_storage.dict_of_prefixes[input_filename]
         file_type = SeqIO.get_read_file_type("filename" + ext)
@@ -131,30 +135,30 @@ def get_read_file_type(input_filename, log=None):
         file_type = SeqIO.get_read_file_type(input_filename)
 
     if not file_type:
-        error("incorrect extension of reads file: %s" % input_filename, log)
+        error("incorrect extension of reads file: %s" % input_filename, logger_instance)
     return file_type
 
 
-def check_file_not_empty(input_filename, message="", log=None):
+def check_file_not_empty(input_filename, message="", logger_instance=None):
     filename = abspath(expanduser(input_filename))
-    file_type = get_read_file_type(input_filename, log)
-    if (file_type == 'bam' or file_type == 'sra'):
+    file_type = get_read_file_type(input_filename, logger_instance)
+    if file_type == 'bam' or file_type == 'sra':
         return
     
     try:
         reads_iterator = SeqIO.parse(SeqIO.Open(filename, "r"), file_type)
         if next(reads_iterator, None) is None:
-            error("file is empty: %s (%s)" % (filename, message), log=log)
+            error("file is empty: %s (%s)" % (filename, message), logger_instance=logger_instance)
     except Exception as inst:
         error(inst.args[0].format(FILE=filename) + "\n\n" +
-              traceback.format_exc().format(FILE=filename), log=log)
+              traceback.format_exc().format(FILE=filename), logger_instance=logger_instance)
 
 
-def check_dir_existence(input_dirname, message="", log=None):
+def check_dir_existence(input_dirname, message="", logger_instance=None):
     dirname = abspath(expanduser(input_dirname))
     check_path_is_ascii(dirname, message)
     if not os.path.isdir(dirname):
-        error("directory not found: %s (%s)" % (dirname, message), log=log)
+        error("directory not found: %s (%s)" % (dirname, message), logger_instance=logger_instance)
     options_storage.dict_of_rel2abs[input_dirname] = dirname
     return dirname
 
@@ -178,13 +182,13 @@ def recreate_dir(dirname):
     os.makedirs(dirname)
 
 
-def check_files_duplication(filenames, log):
+def check_files_duplication(filenames):
     for filename in filenames:
         if filenames.count(filename) != 1:
             error("file %s was specified at least twice" % filename, log)
 
 
-def check_reads_file_format(filename, message, only_assembler, iontorrent, library_type, log):
+def check_reads_file_format(filename, message, only_assembler, iontorrent, library_type):
     if filename in options_storage.dict_of_prefixes:
         ext = options_storage.dict_of_prefixes[filename]
     else:
@@ -204,8 +208,8 @@ def check_reads_file_format(filename, message, only_assembler, iontorrent, libra
         error(", ".join(options_storage.IONTORRENT_ONLY_ALLOWED_READS_EXTENSIONS) +
               " formats supported only for iontorrent mode: %s (%s)" % (filename, message), log)
 
-    if not only_assembler and ext.lower() not in options_storage.BH_ALLOWED_READS_EXTENSIONS and \
-                    library_type not in options_storage.LONG_READS_TYPES:
+    if (not only_assembler and ext.lower() not in options_storage.BH_ALLOWED_READS_EXTENSIONS and
+            library_type not in options_storage.LONG_READS_TYPES):
         error("to run read error correction, reads should be in FASTQ format (%s are supported): %s (%s)" %
               (", ".join(options_storage.BH_ALLOWED_READS_EXTENSIONS), filename, message), log)
 
@@ -220,8 +224,8 @@ def check_reads_file_format(filename, message, only_assembler, iontorrent, libra
 
 # http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
 def which(program):
-    def is_exe(fpath):
-        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+    def is_exe(file_path):
+        return os.path.isfile(file_path) and os.access(file_path, os.X_OK)
 
     fpath, fname = os.path.split(program)
     if fpath:
@@ -271,13 +275,13 @@ def process_readline(line, utf8=True):
     return line.rstrip()
 
 
-def process_spaces(str):
-    if " " in str:
-        str = '"' + str + '"'
-    return str
+def process_spaces(string):
+    if " " in string:
+        string = '"' + string + '"'
+    return string
 
 
-def sys_call(cmd, log=None, cwd=None):
+def sys_call(cmd, logger_instance=None, cwd=None):
     import shlex
     import subprocess
 
@@ -292,8 +296,8 @@ def sys_call(cmd, log=None, cwd=None):
     while not proc.poll():
         line = process_readline(proc.stdout.readline())
         if line:
-            if log:
-                log.info(line)
+            if logger_instance:
+                logger_instance.info(line)
             else:
                 output += line + "\n"
         if proc.returncode is not None:
@@ -302,20 +306,18 @@ def sys_call(cmd, log=None, cwd=None):
     for line in proc.stdout.readlines():
         line = process_readline(line)
         if line:
-            if log:
-                log.info(line)
+            if logger_instance:
+                logger_instance.info(line)
             else:
                 output += line + "\n"
 
     if proc.returncode:
-        sys_error(cmd, log, proc.returncode)
+        sys_error(cmd, logger_instance, proc.returncode)
     return output
 
 
-def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None):
-    '''
-    Runs cmd and redirects stdout to out_filename (if specified), stderr to err_filename (if specified), or to log otherwise
-    '''
+def universal_sys_call(cmd, logger_instance, out_filename=None, err_filename=None, cwd=None):
+    # Runs cmd and redirects stdout to out_filename (if specified), stderr to err_filename (if specified), or to log otherwise
     import shlex
     import subprocess
 
@@ -335,27 +337,27 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
 
     proc = subprocess.Popen(cmd_list, stdout=stdout, stderr=stderr, cwd=cwd)
 
-    if log and (not out_filename or not err_filename):
+    if logger_instance and (not out_filename or not err_filename):
         while not proc.poll():
             if not out_filename:
                 line = process_readline(proc.stdout.readline())
                 if line:
-                    log.info(line)
+                    logger_instance.info(line)
             if not err_filename:
                 line = process_readline(proc.stderr.readline())
                 if line:
-                    log.info(line)
+                    logger_instance.info(line)
             if proc.returncode is not None:
                 break
 
         if not out_filename:
             for line in proc.stdout.readlines():
                 if line != "":
-                    log.info(process_readline(line))
+                    logger_instance.info(process_readline(line))
         if not err_filename:
             for line in proc.stderr.readlines():
                 if line != "":
-                    log.info(process_readline(line))
+                    logger_instance.info(process_readline(line))
     else:
         proc.wait()
 
@@ -364,7 +366,7 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
     if err_filename:
         stderr.close()
     if proc.returncode:
-        sys_error(cmd, log, proc.returncode)
+        sys_error(cmd, logger_instance, proc.returncode)
 
 
 def save_data_to_file(data, file):
@@ -375,9 +377,9 @@ def save_data_to_file(data, file):
 
 
 def get_important_messages_from_log(log_filename, warnings=True):
-    def already_saved(list_to_check, suffix):  # for excluding duplicates (--continue-from may cause them)
+    def already_saved(list_to_check, suffix_str):  # for excluding duplicates (--continue-from may cause them)
         for item in list_to_check:
-            if item.endswith(suffix):
+            if item.endswith(suffix_str):
                 return True
         return False
 
@@ -405,72 +407,73 @@ def get_important_messages_from_log(log_filename, warnings=True):
 
     spades_py_msgs = []
     spades_msgs = []
-    IMPORTANT_MESSAGE_SUMMARY_PREFIX = " * "
+    important_message_summary_prefix = " * "
     for line in lines_to_check:
-        if line.startswith(IMPORTANT_MESSAGE_SUMMARY_PREFIX):
+        if line.startswith(important_message_summary_prefix):
             continue
         if spades_py_message in line:
             suffix = line[line.find(spades_py_message) + len(spades_py_message):].strip()
             line = line.replace(spades_py_message, "").strip()
             if not already_saved(spades_py_msgs, suffix):
-                spades_py_msgs.append(IMPORTANT_MESSAGE_SUMMARY_PREFIX + line)
+                spades_py_msgs.append(important_message_summary_prefix + line)
         elif spades_message in line:
             suffix = line[line.find(spades_message) + len(spades_message):].strip()
             line = line.strip()
             if not already_saved(spades_msgs, suffix):
-                spades_msgs.append(IMPORTANT_MESSAGE_SUMMARY_PREFIX + line)
+                spades_msgs.append(important_message_summary_prefix + line)
     return spades_py_msgs, spades_msgs
 
 
-def get_logger_filename(log):
+def get_logger_filename(logger_instance):
     log_file = None
-    for h in log.__dict__["handlers"]:
+    for h in logger_instance.__dict__["handlers"]:
         if h.__class__.__name__ == "FileHandler":
             log_file = h.baseFilename
     return log_file
 
 
-def log_warnings(log, with_error=False):
-    log_file = get_logger_filename(log)
+def log_warnings(logger_instance, with_error=False):
+    log_file = get_logger_filename(logger_instance)
     if not log_file:
         return False
-    for h in log.__dict__["handlers"]:
+    for h in logger_instance.__dict__["handlers"]:
         h.flush()
     spades_py_warns, spades_warns = get_important_messages_from_log(log_file, warnings=True)
     if spades_py_warns or spades_warns:
         if with_error:
-            log.info("\n======= SPAdes pipeline finished abnormally and WITH WARNINGS!")
+            logger_instance.warning("\n======= SPAdes pipeline finished abnormally and WITH WARNINGS!")
         else:
-            log.info("\n======= SPAdes pipeline finished WITH WARNINGS!")
+            logger_instance.info("\n======= SPAdes pipeline finished WITH WARNINGS!")
         warnings_filename = os.path.join(os.path.dirname(log_file), "warnings.log")
         warnings_handler = logging.FileHandler(warnings_filename, mode='w')
-        log.addHandler(warnings_handler)
+        logger_instance.addHandler(warnings_handler)
         # log.info("===== Warnings occurred during SPAdes run =====")
-        log.info("")
+        logger_instance.info("")
         if spades_py_warns:
-            log.info("=== Pipeline warnings:")
+            logger_instance.info("=== Pipeline warnings:")
             for line in spades_py_warns:
-                log.info(line)
+                logger_instance.info(line)
         if spades_warns:
-            log.info("=== Error correction and assembling warnings:")
+            logger_instance.info("=== Error correction and assembling warnings:")
             for line in spades_warns:
-                log.info(line)
-        log.info("======= Warnings saved to " + warnings_filename)
-        log.removeHandler(warnings_handler)
+                logger_instance.info(line)
+        logger_instance.info("======= Warnings saved to " + warnings_filename)
+        logger_instance.removeHandler(warnings_handler)
         if with_error:
             spades_py_errors, spades_errors = get_important_messages_from_log(log_file, warnings=False)
-            log.info("")
-            log.info("=== ERRORs:")
+            logger_instance.info("")
+            logger_instance.info("=== ERRORs:")
             for line in (spades_errors + spades_py_errors):
-                log.info(line)
+                logger_instance.info(line)
         return True
     return False
 
 
-def continue_from_here(log):
+# FIXME: unused function?
+def continue_from_here(logger_instnace):
     if options_storage.args.continue_mode:
         options_storage.args.continue_mode = False
-        log_filename = get_logger_filename(log)
+        log_filename = get_logger_filename(logger_instnace)
         if log_filename:
             log_file = open(log_filename)
             log_file.seek(0, 2)  # seek to the end of file
@@ -549,6 +552,7 @@ def get_lib_type_and_number(option):
 
     return lib_type, lib_number
 
+
 def get_data_type(option):
     if option.endswith("-12"):
         data_type = "interlaced reads"
@@ -556,10 +560,7 @@ def get_data_type(option):
         data_type = "left reads"
     elif option.endswith("-2"):
         data_type = "right reads"
-    elif option.endswith("-s") or \
-         is_single_read_type(option) or \
-         get_long_reads_type(option) or \
-         get_graph_type(option):
+    elif option.endswith("-s") or is_single_read_type(option) or get_long_reads_type(option) or get_graph_type(option):
         data_type = "single reads"
     elif option.endswith("-m") or option.endswith("-merged"):
         data_type = "merged reads"
@@ -650,11 +651,11 @@ def relative2abs_paths(dataset_data, dirname):
     return abs_paths_dataset_data
 
 
-def get_reads_length(dataset_data, log, ignored_types,
+def get_reads_length(dataset_data, ignored_types,
                      used_types=options_storage.READS_TYPES_USED_IN_CONSTRUCTION,
                      num_checked=10 ** 4, diff_len_allowable=25):
-    max_reads_lenghts = [get_max_reads_length(reads_file, log, num_checked) for reads_file in
-                         get_reads_files(dataset_data, log, ignored_types, used_types)]
+    max_reads_lenghts = [get_max_reads_length(reads_file, num_checked) for reads_file in
+                         get_reads_files(dataset_data, ignored_types, used_types)]
 
     avg_len = sum(max_reads_lenghts) / len(max_reads_lenghts)
     for max_len in max_reads_lenghts:
@@ -665,16 +666,16 @@ def get_reads_length(dataset_data, log, ignored_types,
     return reads_length
 
 
-def get_primary_max_reads_length(dataset_data, log, ignored_types, used_types, num_checked=10 ** 4):
-    max_reads_lenghts = [get_max_reads_length(reads_file, log, num_checked) for reads_file in
-                         get_reads_files(dataset_data, log, ignored_types, used_types)]
+def get_primary_max_reads_length(dataset_data, ignored_types, used_types, num_checked=10 ** 4):
+    max_reads_lenghts = [get_max_reads_length(reads_file, num_checked) for reads_file in
+                         get_reads_files(dataset_data, ignored_types, used_types)]
 
     reads_length = max(max_reads_lenghts)
     log.info("\nReads length: %d\n" % reads_length)
     return reads_length
 
 
-def get_reads_files(dataset_data, log, ignored_types, used_types=None):
+def get_reads_files(dataset_data, ignored_types, used_types=None):
     for reads_library in dataset_data:
         if (used_types is not None) and reads_library["type"] not in used_types:
             continue
@@ -687,7 +688,7 @@ def get_reads_files(dataset_data, log, ignored_types, used_types=None):
                     yield reads_file
 
 
-def get_max_reads_length(reads_file, log, num_checked):
+def get_max_reads_length(reads_file, num_checked):
     file_type = get_read_file_type(reads_file, log)
     max_reads_length = 0
     if file_type == 'sra':
@@ -698,19 +699,19 @@ def get_max_reads_length(reads_file, log, num_checked):
                 [len(rec) for rec in itertools.islice(SeqIO.parse(SeqIO.Open(reads_file, "r"), file_type), num_checked)])
         except Exception as inst:
             error(inst.args[0].format(FILE=reads_file) + "\n\n" +
-                  traceback.format_exc().format(FILE=reads_file), log=log)
+                  traceback.format_exc().format(FILE=reads_file), logger_instance=log)
         else:
             log.info("%s: max reads length: %s" % (reads_file, str(max_reads_length)))
     return max_reads_length
 
 
-def check_dataset_reads(dataset_data, only_assembler, iontorrent, log):
+def check_dataset_reads(dataset_data, only_assembler, iontorrent):
     all_files = []
-    for id, reads_library in enumerate(dataset_data):
+    for lib_id, reads_library in enumerate(dataset_data):
         left_number = 0
         right_number = 0
         if "number" not in reads_library:
-            reads_library["number"] = id + 1
+            reads_library["number"] = lib_id + 1
 
         for key, value in reads_library.items():
             if key.endswith("reads"):
@@ -720,7 +721,7 @@ def check_dataset_reads(dataset_data, only_assembler, iontorrent, log):
                                          (key, reads_library["number"], reads_library["type"]), log)
                     check_reads_file_format(reads_file, "%s, library number: %d, library type: %s" %
                                             (key, reads_library["number"], reads_library["type"]), only_assembler, iontorrent,
-                                            reads_library["type"], log)
+                                            reads_library["type"])
                     if reads_library["type"] in options_storage.READS_TYPES_USED_IN_CONSTRUCTION:
                         check_file_not_empty(reads_file,
                                              "%s, library number: %d, library type: %s" %
@@ -732,17 +733,16 @@ def check_dataset_reads(dataset_data, only_assembler, iontorrent, log):
                 elif key == "right reads":
                     right_number = len(value)
 
-
         if left_number != right_number:
             error("the number of files with left paired reads is not equal to the number of files "
                   "with right paired reads (library number: %d, library type: %s)!" %
-                  (id + 1, reads_library["type"]), log)
+                  (lib_id + 1, reads_library["type"]), log)
     if not len(all_files):
         error("you should specify at least one file with reads!", log)
-    check_files_duplication(all_files, log)
+    check_files_duplication(all_files)
 
 
-def check_single_reads_in_options(log):
+def check_single_reads_in_options():
     if not only_old_style_options and old_style_single_reads:
         warning("it is recommended to specify single reads with --pe<#>-s, --mp<#>-s, --hqmp<#>-s, "
                 "or --s<#> option instead of -s!", log)
@@ -752,24 +752,24 @@ def get_lib_ids_by_type(dataset_data, types):
     if type(types) is not list:
         types = [types]
     lib_ids = []
-    for id, reads_library in enumerate(dataset_data):
+    for lib_id, reads_library in enumerate(dataset_data):
         if reads_library["type"] in types:
-            lib_ids.append(id)
+            lib_ids.append(lib_id)
     return lib_ids
 
 
 def get_libs_by_type(dataset_data, types):
     ids = get_lib_ids_by_type(dataset_data, types)
     result = []
-    for id in ids:
-        result.append(dataset_data[id])
+    for lib_id in ids:
+        result.append(dataset_data[lib_id])
     return result
 
 
 def rm_libs_by_type(dataset_data, types):
     ids = get_lib_ids_by_type(dataset_data, types)
-    for id in sorted(ids, reverse=True):
-        del dataset_data[id]
+    for lib_id in sorted(ids, reverse=True):
+        del dataset_data[lib_id]
     return dataset_data
 
 
@@ -804,19 +804,18 @@ def dataset_has_additional_contigs(dataset_data):
     return False
 
 
-def pretty_print_reads(dataset_data, log, indent="    "):
-    READS_TYPES = ["left reads", "right reads", "interlaced reads", "single reads", "merged reads"]
-    for id, reads_library in enumerate(dataset_data):
-        log.info(indent + "Library number: %d, library type: %s" % (id + 1, reads_library["type"]))
+def pretty_print_reads(dataset_data, indent="    "):
+    read_types = ["left reads", "right reads", "interlaced reads", "single reads", "merged reads"]
+    for lib_id, reads_library in enumerate(dataset_data):
+        log.info(indent + "Library number: %d, library type: %s" % (lib_id + 1, reads_library["type"]))
         if "orientation" in reads_library:
             log.info("%s  orientation: %s" % (indent, reads_library["orientation"]))
-        for reads_type in READS_TYPES:
+        for reads_type in read_types:
             if reads_type not in reads_library:
                 value = "not specified"
             else:
                 value = str(reads_library[reads_type])
             log.info("%s  %s: %s" % (indent, reads_type, value))
-
 
 # END: for processing YAML files
 
@@ -859,7 +858,7 @@ def write_fasta(filename, fasta):
 def break_scaffolds(input_filename, threshold, replace_char="N", gzipped=False):
     new_fasta = []
     modified = False
-    for id, (name, seq) in enumerate(read_fasta(input_filename, gzipped)):
+    for lib_id, (name, seq) in enumerate(read_fasta(input_filename, gzipped)):
         i = 0
         cur_contig_number = 1
         cur_contig_start = 0
@@ -896,7 +895,7 @@ def rev_comp(seq):
 def get_contig_id(s):
     values = s.split("_")
     if len(values) < 2 or (values[0] != ">NODE" and values[0] != "NODE"):
-        warning("contig %s has unknown ID format" % (s))
+        warning("contig %s has unknown ID format" % s)
         return None
     if "'" in s:
         return values[1] + "'"
@@ -935,7 +934,7 @@ def add_user_write_permission_recursive(path):
             os.chmod(d, s.st_mode | stat.S_IWUSR | stat.S_IRUSR)
         for f in files:
             f = os.path.join(root, f)
-            s = os.stat(d)
+            s = os.stat(f)
             os.chmod(f, s.st_mode | stat.S_IWUSR | stat.S_IRUSR)
 
 
@@ -951,7 +950,7 @@ def copy_tree(src, dst, preserve_times=True, preserve_mode=True):
         shutil.rmtree(dst)
 
     # shutil.copytree preserves the timestamp, so we must update it afterwards.
-    shutil.copytree(src, dst, copy_function = copy_fn)
+    shutil.copytree(src, dst, copy_function=copy_fn)
     if not preserve_mode:
         add_user_write_permission_recursive(dst)
 

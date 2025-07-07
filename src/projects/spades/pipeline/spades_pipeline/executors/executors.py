@@ -56,14 +56,14 @@ class ExecutorCluster(ExecutorBase):
     grid_engine_kill_command = None
 
     def join(self, job_name):
-        support.sys_call(self.grid_engine_wait_command.format(JOB_NAME=job_name), log=self.log)
+        support.sys_call(self.grid_engine_wait_command.format(JOB_NAME=job_name), logger_instance=self.log)
 
     def kill(self, job_name):
         # support.sys_call(self.grid_engine_kill_command.format(JOB_NAME=job_name), log=self.log)
         os.system(self.grid_engine_kill_command.format(JOB_NAME=job_name))
 
     def run_cluster_command(self, cmd, uuid):
-        support.sys_call(cmd, log=self.log)
+        support.sys_call(cmd, logger_instance=self.log)
         return uuid
 
     def execute(self, commands):

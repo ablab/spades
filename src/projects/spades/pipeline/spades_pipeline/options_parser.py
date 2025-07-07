@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 ############################################################################
 # Copyright (c) 2023-2024 SPAdes team
 # Copyright (c) 2019-2022 Saint Petersburg State University
@@ -13,10 +12,15 @@ import argparse
 from gettext import gettext
 from os.path import basename
 from os.path import abspath, expanduser
+import logging
 
 import support
 import options_storage
 from process_cfg import empty_config
+
+
+log = logging.getLogger("spades")
+
 
 def get_mode():
     mode = None
@@ -80,7 +84,6 @@ def add_mode_to_args(args):
         args.meta = True
         args.rnaviral = True
         args.corona = True
-
 
 
 def version():
@@ -876,7 +879,7 @@ def create_parser():
     return parser
 
 
-def check_options_for_restart_from(log):
+def check_options_for_restart_from():
     if ("dataset_data" in options_storage.args) and (options_storage.args.dataset_data is not None):
         support.error("you cannot specify input data (-1, -2, -12, --pe-1, --pe-2 ...) with --restart-from option!", log)
     if options_storage.args.dataset_yaml_filename:
@@ -900,9 +903,10 @@ def check_options_for_restart_from(log):
     if options_storage.args.strand_specificity is not None:
         support.error("you cannot specify strand specificity (--ss-rf or --ss-fr) with --restart-from option!", log)
 
-def add_to_option(args, log, skip_output_dir):
+
+def add_to_option(args, skip_output_dir):
     if args.restart_from:
-        check_options_for_restart_from(log)
+        check_options_for_restart_from()
 
     add_mode_to_args(options_storage.args)
 
@@ -973,7 +977,7 @@ def add_to_option(args, log, skip_output_dir):
         args.only_assembler = True
 
 
-def add_to_cfg(cfg, log, bin_home, spades_home, args):
+def add_to_cfg(cfg, bin_home, spades_home, args):
     ### FILLING cfg
     cfg["common"] = empty_config()
     cfg["dataset"] = empty_config()
@@ -1067,7 +1071,7 @@ def add_to_cfg(cfg, log, bin_home, spades_home, args):
         cfg["mismatch_corrector"].__dict__["output-dir"] = args.output_dir
 
 
-def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dataset, restart_from, options=None):
+def postprocessing(args, dataset_data, spades_home, load_processed_dataset, restart_from, options=None):
     import pyyaml3 as pyyaml
 
     if args.test_mode:
@@ -1161,7 +1165,7 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
 
     args.dataset_yaml_filename = processed_dataset_fpath
 
-    support.check_dataset_reads(dataset_data, (args.only_assembler or args.rna), args.iontorrent, log)
+    support.check_dataset_reads(dataset_data, (args.only_assembler or args.rna), args.iontorrent)
     if not support.get_lib_ids_by_type(dataset_data, options_storage.READS_TYPES_USED_IN_CONSTRUCTION):
         support.error("you should specify at least one unpaired, paired-end, or high-quality mate-pairs library!")
     if args.rna:
@@ -1190,7 +1194,7 @@ def postprocessing(args, cfg, dataset_data, log, spades_home, load_processed_dat
     return dataset_data
 
 
-def parse_args(log, bin_home, spades_home, secondary_filling, restart_from=False, options=None):
+def parse_args(bin_home, spades_home, secondary_filling, restart_from=False, options=None):
     cfg = dict()
     parser = create_parser()
 
@@ -1216,19 +1220,19 @@ def parse_args(log, bin_home, spades_home, secondary_filling, restart_from=False
         options_storage.args.output_dir = old_output_dir
         options_storage.args.stop_after = old_stop_after
 
-    add_to_option(options_storage.args, log, skip_output_dir)
+    add_to_option(options_storage.args, skip_output_dir)
 
     if "dataset_data" in options_storage.args:
         dataset_data = options_storage.args.dataset_data
     else:
         dataset_data = init_dataset_data()
-    dataset_data = postprocessing(options_storage.args, cfg, dataset_data, log, spades_home,
+    dataset_data = postprocessing(options_storage.args, dataset_data, spades_home,
                                   load_processed_dataset, restart_from, options)
 
     if options_storage.args.continue_mode:
         return options_storage.args, None, None
 
-    add_to_cfg(cfg, log, bin_home, spades_home, options_storage.args)
+    add_to_cfg(cfg, bin_home, spades_home, options_storage.args)
     return options_storage.args, cfg, dataset_data
 
 

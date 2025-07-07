@@ -38,13 +38,17 @@ import options_parser
 from stages.pipeline import Pipeline
 import executor_save_yaml
 
-def print_used_values(cfg, log):
-    def print_value(cfg, section, param, pretty_param="", margin="  "):
+
+log = logging.getLogger("spades")
+
+
+def print_used_values(cfg):
+    def print_value(config, section, param, pretty_param="", margin="  "):
         if not pretty_param:
             pretty_param = param.capitalize().replace('_', ' ')
         line = margin + pretty_param
-        if param in cfg[section].__dict__:
-            line += ": " + str(cfg[section].__dict__[param])
+        if param in config[section].__dict__:
+            line += ": " + str(config[section].__dict__[param])
         else:
             if "offset" in param:
                 line += " will be auto-detected"
@@ -105,15 +109,15 @@ def print_used_values(cfg, log):
             log.info("  Single-cell mode")
         else:
             log.info("  Standard mode")
-            log.info("  For multi-cell/isolate data we recommend to use '--isolate' option;" \
-                     " for single-cell MDA data use '--sc';" \
-                     " for metagenomic data use '--meta';" \
+            log.info("  For multi-cell/isolate data we recommend to use '--isolate' option;"
+                     " for single-cell MDA data use '--sc';"
+                     " for metagenomic data use '--meta';"
                      " for RNA-Seq use '--rna'.")
 
         log.info("  Reads:")
         dataset_data = pyyaml.load(open(cfg["dataset"].yaml_filename))
         dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(cfg["dataset"].yaml_filename))
-        support.pretty_print_reads(dataset_data, log)
+        support.pretty_print_reads(dataset_data)
 
     # error correction
     if "error_correction" in cfg:
@@ -166,15 +170,11 @@ def print_used_values(cfg, log):
 
 
 def create_logger():
-    log = logging.getLogger("spades")
     log.setLevel(logging.DEBUG)
-
-
     console = logging.StreamHandler(sys.stdout)
     console.setFormatter(logging.Formatter("%(message)s"))
     console.setLevel(logging.DEBUG)
     log.addHandler(console)
-    return log
 
 
 def check_cfg_for_partial_run(cfg, partial_run_type="restart-from"):  # restart-from ot stop-after
@@ -238,8 +238,8 @@ def get_options_from_params(params_filename, running_script):
 
 
 # parse options and safe all parameters to cfg
-def parse_args(args, log):
-    options, cfg, dataset_data = options_parser.parse_args(log, bin_home, spades_home,
+def parse_args(args):
+    options, cfg, dataset_data = options_parser.parse_args(bin_home, spades_home,
                                                            secondary_filling=False, restart_from=False)
 
     command_line = ""
@@ -251,7 +251,7 @@ def parse_args(args, log):
             args[0])
         if err_msg:
             support.error(err_msg + " Please restart from the beginning or specify another output directory.")
-        options, cfg, dataset_data = options_parser.parse_args(log, bin_home, spades_home, secondary_filling=True,
+        options, cfg, dataset_data = options_parser.parse_args(bin_home, spades_home, secondary_filling=True,
                                                                restart_from=(options_storage.args.restart_from is not None),
                                                                options=options)
 
@@ -264,17 +264,17 @@ def parse_args(args, log):
     if options_storage.args.stop_after:
         check_cfg_for_partial_run(cfg, partial_run_type="stop-after")
 
-    support.check_single_reads_in_options(log)
+    support.check_single_reads_in_options()
     return cfg, dataset_data, command_line
 
 
-def add_file_to_log(cfg, log):
+def add_file_to_log(cfg, log_intance):
     log_filename = os.path.join(cfg["common"].output_dir, "spades.log")
     if options_storage.args.continue_mode:
         log_handler = logging.FileHandler(log_filename, mode='a')
     else:
         log_handler = logging.FileHandler(log_filename, mode='w')
-    log.addHandler(log_handler)
+    log_intance.addHandler(log_handler)
     return log_filename, log_handler
 
 
@@ -304,7 +304,7 @@ def get_command_line(args):
     return command
 
 
-def print_params(log, log_filename, command_line, args, cfg):
+def print_params(log_filename, command_line, args, cfg):
     if options_storage.args.continue_mode:
         log.info("\n======= SPAdes pipeline continued. Log can be found here: " + log_filename + "\n")
         log.info("Restored from " + command_line)
@@ -324,12 +324,11 @@ def print_params(log, log_filename, command_line, args, cfg):
     else:
         log.info(command_line)
 
-
-    print_used_values(cfg, log)
+    print_used_values(cfg)
     log.removeHandler(params_handler)
 
 
-def clear_configs(cfg, log, command_before_restart_from, stage_id_before_restart_from):
+def clear_configs(cfg, command_before_restart_from, stage_id_before_restart_from):
     def matches_with_restart_from_arg(stage, restart_from_arg):
         return stage["short_name"].startswith(restart_from_arg.split(":")[0])
 
@@ -344,8 +343,8 @@ def clear_configs(cfg, log, command_before_restart_from, stage_id_before_restart
             restart_from_stage_id = num
             break
 
-    if command_before_restart_from is not None and \
-                    old_pipeline[stage_id_before_restart_from]["short_name"] != command_before_restart_from.short_name:
+    if (command_before_restart_from is not None and
+            old_pipeline[stage_id_before_restart_from]["short_name"] != command_before_restart_from.short_name):
         support.error("new and old pipelines have difference before %s" % options_storage.args.restart_from, log)
 
     if command_before_restart_from is None:
@@ -382,7 +381,7 @@ def get_first_incomplete_command(filename):
     return None
 
 
-def get_command_and_stage_id_before_restart_from(draft_commands, cfg, log):
+def get_command_and_stage_id_before_restart_from(draft_commands):
     restart_from_stage_name = options_storage.args.restart_from.split(":")[0]
 
     if options_storage.args.restart_from == options_storage.LAST_STAGE:
@@ -417,7 +416,7 @@ def get_command_and_stage_id_before_restart_from(draft_commands, cfg, log):
     return None, None
 
 
-def print_info_about_output_files(cfg, log, output_files):
+def print_info_about_output_files(cfg, output_files):
     def check_and_report_output_file(output_file_key, message_prefix_text, error_message = ""):
         if os.path.isfile(output_files[output_file_key]):
             message = message_prefix_text + support.process_spaces(output_files[output_file_key])
@@ -491,7 +490,7 @@ def get_output_files(cfg):
     output_files["result_sewage_lineages_filename"] = os.path.join(cfg["common"].output_dir, options_storage.sewage_lineages)
     output_files["result_gene_clusters_filename"] = os.path.join(cfg["common"].output_dir, options_storage.scaffolds_name)
     output_files["misc_dir"] = os.path.join(cfg["common"].output_dir, "misc")
-    ### if mismatch correction is enabled then result contigs are copied to misc directory
+    # if mismatch correction is enabled then result contigs are copied to misc directory
     output_files["assembled_contigs_filename"] = os.path.join(output_files["misc_dir"], "assembled_contigs.fasta")
     output_files["assembled_scaffolds_filename"] = os.path.join(output_files["misc_dir"], "assembled_scaffolds.fasta")
     if options_storage.hmm_mode():
@@ -499,7 +498,7 @@ def get_output_files(cfg):
         output_files["result_scaffolds_paths_filename"] = os.path.join(cfg["common"].output_dir,
                                                                        options_storage.secondary_scaffolds_paths)
         output_files["result_contigs_filename"] = os.path.join(cfg["common"].output_dir,
-                                                                       options_storage.secondary_contigs_name)
+                                                               options_storage.secondary_contigs_name)
 
     return output_files
 
@@ -508,10 +507,10 @@ def get_stage(iteration_name):
     if not options_storage.args.continue_mode:
         return options_storage.BASE_STAGE
 
-    if options_storage.args.restart_from is not None and \
-                    options_storage.args.restart_from != options_storage.LAST_STAGE:
-        if ":" in options_storage.args.restart_from and \
-                        iteration_name == options_storage.args.restart_from.split(":")[0]:
+    if (options_storage.args.restart_from is not None and
+            options_storage.args.restart_from != options_storage.LAST_STAGE):
+        if (":" in options_storage.args.restart_from and
+                iteration_name == options_storage.args.restart_from.split(":")[0]):
             return options_storage.args.restart_from.split(":")[-1]
         else:
             return options_storage.BASE_STAGE
@@ -530,7 +529,7 @@ def get_stage(iteration_name):
         return options_storage.BASE_STAGE
 
 
-def build_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
+def build_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
                    ext_python_modules_home, python_modules_home):
     from stages import before_start_stage
     from stages import error_correction_stage
@@ -541,33 +540,33 @@ def build_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, l
     from stages import preprocess_reads_stage
     from stages import terminating_stage
 
-    before_start_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
+    before_start_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
+                                       ext_python_modules_home, python_modules_home)
+    preprocess_reads_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
                                            ext_python_modules_home, python_modules_home)
-    preprocess_reads_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
-                                           ext_python_modules_home, python_modules_home)
-    error_correction_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
+    error_correction_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
                                            ext_python_modules_home, python_modules_home)
 
     get_stage.cfg, get_stage.restart_stage = cfg, None
-    spades_stage.add_to_pipeline(pipeline, get_stage, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
+    spades_stage.add_to_pipeline(pipeline, get_stage, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
                                  ext_python_modules_home, python_modules_home)
-    correction_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
+    correction_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
                                      ext_python_modules_home, python_modules_home)
-    check_test_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
+    check_test_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
                                      ext_python_modules_home, python_modules_home)
-    breaking_scaffolds_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
+    breaking_scaffolds_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
                                              ext_python_modules_home, python_modules_home)
-    terminating_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
+    terminating_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
                                          ext_python_modules_home, python_modules_home)
 
-def get_executor(log):
+def get_executor():
     import importlib
     module_name = "executor_" + options_storage.args.grid_engine
     executor_module = importlib.import_module(module_name)
     return executor_module.Executor(log)
 
 
-def get_sh_dump_executor(log):
+def get_sh_dump_executor():
     if options_storage.args.grid_engine == "local":
         return executor_save_yaml.Executor(log)
     else:
@@ -614,35 +613,35 @@ def main(args):
     executor = None
     pipeline = Pipeline()
 
-    log = create_logger()
-    cfg, dataset_data, command_line = parse_args(args, log)
+    create_logger()
+    cfg, dataset_data, command_line = parse_args(args)
     log_filename, log_handler = add_file_to_log(cfg, log)
-    print_params(log, log_filename, command_line, args, cfg)
+    print_params(log_filename, command_line, args, cfg)
 
     if not options_storage.args.continue_mode:
         log.info("\n======= SPAdes pipeline started. Log can be found here: " + log_filename + "\n")
 
-    support.check_binaries(bin_home, log)
+    support.check_binaries(bin_home)
     try:
         output_files = get_output_files(cfg)
         tmp_configs_dir = os.path.join(cfg["common"].output_dir, "configs")
 
-        build_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log,
+        build_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data,
                        bin_home, ext_python_modules_home, python_modules_home)
 
         if options_storage.args.restart_from:
             draft_commands = pipeline.get_commands(cfg)
             command_before_restart_from, stage_id_before_restart_from = \
-                get_command_and_stage_id_before_restart_from(draft_commands, cfg, log)
-            clear_configs(cfg, log, command_before_restart_from, stage_id_before_restart_from)
+                get_command_and_stage_id_before_restart_from(draft_commands)
+            clear_configs(cfg, command_before_restart_from, stage_id_before_restart_from)
 
         pipeline.generate_configs(cfg, spades_home, tmp_configs_dir)
         commands = pipeline.get_commands(cfg)
 
-        executor = get_sh_dump_executor(log)
+        executor = get_sh_dump_executor()
         executor.execute(commands)
 
-        executor = get_executor(log)
+        executor = get_executor()
         if options_storage.args.grid_engine != "local":
             executor.dump_commands(commands, os.path.join(options_storage.args.output_dir, "run_spades_on_cluster.sh"))
 
@@ -664,7 +663,7 @@ def main(args):
                     (options_storage.args.grid_wait or options_storage.args.grid_engine == "local")
         if is_result:
             # TODO make it executor method executor.is_fake()
-            print_info_about_output_files(cfg, log, output_files)
+            print_info_about_output_files(cfg, output_files)
 
         if not support.log_warnings(log):
             if is_result:
@@ -690,7 +689,7 @@ def main(args):
             else:
                 log.exception(exc_value)
                 support.error("exception caught: %s" % exc_type, log)
-    except BaseException:  # since python 2.5 system-exiting exceptions (e.g. KeyboardInterrupt) are derived from BaseException
+    except BaseException:
         exc_type, exc_value, _ = sys.exc_info()
         if exc_type == SystemExit:
             sys.exit(exc_value)

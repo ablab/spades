@@ -23,7 +23,7 @@ from support import copy_tree
 
 
 class ECRunningToolStage(stage.Stage):
-    def prepare_config_bh(self, filename, cfg, log):
+    def prepare_config_bh(self, filename, cfg):
         subst_dict = dict()
         subst_dict["dataset"] = process_cfg.process_spaces(cfg.dataset_yaml_filename)
         subst_dict["input_working_dir"] = process_cfg.process_spaces(cfg.tmp_dir)
@@ -41,7 +41,7 @@ class ECRunningToolStage(stage.Stage):
             subst_dict["count_filter_singletons"] = cfg.count_filter_singletons
         if "read_buffer_size" in cfg.__dict__:
             subst_dict["count_split_buffer"] = cfg.read_buffer_size
-        process_cfg.substitute_params(filename, subst_dict, log)
+        process_cfg.substitute_params(filename, subst_dict)
 
     def prepare_config_ih(self, filename, cfg, ext_python_modules_home):
         addsitedir(ext_python_modules_home)
@@ -71,7 +71,7 @@ class ECRunningToolStage(stage.Stage):
         if cfg.iontorrent:
             self.prepare_config_ih(cfg_file_name, cfg, self.ext_python_modules_home)
         else:
-            self.prepare_config_bh(cfg_file_name, cfg, self.log)
+            self.prepare_config_bh(cfg_file_name, cfg)
 
     def get_command(self, cfg):
         dst_configs = os.path.join(cfg.output_dir, "configs")
@@ -127,11 +127,11 @@ class ErrorCorrectionStage(stage.Stage):
         self.cfg.not_used_dataset_yaml_filename = ""
         self.stages.append(ECRunningToolStage("ec_runtool",
                                               self.output_files, self.tmp_configs_dir, self.dataset_data,
-                                              self.log, self.bin_home, self.ext_python_modules_home,
+                                              self.bin_home, self.ext_python_modules_home,
                                               self.python_modules_home))
         self.stages.append(
             ErrorCorrectionCompressingStage("ec_compress",
-                                            self.output_files, self.tmp_configs_dir, self.dataset_data, self.log,
+                                            self.output_files, self.tmp_configs_dir, self.dataset_data,
                                             self.bin_home, self.ext_python_modules_home,
                                             self.python_modules_home))
 
@@ -180,8 +180,8 @@ class ErrorCorrectionStage(stage.Stage):
                                         short_name=self.short_name + "_finish")]
 
 
-def add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log,
+def add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data,
                     bin_home, ext_python_modules_home, python_modules_home):
     if "error_correction" in cfg:
         pipeline.add(ErrorCorrectionStage(cfg, "ec", output_files, tmp_configs_dir,
-                                          dataset_data, log, bin_home, ext_python_modules_home, python_modules_home))
+                                          dataset_data, bin_home, ext_python_modules_home, python_modules_home))

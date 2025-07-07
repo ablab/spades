@@ -32,8 +32,8 @@ class BreakingScaffoldsStage(stage.Stage):
                                         short_name=self.short_name)]
 
 
-def add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log,
+def add_to_pipeline(pipeline, _, output_files, tmp_configs_dir, dataset_data,
                     bin_home, ext_python_modules_home, python_modules_home):
     pipeline.add(BreakingScaffoldsStage("bs", output_files,
-                                        tmp_configs_dir, dataset_data, log, bin_home,
+                                        tmp_configs_dir, dataset_data, bin_home,
                                         ext_python_modules_home, python_modules_home))

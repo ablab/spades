@@ -12,13 +12,14 @@ import os
 import sys
 from os.path import abspath, dirname, realpath, join, isfile
 
-source_dirs = ["", "truspades", "common", "executors", "scripts"]
+source_dirs = ["", "stages", "common", "executors", "scripts"]
 
 # developers configuration
 spades_home = abspath(dirname(realpath(__file__)))
-bin_home = join(spades_home, "bin")
-python_modules_home = join(spades_home, "src")
-ext_python_modules_home = join(spades_home, "ext", "src", "python_libs")
+spades_root = abspath(join(spades_home, "../../../../"))
+bin_home = join(spades_root, "bin")
+python_modules_home = join(spades_root, "src", "projects", "spades", "pipeline")
+ext_python_modules_home = join(spades_root, "ext", "src", "python_libs")
 spades_version = ""
 
 
@@ -28,19 +29,22 @@ def init():
     global python_modules_home
     global spades_version
     global ext_python_modules_home
+    global spades_root
 
-    # users configuration (spades_init.py and spades binary are in the same directory)
     if isfile(os.path.join(spades_home, "spades-core")):
+        # users configuration (spades_init.py and spades binary are in the same directory)
         install_prefix = dirname(spades_home)
         bin_home = join(install_prefix, "bin")
         spades_home = join(install_prefix, "share", "spades")
         python_modules_home = spades_home
         ext_python_modules_home = spades_home
+        spades_version = open(join(spades_home, "VERSION"), 'r').readline().strip()
+    else:
+        spades_version = open(join(spades_root, "VERSION"), 'r').readline().strip()
 
+    sys.path.append(join(python_modules_home, "spades_pipeline"))
     for dir in source_dirs:
         sys.path.append(join(python_modules_home, "spades_pipeline", dir))
-
-    spades_version = open(join(spades_home, "VERSION"), 'r').readline().strip()
 
 
 if __name__ == "__main__":
