@@ -18,6 +18,10 @@ source_dirs = ["", "stages", "common", "executors", "scripts"]
 # FIXME doesn't really work
 spades_home = abspath(dirname(realpath(__file__)))
 spades_root = abspath(join(spades_home, "../../../../"))
+config_dirs = [(join(spades_root, "src", "projects", "spades", "configs"), "debruijn"),
+               (join(spades_root, "src", "projects", "ionhammer", "configs"), "ionhammer"),
+               (join(spades_root, "src", "projects", "hammer", "configs"), "hammer"),
+               (join(spades_root, "src", "projects", "corrector", "configs"), "corrector")]
 bin_home = join(spades_root, "bin")
 python_modules_home = join(spades_root, "src", "projects", "spades", "pipeline")
 ext_python_modules_home = join(spades_root, "ext", "src", "python_libs")
@@ -27,6 +31,7 @@ spades_version = ""
 def init():
     global spades_home
     global bin_home
+    global config_dirs
     global python_modules_home
     global spades_version
     global ext_python_modules_home
@@ -37,6 +42,7 @@ def init():
         install_prefix = dirname(spades_home)
         bin_home = join(install_prefix, "bin")
         spades_home = join(install_prefix, "share", "spades")
+        config_dirs = [(join(spades_home, "configs"), "./")]
         python_modules_home = spades_home
         ext_python_modules_home = spades_home
         spades_version = open(join(spades_home, "VERSION"), 'r').readline().strip()
