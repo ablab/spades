@@ -70,6 +70,7 @@ class ExecutorCluster(ExecutorBase):
 
     def execute(self, commands):
         jobs = []
+
         def prev_id():
             if not jobs:
                 return ""
@@ -104,12 +105,13 @@ class ExecutorCluster(ExecutorBase):
                 jobs.append(jid)
 
             touch_command = commands_parser.Command(command.stage + "_touch",
-                    "touch",
+                                                    "touch",
                                                     [stage_checkpoint_path],
-                    "touch",
+                                                    "touch",
                                                     job_uuid=command.job_uuid + "_touch")
 
-            touch_jid = self.run_cluster_command(self.get_not_MPI_command(touch_command, prev_id()), touch_command.job_uuid)
+            touch_jid = self.run_cluster_command(self.get_not_MPI_command(touch_command, prev_id()),
+                                                 touch_command.job_uuid)
             jobs.append(touch_jid)
 
             # FIXME implement
@@ -118,7 +120,7 @@ class ExecutorCluster(ExecutorBase):
 
             if options_storage.args.stop_after == command.short_name or \
                     ("_finish" in command.short_name and
-                             options_storage.args.stop_after == command.short_name.split('_')[0]):
+                     options_storage.args.stop_after == command.short_name.split('_')[0]):
                 self.log.info("\n======= Skipping the rest of SPAdes "
                               "pipeline (--stop-after was set to '%s'). "
                               "You can continue later with --continue or "
@@ -146,9 +148,10 @@ class ExecutorCluster(ExecutorBase):
         preambula += "LOG_OUT=\"" + self.grid_engine_output_option.format(OUT=log_file) + "\"\n"
         preambula += "ERR_OUT=\"" + self.grid_engine_err_output_option.format(ERR=log_file) + "\"\n"
         memory_in_kb = int(options_storage.args.memory * 1024 * 1024)
-        preambula += "QUEUE=\"" + self.grid_engine_queue.format(QUEUE=options_storage.args.grid_queue)  + "\"\n"
+        preambula += "QUEUE=\"" + self.grid_engine_queue.format(QUEUE=options_storage.args.grid_queue) + "\"\n"
         preambula += "CLUSTER_ARGS=\"$QUEUE " + \
-                     self.grid_engine_memory_option.format(MEMORY=memory_in_kb, TOTAL_MEMORY=memory_in_kb * options_storage.args.grid_nnodes) + " " + \
+                     self.grid_engine_memory_option.format(MEMORY=memory_in_kb,
+                                                           TOTAL_MEMORY=memory_in_kb * options_storage.args.grid_nnodes) + " " + \
                      self.grid_engine_thread_option.format(NNODES=options_storage.args.grid_nnodes,
                                                            NCPUS=options_storage.args.threads,
                                                            NPROCESSORS=options_storage.args.grid_nnodes * options_storage.args.threads) + " " + \
@@ -190,7 +193,6 @@ class ExecutorCluster(ExecutorBase):
         cmd += "$CMD\n\n"
         return cmd
 
-
     def get_MPI_command(self, command, prev_job_name=""):
         cmd = self.grid_engine_submit_command + " "
         cmd += self.grid_engine_name_option.format(JOB_NAME=command.job_uuid) + " "
@@ -201,10 +203,11 @@ class ExecutorCluster(ExecutorBase):
             cmd += self.grid_engine_dependency_option.format(WAIT_TAG=prev_job_name) + " "
         cmd += self.grid_engine_queue.format(QUEUE=options_storage.args.grid_queue) + " "
         memory_in_kb = int(options_storage.args.memory * 1024 * 1024)
-        cmd += self.grid_engine_memory_option.format(MEMORY=memory_in_kb, TOTAL_MEMORY=memory_in_kb * options_storage.args.grid_nnodes) + " "
+        cmd += self.grid_engine_memory_option.format(MEMORY=memory_in_kb,
+                                                     TOTAL_MEMORY=memory_in_kb * options_storage.args.grid_nnodes) + " "
         cmd += self.grid_engine_thread_option.format(NNODES=options_storage.args.grid_nnodes,
-                NCPUS=options_storage.args.threads,
-                NPROCESSORS=options_storage.args.grid_nnodes * options_storage.args.threads) + " "
+                                                     NCPUS=options_storage.args.threads,
+                                                     NPROCESSORS=options_storage.args.grid_nnodes * options_storage.args.threads) + " "
         cmd += self.grid_engine_minimum_node_mem.format(MEMORY=memory_in_kb) + " "
 
         cmd += self.grid_engine_mpi_runtime + " " + self.grid_engine_mpi_runtime_args.format(
@@ -232,7 +235,6 @@ class ExecutorCluster(ExecutorBase):
         cmd += valgrind_line + " "
         cmd += command.mpi_str()
         return cmd
-
 
     def get_not_MPI_command(self, command, prev_job_name=""):
         cmd = self.grid_engine_submit_command + " "

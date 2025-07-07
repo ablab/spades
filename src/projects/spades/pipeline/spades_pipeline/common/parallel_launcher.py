@@ -40,9 +40,9 @@ def GetHandlers(output_file_pattern, err_file_pattern, bid):
         output_file_pattern = "/dev/null"
     output = open(output_file_pattern.format(bid), "a")
     if err_file_pattern == "":
-        return (output, subprocess.STDOUT)
+        return output, subprocess.STDOUT
     else:
-        return (output, open(err_file_pattern.format(bid), "a"))
+        return output, open(err_file_pattern.format(bid), "a")
 
 
 class ExternalCallTask:

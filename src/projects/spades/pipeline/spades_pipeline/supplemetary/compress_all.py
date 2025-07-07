@@ -97,25 +97,25 @@ def compress_dataset_files(input_file, ext_python_modules_home, max_threads, log
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_file",
-                    help="path to input file",
-                    action="store")
+                        help="path to input file",
+                        action="store")
     parser.add_argument("--ext_python_modules_home",
-                    help="path to ext python modules home",
-                    action="store")
+                        help="path to ext python modules home",
+                        action="store")
     parser.add_argument("--max_threads",
-                    type=int,
-                    help="max threads",
-                    action="store")
+                        type=int,
+                        help="max threads",
+                        action="store")
     parser.add_argument("--output_dir",
-                    help="path to output dir",
-                    action="store")
+                        help="path to output dir",
+                        action="store")
     parser.add_argument("--gzip_output",
-                    help="flag for enable gziping",
-                    action="store_true")
+                        help="flag for enable gziping",
+                        action="store_true")
     parser.add_argument("--not_used_yaml_file",
-                    default="",
-                    help="path to yaml file with not used data during error correction",
-                    action="store")
+                        default="",
+                        help="path to yaml file with not used data during error correction",
+                        action="store")
     return parser.parse_args()
 
 

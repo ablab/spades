@@ -87,7 +87,7 @@ def print_used_values(cfg):
     if not options_storage.args.rna:
         if ("error_correction" in cfg) and ("assembly" not in cfg):
             log.info("Mode: ONLY read error correction (without assembling)")
-        elif (not "error_correction" in cfg) and ("assembly" in cfg):
+        elif ("error_correction" not in cfg) and ("assembly" in cfg):
             log.info("Mode: ONLY assembling (without read error correction)")
         else:
             log.info("Mode: read error correction and assembling")
@@ -213,6 +213,7 @@ def check_cfg_for_partial_run(cfg, partial_run_type="restart-from"):  # restart-
         if "assembly" not in cfg:
             support.error(
                 "failed to %s 'assembling' ('%s') because this stage %s not specified!" % (action, check_point, verb))
+
 
 def get_options_from_params(params_filename, running_script):
     command_line = None
@@ -388,7 +389,9 @@ def get_first_incomplete_command(filename):
 
     first_incomplete_stage_id = 0
     while first_incomplete_stage_id < len(old_pipeline):
-        stage_filename = options_storage.get_stage_filename(first_incomplete_stage_id, old_pipeline[first_incomplete_stage_id]["short_name"])
+        stage_filename = (
+            options_storage.get_stage_filename(first_incomplete_stage_id,
+                                               old_pipeline[first_incomplete_stage_id]["short_name"]))
         if not os.path.isfile(stage_filename):
             return old_pipeline[first_incomplete_stage_id]
         first_incomplete_stage_id += 1
@@ -422,7 +425,8 @@ def get_command_and_stage_id_before_restart_from(draft_commands):
         return draft_commands[restart_from_stage_id], restart_from_stage_id
 
     if restart_from_stage_id > 0:
-        stage_filename = options_storage.get_stage_filename(restart_from_stage_id - 1, draft_commands[restart_from_stage_id - 1].short_name)
+        stage_filename = options_storage.get_stage_filename(restart_from_stage_id - 1,
+                                                            draft_commands[restart_from_stage_id - 1].short_name)
         if not os.path.isfile(stage_filename):
             support.error(
                 "cannot restart from stage %s: previous stage was not complete." % options_storage.args.restart_from,
@@ -562,7 +566,7 @@ def build_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data):
     breaking_scaffolds_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
                                              ext_python_modules_home, python_modules_home)
     terminating_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
-                                         ext_python_modules_home, python_modules_home)
+                                      ext_python_modules_home, python_modules_home)
 
 
 def get_executor():
@@ -612,7 +616,7 @@ def main(args):
     init_parser(args)
 
     if len(args) == 1:
-        options_parser.usage(spades_version)
+        options_parser.usage()
         sys.exit(0)
 
     jobs = []
@@ -663,9 +667,9 @@ def main(args):
             else:
                 log.info("Last job name: " + last_job)
 
-        is_result = (options_storage.args.grid_engine != "save_yaml" and (
-            not options_storage.args.only_generate_config)) and \
-                    (options_storage.args.grid_wait or options_storage.args.grid_engine == "local")
+        is_result = ((options_storage.args.grid_engine != "save_yaml" and (
+            not options_storage.args.only_generate_config)) and
+                     (options_storage.args.grid_wait or options_storage.args.grid_engine == "local"))
         if is_result:
             # TODO make it executor method executor.is_fake()
             print_info_about_output_files(cfg, output_files)

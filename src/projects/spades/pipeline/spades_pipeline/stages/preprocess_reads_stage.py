@@ -170,10 +170,10 @@ class PreprocessReadsStage(stage.Stage):
 
         if dataset_has_interlaced_reads(self.dataset_data) and (not options_storage.args.only_assembler):
             self.stages.append(PreprocessInterlacedReads(self.dir_for_split_reads, self.tmp_dir, "preprocess_12",
-                                                          self.output_files, self.tmp_configs_dir,
-                                                          self.dataset_data, self.bin_home,
-                                                          self.ext_python_modules_home,
-                                                          self.python_modules_home))
+                                                         self.output_files, self.tmp_configs_dir,
+                                                         self.dataset_data, self.bin_home,
+                                                         self.ext_python_modules_home,
+                                                         self.python_modules_home))
 
         if dataset_has_additional_contigs(self.dataset_data):
             self.stages.append(PreprocessContigs(self.dir_for_split_reads, self.tmp_dir, "preprocess_ac",

@@ -41,4 +41,3 @@ def add_configs(command, configs_dir):
     # special case: extra config
     if options_storage.args.rna and options_storage.args.fast:
         command.append(os.path.join(configs_dir, "rna_fast_mode.info"))
-

@@ -27,7 +27,7 @@ class BeforeStartStage(stage.Stage):
         output_dir = cfg["common"].output_dir
         self.tmp_files = []
 
-        if (os.path.isfile(os.path.join(output_dir, "run_spades.yaml"))):
+        if os.path.isfile(os.path.join(output_dir, "run_spades.yaml")):
             previous_pipeline = pyyaml.load(open(os.path.join(output_dir, "run_spades.yaml")))
             for previous_stage in previous_pipeline:
                 self.tmp_files += previous_stage["del_after"]

@@ -43,7 +43,7 @@ def add_configs(command, configs_dir, cfg):
         else:
             command.append(os.path.join(configs_dir, "careful_mode.info"))
     if "set_of_hmms" in cfg.__dict__:
-            command.append(os.path.join(configs_dir, "hmm_mode.info"))
+        command.append(os.path.join(configs_dir, "hmm_mode.info"))
 
 
 def prepare_config_spades(filename, cfg, additional_contigs_fname, K, stage, saves_dir, last_one):
@@ -106,8 +106,9 @@ def prepare_config_rnaspades(filename):
     subst_dict["antisense"] = bool_to_str(options_storage.args.strand_specificity == "rf")
     substitute_params(filename, subst_dict)
 
+
 def prepare_config_bgcspades(filename, cfg):
-    if not "set_of_hmms" in cfg.__dict__:
+    if "set_of_hmms" not in cfg.__dict__:
         return
     subst_dict = dict()
     subst_dict["set_of_hmms"] = cfg.set_of_hmms
@@ -116,6 +117,7 @@ def prepare_config_bgcspades(filename, cfg):
         subst_dict["set_copynumber"] = bool_to_str(True)
         subst_dict["start_only_from_tips"] = bool_to_str(True)
     substitute_params(filename, subst_dict)
+
 
 def prepare_config_construction(filename):
     if options_storage.args.read_cov_threshold is None:
@@ -154,11 +156,11 @@ class IterationStage(stage.Stage):
         if "read_buffer_size" in cfg.__dict__:
             # FIXME why here???
             substitute_params(os.path.join(dst_configs, "construction.info"),
-                                          {"read_buffer_size": cfg.read_buffer_size})
+                              {"read_buffer_size": cfg.read_buffer_size})
         if "scaffolding_mode" in cfg.__dict__:
             # FIXME why here???
             substitute_params(os.path.join(dst_configs, "pe_params.info"),
-                                          {"scaffolding_mode": cfg.scaffolding_mode})
+                              {"scaffolding_mode": cfg.scaffolding_mode})
 
         prepare_config_rnaspades(os.path.join(dst_configs, "rna_mode.info"))
         prepare_config_bgcspades(os.path.join(dst_configs, "hmm_mode.info"), cfg)

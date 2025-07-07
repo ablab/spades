@@ -16,6 +16,7 @@ from ..options_storage import OptionStorage
 
 options_storage = OptionStorage()
 
+
 class Executor(executor_base.ExecutorBase):
     def __init__(self, log):
         super(Executor, self).__init__(log)
@@ -44,9 +45,9 @@ class Executor(executor_base.ExecutorBase):
                 self.log.info("\n===== %s finished. \n" % command.stage)
 
             self.touch_file(command, num)
-            if options_storage.args.stop_after == command.short_name or \
+            if (options_storage.args.stop_after == command.short_name or
                     ("_finish" in command.short_name and
-                             options_storage.args.stop_after == command.short_name.split('_')[0]):
+                     options_storage.args.stop_after == command.short_name.split('_')[0])):
                 self.log.info("\n======= Skipping the rest of SPAdes "
                               "pipeline (--stop-after was set to '%s'). "
                               "You can continue later with --continue or "

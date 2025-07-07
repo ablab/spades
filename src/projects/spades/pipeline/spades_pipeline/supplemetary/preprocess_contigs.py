@@ -21,16 +21,16 @@ import support
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--args_filename",
-                    help="path to file with args",
-                    action="store")
+                        help="path to file with args",
+                        action="store")
     parser.add_argument("--dst",
-                    help="path to dst dir",
-                    action="store")
+                        help="path to dst dir",
+                        action="store")
     parser.add_argument("--threshold_for_breaking_additional_contigs",
-                    dest="THRESHOLD_FOR_BREAKING_ADDITIONAL_CONTIGS",
-                    type=int,
-                    help="threshold for breaking additional contigs",
-                    action="store")
+                        dest="THRESHOLD_FOR_BREAKING_ADDITIONAL_CONTIGS",
+                        type=int,
+                        help="threshold for breaking additional contigs",
+                        action="store")
     return parser.parse_args()
 
 

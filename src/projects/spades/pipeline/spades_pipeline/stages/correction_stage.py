@@ -17,6 +17,7 @@ from . import stage
 from ..process_cfg import merge_configs
 from ..commands_parser import Command
 from ..options_storage import OptionStorage
+
 options_storage = OptionStorage()
 from ..support import copy_tree
 from ..file_operations import get_tmp_dir
@@ -50,12 +51,13 @@ class CorrectionIterationStage(stage.Stage):
         self.cfg = merge_configs(cfg["mismatch_corrector"], cfg["common"])
 
     def get_command(self, cfg):
-        args = [os.path.join(self.python_modules_home, "spades_pipeline", "supplemetary", "correction_iteration_script.py"),
-                "--corrected", self.corrected,
-                "--assembled", self.assembled,
-                "--assembly_type", self.assembly_type,
-                "--output_dir", cfg["common"].output_dir,
-                "--bin_home", self.bin_home]
+        args = [
+            os.path.join(self.python_modules_home, "spades_pipeline", "supplemetary", "correction_iteration_script.py"),
+            "--corrected", self.corrected,
+            "--assembled", self.assembled,
+            "--assembly_type", self.assembly_type,
+            "--output_dir", cfg["common"].output_dir,
+            "--bin_home", self.bin_home]
 
         return [Command(stage=self.STAGE_NAME,
                         path=sys.executable,
@@ -63,9 +65,9 @@ class CorrectionIterationStage(stage.Stage):
                         config_dir=os.path.relpath(self.cfg.output_dir, options_storage.args.output_dir),
                         short_name=self.short_name,
                         del_after=[os.path.join(os.path.relpath(self.cfg.output_dir,
-                                                                                options_storage.args.output_dir),
-                                                                "tmp"),
-                                                   os.path.relpath(self.cfg.tmp_dir, options_storage.args.output_dir)])]
+                                                                options_storage.args.output_dir),
+                                                "tmp"),
+                                   os.path.relpath(self.cfg.tmp_dir, options_storage.args.output_dir)])]
 
     def generate_config(self, cfg):
         dst_configs = os.path.join(self.cfg.output_dir, "configs")
@@ -112,11 +114,11 @@ class CorrectionStage(stage.Stage):
                         path="true",
                         args=[],
                         short_name=self.short_name + "_start")] + \
-               [x for stage in self.stages for x in stage.get_command(cfg)] + \
-               [Command(stage=self.STAGE_NAME,
-                        path="true",
-                        args=[],
-                        short_name=self.short_name + "_finish")]
+            [x for stage in self.stages for x in stage.get_command(cfg)] + \
+            [Command(stage=self.STAGE_NAME,
+                     path="true",
+                     args=[],
+                     short_name=self.short_name + "_finish")]
 
 
 def add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,

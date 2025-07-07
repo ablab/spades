@@ -26,7 +26,7 @@ class Pipeline(object):
         if not os.path.isdir(tmp_configs_dir):
             if options_storage.args.configs_dir:
                 copy_tree(options_storage.args.configs_dir, tmp_configs_dir, preserve_times=False,
-                                   preserve_mode=False)
+                          preserve_mode=False)
             else:
                 for src_dir, target_dir in config_dirs:
                     copy_tree(src_dir, os.path.join(tmp_configs_dir, target_dir),

@@ -61,11 +61,11 @@ def write_single_read(in_file, out_file, read_name=None, is_fastq=False, compres
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--args_filename",
-                    help="path to file with args",
-                    action="store")
+                        help="path to file with args",
+                        action="store")
     parser.add_argument("--dst",
-                    help="path to dst dir",
-                    action="store")
+                        help="path to dst dir",
+                        action="store")
     return parser.parse_args()
 
 
@@ -102,7 +102,7 @@ def main():
                 next_read_name = write_single_read(input_file, out_files[i], next_read_name, is_fastq, was_compressed)
             if i == 0:
                 support.error(
-                    "the number of reads in file with interlaced reads (%s) should be EVEN!" % (input_filename),
+                    "the number of reads in file with interlaced reads (%s) should be EVEN!" % input_filename,
                     log)
             out_files[0].close()
             out_files[1].close()

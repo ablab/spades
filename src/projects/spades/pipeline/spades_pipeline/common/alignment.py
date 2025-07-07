@@ -7,8 +7,9 @@
 
 import os
 import shutil
+import logging
 
-import support
+from .. import support
 
 
 def align_bwa_pe_lib(command, index, reads_file1, reads_file2, work_dir, log, threads=1):
@@ -58,7 +59,7 @@ def align_bwa_pe_libs(command, index, reads, work_dir, log, threads):
 
 
 def align_bwa(command, reference, dataset, work_dir, log=None, threads=1):
-    if log == None:
+    if log is None:
         log = logging.getLogger('')
     if os.path.exists(work_dir):
         shutil.rmtree(work_dir)
