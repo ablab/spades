@@ -11,9 +11,11 @@ import os
 import sys
 from abc import ABCMeta, abstractmethod
 
-import options_storage
-import support
-import commands_parser
+from .. import support
+from .. import commands_parser
+from ..options_storage import OptionStorage
+
+options_storage = OptionStorage()
 
 
 class ExecutorBase(object):

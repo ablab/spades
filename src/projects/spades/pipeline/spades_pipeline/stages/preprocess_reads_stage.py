@@ -10,13 +10,12 @@
 
 import os
 import sys
-import gzip
 
-import support
-import options_storage
-import commands_parser
-from stages import stage
-
+from ..commands_parser import Command
+from ..options_storage import OptionStorage
+options_storage = OptionStorage()
+import stage
+from ..support import dataset_has_interlaced_reads, dataset_has_additional_contigs
 
 class PreprocessInterlacedReads(stage.Stage):
     STAGE_NAME = "Preprocess interlaced reads"
@@ -84,14 +83,14 @@ class PreprocessInterlacedReads(stage.Stage):
                 fw.write(str(update_item["is_fastq"]) + "\n")
 
     def get_command(self, cfg):
-        command = [commands_parser.Command(STAGE=self.STAGE_NAME,
-                                           path=sys.executable,
-                                           args=[
-                                               os.path.join(self.python_modules_home, "spades_pipeline", "scripts",
-                                                            "preprocess_interlaced_reads.py"),
-                                               "--args_filename", os.path.join(self.tmp_dir, "interlaced"),
-                                               "--dst", self.dst],
-                                           short_name=self.short_name)]
+        command = [Command(STAGE=self.STAGE_NAME,
+                           path=sys.executable,
+                           args=[
+                               os.path.join(self.python_modules_home, "spades_pipeline", "scripts",
+                                            "preprocess_interlaced_reads.py"),
+                               "--args_filename", os.path.join(self.tmp_dir, "interlaced"),
+                               "--dst", self.dst],
+                           short_name=self.short_name)]
         return command
 
     def __init__(self, dir_for_split_reads, tmp_dir, *args):
@@ -139,16 +138,16 @@ class PreprocessContigs(stage.Stage):
                 fw.write(update_item["new_filename"] + "\n")
 
     def get_command(self, cfg):
-        command = [commands_parser.Command(STAGE=self.STAGE_NAME,
-                                           path=sys.executable,
-                                           args=[
-                                               os.path.join(self.python_modules_home, "spades_pipeline", "scripts",
-                                                            "preprocess_contigs.py"),
-                                               "--args_filename", os.path.join(self.tmp_dir, "contigs"),
-                                               "--dst", self.dst,
-                                               "--threshold_for_breaking_additional_contigs",
-                                               str(options_storage.THRESHOLD_FOR_BREAKING_ADDITIONAL_CONTIGS)],
-                                           short_name=self.short_name)]
+        command = [Command(STAGE=self.STAGE_NAME,
+                           path=sys.executable,
+                           args=[
+                               os.path.join(self.python_modules_home, "spades_pipeline", "scripts",
+                                            "preprocess_contigs.py"),
+                               "--args_filename", os.path.join(self.tmp_dir, "contigs"),
+                               "--dst", self.dst,
+                               "--threshold_for_breaking_additional_contigs",
+                               str(options_storage.THRESHOLD_FOR_BREAKING_ADDITIONAL_CONTIGS)],
+                           short_name=self.short_name)]
         return command
 
     def __init__(self, dir_for_split_reads, tmp_dir, *args):
@@ -168,14 +167,14 @@ class PreprocessReadsStage(stage.Stage):
         self.dir_for_split_reads = os.path.join(options_storage.args.output_dir, "split_input")
         self.tmp_dir = os.path.join(self.dir_for_split_reads, "tmp")
 
-        if support.dataset_has_interlaced_reads(self.dataset_data) and (not options_storage.args.only_assembler):
+        if dataset_has_interlaced_reads(self.dataset_data) and (not options_storage.args.only_assembler):
             self.stages.append(PreprocessInterlacedReads(self.dir_for_split_reads, self.tmp_dir, "preprocess_12",
                                                           self.output_files, self.tmp_configs_dir,
                                                           self.dataset_data, self.bin_home,
                                                           self.ext_python_modules_home,
                                                           self.python_modules_home))
 
-        if support.dataset_has_additional_contigs(self.dataset_data):
+        if dataset_has_additional_contigs(self.dataset_data):
             self.stages.append(PreprocessContigs(self.dir_for_split_reads, self.tmp_dir, "preprocess_ac",
                                                  self.output_files, self.tmp_configs_dir,
                                                  self.dataset_data, self.bin_home,
@@ -203,21 +202,21 @@ class PreprocessReadsStage(stage.Stage):
                         default_flow_style=False, default_style='"', width=float("inf"))
 
     def get_command(self, cfg):
-        return [commands_parser.Command(STAGE=self.STAGE_NAME,
-                                        path="true",
-                                        args=[],
-                                        short_name=self.short_name + "_start")] + \
-               [x for stage in self.stages for x in stage.get_command(cfg)] + \
-               [commands_parser.Command(STAGE=self.STAGE_NAME,
-                                        path="true",
-                                        args=[],
-                                        short_name=self.short_name + "_finish")]
+        return [Command(STAGE=self.STAGE_NAME,
+                        path="true",
+                        args=[],
+                        short_name=self.short_name + "_start")] + \
+            [x for stage in self.stages for x in stage.get_command(cfg)] + \
+            [Command(STAGE=self.STAGE_NAME,
+                     path="true",
+                     args=[],
+                     short_name=self.short_name + "_finish")]
 
 
 def add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data,
                     bin_home, ext_python_modules_home, python_modules_home):
-    if (support.dataset_has_interlaced_reads(options_storage.original_dataset_data)
-            or support.dataset_has_additional_contigs(options_storage.original_dataset_data)):
+    if (dataset_has_interlaced_reads(options_storage.original_dataset_data)
+            or dataset_has_additional_contigs(options_storage.original_dataset_data)):
         pipeline.add(PreprocessReadsStage(cfg, "preprocess", output_files, tmp_configs_dir,
                                           options_storage.original_dataset_data, bin_home,
                                           ext_python_modules_home, python_modules_home))

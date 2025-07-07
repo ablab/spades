@@ -8,25 +8,26 @@
 ############################################################################
 
 import os
-import executors
-import commands_parser
-import options_storage
+from .executor_base import ExecutorBase
+from ..commands_parser import write_commands_to_sh, write_commands_to_yaml
+from ..options_storage import OptionStorage
 
+options_storage = OptionStorage()
 
-class Executor(executors.ExecutorBase):
+class Executor(ExecutorBase):
     def __init__(self, log):
         super(Executor, self).__init__(log)
 
     def execute(self, commands):
         super(Executor, self).execute(commands)
-        commands_parser.write_commands_to_sh(commands, os.path.join(options_storage.args.output_dir, "run_spades.sh"))
-        commands_parser.write_commands_to_yaml(commands,
+        write_commands_to_sh(commands, os.path.join(options_storage.args.output_dir, "run_spades.sh"))
+        write_commands_to_yaml(commands,
                                                os.path.join(options_storage.args.output_dir,
                                                "run_spades.yaml"))
         return None
 
     def dump_commands(self, commands, outputfile):
-        commands_parser.write_commands_to_sh(commands, outputfile)
+        write_commands_to_sh(commands, outputfile)
 
     def join(self, job_name):
         assert (job_name is None)

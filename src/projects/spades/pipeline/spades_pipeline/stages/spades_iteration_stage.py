@@ -9,14 +9,13 @@
 ############################################################################
 
 import os
-import shutil
 
-import commands_parser
-import options_storage
-from stages import stage
-import process_cfg
-from process_cfg import bool_to_str
-from support import copy_tree
+from ..commands_parser import Command
+from ..process_cfg import process_spaces, bool_to_str, substitute_params
+from ..support import copy_tree
+import stage
+from ..options_storage import OptionStorage
+options_storage = OptionStorage()
 
 
 # FIXME double with scaffold correction stage
@@ -50,11 +49,11 @@ def add_configs(command, configs_dir, cfg):
 def prepare_config_spades(filename, cfg, additional_contigs_fname, K, stage, saves_dir, last_one):
     subst_dict = dict()
     subst_dict["K"] = str(K)
-    subst_dict["dataset"] = process_cfg.process_spaces(cfg.dataset)
-    subst_dict["output_base"] = process_cfg.process_spaces(cfg.output_dir)
-    subst_dict["tmp_dir"] = process_cfg.process_spaces(cfg.tmp_dir)
+    subst_dict["dataset"] = process_spaces(cfg.dataset)
+    subst_dict["output_base"] = process_spaces(cfg.output_dir)
+    subst_dict["tmp_dir"] = process_spaces(cfg.tmp_dir)
     if additional_contigs_fname:
-        subst_dict["additional_contigs"] = process_cfg.process_spaces(additional_contigs_fname)
+        subst_dict["additional_contigs"] = process_spaces(additional_contigs_fname)
         subst_dict["use_additional_contigs"] = bool_to_str(True)
     else:
         subst_dict["use_additional_contigs"] = bool_to_str(False)
@@ -96,7 +95,7 @@ def prepare_config_spades(filename, cfg, additional_contigs_fname, K, stage, sav
 
     if "series_analysis" in cfg.__dict__:
         subst_dict["series_analysis"] = cfg.series_analysis
-    process_cfg.substitute_params(filename, subst_dict)
+    substitute_params(filename, subst_dict)
 
 
 def prepare_config_rnaspades(filename):
@@ -105,7 +104,7 @@ def prepare_config_rnaspades(filename):
     subst_dict = dict()
     subst_dict["ss_enabled"] = bool_to_str(options_storage.args.strand_specificity is not None)
     subst_dict["antisense"] = bool_to_str(options_storage.args.strand_specificity == "rf")
-    process_cfg.substitute_params(filename, subst_dict)
+    substitute_params(filename, subst_dict)
 
 def prepare_config_bgcspades(filename, cfg):
     if not "set_of_hmms" in cfg.__dict__:
@@ -116,14 +115,14 @@ def prepare_config_bgcspades(filename, cfg):
         subst_dict["component_size_part"] = 1
         subst_dict["set_copynumber"] = bool_to_str(True)
         subst_dict["start_only_from_tips"] = bool_to_str(True)
-    process_cfg.substitute_params(filename, subst_dict)
+    substitute_params(filename, subst_dict)
 
 def prepare_config_construction(filename):
     if options_storage.args.read_cov_threshold is None:
         return
     subst_dict = dict()
     subst_dict["read_cov_threshold"] = options_storage.args.read_cov_threshold
-    process_cfg.substitute_params(filename, subst_dict)
+    substitute_params(filename, subst_dict)
 
 
 class IterationStage(stage.Stage):
@@ -154,11 +153,11 @@ class IterationStage(stage.Stage):
 
         if "read_buffer_size" in cfg.__dict__:
             # FIXME why here???
-            process_cfg.substitute_params(os.path.join(dst_configs, "construction.info"),
+            substitute_params(os.path.join(dst_configs, "construction.info"),
                                           {"read_buffer_size": cfg.read_buffer_size})
         if "scaffolding_mode" in cfg.__dict__:
             # FIXME why here???
-            process_cfg.substitute_params(os.path.join(dst_configs, "pe_params.info"),
+            substitute_params(os.path.join(dst_configs, "pe_params.info"),
                                           {"scaffolding_mode": cfg.scaffolding_mode})
 
         prepare_config_rnaspades(os.path.join(dst_configs, "rna_mode.info"))
@@ -175,7 +174,7 @@ class IterationStage(stage.Stage):
         args = [cfg_fn]
         add_configs(args, dst_configs, cfg)
 
-        command = [commands_parser.Command(
+        command = [Command(
             STAGE="K%d" % self.K,
             path=os.path.join(self.bin_home, "{spades_core}"),
             args=args,

@@ -13,8 +13,9 @@ import sys
 
 import pyyaml3 as pyyaml
 
-import commands_parser
-from stages import stage
+from ..commands_parser import Command
+import stage
+
 
 #delete tmp files in ouput folder
 class BeforeStartStage(stage.Stage):
@@ -32,7 +33,7 @@ class BeforeStartStage(stage.Stage):
                 self.tmp_files += previous_stage["del_after"]
 
     def get_command(self, cfg):
-        return [commands_parser.Command(STAGE=self.STAGE_NAME,
+        return [Command(STAGE=self.STAGE_NAME,
                                         path="true",
                                         args=[],
                                         short_name=self.short_name,

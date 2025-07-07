@@ -13,11 +13,7 @@ import logging
 import os
 import shutil
 import sys
-from os.path import abspath, dirname, realpath, join
-
-python_modules_home = abspath(dirname(realpath(__file__)))
-sys.path.append(join(python_modules_home, ".."))
-import support
+from .. import support
 
 
 def parse_args():

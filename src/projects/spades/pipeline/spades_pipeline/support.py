@@ -23,7 +23,9 @@ import traceback
 from platform import uname
 from os.path import abspath, expanduser, join
 
-import options_storage
+from .options_storage import OptionStorage
+options_storage = OptionStorage()
+
 from common import SeqIO
 
 
@@ -480,7 +482,6 @@ def get_latest_dir(pattern):
 
 def get_tmp_dir(prefix="", base_dir=None):
     global current_tmp_dir
-
     if not base_dir:
         base_dir = options_storage.args.tmp_dir
     if not os.path.isdir(base_dir):

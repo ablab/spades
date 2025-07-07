@@ -11,9 +11,10 @@
 import os
 import sys
 
-import options_storage
-from stages import stage
-import commands_parser
+from ..options_storage import OptionStorage
+options_storage = OptionStorage()
+import stage
+from ..commands_parser import Command
 
 
 class CheckStageStage(stage.Stage):
@@ -32,7 +33,7 @@ class CheckStageStage(stage.Stage):
             args += ["--result_contigs_filename", self.output_files["result_contigs_filename"],
                      "--result_scaffolds_filename", self.output_files["result_scaffolds_filename"]]
 
-        return [commands_parser.Command(STAGE=self.STAGE_NAME,
+        return [Command(STAGE=self.STAGE_NAME,
                                         path=sys.executable,
                                         args=args,
                                         short_name=self.short_name)]

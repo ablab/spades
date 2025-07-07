@@ -12,15 +12,14 @@ import os
 import shutil
 import sys
 import logging
-from site import addsitedir
 
-import commands_parser
-import options_storage
-from stages import stage
-from stages import spades_iteration_stage
-import support
-from process_cfg import merge_configs
-
+from ..commands_parser import Command
+from ..process_cfg import process_spaces, merge_configs
+from ..support import get_reads_length, get_primary_max_reads_length, warning, get_tmp_dir
+import stage
+from .spades_iteration_stage import IterationStage
+from ..options_storage import OptionStorage
+options_storage = OptionStorage()
 
 log = logging.getLogger("spades")
 
@@ -58,8 +57,8 @@ def reveal_original_k_mers(RL):
     return original_k_mers
 
 
-def rna_k_values(support, dataset_data):
-    rna_rl = support.get_reads_length(dataset_data, ["merged reads"])
+def rna_k_values(dataset_data):
+    rna_rl = get_reads_length(dataset_data, ["merged reads"])
     upper_k = int(rna_rl / 2) - 1
     if upper_k % 2 == 0:
         upper_k -= 1
@@ -73,9 +72,9 @@ def rna_k_values(support, dataset_data):
         use_iterative = False
 
     if upper_k < options_storage.RNA_MIN_K:
-        support.warning("\nauto K value (%d) is too small, recommended to be at least %d.\n" % (upper_k, options_storage.RNA_MIN_K))
+        warning("\nauto K value (%d) is too small, recommended to be at least %d.\n" % (upper_k, options_storage.RNA_MIN_K))
         if rna_rl <= options_storage.RNA_MIN_K:
-            support.warning(
+            warning(
                 "read length is too small (%d), but keeping current K value anyway. Consider setting K manually. K\n" % (
                     rna_rl))
         else:
@@ -103,14 +102,14 @@ def generateK_for_rna(cfg, dataset_data):
     if cfg.iterative_K == "auto":
         k_values = options_storage.K_MERS_RNA
         if not options_storage.args.iontorrent:
-            k_values = rna_k_values(support, dataset_data)
+            k_values = rna_k_values(dataset_data)
         cfg.iterative_K = k_values
         log.info("K values to be used: " + str(k_values))
 
 
 def generateK_for_rnaviral(cfg, dataset_data):
     if cfg.iterative_K == "auto":
-        k_values = rna_k_values(support, dataset_data)
+        k_values = rna_k_values(dataset_data)
         # FIXME: Hack-hack-hack! :)
         if min(k_values) == options_storage.RNA_MAX_LOWER_K:
             k_values = [options_storage.K_MERS_RNA[0]] + k_values
@@ -128,8 +127,8 @@ def generateK(cfg, dataset_data, silent=False):
     elif options_storage.args.rnaviral:
         generateK_for_rnaviral(cfg, dataset_data)
     elif not options_storage.args.iontorrent:
-        RL = support.get_primary_max_reads_length(dataset_data, ["merged reads"],
-                                                  options_storage.READS_TYPES_USED_IN_CONSTRUCTION)
+        RL = get_primary_max_reads_length(dataset_data, ["merged reads"],
+                                          options_storage.READS_TYPES_USED_IN_CONSTRUCTION)
         if options_storage.auto_K_allowed():
             if options_storage.args.plasmid:
                 if RL >= 150:
@@ -172,11 +171,11 @@ class PlasmidGlueFileStage(stage.Stage):
         self.cfg = cfg
         args = [os.path.join(self.python_modules_home, "spades_pipeline", "scripts", "plasmid_glue.py")]
         args.append(self.latest)
-        command = [commands_parser.Command(STAGE=self.STAGE_NAME,
-                                       path=sys.executable,
-                                       args=args,
-                                       short_name=self.short_name,
-                                       )]
+        command = [Command(STAGE=self.STAGE_NAME,
+                           path=sys.executable,
+                           args=args,
+                           short_name=self.short_name,
+                           )]
         return command 
 
 
@@ -260,12 +259,12 @@ class SpadesCopyFileStage(stage.Stage):
                 args.append(filename)
                 args.append(outputfile.output_file)
         bin_reads_dir = os.path.join(self.cfg.output_dir, ".bin_reads")
-        command = [commands_parser.Command(STAGE=self.STAGE_NAME,
-                                           path=sys.executable,
-                                           args=args,
-                                           short_name=self.short_name,
-                                           del_after=[os.path.relpath(bin_reads_dir, options_storage.args.output_dir),
-                                                      os.path.relpath(self.cfg.tmp_dir, options_storage.args.output_dir)])]
+        command = [Command(STAGE=self.STAGE_NAME,
+                           path=sys.executable,
+                           args=args,
+                           short_name=self.short_name,
+                           del_after=[os.path.relpath(bin_reads_dir, options_storage.args.output_dir),
+                                      os.path.relpath(self.cfg.tmp_dir, options_storage.args.output_dir)])]
         return command
 
 
@@ -283,17 +282,16 @@ class SpadesStage(stage.Stage):
         # creating dataset
         dataset_filename = os.path.join(self.cfg.output_dir, "dataset.info")
         with open(dataset_filename, 'w') as dataset_file:
-            import process_cfg
             # TODO don't exists at that moment, what better to write????
             if self.output_files["corrected_dataset_yaml_filename"] != "":
                 dataset_file.write("reads\t%s\n" %
-                                   process_cfg.process_spaces(self.output_files["corrected_dataset_yaml_filename"]))
+                                   process_spaces(self.output_files["corrected_dataset_yaml_filename"]))
             else:
                 dataset_file.write(
-                    "reads\t%s\n" % process_cfg.process_spaces(cfg["dataset"].yaml_filename))
+                    "reads\t%s\n" % process_spaces(cfg["dataset"].yaml_filename))
             if self.cfg.developer_mode and "reference" in cfg["dataset"].__dict__:
                 dataset_file.write("reference_genome\t")
-                dataset_file.write(process_cfg.process_spaces(cfg["dataset"].reference) + '\n')
+                dataset_file.write(process_spaces(cfg["dataset"].reference) + '\n')
 
         if not os.path.isdir(self.output_files["misc_dir"]):
             os.makedirs(self.output_files["misc_dir"])
@@ -307,12 +305,12 @@ class SpadesStage(stage.Stage):
             count += 1
             last_one = count == len(self.cfg.iterative_K)
 
-            iter_stage = spades_iteration_stage.IterationStage(K, prev_K, last_one, self.get_stage, self.latest,
-                                                               "k%d" % K,
-                                                               self.output_files, self.tmp_configs_dir,
-                                                               self.dataset_data, self.bin_home,
-                                                               self.ext_python_modules_home,
-                                                               self.python_modules_home)
+            iter_stage = IterationStage(K, prev_K, last_one, self.get_stage, self.latest,
+                                        "k%d" % K,
+                                        self.output_files, self.tmp_configs_dir,
+                                        self.dataset_data, self.bin_home,
+                                        self.ext_python_modules_home,
+                                        self.python_modules_home)
             self.stages.append(iter_stage)
             self.latest = os.path.join(self.cfg.output_dir, "K%d" % K)
 
@@ -361,22 +359,22 @@ class SpadesStage(stage.Stage):
 
         dataset_filename = os.path.join(self.cfg.output_dir, "dataset.info")
         self.cfg.__dict__["dataset"] = dataset_filename
-        self.cfg.tmp_dir = support.get_tmp_dir(prefix="spades_")
+        self.cfg.tmp_dir = get_tmp_dir(prefix="spades_")
 
     def generate_config(self, cfg):
         for stage in self.stages:
             stage.generate_config(self.cfg)
 
     def get_command(self, cfg):
-        return [commands_parser.Command(STAGE=self.STAGE_NAME,
-                                        path="true",
-                                        args=[],
-                                        short_name=self.short_name + "_start")] + \
-               [x for stage in self.stages for x in stage.get_command(self.cfg)] + \
-               [commands_parser.Command(STAGE=self.STAGE_NAME,
-                                        path="true",
-                                        args=[],
-                                        short_name=self.short_name + "_finish")]
+        return [Command(STAGE=self.STAGE_NAME,
+                        path="true",
+                        args=[],
+                        short_name=self.short_name + "_start")] + \
+            [x for stage in self.stages for x in stage.get_command(self.cfg)] + \
+            [Command(STAGE=self.STAGE_NAME,
+                     path="true",
+                     args=[],
+                     short_name=self.short_name + "_finish")]
 
 
 def add_to_pipeline(pipeline, get_stage, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,

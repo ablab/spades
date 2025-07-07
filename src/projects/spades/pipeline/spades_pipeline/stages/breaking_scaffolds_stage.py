@@ -9,12 +9,12 @@
 ############################################################################
 
 import os
-import shutil
 import sys
 
-import options_storage
-from stages import stage
-import commands_parser
+from ..options_storage import OptionStorage
+options_storage = OptionStorage()
+import stage
+from ..commands_parser import Command
 
 
 class BreakingScaffoldsStage(stage.Stage):
@@ -26,10 +26,10 @@ class BreakingScaffoldsStage(stage.Stage):
                 "--misc_dir", self.output_files["misc_dir"],
                 "--threshold_for_breaking_scaffolds", str(options_storage.THRESHOLD_FOR_BREAKING_SCAFFOLDS)]
 
-        return [commands_parser.Command(STAGE=self.STAGE_NAME,
-                                        path=sys.executable,
-                                        args=args,
-                                        short_name=self.short_name)]
+        return [Command(STAGE=self.STAGE_NAME,
+                        path=sys.executable,
+                        args=args,
+                        short_name=self.short_name)]
 
 
 def add_to_pipeline(pipeline, _, output_files, tmp_configs_dir, dataset_data,

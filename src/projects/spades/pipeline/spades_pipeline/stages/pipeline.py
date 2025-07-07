@@ -11,8 +11,10 @@
 import os
 import shutil
 
-import options_storage
-from support import copy_tree
+from ..options_storage import OptionStorage
+options_storage = OptionStorage()
+from ..support import copy_tree
+
 
 class Pipeline(object):
     stages = []
