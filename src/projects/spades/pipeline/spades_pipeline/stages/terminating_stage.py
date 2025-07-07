@@ -10,9 +10,11 @@
 import os
 import sys
 
-import options_storage
-from stages import stage
-import commands_parser
+from . import stage
+from .. import commands_parser
+from ..options_storage import OptionStorage
+
+options_storage = OptionStorage()
 
 
 class TerminatingStage(stage.Stage):

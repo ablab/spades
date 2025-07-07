@@ -25,19 +25,30 @@ python_modules_home = spades_init.python_modules_home
 ext_python_modules_home = spades_init.ext_python_modules_home
 spades_version = spades_init.spades_version
 
-import support
+from spades_pipeline.options_storage import OptionStorage
+options_storage = OptionStorage()
+
+from spades_pipeline import support
 
 support.check_python_version()
 
 addsitedir(ext_python_modules_home)
 import pyyaml3 as pyyaml
 
-import options_storage
 options_storage.spades_version = spades_version
 
-import options_parser
-from stages.pipeline import Pipeline
-import executor_save_yaml
+from spades_pipeline import options_parser
+from spades_pipeline.stages.pipeline import Pipeline
+from spades_pipeline.executors import executor_save_yaml
+
+from spades_pipeline.stages import before_start_stage
+from spades_pipeline.stages import error_correction_stage
+from spades_pipeline.stages import spades_stage
+from spades_pipeline.stages import correction_stage
+from spades_pipeline.stages import check_test_stage
+from spades_pipeline.stages import breaking_scaffolds_stage
+from spades_pipeline.stages import preprocess_reads_stage
+from spades_pipeline.stages import terminating_stage
 
 
 log = logging.getLogger("spades")
@@ -242,6 +253,7 @@ def get_options_from_params(params_filename, running_script):
 def parse_args(args):
     options, cfg, dataset_data = options_parser.parse_args(bin_home, spades_home,
                                                            secondary_filling=False, restart_from=False)
+    print(options_storage.args.rna)
 
     command_line = ""
 
@@ -532,15 +544,6 @@ def get_stage(iteration_name):
 
 def build_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
                    ext_python_modules_home, python_modules_home):
-    from stages import before_start_stage
-    from stages import error_correction_stage
-    from stages import spades_stage
-    from stages import correction_stage
-    from stages import check_test_stage
-    from stages import breaking_scaffolds_stage
-    from stages import preprocess_reads_stage
-    from stages import terminating_stage
-
     before_start_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
                                        ext_python_modules_home, python_modules_home)
     preprocess_reads_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
@@ -560,10 +563,11 @@ def build_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, b
     terminating_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
                                          ext_python_modules_home, python_modules_home)
 
+
 def get_executor():
     import importlib
     module_name = "executor_" + options_storage.args.grid_engine
-    executor_module = importlib.import_module(module_name)
+    executor_module = importlib.import_module("spades_pipeline.executors." + module_name, package="pipeline")
     return executor_module.Executor(log)
 
 

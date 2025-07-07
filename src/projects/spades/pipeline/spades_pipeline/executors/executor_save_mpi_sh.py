@@ -7,12 +7,14 @@
 ############################################################################
 
 import os
-import executors
-import commands_parser
-import options_storage
+from . import executor_base
+from .. import commands_parser
+from ..options_storage import OptionStorage
+
+options_storage = OptionStorage()
 
 
-class Executor(executors.ExecutorBase):
+class Executor(executor_base.ExecutorBase):
     def __init__(self, log):
         super(Executor, self).__init__(log)
 

@@ -7,13 +7,13 @@
 ############################################################################
 import sys
 
-import executors
+import executor_base
 from abc import ABCMeta, abstractmethod
-import options_storage
-import support
+from ..options_storage import OptionStorage as options_storage
+from .. import support
 
 
-class Executor(executors.ExecutorCluster):
+class Executor(executor_base.ExecutorCluster):
     grid_engine = "SLURM"
     grid_engine_submit_command = "sbatch"
     grid_engine_slurm_args = ("--hint=compute_bound --mem-bind=verbose,none --cpus-per-task {NCPUS} --open-mode=append "

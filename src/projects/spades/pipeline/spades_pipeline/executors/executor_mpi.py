@@ -8,11 +8,13 @@
 
 import os
 import shutil
-import support
-import executors
-import commands_parser
-import options_storage
-import executor_local
+from .. import support
+from . import executor_base
+from .. import commands_parser
+from . import executor_local
+from ..options_storage import OptionStorage
+
+options_storage = OptionStorage()
 
 
 class Executor(executor_local.Executor):

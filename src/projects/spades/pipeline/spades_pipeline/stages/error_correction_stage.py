@@ -13,21 +13,21 @@ import shutil
 import sys
 from site import addsitedir
 
-import commands_parser
-import options_storage
-from stages import stage
-import process_cfg
-import support
-from process_cfg import merge_configs
-from support import copy_tree
+from ..commands_parser import Command
+from ..options_storage import OptionStorage
+
+options_storage = OptionStorage()
+import stage
+from ..process_cfg import merge_configs, process_spaces, substitute_params
+from ..support import copy_tree, get_tmp_dir, get_lib_ids_by_type, rm_libs_by_type
 
 
 class ECRunningToolStage(stage.Stage):
     def prepare_config_bh(self, filename, cfg):
         subst_dict = dict()
-        subst_dict["dataset"] = process_cfg.process_spaces(cfg.dataset_yaml_filename)
-        subst_dict["input_working_dir"] = process_cfg.process_spaces(cfg.tmp_dir)
-        subst_dict["output_dir"] = process_cfg.process_spaces(cfg.output_dir)
+        subst_dict["dataset"] = process_spaces(cfg.dataset_yaml_filename)
+        subst_dict["input_working_dir"] = process_spaces(cfg.tmp_dir)
+        subst_dict["output_dir"] = process_spaces(cfg.output_dir)
         subst_dict["general_max_iterations"] = options_storage.ITERATIONS
         subst_dict["general_max_nthreads"] = cfg.max_threads
         subst_dict["count_merge_nthreads"] = cfg.max_threads
@@ -41,7 +41,7 @@ class ECRunningToolStage(stage.Stage):
             subst_dict["count_filter_singletons"] = cfg.count_filter_singletons
         if "read_buffer_size" in cfg.__dict__:
             subst_dict["count_split_buffer"] = cfg.read_buffer_size
-        process_cfg.substitute_params(filename, subst_dict)
+        substitute_params(filename, subst_dict)
 
     def prepare_config_ih(self, filename, cfg, ext_python_modules_home):
         addsitedir(ext_python_modules_home)
@@ -67,7 +67,7 @@ class ECRunningToolStage(stage.Stage):
             copy_tree(os.path.join(self.tmp_configs_dir, "hammer"), dst_configs, preserve_times=False)
             cfg_file_name = os.path.join(dst_configs, "config.info")
 
-        cfg.tmp_dir = support.get_tmp_dir(prefix="hammer_")
+        cfg.tmp_dir = get_tmp_dir(prefix="hammer_")
         if cfg.iontorrent:
             self.prepare_config_ih(cfg_file_name, cfg, self.ext_python_modules_home)
         else:
@@ -85,13 +85,13 @@ class ECRunningToolStage(stage.Stage):
         else:
             binary_name = "spades-hammer"
 
-        command = [commands_parser.Command(STAGE="Read error correction",
-                                           path=os.path.join(self.bin_home, binary_name),
-                                           args=[os.path.abspath(cfg_file_name)],
-                                           config_dir=os.path.relpath(cfg.output_dir, options_storage.args.output_dir),
-                                           short_name=self.short_name,
-                                           del_after=[os.path.relpath(cfg.tmp_dir, options_storage.args.output_dir)],
-                                           output_files=[self.output_files["corrected_dataset_yaml_filename"]])]
+        command = [Command(STAGE="Read error correction",
+                           path=os.path.join(self.bin_home, binary_name),
+                           args=[os.path.abspath(cfg_file_name)],
+                           config_dir=os.path.relpath(cfg.output_dir, options_storage.args.output_dir),
+                           short_name=self.short_name,
+                           del_after=[os.path.relpath(cfg.tmp_dir, options_storage.args.output_dir)],
+                           output_files=[self.output_files["corrected_dataset_yaml_filename"]])]
         return command
 
 
@@ -107,10 +107,10 @@ class ErrorCorrectionCompressingStage(stage.Stage):
         if cfg.gzip_output:
             args.append("--gzip_output")
 
-        command = [commands_parser.Command(STAGE="corrected reads compression",
-                                           path=sys.executable,
-                                           args=args,
-                                           short_name=self.short_name)]
+        command = [Command(STAGE="corrected reads compression",
+                           path=sys.executable,
+                           args=args,
+                           short_name=self.short_name)]
         return command
 
 
@@ -135,7 +135,6 @@ class ErrorCorrectionStage(stage.Stage):
                                             self.bin_home, self.ext_python_modules_home,
                                             self.python_modules_home))
 
-
     def generate_config(self, cfg):
         import pyyaml3 as pyyaml
 
@@ -149,9 +148,9 @@ class ErrorCorrectionStage(stage.Stage):
             os.makedirs(self.cfg.output_dir)
 
         # not all reads need processing
-        if support.get_lib_ids_by_type(self.dataset_data, options_storage.LONG_READS_TYPES):
-            not_used_dataset_data = support.get_libs_by_type(self.dataset_data, options_storage.LONG_READS_TYPES)
-            to_correct_dataset_data = support.rm_libs_by_type(self.dataset_data, options_storage.LONG_READS_TYPES)
+        if get_lib_ids_by_type(self.dataset_data, options_storage.LONG_READS_TYPES):
+            not_used_dataset_data = get_libs_by_type(self.dataset_data, options_storage.LONG_READS_TYPES)
+            to_correct_dataset_data = rm_libs_by_type(self.dataset_data, options_storage.LONG_READS_TYPES)
             to_correct_dataset_yaml_filename = os.path.join(self.cfg.output_dir, "to_correct.yaml")
             self.cfg.not_used_dataset_yaml_filename = os.path.join(self.cfg.output_dir, "dont_correct.yaml")
             with open(to_correct_dataset_yaml_filename, 'w') as f:
@@ -169,15 +168,15 @@ class ErrorCorrectionStage(stage.Stage):
             stage.generate_config(self.cfg)
 
     def get_command(self, cfg):
-        return [commands_parser.Command(STAGE=self.STAGE_NAME,
-                                        path="true",
-                                        args=[],
-                                        short_name=self.short_name + "_start")] + \
-               [x for stage in self.stages for x in stage.get_command(self.cfg)] + \
-               [commands_parser.Command(STAGE=self.STAGE_NAME,
-                                        path="true",
-                                        args=[],
-                                        short_name=self.short_name + "_finish")]
+        return [Command(STAGE=self.STAGE_NAME,
+                        path="true",
+                        args=[],
+                        short_name=self.short_name + "_start")] + \
+            [x for stage in self.stages for x in stage.get_command(self.cfg)] + \
+            [Command(STAGE=self.STAGE_NAME,
+                     path="true",
+                     args=[],
+                     short_name=self.short_name + "_finish")]
 
 
 def add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data,

@@ -9,9 +9,11 @@
 
 import random
 import string
-
-import support
 import sys
+
+from . import support
+from .options_storage import OptionStorage
+options_storage = OptionStorage()
 
 
 class Command(object):

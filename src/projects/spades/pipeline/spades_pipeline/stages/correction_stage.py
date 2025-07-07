@@ -13,12 +13,13 @@ import shutil
 import sys
 from site import addsitedir
 
-from stages import stage
-import support
-from process_cfg import merge_configs
-import commands_parser
-import options_storage
-from support import copy_tree
+import stage
+from ..process_cfg import merge_configs
+from ..commands_parser import Command
+from ..options_storage import OptionStorage
+options_storage = OptionStorage()
+from ..support import copy_tree, get_tmp_dir
+
 
 def prepare_config_corr(filename, cfg, ext_python_modules_home):
     addsitedir(ext_python_modules_home)
@@ -55,7 +56,7 @@ class CorrectionIterationStage(stage.Stage):
                 "--output_dir", cfg["common"].output_dir,
                 "--bin_home", self.bin_home]
 
-        return [commands_parser.Command(STAGE=self.STAGE_NAME,
+        return [Command(STAGE=self.STAGE_NAME,
                                         path=sys.executable,
                                         args=args,
                                         config_dir=os.path.relpath(self.cfg.output_dir, options_storage.args.output_dir),
@@ -74,7 +75,7 @@ class CorrectionIterationStage(stage.Stage):
 
         cfg_file_name = os.path.join(dst_configs, "corrector.info")
 
-        self.cfg.tmp_dir = support.get_tmp_dir(prefix="corrector_")
+        self.cfg.tmp_dir = get_tmp_dir(prefix="corrector_")
         prepare_config_corr(cfg_file_name, self.cfg, self.ext_python_modules_home)
 
 
@@ -106,12 +107,12 @@ class CorrectionStage(stage.Stage):
             stage.generate_config(cfg)
 
     def get_command(self, cfg):
-        return [commands_parser.Command(STAGE=self.STAGE_NAME,
+        return [Command(STAGE=self.STAGE_NAME,
                                         path="true",
                                         args=[],
                                         short_name=self.short_name + "_start")] + \
                [x for stage in self.stages for x in stage.get_command(cfg)] + \
-               [commands_parser.Command(STAGE=self.STAGE_NAME,
+               [Command(STAGE=self.STAGE_NAME,
                                         path="true",
                                         args=[],
                                         short_name=self.short_name + "_finish")]

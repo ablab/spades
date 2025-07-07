@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import logging
 
 ############################################################################
 # Copyright (c) 2023-2024 SPAdes team
@@ -9,8 +8,8 @@ import logging
 # See file LICENSE for details.
 ############################################################################
 
-
-import support
+import logging
+from . import support
 
 
 class cfg_placeholder:

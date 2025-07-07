@@ -9,13 +9,10 @@
 ############################################################################
 
 import os
-import shutil
 
-import commands_parser
-import options_storage
-from stages import stage
-import process_cfg
-from process_cfg import bool_to_str
+from ..options_storage import OptionStorage
+options_storage = OptionStorage()
+
 
 # TODO copypast from iteraton stage
 READS_TYPES_USED_IN_CONSTRUCTION = ["paired-end", "single", "hq-mate-pairs"]

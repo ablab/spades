@@ -14,9 +14,11 @@ from os.path import basename
 from os.path import abspath, expanduser
 import logging
 
-import support
-import options_storage
-from process_cfg import empty_config
+from . import support
+from .options_storage import OptionStorage
+options_storage = OptionStorage()
+
+from .process_cfg import empty_config
 
 
 log = logging.getLogger("spades")
