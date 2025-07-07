@@ -20,6 +20,7 @@ from ..file_operations import get_tmp_dir, get_reads_length, get_primary_max_rea
 from . import stage
 from .spades_iteration_stage import IterationStage
 from ..options_storage import OptionStorage
+
 options_storage = OptionStorage()
 
 log = logging.getLogger("spades")
@@ -73,7 +74,8 @@ def rna_k_values(dataset_data):
         use_iterative = False
 
     if upper_k < options_storage.RNA_MIN_K:
-        warning("\nauto K value (%d) is too small, recommended to be at least %d.\n" % (upper_k, options_storage.RNA_MIN_K))
+        warning(
+            "\nauto K value (%d) is too small, recommended to be at least %d.\n" % (upper_k, options_storage.RNA_MIN_K))
         if rna_rl <= options_storage.RNA_MIN_K:
             warning(
                 "read length is too small (%d), but keeping current K value anyway. Consider setting K manually. K\n" % (
@@ -134,22 +136,26 @@ def generateK(cfg, dataset_data, silent=False):
             if options_storage.args.plasmid:
                 if RL >= 150:
                     if not silent:
-                        log.info("Default k-mer sizes were set to %s because estimated read length (%d) is equal to or greater than 150" % (str(options_storage.K_MERS_PLASMID_LONG), RL))
+                        log.info("Default k-mer sizes were set to %s because estimated read length (%d) is equal to "
+                                 "or greater than 150" % (str(options_storage.K_MERS_PLASMID_LONG), RL))
                     cfg.iterative_K = options_storage.K_MERS_PLASMID_LONG
                 else:
                     if not silent:
-                        log.info("Default k-mer sizes were set to %s because estimated read length (%d) is less than 150" % (str(options_storage.K_MERS_PLASMID_100), RL))
+                        log.info("Default k-mer sizes were set to %s because estimated read length (%d) is less "
+                                 "than 150" % (str(options_storage.K_MERS_PLASMID_100), RL))
                     cfg.iterative_K = options_storage.K_MERS_PLASMID_100
             else:
                 if RL >= 250:
                     if not silent:
                         log.info("Default k-mer sizes were set to %s because estimated "
-                                 "read length (%d) is equal to or greater than 250" % (str(options_storage.K_MERS_250), RL))
+                                 "read length (%d) is equal to or greater than 250" % (
+                                 str(options_storage.K_MERS_250), RL))
                     cfg.iterative_K = options_storage.K_MERS_250
                 elif RL >= 150:
                     if not silent:
                         log.info("Default k-mer sizes were set to %s because estimated "
-                                 "read length (%d) is equal to or greater than 150" % (str(options_storage.K_MERS_150), RL))
+                                 "read length (%d) is equal to or greater than 150" % (
+                                 str(options_storage.K_MERS_150), RL))
                     cfg.iterative_K = options_storage.K_MERS_150
         if RL <= max(cfg.iterative_K):
             new_k_mers = [k for k in cfg.iterative_K if k < RL]
@@ -162,8 +168,10 @@ def generateK(cfg, dataset_data, silent=False):
         cfg.iterative_K = [cfg.iterative_K]
     cfg.iterative_K = sorted(cfg.iterative_K)
 
+
 class PlasmidGlueFileStage(stage.Stage):
     STAGE_NAME = "metaextrachromosomal glue files"
+
     def __init__(self, latest, *args):
         super(PlasmidGlueFileStage, self).__init__(*args)
         self.latest = latest
@@ -177,7 +185,7 @@ class PlasmidGlueFileStage(stage.Stage):
                            args=args,
                            short_name=self.short_name,
                            )]
-        return command 
+        return command
 
 
 class SpadesCopyFileStage(stage.Stage):
@@ -189,10 +197,10 @@ class SpadesCopyFileStage(stage.Stage):
     def rna_copy(self, output_file, latest, cfg):
         return options_storage.args.rna and self.always_copy(output_file, latest, cfg)
 
-    def has_hmm(self, output_file = None, latest = None, cfg = None):
+    def has_hmm(self, output_file=None, latest=None, cfg=None):
         return options_storage.args.bio or options_storage.args.custom_hmms or options_storage.args.corona
 
-    def is_sewage(self, output_file = None, latest = None, cfg = None):
+    def is_sewage(self, output_file=None, latest=None, cfg=None):
         return options_storage.args.sewage
 
     def not_rna_copy(self, output_file, latest, cfg):
@@ -212,8 +220,9 @@ class SpadesCopyFileStage(stage.Stage):
         self.output = [
             self.OutputFile(os.path.join(os.path.dirname(self.cfg.result_contigs), "before_rr.fasta"),
                             "before_rr.fasta", self.always_copy),
-            self.OutputFile(os.path.join(os.path.dirname(self.cfg.result_contigs), "assembly_graph_after_simplification.gfa"),
-                            "assembly_graph_after_simplification.gfa", self.always_copy),
+            self.OutputFile(
+                os.path.join(os.path.dirname(self.cfg.result_contigs), "assembly_graph_after_simplification.gfa"),
+                "assembly_graph_after_simplification.gfa", self.always_copy),
             self.OutputFile(self.cfg.result_transcripts, "transcripts.fasta", self.rna_copy),
             self.OutputFile(self.cfg.result_transcripts_paths, "transcripts.paths", self.rna_copy),
             self.OutputFile(self.cfg.result_contigs, "final_contigs.fasta", self.not_rna_copy),
@@ -236,7 +245,8 @@ class SpadesCopyFileStage(stage.Stage):
             prefix = filtering_type + "_filtered_"
             result_filtered_transcripts = os.path.join(self.cfg.output_dir,
                                                        prefix + options_storage.transcripts_name)
-            self.output.append(self.OutputFile(result_filtered_transcripts, prefix + "final_paths.fasta", self.rna_copy))
+            self.output.append(
+                self.OutputFile(result_filtered_transcripts, prefix + "final_paths.fasta", self.rna_copy))
 
     def __init__(self, latest, *args):
         super(SpadesCopyFileStage, self).__init__(*args)
@@ -321,7 +331,7 @@ class SpadesStage(stage.Stage):
                 break
 
         if options_storage.args.plasmid and options_storage.args.meta:
-            self.stages.append(PlasmidGlueFileStage(self.latest, "plasmid_copy_files", 
+            self.stages.append(PlasmidGlueFileStage(self.latest, "plasmid_copy_files",
                                                     self.output_files,
                                                     self.tmp_configs_dir,
                                                     self.dataset_data,

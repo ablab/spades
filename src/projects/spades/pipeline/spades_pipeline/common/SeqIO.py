@@ -27,7 +27,7 @@ class Reader:
         self.cash = None
 
     def FillCash(self):
-        if self.cash == None:
+        if self.cash is None:
             self.cash = self.handler.readline()
 
     def TrashCash(self):
@@ -74,7 +74,7 @@ class SeqRecord:
     def __init__(self, seq, id, qual=None):
         if qual != None and len(qual) != len(seq):
             sys.stdout.write("oppa" + id + "oppa")
-        assert qual == None or len(qual) == len(seq)
+        assert qual is None or len(qual) == len(seq)
         self.id = id
         self.seq = seq
         self.qual = qual
@@ -86,7 +86,7 @@ class SeqRecord:
         return self.seq[key]
 
     def QualSubseq(self, l, r):
-        if self.qual != None:
+        if self.qual is not None:
             return self.qual[l: r]
         return None
 
@@ -180,6 +180,7 @@ def is_fastq(file_name):
 
 def is_bam(file_name):
     return check_extension(file_name, ['.bam'])
+
 
 def is_sra(file_name):
     return check_extension(file_name, ['.sra'])

@@ -8,9 +8,10 @@
 import sys
 
 import executor_base
-from abc import ABCMeta, abstractmethod
-from ..options_storage import OptionStorage as options_storage
+from ..options_storage import OptionStorage
 from .. import support
+
+options_storage = OptionStorage()
 
 
 class Executor(executor_base.ExecutorCluster):
@@ -53,7 +54,7 @@ class Executor(executor_base.ExecutorCluster):
         cmd_str = "#=== STAGE " + command.stage + (" (MPI) ===\n" if mpi else " (not MPI) ===\n")
         cmd_str += "CMD=\"" + command.mpi_sh_str() + "\"\n"
         cmd_str += "SID1=$(" + self.grid_engine_submit_command + " $SLURM_ARGS " + \
-                   self.grid_engine_job_name.format(JOB_NAME=command.job_uuid)  + " $LOG_OUT $ERR_OUT "
+                   self.grid_engine_job_name.format(JOB_NAME=command.job_uuid) + " $LOG_OUT $ERR_OUT "
         if mpi:
             cmd_str += self.grid_engine_set_command.format(COMMAND="srun $SRUN_ARGS $CMD")
         else:

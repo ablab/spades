@@ -19,24 +19,25 @@ python_modules_home = abspath(dirname(realpath(__file__)))
 sys.path.append(join(python_modules_home, ".."))
 import support
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--corrected",
-                    help="path to file with corrected contigs/scaffolds",
-                    action="store")
+                        help="path to file with corrected contigs/scaffolds",
+                        action="store")
     parser.add_argument("--assembled",
-                    help="path to file with assembled contigs/scaffolds",
-                    action="store")
+                        help="path to file with assembled contigs/scaffolds",
+                        action="store")
     parser.add_argument("--assembly_type",
-                    choices=["contigs", "scaffolds"],
-                    help="assembly type: contigs/scaffolds",
-                    action="store")
+                        choices=["contigs", "scaffolds"],
+                        help="assembly type: contigs/scaffolds",
+                        action="store")
     parser.add_argument("--output_dir",
-                    help="path to output dir",
-                    action="store")
+                        help="path to output dir",
+                        action="store")
     parser.add_argument("--bin_home",
-                    help="path to bin home",
-                    action="store")
+                        help="path to bin home",
+                        action="store")
     return parser.parse_args()
 
 

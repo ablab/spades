@@ -7,9 +7,7 @@
 ############################################################################
 
 import os
-import shutil
 from .. import support
-from . import executor_base
 from .. import commands_parser
 from . import executor_local
 from ..options_storage import OptionStorage
@@ -32,20 +30,20 @@ class Executor(executor_local.Executor):
             if "_finish" not in command.short_name:
                 self.log.info("\n===== %s started. \n" % command.stage)
 
-            # `true' command does nothing, it corresponds to an arbitrary stage
+            # 'true' command does nothing, it corresponds to an arbitrary stage
             # used for cleanup, restart-from, and other such stuff. We skip its
             # actual running for the sake of log purity and beauty
             if command.__str__() != "true":
-                if (command.mpi_support):
+                if command.mpi_support:
                     # cmd = "mpiexec -np 4 xterm -e gdb -ex run --args " + command.__str__()
                     valgrind = "valgrind" if options_storage.args.grid_valgrind else ""
-                    cmd = "mpiexec --bind-to none -np {NODES} {VALGRIND} ".format(NODES=options_storage.args.grid_nnodes, VALGRIND=valgrind) + command.mpi_str()
+                    cmd = "mpiexec --bind-to none -np {NODES} {VALGRIND} ".format(NODES=options_storage.args.grid_nnodes,
+                                                                                  VALGRIND=valgrind) + command.mpi_str()
                     self.log.info("\n== Running: %s\n" % cmd)
                     support.sys_call(cmd, self.log)
                 else:
                     self.log.info("\n== Running: %s\n" % command.__str__())
                     command.run(self.log)
-
 
             self.rm_files(command)
             self.check_output(command)
@@ -55,9 +53,9 @@ class Executor(executor_local.Executor):
 
             self.touch_file(command, num)
 
-            if options_storage.args.stop_after == command.short_name or \
+            if (options_storage.args.stop_after == command.short_name or
                     ("_finish" in command.short_name and
-                             options_storage.args.stop_after == command.short_name.split('_')[0]):
+                     options_storage.args.stop_after == command.short_name.split('_')[0])):
                 self.log.info("\n======= Skipping the rest of SPAdes "
                               "pipeline (--stop-after was set to '%s'). "
                               "You can continue later with --continue or "
