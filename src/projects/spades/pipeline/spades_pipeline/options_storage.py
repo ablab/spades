@@ -20,7 +20,8 @@ class OptionStorage:
         return cls._instance
 
     def __init__(self):
-        if hasattr(self, '_initialized'): # Prevent re-initialization
+        if hasattr(self, '_initialized'):
+            # Prevent re-initialization
             return
         self._initialized = True
         # for restarting SPAdes
@@ -35,7 +36,8 @@ class OptionStorage:
         self.IONTORRENT_ONLY_ALLOWED_READS_EXTENSIONS = [".bam"]
         self.CONTIGS_ALLOWED_READS_EXTENSIONS = [".fa", ".fasta", ".fa.gz", ".fasta.gz"]
         self.GRAPH_ALLOWED_READS_EXTENSIONS = [".gfa"]
-        self.ALLOWED_READS_EXTENSIONS = self.BH_ALLOWED_READS_EXTENSIONS + self.CONTIGS_ALLOWED_READS_EXTENSIONS + self.GRAPH_ALLOWED_READS_EXTENSIONS + [".sra"]
+        self.ALLOWED_READS_EXTENSIONS = (self.BH_ALLOWED_READS_EXTENSIONS + self.CONTIGS_ALLOWED_READS_EXTENSIONS +
+                                         self.GRAPH_ALLOWED_READS_EXTENSIONS + [".sra"])
 
         # we support up to MAX_LIBS_NUMBER libs for each type of short-reads libs
         self.MAX_LIBS_NUMBER = 9
@@ -112,7 +114,6 @@ class OptionStorage:
         if not os.path.exists(os.path.dirname(stage_checkpoint_path)):
             os.makedirs(os.path.dirname(stage_checkpoint_path))
         return stage_checkpoint_path
-
 
     # kmers were set by default, not SC, not IonTorrent data and not rna and temporary not meta (except metaplasmid)
     def auto_K_allowed(self):

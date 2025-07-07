@@ -9,7 +9,6 @@
 ############################################################################
 
 import gzip
-import itertools
 import logging
 import os
 import shutil
@@ -28,7 +27,6 @@ SPADES_WARN_MESSAGE = " WARN "
 # for correct warnings detection in case of continue_mode
 continue_logfile_offset = None
 # for removing tmp_dir even if error occurs
-current_tmp_dir = None
 
 only_old_style_options = True
 old_style_single_reads = False
@@ -422,7 +420,7 @@ def comp(letter):
 
 
 def rev_comp(seq):
-    return "".join(itertools.imap(comp, seq[::-1]))
+    return "".join(map(comp, seq[::-1]))
 
 
 def get_contig_id(s):
@@ -492,4 +490,3 @@ def copy_tree(src, dst, preserve_times=True, preserve_mode=True):
             os.utime(dirpath, None)
             for file in filenames:
                 os.utime(os.path.join(dirpath, file), None)
-

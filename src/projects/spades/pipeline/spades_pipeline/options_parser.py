@@ -350,7 +350,8 @@ def add_basic_args(pgroup_basic):
                               action="store_true")
     pgroup_basic.add_argument("--metaplasmid",
                               dest="metaplasmid",
-                              help="runs metaplasmidSPAdes pipeline for plasmid detection in metagenomic datasets (equivalent for --meta --plasmid)"
+                              help="runs metaplasmidSPAdes pipeline for plasmid detection in metagenomic datasets "
+                                   "(equivalent for --meta --plasmid)"
                               if not help_hidden else argparse.SUPPRESS,
                               action="store_true")                              
     pgroup_basic.add_argument("--rnaviral",
@@ -477,7 +478,6 @@ def add_input_data_args(pgroup_input_data):
                                    if not help_hidden else argparse.SUPPRESS,
                                    action=AddToDatasetAction)
 
-    help_hidden = (mode == "rna")
     pgroup_input_data.add_argument("--pacbio",
                                    metavar="<filename>",
                                    nargs=1,
@@ -540,7 +540,8 @@ def add_input_data_args(pgroup_input_data):
                                    help="file with assembly graph"
                                    if not help_hidden else argparse.SUPPRESS,
                                    action=AddToDatasetAction)
-    
+
+
 def add_pipeline_args(pgroup_pipeline):
     mode = get_mode()
     help_hidden = (mode == "rna" or mode == "rnaviral")
@@ -617,6 +618,7 @@ def add_pipeline_args(pgroup_pipeline):
                             help=argparse.SUPPRESS,
                             action="store_false")
 
+
 def add_advanced_args(pgroup_advanced):
     mode = get_mode()
     pgroup_advanced.add_argument("--dataset",
@@ -691,6 +693,7 @@ def add_advanced_args(pgroup_advanced):
                        default=None,
                        help=argparse.SUPPRESS,
                        action="store_false")
+
 
 def add_hidden_args(pgroup_hidden):
     show_help_hidden = ("--help-hidden" in sys.argv)
@@ -779,7 +782,7 @@ def add_hidden_args(pgroup_hidden):
                                metavar="<float>",
                                type=lcer_cutoff,
                                dest="lcer_cutoff",
-                               help="coverage cutoff value deeply integrated in simplification" \
+                               help="coverage cutoff value deeply integrated in simplification"
                                     " (a positive float number). Base coverage! Will be adjusted depending on K and RL!"
                                if show_help_hidden else argparse.SUPPRESS,
                                action="store")
@@ -799,11 +802,12 @@ def add_hidden_args(pgroup_hidden):
                                dest="no_clear_after",
                                help="don't delete tmp files after SPAdes pipeline finished"
                                if show_help_hidden else argparse.SUPPRESS,
-                               action = "store_true")
+                               action="store_true")
     pgroup_hidden.add_argument("--help-hidden",
                                help="prints this usage message with all hidden options"
                                if show_help_hidden else argparse.SUPPRESS,
                                action="help")
+
 
 def add_cluster_args(pgroup_cluster):
     pgroup_cluster.add_argument("--grid-engine",
@@ -849,22 +853,25 @@ def add_cluster_args(pgroup_cluster):
     pgroup_cluster.add_argument("--grid-profile",
                                 dest="grid_profile",
                                 action="store_true",
-                                help="enable mpi task profiling (for SLURM grid engine, for developers only)" if show_help_hidden else argparse.SUPPRESS)
+                                help="enable mpi task profiling (for SLURM grid engine, for developers only)"
+                                if show_help_hidden else argparse.SUPPRESS)
     pgroup_cluster.add_argument("--grid-valgrind",
                                 dest="grid_valgrind",
                                 action="store_true",
-                                help="run mpi tasks with valgrind (for SLURM grid engine, for developers only" if show_help_hidden else argparse.SUPPRESS)
+                                help="run mpi tasks with valgrind (for SLURM grid engine, for developers only"
+                                if show_help_hidden else argparse.SUPPRESS)
     pgroup_cluster.add_argument("--grid-coredump",
                                 dest="grid_coredump",
                                 action="store_true",
-                                help="enable core dumps for mpi tasks (for SLURM cluster, for developers only" if show_help_hidden else argparse.SUPPRESS)
+                                help="enable core dumps for mpi tasks (for SLURM cluster, for developers only"
+                                if show_help_hidden else argparse.SUPPRESS)
 
 
 def create_parser():
     parser = argparse.ArgumentParser(prog="spades.py", formatter_class=SpadesHelpFormatter,
                                      usage="%(prog)s [options] -o <output_dir>", add_help=False)
 
-    #pgroup for parser group
+    # pgroup for parser group
     pgroup_basic = parser.add_argument_group("Basic options")
     pgroup_input_data = parser.add_argument_group("Input data")
     pgroup_pipeline = parser.add_argument_group("Pipeline options")
@@ -954,10 +961,10 @@ def add_to_option(args, skip_output_dir):
     if args.isolate and args.only_error_correction:
         support.error("you cannot specify --only-error-correction in isolate mode!", log)
 
-    if args.careful == False and args.mismatch_corrector == True:
+    if args.careful is False and args.mismatch_corrector is True:
         support.error("you cannot specify --mismatch-correction and --careful:false simultaneously")
 
-    if args.careful == True and args.mismatch_corrector == False:
+    if args.careful is True and args.mismatch_corrector is False:
         support.error("you cannot specify --mismatch-correction:false and --careful simultaneously")
 
     if args.rna and (args.careful or args.mismatch_corrector):
@@ -981,7 +988,7 @@ def add_to_option(args, skip_output_dir):
 
 
 def add_to_cfg(cfg, bin_home, spades_home, args):
-    ### FILLING cfg
+    # FILLING cfg
     cfg["common"] = empty_config()
     cfg["dataset"] = empty_config()
     if not args.only_assembler:
@@ -1013,10 +1020,10 @@ def add_to_cfg(cfg, bin_home, spades_home, args):
 
     if hmms_path is not None:
         hmms = ""
-        is_hmmfile= lambda hmmfile: os.path.isfile(hmmfile) \
-            and (hmmfile.endswith("hmm") or hmmfile.endswith("hmm.gz") or \
-                 hmmfile.endswith("aa") or hmmfile.endswith("aa.gz") or \
-                 hmmfile.endswith("fa") or hmmfile.endswith("fa.gz") or \
+        is_hmmfile = lambda hmmfile: os.path.isfile(hmmfile) \
+            and (hmmfile.endswith("hmm") or hmmfile.endswith("hmm.gz") or
+                 hmmfile.endswith("aa") or hmmfile.endswith("aa.gz") or
+                 hmmfile.endswith("fa") or hmmfile.endswith("fa.gz") or
                  hmmfile.endswith("fna") or hmmfile.endswith("fna.gz"))
         if os.path.isdir(hmms_path):
             hmms = ",".join([os.path.join(hmms_path, hmmfile)
@@ -1053,7 +1060,7 @@ def add_to_cfg(cfg, bin_home, spades_home, args):
             args.k_mers = None
         if args.k_mers:
             cfg["assembly"].__dict__["iterative_K"] = args.k_mers
-        elif (args.rna or args.rnaviral):
+        elif args.rna or args.rnaviral:
             cfg["assembly"].__dict__["iterative_K"] = "auto"
         else:
             cfg["assembly"].__dict__["iterative_K"] = options_storage.K_MERS_SHORT
@@ -1118,7 +1125,7 @@ def postprocessing(args, dataset_data, spades_home, load_processed_dataset, rest
         if args.careful:
             support.error("you cannot specify --careful in RNA-Seq mode!", log)
 
-    modes_count =  [args.large_genome, args.rna, args.plasmid, args.meta, args.single_cell, args.isolate, args.rnaviral,
+    modes_count = [args.large_genome, args.rna, args.plasmid, args.meta, args.single_cell, args.isolate, args.rnaviral,
                     args.corona, args.metaviral, args.metaplasmid, args.bio, args.sewage].count(True)
     is_metaplasmid = modes_count == 3 and [args.meta, args.plasmid, args.metaplasmid].count(True) == 3
     is_bgc = modes_count == 2 and [args.meta, args.bio].count(True) == 2
@@ -1133,7 +1140,8 @@ def postprocessing(args, dataset_data, spades_home, load_processed_dataset, rest
         # everything else is forbidden
         support.error("Specified mode combination is not supported! Check out user manual for available modes.", log)
     elif modes_count == 0:
-        support.warning("No assembly mode was specified! If you intend to assemble high-coverage multi-cell/isolate data, use '--isolate' option.")
+        support.warning("No assembly mode was specified! If you intend to assemble high-coverage multi-cell/isolate "
+                        "data, use '--isolate' option.")
 
     if args.continue_mode:
         return None
@@ -1155,11 +1163,13 @@ def postprocessing(args, dataset_data, spades_home, load_processed_dataset, rest
             _, exc, _ = sys.exc_info()
             support.error(
                     "exception caught while parsing YAML file (%s):\n" % args.dataset_yaml_filename + str(exc))
-        options_storage.original_dataset_data = file_operations.relative2abs_paths(options_storage.original_dataset_data,
-                                                                                                                                os.path.dirname(args.dataset_yaml_filename))
+        options_storage.original_dataset_data = (
+            file_operations.relative2abs_paths(options_storage.original_dataset_data,
+                                               os.path.dirname(args.dataset_yaml_filename)))
     else:
         options_storage.original_dataset_data = file_operations.correct_dataset(options_storage.original_dataset_data)
-        options_storage.original_dataset_data = file_operations.relative2abs_paths(options_storage.original_dataset_data, os.getcwd())
+        options_storage.original_dataset_data = (
+            file_operations.relative2abs_paths(options_storage.original_dataset_data, os.getcwd()))
 
     if existing_dataset_data is not None:
         dataset_data = existing_dataset_data
@@ -1242,7 +1252,7 @@ def parse_args(bin_home, spades_home, secondary_filling, restart_from=False, opt
     return options_storage.args, cfg, dataset_data
 
 
-def usage(spades_version, show_hidden=False, mode=None):
+def usage():
     parser = create_parser()
     parser.print_help()
 

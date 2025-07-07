@@ -27,11 +27,11 @@ class Executor(executor_base.ExecutorBase):
                 if os.path.isfile(stage_checkpoint_path) and \
                         ("_start" not in command.short_name) and \
                         ("_finish" not in command.short_name):
-                    self.log.info("===== Skipping %s (already processed)" % command.STAGE)
+                    self.log.info("===== Skipping %s (already processed)" % command.stage)
                     continue
 
             if "_finish" not in command.short_name:
-                self.log.info("\n===== %s started. \n" % command.STAGE)
+                self.log.info("\n===== %s started. \n" % command.stage)
 
             if command.__str__() != "true":
                 self.log.info("\n== Running: %s\n" % command.__str__())
@@ -41,7 +41,7 @@ class Executor(executor_base.ExecutorBase):
             self.check_output(command)
 
             if "_start" not in command.short_name:
-                self.log.info("\n===== %s finished. \n" % command.STAGE)
+                self.log.info("\n===== %s finished. \n" % command.stage)
 
             self.touch_file(command, num)
             if options_storage.args.stop_after == command.short_name or \
@@ -68,7 +68,7 @@ class Executor(executor_base.ExecutorBase):
     def check_output(self, command):
         for fpath in command.output_files:
             if not os.path.isfile(fpath):
-                support.error(command.STAGE + " finished abnormally: %s not found!" % fpath)
+                support.error(command.stage + " finished abnormally: %s not found!" % fpath)
 
     def dump_commands(self, commands, outputfile):
         commands_parser.write_commands_to_sh(commands, outputfile)

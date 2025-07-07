@@ -175,7 +175,7 @@ class IterationStage(stage.Stage):
         add_configs(args, dst_configs, cfg)
 
         command = [Command(
-            STAGE="K%d" % self.K,
+            stage="K%d" % self.K,
             path=os.path.join(self.bin_home, "{spades_core}"),
             args=args,
             config_dir=os.path.relpath(data_dir, options_storage.args.output_dir),

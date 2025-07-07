@@ -33,11 +33,11 @@ class BeforeStartStage(stage.Stage):
                 self.tmp_files += previous_stage["del_after"]
 
     def get_command(self, cfg):
-        return [Command(STAGE=self.STAGE_NAME,
-                                        path="true",
-                                        args=[],
-                                        short_name=self.short_name,
-                                        del_after=self.tmp_files)]
+        return [Command(stage=self.STAGE_NAME,
+                        path="true",
+                        args=[],
+                        short_name=self.short_name,
+                        del_after=self.tmp_files)]
 
 
 def add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data,
