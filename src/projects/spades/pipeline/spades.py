@@ -19,6 +19,7 @@ import spades_init
 
 spades_init.init()
 spades_home = spades_init.spades_home
+config_dirs = spades_init.config_dirs
 bin_home = spades_init.bin_home
 python_modules_home = spades_init.python_modules_home
 ext_python_modules_home = spades_init.ext_python_modules_home
@@ -635,7 +636,7 @@ def main(args):
                 get_command_and_stage_id_before_restart_from(draft_commands)
             clear_configs(cfg, command_before_restart_from, stage_id_before_restart_from)
 
-        pipeline.generate_configs(cfg, spades_home, tmp_configs_dir)
+        pipeline.generate_configs(cfg, config_dirs, tmp_configs_dir)
         commands = pipeline.get_commands(cfg)
 
         executor = get_sh_dump_executor()
