@@ -29,6 +29,9 @@ options_storage = OptionStorage()
 
 log = logging.getLogger("spades")
 
+current_tmp_dir = None
+
+
 def check_python_version():
     if sys.version_info < options_storage.MINIMAL_PYTHON_VERSION:
         error("\nPython version %s is not supported!\n"

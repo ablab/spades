@@ -85,7 +85,7 @@ def print_used_values(cfg):
     # main
     print_value(cfg, "common", "output_dir", "", "")
     if not options_storage.args.rna:
-        if ("error_correction" in cfg) and (not "assembly" in cfg):
+        if ("error_correction" in cfg) and ("assembly" not in cfg):
             log.info("Mode: ONLY read error correction (without assembling)")
         elif (not "error_correction" in cfg) and ("assembly" in cfg):
             log.info("Mode: ONLY assembling (without read error correction)")
@@ -344,8 +344,8 @@ def print_params(log_filename, command_line, args, cfg):
 
 
 def clear_configs(cfg, command_before_restart_from, stage_id_before_restart_from):
-    def matches_with_restart_from_arg(stage, restart_from_arg):
-        return stage["short_name"].startswith(restart_from_arg.split(":")[0])
+    def matches_with_restart_from_arg(stage_instance, restart_from_arg):
+        return stage_instance["short_name"].startswith(restart_from_arg.split(":")[0])
 
     spades_commands_fpath = os.path.join(cfg["common"].output_dir, "run_spades.yaml")
     with open(spades_commands_fpath) as stream:
@@ -544,8 +544,7 @@ def get_stage(iteration_name):
         return options_storage.BASE_STAGE
 
 
-def build_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
-                   ext_python_modules_home, python_modules_home):
+def build_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data):
     before_start_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
                                        ext_python_modules_home, python_modules_home)
     preprocess_reads_stage.add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
@@ -633,8 +632,7 @@ def main(args):
         output_files = get_output_files(cfg)
         tmp_configs_dir = os.path.join(cfg["common"].output_dir, "configs")
 
-        build_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data,
-                       bin_home, ext_python_modules_home, python_modules_home)
+        build_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data)
 
         if options_storage.args.restart_from:
             draft_commands = pipeline.get_commands(cfg)

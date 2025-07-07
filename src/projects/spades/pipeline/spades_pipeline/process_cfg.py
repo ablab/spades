@@ -12,7 +12,7 @@ import logging
 from . import support
 
 
-class cfg_placeholder:
+class CfgPlaceholder:
     pass
 
 
@@ -45,12 +45,12 @@ def bool_to_str(b):
     return "false"
 
 
-def process_spaces(str):
-    return support.process_spaces(str)
+def process_spaces(string):
+    return support.process_spaces(string)
 
 
 def vars_from_lines(lines):
-    class var_metadata:
+    class VarMetadata:
         def __init__(self, value, line_num, indent):
             self.value = value
             self.line_num = line_num
@@ -64,23 +64,23 @@ def vars_from_lines(lines):
             return True
 
     def var_from_line(line, line_num):
-        l = skip_double_quotes(skip_info_comment(line)).split()
-        if len(l) == 0 or not valid_var_name(l[0]):
+        ln = skip_double_quotes(skip_info_comment(line)).split()
+        if len(ln) == 0 or not valid_var_name(ln[0]):
             return None, None
 
         def indent(s):
             return s[: len(s) - len(s.lstrip())]
 
-        return l[0], var_metadata(l[1:], line_num, indent(line))
+        return ln[0], VarMetadata(ln[1:], line_num, indent(line))
 
-    vars = dict()
+    variables = dict()
 
     for i in range(len(lines)):
         var, meta = var_from_line(lines[i], i)
         if var is not None:
-            vars[var] = meta
+            variables[var] = meta
 
-    return vars
+    return variables
 
 
 def substitute_params(filename, var_dict):
@@ -101,7 +101,7 @@ def substitute_params(filename, var_dict):
 
 # configs with more priority should go first in parameters
 def merge_configs(*cfgs):
-    res = cfg_placeholder()
+    res = CfgPlaceholder()
 
     for cfg in reversed(cfgs):
         res.__dict__.update(cfg.__dict__)
@@ -110,7 +110,7 @@ def merge_configs(*cfgs):
 
 
 def load_config_from_vars(cfg_vars):
-    cfg = cfg_placeholder()
+    cfg = CfgPlaceholder()
 
     def load_value(value):
         if value == 'True' or value == 'true':
@@ -169,7 +169,7 @@ def load_config_from_info_file(filename):
                 blocks[cur_block_name].append(prev_line)
 
     cfg = dict()
-    for block_name in blocks.iterkeys():
+    for block_name in blocks.keys():
         cfg[block_name] = load_config_from_vars(vars_from_lines(blocks[block_name]))
 
     return cfg

@@ -17,10 +17,10 @@ options_storage = OptionStorage()
 
 
 class Command(object):
-    def __init__(self, STAGE, path, args, short_name, config_dir="",
+    def __init__(self, stage, path, args, short_name, config_dir="",
                  mpi_support=False, job_uuid="",
                  del_after=None, output_files=None):
-        self.STAGE = STAGE
+        self.stage = stage
         self.path = path
         self.args = args
         self.short_name = short_name
@@ -68,7 +68,7 @@ class Command(object):
         support.sys_call(self.to_list(), log)
 
     def to_dict(self):
-        return {"STAGE": self.STAGE,
+        return {"STAGE": self.stage,
                 "path": self.path,
                 "args": self.args,
                 "short_name": self.short_name,
@@ -79,10 +79,8 @@ class Command(object):
                 "del_after": self.del_after}
 
     def generate_job_uuid(self):
-        return ('hpcSPAdes_' if self.mpi_support else 'SPAdes_') + \
-            self.STAGE.replace(' ', '_') + "_" + \
-               ''.join([random.choice(string.ascii_uppercase + string.digits) for k in range(32)])
-
+        return (('hpcSPAdes_' if self.mpi_support else 'SPAdes_') + self.stage.replace(' ', '_') + "_" +
+                ''.join([random.choice(string.ascii_uppercase + string.digits) for _ in range(32)]))
 
 
 def write_commands_to_sh(commands, output_file):

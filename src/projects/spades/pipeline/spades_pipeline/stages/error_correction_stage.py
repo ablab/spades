@@ -86,7 +86,7 @@ class ECRunningToolStage(stage.Stage):
         else:
             binary_name = "spades-hammer"
 
-        command = [Command(STAGE="Read error correction",
+        command = [Command(stage="Read error correction",
                            path=os.path.join(self.bin_home, binary_name),
                            args=[os.path.abspath(cfg_file_name)],
                            config_dir=os.path.relpath(cfg.output_dir, options_storage.args.output_dir),
@@ -108,7 +108,7 @@ class ErrorCorrectionCompressingStage(stage.Stage):
         if cfg.gzip_output:
             args.append("--gzip_output")
 
-        command = [Command(STAGE="corrected reads compression",
+        command = [Command(stage="corrected reads compression",
                            path=sys.executable,
                            args=args,
                            short_name=self.short_name)]
@@ -169,12 +169,12 @@ class ErrorCorrectionStage(stage.Stage):
             stage.generate_config(self.cfg)
 
     def get_command(self, cfg):
-        return [Command(STAGE=self.STAGE_NAME,
+        return [Command(stage=self.STAGE_NAME,
                         path="true",
                         args=[],
                         short_name=self.short_name + "_start")] + \
             [x for stage in self.stages for x in stage.get_command(self.cfg)] + \
-            [Command(STAGE=self.STAGE_NAME,
+            [Command(stage=self.STAGE_NAME,
                      path="true",
                      args=[],
                      short_name=self.short_name + "_finish")]

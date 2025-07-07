@@ -26,11 +26,11 @@ class Executor(executor_local.Executor):
                 if os.path.isfile(stage_checkpoint_path) and \
                         ("_start" not in command.short_name) and \
                         ("_finish" not in command.short_name):
-                    self.log.info("===== Skipping %s (already processed)" % command.STAGE)
+                    self.log.info("===== Skipping %s (already processed)" % command.stage)
                     continue
 
             if "_finish" not in command.short_name:
-                self.log.info("\n===== %s started. \n" % command.STAGE)
+                self.log.info("\n===== %s started. \n" % command.stage)
 
             # `true' command does nothing, it corresponds to an arbitrary stage
             # used for cleanup, restart-from, and other such stuff. We skip its
@@ -51,7 +51,7 @@ class Executor(executor_local.Executor):
             self.check_output(command)
 
             if "_start" not in command.short_name:
-                self.log.info("\n===== %s finished. \n" % command.STAGE)
+                self.log.info("\n===== %s finished. \n" % command.stage)
 
             self.touch_file(command, num)
 

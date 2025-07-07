@@ -84,7 +84,7 @@ class PreprocessInterlacedReads(stage.Stage):
                 fw.write(str(update_item["is_fastq"]) + "\n")
 
     def get_command(self, cfg):
-        command = [Command(STAGE=self.STAGE_NAME,
+        command = [Command(stage=self.STAGE_NAME,
                            path=sys.executable,
                            args=[
                                os.path.join(self.python_modules_home, "spades_pipeline", "supplemetary",
@@ -139,7 +139,7 @@ class PreprocessContigs(stage.Stage):
                 fw.write(update_item["new_filename"] + "\n")
 
     def get_command(self, cfg):
-        command = [Command(STAGE=self.STAGE_NAME,
+        command = [Command(stage=self.STAGE_NAME,
                            path=sys.executable,
                            args=[
                                os.path.join(self.python_modules_home, "spades_pipeline", "supplemetary",
@@ -203,12 +203,12 @@ class PreprocessReadsStage(stage.Stage):
                         default_flow_style=False, default_style='"', width=float("inf"))
 
     def get_command(self, cfg):
-        return [Command(STAGE=self.STAGE_NAME,
+        return [Command(stage=self.STAGE_NAME,
                         path="true",
                         args=[],
                         short_name=self.short_name + "_start")] + \
             [x for stage in self.stages for x in stage.get_command(cfg)] + \
-            [Command(STAGE=self.STAGE_NAME,
+            [Command(stage=self.STAGE_NAME,
                      path="true",
                      args=[],
                      short_name=self.short_name + "_finish")]

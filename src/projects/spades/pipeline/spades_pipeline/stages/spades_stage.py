@@ -172,7 +172,7 @@ class PlasmidGlueFileStage(stage.Stage):
         self.cfg = cfg
         args = [os.path.join(self.python_modules_home, "spades_pipeline", "supplemetary", "plasmid_glue.py")]
         args.append(self.latest)
-        command = [Command(STAGE=self.STAGE_NAME,
+        command = [Command(stage=self.STAGE_NAME,
                            path=sys.executable,
                            args=args,
                            short_name=self.short_name,
@@ -260,7 +260,7 @@ class SpadesCopyFileStage(stage.Stage):
                 args.append(filename)
                 args.append(outputfile.output_file)
         bin_reads_dir = os.path.join(self.cfg.output_dir, ".bin_reads")
-        command = [Command(STAGE=self.STAGE_NAME,
+        command = [Command(stage=self.STAGE_NAME,
                            path=sys.executable,
                            args=args,
                            short_name=self.short_name,
@@ -367,12 +367,12 @@ class SpadesStage(stage.Stage):
             stage.generate_config(self.cfg)
 
     def get_command(self, cfg):
-        return [Command(STAGE=self.STAGE_NAME,
+        return [Command(stage=self.STAGE_NAME,
                         path="true",
                         args=[],
                         short_name=self.short_name + "_start")] + \
             [x for stage in self.stages for x in stage.get_command(self.cfg)] + \
-            [Command(STAGE=self.STAGE_NAME,
+            [Command(stage=self.STAGE_NAME,
                      path="true",
                      args=[],
                      short_name=self.short_name + "_finish")]

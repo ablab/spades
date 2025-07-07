@@ -83,11 +83,11 @@ class ExecutorCluster(ExecutorBase):
                 if os.path.isfile(stage_checkpoint_path) and \
                         ("_start" not in command.short_name) and \
                         ("_finish" not in command.short_name):
-                    self.log.info("===== Skipping %s (already processed)" % command.STAGE)
+                    self.log.info("===== Skipping %s (already processed)" % command.stage)
                     continue
 
             if "_finish" not in command.short_name:
-                self.log.info("\n===== %s started. \n" % command.STAGE)
+                self.log.info("\n===== %s started. \n" % command.stage)
 
             # `true' command does nothing, it corresponds to an arbitrary stage
             # used for cleanup, restart-from, and other such stuff We skip its
@@ -100,14 +100,14 @@ class ExecutorCluster(ExecutorBase):
                     cmd = self.get_not_MPI_command(command, prev_id())
                 jid = self.run_cluster_command(cmd, command.job_uuid)
                 if "_start" not in command.short_name:
-                    self.log.info("\n===== %s submitted. Job ID: %s \n" % (command.STAGE, jid))
+                    self.log.info("\n===== %s submitted. Job ID: %s \n" % (command.stage, jid))
                 jobs.append(jid)
 
-            touch_command = commands_parser.Command(command.STAGE + "_touch",
+            touch_command = commands_parser.Command(command.stage + "_touch",
                     "touch",
-                    [stage_checkpoint_path],
+                                                    [stage_checkpoint_path],
                     "touch",
-                    job_uuid=command.job_uuid + "_touch")
+                                                    job_uuid=command.job_uuid + "_touch")
 
             touch_jid = self.run_cluster_command(self.get_not_MPI_command(touch_command, prev_id()), touch_command.job_uuid)
             jobs.append(touch_jid)
@@ -170,14 +170,14 @@ class ExecutorCluster(ExecutorBase):
         cmd += "$CLUSTER_ARGS "
         cmd += self.grid_engine_mpi_runtime + " $MPIRUN_ARGS "
         cmd1 = cmd
-        cmd = "# === STAGE " + command.STAGE + "(MPI) === \n"
+        cmd = "# === STAGE " + command.stage + "(MPI) === \n"
         cmd += "CMD=\"" + command.mpi_sh_str() + "\"\n\n"
         cmd += cmd1
         cmd += "$CMD\n\n"
         return cmd
 
     def get_not_MPI_sh_command(self, command, prev_job_name=""):
-        cmd = "#=== STAGE " + command.STAGE + " (not MPI) ===\n"
+        cmd = "#=== STAGE " + command.stage + " (not MPI) ===\n"
         cmd += "CMD=\"" + command.sh_str() + "\"\n\n"
 
         cmd += self.grid_engine_submit_command + " "
@@ -212,7 +212,7 @@ class ExecutorCluster(ExecutorBase):
             NCPUS=options_storage.args.threads) + " "
 
         if options_storage.args.grid_profile:
-            name = command.STAGE + "_" + command.short_name + "_" + command.job_uuid
+            name = command.stage + "_" + command.short_name + "_" + command.job_uuid
             profile = options_storage.args.output_dir + "/" + name + ".prof"
             profile_line = " -x CPUPROFILE={PROFILE} ompi_profile_helper.sh ".format(PROFILE=profile)
         else:

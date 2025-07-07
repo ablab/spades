@@ -33,10 +33,10 @@ class CheckStageStage(stage.Stage):
             args += ["--result_contigs_filename", self.output_files["result_contigs_filename"],
                      "--result_scaffolds_filename", self.output_files["result_scaffolds_filename"]]
 
-        return [Command(STAGE=self.STAGE_NAME,
-                                        path=sys.executable,
-                                        args=args,
-                                        short_name=self.short_name)]
+        return [Command(stage=self.STAGE_NAME,
+                        path=sys.executable,
+                        args=args,
+                        short_name=self.short_name)]
 
 
 def add_to_pipeline(pipeline, _, output_files, tmp_configs_dir, dataset_data, bin_home,

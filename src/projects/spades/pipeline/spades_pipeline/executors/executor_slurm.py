@@ -50,7 +50,7 @@ class Executor(executor_base.ExecutorCluster):
         return preambula
 
     def get_sh_command(self, command, prev_id, mpi):
-        cmd_str = "#=== STAGE " + command.STAGE + (" (MPI) ===\n" if mpi else " (not MPI) ===\n")
+        cmd_str = "#=== STAGE " + command.stage + (" (MPI) ===\n" if mpi else " (not MPI) ===\n")
         cmd_str += "CMD=\"" + command.mpi_sh_str() + "\"\n"
         cmd_str += "SID1=$(" + self.grid_engine_submit_command + " $SLURM_ARGS " + \
                    self.grid_engine_job_name.format(JOB_NAME=command.job_uuid)  + " $LOG_OUT $ERR_OUT "
@@ -72,7 +72,7 @@ class Executor(executor_base.ExecutorCluster):
         log_file = options_storage.args.output_dir + "/spades.log"
         if mpi:
             if options_storage.args.grid_profile:
-                name = command.STAGE + "_" + command.short_name + "_" + command.job_uuid
+                name = command.stage + "_" + command.short_name + "_" + command.job_uuid
                 profile = options_storage.args.output_dir + "/" + name + ".prof"
                 profile_line = "-x CPUPROFILE={PROFILE} ompi_profile_helper.sh".format(PROFILE=profile)
             else:

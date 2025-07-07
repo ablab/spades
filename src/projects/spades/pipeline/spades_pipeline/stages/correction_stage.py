@@ -57,12 +57,12 @@ class CorrectionIterationStage(stage.Stage):
                 "--output_dir", cfg["common"].output_dir,
                 "--bin_home", self.bin_home]
 
-        return [Command(STAGE=self.STAGE_NAME,
-                                        path=sys.executable,
-                                        args=args,
-                                        config_dir=os.path.relpath(self.cfg.output_dir, options_storage.args.output_dir),
-                                        short_name=self.short_name,
-                                        del_after=[os.path.join(os.path.relpath(self.cfg.output_dir,
+        return [Command(stage=self.STAGE_NAME,
+                        path=sys.executable,
+                        args=args,
+                        config_dir=os.path.relpath(self.cfg.output_dir, options_storage.args.output_dir),
+                        short_name=self.short_name,
+                        del_after=[os.path.join(os.path.relpath(self.cfg.output_dir,
                                                                                 options_storage.args.output_dir),
                                                                 "tmp"),
                                                    os.path.relpath(self.cfg.tmp_dir, options_storage.args.output_dir)])]
@@ -108,15 +108,15 @@ class CorrectionStage(stage.Stage):
             stage.generate_config(cfg)
 
     def get_command(self, cfg):
-        return [Command(STAGE=self.STAGE_NAME,
-                                        path="true",
-                                        args=[],
-                                        short_name=self.short_name + "_start")] + \
+        return [Command(stage=self.STAGE_NAME,
+                        path="true",
+                        args=[],
+                        short_name=self.short_name + "_start")] + \
                [x for stage in self.stages for x in stage.get_command(cfg)] + \
-               [Command(STAGE=self.STAGE_NAME,
-                                        path="true",
-                                        args=[],
-                                        short_name=self.short_name + "_finish")]
+               [Command(stage=self.STAGE_NAME,
+                        path="true",
+                        args=[],
+                        short_name=self.short_name + "_finish")]
 
 
 def add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
