@@ -30,8 +30,8 @@ class TerminatingStage(stage.Stage):
                                         del_after=del_after)]
 
 
-def add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
+def add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
                     ext_python_modules_home, python_modules_home):
     pipeline.add(TerminatingStage("terminate", output_files, tmp_configs_dir,
-                                  dataset_data, log, bin_home,
+                                  dataset_data, bin_home,
                                   ext_python_modules_home, python_modules_home))

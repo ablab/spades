@@ -47,7 +47,7 @@ def add_configs(command, configs_dir, cfg):
             command.append(os.path.join(configs_dir, "hmm_mode.info"))
 
 
-def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one, execution_home):
+def prepare_config_spades(filename, cfg, additional_contigs_fname, K, stage, saves_dir, last_one):
     subst_dict = dict()
     subst_dict["K"] = str(K)
     subst_dict["dataset"] = process_cfg.process_spaces(cfg.dataset)
@@ -96,18 +96,18 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
 
     if "series_analysis" in cfg.__dict__:
         subst_dict["series_analysis"] = cfg.series_analysis
-    process_cfg.substitute_params(filename, subst_dict, log)
+    process_cfg.substitute_params(filename, subst_dict)
 
 
-def prepare_config_rnaspades(filename, log):
+def prepare_config_rnaspades(filename):
     if not options_storage.args.rna:
         return
     subst_dict = dict()
     subst_dict["ss_enabled"] = bool_to_str(options_storage.args.strand_specificity is not None)
     subst_dict["antisense"] = bool_to_str(options_storage.args.strand_specificity == "rf")
-    process_cfg.substitute_params(filename, subst_dict, log)
+    process_cfg.substitute_params(filename, subst_dict)
 
-def prepare_config_bgcspades(filename, cfg, log):
+def prepare_config_bgcspades(filename, cfg):
     if not "set_of_hmms" in cfg.__dict__:
         return
     subst_dict = dict()
@@ -116,14 +116,14 @@ def prepare_config_bgcspades(filename, cfg, log):
         subst_dict["component_size_part"] = 1
         subst_dict["set_copynumber"] = bool_to_str(True)
         subst_dict["start_only_from_tips"] = bool_to_str(True)
-    process_cfg.substitute_params(filename, subst_dict, log)
+    process_cfg.substitute_params(filename, subst_dict)
 
-def prepare_config_construction(filename, log):
+def prepare_config_construction(filename):
     if options_storage.args.read_cov_threshold is None:
         return
     subst_dict = dict()
     subst_dict["read_cov_threshold"] = options_storage.args.read_cov_threshold
-    process_cfg.substitute_params(filename, subst_dict, log)
+    process_cfg.substitute_params(filename, subst_dict)
 
 
 class IterationStage(stage.Stage):
@@ -155,18 +155,18 @@ class IterationStage(stage.Stage):
         if "read_buffer_size" in cfg.__dict__:
             # FIXME why here???
             process_cfg.substitute_params(os.path.join(dst_configs, "construction.info"),
-                                          {"read_buffer_size": cfg.read_buffer_size}, self.log)
+                                          {"read_buffer_size": cfg.read_buffer_size})
         if "scaffolding_mode" in cfg.__dict__:
             # FIXME why here???
             process_cfg.substitute_params(os.path.join(dst_configs, "pe_params.info"),
-                                          {"scaffolding_mode": cfg.scaffolding_mode}, self.log)
+                                          {"scaffolding_mode": cfg.scaffolding_mode})
 
-        prepare_config_rnaspades(os.path.join(dst_configs, "rna_mode.info"), self.log)
-        prepare_config_bgcspades(os.path.join(dst_configs, "hmm_mode.info"), cfg, self.log)
-        prepare_config_construction(os.path.join(dst_configs, "construction.info"), self.log)
+        prepare_config_rnaspades(os.path.join(dst_configs, "rna_mode.info"))
+        prepare_config_bgcspades(os.path.join(dst_configs, "hmm_mode.info"), cfg)
+        prepare_config_construction(os.path.join(dst_configs, "construction.info"))
         cfg_fn = os.path.join(dst_configs, "config.info")
-        prepare_config_spades(cfg_fn, cfg, self.log, additional_contigs_dname, self.K, self.get_stage(self.short_name),
-                              saves_dir, self.last_one, self.bin_home)
+        prepare_config_spades(cfg_fn, cfg, additional_contigs_dname, self.K, self.get_stage(self.short_name),
+                              saves_dir, self.last_one)
 
     def get_command(self, cfg):
         data_dir = os.path.join(cfg.output_dir, "K%d" % self.K)

@@ -11,6 +11,7 @@
 import os
 import shutil
 import sys
+import logging
 from site import addsitedir
 
 import commands_parser
@@ -21,21 +22,10 @@ import support
 from process_cfg import merge_configs
 
 
-def get_read_length(output_dir, K, ext_python_modules_home, log):
-    est_params_filename = os.path.join(output_dir, "K%d" % K, "final.lib_data")
-    max_read_length = 0
-    if os.path.isfile(est_params_filename):
-        addsitedir(ext_python_modules_home)
-        import pyyaml3 as pyyaml
-        est_params_data = pyyaml.load(open(est_params_filename))
-        max_read_length = int(est_params_data["nomerge max read length"])
-        log.info("Max read length detected as %d" % max_read_length)
-    if max_read_length == 0:
-        support.error("Failed to estimate maximum read length! File with estimated params: %s" % est_params_filename, log)
-    return max_read_length
+log = logging.getLogger("spades")
 
 
-def update_k_mers_in_special_cases(cur_k_mers, RL, log, silent=False):
+def update_k_mers_in_special_cases(cur_k_mers, RL, silent=False):
     if options_storage.auto_K_allowed():
         if RL >= 250:
             if not silent:
@@ -60,7 +50,7 @@ def reveal_original_k_mers(RL):
     if options_storage.original_k_mers is None or options_storage.original_k_mers == "auto":
         cur_k_mers = options_storage.args.k_mers
         options_storage.args.k_mers = options_storage.original_k_mers
-        original_k_mers = update_k_mers_in_special_cases(options_storage.K_MERS_SHORT, RL, None, silent=True)
+        original_k_mers = update_k_mers_in_special_cases(options_storage.K_MERS_SHORT, RL, silent=True)
         options_storage.args.k_mers = cur_k_mers
     else:
         original_k_mers = options_storage.original_k_mers
@@ -68,8 +58,8 @@ def reveal_original_k_mers(RL):
     return original_k_mers
 
 
-def rna_k_values(support, dataset_data, log):
-    rna_rl = support.get_reads_length(dataset_data, log, ["merged reads"])
+def rna_k_values(support, dataset_data):
+    rna_rl = support.get_reads_length(dataset_data, ["merged reads"])
     upper_k = int(rna_rl / 2) - 1
     if upper_k % 2 == 0:
         upper_k -= 1
@@ -101,24 +91,26 @@ def rna_k_values(support, dataset_data, log):
         return [upper_k]
     return [lower_k, upper_k]
 
-def generateK_for_sewage(cfg, dataset_data, log):
+
+def generateK_for_sewage(cfg):
     if cfg.iterative_K == "auto":
         k_values = [55]
         cfg.iterative_K = k_values
         log.info("K values to be used: " + str(k_values))
 
-def generateK_for_rna(cfg, dataset_data, log):
+
+def generateK_for_rna(cfg, dataset_data):
     if cfg.iterative_K == "auto":
         k_values = options_storage.K_MERS_RNA
         if not options_storage.args.iontorrent:
-            k_values = rna_k_values(support, dataset_data, log)
+            k_values = rna_k_values(support, dataset_data)
         cfg.iterative_K = k_values
         log.info("K values to be used: " + str(k_values))
 
 
-def generateK_for_rnaviral(cfg, dataset_data, log):
+def generateK_for_rnaviral(cfg, dataset_data):
     if cfg.iterative_K == "auto":
-        k_values = rna_k_values(support, dataset_data, log)
+        k_values = rna_k_values(support, dataset_data)
         # FIXME: Hack-hack-hack! :)
         if min(k_values) == options_storage.RNA_MAX_LOWER_K:
             k_values = [options_storage.K_MERS_RNA[0]] + k_values
@@ -128,15 +120,15 @@ def generateK_for_rnaviral(cfg, dataset_data, log):
         log.info("K values to be used: " + str(k_values))
 
 
-def generateK(cfg, log, dataset_data, silent=False):
+def generateK(cfg, dataset_data, silent=False):
     if options_storage.args.sewage:
-        generateK_for_sewage(cfg, dataset_data, log)
+        generateK_for_sewage(cfg)
     elif options_storage.args.rna:
-        generateK_for_rna(cfg, dataset_data, log)
+        generateK_for_rna(cfg, dataset_data)
     elif options_storage.args.rnaviral:
-        generateK_for_rnaviral(cfg, dataset_data, log)
+        generateK_for_rnaviral(cfg, dataset_data)
     elif not options_storage.args.iontorrent:
-        RL = support.get_primary_max_reads_length(dataset_data, log, ["merged reads"],
+        RL = support.get_primary_max_reads_length(dataset_data, ["merged reads"],
                                                   options_storage.READS_TYPES_USED_IN_CONSTRUCTION)
         if options_storage.auto_K_allowed():
             if options_storage.args.plasmid:
@@ -306,7 +298,7 @@ class SpadesStage(stage.Stage):
         if not os.path.isdir(self.output_files["misc_dir"]):
             os.makedirs(self.output_files["misc_dir"])
 
-        generateK(self.cfg, self.log, self.dataset_data)
+        generateK(self.cfg, self.dataset_data)
 
         self.used_K = []
         count = 0
@@ -318,7 +310,7 @@ class SpadesStage(stage.Stage):
             iter_stage = spades_iteration_stage.IterationStage(K, prev_K, last_one, self.get_stage, self.latest,
                                                                "k%d" % K,
                                                                self.output_files, self.tmp_configs_dir,
-                                                               self.dataset_data, self.log, self.bin_home,
+                                                               self.dataset_data, self.bin_home,
                                                                self.ext_python_modules_home,
                                                                self.python_modules_home)
             self.stages.append(iter_stage)
@@ -333,14 +325,14 @@ class SpadesStage(stage.Stage):
             self.stages.append(PlasmidGlueFileStage(self.latest, "plasmid_copy_files", 
                                                     self.output_files,
                                                     self.tmp_configs_dir,
-                                                    self.dataset_data, self.log,
+                                                    self.dataset_data,
                                                     self.bin_home,
                                                     self.ext_python_modules_home,
                                                     self.python_modules_home))
         self.stages.append(SpadesCopyFileStage(self.latest, "copy_files",
                                                self.output_files,
                                                self.tmp_configs_dir,
-                                               self.dataset_data, self.log,
+                                               self.dataset_data,
                                                self.bin_home,
                                                self.ext_python_modules_home,
                                                self.python_modules_home))
@@ -387,8 +379,8 @@ class SpadesStage(stage.Stage):
                                         short_name=self.short_name + "_finish")]
 
 
-def add_to_pipeline(pipeline, get_stage, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
+def add_to_pipeline(pipeline, get_stage, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
                     ext_python_modules_home, python_modules_home):
     if "assembly" in cfg:
         pipeline.add(SpadesStage(cfg, get_stage, "as", output_files, tmp_configs_dir,
-                                 dataset_data, log, bin_home, ext_python_modules_home, python_modules_home))
+                                 dataset_data, bin_home, ext_python_modules_home, python_modules_home))

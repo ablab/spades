@@ -24,7 +24,7 @@ class PreprocessInterlacedReads(stage.Stage):
     # {input_filename, out_left_filename, out_right_filename, was_compressed, is_fastq}}
     update_list = []
 
-    def split_interlaced_reads(self, dataset_data, dst, log):
+    def split_interlaced_reads(self, dataset_data, dst):
         self.dst = dst
         for reads_library in dataset_data:
             copy_reads_library = dict(reads_library)
@@ -73,7 +73,7 @@ class PreprocessInterlacedReads(stage.Stage):
                     del reads_library["interlaced reads"]
 
     def generate_config(self, cfg):
-        self.split_interlaced_reads(self.dataset_data, self.dst, self.log)
+        self.split_interlaced_reads(self.dataset_data, self.dst)
 
         with open(os.path.join(self.tmp_dir, "interlaced"), "w") as fw:
             for update_item in self.update_list:
@@ -106,7 +106,7 @@ class PreprocessContigs(stage.Stage):
     # (gzipped, old_filename, new_filename)
     update_list = []
 
-    def process_Ns_in_additional_contigs(self, dataset_data, dst, log):
+    def process_Ns_in_additional_contigs(self, dataset_data, dst):
         self.dst = dst
         for reads_library in dataset_data:
             if reads_library["type"].endswith("contigs"):
@@ -131,7 +131,7 @@ class PreprocessContigs(stage.Stage):
                 reads_library["single reads"] = new_entry
 
     def generate_config(self, cfg):
-        self.process_Ns_in_additional_contigs(self.dataset_data, self.dst, self.log)
+        self.process_Ns_in_additional_contigs(self.dataset_data, self.dst)
         with open(os.path.join(self.tmp_dir, "contigs"), "w") as fw:
             for update_item in self.update_list:
                 fw.write(str(update_item["gzipped"]) + "\n")
@@ -171,16 +171,14 @@ class PreprocessReadsStage(stage.Stage):
         if support.dataset_has_interlaced_reads(self.dataset_data) and (not options_storage.args.only_assembler):
             self.stages.append(PreprocessInterlacedReads(self.dir_for_split_reads, self.tmp_dir, "preprocess_12",
                                                           self.output_files, self.tmp_configs_dir,
-                                                          self.dataset_data, self.log,
-                                                          self.bin_home,
+                                                          self.dataset_data, self.bin_home,
                                                           self.ext_python_modules_home,
                                                           self.python_modules_home))
 
         if support.dataset_has_additional_contigs(self.dataset_data):
             self.stages.append(PreprocessContigs(self.dir_for_split_reads, self.tmp_dir, "preprocess_ac",
                                                  self.output_files, self.tmp_configs_dir,
-                                                 self.dataset_data, self.log,
-                                                 self.bin_home,
+                                                 self.dataset_data, self.bin_home,
                                                  self.ext_python_modules_home,
                                                  self.python_modules_home))
 
@@ -216,9 +214,10 @@ class PreprocessReadsStage(stage.Stage):
                                         short_name=self.short_name + "_finish")]
 
 
-def add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log,
+def add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data,
                     bin_home, ext_python_modules_home, python_modules_home):
-    if (support.dataset_has_interlaced_reads(options_storage.original_dataset_data) \
+    if (support.dataset_has_interlaced_reads(options_storage.original_dataset_data)
             or support.dataset_has_additional_contigs(options_storage.original_dataset_data)):
         pipeline.add(PreprocessReadsStage(cfg, "preprocess", output_files, tmp_configs_dir,
-                                          options_storage.original_dataset_data, log, bin_home, ext_python_modules_home, python_modules_home))
+                                          options_storage.original_dataset_data, bin_home,
+                                          ext_python_modules_home, python_modules_home))

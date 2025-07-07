@@ -16,7 +16,8 @@ import support
 class Executor(executors.ExecutorCluster):
     grid_engine = "SLURM"
     grid_engine_submit_command = "sbatch"
-    grid_engine_slurm_args = "--hint=compute_bound --mem-bind=verbose,none --cpus-per-task {NCPUS} --open-mode=append --kill-on-invalid-dep=yes --mem {MEMORY_MB}M --time {TIME} {EXTRA}"
+    grid_engine_slurm_args = ("--hint=compute_bound --mem-bind=verbose,none --cpus-per-task {NCPUS} --open-mode=append "
+                              "--kill-on-invalid-dep=yes --mem {MEMORY_MB}M --time {TIME} {EXTRA}")
     grid_engine_output_option = "-o {OUT}"
     grid_engine_err_output_option = "-e {ERR}"
     grid_engine_job_name = "--job-name {JOB_NAME}"
@@ -32,7 +33,7 @@ class Executor(executors.ExecutorCluster):
         cmd += " " + self.grid_engine_dependency_option.format(WAIT_TAG=job_name)
         cmd += " " + self.grid_engine_credentials.format(QUEUE=options_storage.args.grid_queue)
         cmd += " --wait"
-        support.sys_call(cmd, log=self.log)
+        support.sys_call(cmd, logger_instance=self.log)
 
     def get_MPI_sh_preambula(self):
         memory_mb = int(options_storage.args.memory * 1024)
@@ -87,8 +88,10 @@ class Executor(executors.ExecutorCluster):
                 coredump_line = "ulimit -c unlimited;"
             else:
                 coredump_line = ""
-            command_line = "{COREDUMP} srun ".format(COREDUMP=coredump_line) + self.grid_engine_srun_args.format(NCPUS=options_storage.args.threads) + \
-                           " {VALGRIND} {PROFILE}".format(PROFILE=profile_line, VALGRIND=valgrind_line) + " " + command.mpi_str()
+            command_line = ("{COREDUMP} srun ".format(COREDUMP=coredump_line) +
+                            self.grid_engine_srun_args.format(NCPUS=options_storage.args.threads) +
+                            " {VALGRIND} {PROFILE}".format(PROFILE=profile_line, VALGRIND=valgrind_line) +
+                            " " + command.mpi_str())
         else:
             command_line = command.mpi_str()
         cmd = self.grid_engine_submit_command + " "
@@ -96,7 +99,7 @@ class Executor(executors.ExecutorCluster):
         cmd += self.grid_engine_slurm_args.format(NCPUS=options_storage.args.threads,
                                                   MEMORY_MB=memory_mb,
                                                   TIME=options_storage.args.grid_time,
-                                                  EXTRA=options.storage.args.grid_extra,
+                                                  EXTRA=options_storage.args.grid_extra,
                                                   QUEUE=options_storage.args.grid_queue) + " "
         cmd += self.grid_engine_job_name.format(JOB_NAME=command.job_uuid) + " "
         cmd += self.grid_engine_err_output_option.format(ERR=log_file) + " "
@@ -123,7 +126,8 @@ class Executor(executors.ExecutorCluster):
         return self.get_sh_command(command, prev_id=prev_id, mpi=False)
 
     def run_cluster_command(self, cmd, uuid):
-        import re, os
+        import re
+        import os
         self.log.info("Submit cluster job: " + cmd)
         output = os.popen(cmd).read()
         jobid_search = re.search(r"^Submitted batch job (\d+)$", output)

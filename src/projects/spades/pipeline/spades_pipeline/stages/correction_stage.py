@@ -97,7 +97,7 @@ class CorrectionStage(stage.Stage):
             self.stages.append(CorrectionIterationStage(cfg, assembly_type, corrected, assembled,
                                                         "mc_%s" % assembly_type,
                                                         self.output_files,
-                                                        self.tmp_configs_dir, self.dataset_data, self.log,
+                                                        self.tmp_configs_dir, self.dataset_data,
                                                         self.bin_home, self.ext_python_modules_home,
                                                         self.python_modules_home))
 
@@ -117,8 +117,8 @@ class CorrectionStage(stage.Stage):
                                         short_name=self.short_name + "_finish")]
 
 
-def add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, log, bin_home,
+def add_to_pipeline(pipeline, cfg, output_files, tmp_configs_dir, dataset_data, bin_home,
                     ext_python_modules_home, python_modules_home):
     if "assembly" in cfg and "mismatch_corrector" in cfg:
         pipeline.add(CorrectionStage(cfg, "mc", output_files, tmp_configs_dir, dataset_data,
-                                     log, bin_home, ext_python_modules_home, python_modules_home))
+                                     bin_home, ext_python_modules_home, python_modules_home))
