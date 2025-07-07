@@ -14,8 +14,11 @@ import logging
 import os
 import sys
 from site import addsitedir
-from os.path import isfile
-from .. import support
+from os.path import isfile, abspath, dirname, realpath, join
+
+python_modules_home = abspath(dirname(realpath(__file__)))
+sys.path.append(join(python_modules_home, ".."))
+import support
 
 
 def remove_not_corrected_reads(output_dir):

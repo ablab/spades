@@ -12,8 +12,6 @@ import os
 import sys
 from os.path import abspath, dirname, realpath, join, isfile
 
-source_dirs = ["", "stages", "common", "executors", "scripts"]
-
 # developers configuration
 spades_home = abspath(dirname(realpath(__file__)))
 spades_root = abspath(join(spades_home, "../../../../"))
@@ -48,9 +46,7 @@ def init():
     else:
         spades_version = open(join(spades_root, "VERSION"), 'r').readline().strip()
 
-    sys.path.append(join(python_modules_home, "spades_pipeline"))
-    for dir in source_dirs:
-        sys.path.append(join(python_modules_home, "spades_pipeline", dir))
+    sys.path.append(join(python_modules_home))
 
 
 if __name__ == "__main__":

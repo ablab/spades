@@ -18,6 +18,8 @@ import datetime
 import subprocess
 import functools
 
+import src.projects.spades.pipeline.spades_pipeline.file_operations
+
 ###################################################################
 
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'conversion'))
@@ -72,7 +74,7 @@ for opt, arg in options:
         output_dir = arg
         make_latest_symlink = False  
     elif opt in ('-r', "--reference"):
-        support.check_file_existence(arg, "reference")
+        src.projects.spades.pipeline.spades_pipeline.file_operations.check_file_existence(arg, "reference")
         reference = arg
     elif opt in ('-t', "--thread-num"):
         thread_num = int(arg)
@@ -95,7 +97,7 @@ for opt, arg in options:
         raise ValueError
 
 for d in datasets:
-    support.check_file_existence(d)    
+    src.projects.spades.pipeline.spades_pipeline.file_operations.check_file_existence(d)
 
 if not datasets:
     sys.stderr.write("no datasets provided")
@@ -151,7 +153,7 @@ for dataset in datasets:
         support.warning('skipping ' + dataset + ': exception caught while parsing YAML file (' + options_storage.dataset_yaml_filename + '):\n' + str(exc))
         continue
 
-    dataset_data = support.correct_dataset(dataset_data)
+    dataset_data = src.projects.spades.pipeline.spades_pipeline.file_operations.correct_dataset(dataset_data)
     for id, library in enumerate(dataset_data):
         print("processing lib#" + str(id) + " of " + dataset)
         basename = os.path.splitext(os.path.basename(dataset))[0]

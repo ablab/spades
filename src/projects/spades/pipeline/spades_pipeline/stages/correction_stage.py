@@ -13,12 +13,13 @@ import shutil
 import sys
 from site import addsitedir
 
-import stage
+from . import stage
 from ..process_cfg import merge_configs
 from ..commands_parser import Command
 from ..options_storage import OptionStorage
 options_storage = OptionStorage()
-from ..support import copy_tree, get_tmp_dir
+from ..support import copy_tree
+from ..file_operations import get_tmp_dir
 
 
 def prepare_config_corr(filename, cfg, ext_python_modules_home):
@@ -49,7 +50,7 @@ class CorrectionIterationStage(stage.Stage):
         self.cfg = merge_configs(cfg["mismatch_corrector"], cfg["common"])
 
     def get_command(self, cfg):
-        args = [os.path.join(self.python_modules_home, "spades_pipeline", "scripts", "correction_iteration_script.py"),
+        args = [os.path.join(self.python_modules_home, "spades_pipeline", "supplemetary", "correction_iteration_script.py"),
                 "--corrected", self.corrected,
                 "--assembled", self.assembled,
                 "--assembly_type", self.assembly_type,

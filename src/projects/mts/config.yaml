@@ -3,7 +3,7 @@
 data: "path/to/samples/directory"
 soft: "path/to/software/directory" #Directory with kmc, binners, CheckM, etc.
 #bin: "/path/to/mts/binaries" #Derived from the current dir by default
-#scripts: "/path/to/scripts/directory" #Derived from the current dir by default
+#supplemetary: "/path/to/supplemetary/directory" #Derived from the current dir by default
 #threads: 8 #Maximum number of threads for a task to use
 #assembly:
     #assembler: spades

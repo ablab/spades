@@ -14,6 +14,7 @@ from os.path import basename
 from os.path import abspath, expanduser
 import logging
 
+from . import file_operations
 from . import support
 from .options_storage import OptionStorage
 options_storage = OptionStorage()
@@ -148,7 +149,7 @@ class AddToDatasetAction(argparse.Action):
                 arg = values[0]
 
         # add to dataset for old format
-        support.add_to_dataset(opt, arg, namespace.dataset_data)
+        file_operations.add_to_dataset(opt, arg, namespace.dataset_data)
 
 
 class StoreUniqueAction(argparse.Action):
@@ -620,7 +621,7 @@ def add_advanced_args(pgroup_advanced):
     mode = get_mode()
     pgroup_advanced.add_argument("--dataset",
                                  metavar="<filename>",
-                                 type=support.check_file_existence,
+                                 type=file_operations.check_file_existence,
                                  dest="dataset_yaml_filename",
                                  help="file with dataset description in YAML format",
                                  action="store")
@@ -737,21 +738,21 @@ def add_hidden_args(pgroup_hidden):
     pgroup_hidden.add_argument("--reference",
                                metavar="<filename>",
                                dest="reference",
-                               type=support.check_file_existence,
+                               type=file_operations.check_file_existence,
                                help="file with reference for deep analysis (only in debug mode)"
                                if show_help_hidden else argparse.SUPPRESS,
                                action="store")
     pgroup_hidden.add_argument("--series-analysis",
                                metavar="<filename>",
                                dest="series_analysis",
-                               type=support.check_file_existence,
+                               type=file_operations.check_file_existence,
                                help="config for metagenomics-series-augmented reassembly"
                                if show_help_hidden else argparse.SUPPRESS,
                                action="store")
     pgroup_hidden.add_argument("--configs-dir",
                                metavar="<config_dir>",
                                dest="configs_dir",
-                               type=support.check_dir_existence,
+                               type=file_operations.check_dir_existence,
                                help="directory with configs"
                                if show_help_hidden else argparse.SUPPRESS,
                                action="store")
@@ -924,18 +925,18 @@ def add_to_option(args, skip_output_dir):
     if not skip_output_dir:
         output_dir = abspath(expanduser(args.output_dir))
         options_storage.dict_of_rel2abs[args.output_dir] = output_dir
-        support.check_path_is_ascii(output_dir, "output directory")
+        file_operations.check_path_is_ascii(output_dir, "output directory")
         args.output_dir = output_dir
 
     if args.tmp_dir is not None:
         tmp_dir = abspath(expanduser(args.tmp_dir))
         options_storage.dict_of_rel2abs[args.tmp_dir] = tmp_dir
-        support.check_path_is_ascii(tmp_dir, "directory for temporary files")
+        file_operations.check_path_is_ascii(tmp_dir, "directory for temporary files")
         args.tmp_dir = tmp_dir
 
     if args.custom_hmms is not None:
         custom_hmms = abspath(expanduser(args.custom_hmms))
-        support.check_path_is_ascii(custom_hmms, "directory with custom hmms")
+        file_operations.check_path_is_ascii(custom_hmms, "directory with custom hmms")
         args.custom_hmms = custom_hmms
 
     if "reference" in args and args.reference is not None:
@@ -1078,11 +1079,11 @@ def postprocessing(args, dataset_data, spades_home, load_processed_dataset, rest
 
     if args.test_mode:
         if args.plasmid:
-            support.add_to_dataset("-1", os.path.join(spades_home, "test_dataset_plasmid/pl1.fq.gz"), dataset_data)
-            support.add_to_dataset("-2", os.path.join(spades_home, "test_dataset_plasmid/pl2.fq.gz"), dataset_data)
+            file_operations.add_to_dataset("-1", os.path.join(spades_home, "test_dataset_plasmid/pl1.fq.gz"), dataset_data)
+            file_operations.add_to_dataset("-2", os.path.join(spades_home, "test_dataset_plasmid/pl2.fq.gz"), dataset_data)
         else:
-            support.add_to_dataset("-1", os.path.join(spades_home, "test_dataset/ecoli_1K_1.fq.gz"), dataset_data)
-            support.add_to_dataset("-2", os.path.join(spades_home, "test_dataset/ecoli_1K_2.fq.gz"), dataset_data)
+            file_operations.add_to_dataset("-1", os.path.join(spades_home, "test_dataset/ecoli_1K_1.fq.gz"), dataset_data)
+            file_operations.add_to_dataset("-2", os.path.join(spades_home, "test_dataset/ecoli_1K_2.fq.gz"), dataset_data)
 
     if args.bio or args.rnaviral:
         args.meta = True
@@ -1094,7 +1095,7 @@ def postprocessing(args, dataset_data, spades_home, load_processed_dataset, rest
         os.makedirs(args.output_dir)
     if args.restart_from or restart_from:
         if args.continue_mode:  # saving parameters specified with --restart-from
-            if not support.dataset_is_empty(dataset_data):
+            if not file_operations.dataset_is_empty(dataset_data):
                 support.error("you cannot specify reads with --restart-from option!", log)
             save_restart_options()
         else:  # overriding previous run parameters
@@ -1154,11 +1155,11 @@ def postprocessing(args, dataset_data, spades_home, load_processed_dataset, rest
             _, exc, _ = sys.exc_info()
             support.error(
                     "exception caught while parsing YAML file (%s):\n" % args.dataset_yaml_filename + str(exc))
-        options_storage.original_dataset_data = support.relative2abs_paths(options_storage.original_dataset_data,
-                                                      os.path.dirname(args.dataset_yaml_filename))
+        options_storage.original_dataset_data = file_operations.relative2abs_paths(options_storage.original_dataset_data,
+                                                                                                                                os.path.dirname(args.dataset_yaml_filename))
     else:
-        options_storage.original_dataset_data = support.correct_dataset(options_storage.original_dataset_data)
-        options_storage.original_dataset_data = support.relative2abs_paths(options_storage.original_dataset_data, os.getcwd())
+        options_storage.original_dataset_data = file_operations.correct_dataset(options_storage.original_dataset_data)
+        options_storage.original_dataset_data = file_operations.relative2abs_paths(options_storage.original_dataset_data, os.getcwd())
 
     if existing_dataset_data is not None:
         dataset_data = existing_dataset_data
@@ -1167,20 +1168,23 @@ def postprocessing(args, dataset_data, spades_home, load_processed_dataset, rest
 
     args.dataset_yaml_filename = processed_dataset_fpath
 
-    support.check_dataset_reads(dataset_data, (args.only_assembler or args.rna), args.iontorrent)
-    if not support.get_lib_ids_by_type(dataset_data, options_storage.READS_TYPES_USED_IN_CONSTRUCTION):
+    file_operations.check_dataset_reads(dataset_data, (args.only_assembler or args.rna), args.iontorrent)
+    if not file_operations.get_lib_ids_by_type(dataset_data, options_storage.READS_TYPES_USED_IN_CONSTRUCTION):
         support.error("you should specify at least one unpaired, paired-end, or high-quality mate-pairs library!")
     if args.rna:
         if len(dataset_data) != len(
-                support.get_lib_ids_by_type(dataset_data, options_storage.READS_TYPES_USED_IN_RNA_SEQ)):
+                file_operations.get_lib_ids_by_type(dataset_data, options_storage.READS_TYPES_USED_IN_RNA_SEQ)):
             support.error("you cannot specify any data types except " +
                           ", ".join(options_storage.READS_TYPES_USED_IN_RNA_SEQ) + " in RNA-Seq mode!")
             # if len(support.get_lib_ids_by_type(dataset_data, 'paired-end')) > 1:
             #    support.error('you cannot specify more than one paired-end library in RNA-Seq mode!')
     if args.meta and not args.only_error_correction and not args.rnaviral:
-        paired_end_libs = max(1, len(support.get_lib_ids_by_type(dataset_data, "paired-end")))
-        graph_libs = max(1, len(support.get_lib_ids_by_type(dataset_data, "assembly-graph")))
-        long_read_libs = max(1, len(support.get_lib_ids_by_type(dataset_data, ["pacbio", "nanopore"])))
+        paired_end_libs = max(1, len(
+            file_operations.get_lib_ids_by_type(dataset_data, "paired-end")))
+        graph_libs = max(1, len(
+            file_operations.get_lib_ids_by_type(dataset_data, "assembly-graph")))
+        long_read_libs = max(1, len(
+            file_operations.get_lib_ids_by_type(dataset_data, ["pacbio", "nanopore"])))
         
         if len(dataset_data) > paired_end_libs + graph_libs + long_read_libs:
             support.error("you cannot specify any data types except a single paired-end library "

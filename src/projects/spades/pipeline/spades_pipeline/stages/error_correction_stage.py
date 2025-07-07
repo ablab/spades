@@ -17,9 +17,10 @@ from ..commands_parser import Command
 from ..options_storage import OptionStorage
 
 options_storage = OptionStorage()
-import stage
+from . import stage
 from ..process_cfg import merge_configs, process_spaces, substitute_params
-from ..support import copy_tree, get_tmp_dir, get_lib_ids_by_type, rm_libs_by_type
+from ..support import copy_tree
+from ..file_operations import get_tmp_dir, get_lib_ids_by_type, rm_libs_by_type
 
 
 class ECRunningToolStage(stage.Stage):
@@ -97,7 +98,7 @@ class ECRunningToolStage(stage.Stage):
 
 class ErrorCorrectionCompressingStage(stage.Stage):
     def get_command(self, cfg):
-        args = [os.path.join(self.python_modules_home, "spades_pipeline", "scripts", "compress_all.py"),
+        args = [os.path.join(self.python_modules_home, "spades_pipeline", "supplemetary", "compress_all.py"),
                 "--input_file", self.output_files["corrected_dataset_yaml_filename"],
                 "--ext_python_modules_home", self.ext_python_modules_home,
                 "--max_threads", str(cfg.max_threads),

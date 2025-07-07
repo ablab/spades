@@ -14,8 +14,9 @@ import sys
 from ..commands_parser import Command
 from ..options_storage import OptionStorage
 options_storage = OptionStorage()
-import stage
-from ..support import dataset_has_interlaced_reads, dataset_has_additional_contigs
+from . import stage
+from ..file_operations import dataset_has_interlaced_reads, dataset_has_additional_contigs
+
 
 class PreprocessInterlacedReads(stage.Stage):
     STAGE_NAME = "Preprocess interlaced reads"
@@ -86,7 +87,7 @@ class PreprocessInterlacedReads(stage.Stage):
         command = [Command(STAGE=self.STAGE_NAME,
                            path=sys.executable,
                            args=[
-                               os.path.join(self.python_modules_home, "spades_pipeline", "scripts",
+                               os.path.join(self.python_modules_home, "spades_pipeline", "supplemetary",
                                             "preprocess_interlaced_reads.py"),
                                "--args_filename", os.path.join(self.tmp_dir, "interlaced"),
                                "--dst", self.dst],
@@ -141,7 +142,7 @@ class PreprocessContigs(stage.Stage):
         command = [Command(STAGE=self.STAGE_NAME,
                            path=sys.executable,
                            args=[
-                               os.path.join(self.python_modules_home, "spades_pipeline", "scripts",
+                               os.path.join(self.python_modules_home, "spades_pipeline", "supplemetary",
                                             "preprocess_contigs.py"),
                                "--args_filename", os.path.join(self.tmp_dir, "contigs"),
                                "--dst", self.dst,

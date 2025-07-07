@@ -29,8 +29,10 @@ from spades_pipeline.options_storage import OptionStorage
 options_storage = OptionStorage()
 
 from spades_pipeline import support
+from spades_pipeline import file_operations
 
-support.check_python_version()
+
+file_operations.check_python_version()
 
 addsitedir(ext_python_modules_home)
 import pyyaml3 as pyyaml
@@ -128,7 +130,7 @@ def print_used_values(cfg):
 
         log.info("  Reads:")
         dataset_data = pyyaml.load(open(cfg["dataset"].yaml_filename))
-        dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(cfg["dataset"].yaml_filename))
+        dataset_data = file_operations.relative2abs_paths(dataset_data, os.path.dirname(cfg["dataset"].yaml_filename))
         support.pretty_print_reads(dataset_data)
 
     # error correction
@@ -277,7 +279,7 @@ def parse_args(args):
     if options_storage.args.stop_after:
         check_cfg_for_partial_run(cfg, partial_run_type="stop-after")
 
-    support.check_single_reads_in_options()
+    file_operations.check_single_reads_in_options()
     return cfg, dataset_data, command_line
 
 
@@ -308,7 +310,7 @@ def get_command_line(args):
     command = ""
     for v in args:
         # substituting relative paths with absolute ones (read paths, output dir path, etc)
-        v, prefix = support.get_option_prefix(v)
+        v, prefix = file_operations.get_option_prefix(v)
         if v in options_storage.dict_of_rel2abs.keys():
             v = options_storage.dict_of_rel2abs[v]
         if prefix:
@@ -575,7 +577,7 @@ def get_sh_dump_executor():
     if options_storage.args.grid_engine == "local":
         return executor_save_yaml.Executor(log)
     else:
-        import executor_save_mpi_sh
+        from spades_pipeline.executors import executor_save_mpi_sh
         return executor_save_mpi_sh.Executor(log)
 
 
@@ -626,7 +628,7 @@ def main(args):
     if not options_storage.args.continue_mode:
         log.info("\n======= SPAdes pipeline started. Log can be found here: " + log_filename + "\n")
 
-    support.check_binaries(bin_home)
+    file_operations.check_binaries(bin_home)
     try:
         output_files = get_output_files(cfg)
         tmp_configs_dir = os.path.join(cfg["common"].output_dir, "configs")
@@ -690,7 +692,7 @@ def main(args):
             import errno
             if exc_type == OSError and exc_value.errno == errno.ENOEXEC:  # Exec format error
                 support.error("it looks like you are using SPAdes binaries for another platform.\n" +
-                              support.get_spades_binaries_info_message())
+                              file_operations.get_spades_binaries_info_message())
             else:
                 log.exception(exc_value)
                 support.error("exception caught: %s" % exc_type, log)

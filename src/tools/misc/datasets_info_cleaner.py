@@ -13,6 +13,8 @@ import os
 import sys
 import glob
 
+import src.projects.spades.pipeline.spades_pipeline.file_operations
+
 sys.path.append(os.path.join(sys.path[0], "../../spades_pipeline/"))
 from process_cfg import *
 import support
@@ -40,7 +42,7 @@ else:
 
 # aux function
 def add_to_dataset(option, data, dataset_data, lib_type='pe'):
-    data_type = support.get_data_type(option)    
+    data_type = src.projects.spades.pipeline.spades_pipeline.file_operations.get_data_type(option)
     if lib_type == 'pe':
         record_id = 0
     else: # mate-pairs

@@ -14,7 +14,7 @@ import sys
 import pyyaml3 as pyyaml
 
 from ..commands_parser import Command
-import stage
+from . import stage
 
 
 #delete tmp files in ouput folder
