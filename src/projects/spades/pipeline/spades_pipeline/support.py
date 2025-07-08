@@ -14,8 +14,8 @@ import os
 import shutil
 import stat
 import sys
+import tempfile
 from platform import uname
-
 
 log = logging.getLogger("spades")
 
@@ -30,6 +30,9 @@ continue_logfile_offset = None
 
 only_old_style_options = True
 old_style_single_reads = False
+
+current_tmp_dir = None
+
 
 
 def error(err_str, logger_instance=None, prefix=SPADES_PY_ERROR_MESSAGE, exit_code=-1):
@@ -118,6 +121,14 @@ def get_available_memory():
         except IOError:
             return None
     return None
+
+
+def get_tmp_dir(base_dir, prefix=""):
+    global current_tmp_dir
+    if not os.path.isdir(base_dir):
+        os.makedirs(base_dir)
+    current_tmp_dir = tempfile.mkdtemp(dir=base_dir, prefix=prefix)
+    return current_tmp_dir
 
 
 # based on http://stackoverflow.com/questions/196345/how-to-check-if-a-string-in-python-is-in-ascii
