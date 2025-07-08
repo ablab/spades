@@ -15,8 +15,8 @@ import logging
 
 from ..commands_parser import Command
 from ..process_cfg import process_spaces, merge_configs
-from ..support import warning
-from ..file_operations import get_tmp_dir, get_reads_length, get_primary_max_reads_length
+from ..support import warning, get_tmp_dir
+from ..file_operations import get_reads_length, get_primary_max_reads_length
 from . import stage
 from .spades_iteration_stage import IterationStage
 from ..options_storage import OptionStorage
@@ -370,7 +370,7 @@ class SpadesStage(stage.Stage):
 
         dataset_filename = os.path.join(self.cfg.output_dir, "dataset.info")
         self.cfg.__dict__["dataset"] = dataset_filename
-        self.cfg.tmp_dir = get_tmp_dir(prefix="spades_")
+        self.cfg.tmp_dir = get_tmp_dir(base_dir=options_storage.args.tmp_dir, prefix="spades_")
 
     def generate_config(self, cfg):
         for stage in self.stages:

@@ -19,8 +19,7 @@ from ..commands_parser import Command
 from ..options_storage import OptionStorage
 
 options_storage = OptionStorage()
-from ..support import copy_tree
-from ..file_operations import get_tmp_dir
+from ..support import copy_tree, get_tmp_dir
 
 
 def prepare_config_corr(filename, cfg, ext_python_modules_home):
@@ -78,7 +77,7 @@ class CorrectionIterationStage(stage.Stage):
 
         cfg_file_name = os.path.join(dst_configs, "corrector.info")
 
-        self.cfg.tmp_dir = get_tmp_dir(prefix="corrector_")
+        self.cfg.tmp_dir = get_tmp_dir(base_dir=options_storage.args.tmp_dir, prefix="corrector_")
         prepare_config_corr(cfg_file_name, self.cfg, self.ext_python_modules_home)
 
 

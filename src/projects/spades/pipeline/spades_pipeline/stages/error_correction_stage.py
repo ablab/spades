@@ -19,8 +19,8 @@ from ..options_storage import OptionStorage
 options_storage = OptionStorage()
 from . import stage
 from ..process_cfg import merge_configs, process_spaces, substitute_params
-from ..support import copy_tree
-from ..file_operations import get_tmp_dir, get_lib_ids_by_type, rm_libs_by_type
+from ..support import copy_tree, get_tmp_dir
+from ..file_operations import get_lib_ids_by_type, rm_libs_by_type, get_libs_by_type
 
 
 class ECRunningToolStage(stage.Stage):
@@ -68,7 +68,7 @@ class ECRunningToolStage(stage.Stage):
             copy_tree(os.path.join(self.tmp_configs_dir, "hammer"), dst_configs, preserve_times=False)
             cfg_file_name = os.path.join(dst_configs, "config.info")
 
-        cfg.tmp_dir = get_tmp_dir(prefix="hammer_")
+        cfg.tmp_dir = get_tmp_dir(base_dir=options_storage.args.tmp_dir, prefix="hammer_")
         if cfg.iontorrent:
             self.prepare_config_ih(cfg_file_name, cfg, self.ext_python_modules_home)
         else:

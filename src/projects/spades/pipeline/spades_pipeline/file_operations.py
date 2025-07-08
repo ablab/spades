@@ -16,7 +16,6 @@ import os
 import re
 import shutil
 import sys
-import tempfile
 import traceback
 from os.path import abspath, expanduser, join
 
@@ -28,8 +27,6 @@ options_storage = OptionStorage()
 
 
 log = logging.getLogger("spades")
-
-current_tmp_dir = None
 
 
 def check_python_version():
@@ -165,16 +162,6 @@ def get_latest_dir(pattern):
             latest_dir = dir_to_test
             break
     return latest_dir
-
-
-def get_tmp_dir(prefix="", base_dir=None):
-    global current_tmp_dir
-    if not base_dir:
-        base_dir = options_storage.args.tmp_dir
-    if not os.path.isdir(base_dir):
-        os.makedirs(base_dir)
-    current_tmp_dir = tempfile.mkdtemp(dir=base_dir, prefix=prefix)
-    return current_tmp_dir
 
 
 def get_short_reads_type(option):
