@@ -181,6 +181,11 @@ jobs:
         run: >
           $INSTALL_DIR/$PKG_LINUX/bin/spades.py --test --grid-engine=mpi
 
+      - name: 'slurm configs only'
+        run: >
+          $INSTALL_DIR/$PKG_LINUX/bin/spades.py --test --grid-engine=slurm --only-generate-config --grid-extra=\"--gres=gpu:0\"
+
+
   build-mac:
     strategy:
       matrix:

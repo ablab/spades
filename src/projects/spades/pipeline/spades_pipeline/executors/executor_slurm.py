@@ -7,7 +7,7 @@
 ############################################################################
 import sys
 
-import executor_base
+from . import executor_base
 from ..options_storage import OptionStorage
 from .. import support
 
