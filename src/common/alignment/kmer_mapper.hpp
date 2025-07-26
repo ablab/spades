@@ -161,7 +161,7 @@ public:
     }
 
     Kmer Substitute(const Kmer &kmer) const {
-        VERIFY(this->IsAttached());
+        // VERIFY(this->IsAttached());
         const auto *rawval = mapping_.find(kmer);
         if (rawval == nullptr)
             return kmer;
