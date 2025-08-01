@@ -16,6 +16,7 @@
 #include <map>
 #include <unordered_map>
 #include <memory>
+#include <cstdint>
 
 namespace io {
 

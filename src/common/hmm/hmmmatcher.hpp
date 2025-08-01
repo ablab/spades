@@ -11,6 +11,7 @@
 #include <llvm/ADT/iterator_range.h>
 
 #include <memory>
+#include <cstdint>
 #include "hmmer_fwd.h"
 
 namespace hmmer {

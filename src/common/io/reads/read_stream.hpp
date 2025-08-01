@@ -14,6 +14,7 @@
 #include <memory>
 #include <typeinfo>
 #include <typeindex>
+#include <cstdint>
 
 namespace io {
 
