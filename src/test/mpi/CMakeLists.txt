@@ -8,7 +8,7 @@ project(mpi_test CXX)
 
 set(MPI_DETERMINE_LIBRARY_VERSION TRUE)
 find_package(MPI)
-if (MPI_FOUND)
+if (MPI_FOUND AND SPADES_TOOL_HPCSPADES_BUILD)
   # Determine MPI vendor and MPI runtime version
   # configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/MPIVendorName.c.in"
   #                "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/MPIVendorName.c"
@@ -33,13 +33,8 @@ if (MPI_FOUND)
       message(FATAL_ERROR "Open MPI version ${OPENMPI_MAJOR_VERSION}.x is known to be buggy")
     endif()
   endif()
+
+  add_executable(mpi_test mpi_test.cpp)
+  include_directories(${SPADES_MAIN_PROJ_DIR}/hpcspades)
+  target_link_libraries(mpi_test utils_mpi utils llvm-support ${COMMON_LIBRARIES} ${MPI_LIBRARIES})
 endif()
-
-if (NOT MPI_ENABLE AND (NOT MPI_FOUND OR MPI_DISABLE))
-  message(FATAL_ERROR "hpcSPAdees requires MPI to be enabled")
-endif()
-
-add_executable(mpi_test mpi_test.cpp)
-include_directories(${SPADES_MAIN_PROJ_DIR}/hpcspades)
-target_link_libraries(mpi_test utils_mpi utils llvm-support ${COMMON_LIBRARIES} ${MPI_LIBRARIES})
-
