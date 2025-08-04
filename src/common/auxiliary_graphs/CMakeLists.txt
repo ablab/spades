@@ -13,6 +13,6 @@ add_library(auxiliary_graphs STATIC
             contracted_graph/graph_condensation.cpp
             contracted_graph/contracted_statistics.cpp
             scaffold_graph/scaffold_vertex.cpp
-            scaffold_graph/scaffold_graph.cpp)
+)
 
 target_link_libraries(auxiliary_graphs assembly_graph)
