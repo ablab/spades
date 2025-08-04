@@ -16,6 +16,7 @@
 #include "ss_coverage.hpp"
 #include "paired_index.hpp"
 #include "positions.hpp"
+#include "read_cloud.hpp"
 #include "trusted_paths.hpp"
 #include "utils/stl_utils.hpp"
 
