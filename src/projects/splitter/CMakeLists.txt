@@ -12,7 +12,7 @@ add_executable(splitter
                main.cpp barcode_index_construction.cpp graph_resolver.cpp graph_resolver_io.cpp
                path_extractor.cpp scaffold_graph_helper.cpp)
 
-target_link_libraries(splitter spades-stages graphio toolchain common_modules ${COMMON_LIBRARIES} auxiliary_graphs)
+target_link_libraries(splitter graphio toolchain common_modules ${COMMON_LIBRARIES} auxiliary_graphs)
 
 install(TARGETS splitter
         DESTINATION bin
