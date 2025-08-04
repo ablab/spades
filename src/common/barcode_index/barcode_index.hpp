@@ -788,7 +788,7 @@ class FrameBarcodeIndex: public BarcodeIndex<Graph, FrameEdgeEntry<Graph>> {
     friend class FrameBarcodeIndexBuilder;
     friend class BarcodeIndexInfoExtractor<Graph, FrameEdgeEntry<Graph>>;
  public:
-    using BarcodeIndex<Graph, FrameEdgeEntry<Graph>>::barcode_map_t;
+    typedef typename barcode_index::BarcodeIndex<Graph, FrameEdgeEntry<Graph>> barcode_map_t;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename omnigraph::IterationHelper <Graph, EdgeId> edge_it_helper;
 

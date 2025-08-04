@@ -8,6 +8,9 @@
 
 #include "io_base.hpp"
 #include "barcode_index/barcode_index.hpp"
+//fixme added temporarily to compile, remove later
+#include "barcode_index/barcode_index_builder.hpp"
+#include "barcode_index/barcode_info_extractor.hpp"
 
 namespace io {
 
