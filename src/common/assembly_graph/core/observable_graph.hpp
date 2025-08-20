@@ -64,7 +64,7 @@ public:
     void PrintHandlersNames() const;
 
     void FireGameOver() const;
-    
+
    //todo make Fire* protected once again with helper friend class
     void FireAddVertex(VertexId v) const;
 
@@ -119,7 +119,7 @@ public:
     void DeleteVertex(VertexId v);
 
     void ForceDeleteVertex(VertexId v);
-    
+
     using base::conjugate;
 
     EdgeId AddEdge(EdgeData data, EdgeId id1 = 0, EdgeId id2 = 0);
@@ -419,21 +419,22 @@ template<class DataMaster>
 std::vector<typename ObservableGraph<DataMaster>::EdgeId>
 ObservableGraph<DataMaster>::CorrectMergePath(const std::vector<EdgeId>& path) const {
     for (size_t i = 0; i < path.size(); i++) {
-        if (path[i] == base::conjugate(path[i])) {
-            std::vector<EdgeId> result;
-            if (i < path.size() - 1 - i) {
-                for (size_t j = 0; j < path.size(); j++)
-                    result.push_back(base::conjugate(path[path.size() - 1 - j]));
-                i = path.size() - 1 - i;
-            } else {
-                result = path;
-            }
-            size_t size = 2 * i + 1;
-            for (size_t j = result.size(); j < size; j++) {
-                result.push_back(base::conjugate(result[size - 1 - j]));
-            }
-            return result;
+        if (path[i] != base::conjugate(path[i]))
+            continue;
+
+        std::vector<EdgeId> result;
+        if (i < path.size() - 1 - i) {
+            for (size_t j = 0; j < path.size(); j++)
+                result.push_back(base::conjugate(path[path.size() - 1 - j]));
+            i = path.size() - 1 - i;
+        } else {
+            result = path;
         }
+        size_t size = 2 * i + 1;
+        for (size_t j = result.size(); j < size; j++) {
+            result.push_back(base::conjugate(result[size - 1 - j]));
+        }
+        return result;
     }
     return path;
 }
@@ -445,13 +446,12 @@ typename ObservableGraph<DataMaster>::EdgeId
                                                std::vector<uint32_t> overlaps) {
     VERIFY(!path.empty());
     for (size_t i = 0; i < path.size(); i++)
-        for (size_t j = i + 1; j < path.size(); j++) {
+        for (size_t j = i + 1; j < path.size(); j++)
             VERIFY(path[i] != path[j]);
-        }
+
     if (path.size() == 1) {
-        TRACE(
-                "Path of single edge " << base::str(*(path.begin())) << ". Nothing to merge.");
-    };
+        TRACE("Path of single edge " << base::str(*(path.begin())) << ". Nothing to merge.");
+    }
     //      cerr << "Merging " << PrintDetailedPath(pObservableGraph<DataMaster><VertexIdT, EdgeIdT, VertexIt>ath) << endl;
     //      cerr << "Conjugate " << PrintConjugatePath(path) << endl;
     auto corrected_path = CorrectMergePath(path);

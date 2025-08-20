@@ -27,6 +27,12 @@ inline std::string Complement(const std::string &s) {
     return res;
 }
 
+inline std::string ReverseComplement(const std::string &s) {
+    std::string res(s.size(), 0);
+    transform(s.begin(), s.end(), res.rbegin(), nucl_complement); // only difference with reverse is rbegin() instead of begin()
+    return res;
+}
+
 //Uses edlib; returns std::numeric_limits<int>::max() for too distant string
 int StringDistance(const std::string &a, const std::string &b, int max_score = -1);
 
@@ -34,17 +40,15 @@ void SHWDistanceExtended(const std::string &target, const std::string &query, in
 
 int SHWDistance(const std::string &a, const std::string &b, int max_score, int &end_pos);
 
-inline Sequence MergeOverlappingSequences(const std::vector<Sequence>& ss,
+inline Sequence MergeOverlappingSequences(const std::vector<Sequence> &ss,
                                           const std::vector<uint32_t> &overlaps, bool safe_merging = true) {
-    if (ss.empty()) {
-        return Sequence();
-    }
+    if (ss.empty()) return Sequence();
+
     VERIFY(overlaps.size() + 1 == ss.size());
     SequenceBuilder sb;
     sb.append(ss.front());
-    if (ss.size() == 1) {
-        return sb.BuildSequence();
-    }
+    if (ss.size() == 1) return sb.BuildSequence();
+
     Sequence prev_end = ss.front().Subseq(ss.front().size() - overlaps.front());
     for (size_t i = 1; i + 1 < ss.size(); ++i) {
         if (safe_merging) {
@@ -56,7 +60,7 @@ inline Sequence MergeOverlappingSequences(const std::vector<Sequence>& ss,
     if (safe_merging) {
         VERIFY(prev_end == ss.back().Subseq(0, overlaps[ss.size() - 2]));
     }
-    sb.append(ss.back().Subseq(overlaps[ss.size() - 2]));
+    sb.append(ss.back().Subseq(overlaps.back()));
     return sb.BuildSequence();
 }
 
@@ -129,12 +133,6 @@ inline std::pair<size_t, size_t> LocalSimilarity(const Sequence& s1, const Seque
         }
     }
     return std::make_pair(size_t(answer), std::min(i_m - i, j_m - j));
-}
-
-inline std::string ReverseComplement(const std::string &s) {
-    std::string res(s.size(), 0);
-    transform(s.begin(), s.end(), res.rbegin(), nucl_complement); // only difference with reverse is rbegin() instead of begin()
-    return res;
 }
 
 class UniformPositionAligner {
