@@ -25,15 +25,134 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 
+namespace detail {
+/// A smart pointer to a reference-counted object that inherits from
+/// RefCountedBase or ThreadSafeRefCountedBase.
+///
+/// This class increments its pointee's reference count when it is created, and
+/// decrements its refcount when it's destroyed (or is changed to point to a
+/// different object).
+template <typename T>
+class RefCntPtr {
+    T *Obj = nullptr;
+
+public:
+    using element_type = T;
+
+    explicit RefCntPtr() = default;
+    RefCntPtr(T *obj) : Obj(obj) { retain(); }
+    RefCntPtr(const RefCntPtr &S) : Obj(S.Obj) { retain(); }
+    RefCntPtr(RefCntPtr &&S) : Obj(S.Obj) { S.Obj = nullptr; }
+
+    template <class X>
+    RefCntPtr(RefCntPtr<X> &&S) : Obj(S.get()) {
+        S.Obj = nullptr;
+    }
+
+    template <class X>
+    RefCntPtr(const RefCntPtr<X> &S) : Obj(S.get()) {
+        retain();
+    }
+
+    ~RefCntPtr() { release(); }
+
+    RefCntPtr &operator=(RefCntPtr S) {
+        swap(S);
+        return *this;
+    }
+
+    T &operator*() const { return *get(); }
+    T *operator->() const { return get(); }
+    T *get() const { return Obj; }
+    explicit operator bool() const { return get(); }
+
+    void swap(RefCntPtr &other) {
+        T *tmp = other.Obj;
+        other.Obj = Obj;
+        Obj = tmp;
+    }
+
+    void reset() {
+        release();
+        Obj = nullptr;
+    }
+
+    void resetWithoutRelease() { Obj = nullptr; }
+
+private:
+    void retain() {
+        if (auto obj = get()) obj->Retain();
+    }
+    void release() {
+        if (auto obj = get()) obj->Release();
+    }
+
+    template <typename X>
+    friend class RefCntPtr;
+};
+
+template <class T, class U>
+inline bool operator==(const RefCntPtr<T> &A, const RefCntPtr<U> &B) {
+    return A.get() == B.get();
+}
+
+template <class T, class U>
+inline bool operator!=(const RefCntPtr<T> &A, const RefCntPtr<U> &B) {
+    return A.get() != B.get();
+}
+
+template <class T, class U>
+inline bool operator==(const RefCntPtr<T> &A, U *B) {
+    return A.get() == B;
+}
+
+template <class T, class U>
+inline bool operator!=(const RefCntPtr<T> &A, U *B) {
+    return A.get() != B;
+}
+
+template <class T, class U>
+inline bool operator==(T *A, const RefCntPtr<U> &B) {
+    return A == B.get();
+}
+
+template <class T, class U>
+inline bool operator!=(T *A, const RefCntPtr<U> &B) {
+    return A != B.get();
+}
+
+template <class T>
+bool operator==(std::nullptr_t, const RefCntPtr<T> &B) {
+    return !B;
+}
+
+template <class T>
+bool operator==(const RefCntPtr<T> &A, std::nullptr_t B) {
+    return B == A;
+}
+
+template <class T>
+bool operator!=(std::nullptr_t A, const RefCntPtr<T> &B) {
+    return !(A == B);
+}
+
+template <class T>
+bool operator!=(const RefCntPtr<T> &A, std::nullptr_t B) {
+    return !(A == B);
+}
+
+} // namespace detail
+
+
 class Sequence {
     // Type to store Seq in Sequences
     typedef seq::seq_element_type ST;
     // Number of bits in ST
-    const static size_t STBits = sizeof(ST) << 3;
+    static constexpr size_t STBits = sizeof(ST) << 3;
     // Number of nucleotides in ST
-    const static size_t STN = (STBits >> 1);
+    static constexpr size_t STN = (STBits >> 1);
     // Number of bits in STN (for faster div and mod)
-    const static size_t STNBits = log_<STN, 2>::value;
+    static constexpr size_t STNBits = log_<STN, 2>::value;
 
     class ManagedNuclBuffer final : public llvm::ThreadSafeRefCountedBase<ManagedNuclBuffer>,
                                     protected llvm::TrailingObjects<ManagedNuclBuffer, ST> {
@@ -42,19 +161,19 @@ class Sequence {
         ManagedNuclBuffer() {}
 
         ManagedNuclBuffer(size_t nucls, ST *buf) {
-            std::uninitialized_copy(buf, buf + Sequence::DataSize(nucls), data());
+            std::uninitialized_copy(buf, buf + Sequence::data_size(nucls), data());
         }
 
       public:
         void operator delete(void *p) { ::operator delete(p); }
 
         static ManagedNuclBuffer *create(size_t nucls) {
-            void *mem = ::operator new(totalSizeToAlloc<ST>(Sequence::DataSize(nucls)));
+            void *mem = ::operator new(totalSizeToAlloc<ST>(Sequence::data_size(nucls)));
             return new (mem) ManagedNuclBuffer();
         }
 
         static ManagedNuclBuffer *create(size_t nucls, ST *data) {
-            void *mem = ::operator new(totalSizeToAlloc<ST>(Sequence::DataSize(nucls)));
+            void *mem = ::operator new(totalSizeToAlloc<ST>(Sequence::data_size(nucls)));
             return new (mem) ManagedNuclBuffer(nucls, data);
         }
 
@@ -62,19 +181,205 @@ class Sequence {
         ST *data() { return getTrailingObjects<ST>(); }
     };
 
-    size_t size_ : 32;
-    size_t from_ : 31;
-    bool   rtl_  : 1;  // Right to left + complimentary (?)
-    llvm::IntrusiveRefCntPtr<ManagedNuclBuffer> data_;
+    // Historically we're having very unfortunate "mixed-endian" internal represenation of the nucl buffer.
+    // Essentially, everything works in words (64-bit by default) and for the uneven length, the top
+    // bits of the last word are zeroed. As a result, the buffer layout on litle-endian platform is as follows:
+    //
+    // |0000111122223333|000011112222....|
+    //
+    // Sequence itsels is essentially a pair of 64-bit values: first represents packed tuple of size, start offset
+    // and reverse-complementary indicator, plus a pointer to a reference-counted nucl buffer.
+    // In order to make short sequence optimization and reuse these 128-bits for the nucl buffer while keepeing
+    // compatible buffer layout (lots of code expects word layout of the buffer) we essentially need to:
+    //  - Reserve upper 8 bits of the buffer pointer for metadata: "is_short" indicator plus short size.
+    //    Fortunately, the majority of the platforms operate in 48 or 56-bit address space, so upper byte could
+    //    be (somehow) used
+    //  - Ensure metadata is properly restored after potentially disrupting buffer copies
+    //  - Short sequences are never shared and always copied as-is
+    //  - Short sequences could only be constructed, we do not create them for substrings, etc. to keep
+    //    these constant-time
+    // The final layout is then as follows:
+    //  - Long sequence:
+    //     | size: 32, from: 31, rtl: 1 | refptr : 56, metadata: 8 |
+    //                                       |
+    //                                       +---> | refcounter |3333222211110000|...3222211110000|
+    //  - Short sequence:
+    //     |0000111122223333| 000011112222, metadata:8|
+    // This way we can use buffer up to 120 bits for short strings, so we can store inline up to 60 nucls
+    // The metadata is as follows:
+    //  - [ size: 6, short_rtl : 1, is_short : 1 |
+    // When is_short == 1, then it is expected that all other bits are zero, so the "is short" check is simply
+    // check that the upper byte of the pointer is zero w/o any bitfield layout implications.
 
-    static size_t DataSize(size_t size) {
+    static_assert(CHAR_BIT == 8, "This implementation assumes that one byte contains 8 bits");
+
+    struct LongRep {
+        size_t size_ : 32;
+        size_t from_ : 31;
+        bool   rtl_  : 1;  // Right to left + complimentary
+        detail::RefCntPtr<ManagedNuclBuffer> data_;
+
+        LongRep()
+                : size_(0), from_(0), rtl_(0), data_(nullptr) {}
+
+        LongRep(size_t size, size_t from, bool rtl, ManagedNuclBuffer *data)
+                : size_(size), from_(from), rtl_(rtl), data_(data) {}
+
+        bool rtl() const { return rtl_; }
+        size_t from() const { return from_; }
+        size_t size() const { return size_; }
+    };
+
+    enum { ShortSize = sizeof(LongRep) / sizeof(ST),
+           MetadataOffset = (sizeof(ST) - 1)*8,
+           MetadataMask = 0xFF,
+           DataMask = (ST(1) << MetadataOffset) - 1,
+           RTLOffset = 1, RTLMask = 0x1,
+           SizeOffset = 2, SizeMask = 0x3F};
+
+    static_assert(sizeof(ST) == 8, "This implementation assumes 64-bit underlying words");
+
+    struct ShortRep {
+        ST data[ShortSize];
+
+        ShortRep() = default;
+
+        uint8_t metadata() const {
+            return (data[ShortSize - 1] >> MetadataOffset) & MetadataMask;
+        }
+        void set_metadata(size_t size, bool rtl) {
+            uint8_t metadata = (size & SizeMask) << SizeOffset |
+                               (rtl << RTLOffset) |
+                               1;
+            data[ShortSize - 1] = (data[ShortSize - 1] & DataMask) |
+                                  ST(metadata) << MetadataOffset;
+        }
+        void set_metadata(uint8_t metadata) {
+            data[ShortSize - 1] = (data[ShortSize - 1] & DataMask) |
+                                  ST(metadata) << MetadataOffset;
+        }
+
+        bool rtl() const {
+            return (metadata() >> RTLOffset) & RTLMask;
+        }
+        void set_rtl(bool rtl) {
+            ST RTLFullMask = ST(RTLMask) << (MetadataOffset + RTLOffset);
+            if (rtl)
+                data[ShortSize - 1] |= RTLFullMask;
+            else
+                data[ShortSize - 1] &= ~RTLFullMask;
+        }
+        size_t size() const {
+            return (metadata() >> SizeOffset) & SizeMask;
+        }
+        size_t from() const { return 0; }
+    };
+
+    // We borrow one byte for size, etc.
+    static constexpr size_t ShortBits = (sizeof(ShortRep) - 1) << 3;
+    static constexpr size_t ShortN = ShortBits >> 1;
+    static constexpr size_t ShortNBits = log_<ShortN, 2>::value;
+
+    static_assert(SizeMask >= ShortN, "inconsistent internal bitfield widths");
+
+    #define ALWAYS_INLINE __attribute__((always_inline))
+    union Rep {
+        LongRep l;
+        ShortRep s;
+
+        // We need to be extremely careful and not invoke UB via
+        // type-punning. Unfortunately, due to reasons explained above we cannot
+        // access inactive union member, nor we might have a common leading
+        // field sequence. As a result, the only escape hatch for us is the explicit
+        // byte-based representation. This assumes little endian platform (!)
+        ALWAYS_INLINE uint8_t metadata() const {
+            const uint8_t *bytes = reinterpret_cast<const uint8_t*>(this);
+            size_t offs = offsetof(ShortRep, data[ShortSize]);
+            return bytes[offs - 1];
+        }
+
+        ALWAYS_INLINE bool is_short() const {
+            return metadata() != 0;
+        }
+
+        ALWAYS_INLINE Rep() noexcept : l() {  }
+        ALWAYS_INLINE ~Rep() noexcept { if (!is_short()) (&l)->LongRep::~LongRep(); }
+        ALWAYS_INLINE Rep(const Rep &rhs) noexcept : l() {
+            if (rhs.is_short())
+                s = rhs.s;
+            else
+                l = rhs.l;
+        }
+
+        ALWAYS_INLINE Rep(Rep &&rhs) noexcept : l() {
+            if (rhs.is_short())
+                s = rhs.s;
+            else
+                l = std::move(rhs.l);
+        }
+
+        ALWAYS_INLINE Rep &operator=(const Rep &rhs) noexcept {
+            if (&rhs == this)
+                return *this;
+
+            bool this_short =  is_short();
+            if (rhs.is_short()) {
+                if (!this_short) (&l)->LongRep::~LongRep();
+                s = rhs.s;
+            } else if (this_short)
+                new(&l) LongRep(rhs.l);
+            else // both this and rhs are long
+                l = rhs.l;
+
+            return *this;
+        }
+        ALWAYS_INLINE Rep &operator=(Rep &&rhs) noexcept {
+            if (&rhs == this)
+                return *this;
+
+            bool this_short =  is_short();
+            if (rhs.is_short()) {
+                if (!this_short) (&l)->LongRep::~LongRep();
+                s = rhs.s;
+            } else if (this_short)
+                new(&l) LongRep(std::move(rhs.l));
+            else // both this and rhs are long
+                l = std::move(rhs.l);
+
+            return *this;
+        }
+    };
+
+    Rep rep_;
+
+    static constexpr bool is_short_rep(size_t size) { return size < ShortN; }
+
+    static constexpr size_t data_size(size_t size) {
         return (size + STN - 1) >> STNBits;
     }
+    size_t data_size() const {
+        return (size() + STN - 1) >> STNBits;
+    }
 
+    ALWAYS_INLINE ST *data() {
+        return is_short() ? rep_.s.data : rep_.l.data_->data();
+    }
+
+    ALWAYS_INLINE size_t from() const {
+        return is_short() ? rep_.s.from() : rep_.l.from();
+    }
+
+    ALWAYS_INLINE bool rtl() const {
+        return is_short() ? rep_.s.rtl() : rep_.l.rtl();
+    }
+
+    // NOTE: This function would destroy medata byte for short sequences
+    // It should be "restored" by hands. Also, it is only allowed to look
+    // over data as other fields are not expected to be populated yet.
     template<typename S>
-    void InitFromNucls(const S &s, bool rc = false) {
-        size_t bytes_size = DataSize(size_);
-        ST *bytes = data_->data();
+    void InitFromNucls(const S &s, size_t size, bool rc) {
+        size_t word_size = data_size(size);
+        ST *words = data();
 
         VERIFY(is_dignucl(s[0]) || is_nucl(s[0]));
 
@@ -88,7 +393,7 @@ class Sequence {
         size_t cur = 0;
 
         if (rc) {
-            for (int i = (int) size_ - 1; i >= 0; --i) {
+            for (int i = (int) size - 1; i >= 0; --i) {
                 //VERIFY(is_dignucl(s[i]) || is_nucl(s[i]));
                 char c = complement(digit_str ? s[(unsigned) i] : dignucl(s[(unsigned) i]));
 
@@ -96,13 +401,13 @@ class Sequence {
                 cnt += 2;
 
                 if (cnt == STBits) {
-                    bytes[cur++] = data;
+                    words[cur++] = data;
                     cnt = 0;
                     data = 0;
                 }
             }
         } else {
-            for (size_t i = 0; i < size_; ++i) {
+            for (size_t i = 0; i < size; ++i) {
                 //VERIFY(is_dignucl(s[i]) || is_nucl(s[i]));
                 char c = digit_str ? s[i] : dignucl(s[i]);
 
@@ -110,7 +415,7 @@ class Sequence {
                 cnt += 2;
 
                 if (cnt == STBits) {
-                    bytes[cur++] = data;
+                    words[cur++] = data;
                     cnt = 0;
                     data = 0;
                 }
@@ -118,21 +423,61 @@ class Sequence {
         }
 
         if (cnt != 0)
-            bytes[cur++] = data;
+            words[cur++] = data;
 
-        for (; cur < bytes_size; ++cur)
-            bytes[cur] = 0;
+        for (; cur < word_size; ++cur)
+            words[cur] = 0;
     }
 
     inline bool ReadHeader(std::istream &file);
     inline bool WriteHeader(std::ostream &file) const;
 
-    Sequence(size_t size, int)
-            : size_(size), from_(0), rtl_(false), data_(ManagedNuclBuffer::create(size_)) {}
+    uint8_t metadata() const {
+        return rep_.metadata();
+    }
 
-    //Low level constructor. Handle with care.
-    Sequence(const Sequence &seq, size_t from, size_t size, bool rtl)
-            : size_(size), from_(from), rtl_(rtl), data_(seq.data_) {}
+    void set_metadata(uint8_t val) {
+        return rep_.s.set_metadata(val);
+    }
+
+    Sequence(size_t size) {
+        if (is_short_rep(size)) {
+            rep_.s.set_metadata(size, /* rtl */ false);
+        } else {
+            new (&rep_.l) LongRep(size, 0, false, ManagedNuclBuffer::create(size));
+        }
+    }
+
+    // Low level constructor. Handle with care.
+    Sequence(const Sequence &seq, size_t from, size_t size, bool rtl) {
+        // We are having few importants cases here:
+        //   - If seq is a long sequence, we're just reusing buffer
+        //   - Otherwise, we promote to long sequence if seq.from != from
+        bool is_long = !seq.is_short();
+        size_t seq_size = seq.size();
+        if (is_long || seq.from() != from) {
+            if (is_long) {
+                rep_.l.size_ = size;
+                rep_.l.from_ = from;
+                rep_.l.rtl_  = rtl;
+                rep_.l.data_ = seq.rep_.l.data_;
+            } else {
+                VERIFY(seq.from() == 0);
+                new (&rep_.l) LongRep(size, from, rtl, ManagedNuclBuffer::create(seq_size));
+                size_t dest_words = data_size(seq_size);
+                ST *dest = rep_.l.data_->data();
+                memcpy(dest, seq.data(), dest_words * sizeof(ST));
+                // Ensure the metadata byte is cleared if we copied the last
+                // word
+                if (dest_words == ShortSize) dest[ShortSize - 1] &= DataMask;
+            }
+        } else {
+            // Now we know that seq is short with same from / size
+            // Copy the data and set rtl flag
+            rep_.s = seq.rep_.s;
+            rep_.s.set_metadata(size, rtl);
+        }
+    }
 
 public:
     /**
@@ -141,81 +486,95 @@ public:
      * @param s ACGT or 0123-string
      */
     explicit Sequence(const char *s, bool rc = false)
-            : Sequence(strlen(s), 0) {
-        InitFromNucls(s, rc);
+            : Sequence(strlen(s)) {
+        uint8_t m = metadata();
+        InitFromNucls(s, size(), rc);
+        if (m) set_metadata(m);
     }
 
     explicit Sequence(char *s, bool rc = false)
-            : Sequence(strlen(s), 0) {
-        InitFromNucls(s, rc);
+            : Sequence(strlen(s)) {
+        uint8_t m = metadata();
+        InitFromNucls(s, size(), rc);
+        if (m) set_metadata(m);
     }
 
     template<typename S>
     explicit Sequence(const S &s, bool rc = false)
-            : Sequence(s.size(), 0) {
-        InitFromNucls(s, rc);
+            : Sequence(s.size()) {
+        uint8_t m = metadata();
+        InitFromNucls(s, size(), rc);
+        if (m) set_metadata(m);
     }
 
     Sequence()
-            : Sequence(size_t(0), 0) {
-        memset(data_->data(), 0, DataSize(size_));
+            : Sequence(size_t(0)) {
+        uint8_t m = metadata();
+        memset(data(), 0, data_size() * sizeof(ST));
+        if (m) set_metadata(m);
     }
 
     template<size_t size2_>
     explicit Sequence(const Seq<size2_> &kmer, size_t)
-            : Sequence(kmer.size(), 0) {
-        kmer.copy_data(data_->data());
+            : Sequence(kmer.size()) {
+        uint8_t m = metadata();
+        kmer.copy_data(data());
+        if (m) set_metadata(m);
     }
 
     template<size_t size2_>
     explicit Sequence(const RuntimeSeq<size2_> &kmer, size_t)
-            : Sequence(kmer.size(), 0) {
-        kmer.copy_data(data_->data());
+            : Sequence(kmer.size()) {
+        uint8_t m = metadata();
+        kmer.copy_data(data());
+        if (m) set_metadata(m);
     }
 
     Sequence(const Sequence &s)
-            : Sequence(s, s.from_, s.size_, s.rtl_) {}
+            : Sequence(s, s.from(), s.size(), s.rtl()) { }
 
     Sequence(Sequence &&) noexcept = default;
-
-    const Sequence &operator=(const Sequence &rhs) {
-        if (&rhs == this)
-            return *this;
-
-        from_ = rhs.from_;
-        size_ = rhs.size_;
-        rtl_ = rhs.rtl_;
-        data_ = rhs.data_;
-
-        return *this;
-    }
-
+    Sequence &operator=(const Sequence &rhs) noexcept = default;
     Sequence &operator=(Sequence &&) noexcept = default;
 
+    ALWAYS_INLINE bool is_short() const { return rep_.is_short(); }
+
+    #undef ALWAYS_INLINE
+
+    Sequence operator!() const {
+        return Sequence(*this, from(), size(), !rtl());
+    }
+
     char operator[](const size_t index) const {
-        VERIFY_DEV(index < size_);
-        const ST *bytes = data_->data();
-        if (rtl_) {
-            size_t i = from_ + size_ - 1 - index;
-            return complement((bytes[i >> STNBits] >> ((i & (STN - 1)) << 1)) & 3);
+        VERIFY_DEV(index < size());
+        const ST *words = data();
+        if (rtl()) {
+            size_t i = from() + size() - 1 - index;
+            return complement((words[i >> STNBits] >> ((i & (STN - 1)) << 1)) & 3);
         } else {
-            size_t i = from_ + index;
-            return (bytes[i >> STNBits] >> ((i & (STN - 1)) << 1)) & 3;
+            size_t i = from() + index;
+            return (words[i >> STNBits] >> ((i & (STN - 1)) << 1)) & 3;
         }
     }
 
-    const auto *data() const {
-        return data_->data();
+    const ST *data() const {
+        return is_short() ? rep_.s.data : rep_.l.data_->data();
     }
 
     bool operator==(const Sequence &that) const {
-        if (size_ != that.size_)
+        if (size() != that.size())
             return false;
 
-        if (data_ == that.data_ && from_ == that.from_ && rtl_ == that.rtl_)
-            return true;
+        // If both sequences are long we need to check if they share the same
+        // buffer and have same parameters
+        if (!is_short() && !that.is_short()) {
+            if (rep_.l.data_ == that.rep_.l.data_ &&
+                rep_.l.from_ == that.rep_.l.from_ &&
+                rep_.l.rtl_  == that.rep_.l.rtl_)
+                return true;
+        }
 
-        for (size_t i = 0; i < size_; ++i) {
+        for (size_t i = 0; i < size(); ++i) {
             if (this->operator[](i) != that[i]) {
                 return false;
             }
@@ -231,17 +590,13 @@ public:
      * @todo Might be optimized via int comparison (not so easy)
      */
     bool operator<(const Sequence &that) const {
-        size_t s = std::min(size_, that.size_);
+        size_t s = std::min(size(), that.size());
         for (size_t i = 0; i < s; ++i) {
             if (this->operator[](i) != that[i]) {
                 return (this->operator[](i) < that[i]);
             }
         }
-        return (size_ < that.size_);
-    }
-
-    Sequence operator!() const {
-        return Sequence(*this, from_, size_, !rtl_);
+        return (size() < that.size());
     }
 
     inline Sequence operator<<(char c) const;
@@ -251,35 +606,30 @@ public:
      * @param to exclusive;
      */
     inline Sequence Subseq(size_t from, size_t to) const;
-
     inline Sequence Subseq(size_t from) const; // up to size_ by default
 
     inline Sequence operator+(const Sequence &s) const;
 
     inline Sequence First(size_t count) const;
-
     inline Sequence Last(size_t count) const;
 
     inline size_t find(const Sequence &t, size_t from = 0) const;
 
     template<size_t size2_>
     Seq<size2_> start() const;
-
     template<size_t size2_>
     Seq<size2_> end() const;
 
     template<class Seq>
     Seq start(size_t k) const;
-
     template<class Seq>
     Seq end(size_t k) const;
 
     inline std::string str() const;
-
     inline std::string err() const;
 
     size_t size() const {
-        return size_;
+        return is_short() ? rep_.s.size() : rep_.l.size();
     }
 
     bool empty() const {
@@ -298,18 +648,18 @@ public:
     }
 
     static bool RawCompare(const Sequence &s1, const Sequence &s2) {
-        VERIFY_DEV(s1.from_ == 0);
-        VERIFY_DEV(s2.from_ == 0);
-        VERIFY_DEV(!s1.rtl_);
-        VERIFY_DEV(!s2.rtl_);
+        VERIFY_DEV(s1.from() == 0);
+        VERIFY_DEV(s2.from() == 0);
+        VERIFY_DEV(!s1.rtl());
+        VERIFY_DEV(!s2.rtl());
 
-        if (s1.size_ != s2.size_) {
-            return s1.size_ < s2.size_;
+        if (s1.size() != s2.size()) {
+            return s1.size() < s2.size();
         }
-        size_t szwords = (s1.size_ + STN - 1) / STN;
 
-        const ST *d1 = s1.data_->data();
-        const ST *d2 = s2.data_->data();
+        size_t szwords = s1.data_size();
+        const ST *d1 = s1.data();
+        const ST *d2 = s2.data();
         for (size_t i = 0; i < szwords; ++i) {
             if (d1[i] != d2[i]) {
                 return d1[i] < d2[i];
@@ -335,7 +685,7 @@ Seq<size2_> Sequence::start() const {
 
 template<size_t size2_>
 Seq<size2_> Sequence::end() const {
-    return Seq<size2_>(*this, size_ - size2_);
+    return Seq<size2_>(*this, size() - size2_);
 }
 
 
@@ -346,7 +696,7 @@ Seq Sequence::start(size_t k) const {
 
 template<class Seq>
 Seq Sequence::end(size_t k) const {
-    return Seq(unsigned(k), *this, size_ - k);
+    return Seq(unsigned(k), *this, size() - k);
 }
 
 // O(1)
@@ -354,18 +704,18 @@ Seq Sequence::end(size_t k) const {
 //safe if not #DEFINE NDEBUG
 Sequence Sequence::Subseq(size_t from, size_t to) const {
     VERIFY(to >= from);
-    VERIFY(to <= size_);
+    VERIFY(to <= size());
     //VERIFY(to - from <= size_);
-    if (rtl_) {
-        return Sequence(*this, from_ + size_ - to, to - from, true);
+    if (rtl()) {
+        return Sequence(*this, this->from() + size() - to, to - from, true);
     } else {
-        return Sequence(*this, from_ + from, to - from, false);
+        return Sequence(*this, this->from() + from, to - from, false);
     }
 }
 
 //including from, excluding to
 Sequence Sequence::Subseq(size_t from) const {
-    return Subseq(from, size_);
+    return Subseq(from, size());
 }
 
 Sequence Sequence::First(size_t count) const {
@@ -373,7 +723,7 @@ Sequence Sequence::First(size_t count) const {
 }
 
 Sequence Sequence::Last(size_t count) const {
-    return Subseq(size_ - count);
+    return Subseq(size() - count);
 }
 
 /**
@@ -406,8 +756,8 @@ Sequence Sequence::operator+(const Sequence &s) const {
 }
 
 std::string Sequence::str() const {
-    std::string res(size_, '-');
-    for (size_t i = 0; i < size_; ++i) {
+    std::string res(size(), '-');
+    for (size_t i = 0; i < size(); ++i) {
         res[i] = nucl2(this->operator[](i));
     }
     return res;
@@ -415,10 +765,11 @@ std::string Sequence::str() const {
 
 std::string Sequence::err() const {
     std::ostringstream oss;
-    oss << "{ *data=" << data_->data() <<
-            ", from_=" << from_ <<
-            ", size_=" << size_ <<
-            ", rtl_=" << int(rtl_) << " }";
+    oss << (is_short() ? "{ short seq " : "{ long seq ");
+    oss << "*data=" << data() <<
+            ", from_=" << from() <<
+            ", size_=" << size() <<
+            ", rtl_=" << int(rtl()) << " }";
     return oss.str();
 }
 
@@ -431,18 +782,23 @@ bool Sequence::ReadHeader(std::istream &file) {
     size_t size;
     file.read((char *) &size, sizeof(size));
 
-    size_ = size;
-    from_ = 0;
-    rtl_ = false;
+    if (!is_short())
+        rep_.l.data_.reset();
+
+    if (is_short_rep(size)) {
+        rep_.s.set_metadata(size, false);
+    } else {
+        new (&rep_.l) LongRep(size, 0, false, ManagedNuclBuffer::create(size));
+    }
 
     return !file.fail();
 }
 
 bool Sequence::WriteHeader(std::ostream &file) const {
-    VERIFY(from_ == 0);
-    VERIFY(!rtl_);
+    VERIFY(from() == 0);
+    VERIFY(!rtl());
 
-    size_t size = size_;
+    size_t size = this->size();
     file.write((const char *)&size, sizeof(size));
 
     return !file.fail();
@@ -452,22 +808,23 @@ bool Sequence::WriteHeader(std::ostream &file) const {
 bool Sequence::BinRead(std::istream &file) {
     ReadHeader(file);
 
-    data_ = llvm::IntrusiveRefCntPtr<ManagedNuclBuffer>(ManagedNuclBuffer::create(size_));
-    file.read((char *) data_->data(), DataSize(size_) * sizeof(ST));
+    uint8_t m = metadata();
+    file.read((char *) data(), data_size() * sizeof(ST));
+    if (m) set_metadata(m);
 
     return !file.fail();
 }
 
 
 bool Sequence::BinWrite(std::ostream &file) const {
-    if (from_ != 0 || rtl_) {
+    if (from() != 0 || rtl()) {
         Sequence clear(this->str());
         return clear.BinWrite(file);
     }
 
     WriteHeader(file);
 
-    file.write((const char *) data_->data(), DataSize(size_) * sizeof(ST));
+    file.write((const char *) data(), data_size() * sizeof(ST));
 
     return !file.fail();
 }

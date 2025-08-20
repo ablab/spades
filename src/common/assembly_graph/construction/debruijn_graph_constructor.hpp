@@ -515,6 +515,10 @@ public:
         {
             TIME_TRACE_SCOPE("ConstructGraph::CollectLinkRecords");
             CollectLinkRecords(helper, graph, records, sequences);
+            size_t short_seqs = 0;
+            for (const auto &s : sequences)
+                short_seqs += s.is_short();
+            INFO("Total short graph edges: " << 2*short_seqs);
         }
         INFO("Ordering link records")
         // We sort by Vertex and then by EdgeID and RC/Start mask in order to combine together records accociated with the same vertex with a special order in each group
