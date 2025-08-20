@@ -63,7 +63,7 @@ UniquePathLengthLowerBound(const Graph &g, size_t min_length) {
 template<class Graph>
 EdgePredicate<Graph>
 UniqueIncomingPathLengthLowerBound(const Graph &g, size_t min_length) {
-    return [&] (typename Graph::EdgeId e) {
+    return [&g, min_length] (typename Graph::EdgeId e) {
         typename Graph::VertexId v = g.EdgeStart(e);
         return g.CheckUniqueIncomingEdge(v) &&
                 UniquePathLengthLowerBound(g, min_length)(g.GetUniqueIncomingEdge(v));
