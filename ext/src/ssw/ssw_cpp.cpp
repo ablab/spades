@@ -126,8 +126,8 @@ int CalculateNumberMismatch(
     int8_t const *query,
     const int& query_len) {
 
-  ref   += al->ref_begin;
-  query += al->query_begin;
+  ref   += (al->ref_begin > 0 ? al->ref_begin : 0);
+  query += (al->query_begin > 0 ? al->query_begin : 0);
   int mismatch_length = 0;
 
   std::vector<uint32_t> new_cigar;
