@@ -46,7 +46,10 @@ class BinaryWriter {
 
     template<class Read>
     struct BarcodeTagger {
-        uint64_t operator()(const Read &r) const { return r.aux().sequence().data()[0]; }
+        uint64_t operator()(const Read &r) const {
+            const Sequence s = r.aux().sequence();
+            return *reinterpret_cast<const uint64_t*>(s.data());
+        }
     };
 
 public:

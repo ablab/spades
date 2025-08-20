@@ -72,6 +72,14 @@ TEST( Seq, FromType ) {
     Sequence s("ACGTACGTAC");
     EXPECT_EQ("ACGTA", Seq<5>(s).str());
     EXPECT_EQ("GTACG", Seq<5>(s, 2).str());
+
+    Sequence s2("ACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC");
+    EXPECT_EQ("ACGTA", Seq<5>(s2).str());
+    EXPECT_EQ("GTACG", Seq<5>(s2, 2).str());
+
+    Sequence s3("ACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTACACGTACGTAC");
+    EXPECT_EQ("ACGTA", Seq<5>(s3).str());
+    EXPECT_EQ("GTACG", Seq<5>(s3, 2).str());
 }
 
 TEST( Seq, PushBack ) {
