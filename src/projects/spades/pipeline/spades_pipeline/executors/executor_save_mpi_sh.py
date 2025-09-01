@@ -21,9 +21,9 @@ class Executor(executor_base.ExecutorBase):
     def execute(self, commands):
         super(Executor, self).execute(commands)
         commands_parser.write_commands_to_mpi_sh(commands, os.path.join(options_storage.args.output_dir, "run_spades.sh"))
-        commands_parser.write_commands_to_yaml(commands,
-                                               os.path.join(options_storage.args.output_dir,
-                                                            "run_spades.yaml"))
+        commands_parser.write_commands_to_mpi_yaml(commands,
+                                                   os.path.join(options_storage.args.output_dir,
+                                                                "run_spades.yaml"))
         return None
 
     def dump_commands(self, commands, outputfile):
