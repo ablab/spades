@@ -67,9 +67,9 @@ class Command(object):
     def run(self, log):
         support.sys_call(self.to_list(), log)
 
-    def to_dict(self):
+    def to_dict(self, spades_core="spades-core"):
         return {"STAGE": self.stage,
-                "path": self.path,
+                "path": self.path.format(spades_core=spades_core),
                 "args": self.args,
                 "short_name": self.short_name,
                 "mpi_support": self.mpi_support,
@@ -87,7 +87,7 @@ def write_commands_to_sh(commands, output_file):
     with open(output_file, 'w') as fw:
         fw.write("set -e\n")
         for command in commands:
-            fw.write(command.__str__() + "\n")
+            fw.write(str(command) + "\n")
 
 
 def write_commands_to_mpi_sh(commands, output_file):
@@ -101,6 +101,15 @@ def write_commands_to_yaml(commands, output_file):
     import pyyaml3 as yaml
 
     data = [command.to_dict() for command in commands]
+
+    with open(output_file, 'w') as f:
+        yaml.dump(data, f, default_flow_style=False)
+
+
+def write_commands_to_mpi_yaml(commands, output_file):
+    import pyyaml3 as yaml
+
+    data = [command.to_dict(spades_core="spades-hpc") for command in commands]
 
     with open(output_file, 'w') as f:
         yaml.dump(data, f, default_flow_style=False)
