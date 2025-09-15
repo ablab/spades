@@ -11,6 +11,7 @@
 
 #include <limits>
 #include <cmath>
+#include <cstdlib>
 
 namespace math {
 // Copyright 2005, Google Inc.
