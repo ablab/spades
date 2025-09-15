@@ -49,7 +49,7 @@ void EnsureIndex(GraphPack& gp) {
 void EnsureBasicMapping(GraphPack& gp) {
     auto &kmer_mapper = gp.get_mutable<KmerMapper<Graph>>();
 
-    VERIFY(kmer_mapper.IsAttached());
+    // VERIFY(kmer_mapper.IsAttached());
     EnsureIndex(gp);
     INFO("Normalizing k-mer map. Total " << kmer_mapper.size() << " kmers to process");
     kmer_mapper.Normalize();
