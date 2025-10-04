@@ -1,5 +1,6 @@
 //***************************************************************************
-//* Copyright (c) 2019 Saint Petersburg State University
+//* Copyright (c) 2023-2025 SPAdes team
+//* Copyright (c) 2019-2022 Saint Petersburg State University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
