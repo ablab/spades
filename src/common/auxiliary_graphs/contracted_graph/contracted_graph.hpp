@@ -21,10 +21,10 @@ class AdjacencyMap {
     typedef std::map<VertexId, std::unordered_set<ScaffoldVertex>>::value_type value_type;
 
     AdjacencyMap() = default;
-    AdjacencyMap(const VertexId &vertex, const ScaffoldVertex &edge) : data_({{vertex, {edge}}}) {}
-    void InsertPair(const VertexId &vertex, const ScaffoldVertex &edge);
-    void RemovePair(const VertexId &vertex, const ScaffoldVertex &edge);
-    bool Contains(const VertexId &vertex, const ScaffoldVertex &edge);
+    AdjacencyMap(VertexId vertex, const ScaffoldVertex &edge) : data_({{vertex, {edge}}}) {}
+    void InsertPair(VertexId vertex, const ScaffoldVertex &edge);
+    void RemovePair(VertexId vertex, const ScaffoldVertex &edge);
+    bool Contains(VertexId vertex, const ScaffoldVertex &edge);
     bool empty() const;
     size_t size() const;
 
@@ -88,30 +88,30 @@ class ContractedGraph {
     virtual ~ContractedGraph() = default;
     ContractedGraph(ContractedGraph &&other) = default;
 
-    void InsertVertex(const VertexId &vertex);
-    void InsertEdge(const VertexId &head, const VertexId &tail, const ScaffoldVertex &edge);
-    void RemoveEdge(const VertexId &head, const VertexId &tail, const ScaffoldVertex &edge);
-    size_t GetOutDegree(const VertexId &vertex) const;
-    size_t GetInDegree(const VertexId &vertex) const;
-    size_t GetCapacity(const VertexId &vertex) const;
-    void InsertCapacity(const VertexId &vertex, size_t capacity);
-    bool ContainsVertex(const VertexId &vertex) const;
+    void InsertVertex(VertexId vertex);
+    void InsertEdge(VertexId head, VertexId tail, const ScaffoldVertex &edge);
+    void RemoveEdge(VertexId head, VertexId tail, const ScaffoldVertex &edge);
+    size_t GetOutDegree(VertexId vertex) const;
+    size_t GetInDegree(VertexId vertex) const;
+    size_t GetCapacity(VertexId vertex) const;
+    void InsertCapacity(VertexId vertex, size_t capacity);
+    bool ContainsVertex(VertexId vertex) const;
 
-    const_entry_iterator in_entry_begin(const VertexId &vertex) const;
-    const_entry_iterator in_entry_end(const VertexId &vertex) const;
-    adt::iterator_range<const_entry_iterator> IncomingEntries(const VertexId &vertex) const;
-    const_entry_iterator out_entry_begin(const VertexId &vertex) const;
-    const_entry_iterator out_entry_end(const VertexId &vertex) const;
-    adt::iterator_range<const_entry_iterator> OutcomingEntries(const VertexId &vertex) const;
+    const_entry_iterator in_entry_begin(VertexId vertex) const;
+    const_entry_iterator in_entry_end(VertexId vertex) const;
+    adt::iterator_range<const_entry_iterator> IncomingEntries(VertexId vertex) const;
+    const_entry_iterator out_entry_begin(VertexId vertex) const;
+    const_entry_iterator out_entry_end(VertexId vertex) const;
+    adt::iterator_range<const_entry_iterator> OutcomingEntries(VertexId vertex) const;
 
-    const_edge_iterator in_edge_begin(const VertexId &vertex) const;
-    const_edge_iterator in_edge_end(const VertexId &vertex) const;
-    adt::iterator_range<const_edge_iterator> IncomingEdges(const VertexId &vertex) const;
-    size_t IncomingEdgeCount(const VertexId &vertex) const;
-    const_edge_iterator out_edge_begin(const VertexId &vertex) const;
-    const_edge_iterator out_edge_end(const VertexId &vertex) const;
-    adt::iterator_range<const_edge_iterator> OutgoingEdges(const VertexId &vertex) const;
-    size_t OutgoingEdgeCount(const VertexId &vertex) const;
+    const_edge_iterator in_edge_begin(VertexId vertex) const;
+    const_edge_iterator in_edge_end(VertexId vertex) const;
+    adt::iterator_range<const_edge_iterator> IncomingEdges(VertexId vertex) const;
+    size_t IncomingEdgeCount(VertexId vertex) const;
+    const_edge_iterator out_edge_begin(VertexId vertex) const;
+    const_edge_iterator out_edge_end(VertexId vertex) const;
+    adt::iterator_range<const_edge_iterator> OutgoingEdges(VertexId vertex) const;
+    size_t OutgoingEdgeCount(VertexId vertex) const;
 
     const_vertex_iterator begin() const;
     const_vertex_iterator end() const;
@@ -131,7 +131,7 @@ class ContractedGraph {
     size_t int_id(EdgeId edge) const;
 
     ScaffoldVertex conjugate(ScaffoldVertex edge) const;
-    VertexId conjugate(const VertexId &vertex) const;
+    VertexId conjugate(VertexId vertex) const;
 
  protected:
     EdgeContainer outcoming_;

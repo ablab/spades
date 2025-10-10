@@ -72,7 +72,7 @@ class DBGContractedGraphFactory : public PartsBasedContractedFactory {
 
     void ProcessEdge(contracted_dsu_t &graph_dsu, ContractedGraphParts &parts,
                      const std::unordered_map<VertexId, size_t> &vertex_to_id,
-                     const std::unordered_map<size_t, VertexId> &id_to_vertex, const EdgeId &edge) const;
+                     const std::unordered_map<size_t, VertexId> &id_to_vertex, EdgeId edge) const;
 
     using PartsBasedContractedFactory::g_;
     using PartsBasedContractedFactory::graph_ptr_;

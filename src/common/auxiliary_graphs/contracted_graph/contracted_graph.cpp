@@ -9,7 +9,7 @@
 
 namespace contracted_graph {
 
-void AdjacencyMap::InsertPair(const AdjacencyMap::VertexId &vertex, const AdjacencyMap::ScaffoldVertex &edge) {
+void AdjacencyMap::InsertPair(const AdjacencyMap::VertexId vertex, const AdjacencyMap::ScaffoldVertex &edge) {
     data_[vertex].insert(edge);
 }
 AdjacencyMap::const_iterator AdjacencyMap::begin() const {
@@ -18,13 +18,13 @@ AdjacencyMap::const_iterator AdjacencyMap::begin() const {
 AdjacencyMap::const_iterator AdjacencyMap::end() const {
     return data_.end();
 }
-void AdjacencyMap::RemovePair(const VertexId &vertex, const AdjacencyMap::ScaffoldVertex &edge) {
+void AdjacencyMap::RemovePair(VertexId vertex, const AdjacencyMap::ScaffoldVertex &edge) {
     data_.at(vertex).erase(edge);
     if (data_.at(vertex).empty()) {
         data_.erase(vertex);
     }
 }
-bool AdjacencyMap::Contains(const VertexId &vertex, const AdjacencyMap::ScaffoldVertex &edge) {
+bool AdjacencyMap::Contains(VertexId vertex, const AdjacencyMap::ScaffoldVertex &edge) {
     auto vertex_entry = data_.find(vertex);
     if (vertex_entry == data_.end()) {
         return false;
@@ -38,61 +38,61 @@ size_t AdjacencyMap::size() const {
     return data_.size();
 }
 
-void ContractedGraph::InsertVertex(const ContractedGraph::VertexId &vertex) {
+void ContractedGraph::InsertVertex(const ContractedGraph::VertexId vertex) {
     if (vertices_.insert(vertex).second) {
         AdjacencyMap empty;
         incoming_[vertex] = empty;
         outcoming_[vertex] = empty;
     }
 }
-void ContractedGraph::InsertEdge(const ContractedGraph::VertexId &head, const ContractedGraph::VertexId &tail,
+void ContractedGraph::InsertEdge(const ContractedGraph::VertexId head, const ContractedGraph::VertexId tail,
                                  const ContractedGraph::ScaffoldVertex &edge) {
     VERIFY_DEV(vertices_.find(head) != vertices_.end());
     VERIFY_DEV(vertices_.find(tail) != vertices_.end());
     outcoming_[head].InsertPair(tail, edge);
     incoming_[tail].InsertPair(head, edge);
 }
-ContractedGraph::const_entry_iterator ContractedGraph::in_entry_begin(const ContractedGraph::VertexId &vertex) const {
+ContractedGraph::const_entry_iterator ContractedGraph::in_entry_begin(const ContractedGraph::VertexId vertex) const {
     return incoming_.at(vertex).begin();
 }
-ContractedGraph::const_entry_iterator ContractedGraph::in_entry_end(const ContractedGraph::VertexId &vertex) const {
+ContractedGraph::const_entry_iterator ContractedGraph::in_entry_end(const ContractedGraph::VertexId vertex) const {
     return incoming_.at(vertex).end();
 }
 adt::iterator_range<ContractedGraph::const_entry_iterator> ContractedGraph::IncomingEntries(
-        const ContractedGraph::VertexId &vertex) const {
+        const ContractedGraph::VertexId vertex) const {
     return adt::make_range(in_entry_begin(vertex), in_entry_end(vertex));
 }
-ContractedGraph::const_entry_iterator ContractedGraph::out_entry_begin(const ContractedGraph::VertexId &vertex) const {
+ContractedGraph::const_entry_iterator ContractedGraph::out_entry_begin(const ContractedGraph::VertexId vertex) const {
     return outcoming_.at(vertex).begin();
 }
-ContractedGraph::const_entry_iterator ContractedGraph::out_entry_end(const ContractedGraph::VertexId &vertex) const {
+ContractedGraph::const_entry_iterator ContractedGraph::out_entry_end(const ContractedGraph::VertexId vertex) const {
     return outcoming_.at(vertex).end();
 }
 adt::iterator_range<ContractedGraph::const_entry_iterator> ContractedGraph::OutcomingEntries(
-        const ContractedGraph::VertexId &vertex) const {
+        const ContractedGraph::VertexId vertex) const {
     return adt::make_range(out_entry_begin(vertex), out_entry_end(vertex));
 }
-size_t ContractedGraph::GetOutDegree(const ContractedGraph::VertexId &vertex) const {
+size_t ContractedGraph::GetOutDegree(const ContractedGraph::VertexId vertex) const {
     size_t result = 0;
     for (const auto &entry: outcoming_.at(vertex)) {
         result += entry.second.size();
     }
     return result;
 }
-size_t ContractedGraph::GetInDegree(const ContractedGraph::VertexId &vertex) const {
+size_t ContractedGraph::GetInDegree(const ContractedGraph::VertexId vertex) const {
     size_t result = 0;
     for (const auto &entry: incoming_.at(vertex)) {
         result += entry.second.size();
     }
     return result;
 }
-size_t ContractedGraph::GetCapacity(const ContractedGraph::VertexId &vertex) const {
+size_t ContractedGraph::GetCapacity(const ContractedGraph::VertexId vertex) const {
     return capacity_.at(vertex);
 }
-void ContractedGraph::InsertCapacity(const ContractedGraph::VertexId &vertex, size_t capacity) {
+void ContractedGraph::InsertCapacity(const ContractedGraph::VertexId vertex, size_t capacity) {
     capacity_[vertex] = capacity;
 }
-bool ContractedGraph::ContainsVertex(const ContractedGraph::VertexId &vertex) const {
+bool ContractedGraph::ContainsVertex(const ContractedGraph::VertexId vertex) const {
     return vertices_.find(vertex) != vertices_.end();
 }
 ContractedGraph::const_vertex_iterator ContractedGraph::begin() const {
@@ -111,7 +111,7 @@ size_t ContractedGraph::CountEdges() const {
     }
     return result;
 }
-void ContractedGraph::RemoveEdge(const VertexId &head, const VertexId &tail, const ContractedGraph::ScaffoldVertex &edge) {
+void ContractedGraph::RemoveEdge(VertexId head, VertexId tail, const ContractedGraph::ScaffoldVertex &edge) {
     VERIFY_DEV(ContainsVertex(head));
     VERIFY_DEV(ContainsVertex(tail));
     auto &head_outcoming = outcoming_.at(head);
@@ -147,14 +147,14 @@ size_t ContractedGraph::int_id(ContractedGraph::EdgeId edge) const {
 adt::iterator_range<ContractedGraph::const_vertex_iterator> ContractedGraph::vertices() const {
     return adt::make_range(begin(), end());
 }
-ContractedGraph::const_edge_iterator ContractedGraph::in_edge_begin(const VertexId &vertex) const {
+ContractedGraph::const_edge_iterator ContractedGraph::in_edge_begin(VertexId vertex) const {
     auto entry_begin = in_entry_begin(vertex);
     if (not incoming_.at(vertex).empty()) {
         return ContractedGraph::const_edge_iterator(entry_begin, entry_begin->second.begin(), in_entry_end(vertex));
     }
     return const_edge_iterator(entry_begin, empty_.end(), in_entry_end(vertex));
 }
-ContractedGraph::const_edge_iterator ContractedGraph::in_edge_end(const VertexId &vertex) const {
+ContractedGraph::const_edge_iterator ContractedGraph::in_edge_end(VertexId vertex) const {
     auto entry_end = in_entry_end(vertex);
     auto entry_last = std::prev(entry_end);
     if (not incoming_.at(vertex).empty()) {
@@ -162,18 +162,18 @@ ContractedGraph::const_edge_iterator ContractedGraph::in_edge_end(const VertexId
     }
     return const_edge_iterator(entry_end, empty_.end(), entry_end);
 }
-adt::iterator_range<ContractedGraph::const_edge_iterator> ContractedGraph::IncomingEdges(const VertexId &vertex) const {
+adt::iterator_range<ContractedGraph::const_edge_iterator> ContractedGraph::IncomingEdges(VertexId vertex) const {
     return adt::make_range(in_edge_begin(vertex), in_edge_end(vertex));
 }
 
-ContractedGraph::const_edge_iterator ContractedGraph::out_edge_begin(const VertexId &vertex) const {
+ContractedGraph::const_edge_iterator ContractedGraph::out_edge_begin(VertexId vertex) const {
     auto entry_begin = out_entry_begin(vertex);
     if (not outcoming_.at(vertex).empty()) {
         return ContractedGraph::const_edge_iterator(entry_begin, entry_begin->second.begin(), out_entry_end(vertex));
     }
     return const_edge_iterator(entry_begin, empty_.end(), out_entry_end(vertex));
 }
-ContractedGraph::const_edge_iterator ContractedGraph::out_edge_end(const VertexId &vertex) const {
+ContractedGraph::const_edge_iterator ContractedGraph::out_edge_end(VertexId vertex) const {
     auto entry_end = out_entry_end(vertex);
     auto entry_last = std::prev(entry_end);
     if (not outcoming_.at(vertex).empty()) {
@@ -181,23 +181,23 @@ ContractedGraph::const_edge_iterator ContractedGraph::out_edge_end(const VertexI
     }
     return const_edge_iterator(entry_end, empty_.end(), entry_end);
 }
-adt::iterator_range<ContractedGraph::const_edge_iterator> ContractedGraph::OutgoingEdges(const VertexId &vertex) const {
+adt::iterator_range<ContractedGraph::const_edge_iterator> ContractedGraph::OutgoingEdges(VertexId vertex) const {
     return adt::make_range(out_edge_begin(vertex), out_edge_end(vertex));
 }
 auto ContractedGraph::canonical_edges() const {
     return assembly_graph_.canonical_edges();
 }
-ContractedGraph::VertexId ContractedGraph::conjugate(const ContractedGraph::VertexId &vertex) const {
+ContractedGraph::VertexId ContractedGraph::conjugate(const ContractedGraph::VertexId vertex) const {
     return assembly_graph_.conjugate(vertex);
 }
 Sequence ContractedGraph::EdgeNucls(ContractedGraph::EdgeId edge) const {
     VERIFY(edge.GetType() == scaffold_graph::ScaffoldVertexT::Edge);
     assembly_graph_.EdgeNucls(edge.GetFirstEdge());
 }
-size_t ContractedGraph::IncomingEdgeCount(const ContractedGraph::VertexId &vertex) const {
+size_t ContractedGraph::IncomingEdgeCount(const ContractedGraph::VertexId vertex) const {
     return incoming_.at(vertex).size();
 }
-size_t ContractedGraph::OutgoingEdgeCount(const contracted_graph::ContractedGraph::VertexId &vertex) const {
+size_t ContractedGraph::OutgoingEdgeCount(const contracted_graph::ContractedGraph::VertexId vertex) const {
     return outcoming_.at(vertex).size();
 }
 
