@@ -48,10 +48,10 @@ public:
     virtual size_t size() const = 0;
 
     //Number of barcodes on the beginning/end of the edge
-    virtual size_t GetBarcodeNumber(const EdgeId &edge) const = 0;
+    virtual size_t GetBarcodeNumber(EdgeId edge) const = 0;
 
-    virtual void ReadEntry(std::ifstream& fin, const EdgeId& edge) = 0;
-    virtual void WriteEntry(std::ofstream& fin, const EdgeId& edge) = 0;
+    virtual void ReadEntry(std::ifstream& fin, EdgeId edge) = 0;
+    virtual void WriteEntry(std::ofstream& fin, EdgeId edge) = 0;
 
     //Remove low abundant barcodes
     virtual void Filter(size_t abundancy_threshold, size_t gap_threshold) = 0;
@@ -81,7 +81,7 @@ class ConcurrentBarcodeIndexBuffer {
         edge_to_entry_.insert(entry);
     }
 
-    void InsertBarcode(const BarcodeId &barcode, const EdgeId &edge, size_t count, const Range &range) {
+    void InsertBarcode(BarcodeId barcode, EdgeId edge, size_t count, const Range &range) {
         edge_to_entry_.update_fn(edge,
                                  [&](EdgeEntryT &second) {
                                    second.InsertBarcode(barcode, count, range);
@@ -146,7 +146,7 @@ public:
         return edge_to_entry_.cend();
     }
 
-    size_t GetBarcodeNumber(const EdgeId &edge) const override {
+    size_t GetBarcodeNumber(EdgeId edge) const override {
         return GetEntry(edge).Size();
     }
 
@@ -161,13 +161,13 @@ public:
         }
     }
 
-    void ReadEntry (std::ifstream& fin, const EdgeId& edge) override {
+    void ReadEntry (std::ifstream& fin, EdgeId edge) override {
         DEBUG("Reading entry")
         DEBUG("Edge: " << edge.int_id());
         DEBUG("Length: " << g_.length(edge));
         edge_to_entry_[edge].Deserialize(fin);
     }
-    void WriteEntry (std::ofstream& fout, const EdgeId& edge) override {
+    void WriteEntry (std::ofstream& fout, EdgeId edge) override {
         fout << g_.int_id(edge) << std::endl;
         GetEntry(edge).Serialize(fout);
     }
@@ -192,17 +192,17 @@ public:
         }
     }
 
-    typename barcode_map_t::const_iterator GetEntryTailsIterator(const EdgeId& edge) const {
+    typename barcode_map_t::const_iterator GetEntryTailsIterator(EdgeId edge) const {
         return edge_to_entry_.find(g_.conjugate(edge));
     }
-    typename barcode_map_t::const_iterator GetEntryHeadsIterator(const EdgeId& edge) const {
+    typename barcode_map_t::const_iterator GetEntryHeadsIterator(EdgeId edge) const {
         return edge_to_entry_.find(edge);
     }
 
-    void InsertEntry(const EdgeId &edge, const EdgeEntryT &entry) {
+    void InsertEntry(EdgeId edge, const EdgeEntryT &entry) {
         edge_to_entry_.insert({edge, entry});
     }
-    const EdgeEntryT& GetEntry(const EdgeId &edge) const {
+    const EdgeEntryT& GetEntry(EdgeId edge) const {
         return edge_to_entry_.at(edge);
     }
 
@@ -487,7 +487,7 @@ public:
 
     EdgeEntry():
             edge_(), barcode_distribution_() {};
-    EdgeEntry(const EdgeId& edge) :
+    EdgeEntry(EdgeId edge) :
             edge_(edge), barcode_distribution_() {}
 
     virtual ~EdgeEntry() {}
@@ -528,11 +528,11 @@ public:
         return barcode_distribution_.cend();
     }
 
-    bool has_barcode(const BarcodeId& barcode) const {
+    bool has_barcode(BarcodeId barcode) const {
         return barcode_distribution_.find(barcode) != barcode_distribution_.end();
     }
 
-    typename barcode_distribution_t::const_iterator get_barcode(const BarcodeId& barcode) const {
+    typename barcode_distribution_t::const_iterator get_barcode(BarcodeId barcode) const {
         return barcode_distribution_.find(barcode);
     }
 
@@ -564,7 +564,7 @@ protected:
         }
     }
 
-    void InsertInfo(const BarcodeId &barcode, const barcode_info_t &info) {
+    void InsertInfo(BarcodeId barcode, const barcode_info_t &info) {
         auto barcode_result = barcode_distribution_.find(barcode);
         if (barcode_result == barcode_distribution_.end()) {
             barcode_distribution_.insert({barcode, info});
@@ -573,7 +573,7 @@ protected:
             barcode_result->second.Update(info);
         }
     }
-    virtual void InsertBarcode(const BarcodeId &code, const size_t count, const Range &range) = 0;
+    virtual void InsertBarcode(BarcodeId code, const size_t count, const Range &range) = 0;
 
     EdgeId edge_;
     barcode_distribution_t barcode_distribution_;
@@ -592,7 +592,7 @@ protected:
 public:
     SimpleEdgeEntry():
         EdgeEntry<Graph, SimpleBarcodeInfo>() {}
-    SimpleEdgeEntry(const EdgeId& edge) :
+    SimpleEdgeEntry(EdgeId edge) :
         EdgeEntry<Graph, SimpleBarcodeInfo>(edge) {}
 
     ~SimpleEdgeEntry() {}
@@ -610,7 +610,7 @@ public:
     }
 
 protected:
-    void InsertBarcode(const BarcodeId& barcode, const size_t count, const Range& range) {
+    void InsertBarcode(BarcodeId barcode, const size_t count, const Range& range) {
         if (barcode_distribution_.find(barcode) == barcode_distribution_.end()) {
             SimpleBarcodeInfo info(count, range);
             barcode_distribution_.insert({barcode, info});
@@ -650,7 +650,7 @@ public:
         edge_length_(0),
         frame_size_(0),
         number_of_frames_(0) {}
-    FrameEdgeEntry(const EdgeId& edge, size_t edge_length, size_t frame_size) :
+    FrameEdgeEntry(EdgeId edge, size_t edge_length, size_t frame_size) :
         EdgeEntry<Graph, FrameBarcodeInfo>(edge),
         edge_length_(edge_length),
         frame_size_(frame_size),
@@ -709,7 +709,7 @@ public:
     }
 
 protected:
-    void InsertBarcode(const BarcodeId& barcode, const size_t count, const Range& range) override {
+    void InsertBarcode(BarcodeId barcode, const size_t count, const Range& range) override {
         DEBUG("Inserting barcode");
         if (barcode_distribution_.find(barcode) == barcode_distribution_.end()) {
             FrameBarcodeInfo info(number_of_frames_);
@@ -767,7 +767,7 @@ class FrameConcurrentBarcodeIndexBuffer: public ConcurrentBarcodeIndexBuffer<Gra
     void InitialFillMap() {
         VERIFY_DEV(frame_size_ != 0);
         VERIFY_DEV(edge_to_entry_.empty());
-        for (const debruijn_graph::EdgeId &edge: g_.canonical_edges()) {
+        for (const debruijn_graph::EdgeId edge: g_.canonical_edges()) {
             edge_to_entry_.insert(edge, FrameEdgeEntry<Graph>(edge, g_.length(edge), frame_size_));
             debruijn_graph::EdgeId conj = g_.conjugate(edge);
             edge_to_entry_.insert(conj, FrameEdgeEntry<Graph>(conj, g_.length(edge), frame_size_));

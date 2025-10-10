@@ -37,7 +37,7 @@ namespace barcode_index {
          * @param edge
          * @return Number of barcodes contained by the edge
          */
-        size_t GetNumberOfBarcodes(const EdgeId &edge) const {
+        size_t GetNumberOfBarcodes(EdgeId edge) const {
             return index_.GetEntry(edge).Size();
         }
 
@@ -47,7 +47,7 @@ namespace barcode_index {
          * @param edge2
          * @return List of barcodes shared by edge1 and edge2
          */
-        std::vector<BarcodeId> GetSharedBarcodes (const EdgeId &edge1, const EdgeId &edge2) const {
+        std::vector<BarcodeId> GetSharedBarcodes (EdgeId edge1, EdgeId edge2) const {
             std::vector<BarcodeId> intersection;
             for (auto it = intersection_iterator_begin(edge1, edge2); it != intersection_iterator_end(edge1, edge2); ++it) {
                 intersection.push_back((*it).key_);
@@ -61,7 +61,7 @@ namespace barcode_index {
          * @param edge2
          * @return Number of barcodes shared by edge1 and edge2
          */
-        size_t GetNumberOfSharedBarcodes (const EdgeId &edge1, const EdgeId &edge2) const {
+        size_t GetNumberOfSharedBarcodes (EdgeId edge1, EdgeId edge2) const {
             size_t result = 0;
             for (auto it = intersection_iterator_begin(edge1, edge2); it != intersection_iterator_end(edge1, edge2); ++it) {
                 ++result;
@@ -74,7 +74,7 @@ namespace barcode_index {
          * @param barcode
          * @return True if the edge contains the barcode
          */
-        bool HasBarcode(const EdgeId &edge, const BarcodeId& barcode) const {
+        bool HasBarcode(EdgeId edge, BarcodeId barcode) const {
             return index_.GetEntry(edge).has_barcode(barcode);
         }
 
@@ -97,7 +97,7 @@ namespace barcode_index {
             return static_cast <double> (barcodes_overall) / static_cast <double> (long_edges);
         }
 
-        double GetIntersectionSizeNormalizedByUnion(const EdgeId &edge1, const EdgeId &edge2) const {
+        double GetIntersectionSizeNormalizedByUnion(EdgeId edge1, EdgeId edge2) const {
             if (GetUnionSize(edge1, edge2)) {
                 return static_cast <double> (GetNumberOfSharedBarcodes(edge1, edge2)) /
                        static_cast <double> (GetUnionSize(edge1, edge2));
@@ -105,7 +105,7 @@ namespace barcode_index {
             return 0;
         }
 
-        virtual double GetIntersectionSizeNormalizedBySecond(const EdgeId &edge1, const EdgeId &edge2) const {
+        virtual double GetIntersectionSizeNormalizedBySecond(EdgeId edge1, EdgeId edge2) const {
             if (GetNumberOfBarcodes(edge2) > 0) {
                 return static_cast <double> (GetNumberOfSharedBarcodes(edge1, edge2)) /
                        static_cast <double> (GetNumberOfBarcodes(edge2));
@@ -113,13 +113,13 @@ namespace barcode_index {
             return 0;
         }
 
-        size_t GetUnionSize(const EdgeId &edge1, const EdgeId &edge2) const {
+        size_t GetUnionSize(EdgeId edge1, EdgeId edge2) const {
             auto it_tail = index_.GetEntryTailsIterator(edge1);
             auto it_head = index_.GetEntryHeadsIterator(edge2);
             return (it_tail->second).GetUnionSize(it_head->second);
         }
 
-        std::vector<BarcodeId> GetBarcodes(const EdgeId& edge) const {
+        std::vector<BarcodeId> GetBarcodes(EdgeId edge) const {
             std::vector <BarcodeId> result;
             auto copy_barcode_id = [&result](const barcode_info_pair_t& entry)
                         {result.push_back(entry.first); };
@@ -127,12 +127,12 @@ namespace barcode_index {
             return result;
         }
 
-        typename distribution_t::const_iterator barcode_iterator_begin(const EdgeId &edge) const {
+        typename distribution_t::const_iterator barcode_iterator_begin(EdgeId edge) const {
             auto entry_it = index_.GetEntryHeadsIterator(edge);
             return entry_it->second.begin();
         }
 
-        typename distribution_t::const_iterator barcode_iterator_end(const EdgeId &edge) const {
+        typename distribution_t::const_iterator barcode_iterator_end(EdgeId edge) const {
             auto entry_it = index_.GetEntryHeadsIterator(edge);
             return entry_it->second.end();
         }
@@ -253,7 +253,7 @@ namespace barcode_index {
         };
 
         //todo remove end decrement?
-        const_intersection_iterator intersection_iterator_begin(const EdgeId& first, const EdgeId& second) const {
+        const_intersection_iterator intersection_iterator_begin(EdgeId first, EdgeId second) const {
             if (GetNumberOfBarcodes(first) == 0 or GetNumberOfBarcodes(second) == 0) {
                 return intersection_iterator_end(first, second);
             }
@@ -267,7 +267,7 @@ namespace barcode_index {
             return ++prebegin;
         }
 
-        const_intersection_iterator intersection_iterator_end(const EdgeId& first, const EdgeId& second) const {
+        const_intersection_iterator intersection_iterator_end(EdgeId first, EdgeId second) const {
             auto first_end = barcode_iterator_end(first);
             auto second_end = barcode_iterator_end(second);
             if (GetNumberOfBarcodes(first) == 0 or GetNumberOfBarcodes(second) == 0) {
@@ -287,13 +287,13 @@ namespace barcode_index {
          * @param barcode
          * @return barcode info corresponding to given edge
          */
-        const barcode_info_t& GetInfo(const EdgeId& edge, const BarcodeId& barcode) const {
+        const barcode_info_t& GetInfo(EdgeId edge, BarcodeId barcode) const {
             VERIFY(HasBarcode(edge, barcode));
             const BarcodeEntryT& entry = GetEntry(edge);
             return entry.get_barcode(barcode)->second;
         }
 
-        const BarcodeEntryT& GetEntry(const EdgeId& edge) const {
+        const BarcodeEntryT& GetEntry(EdgeId edge) const {
             return index_.GetEntry(edge);
         }
 
@@ -318,7 +318,7 @@ public:
      * @param barcode
      * @return number of barcoded reads aligned to the edge
      */
-    size_t GetNumberOfReads(const EdgeId &edge, const BarcodeId &barcode) const {
+    size_t GetNumberOfReads(EdgeId edge, const BarcodeId &barcode) const {
         return this->GetInfo(edge, barcode).GetCount();
     }
 
@@ -328,7 +328,7 @@ public:
      * @param barcode
      * @return leftmost barcoded bin of the edge
      */
-    size_t GetLeftBin(const EdgeId &edge, const BarcodeId &barcode) const {
+    size_t GetLeftBin(EdgeId edge, const BarcodeId &barcode) const {
         return this->GetInfo(edge, barcode).GetLeftMost();
     }
 
@@ -338,7 +338,7 @@ public:
      * @param barcode
      * @return rightmost barcoded bin of the edge
      */
-    size_t GetRightBin(const EdgeId &edge, const BarcodeId &barcode) const {
+    size_t GetRightBin(EdgeId edge, const BarcodeId &barcode) const {
         return this->GetInfo(edge, barcode).GetRightMost();
     }
 
@@ -346,7 +346,7 @@ public:
      * @param edge
      * @return length of the bin
      */
-    size_t GetBinLength(const EdgeId &edge) const {
+    size_t GetBinLength(EdgeId edge) const {
         return this->GetEntry(edge).GetFrameSize();
     }
 
@@ -355,7 +355,7 @@ public:
      * @param edge
      * @return number of bins on the edge
      */
-    size_t GetNumberOfBins(const EdgeId& edge) const {
+    size_t GetNumberOfBins(EdgeId edge) const {
         return this->GetEntry(edge).GetNumberOfFrames();
     }
 
@@ -368,8 +368,8 @@ public:
      *      Cloud is located in the beginning of the edge if it is not aligned to the last gap_threshold nucleotides of the edge.
      * @return true if there are at least shared_threshold barcodes which pass requirements determined by count_threshold and gap_threshold.
      */
-    bool AreEnoughSharedBarcodesWithFilter (const EdgeId &first,
-                                            const EdgeId &second,
+    bool AreEnoughSharedBarcodesWithFilter (EdgeId first,
+                                            EdgeId second,
                                             size_t shared_threshold,
                                             size_t count_threshold,
                                             size_t gap_threshold) const {
@@ -400,14 +400,14 @@ public:
      *      Cloud is located in the beginning of the edge if it is not aligned to the last gap_threshold nucleotides of the edge.
      * @return number of barcodes which pass requirements determined by count_threshold and gap_threshold.
      */
-    size_t CountSharedBarcodesWithFilter (const EdgeId &first,
-                                         const EdgeId &second,
+    size_t CountSharedBarcodesWithFilter (EdgeId first,
+                                         EdgeId second,
                                          size_t count_threshold,
                                          size_t gap_threshold) const {
         return GetSharedBarcodesWithFilter(first, second, count_threshold, gap_threshold).size();
     }
 
-    std::vector<BarcodeId> GetSharedBarcodesWithFilter(const EdgeId& first, const EdgeId& second,
+    std::vector<BarcodeId> GetSharedBarcodesWithFilter(EdgeId first, EdgeId second,
                                                   size_t count_threshold, size_t gap_threshold) const {
         std::vector<BarcodeId> intersection;
         for (auto it = this->intersection_iterator_begin(first, second); it != this->intersection_iterator_end(first, second); ++it) {
@@ -425,7 +425,7 @@ public:
         return intersection;
     }
 
-    std::vector<BarcodeId> GetBarcodesFromHead(const EdgeId& edge, size_t count_threshold, size_t right) const {
+    std::vector<BarcodeId> GetBarcodesFromHead(EdgeId edge, size_t count_threshold, size_t right) const {
         std::vector<BarcodeId> barcodes;
         size_t bin_length = GetBinLength(edge);
         for (auto it = this->barcode_iterator_begin(edge); it != this->barcode_iterator_end(edge); ++it) {
@@ -439,7 +439,7 @@ public:
         return barcodes;
     }
 
-    std::vector<std::pair<BarcodeId, size_t>> GetBarcodesAndCountsFromHead(const EdgeId& edge,
+    std::vector<std::pair<BarcodeId, size_t>> GetBarcodesAndCountsFromHead(EdgeId edge,
                                                                            size_t count_threshold,
                                                                            size_t right) const {
         std::vector<std::pair<BarcodeId, size_t>> barcodes;
@@ -455,7 +455,7 @@ public:
         return barcodes;
     };
 
-    std::vector<BarcodeId> GetBarcodesFromRange(const EdgeId& edge, size_t count_threshold,
+    std::vector<BarcodeId> GetBarcodesFromRange(EdgeId edge, size_t count_threshold,
                                                 size_t left, size_t right) const {
         std::vector<BarcodeId> barcodes;
         size_t bin_length = GetBinLength(edge);
@@ -482,7 +482,7 @@ public:
      * @param barcode
      * @return Estimated first position of the cloud defined by the barcode and the edge (not the first bin, but the first nucleotide)
      */
-    size_t GetMinPos(const EdgeId &edge, const BarcodeId& barcode) const {
+    size_t GetMinPos(EdgeId edge, BarcodeId barcode) const {
         const FrameEdgeEntry<Graph> &entry = this->GetEntry(edge);
         const FrameBarcodeInfo& info = this->GetInfo(edge, barcode);
         size_t frame_size = entry.GetFrameSize();
@@ -495,7 +495,7 @@ public:
      * @param barcode
      * @return Estimated last position of the cloud defined by the barcode and the edge (not the last bin, but the last nucleotide)
      */
-    size_t GetMaxPos(const EdgeId &edge, const BarcodeId& barcode) const {
+    size_t GetMaxPos(EdgeId edge, BarcodeId barcode) const {
         const FrameEdgeEntry<Graph> &entry = this->GetEntry(edge);
         const FrameBarcodeInfo& info = this->GetInfo(edge, barcode);
         size_t frame_size = entry.GetFrameSize();

@@ -70,7 +70,7 @@ void DBGContractedGraphFactory::ProcessEdge(DBGContractedGraphFactory::contracte
                                             PartsBasedContractedFactory::ContractedGraphParts &parts,
                                             const std::unordered_map<VertexId, size_t> &vertex_to_id,
                                             const std::unordered_map<size_t, VertexId> &id_to_vertex,
-                                            const EdgeId &edge) const {
+                                            EdgeId edge) const {
     VertexId start = g_.EdgeStart(edge);
     VertexId end = g_.EdgeEnd(edge);
     size_t start_id = vertex_to_id.at(start);
