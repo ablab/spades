@@ -30,38 +30,40 @@ class ConcurrentBufferFiller {
     using SequenceMapper = debruijn_graph::SequenceMapper<Graph>;
     using MappingPath = omnigraph::MappingPath<EdgeId>;
     using MappingRange = omnigraph::MappingRange;
+    using BarcodeMap = libcuckoo::cuckoohash_map<std::string, BarcodeId>;
 
     class BarcodeEncoder {
       public:
-        BarcodeEncoder(size_t start):
-            codes_(),
+        explicit BarcodeEncoder(size_t start):
+            barcodes_map_(),
             start_(start)
         { }
 
-        BarcodeId add(const std::string &barcode) {
-            std::unique_lock<std::shared_timed_mutex> lock(mutex_);
-            size_t encoder_size = codes_.size();
-            codes_[barcode] = encoder_size + start_;
-            return encoder_size;
+        BarcodeId find_or_insert(const std::string &barcode_string) {
+            try {
+                return barcodes_map_.find(barcode_string);
+            }
+            catch (std::out_of_range&) {
+                size_t num_barcodes = barcodes_map_.size();
+                barcodes_map_.insert(barcode_string, num_barcodes + start_);
+                return num_barcodes;
+            }
         }
 
-        auto begin() const {
-            return codes_.begin();
+        auto begin() {
+            return barcodes_map_.lock_table().begin();
         }
         auto end() {
-            std::shared_lock<std::shared_timed_mutex> lock(mutex_);
-            return codes_.end();
+            return barcodes_map_.lock_table().end();
         }
         auto find(const string& barcode) {
-            std::shared_lock<std::shared_timed_mutex> lock(mutex_);
-            return codes_.find(barcode);
+            return barcodes_map_.find(barcode);
         }
         size_t size() const {
-            return codes_.size();
+            return barcodes_map_.size();
         }
       private:
-        std::unordered_map <std::string, BarcodeId> codes_;
-        std::shared_timed_mutex mutex_;
+        BarcodeMap barcodes_map_;
         const size_t start_;
     };
 
@@ -107,13 +109,7 @@ class ConcurrentBufferFiller {
                            const MappingPath& path1,
                            const MappingPath& path2) {
 
-        auto code_result = encoder_.find(barcode_string);
-        BarcodeId barcode;
-        if (code_result == encoder_.end()) {
-            barcode = encoder_.add(barcode_string);
-        } else {
-            barcode = code_result->second;
-        }
+        BarcodeId barcode = encoder_.find_or_insert(barcode_string);
         InsertMappingPath(barcode, path1);
         InsertMappingPath(barcode, path2);
     }

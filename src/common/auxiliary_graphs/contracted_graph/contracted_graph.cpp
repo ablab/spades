@@ -197,7 +197,7 @@ Sequence ContractedGraph::EdgeNucls(ContractedGraph::EdgeId edge) const {
 size_t ContractedGraph::IncomingEdgeCount(const ContractedGraph::VertexId vertex) const {
     return incoming_.at(vertex).size();
 }
-size_t ContractedGraph::OutgoingEdgeCount(const contracted_graph::ContractedGraph::VertexId vertex) const {
+size_t ContractedGraph::OutgoingEdgeCount(const ContractedGraph::VertexId vertex) const {
     return outcoming_.at(vertex).size();
 }
 
