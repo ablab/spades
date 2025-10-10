@@ -106,7 +106,6 @@ friend class BarcodeIndexInfoExtractor<Graph, EdgeEntryT>;
 public:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef typename omnigraph::IterationHelper <Graph, EdgeId> edge_it_helper;
     typedef std::unordered_map <EdgeId, EdgeEntryT> barcode_map_t;
 
     BarcodeIndex (const Graph &g) :
@@ -585,7 +584,6 @@ class SimpleEdgeEntry : public EdgeEntry<Graph, SimpleBarcodeInfo> {
     friend class BarcodeIndexInfoExtractor<Graph, SimpleEdgeEntry>;
 protected:
     typedef typename Graph::EdgeId EdgeId;
-    typedef typename EdgeEntry<Graph, SimpleBarcodeInfo>::barcode_distribution_t barcode_distribution_t;
     using EdgeEntry<Graph, SimpleBarcodeInfo>::barcode_distribution_;
     using EdgeEntry<Graph, SimpleBarcodeInfo>::edge_;
 
@@ -637,7 +635,6 @@ class FrameEdgeEntry : public EdgeEntry<Graph, FrameBarcodeInfo> {
     friend class ConcurrentBarcodeIndexBuffer<Graph, FrameEdgeEntry>;
 protected:
     typedef typename Graph::EdgeId EdgeId;
-    typedef typename EdgeEntry<Graph, FrameBarcodeInfo>::barcode_distribution_t barcode_distribution_t;
     using EdgeEntry<Graph, FrameBarcodeInfo>::barcode_distribution_;
     using EdgeEntry<Graph, FrameBarcodeInfo>::edge_;
     size_t edge_length_;
@@ -789,9 +786,7 @@ class FrameBarcodeIndex: public BarcodeIndex<Graph, FrameEdgeEntry<Graph>> {
     friend class FrameBarcodeIndexBuilder;
     friend class BarcodeIndexInfoExtractor<Graph, FrameEdgeEntry<Graph>>;
  public:
-    typedef typename barcode_index::BarcodeIndex<Graph, FrameEdgeEntry<Graph>> barcode_map_t;
     typedef typename Graph::EdgeId EdgeId;
-    typedef typename omnigraph::IterationHelper <Graph, EdgeId> edge_it_helper;
 
     FrameBarcodeIndex(const Graph &g, size_t frame_size):
         BarcodeIndex<Graph, FrameEdgeEntry<Graph>>(g), frame_size_(frame_size) {
@@ -809,10 +804,9 @@ class FrameBarcodeIndex: public BarcodeIndex<Graph, FrameEdgeEntry<Graph>> {
     void InitialFillMap() {
         VERIFY_DEV(frame_size_ != 0);
         VERIFY_DEV(edge_to_entry_.empty());
-        edge_it_helper helper(g_);
-        for (auto it = helper.begin(); it != helper.end(); ++it) {
-            FrameEdgeEntry<Graph> entry(*it, g_.length(*it), frame_size_);
-            this->InsertEntry(*it, entry);
+        for (const EdgeId &edge: g_.edges()) {
+            FrameEdgeEntry<Graph> entry(edge, g_.length(edge), frame_size_);
+            this->InsertEntry(edge, entry);
         }
     }
 
