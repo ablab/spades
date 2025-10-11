@@ -203,20 +203,23 @@ class FrameBarcodeIndexBuilder {
 
     void DownsampleBarcodeIndex(FrameBarcodeIndex<Graph> &downsampled_index, FrameBarcodeIndex<Graph> &original_index, double sampling_factor) {
         std::unordered_set<BarcodeId> barcodes;
+        std::unordered_set<BarcodeId> passed_barcodes;
+        BarcodeId min_barcode = std::numeric_limits<BarcodeId>::max();
+        BarcodeId max_barcode = std::numeric_limits<BarcodeId>::min();
         for (auto it = original_index.begin(); it != original_index.end(); ++it) {
             const auto &barcode_distribution = it->second.GetDistribution();
             for (const auto &entry: barcode_distribution) {
                 BarcodeId current_barcode = entry.first;
                 barcodes.insert(current_barcode);
+                min_barcode = std::min(min_barcode, current_barcode);
+                max_barcode = std::max(max_barcode, current_barcode);
             }
         }
         INFO("Number of encountered barcodes: " << barcodes.size());
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_real_distribution<> distr(.0, 1.0);
-        std::unordered_set<BarcodeId> passed_barcodes;
+        INFO("Barcode id range: " << min_barcode << ", " << max_barcode);
+        double barcode_thr = static_cast<double>(max_barcode - min_barcode) * sampling_factor;
         for (const auto &barcode: barcodes) {
-            if (math::le(distr(gen), sampling_factor)) {
+            if (math::le(barcode - min_barcode, barcode_thr)) {
                 passed_barcodes.insert(barcode);
             }
         }
