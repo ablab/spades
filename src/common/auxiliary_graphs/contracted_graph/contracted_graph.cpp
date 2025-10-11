@@ -192,7 +192,7 @@ ContractedGraph::VertexId ContractedGraph::conjugate(const ContractedGraph::Vert
 }
 Sequence ContractedGraph::EdgeNucls(ContractedGraph::EdgeId edge) const {
     VERIFY(edge.GetType() == scaffold_graph::ScaffoldVertexT::Edge);
-    assembly_graph_.EdgeNucls(edge.GetFirstEdge());
+    return assembly_graph_.EdgeNucls(edge.GetFirstEdge());
 }
 size_t ContractedGraph::IncomingEdgeCount(const ContractedGraph::VertexId vertex) const {
     return incoming_.at(vertex).size();
