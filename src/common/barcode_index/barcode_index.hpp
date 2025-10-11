@@ -17,8 +17,6 @@
 #include <cuckoo/cuckoohash_map.hh>
 #include <unordered_set>
 
-using std::string;
-using std::istringstream;
 using namespace omnigraph;
 
 namespace barcode_index {
@@ -155,7 +153,7 @@ public:
 
     //Delete low abundant barcodes from every edge
     void Filter(size_t trimming_threshold, size_t gap_threshold) override {
-        for (auto entry = edge_to_entry_.begin(); entry != edge_to_entry_.end(); ++entry) {
+        for (auto &entry: edge_to_entry_) {
             entry->second.Filter(trimming_threshold, gap_threshold);
         }
     }
@@ -179,8 +177,7 @@ public:
         BinRead(str, size);
         for (size_t i = 0; i < size; ++i) {
             EdgeId edge_id = BinRead<uint64_t>(str);
-            auto entry = BinRead<EdgeEntryT>(str);
-            edge_to_entry_.insert({std::move(edge_id), std::move(entry)});
+            edge_to_entry_.emplace(edge_id, BinRead<EdgeEntryT>(str));
         }
     }
     virtual void BinWrite(std::ostream &str) const {
@@ -277,25 +274,25 @@ public:
     Range GetRange() const {
         return range_;
     }
-    friend std::ostream& operator <<(std::ostream& os, const SimpleBarcodeInfo& info);
-    friend std::istream& operator >>(std::istream& is, SimpleBarcodeInfo& info);
+  friend std::ostream &operator<<(std::ostream &os, const SimpleBarcodeInfo &info);
+  friend std::istream &operator>>(std::istream &is, SimpleBarcodeInfo &info);
 };
 
-inline std::ostream& operator <<(std::ostream& os, const SimpleBarcodeInfo& info)
+inline std::ostream &operator<<(std::ostream &os, const SimpleBarcodeInfo &info)
 {
     os << info.count_ << " " << info.range_.start_pos << " " << info.range_.end_pos;
     return os;
 }
 
-inline std::istream& operator >>(std::istream& os, SimpleBarcodeInfo& info)
+inline std::istream &operator>>(std::istream &is, SimpleBarcodeInfo &info)
 {
     size_t range_start;
     size_t range_end;
-    os >> info.count_;
-    os >> range_start;
-    os >> range_end;
+    is >> info.count_;
+    is >> range_start;
+    is >> range_end;
     info.range_ = Range(range_start, range_end);
-    return os;
+    return is;
 }
 
 /**
@@ -413,9 +410,8 @@ public:
         }
     }
 
-
-    friend std::ostream& operator <<(std::ostream& os, const FrameBarcodeInfo& info);
-    friend std::istream& operator >>(std::istream& is, FrameBarcodeInfo& info);
+  friend std::ostream &operator<<(std::ostream &os, const FrameBarcodeInfo &info);
+  friend std::istream &operator>>(std::istream &is, FrameBarcodeInfo &info);
 
  private:
     /**
@@ -438,7 +434,7 @@ public:
     DECL_LOGGER("FrameBarcodeInfo");
 };
 
-inline std::ostream& operator <<(std::ostream& os, const FrameBarcodeInfo& info)
+inline std::ostream &operator<<(std::ostream &os, const FrameBarcodeInfo &info)
 {
     os << info.count_ << " " << info.covered_bins_.size();
     for (const auto &bin: info.covered_bins_) {
@@ -447,7 +443,7 @@ inline std::ostream& operator <<(std::ostream& os, const FrameBarcodeInfo& info)
     return os;
 }
 
-inline std::istream& operator >>(std::istream& is, FrameBarcodeInfo& info)
+inline std::istream &operator>>(std::istream &is, FrameBarcodeInfo &info)
 {
     using io::binary::BinRead;
     size_t count;
@@ -687,8 +683,8 @@ public:
         for (size_t i = 0; i < size; ++i) {
             BarcodeId barcode;
             FrameBarcodeInfo info(number_of_frames_);
-            BinRead(str, barcode, info);
-            barcode_distribution_.insert({std::move(barcode), std::move(info)});
+            BinRead(str, barcode);
+            barcode_distribution_.emplace(barcode, BinRead<FrameBarcodeInfo>(str));
         }
     }
 

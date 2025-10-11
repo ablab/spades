@@ -10,8 +10,7 @@
 #include "assembly_graph/paths/bidirectional_path.hpp"
 #include "assembly_graph/core/graph.hpp"
 
-#include "boost/optional/optional.hpp"
-
+#include <optional>
 #include <unordered_set>
 
 namespace scaffold_graph {
@@ -31,8 +30,8 @@ class InnerScaffoldVertex {
     virtual std::shared_ptr<InnerScaffoldVertex> GetConjugateFromGraph(const debruijn_graph::Graph &g) const = 0;
     virtual debruijn_graph::VertexId GetEndGraphVertex(const debruijn_graph::Graph &g) const = 0;
     virtual debruijn_graph::VertexId GetStartGraphVertex(const debruijn_graph::Graph &g) const = 0;
-    virtual boost::optional<EdgeId> GetLastEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const = 0;
-    virtual boost::optional<EdgeId> GetFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const = 0;
+    virtual std::optional<EdgeId> GetLastEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const = 0;
+    virtual std::optional<EdgeId> GetFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const = 0;
     virtual std::string GetSequence(const debruijn_graph::Graph &g) const = 0;
     virtual size_t GetSize() const = 0;
 
@@ -58,8 +57,8 @@ class EdgeIdVertex : public InnerScaffoldVertex {
     std::shared_ptr<InnerScaffoldVertex> GetConjugateFromGraph(const debruijn_graph::Graph &g) const override;
     debruijn_graph::VertexId GetEndGraphVertex(const debruijn_graph::Graph &g) const override { return g.EdgeEnd(edge_); }
     debruijn_graph::VertexId GetStartGraphVertex(const debruijn_graph::Graph &g) const override { return g.EdgeStart(edge_); }
-    boost::optional<EdgeId> GetLastEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const override;
-    boost::optional<EdgeId> GetFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const override;
+    std::optional<EdgeId> GetLastEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const override;
+    std::optional<EdgeId> GetFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const override;
     std::string GetSequence(const debruijn_graph::Graph &g) const override;
     size_t GetSize() const override { return 1; }
 
@@ -90,8 +89,8 @@ class PathVertex : public InnerScaffoldVertex {
     std::shared_ptr<InnerScaffoldVertex> GetConjugateFromGraph(const debruijn_graph::Graph &/*g*/) const override;
     VertexId GetEndGraphVertex(const debruijn_graph::Graph &g) const override;
     VertexId GetStartGraphVertex(const debruijn_graph::Graph &g) const override;
-    boost::optional<EdgeId> GetLastEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const override;
-    boost::optional<EdgeId> GetFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const override;
+    std::optional<EdgeId> GetLastEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const override;
+    std::optional<EdgeId> GetFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const override;
     std::string GetSequence(const debruijn_graph::Graph &g) const override;
     size_t GetSize() const override { return path_->Size(); }
 
@@ -131,10 +130,10 @@ class ScaffoldVertex {
     ScaffoldVertex GetConjugateFromGraph(const debruijn_graph::Graph &g) const;
     VertexId GetEndGraphVertex(const debruijn_graph::Graph &g) const { return vertex_ptr_->GetEndGraphVertex(g); }
     VertexId GetStartGraphVertex(const debruijn_graph::Graph &g) const { return vertex_ptr_->GetStartGraphVertex(g); }
-    boost::optional<EdgeId> GetLastEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const {
+    std::optional<EdgeId> GetLastEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const {
         return vertex_ptr_->GetLastEdgeWithPredicate(pred);
     }
-    boost::optional<EdgeId> GetFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const {
+    std::optional<EdgeId> GetFirstEdgeWithPredicate(const func::TypedPredicate<EdgeId> &pred) const {
         return vertex_ptr_->GetFirstEdgeWithPredicate(pred);
     }
     std::string GetSequence(const debruijn_graph::Graph &g) const { return vertex_ptr_->GetSequence(g); }

@@ -14,9 +14,8 @@
 #include "alignment/sequence_mapper_notifier.hpp"
 #include "alignment/sequence_mapper.hpp"
 
-#include <mutex>
 #include <random>
-#include <shared_mutex>
+#include <string>
 #include <unordered_set>
 
 namespace barcode_index {
@@ -56,7 +55,7 @@ class ConcurrentBufferFiller {
         auto end() {
             return barcodes_map_.lock_table().end();
         }
-        auto find(const string& barcode) {
+        auto find(const std::string& barcode) {
             return barcodes_map_.find(barcode);
         }
         size_t size() const {
@@ -136,20 +135,20 @@ class ConcurrentBufferFiller {
         }
     }
 
-    string GetTenXBarcodeFromRead(const std::string &read_name, const std::vector<string>& barcode_prefixes) {
+    std::string GetTenXBarcodeFromRead(const std::string &read_name, const std::vector<std::string>& barcode_prefixes) {
         for (const auto& prefix: barcode_prefixes) {
             size_t prefix_len = prefix.size();
             size_t start_pos = read_name.find(prefix);
-            if (start_pos != string::npos) {
-                string barcode = GetBarcodeFromStartPos(start_pos + prefix_len, read_name);
+            if (start_pos != std::string::npos) {
+                std::string barcode = GetBarcodeFromStartPos(start_pos + prefix_len, read_name);
                 TRACE(barcode);
                 return barcode;
             }
         }
         return "";
     }
-    string GetBarcodeFromStartPos(const size_t start_pos, const string& read_id) {
-        string result = "";
+    std::string GetBarcodeFromStartPos(const size_t start_pos, const std::string& read_id) {
+        std::string result = "";
         for (auto it = read_id.begin() + start_pos; it != read_id.end(); ++it) {
             if (not is_nucl(*it)) {
                 return result;

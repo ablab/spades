@@ -51,7 +51,7 @@ std::vector<UnbranchingPathExtractor::SimplePath> UnbranchingPathExtractor::Extr
     INFO(result.size() << " unbranching simple paths")
     for (const auto &vertex: unbranching_vertices) {
         if (visited.insert(vertex).second) {
-            INFO("Unvisited");
+            DEBUG("Unvisited");
             SimplePath cycle;
             cycle.push_back(vertex);
             ScaffoldVertex curr_vertex = edge_to_next.at(vertex);
