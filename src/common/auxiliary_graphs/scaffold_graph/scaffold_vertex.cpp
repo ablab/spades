@@ -25,17 +25,17 @@ path_extend::BidirectionalPath* EdgeIdVertex::ToPath(const debruijn_graph::Graph
     return result;
 }
 
-boost::optional<debruijn_graph::EdgeId> EdgeIdVertex::GetLastEdgeWithPredicate(
+std::optional<debruijn_graph::EdgeId> EdgeIdVertex::GetLastEdgeWithPredicate(
         const func::TypedPredicate<EdgeId> &pred) const {
-    boost::optional<EdgeId> result;
+    std::optional<EdgeId> result;
     if (pred(edge_)) {
         result = edge_;
     }
     return result;
 }
-boost::optional<debruijn_graph::EdgeId> EdgeIdVertex::GetFirstEdgeWithPredicate(
+std::optional<debruijn_graph::EdgeId> EdgeIdVertex::GetFirstEdgeWithPredicate(
         const func::TypedPredicate<EdgeId> &pred) const {
-    boost::optional<EdgeId> result;
+    std::optional<EdgeId> result;
     if (pred(edge_)) {
         result = edge_;
     }
@@ -73,9 +73,9 @@ debruijn_graph::EdgeId PathVertex::GetFirstEdge() const {
     VERIFY(path_size > 0);
     return path_->Front();
 }
-boost::optional<debruijn_graph::EdgeId> PathVertex::GetLastEdgeWithPredicate(
+std::optional<debruijn_graph::EdgeId> PathVertex::GetLastEdgeWithPredicate(
         const func::TypedPredicate<EdgeId> &pred) const {
-    boost::optional<EdgeId> result;
+    std::optional<EdgeId> result;
     for (int i = static_cast<int>(path_->Size()) - 1; i >= 0; --i) {
         EdgeId current = path_->At(i);
         if (pred(current)) {
@@ -85,9 +85,9 @@ boost::optional<debruijn_graph::EdgeId> PathVertex::GetLastEdgeWithPredicate(
     }
     return result;
 }
-boost::optional<debruijn_graph::EdgeId> PathVertex::GetFirstEdgeWithPredicate(
+std::optional<debruijn_graph::EdgeId> PathVertex::GetFirstEdgeWithPredicate(
         const func::TypedPredicate<EdgeId> &pred) const {
-    boost::optional<EdgeId> result;
+    std::optional<EdgeId> result;
     for (size_t i = 0; i < path_->Size(); ++i) {
         EdgeId current = path_->At(i);
         if (pred(current)) {
