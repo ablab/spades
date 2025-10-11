@@ -17,7 +17,7 @@ class AdjacencyMap {
     typedef debruijn_graph::VertexId VertexId;
     typedef debruijn_graph::EdgeId EdgeId;
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
-    typedef std::map<VertexId, std::unordered_set<ScaffoldVertex>> ContractedMap;
+    typedef std::unordered_map<VertexId, std::unordered_set<ScaffoldVertex>> ContractedMap;
     typedef ContractedMap::const_iterator const_iterator;
     typedef ContractedMap::value_type value_type;
     typedef ContractedMap::mapped_type mapped_type;
@@ -34,15 +34,15 @@ class AdjacencyMap {
     const_iterator end() const;
 
   private:
-    std::map<debruijn_graph::VertexId, std::unordered_set<ScaffoldVertex>> data_;
+    std::unordered_map<debruijn_graph::VertexId, std::unordered_set<ScaffoldVertex>> data_;
 };
 
 class ContractedGraph {
  public:
     typedef debruijn_graph::VertexId VertexId;
     typedef debruijn_graph::Graph Graph;
-    typedef std::set<VertexId> VertexContainer;
-    typedef std::map<VertexId, AdjacencyMap> EdgeContainer;
+    typedef std::unordered_set<VertexId> VertexContainer;
+    typedef std::unordered_map<VertexId, AdjacencyMap> EdgeContainer;
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
     typedef AdjacencyMap::const_iterator const_entry_iterator;
     typedef VertexContainer::const_iterator const_vertex_iterator;
@@ -139,7 +139,7 @@ class ContractedGraph {
     EdgeContainer outcoming_;
     EdgeContainer incoming_;
     VertexContainer vertices_;
-    std::map<VertexId, size_t> capacity_;
+    std::unordered_map<VertexId, size_t> capacity_;
 
     //for edge iterator
     std::unordered_set<ScaffoldVertex> empty_;
