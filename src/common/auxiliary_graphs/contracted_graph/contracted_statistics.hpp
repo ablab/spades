@@ -14,7 +14,7 @@ class ContractedStatisticsExtractor {
  public:
     using Graph = debruijn_graph::Graph;
 
-    explicit ContractedStatisticsExtractor(const Graph &assembly_graph);
+    explicit ContractedStatisticsExtractor(const Graph &assembly_graph) : assembly_graph_(assembly_graph) {}
 
     size_t CountLoops(const ContractedGraph &graph) const;
     size_t CountNonIsolated(const ContractedGraph &graph) const;

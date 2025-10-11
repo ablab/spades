@@ -55,8 +55,7 @@ void ContractedStatisticsExtractor::GetMeanWeights(std::vector<size_t> threshold
         fout << entry.first << " " << entry.second << "\n";
     }
 }
-ContractedStatisticsExtractor::ContractedStatisticsExtractor(const Graph &assembly_graph) :
-    assembly_graph_(assembly_graph) {}
+
 size_t ContractedStatisticsExtractor::CountNonIsolated(const ContractedGraph &graph) const {
     size_t result = 0;
     for (const auto &vertex: graph) {

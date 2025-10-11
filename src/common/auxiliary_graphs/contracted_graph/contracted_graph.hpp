@@ -24,14 +24,14 @@ class AdjacencyMap {
 
     AdjacencyMap() = default;
     AdjacencyMap(VertexId vertex, const ScaffoldVertex &edge) : data_({{vertex, {edge}}}) {}
-    void InsertPair(VertexId vertex, const ScaffoldVertex &edge);
+    void InsertPair(VertexId vertex, const ScaffoldVertex &edge) { data_[vertex].insert(edge); }
     void RemovePair(VertexId vertex, const ScaffoldVertex &edge);
     bool Contains(VertexId vertex, const ScaffoldVertex &edge);
-    bool empty() const;
-    size_t size() const;
+    bool empty() const { return data_.empty(); }
+    size_t size() const { return data_.size(); }
 
-    const_iterator begin() const;
-    const_iterator end() const;
+    const_iterator begin() const { return data_.begin(); }
+    const_iterator end() const { return data_.end(); }
 
   private:
     std::unordered_map<debruijn_graph::VertexId, std::unordered_set<ScaffoldVertex>> data_;
@@ -95,45 +95,55 @@ class ContractedGraph {
     void RemoveEdge(VertexId head, VertexId tail, const ScaffoldVertex &edge);
     size_t GetOutDegree(VertexId vertex) const;
     size_t GetInDegree(VertexId vertex) const;
-    size_t GetCapacity(VertexId vertex) const;
-    void InsertCapacity(VertexId vertex, size_t capacity);
-    bool ContainsVertex(VertexId vertex) const;
+    size_t GetCapacity(VertexId vertex) const { return capacity_.at(vertex); }
+    void InsertCapacity(VertexId vertex, size_t capacity) { capacity_[vertex] = capacity; }
+    bool ContainsVertex(VertexId vertex) const { return vertices_.find(vertex) != vertices_.end(); }
 
-    const_entry_iterator in_entry_begin(VertexId vertex) const;
-    const_entry_iterator in_entry_end(VertexId vertex) const;
-    adt::iterator_range<const_entry_iterator> IncomingEntries(VertexId vertex) const;
-    const_entry_iterator out_entry_begin(VertexId vertex) const;
-    const_entry_iterator out_entry_end(VertexId vertex) const;
-    adt::iterator_range<const_entry_iterator> OutcomingEntries(VertexId vertex) const;
+    const_entry_iterator in_entry_begin(VertexId vertex) const { return incoming_.at(vertex).begin(); }
+    const_entry_iterator in_entry_end(VertexId vertex) const { return incoming_.at(vertex).end(); }
+    adt::iterator_range<const_entry_iterator> IncomingEntries(VertexId vertex) const {
+        return adt::make_range(in_entry_begin(vertex),
+                               in_entry_end(vertex));
+    }
+    const_entry_iterator out_entry_begin(VertexId vertex) const { return outcoming_.at(vertex).begin(); }
+    const_entry_iterator out_entry_end(VertexId vertex) const { return outcoming_.at(vertex).end(); }
+    adt::iterator_range<const_entry_iterator> OutcomingEntries(VertexId vertex) const {
+        return adt::make_range(out_entry_begin(vertex), out_entry_end(vertex));
+    }
 
     const_edge_iterator in_edge_begin(VertexId vertex) const;
     const_edge_iterator in_edge_end(VertexId vertex) const;
-    adt::iterator_range<const_edge_iterator> IncomingEdges(VertexId vertex) const;
-    size_t IncomingEdgeCount(VertexId vertex) const;
+    adt::iterator_range<const_edge_iterator> IncomingEdges(VertexId vertex) const {
+        return adt::make_range(in_edge_begin(vertex), in_edge_end(vertex));
+    }
+    size_t IncomingEdgeCount(VertexId vertex) const { return incoming_.at(vertex).size(); }
     const_edge_iterator out_edge_begin(VertexId vertex) const;
     const_edge_iterator out_edge_end(VertexId vertex) const;
-    adt::iterator_range<const_edge_iterator> OutgoingEdges(VertexId vertex) const;
-    size_t OutgoingEdgeCount(VertexId vertex) const;
+    adt::iterator_range<const_edge_iterator> OutgoingEdges(VertexId vertex) const {
+        return adt::make_range(out_edge_begin(vertex),
+                               out_edge_end(vertex));
+    }
+    size_t OutgoingEdgeCount(VertexId vertex) const { return outcoming_.at(vertex).size(); }
 
-    const_vertex_iterator begin() const;
-    const_vertex_iterator end() const;
-    adt::iterator_range<const_vertex_iterator> vertices() const;
-    size_t size() const;
+    const_vertex_iterator begin() const { return vertices_.begin(); }
+    const_vertex_iterator end() const { return vertices_.end(); }
+    adt::iterator_range<const_vertex_iterator> vertices() const { return adt::make_range(begin(), end()); }
+    size_t size() const { return vertices_.size(); }
     size_t CountEdges() const;
 
     //fixme also iterates over short edges
-    auto canonical_edges () const;
+    auto canonical_edges () const { return assembly_graph_.canonical_edges(); }
 
-    const Graph &GetAssemblyGraph() const;
+    const Graph &GetAssemblyGraph() const { return assembly_graph_; }
 //    std::string EdgeNucls(EdgeId edge) const;
 //    std::string VertexNucls(VertexId vertex) const;
     Sequence EdgeNucls(EdgeId edge) const;
-    double coverage(EdgeId edge) const;
-    size_t length(EdgeId edge) const;
-    size_t int_id(EdgeId edge) const;
+    double coverage(EdgeId edge) const { return edge.GetCoverageFromGraph(assembly_graph_); }
+    size_t length(EdgeId edge) const { return edge.GetLengthFromGraph(assembly_graph_); }
+    size_t int_id(EdgeId edge) const { return edge.int_id(); }
 
-    ScaffoldVertex conjugate(ScaffoldVertex edge) const;
-    VertexId conjugate(VertexId vertex) const;
+    ScaffoldVertex conjugate(ScaffoldVertex edge) const { return edge.GetConjugateFromGraph(assembly_graph_); }
+    VertexId conjugate(VertexId vertex) const { return assembly_graph_.conjugate(vertex); }
 
  protected:
     EdgeContainer outcoming_;
