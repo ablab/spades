@@ -23,9 +23,7 @@ std::vector<UnbranchingPathExtractor::SimplePath> UnbranchingPathExtractor::Extr
                 unbranching_vertices.insert(incoming_edge);
                 unbranching_vertices.insert(outcoming_edge);
                 starts.insert(incoming_edge);
-                if (starts.find(outcoming_edge) != starts.end()) {
-                    starts.erase(outcoming_edge);
-                }
+                starts.erase(outcoming_edge);
             }
         }
     }
