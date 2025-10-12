@@ -17,7 +17,7 @@ class AdjacencyMap {
     typedef debruijn_graph::VertexId VertexId;
     typedef debruijn_graph::EdgeId EdgeId;
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
-    typedef std::unordered_map<VertexId, std::unordered_set<ScaffoldVertex>> ContractedMap;
+    typedef std::map<VertexId, std::unordered_set<ScaffoldVertex>> ContractedMap;
     typedef ContractedMap::const_iterator const_iterator;
     typedef ContractedMap::value_type value_type;
     typedef ContractedMap::mapped_type mapped_type;
@@ -34,7 +34,7 @@ class AdjacencyMap {
     const_iterator end() const { return data_.end(); }
 
   private:
-    std::unordered_map<debruijn_graph::VertexId, std::unordered_set<ScaffoldVertex>> data_;
+    ContractedMap data_;
 };
 
 class ContractedGraph {
