@@ -75,7 +75,7 @@ namespace barcode_index {
          * @return True if the edge contains the barcode
          */
         bool HasBarcode(EdgeId edge, BarcodeId barcode) const {
-            return index_.GetEntry(edge).has_barcode(barcode);
+            return index_.GetEntry(edge).HasBarcode(barcode);
         }
 
         /**
@@ -290,7 +290,7 @@ namespace barcode_index {
         const barcode_info_t& GetInfo(EdgeId edge, BarcodeId barcode) const {
             VERIFY(HasBarcode(edge, barcode));
             const BarcodeEntryT& entry = GetEntry(edge);
-            return entry.get_barcode(barcode)->second;
+            return entry.GetBarcode(barcode)->second;
         }
 
         const BarcodeEntryT& GetEntry(EdgeId edge) const {

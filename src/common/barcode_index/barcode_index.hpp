@@ -154,7 +154,7 @@ public:
     //Delete low abundant barcodes from every edge
     void Filter(size_t trimming_threshold, size_t gap_threshold) override {
         for (auto &entry: edge_to_entry_) {
-            entry->second.Filter(trimming_threshold, gap_threshold);
+            entry.second.Filter(trimming_threshold, gap_threshold);
         }
     }
 
@@ -523,11 +523,11 @@ public:
         return barcode_distribution_.cend();
     }
 
-    bool has_barcode(BarcodeId barcode) const {
+    bool HasBarcode(BarcodeId barcode) const {
         return barcode_distribution_.find(barcode) != barcode_distribution_.end();
     }
 
-    typename barcode_distribution_t::const_iterator get_barcode(BarcodeId barcode) const {
+    typename barcode_distribution_t::const_iterator GetBarcode(BarcodeId barcode) const {
         return barcode_distribution_.find(barcode);
     }
 
