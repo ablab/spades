@@ -166,6 +166,17 @@ TEST(BarcodeIndex, BarcodeFiltering) {
     EXPECT_EQ(barcode_index.GetBarcodeNumber(edge), 1);
 }
 
+TEST(BarcodeIndex, BarcodeEncoder) {
+    barcode_index::ConcurrentBufferFiller::BarcodeEncoder encoder(0);
+
+    EXPECT_EQ(encoder.find_or_insert("ACGTA"), 1);
+    EXPECT_EQ(encoder.find_or_insert("ACGTC"), 2);
+    EXPECT_EQ(encoder.find_or_insert("ACGTGGG"), 3);
+    EXPECT_EQ(encoder.find_or_insert("ACGTA"), 1);
+
+    EXPECT_EQ(encoder.size(), 3);
+}
+
 TEST(BarcodeIndex, SimpleBarcodeInfo) {
     SimpleBarcodeInfo info(5, Range(10, 50));
 
