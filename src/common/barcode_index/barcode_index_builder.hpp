@@ -39,13 +39,12 @@ class ConcurrentBufferFiller {
         { }
 
         BarcodeId find_or_insert(const std::string &barcode_string) {
-            size_t num_barcodes = barcodes_map_.size();
-            BarcodeId empty;
-            BarcodeId &result = empty;
-            barcodes_map_.upsert(barcode_string, [&result](BarcodeId &value, libcuckoo::UpsertContext context) {
-              if (context == libcuckoo::UpsertContext::ALREADY_EXISTED) {
-                  result = value;
+            BarcodeId result;
+            barcodes_map_.upsert(barcode_string, [&result, this](BarcodeId &value, libcuckoo::UpsertContext context) {
+              if (context != libcuckoo::UpsertContext::ALREADY_EXISTED) {
+                  value = barcodes_map_.size() + start_;
               }
+              result = value;
               return false;
             });
             return result;
