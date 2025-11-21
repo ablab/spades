@@ -257,7 +257,7 @@ void assemble_genome(bool mpi = false) {
                                   cfg::get().flanking_range,
                                   cfg::get().pos.max_mapping_gap,
                                   cfg::get().pos.max_gap_diff);
-    if (cfg::get().need_mapping) {
+    if (0 && cfg::get().need_mapping) {
         INFO("Will need read mapping, kmer mapper will be attached");
         conj_gp.get_mutable<debruijn_graph::KmerMapper<debruijn_graph::Graph>>().Attach();
     }
