@@ -762,7 +762,7 @@ ConstructionMPI::ConstructionMPI()
     add<ExtensionIndexBuilder>();
     if (config::PipelineHelper::IsRNAPipeline(cfg::get().mode))
         add<EarlyATClipper>();
-    if (cfg::get().con.early_tc.enable && !cfg::get().gap_closer_enable)
+    if (cfg::get().con.early_tc.enable) // && !cfg::get().gap_closer_enable)
         add<EarlyTipClipper>();
     add<GraphCondenser>();
     add<PHMCoverageFiller>();
