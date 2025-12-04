@@ -195,3 +195,15 @@ void detach_logger();
     if (!(expr)) {                                                      \
         FATAL_ERROR(msg);                                               \
     }
+
+#define FATAL_ERROR_CODE(message, err_code)                             \
+    do {                                                                \
+        ERROR(message);                                                 \
+        utils::print_stacktrace();                                      \
+        exit(err_code);                                                 \
+    } while(0)
+
+#define CHECK_FATAL_ERROR_CODE(expr, msg, err_code)                     \
+    if (!(expr)) {                                                      \
+        FATAL_ERROR_CODE(msg, err_code);                                \
+    }
