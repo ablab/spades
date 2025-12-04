@@ -891,27 +891,38 @@ def create_parser():
 
 def check_options_for_restart_from():
     if ("dataset_data" in options_storage.args) and (options_storage.args.dataset_data is not None):
-        support.error("you cannot specify input data (-1, -2, -12, --pe-1, --pe-2 ...) with --restart-from option!", log)
+        support.error("you cannot specify input data (-1, -2, -12, --pe-1, --pe-2 ...) with --restart-from option!",
+                      log, exit_code=support.ErrorCode.InvalidParameter)
     if options_storage.args.dataset_yaml_filename:
-        support.error("you cannot specify --dataset with --restart-from option!", log)
+        support.error("you cannot specify --dataset with --restart-from option!", log,
+                      exit_code=support.ErrorCode.InvalidParameter)
     if options_storage.args.single_cell:
-        support.error("you cannot specify --sc with --restart-from option!", log)
+        support.error("you cannot specify --sc with --restart-from option!", log,
+                      exit_code=support.ErrorCode.InvalidParameter)
     if options_storage.args.meta:
-        support.error("you cannot specify --meta with --restart-from option!", log)
+        support.error("you cannot specify --meta with --restart-from option!", log,
+                      exit_code=support.ErrorCode.InvalidParameter)
     if options_storage.args.plasmid:
-        support.error("you cannot specify --plasmid with --restart-from option!", log)
+        support.error("you cannot specify --plasmid with --restart-from option!", log,
+                      exit_code=support.ErrorCode.InvalidParameter)
     if options_storage.args.rna:
-        support.error("you cannot specify --rna with --restart-from option!", log)
+        support.error("you cannot specify --rna with --restart-from option!", log,
+                      exit_code=support.ErrorCode.InvalidParameter)
     if options_storage.args.isolate:
-        support.error("you cannot specify --isolate with --restart-from option!", log)
+        support.error("you cannot specify --isolate with --restart-from option!", log,
+                      exit_code=support.ErrorCode.InvalidParameter)
     if options_storage.args.iontorrent:
-        support.error("you cannot specify --iontorrent with --restart-from option!", log)
+        support.error("you cannot specify --iontorrent with --restart-from option!", log,
+                      exit_code=support.ErrorCode.InvalidParameter)
     if options_storage.args.only_assembler:
-        support.error("you cannot specify --only-assembler with --restart-from option!", log)
+        support.error("you cannot specify --only-assembler with --restart-from option!", log,
+                      exit_code=support.ErrorCode.InvalidParameter)
     if options_storage.args.only_error_correction:
-        support.error("you cannot specify --only-error-correction with --restart-from option!", log)
+        support.error("you cannot specify --only-error-correction with --restart-from option!", log,
+                      exit_code=support.ErrorCode.InvalidParameter)
     if options_storage.args.strand_specificity is not None:
-        support.error("you cannot specify strand specificity (--ss-rf or --ss-fr) with --restart-from option!", log)
+        support.error("you cannot specify strand specificity (--ss-rf or --ss-fr) with --restart-from option!",
+                      log, exit_code=support.ErrorCode.InvalidParameter)
 
 
 def add_to_option(args, skip_output_dir):
@@ -923,11 +934,12 @@ def add_to_option(args, skip_output_dir):
     if args.test_mode:
         if not skip_output_dir:
             if "output_dir" in options_storage.args and options_storage.args.output_dir is not None:
-                support.error("you cannot specify -o and --test simultaneously")
+                support.error("you cannot specify -o and --test simultaneously", exit_code=support.ErrorCode.InvalidParameter)
             options_storage.args.output_dir = os.path.abspath("spades_test")
     else:
         if "output_dir" not in options_storage.args or options_storage.args.output_dir is None:
-            support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).")
+            support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).",
+                          exit_code=support.ErrorCode.InvalidParameter)
 
     if not skip_output_dir:
         output_dir = abspath(expanduser(args.output_dir))
@@ -953,25 +965,32 @@ def add_to_option(args, skip_output_dir):
         args.no_clear_after = True
 
     if args.only_assembler and args.only_error_correction:
-        support.error("you cannot specify --only-error-correction and --only-assembler simultaneously")
+        support.error("you cannot specify --only-error-correction and --only-assembler simultaneously",
+                      exit_code=support.ErrorCode.InvalidParameter)
 
     if (args.rna or args.rnaviral) and args.only_error_correction:
-        support.error("you cannot specify --only-error-correction in RNA-seq mode!", log)
+        support.error("you cannot specify --only-error-correction in RNA-seq mode!", log,
+                      exit_code=support.ErrorCode.InvalidParameter)
 
     if args.isolate and args.only_error_correction:
-        support.error("you cannot specify --only-error-correction in isolate mode!", log)
+        support.error("you cannot specify --only-error-correction in isolate mode!", log,
+                      exit_code=support.ErrorCode.InvalidParameter)
 
     if args.careful is False and args.mismatch_corrector is True:
-        support.error("you cannot specify --mismatch-correction and --careful:false simultaneously")
+        support.error("you cannot specify --mismatch-correction and --careful:false simultaneously",
+                      exit_code=support.ErrorCode.InvalidParameter)
 
     if args.careful is True and args.mismatch_corrector is False:
-        support.error("you cannot specify --mismatch-correction:false and --careful simultaneously")
+        support.error("you cannot specify --mismatch-correction:false and --careful simultaneously",
+                      exit_code=support.ErrorCode.InvalidParameter)
 
     if args.rna and (args.careful or args.mismatch_corrector):
-        support.error("you cannot specify --mismatch-correction or --careful in RNA-seq mode!", log)
+        support.error("you cannot specify --mismatch-correction or --careful in RNA-seq mode!", log,
+                      exit_code=support.ErrorCode.InvalidParameter)
 
     if args.isolate and (args.careful or args.mismatch_corrector):
-        support.error("you cannot specify --mismatch-correction or --careful in isolate mode!", log)
+        support.error("you cannot specify --mismatch-correction or --careful in isolate mode!", log,
+                      exit_code=support.ErrorCode.InvalidParameter)
 
     if args.only_assembler and args.isolate:
         support.warning("Isolate mode already implies --only-assembler, so this option has no effect.")
@@ -1033,7 +1052,8 @@ def add_to_cfg(cfg, bin_home, spades_home, args):
             hmms = hmms_path
 
         if hmms == "":
-            support.error("Custom HMM folder does not contain any HMMs. They should have .hmm or .hmm.gz extension.", log)
+            support.error("Custom HMM folder does not contain any HMMs. They should have .hmm or .hmm.gz extension.", log,
+                          exit_code=support.ErrorCode.FileNotFound)
         cfg["common"].__dict__["set_of_hmms"] = hmms
 
     # dataset section
@@ -1095,15 +1115,18 @@ def postprocessing(args, dataset_data, spades_home, load_processed_dataset, rest
     if args.bio or args.rnaviral:
         args.meta = True
     if not args.output_dir:
-        support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).", log)
+        support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).", log,
+                      exit_code=support.ErrorCode.InvalidParameter)
     if not os.path.isdir(args.output_dir):
         if args.continue_mode:
-            support.error("the output_dir should exist for --continue and for --restart-from!", log)
+            support.error("the output_dir should exist for --continue and for --restart-from!", log,
+                          exit_code=support.ErrorCode.InvalidParameter)
         os.makedirs(args.output_dir)
     if args.restart_from or restart_from:
         if args.continue_mode:  # saving parameters specified with --restart-from
             if not file_operations.dataset_is_empty(dataset_data):
-                support.error("you cannot specify reads with --restart-from option!", log)
+                support.error("you cannot specify reads with --restart-from option!", log,
+                              exit_code=support.ErrorCode.InvalidParameter)
             save_restart_options()
         else:  # overriding previous run parameters
             load_restart_options()
@@ -1116,14 +1139,14 @@ def postprocessing(args, dataset_data, spades_home, load_processed_dataset, rest
             support.error("you cannot specify any option except -o with --continue option! "
                           "Please use '--restart-from last' if you need to change some "
                           "of the options from the initial run and continue from the last available checkpoint.\n"
-                          "Extra options: %s" % unknown_args, log)
+                          "Extra options: %s" % unknown_args, log, exit_code=support.ErrorCode.InvalidParameter)
     if args.meta:
         if args.careful or args.mismatch_corrector or (args.cov_cutoff != "off" and args.cov_cutoff is not None):
             support.error("you cannot specify --careful, --mismatch-correction or --cov-cutoff in metagenomic mode!",
-                          log)
+                          log, exit_code=support.ErrorCode.InvalidParameter)
     if args.rna or args.rnaviral:
         if args.careful:
-            support.error("you cannot specify --careful in RNA-Seq mode!", log)
+            support.error("you cannot specify --careful in RNA-Seq mode!", log, exit_code=support.ErrorCode.InvalidParameter)
 
     modes_count = [args.large_genome, args.rna, args.plasmid, args.meta, args.single_cell, args.isolate, args.rnaviral,
                     args.corona, args.metaviral, args.metaplasmid, args.bio, args.sewage].count(True)
@@ -1138,7 +1161,8 @@ def postprocessing(args, dataset_data, spades_home, load_processed_dataset, rest
         # - either there is 1 or 0 modes specified
         # - or there is 1 of 5 allowed combinations
         # everything else is forbidden
-        support.error("Specified mode combination is not supported! Check out user manual for available modes.", log)
+        support.error("Specified mode combination is not supported! Check out user manual for available modes.",
+                      log, exit_code=support.ErrorCode.InvalidParameter)
     elif modes_count == 0:
         support.warning("No assembly mode was specified! If you intend to assemble high-coverage multi-cell/isolate "
                         "data, use '--isolate' option.")
@@ -1162,7 +1186,8 @@ def postprocessing(args, dataset_data, spades_home, load_processed_dataset, rest
         except pyyaml.YAMLError:
             _, exc, _ = sys.exc_info()
             support.error(
-                    "exception caught while parsing YAML file (%s):\n" % args.dataset_yaml_filename + str(exc))
+                    "exception caught while parsing YAML file (%s):\n" % args.dataset_yaml_filename + str(exc),
+                exit_code=support.ErrorCode.InvalidInputFormat)
         options_storage.original_dataset_data = (
             file_operations.relative2abs_paths(options_storage.original_dataset_data,
                                                os.path.dirname(args.dataset_yaml_filename)))
@@ -1180,12 +1205,14 @@ def postprocessing(args, dataset_data, spades_home, load_processed_dataset, rest
 
     file_operations.check_dataset_reads(dataset_data, (args.only_assembler or args.rna), args.iontorrent)
     if not file_operations.get_lib_ids_by_type(dataset_data, options_storage.READS_TYPES_USED_IN_CONSTRUCTION):
-        support.error("you should specify at least one unpaired, paired-end, or high-quality mate-pairs library!")
+        support.error("you should specify at least one unpaired, paired-end, or high-quality mate-pairs library!",
+                      exit_code=support.ErrorCode.InvalidParameter)
     if args.rna:
         if len(dataset_data) != len(
                 file_operations.get_lib_ids_by_type(dataset_data, options_storage.READS_TYPES_USED_IN_RNA_SEQ)):
             support.error("you cannot specify any data types except " +
-                          ", ".join(options_storage.READS_TYPES_USED_IN_RNA_SEQ) + " in RNA-Seq mode!")
+                          ", ".join(options_storage.READS_TYPES_USED_IN_RNA_SEQ) + " in RNA-Seq mode!",
+                          exit_code=support.ErrorCode.InvalidParameter)
             # if len(support.get_lib_ids_by_type(dataset_data, 'paired-end')) > 1:
             #    support.error('you cannot specify more than one paired-end library in RNA-Seq mode!')
     if args.meta and not args.only_error_correction and not args.rnaviral:
@@ -1199,7 +1226,8 @@ def postprocessing(args, dataset_data, spades_home, load_processed_dataset, rest
         if len(dataset_data) > paired_end_libs + graph_libs + long_read_libs:
             support.error("you cannot specify any data types except a single paired-end library "
                           "(optionally accompanied by a single library of "
-                          "PacBio reads or Nanopore reads) in metaSPAdes mode!")
+                          "PacBio reads or Nanopore reads) in metaSPAdes mode!",
+                          exit_code=support.ErrorCode.InvalidParameter)
 
     if existing_dataset_data is None:
         with open(args.dataset_yaml_filename, 'w') as f:

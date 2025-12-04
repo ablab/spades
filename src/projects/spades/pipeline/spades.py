@@ -205,14 +205,17 @@ def check_cfg_for_partial_run(cfg, partial_run_type="restart-from"):  # restart-
 
     if check_point == "ec" and ("error_correction" not in cfg):
         support.error(
-            "failed to %s 'read error correction' ('%s') because this stage %s not specified!" % (action, check_point, verb))
+            "failed to %s 'read error correction' ('%s') because this stage %s not specified!" % (action, check_point, verb),
+            exit_code=support.ErrorCode.InvalidParameter)
     if check_point == "mc" and ("mismatch_corrector" not in cfg):
         support.error(
-            "failed to %s 'mismatch correction' ('%s') because this stage %s not specified!" % (action, check_point, verb))
+            "failed to %s 'mismatch correction' ('%s') because this stage %s not specified!" % (action, check_point, verb),
+            exit_code=support.ErrorCode.InvalidParameter)
     if check_point == "as" or check_point.startswith('k'):
         if "assembly" not in cfg:
             support.error(
-                "failed to %s 'assembling' ('%s') because this stage %s not specified!" % (action, check_point, verb))
+                "failed to %s 'assembling' ('%s') because this stage %s not specified!" % (action, check_point, verb),
+                exit_code=support.ErrorCode.InvalidParameter)
 
 
 def get_options_from_params(params_filename, running_script):
@@ -266,7 +269,8 @@ def parse_args(args):
             os.path.join(options_storage.args.output_dir, "params.txt"),
             args[0])
         if err_msg:
-            support.error(err_msg + " Please restart from the beginning or specify another output directory.")
+            support.error(err_msg + " Please restart from the beginning or specify another output directory.",
+                          exit_code=support.ErrorCode.InvalidParameter)
         options, cfg, dataset_data = options_parser.parse_args(bin_home, spades_home, secondary_filling=True,
                                                                restart_from=(options_storage.args.restart_from is not None),
                                                                options=options)
@@ -361,7 +365,8 @@ def clear_configs(cfg, command_before_restart_from, stage_id_before_restart_from
 
     if (command_before_restart_from is not None and
             old_pipeline[stage_id_before_restart_from]["short_name"] != command_before_restart_from.short_name):
-        support.error("new and old pipelines have difference before %s" % options_storage.args.restart_from, log)
+        support.error("new and old pipelines have difference before %s" % options_storage.args.restart_from, log,
+                      exit_code=support.ErrorCode.InvalidParameter)
 
     if command_before_restart_from is None:
         first_del = 0

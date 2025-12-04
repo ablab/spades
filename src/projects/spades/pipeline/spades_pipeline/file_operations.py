@@ -21,7 +21,7 @@ from os.path import abspath, expanduser, join
 
 from .common import SeqIO
 from .options_storage import OptionStorage
-from .support import error, is_ascii_string, warning, only_old_style_options, old_style_single_reads
+from .support import error, is_ascii_string, warning, only_old_style_options, old_style_single_reads, ErrorCode
 
 options_storage = OptionStorage()
 
@@ -33,7 +33,8 @@ def check_python_version():
     if sys.version_info < options_storage.MINIMAL_PYTHON_VERSION:
         error("\nPython version %s is not supported!\n"
               "Minimal supported version is %s" %
-              (sys.version.split()[0], ".".join(list(map(str, options_storage.MINIMAL_PYTHON_VERSION)))))
+              (sys.version.split()[0], ".".join(list(map(str, options_storage.MINIMAL_PYTHON_VERSION)))),
+              exit_code=ErrorCode.InvalidParameter)
         return False
     return True
 
@@ -48,14 +49,16 @@ def check_binaries(binary_dir):
     for binary in ["spades-hammer", "spades-ionhammer", "spades-core", "spades-bwa"]:
         binary_path = os.path.join(binary_dir, binary)
         if not os.path.isfile(binary_path):
-            error("SPAdes binaries not found: %s\n%s" % (binary_path, get_spades_binaries_info_message()), log)
+            error("SPAdes binaries not found: %s\n%s" % (binary_path, get_spades_binaries_info_message()), log,
+                  exit_code=ErrorCode.InputFileNotFound)
 
 
 def check_file_existence(input_filename, message="", logger_instance=None):
     filename = abspath(expanduser(input_filename))
     check_path_is_ascii(filename, message)
     if not os.path.isfile(filename):
-        error("file not found: %s (%s)" % (filename, message), logger_instance=logger_instance)
+        error("file not found: %s (%s)" % (filename, message), logger_instance=logger_instance,
+              exit_code=ErrorCode.InputFileNotFound)
     options_storage.dict_of_rel2abs[input_filename] = filename
     return filename
 
@@ -68,7 +71,8 @@ def get_read_file_type(input_filename, logger_instance=None):
         file_type = SeqIO.get_read_file_type(input_filename)
 
     if not file_type:
-        error("incorrect extension of reads file: %s" % input_filename, logger_instance)
+        error("incorrect extension of reads file: %s" % input_filename, logger_instance,
+              exit_code=ErrorCode.InvalidInputFormat)
     return file_type
 
 
@@ -81,10 +85,12 @@ def check_file_not_empty(input_filename, message="", logger_instance=None):
     try:
         reads_iterator = SeqIO.parse(SeqIO.Open(filename, "r"), file_type)
         if next(reads_iterator, None) is None:
-            error("file is empty: %s (%s)" % (filename, message), logger_instance=logger_instance)
+            error("file is empty: %s (%s)" % (filename, message), logger_instance=logger_instance,
+                  exit_code=ErrorCode.InvalidInputFormat)
     except Exception as inst:
         error(inst.args[0].format(FILE=filename) + "\n\n" +
-              traceback.format_exc().format(FILE=filename), logger_instance=logger_instance)
+              traceback.format_exc().format(FILE=filename), logger_instance=logger_instance,
+              exit_code=ErrorCode.InvalidInputFormat)
 
 
 def check_dir_existence(input_dirname, message="", logger_instance=None):
@@ -98,7 +104,7 @@ def check_dir_existence(input_dirname, message="", logger_instance=None):
 
 def check_path_is_ascii(path, message=""):
     if not is_ascii_string(path):
-        error("path contains non-ASCII characters: %s (%s)" % (path, message))
+        error("path contains non-ASCII characters: %s (%s)" % (path, message), exit_code=ErrorCode.InvalidParameter)
 
 
 def recreate_dir(dirname):
@@ -110,7 +116,7 @@ def recreate_dir(dirname):
 def check_files_duplication(filenames):
     for filename in filenames:
         if filenames.count(filename) != 1:
-            error("file %s was specified at least twice" % filename, log)
+            error("file %s was specified at least twice" % filename, log, exit_code=ErrorCode.InvalidParameter)
 
 
 def check_reads_file_format(filename, message, only_assembler, iontorrent, library_type):
@@ -127,24 +133,29 @@ def check_reads_file_format(filename, message, only_assembler, iontorrent, libra
                 ext = pre_pre_ext + ext
     if ext.lower() not in options_storage.ALLOWED_READS_EXTENSIONS:
         error("file with reads has unsupported format (only %s are supported): %s (%s)" %
-              (", ".join(options_storage.ALLOWED_READS_EXTENSIONS), filename, message), log)
+              (", ".join(options_storage.ALLOWED_READS_EXTENSIONS), filename, message), log,
+              exit_code=ErrorCode.InvalidInputFormat)
 
     if not iontorrent and ext.lower() in options_storage.IONTORRENT_ONLY_ALLOWED_READS_EXTENSIONS:
         error(", ".join(options_storage.IONTORRENT_ONLY_ALLOWED_READS_EXTENSIONS) +
-              " formats supported only for iontorrent mode: %s (%s)" % (filename, message), log)
+              " formats supported only for iontorrent mode: %s (%s)" % (filename, message), log,
+              exit_code=ErrorCode.InvalidInputFormat)
 
     if (not only_assembler and ext.lower() not in options_storage.BH_ALLOWED_READS_EXTENSIONS and
             library_type not in options_storage.LONG_READS_TYPES):
         error("to run read error correction, reads should be in FASTQ format (%s are supported): %s (%s)" %
-              (", ".join(options_storage.BH_ALLOWED_READS_EXTENSIONS), filename, message), log)
+              (", ".join(options_storage.BH_ALLOWED_READS_EXTENSIONS), filename, message), log,
+              exit_code=ErrorCode.InvalidInputFormat)
 
     if library_type.endswith("contigs") and ext.lower() not in options_storage.CONTIGS_ALLOWED_READS_EXTENSIONS:
         error("file with %s should be in FASTA format  (%s are supported): %s (%s)" %
-              (library_type, ", ".join(options_storage.CONTIGS_ALLOWED_READS_EXTENSIONS), filename, message), log)
+              (library_type, ", ".join(options_storage.CONTIGS_ALLOWED_READS_EXTENSIONS), filename, message), log,
+              exit_code=ErrorCode.InvalidInputFormat)
 
     if library_type.endswith("graph") and ext.lower() not in options_storage.GRAPH_ALLOWED_READS_EXTENSIONS:
         error("file with %s should be in GFA format  (%s are supported): %s (%s)" %
-              (library_type, ", ".join(options_storage.GRAPH_ALLOWED_READS_EXTENSIONS), filename, message), log)
+              (library_type, ", ".join(options_storage.GRAPH_ALLOWED_READS_EXTENSIONS), filename, message), log,
+              exit_code=ErrorCode.InvalidInputFormat)
 
 
 def get_latest_dir(pattern):
@@ -353,7 +364,8 @@ def get_max_reads_length(reads_file, num_checked):
                 [len(rec) for rec in itertools.islice(SeqIO.parse(SeqIO.Open(reads_file, "r"), file_type), num_checked)])
         except Exception as inst:
             error(inst.args[0].format(FILE=reads_file) + "\n\n" +
-                  traceback.format_exc().format(FILE=reads_file), logger_instance=log)
+                  traceback.format_exc().format(FILE=reads_file), logger_instance=log,
+                  exit_code=ErrorCode.InvalidInputFormat)
         else:
             log.info("%s: max reads length: %s" % (reads_file, str(max_reads_length)))
     return max_reads_length
@@ -390,9 +402,11 @@ def check_dataset_reads(dataset_data, only_assembler, iontorrent):
         if left_number != right_number:
             error("the number of files with left paired reads is not equal to the number of files "
                   "with right paired reads (library number: %d, library type: %s)!" %
-                  (lib_id + 1, reads_library["type"]), log)
+                  (lib_id + 1, reads_library["type"]), log,
+                  exit_code=ErrorCode.InvalidParameter)
     if not len(all_files):
-        error("you should specify at least one file with reads!", log)
+        error("you should specify at least one file with reads!", log,
+              exit_code=ErrorCode.InvalidParameter)
     check_files_duplication(all_files)
 
 
