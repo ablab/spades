@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
         VERIFY(argc > 1)
         using namespace online_visualization;
         filesystem::path cfg_filename = argv[1];
-        CHECK_FATAL_ERROR(exists(cfg_filename), "File " << cfg_filename << " doesn't exist or can't be read!");
+        CHECK_FATAL_ERROR_CODE(exists(cfg_filename), "File " << cfg_filename << " doesn't exist or can't be read!", ErrorCodes::InputFileNotFound);
 
         cfg::create_instance(cfg_filename);
 

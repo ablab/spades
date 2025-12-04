@@ -10,6 +10,7 @@
 
 #include "decl_logger.hpp"
 #include "version.hpp"
+#include "error_codes.hpp"
 
 #include "utils/perf/perfcounter.hpp"
 #include "utils/stacktrace.hpp"

@@ -195,7 +195,7 @@ void LoadGraph(const filesystem::path &saves_path,
                debruijn_graph::ConjugateDeBruijnGraph &g, io::IdMapper<std::string> &id_mapper) {
     if (saves_path.extension() == ".gfa") {
         DEBUG("Load gfa")
-        CHECK_FATAL_ERROR(is_regular_file(saves_path), "GFA-file " << saves_path << " doesn't exist");
+        CHECK_FATAL_ERROR_CODE(is_regular_file(saves_path), "GFA-file " << saves_path << " doesn't exist", ErrorCodes::InputFileNotFound);
         gfa::GFAReader gfa(saves_path);
         DEBUG("Segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
         gfa.to_graph(g, &id_mapper);

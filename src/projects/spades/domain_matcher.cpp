@@ -105,12 +105,12 @@ static void MatchContigs(const path_extend::PathContainer &contig_paths, const p
 static void ParseHMMFile(std::vector<hmmer::HMM> &hmms, const std::filesystem::path &filename) {
     auto hmmfile = hmmer::open_file(filename);
     if (std::error_code ec = hmmfile.getError()) {
-        FATAL_ERROR("Error opening HMM file "<< filename << ", reason: " << ec.message());
+        FATAL_ERROR_CODE("Error opening HMM file "<< filename << ", reason: " << ec.message(), ErrorCodes::InputFileNotFound);
     }
 
     while (auto hmmw = hmmfile->read()) {
         if (std::error_code ec = hmmw.getError())
-            FATAL_ERROR("Error reading HMM file "<< filename << ", reason: " << ec.message());
+            FATAL_ERROR_CODE("Error reading HMM file "<< filename << ", reason: " << ec.message(), ErrorCodes::IOError);
         hmms.emplace_back(std::move(hmmw.get()));
     }
 }
@@ -128,13 +128,13 @@ static void ParseFASTAFile(std::vector<hmmer::HMM> &hmms,
     // Open the query sequence file in FASTA format
     int status = esl_sqfile_Open(qfile, eslSQFILE_FASTA, NULL, &qfp);
     if (status == eslENOTFOUND) {
-        FATAL_ERROR("No such file " << filename);
+        FATAL_ERROR_CODE("No such file " << filename, ErrorCodes::InputFileNotFound);
     } else if (status == eslEFORMAT) {
-        FATAL_ERROR("Format of " << filename << " unrecognized.");
+        FATAL_ERROR_CODE("Format of " << filename << " unrecognized.", ErrorCodes::InvalidInputFormat);
     } else if (status == eslEINVAL) {
-        FATAL_ERROR("Can't autodetect stdin or .gz.");
+        FATAL_ERROR_CODE("Can't autodetect stdin or .gz.", ErrorCodes::InvalidInputFormat);
     } else if (status != eslOK) {
-        FATAL_ERROR("Open of " << filename << " failed, code " << status);
+        FATAL_ERROR_CODE("Open of " << filename << " failed, code " << status, ErrorCodes::IOError);
     }
 
     // For each sequence, build a model and save it.
@@ -144,7 +144,7 @@ static void ParseFASTAFile(std::vector<hmmer::HMM> &hmms,
         esl_sq_Reuse(qsq);
     }
     if (status != eslEOF) {
-        FATAL_ERROR("Unexpected error " << status << " reading sequence file " << filename);
+        FATAL_ERROR_CODE("Unexpected error " << status << " reading sequence file " << filename, ErrorCodes::IOError);
     }
 
     esl_sq_Destroy(qsq);

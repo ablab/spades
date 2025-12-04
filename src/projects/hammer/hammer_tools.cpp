@@ -191,7 +191,7 @@ CorrectionStats CorrectPairedReadFiles(const KMerData &data,
     ++buffer_no;
   }
   if (!irsl.eof() || !irsr.eof())
-      FATAL_ERROR("Pair of read files " << fnamel << " and " << fnamer << " contain unequal amount of reads");
+      FATAL_ERROR_CODE("Pair of read files " << fnamel << " and " << fnamer << " contain unequal amount of reads", ErrorCodes::InvalidInputFormat);
   return stats;
 }
 

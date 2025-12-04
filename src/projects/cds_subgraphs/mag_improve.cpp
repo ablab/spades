@@ -63,7 +63,7 @@ static void Run(size_t K, const std::filesystem::path &graph_path,
 
     std::vector<std::string> ref;
     if (!reference_path.empty()) {
-        CHECK_FATAL_ERROR(exists(reference_path), "File " << reference_path << " doesn't exist or can't be read!");
+        CHECK_FATAL_ERROR_CODE(exists(reference_path), "File " << reference_path << " doesn't exist or can't be read!", ErrorCodes::InputFileNotFound);
         io::FileReadStream genome_stream(reference_path);
         while (!genome_stream.eof()) {
             io::SingleRead r;

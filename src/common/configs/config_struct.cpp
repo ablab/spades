@@ -70,10 +70,10 @@ bool PipelineHelper::IsRNAPipeline(const pipeline_type pipeline) {
 
 template<typename mode_t>
 std::vector<std::string> CheckedNames(const std::vector<std::pair<std::string, mode_t>>& mapping, mode_t total) {
-    CHECK_FATAL_ERROR(size_t(total) == mapping.size(), "Names for some modes missing")
+    CHECK_FATAL_ERROR_CODE(size_t(total) == mapping.size(), "Names for some modes missing", ErrorCodes::InvalidParameter)
     std::vector<std::string> answer;
     for (size_t i = 0; i < mapping.size(); ++i) {
-        CHECK_FATAL_ERROR(size_t(mapping[i].second) == i, "Id/name mapping error");
+        CHECK_FATAL_ERROR_CODE(size_t(mapping[i].second) == i, "Id/name mapping error", ErrorCodes::InvalidParameter);
         answer.push_back(mapping[i].first);
     }
     return answer;
@@ -582,7 +582,7 @@ void load(dataset &ds,
     load(reads_filename, pt, "reads");
 
     reads_filename = input_dir / reads_filename;
-    CHECK_FATAL_ERROR(exists(reads_filename), "File " << reads_filename << " doesn't exist or can't be read!");
+    CHECK_FATAL_ERROR_CODE(exists(reads_filename), "File " << reads_filename << " doesn't exist or can't be read!", ErrorCodes::InputFileNotFound);
     ds.reads.load(reads_filename);
 
     //loading reference
@@ -598,8 +598,8 @@ void load(dataset &ds,
         return;
 
     reference_genome_filename = input_dir / reference_genome_filename;
-    CHECK_FATAL_ERROR(exists(reference_genome_filename),
-                      "File " << reference_genome_filename << " doesn't exist or can't be read!");
+    CHECK_FATAL_ERROR_CODE(exists(reference_genome_filename),
+                      "File " << reference_genome_filename << " doesn't exist or can't be read!", ErrorCodes::InputFileNotFound);
     io::FileReadStream genome_stream(reference_genome_filename);
     while (!genome_stream.eof()) {
         io::SingleRead genome;
@@ -733,7 +733,7 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
 
     load(cfg.max_memory, pt, "max_memory");
 
-    CHECK_FATAL_ERROR(exists(cfg.dataset_file), "File " << cfg.dataset_file << " doesn't exist or can't be read!");
+    CHECK_FATAL_ERROR_CODE(exists(cfg.dataset_file), "File " << cfg.dataset_file << " doesn't exist or can't be read!", ErrorCodes::InputFileNotFound);
     boost::property_tree::ptree ds_pt;
     boost::property_tree::read_info(cfg.dataset_file, ds_pt);
     load(cfg.ds, ds_pt, cfg.input_dir);
@@ -820,7 +820,7 @@ void load_cfg(debruijn_config &cfg, boost::property_tree::ptree const &pt,
         load(*cfg.preliminary_simp, pt, "preliminary_simp", false);
     }
     if (pt.count("prelim_pe")) {
-        CHECK_FATAL_ERROR(!cfg.prelim_pe_params, "Option prelim_pe can be loaded only once");
+        CHECK_FATAL_ERROR_CODE(!cfg.prelim_pe_params, "Option prelim_pe can be loaded only once", ErrorCodes::InvalidParameter);
         cfg.prelim_pe_params = cfg.pe_params;
         load(*cfg.prelim_pe_params, pt, "prelim_pe", false);
     }
@@ -851,7 +851,7 @@ void init_libs(io::DataSet<LibraryData> &dataset, size_t max_threads,
 }
 
 void load(debruijn_config &cfg, const std::vector<std::filesystem::path> &cfg_fns) {
-    CHECK_FATAL_ERROR(cfg_fns.size() > 0, "Should provide at least one config file");
+    CHECK_FATAL_ERROR_CODE(cfg_fns.size() > 0, "Should provide at least one config file", ErrorCodes::InvalidParameter);
     boost::property_tree::ptree base_pt;
     boost::property_tree::read_info(cfg_fns[0], base_pt);
 

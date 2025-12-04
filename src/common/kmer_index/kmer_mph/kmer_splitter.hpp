@@ -147,19 +147,19 @@ protected:
                 // Write k-mers
                 FILE *f = fopen(ostreams[k]->file().c_str(), "ab");
                 if (!f)
-                    FATAL_ERROR("Cannot open temporary file " << ostreams[k]->file() << " for writing");
+                    FATAL_ERROR_CODE("Cannot open temporary file " << ostreams[k]->file() << " for writing", ErrorCodes::IOError);
                 size_t res = fwrite(SortBuffer.data(), SortBuffer.el_data_size(), cnt, f);
                 if (res != cnt)
-                    FATAL_ERROR("I/O error! Incomplete write! Reason: " << strerror(errno) << ". Error code: " << errno);
+                    FATAL_ERROR_CODE("I/O error! Incomplete write! Reason: " << strerror(errno) << ". Error code: " << errno, ErrorCodes::IOError);
                 fclose(f);
 
                 // Write index
                 f = fopen((ostreams[k]->file().native() + ".idx").c_str(), "ab");
                 if (!f)
-                    FATAL_ERROR("Cannot open temporary file " << ostreams[k]->file() << " for writing");
+                    FATAL_ERROR_CODE("Cannot open temporary file " << ostreams[k]->file() << " for writing", ErrorCodes::IOError);
                 res = fwrite(&cnt, sizeof(cnt), 1, f);
                 if (res != 1)
-                    FATAL_ERROR("I/O error! Incomplete write! Reason: " << strerror(errno) << ". Error code: " << errno);
+                    FATAL_ERROR_CODE("I/O error! Incomplete write! Reason: " << strerror(errno) << ". Error code: " << errno, ErrorCodes::IOError);
                 fclose(f);
             }
         }

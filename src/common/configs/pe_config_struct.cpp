@@ -45,7 +45,7 @@ void load(scaffolding_mode &sm, boost::property_tree::ptree const& pt, std::stri
              .Case("combined", scaffolding_mode::sm_combined)
              .Case("old_pe_2015", scaffolding_mode::sm_old_pe_2015)
              .Default(scaffolding_mode::undefined);
-        CHECK_FATAL_ERROR(sm != scaffolding_mode::undefined, "Invalid scaffolding mode");
+        CHECK_FATAL_ERROR_CODE(sm != scaffolding_mode::undefined, "Invalid scaffolding mode", ErrorCodes::InvalidParameter);
     }
 }
 

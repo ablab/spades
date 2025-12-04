@@ -370,7 +370,7 @@ private:
       if (tree.empty()) {
         FILE *g = fopen(ofname.c_str(), "ab");
         if (!g)
-          FATAL_ERROR("Cannot open temporary file " << ofname << " for writing");
+          FATAL_ERROR_CODE("Cannot open temporary file " << ofname << " for writing", ErrorCodes::IOError);
         fclose(g);
         return 0;
       }
@@ -405,10 +405,10 @@ private:
 
           FILE *g = fopen(ofname.c_str(), "ab");
           if (!g)
-            FATAL_ERROR("Cannot open temporary file " << ofname << " for writing");
+            FATAL_ERROR_CODE("Cannot open temporary file " << ofname << " for writing", ErrorCodes::IOError);
           size_t res = fwrite(buf.data(), buf.el_data_size(), buf.size(), g);
           if (res != buf.size())
-            FATAL_ERROR("I/O error! Incomplete write! Reason: " << strerror(errno) << ". Error code: " << errno);
+            FATAL_ERROR_CODE("I/O error! Incomplete write! Reason: " << strerror(errno) << ". Error code: " << errno, ErrorCodes::IOError);
           fclose(g);
       }
 
