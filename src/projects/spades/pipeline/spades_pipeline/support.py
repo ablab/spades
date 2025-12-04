@@ -16,6 +16,7 @@ import stat
 import sys
 import tempfile
 from platform import uname
+from enum import Enum, unique
 
 log = logging.getLogger("spades")
 
@@ -34,19 +35,33 @@ old_style_single_reads = False
 current_tmp_dir = None
 
 
+@unique
+class ErrorCode(Enum):
+    GeneralError = -1
+    PossibleWSLError = -11
+    InvalidInputFormat = 64
+    InputFileNotFound = 65
+    IOError = 66
+    InvalidParameter = 67
+    MemoryLimitExceeded = 68
+
+    def user_end_error(self):
+        return 64 <= self.value <= 127
+
+
 def report_issue_error_message(binary_name):
     return ["In case you have troubles running %s, you can report an issue on our GitHub repository github.com/ablab/spades\n" % binary_name,
             "Please provide us with params.txt and %s.log files from the output directory." % binary_name.lower()]
 
 
 def no_report_error_message(binary_name):
-    return ["%s finished with the errors. Please, check the error message above." % binary_name]
+    return ["%s finished with the following error code. Please, check the error message above." % binary_name]
 
 
-def error(err_str, logger_instance=None, prefix=SPADES_PY_ERROR_MESSAGE, exit_code=-1):
+def error(err_str, logger_instance=None, prefix=SPADES_PY_ERROR_MESSAGE, exit_code:ErrorCode=ErrorCode.GeneralError):
     binary_name = "SPAdes"
 
-    if 64 <= exit_code <= 127:
+    if exit_code.user_end_error():
         error_message = no_report_error_message(binary_name)
     else:
         error_message = report_issue_error_message(binary_name)
@@ -63,7 +78,7 @@ def error(err_str, logger_instance=None, prefix=SPADES_PY_ERROR_MESSAGE, exit_co
         sys.stderr.flush()
     if current_tmp_dir and os.path.isdir(current_tmp_dir):
         shutil.rmtree(current_tmp_dir)
-    sys.exit(exit_code)
+    sys.exit(exit_code.value)
 
 
 def warning(warn_str, logger_instance=None, prefix=SPADES_PY_WARN_MESSAGE):
@@ -86,14 +101,15 @@ def wsl_check():
 
 
 def get_error_hints(exit_code):
-    if exit_code == -11:
+    if exit_code == ErrorCode.PossibleWSLError.value:
         return wsl_check()
+    return ""
 
 
 def sys_error(cmd, logger_instance, exit_code):
     hints_str = get_error_hints(exit_code)
     err_msg = "system call for: \"%s\" finished abnormally, OS return value: %d\n%s" % (cmd, exit_code, hints_str)
-    error(err_msg, logger_instance, exit_code=exit_code)
+    error(err_msg, logger_instance, exit_code=ErrorCode(exit_code))
 
 
 # http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
