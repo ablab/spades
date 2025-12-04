@@ -34,24 +34,32 @@ old_style_single_reads = False
 current_tmp_dir = None
 
 
+def report_issue_error_message(binary_name):
+    return ["In case you have troubles running %s, you can report an issue on our GitHub repository github.com/ablab/spades\n" % binary_name,
+            "Please provide us with params.txt and %s.log files from the output directory." % binary_name.lower()]
+
+
+def no_report_error_message(binary_name):
+    return ["%s finished with the errors. Please, check the error message above." % binary_name]
+
 
 def error(err_str, logger_instance=None, prefix=SPADES_PY_ERROR_MESSAGE, exit_code=-1):
     binary_name = "SPAdes"
 
+    if 64 <= exit_code <= 127:
+        error_message = no_report_error_message(binary_name)
+    else:
+        error_message = report_issue_error_message(binary_name)
+
     if logger_instance:
         logger_instance.error("\n\n%s %s" % (prefix, err_str))
         log_warnings(logger_instance, with_error=True)
-        logger_instance.info("\nIn case you have troubles running %s, you can report an issue on our GitHub repository "
-                             "github.com/ablab/spades" % binary_name)
-        logger_instance.info(
-            "Please provide us with params.txt and %s.log files from the output directory." % binary_name.lower())
+        for line in error_message:
+            logger_instance.error(line)
     else:
         sys.stderr.write("\n\n%s %s\n\n" % (prefix, err_str))
-        sys.stderr.write(
-            "\nIn case you have troubles running %s, you can report an issue on our GitHub repository "
-            "github.com/ablab/spades\n" % binary_name)
-        sys.stderr.write(
-            "Please provide us with params.txt and %s.log files from the output directory.\n" % binary_name.lower())
+        for line in error_message:
+            sys.stderr.write(line + "\n")
         sys.stderr.flush()
     if current_tmp_dir and os.path.isdir(current_tmp_dir):
         shutil.rmtree(current_tmp_dir)

@@ -34,13 +34,13 @@ namespace utils {
 void limit_memory(size_t limit) {
     rlimit rl;
     if (sizeof(rlim_t) < 8) {
-        FATAL_ERROR("Can't limit virtual memory because of 32-bit system");
+        FATAL_ERROR_CODE("Can't limit virtual memory because of 32-bit system", ErrorCodes::InvalidParameter);
         return;
     }
 
     int res = getrlimit(RLIMIT_AS, &rl);
     if (res != 0)
-        FATAL_ERROR("getrlimit(2) call failed, errno = " << errno);
+        FATAL_ERROR_CODE("getrlimit(2) call failed, errno = " << errno, ErrorCodes::IOError);
 
     // We cannot go beyond hard limit and we might not have enough privileges to
     // increase the hard limit
@@ -60,7 +60,7 @@ size_t get_memory_limit() {
     rlimit rl;
     int res = getrlimit(RLIMIT_AS, &rl);
     if (res != 0)
-        FATAL_ERROR("getrlimit(2) call failed, errno = " << errno);
+        FATAL_ERROR_CODE("getrlimit(2) call failed, errno = " << errno, ErrorCodes::IOError);
 
     return rl.rlim_cur;
 }
@@ -103,7 +103,7 @@ size_t get_used_memory() {
         uint64_t epoch = 1;
         size_t sz = sizeof(epoch);
         if (je_mallctl("epoch", &epoch, &sz, &epoch, sz) != 0)
-            FATAL_ERROR("mallctl() call failed, errno = " << errno);
+            FATAL_ERROR_CODE("mallctl() call failed, errno = " << errno, ErrorCodes::IOError);
     }
 
     {
@@ -112,7 +112,7 @@ size_t get_used_memory() {
 
         int res = je_mallctl("stats.active", &cmem, &clen, NULL, 0);
         if (res != 0)
-            FATAL_ERROR("mallctl() call failed, errno = " << errno);
+            FATAL_ERROR_CODE("mallctl() call failed, errno = " << errno, ErrorCodes::IOError);
 
         return cmem;
     }

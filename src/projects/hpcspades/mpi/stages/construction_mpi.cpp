@@ -143,8 +143,8 @@ void ConstructionMPI::init(graph_pack::GraphPack &gp, const char *) {
     for (size_t lib_id : libs_for_construction) {
         auto lib_data = dataset.reads[lib_id].data();
         if (lib_data.unmerged_read_length == 0) {
-            FATAL_ERROR("Failed to determine read length for library #" << lib_data.lib_index << ". "
-                        "Check that not only merged reads are present.");
+            FATAL_ERROR_CODE("Failed to determine read length for library #" << lib_data.lib_index << ". "
+                        "Check that not only merged reads are present.", ErrorCodes::InvalidInputFormat);
         }
         dataset.no_merge_RL = std::max(dataset.no_merge_RL, lib_data.unmerged_read_length);
         merged_max_len = std::max(merged_max_len, lib_data.merged_read_length);
@@ -358,7 +358,7 @@ public:
         size_t kmers = kmerfiles2.total_kmers();
 
         if (!kmers) {
-            FATAL_ERROR("No kmers were extracted from reads. Check the read lengths and k-mer length settings");
+            FATAL_ERROR_CODE("No kmers were extracted from reads. Check the read lengths and k-mer length settings", ErrorCodes::InvalidInputFormat);
         }
         INFO(kmers << " k+1-mers (k=" << k << ") were extracted");
 

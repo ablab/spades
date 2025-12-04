@@ -164,7 +164,7 @@ MPIStageManager::MPIStageManager(spades::SavesPolicy policy)
         int provided;
         MPI_Init_thread(nullptr, nullptr, MPI_THREAD_FUNNELED, &provided);
         if (provided < MPI_THREAD_FUNNELED) {
-            FATAL_ERROR("Used MPI implementation failed to provide MPI_THREAD_FUNNELED thread support level");
+            FATAL_ERROR_CODE("Used MPI implementation failed to provide MPI_THREAD_FUNNELED thread support level", ErrorCodes::InvalidParameter);
         }
         first_ = true;
     }

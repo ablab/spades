@@ -621,8 +621,8 @@ void KMerClustering::process(const std::string &Prefix) {
 
   if (!debug_) {
       int res = unlink(Prefix.c_str());
-      CHECK_FATAL_ERROR(res == 0,
-                        "unlink(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
+      CHECK_FATAL_ERROR_CODE(res == 0,
+                        "unlink(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno, ErrorCodes::IOError);
   }
 
   for (unsigned i = 1; i < nthreads_; ++i)

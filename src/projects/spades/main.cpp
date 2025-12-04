@@ -45,7 +45,7 @@ struct TimeTracerRAII {
 
 void load_config(const std::vector<std::filesystem::path>& cfg_fns) {
     for (const auto& s : cfg_fns) {
-        CHECK_FATAL_ERROR(exists(s), "File " << s << " doesn't exist or can't be read!");
+        CHECK_FATAL_ERROR_CODE(exists(s), "File " << s << " doesn't exist or can't be read!", ErrorCodes::InputFileNotFound);
     }
 
     cfg::create_instance(cfg_fns);

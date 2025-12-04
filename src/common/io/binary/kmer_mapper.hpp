@@ -30,7 +30,7 @@ public:
     void LoadImpl(BinIStream &str, Type &mapper) override {
         uint32_t k_;
         str >> k_;
-        CHECK_FATAL_ERROR(k_ == mapper.k(), "Cannot read kmer mapper, different Ks");
+        CHECK_FATAL_ERROR_CODE(k_ == mapper.k(), "Cannot read kmer mapper, different Ks", ErrorCodes::InvalidParameter);
         mapper.clear();
         str >> mapper;
     }

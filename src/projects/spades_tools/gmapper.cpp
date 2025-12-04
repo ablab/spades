@@ -167,7 +167,7 @@ int main(int argc, char* argv[]) {
         DataSet dataset;
         dataset.load(dataset_desc);
 
-        CHECK_FATAL_ERROR(cfg.libindex < dataset.lib_count(), "invalid library index");
+        CHECK_FATAL_ERROR_CODE(cfg.libindex < dataset.lib_count(), "invalid library index", ErrorCodes::InvalidParameter);
 
         std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
         std::unique_ptr<gfa::GFAReader> gfa;
@@ -175,7 +175,7 @@ int main(int argc, char* argv[]) {
         if (utils::ends_with(cfg.graph.string(), ".gfa"))
             gfa.reset(new gfa::GFAReader(cfg.graph));
         else if (cfg.k == -1U)
-            FATAL_ERROR("k-mer length should be specified");
+            FATAL_ERROR_CODE("k-mer length should be specified", ErrorCodes::InvalidParameter);
 
         Graph graph(k);
         unsigned gfa_k = -1U;

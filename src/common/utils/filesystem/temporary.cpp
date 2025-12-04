@@ -40,7 +40,7 @@ TmpDirImpl::~TmpDirImpl() {
 
 const std::filesystem::path &TmpDirImpl::release() {
     bool already_released = released_.exchange(true);
-    CHECK_FATAL_ERROR(!already_released, "Temp dir is already released");
+    CHECK_FATAL_ERROR_CODE(!already_released, "Temp dir is already released", ErrorCodes::InvalidParameter);
     return dir_;
 }
 
@@ -54,7 +54,7 @@ TmpFileImpl::TmpFileImpl(const std::string &prefix, TmpDir parent)
     if (parent)
         tprefix = parent->dir() / tprefix;
     char *tempprefix = strdup(tprefix.c_str());
-    CHECK_FATAL_ERROR(-1 != (fd_ = ::mkstemp(tempprefix)), "Cannot create temporary file");
+    CHECK_FATAL_ERROR_CODE(-1 != (fd_ = ::mkstemp(tempprefix)), "Cannot create temporary file", ErrorCodes::IOError);
     file_ = tempprefix;
     free(tempprefix);
     TRACE("Creating " << file_);
@@ -63,7 +63,7 @@ TmpFileImpl::TmpFileImpl(const std::string &prefix, TmpDir parent)
 TmpFileImpl::TmpFileImpl(std::nullptr_t, const std::filesystem::path &file, TmpDir parent)
         : file_(file), parent_(parent), fd_(-1), released_(false) {
     fd_ = ::open(file_.c_str(), O_CREAT | O_RDWR, 0600);
-    CHECK_FATAL_ERROR(-1 != fd_, "Cannot open file");
+    CHECK_FATAL_ERROR_CODE(-1 != fd_, "Cannot open file", ErrorCodes::IOError);
     TRACE("Acquiring " << file_);
 }
 
@@ -81,7 +81,7 @@ void TmpFileImpl::close() {
 }
 
 const std::filesystem::path &TmpFileImpl::release() {
-    CHECK_FATAL_ERROR(!released_.exchange(true), "Temp file is already released");
+    CHECK_FATAL_ERROR_CODE(!released_.exchange(true), "Temp file is already released", ErrorCodes::InvalidParameter);
     return file_;
 }
 
@@ -109,7 +109,7 @@ DependentTmpFileImpl::~DependentTmpFileImpl() {
 
 const std::filesystem::path &DependentTmpFileImpl::release() {
     bool already_released = released_.exchange(true);
-    CHECK_FATAL_ERROR(!already_released, "Temp file is already released");
+    CHECK_FATAL_ERROR_CODE(!already_released, "Temp file is already released", ErrorCodes::InvalidParameter);
     return file_;
 }
 

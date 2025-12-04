@@ -97,8 +97,8 @@ public:
     }
 
     void validate() {
-        CHECK_FATAL_ERROR(!qual_.size() || seq_.size() == qual_.size(),
-                     "Invalid read: length of sequence should equal to length of quality line");
+        CHECK_FATAL_ERROR_CODE(!qual_.size() || seq_.size() == qual_.size(),
+                     "Invalid read: length of sequence should equal to length of quality line", ErrorCodes::InvalidInputFormat);
         valid_ = SingleRead::IsValid(seq_);
     }
 

@@ -38,8 +38,8 @@ class MMappedReader {
         if (BlockSize) {
             int StreamFile = open(FileName.c_str(), O_RDONLY);
             if (StreamFile == -1)
-                FATAL_ERROR("open(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno << ". File: " <<
-                            FileName);
+                FATAL_ERROR_CODE("open(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno << ". File: " <<
+                            FileName, ErrorCodes::IOError);
             MappedRegion =
                     (uint8_t *) mmap(NULL, BlockSize,
                                      PROT_READ, MAP_FILE | MAP_PRIVATE,
@@ -49,7 +49,7 @@ class MMappedReader {
             MappedRegion = nullptr;
 
         if (MappedRegion == MAP_FAILED)
-            FATAL_ERROR("mmap(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
+            FATAL_ERROR_CODE("mmap(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno, ErrorCodes::IOError);
     }
 
     void assign(const MMappedReader &other) {
@@ -90,7 +90,7 @@ class MMappedReader {
         if (Unlink) {
             int res = unlink(FileName.c_str());
             if (res != 0)
-                FATAL_ERROR("unlink(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno << ". File:" << FileName);
+                FATAL_ERROR_CODE("unlink(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno << ". File:" << FileName, ErrorCodes::IOError);
         }
     }
 

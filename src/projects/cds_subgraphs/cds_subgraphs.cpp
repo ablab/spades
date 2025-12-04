@@ -47,7 +47,7 @@ inline std::istream &operator>>(std::istream &is, PartialGeneInfo &pgi) {
         pgi.strand = true;
     else if (strand_symbol == "-")
         pgi.strand = false;
-    else CHECK_FATAL_ERROR(false, "Unsupported strand symbol");
+    else CHECK_FATAL_ERROR_CODE(false, "Unsupported strand symbol", ErrorCodes::InvalidInputFormat);
     return is;
 }
 
@@ -69,7 +69,7 @@ static GeneInitSeq
 PredictionsFromDescFile(const Graph &g,
                         const omnigraph::GraphElementFinder<Graph> &element_finder,
                         const std::filesystem::path &desc_file) {
-    CHECK_FATAL_ERROR(exists(desc_file), "File " << desc_file << " doesn't exist or can't be read!");
+    CHECK_FATAL_ERROR_CODE(exists(desc_file), "File " << desc_file << " doesn't exist or can't be read!", ErrorCodes::InputFileNotFound);
     std::ifstream descs(desc_file);
     std::string l;
     PartialGeneInfo info;
@@ -106,7 +106,7 @@ PredictionsFromDescFile(const Graph &g,
 std::unordered_map<std::string, size_t>
 CDSLengthsFromFile(const std::filesystem::path &fn) {
     INFO("Parsing estimated CDS lengths from " << fn);
-    CHECK_FATAL_ERROR(exists(fn), "File " << fn << " doesn't exist or can't be read!");
+    CHECK_FATAL_ERROR_CODE(exists(fn), "File " << fn << " doesn't exist or can't be read!", ErrorCodes::InputFileNotFound);
     std::unordered_map<std::string, size_t> answer;
     std::ifstream in(fn);
     std::string l;
@@ -130,7 +130,7 @@ static std::string GeneNameFromFasta(const std::string &header) {
 }
 
 static GeneInitSeq PredictionsFromFastaFile(const std::filesystem::path &fasta_fn) {
-    CHECK_FATAL_ERROR(exists(fasta_fn), "File " << fasta_fn << " doesn't exist or can't be read!");
+    CHECK_FATAL_ERROR_CODE(exists(fasta_fn), "File " << fasta_fn << " doesn't exist or can't be read!", ErrorCodes::InputFileNotFound);
     io::FileReadStream gene_frags(fasta_fn);
 
     io::SingleRead gene_frag;
