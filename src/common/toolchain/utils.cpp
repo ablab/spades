@@ -31,11 +31,11 @@ io::IdMapper<std::string> *LoadGraphFromGFA(debruijn_graph::Graph &graph,
     unsigned gk = graph.k();
     unsigned k = gfa.to_graph(graph, id_mapper);
     if (k == -1U)
-        FATAL_ERROR_CODE("Failed to determine GFA k-mer length", ErrorCodes::InvalidInputFormat);
+        FATAL_FORMAT_ERROR("Failed to determine GFA k-mer length");
     if (k % 2 != 1)
-        FATAL_ERROR_CODE("GFA used k-mer length must be odd (k=" << k << ")", ErrorCodes::InvalidParameter);
+        FATAL_PARAM_ERROR("GFA used k-mer length must be odd (k=" << k << ")");
     if (k != gk)
-        FATAL_ERROR_CODE("GFA used k-mer length (k=" << k << ") must match the command line settings (k=" << gk <<")", ErrorCodes::InvalidParameter);
+        FATAL_PARAM_ERROR("GFA used k-mer length (k=" << k << ") must match the command line settings (k=" << gk <<")");
 
     return id_mapper;
 }

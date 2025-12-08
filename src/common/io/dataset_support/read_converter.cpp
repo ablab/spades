@@ -185,8 +185,8 @@ BinaryPairedStreams paired_binary_readers(SequencingLibraryT &lib,
                                           bool include_merged,
                                           size_t chunk_num) {
     const auto& data = lib.data();
-    CHECK_FATAL_ERROR_CODE(data.binary_reads_info.binary_converted,
-            "Lib was not converted to binary, cannot produce binary stream", ErrorCodes::InvalidParameter);
+    CHECK_FATAL_PARAM_ERROR(data.binary_reads_info.binary_converted,
+            "Lib was not converted to binary, cannot produce binary stream");
 
     ReadStreamList<PairedReadSeq> paired_streams;
     const size_t n = chunk_num ? chunk_num : data.binary_reads_info.chunk_num;
@@ -216,8 +216,8 @@ BinarySingleStreams single_binary_readers(SequencingLibraryT &lib,
                                           bool including_paired_and_merged,
                                           size_t chunk_num) {
     const auto& data = lib.data();
-    CHECK_FATAL_ERROR_CODE(data.binary_reads_info.binary_converted,
-               "Lib was not converted to binary, cannot produce binary stream", ErrorCodes::InvalidParameter);
+    CHECK_FATAL_PARAM_ERROR(data.binary_reads_info.binary_converted,
+               "Lib was not converted to binary, cannot produce binary stream");
 
     BinarySingleStreams single_streams;
     const size_t n = chunk_num ? chunk_num : data.binary_reads_info.chunk_num;

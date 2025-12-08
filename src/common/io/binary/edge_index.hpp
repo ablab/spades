@@ -30,7 +30,7 @@ public:
     void LoadImpl(BinIStream &str, Type &value) override {
         uint32_t k_;
         str >> k_;
-        CHECK_FATAL_ERROR_CODE(k_ == value.k(), "Cannot read edge index, different Ks", ErrorCodes::InvalidParameter);
+        CHECK_FATAL_PARAM_ERROR(k_ == value.k(), "Cannot read edge index, different Ks");
         value.clear();
         str >> value;
     }

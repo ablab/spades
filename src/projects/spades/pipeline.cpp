@@ -222,13 +222,13 @@ void assemble_genome() {
 
     // Perform various sanity checks
     if (mode == pipeline_type::meta && !MetaCompatibleLibraries()) {
-        FATAL_ERROR_CODE("Sorry, current version of metaSPAdes can work either with single library (paired-end only) "
-                    "or in hybrid paired-end + (TSLR or PacBio or Nanopore) mode.", ErrorCodes::InvalidParameter);
+        FATAL_PARAM_ERROR("Sorry, current version of metaSPAdes can work either with single library (paired-end only) "
+                    "or in hybrid paired-end + (TSLR or PacBio or Nanopore) mode.");
     } else if (AssemblyGraphPresent() &&
                (mode != pipeline_type::metaextrachromosomal &&
                 !cfg::get().hm)) {
         // Disallow generic assembly graph inputs for now
-        FATAL_ERROR_CODE("Assembly graph inputs are supported only for plasmid / metaextrachromosomal and / bgc modes!", ErrorCodes::InvalidParameter);
+        FATAL_PARAM_ERROR("Assembly graph inputs are supported only for plasmid / metaextrachromosomal and / bgc modes!");
     }
 
     INFO("Starting from stage: " << cfg::get().entry_point);

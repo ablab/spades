@@ -106,7 +106,7 @@ void LoadDataset(io::DataSet<debruijn_graph::config::LibraryData> &dataset,
         input.set_type(io::LibraryType::SingleReads);
         dataset.push_back(input);
     } else
-        FATAL_ERROR_CODE("Dataset description file: " << filename << " does not exist or is not a valid YAML file", ErrorCodes::InputFileNotFound);
+        FATAL_FILE_NOT_FOUND_ERROR("Dataset description file: " << filename << " does not exist or is not a valid YAML file");
 }
 
 int main(int argc, char* argv[]) {
@@ -128,11 +128,11 @@ int main(int argc, char* argv[]) {
         START_BANNER("SPAdes standalone graph builder");
 
         if (k < runtime_k::MIN_K)
-            FATAL_ERROR_CODE("k-mer size " << k << " is too low", ErrorCodes::InvalidParameter);
+            FATAL_PARAM_ERROR("k-mer size " << k << " is too low");
         if (k >= runtime_k::MAX_K)
-            FATAL_ERROR_CODE("k-mer size " << k << " is too high, recompile with larger SPADES_MAX_K option", ErrorCodes::InvalidParameter);
+            FATAL_PARAM_ERROR("k-mer size " << k << " is too high, recompile with larger SPADES_MAX_K option");
         if (k % 2 == 0)
-            FATAL_ERROR_CODE("k-mer size must be odd", ErrorCodes::InvalidParameter);
+            FATAL_PARAM_ERROR("k-mer size must be odd");
 
 
         INFO("K-mer length set to " << k);
@@ -229,7 +229,7 @@ int main(int argc, char* argv[]) {
             } else if (cfg.mode == output_type::spades) {
                 io::binary::BasicGraphIO<debruijn_graph::DeBruijnGraph>().Save(cfg.outfile, g);
             } else
-                FATAL_ERROR_CODE("Invalid mode", ErrorCodes::InvalidParameter);
+                FATAL_PARAM_ERROR("Invalid mode");
         }
     } catch (const std::string &s) {
         std::cerr << s << std::endl;

@@ -79,11 +79,11 @@ public:
             std::string label;
             ss >> label;
             EdgeId e = label_helper.edge(label);
-            CHECK_FATAL_ERROR_CODE(e != EdgeId(), "Couldn't find edge with int id " << std::stoi(label) << " in the graph", ErrorCodes::InvalidParameter);
+            CHECK_FATAL_PARAM_ERROR(e != EdgeId(), "Couldn't find edge with int id " << std::stoi(label) << " in the graph");
 
             std::string orient;
             ss >> orient;
-            CHECK_FATAL_ERROR_CODE(orient == "+" || orient == "-", "Invalid orientation", ErrorCodes::InvalidParameter);
+            CHECK_FATAL_PARAM_ERROR(orient == "+" || orient == "-", "Invalid orientation");
 
             //Currently ignored
             int pos;

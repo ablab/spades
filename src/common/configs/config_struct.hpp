@@ -98,14 +98,14 @@ std::vector<std::string> SingleReadResolveModeNames();
 template<typename mode_t>
 mode_t ModeByName(const std::string& name, const std::vector<std::string>& names) {
     auto it = std::find(names.begin(), names.end(), name);
-    CHECK_FATAL_ERROR_CODE(it != names.end(), "Unrecognized mode name: " << name, ErrorCodes::InvalidParameter);
+    CHECK_FATAL_PARAM_ERROR(it != names.end(), "Unrecognized mode name: " << name);
     return mode_t(it - names.begin());
 }
 
 template<typename mode_t>
 std::string ModeName(const mode_t& mode, const std::vector<std::string>& names) {
     auto mode_id = static_cast<size_t>(mode);
-    CHECK_FATAL_ERROR_CODE(mode_id < names.size(), "Unrecognized mode id: " << mode_id, ErrorCodes::InvalidParameter);
+    CHECK_FATAL_PARAM_ERROR(mode_id < names.size(), "Unrecognized mode id: " << mode_id);
     return names[mode_id];
 }
 

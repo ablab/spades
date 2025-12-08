@@ -445,7 +445,7 @@ void OutputMatches(const hmmer::HMM &hmm, const hmmer::HMMMatcher &matcher, cons
     } else if (format == "pfamtblout") {
         p7_tophits_TabularXfam(fp, p7hmm->name, p7hmm->acc, matcher.top_hits(), matcher.pipeline());
     } else {
-        FATAL_ERROR_CODE("unknown output format", ErrorCodes::InvalidParameter);
+        FATAL_PARAM_ERROR("unknown output format");
     }
     fclose(fp);
 }
@@ -454,7 +454,7 @@ std::vector<hmmer::HMM> ParseHMMFile(const std::string &filename) {
     /* Open the query profile HMM file */
     hmmer::HMMFile hmmfile(filename);
     if (!hmmfile.valid()) {
-        FATAL_ERROR_CODE("Error opening HMM file " << filename, ErrorCodes::InputFileNotFound);
+        FATAL_FILE_NOT_FOUND_ERROR("Error opening HMM file " << filename);
     }
 
     std::vector<hmmer::HMM> hmms;
@@ -463,7 +463,7 @@ std::vector<hmmer::HMM> ParseHMMFile(const std::string &filename) {
         hmms.emplace_back(std::move(hmmw.get()));
 
     if (hmms.empty()) {
-        FATAL_ERROR_CODE("Error reading HMM file " << filename, ErrorCodes::IOError);
+        FATAL_IO_ERROR("Error reading HMM file " << filename);
     }
 
     return hmms;
@@ -483,13 +483,13 @@ std::vector<hmmer::HMM> ParseFASTAFile(const std::string &filename, enum Mode mo
     // Open the query sequence file in FASTA format
     int status = esl_sqfile_Open(qfile, eslSQFILE_FASTA, NULL, &qfp);
     if (status == eslENOTFOUND) {
-        FATAL_ERROR_CODE("No such file " << filename, ErrorCodes::InputFileNotFound);
+        FATAL_FILE_NOT_FOUND_ERROR("No such file " << filename);
     } else if (status == eslEFORMAT) {
-        FATAL_ERROR_CODE("Format of " << filename << " unrecognized.", ErrorCodes::InvalidInputFormat);
+        FATAL_FORMAT_ERROR("Format of " << filename << " unrecognized.");
     } else if (status == eslEINVAL) {
-        FATAL_ERROR_CODE("Can't autodetect stdin or .gz.", ErrorCodes::InvalidInputFormat);
+        FATAL_FORMAT_ERROR("Can't autodetect stdin or .gz.");
     } else if (status != eslOK) {
-        FATAL_ERROR_CODE("Open of " << filename << " failed, code " << status, ErrorCodes::IOError);
+        FATAL_IO_ERROR("Open of " << filename << " failed, code " << status);
     }
 
     // For each sequence, build a model and save it.
@@ -502,7 +502,7 @@ std::vector<hmmer::HMM> ParseFASTAFile(const std::string &filename, enum Mode mo
         esl_sq_Reuse(qsq);
     }
     if (status != eslEOF) {
-        FATAL_ERROR_CODE("Unexpected error " << status << " reading sequence file " << filename, ErrorCodes::IOError);
+        FATAL_IO_ERROR("Unexpected error " << status << " reading sequence file " << filename);
     }
 
     esl_sq_Destroy(qsq);
@@ -1180,7 +1180,7 @@ int pathracer_main(int argc, char* argv[]) {
         VERIFY_MSG(gfa_k == 0 || gfa_k % 2 == 1, "k-mer length must be odd");
         VERIFY(graph.k() == gfa_k);
     } else
-        FATAL_ERROR_CODE("Failed to determine k-mer length", ErrorCodes::InvalidInputFormat);
+        FATAL_FORMAT_ERROR("Failed to determine k-mer length");
 
     scaffold_paths.reserve(gfa.num_paths());
     for (const auto &path : gfa.paths()) {

@@ -186,7 +186,7 @@ void LoadGraph(const std::filesystem::path &saves_path, debruijn_graph::Conjugat
                io::IdMapper<std::string> &id_mapper) {
     if (saves_path.extension() == ".gfa") {
         DEBUG("Load gfa");
-        CHECK_FATAL_ERROR_CODE(is_regular_file(saves_path), "GFA-file " + static_cast<std::string>(saves_path) + " doesn't exist", ErrorCodes::InputFileNotFound);
+        CHECK_FATAL_FILE_NOT_FOUND_ERROR(is_regular_file(saves_path), "GFA-file " + static_cast<std::string>(saves_path) + " doesn't exist");
         gfa::GFAReader gfa(saves_path);
         DEBUG("Segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
         gfa.to_graph(g, &id_mapper);
@@ -283,7 +283,7 @@ int main(int argc, char **argv) {
 
     INFO("Loading config from " << cfg)
     auto buf = llvm::MemoryBuffer::getFile(cfg);
-    CHECK_FATAL_ERROR_CODE(buf, "Failed to load config file " + cfg, ErrorCodes::IOError);
+    CHECK_FATAL_IO_ERROR(buf, "Failed to load config file " + cfg);
     llvm::yaml::Input yin(*buf.get());
     yin >> config;
     omp_set_num_threads(nthreads);

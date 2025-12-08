@@ -137,8 +137,8 @@ void Construction::init(graph_pack::GraphPack &gp, const char *) {
     for (size_t lib_id : libs_for_construction) {
         auto lib_data = dataset.reads[lib_id].data();
         if (lib_data.unmerged_read_length == 0) {
-            FATAL_ERROR_CODE("Failed to determine read length for library #" << lib_data.lib_index << ". "
-                    "Check that not only merged reads are present.", ErrorCodes::InvalidInputFormat);
+            FATAL_FORMAT_ERROR("Failed to determine read length for library #" << lib_data.lib_index << ". "
+                    "Check that not only merged reads are present.");
         }
         dataset.no_merge_RL = std::max(dataset.no_merge_RL, lib_data.unmerged_read_length);
         merged_max_len = std::max(merged_max_len, lib_data.merged_read_length);

@@ -106,7 +106,7 @@ private:
 
         } else if (next_token_ == "rlmk") {
             //Read length minus k
-            CHECK_FATAL_ERROR_CODE(settings_.read_length() > g_.k(), "Read length was shorter than K", ErrorCodes::InvalidParameter);
+            CHECK_FATAL_PARAM_ERROR(settings_.read_length() > g_.k(), "Read length was shorter than K");
             double length_coeff = std::stod(ReadNext());
             DEBUG("Creating (rl - k) bound. Multiplicative coefficient: " << length_coeff);
             size_t length_bound = size_t(math::round(length_coeff * double(settings_.read_length() - g_.k())));
@@ -115,7 +115,7 @@ private:
             return LengthUpperBound<Graph>(g_, length_bound);
         } else if (next_token_ == "rl") {
             //Read length
-            CHECK_FATAL_ERROR_CODE(settings_.read_length() > 0, "Read was zero", ErrorCodes::InvalidParameter);
+            CHECK_FATAL_PARAM_ERROR(settings_.read_length() > 0, "Read was zero");
             double length_coeff = std::stod(ReadNext());
             DEBUG("Creating rl bound. Multiplicative coefficient: " << length_coeff);
             size_t length_bound = size_t(math::round(length_coeff * double(settings_.read_length())));
@@ -189,7 +189,7 @@ private:
             DEBUG("Creating max mismatches cond " << next_token_);
             return MismatchTipCondition<Graph>(g_, std::stod(next_token_));
         } else {
-            FATAL_ERROR_CODE("Invalid token: " << next_token_, ErrorCodes::InvalidInputFormat);
+            FATAL_FORMAT_ERROR("Invalid token: " << next_token_);
             return func::AlwaysTrue<EdgeId>();
         }
     }
@@ -237,7 +237,7 @@ public:
             ReadNext();
         }
 
-        CHECK_FATAL_ERROR_CODE(next_token_ == "{", "Expected \"{\", but next token was " << next_token_, ErrorCodes::InvalidInputFormat);
+        CHECK_FATAL_FORMAT_ERROR(next_token_ == "{", "Expected \"{\", but next token was " << next_token_);
         while (next_token_ == "{") {
             size_t min_length_bound = std::numeric_limits<size_t>::max();
             double min_coverage_bound = std::numeric_limits<double>::max();
@@ -587,7 +587,7 @@ AlgoPtr<Graph> TipClipperInstance(Graph &g,
     ConditionParser<Graph> parser(g, tc_config.condition, info);
     auto condition = parser();
     auto algo = TipClipperInstance(g, condition, info, removal_handler);
-    CHECK_FATAL_ERROR_CODE(parser.requested_iterations() != 0, "To disable tip clipper pass empty string", ErrorCodes::InvalidParameter);
+    CHECK_FATAL_PARAM_ERROR(parser.requested_iterations() != 0, "To disable tip clipper pass empty string");
     if (parser.requested_iterations() == 1)
         return algo;
 

@@ -37,7 +37,7 @@ EdgeNamingF<Graph> BasicNamingF(const std::string &prefix = "EDGE") {
 
 template<class Graph>
 std::string ErrorNamingF(const Graph& g, typename Graph::EdgeId e) {
-    FATAL_ERROR_CODE("Unknown edge: " << g.int_id(e), ErrorCodes::InvalidParameter);
+    FATAL_PARAM_ERROR("Unknown edge: " << g.int_id(e));
     return "";
 }
 

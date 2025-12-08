@@ -185,7 +185,7 @@ size_t KMerCoverageModel::EstimateValley() const {
 }
 
 void KMerCoverageModel::Fit() {
-    CHECK_FATAL_ERROR_CODE(cov_.size() > 10, "Invalid kmer coverage histogram, make sure that the coverage is indeed uniform", ErrorCodes::InvalidInputFormat);
+    CHECK_FATAL_FORMAT_ERROR(cov_.size() > 10, "Invalid kmer coverage histogram, make sure that the coverage is indeed uniform");
 
     // Find the minimal coverage point using smoothed histogram.
     Valley_ = EstimateValley();
