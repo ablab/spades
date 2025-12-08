@@ -132,7 +132,7 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
 std::unique_ptr<BinningAssignmentStrategy> get_strategy(const gcfg &cfg) {
     switch (cfg.assignment_strategy) {
         default:
-            FATAL_ERROR_CODE("Unknown binning assignment strategy", ErrorCodes::InvalidParameter);
+            FATAL_PARAM_ERROR("Unknown binning assignment strategy");
         case AssignStrategy::MajorityLength:
             return std::make_unique<MajorityLengthBinningAssignmentStrategy>(cfg.allow_multiple);
         case AssignStrategy::MaxLikelihood:
@@ -146,7 +146,7 @@ std::unique_ptr<AlphaAssigner> get_alpha_assigner(const gcfg &cfg,
                                                   const bin_stats::Binning &binning) {
     switch (cfg.refiner_type) {
         default:
-            FATAL_ERROR_CODE("Unknown binning refiner type", ErrorCodes::InvalidParameter);
+            FATAL_PARAM_ERROR("Unknown binning refiner type");
         case RefinerType::Propagation:
             return std::make_unique<PropagationAssigner>(graph);
         case RefinerType::Correction:
@@ -177,13 +177,13 @@ int main(int argc, char** argv) {
   INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg.nthreads);
 
   if (!std::filesystem::exists(cfg.graph))
-      FATAL_ERROR_CODE("Graph file: " << cfg.graph << " does not exist", ErrorCodes::InputFileNotFound);
+      FATAL_FILE_NOT_FOUND_ERROR("Graph file: " << cfg.graph << " does not exist");
 
   if (!std::filesystem::exists(cfg.binning_file))
-      FATAL_ERROR_CODE("Input binning file " << cfg.binning_file << " does not exist", ErrorCodes::InputFileNotFound);
+      FATAL_FILE_NOT_FOUND_ERROR("Input binning file " << cfg.binning_file << " does not exist");
 
   if (!std::filesystem::create_directories(cfg.tmpdir))
-      FATAL_ERROR_CODE("Failed to create temporary directory: " << cfg.tmpdir, ErrorCodes::IOError);
+      FATAL_IO_ERROR("Failed to create temporary directory: " << cfg.tmpdir);
 
   try {
       auto assignment_strategy = get_strategy(cfg);
@@ -196,7 +196,7 @@ int main(int argc, char** argv) {
 
         if (cfg.libindex == -1u)
             cfg.libindex = 0;
-        CHECK_FATAL_ERROR_CODE(cfg.libindex < dataset.lib_count(), "invalid library index", ErrorCodes::InvalidParameter);
+        CHECK_FATAL_PARAM_ERROR(cfg.libindex < dataset.lib_count(), "invalid library index");
       }
 
       debruijn_graph::Graph graph(0);
@@ -375,7 +375,7 @@ int main(int argc, char** argv) {
       INFO("Final binning:\n" << binning);
 
       if (!std::filesystem::create_directories(cfg.prefix))
-          FATAL_ERROR_CODE("Failed to create output dir: " << cfg.prefix, ErrorCodes::IOError);
+          FATAL_IO_ERROR("Failed to create output dir: " << cfg.prefix);
 
       INFO("Writing final binning");
       binning.WriteToBinningFile(cfg.prefix, cfg.out_options,
@@ -423,7 +423,7 @@ int main(int argc, char** argv) {
 
       if (!cfg.debug)
           if (!std::filesystem::remove_all(cfg.tmpdir))
-              FATAL_ERROR_CODE("Failed to empty temporary directory: " << cfg.tmpdir, ErrorCodes::IOError);
+              FATAL_IO_ERROR("Failed to empty temporary directory: " << cfg.tmpdir);
   } catch (const std::string& s) {
       std::cerr << s << std::endl;
       return EINTR;

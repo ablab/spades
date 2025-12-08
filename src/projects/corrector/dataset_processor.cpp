@@ -84,9 +84,8 @@ void DatasetProcessor::SplitLibrary(const filesystem::path &all_reads_filename, 
         }
 
         for (auto &contig : contigs) {
-            CHECK_FATAL_ERROR_CODE(all_contigs_.find(contig) != all_contigs_.end(),
-                                   "wrong contig name in SAM file header: " + contig,
-                                   ErrorCodes::InvalidInputFormat);
+            CHECK_FATAL_FORMAT_ERROR(all_contigs_.find(contig) != all_contigs_.end(),
+                                     "wrong contig name in SAM file header: " + contig);
 
             for (int i = 0; i < reads_cnt; ++i) {
                 BufferedOutputRead(reads[i], contig, lib_count);
@@ -176,7 +175,7 @@ void DatasetProcessor::ProcessDataset() {
     SplitGenome(work_dir_);
 
     if (RunBwaIndex() != 0) {
-        FATAL_ERROR_CODE("Failed to build bwa index for " << genome_file_, ErrorCodes::IOError);
+        FATAL_IO_ERROR("Failed to build bwa index for " << genome_file_);
     }
 
     auto handle_one_lib = [this, &lib_num](const std::vector<std::filesystem::path>& reads,
@@ -201,7 +200,7 @@ void DatasetProcessor::ProcessDataset() {
             SplitLibrary(samf, lib_num,lib_type !=  io::LibraryType::SingleReads);
             lib_num++;
         } else {
-            FATAL_ERROR_CODE("Failed to align " + type + " reads " << reads_files_str, ErrorCodes::IOError);
+            FATAL_IO_ERROR("Failed to align " + type + " reads " << reads_files_str);
         }
     };
 

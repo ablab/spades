@@ -65,9 +65,9 @@ protected:
     EstimHist EstimateEdgePairDistances(EdgePair /*ep*/,
                                         const InHistogram & /*raw_data*/,
                                         const std::vector<size_t> & /*forward*/) const override {
-        CHECK_FATAL_ERROR_CODE(false, "Sorry, the SMOOOOTHING estimator is not available anymore." <<
-                          "SPAdes is going to terminate", ErrorCodes::InvalidParameter);
-
+        CHECK_FATAL_PARAM_ERROR(false, "Sorry, the SMOOOOTHING estimator is not available anymore."
+                          "SPAdes is going to terminate");
+        
         return EstimHist();
     }
 

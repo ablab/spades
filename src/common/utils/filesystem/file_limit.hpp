@@ -24,8 +24,8 @@ inline rlim_t limit_file(size_t limit) {
   struct rlimit rl;
 
   int res = getrlimit(RLIMIT_NOFILE, &rl);
-  CHECK_FATAL_ERROR_CODE(res == 0,
-             "getrlimit(2) call failed, errno = " << errno, ErrorCodes::IOError);
+  CHECK_FATAL_IO_ERROR(res == 0,
+             "getrlimit(2) call failed, errno = " << errno);
 
   // We cannot go beyond hard limit and we might not have enough privileges to
   // increase the hard limit

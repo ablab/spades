@@ -181,15 +181,12 @@ void detach_logger();
 #define VERBOSE_POWER2(n, message)          VERBOSE_POWER_T2((n), 10000, message)
 #define WARN(message)                       LOG_MSG(logging::L_WARN, message)
 #define ERROR(message)                      LOG_MSG(logging::L_ERROR, message)
+
 #define FATAL_ERROR(message)                                            \
     do {                                                                \
         ERROR(message);                                                 \
         utils::print_stacktrace();                                      \
-        if (errno != 0) {                                               \
-            exit(errno);                                                \
-        } else {                                                        \
-            exit(-1);                                                   \
-        }                                                               \
+        exit(-1);                                                   \
     } while(0)
 
 #define CHECK_FATAL_ERROR(expr, msg)                                    \
@@ -208,3 +205,64 @@ void detach_logger();
     if (!(expr)) {                                                      \
         FATAL_ERROR_CODE(msg, err_code);                                \
     }
+
+#define FATAL_FORMAT_ERROR(message)                                     \
+    do {                                                                \
+        ERROR(message);                                                 \
+        utils::print_stacktrace();                                      \
+        exit(ErrorCodes::InvalidInputFormat);                           \
+    } while(0)
+
+#define CHECK_FATAL_FORMAT_ERROR(expr, msg)                             \
+    if (!(expr)) {                                                      \
+        FATAL_FORMAT_ERROR(msg);                                        \
+    }
+
+#define FATAL_FILE_NOT_FOUND_ERROR(message)                             \
+    do {                                                                \
+        ERROR(message);                                                 \
+        utils::print_stacktrace();                                      \
+        exit(ErrorCodes::InputFileNotFound);                            \
+    } while(0)
+
+#define CHECK_FATAL_FILE_NOT_FOUND_ERROR(expr, msg)                     \
+    if (!(expr)) {                                                      \
+        FATAL_FILE_NOT_FOUND_ERROR(msg);                                \
+    }
+
+#define FATAL_IO_ERROR(message)                                         \
+    do {                                                                \
+        ERROR(message);                                                 \
+        utils::print_stacktrace();                                      \
+        exit(ErrorCodes::IOError);                                      \
+    } while(0)
+
+#define CHECK_FATAL_IO_ERROR(expr, msg)                                 \
+    if (!(expr)) {                                                      \
+        FATAL_IO_ERROR(msg);                                            \
+    }
+
+#define FATAL_PARAM_ERROR(message)                                      \
+    do {                                                                \
+        ERROR(message);                                                 \
+        utils::print_stacktrace();                                      \
+        exit(ErrorCodes::InvalidParameter);                             \
+    } while(0)
+
+#define CHECK_FATAL_PARAM_ERROR(expr, msg)                              \
+    if (!(expr)) {                                                      \
+        FATAL_PARAM_ERROR(msg);                                         \
+    }
+
+#define FATAL_MEM_EXCEEDED_ERROR(message)                               \
+    do {                                                                \
+        ERROR(message);                                                 \
+        utils::print_stacktrace();                                      \
+        exit(ErrorCodes::MemoryLimitExceeded);                                                 \
+    } while(0)
+
+#define CHECK_FATAL_MEM_EXCEEDED_ERROR(expr, msg)                       \
+    if (!(expr)) {                                                      \
+        FATAL_MEM_EXCEEDED_ERROR(msg);                                  \
+    }
+

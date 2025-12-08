@@ -1,16 +1,17 @@
 //***************************************************************************
-//* Copyright (c) 2023-2024 SPAdes team
-//* Copyright (c) 2015-2022 Saint Petersburg State University
-//* Copyright (c) 2011-2014 Saint Petersburg Academic University
+//* Copyright (c) 2025 SPAdes team
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
 
 #pragma once
 
+#include <cstdint>
+
 // Predefined error codes range from 64 to 127 will not trigger message suggesting to report a bug
-// Predefined error codes range from 128 to 255 (negative values) will trigger message suggesting to report a bug
-enum ErrorCodes {
+// Predefined error codes range from 128 to 255 (system calls, negative values) and
+// from 1 to 63 will trigger message suggesting to report a bug
+enum ErrorCodes: std::int8_t {
     InvalidInputFormat = 64,
     InputFileNotFound = 65,
     IOError = 66,

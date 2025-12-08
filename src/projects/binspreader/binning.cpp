@@ -129,11 +129,11 @@ void Binning::LoadBinning(const std::filesystem::path &binning_file,
                 reader.parse_header_line(io::ignore_extra_column, cline);
                 break;
             } else if (!utils::starts_with(line, "@")) {
-                FATAL_ERROR_CODE("Invalid CAMI bioboxies input format!", ErrorCodes::InvalidInputFormat);
+                FATAL_FORMAT_ERROR("Invalid CAMI bioboxies input format!");
             }
         }
         if (sample_id_.empty())
-            FATAL_ERROR_CODE("Invalid sample ID!", ErrorCodes::InvalidInputFormat);
+            FATAL_FORMAT_ERROR("Invalid sample ID!");
 
         INFO("Sample ID: " << sample_id_);
     } else {

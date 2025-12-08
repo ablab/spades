@@ -41,7 +41,7 @@ public:
     explicit FileReadStream(const std::filesystem::path &filename,
                             FileReadFlags flags = FileReadFlags())
             : filename_(filename), flags_(flags), parser_(nullptr) {
-        CHECK_FATAL_ERROR_CODE(exists(filename), "File " << filename << " doesn't exist or can't be read!", ErrorCodes::InputFileNotFound);
+        CHECK_FATAL_FILE_NOT_FOUND_ERROR(exists(filename), "File " << filename << " doesn't exist or can't be read!");
         parser_.reset(SelectParser(filename_, flags_));
     }
 

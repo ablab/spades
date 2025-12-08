@@ -41,7 +41,7 @@ bool SeparatePairedReadStream::eof() {
         } else {
             ERROR("The number of left read-pairs is larger than the number of right read-pairs");
         }
-        FATAL_ERROR_CODE("Unequal number of read-pairs detected in the following files: " << filename1_ << "  " << filename2_ << "", ErrorCodes::InvalidInputFormat);
+        FATAL_FORMAT_ERROR("Unequal number of read-pairs detected in the following files: " << filename1_ << "  " << filename2_ << "");
     }
     return first_.eof();
   }
@@ -80,20 +80,20 @@ bool TellSeqReadStream::eof() {
         } else {
             ERROR("The number of left read-pairs is larger than the number of right read-pairs");
         }
-        FATAL_ERROR_CODE("Unequal number of read-pairs detected in the following files: " << filename1_ << "  " << filename2_ << "", ErrorCodes::InvalidInputFormat);
+        FATAL_FORMAT_ERROR("Unequal number of read-pairs detected in the following files: " << filename1_ << "  " << filename2_ << "");
     }
 
     if (first_.eof() != index_.eof() || second_.eof() != index_.eof()) {
         if (first_.eof()) {
             ERROR("The number of index read-pairs is larger than the number of left read-pairs");
-            FATAL_ERROR_CODE("Unequal number of read-pairs detected in the following files: " << filename1_ << "  " << aux_ << "", ErrorCodes::InvalidInputFormat);
+            FATAL_FORMAT_ERROR("Unequal number of read-pairs detected in the following files: " << filename1_ << "  " << aux_ << "");
         } else if (second_.eof()) {
             ERROR("The number of index read-pairs is larger than the number of right read-pairs");
-            FATAL_ERROR_CODE("Unequal number of read-pairs detected in the following files: " << filename2_ << "  " << aux_ << "", ErrorCodes::InvalidInputFormat);
+            FATAL_FORMAT_ERROR("Unequal number of read-pairs detected in the following files: " << filename2_ << "  " << aux_ << "");
         } else if (index_.eof()) {
             ERROR("The number of index read-pairs is lower than the number of paired-end read-pairs");
-            FATAL_ERROR_CODE("Unequal number of read-pairs detected in the following files: "
-                        << filename1_ << "  " << filename2_ << "  " << aux_ << "", ErrorCodes::InvalidInputFormat);
+            FATAL_FORMAT_ERROR("Unequal number of read-pairs detected in the following files: "
+                        << filename1_ << "  " << filename2_ << "  " << aux_ << "");
         }
     }
 

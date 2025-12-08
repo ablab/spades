@@ -66,7 +66,7 @@ void EdgeProfileStorage::Load(std::istream &is,
 
     if (check_consistency) {
         for (EdgeId e : g().edges()) {
-            CHECK_FATAL_ERROR_CODE(profiles_.count(e) > 0, "Failed to load profile for one of the edges", ErrorCodes::InvalidInputFormat);
+            CHECK_FATAL_FORMAT_ERROR(profiles_.count(e) > 0, "Failed to load profile for one of the edges");
         }
     }
 }

@@ -227,7 +227,7 @@ unsigned GFAReader::to_graph(ConjugateDeBruijnGraph &g,
     std::unique_ptr<std::remove_pointer<gzFile>::type, decltype(&gzclose)>
         fp(gzopen(filename_.c_str(), "r"), gzclose);
     if (!fp)
-        FATAL_ERROR_CODE("Failed to open file: " << filename_, ErrorCodes::InputFileNotFound);
+        FATAL_FILE_NOT_FOUND_ERROR("Failed to open file: " << filename_);
 
     char *line = nullptr;
     size_t len = 0;

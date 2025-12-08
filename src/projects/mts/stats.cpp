@@ -35,7 +35,7 @@ io::SingleRead ReadSequence(io::SingleStream& reader) {
 }
 
 io::SingleRead ReadGenome(const filesystem::path& genome_path) {
-    CHECK_FATAL_ERROR_CODE(exists(genome_path), "File " << genome_path << " doesn't exist or can't be read!", ErrorCodes::InputFileNotFound);
+    CHECK_FATAL_FILE_NOT_FOUND_ERROR(exists(genome_path), "File " << genome_path << " doesn't exist or can't be read!");
     auto genome_stream_ptr = io::EasyStream(genome_path, false);
     return ReadSequence(genome_stream_ptr);
 }

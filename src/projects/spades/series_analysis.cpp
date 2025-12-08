@@ -192,7 +192,7 @@ private:
 
 std::optional<AbundanceVector> InferAbundance(const std::filesystem::path& bin_mult_fn,
                                               const std::string& b_id) {
-    CHECK_FATAL_ERROR_CODE(exists(bin_mult_fn), "File " << bin_mult_fn << " doesn't exist or can't be read!", ErrorCodes::InputFileNotFound);
+    CHECK_FATAL_FILE_NOT_FOUND_ERROR(exists(bin_mult_fn), "File " << bin_mult_fn << " doesn't exist or can't be read!");
 
     std::ifstream is(bin_mult_fn);
     std::vector<AbundanceVector> abundances;

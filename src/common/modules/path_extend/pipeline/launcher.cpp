@@ -618,7 +618,7 @@ void PathExtendLauncher::SelectStrandSpecificPaths(PathContainer &paths) const {
 void MakeConjugateEdgePairsDump(ConjugateDeBruijnGraph const & graph) {
     std::ofstream out(cfg::get().output_dir / "conjugate_edge_pairs_dump.info");
     if (!out.is_open()) {
-        FATAL_ERROR_CODE("Cannot open conjugate_edge_pairs_dump.info for writing", ErrorCodes::IOError);
+        FATAL_IO_ERROR("Cannot open conjugate_edge_pairs_dump.info for writing");
         return;
     }
 

@@ -347,9 +347,9 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
   // Check, whether we'll ever have enough memory for running BH and bail out earlier
   double needed = 1.25 * (double)kmers * (sizeof(KMerStat) + sizeof(hammer::KMer));
   if (needed > (double) utils::get_memory_limit())
-      FATAL_ERROR_CODE("The reads contain too many k-mers to fit into available memory. You need approx. "
+      FATAL_MEM_EXCEEDED_ERROR("The reads contain too many k-mers to fit into available memory. You need approx. "
                   << needed / 1024.0 / 1024.0 / 1024.0
-                  << "GB of free RAM to assemble your dataset", ErrorCodes::MemoryLimitExceeded);
+                  << "GB of free RAM to assemble your dataset");
 
   {
     INFO("Arranging kmers in hash map order");

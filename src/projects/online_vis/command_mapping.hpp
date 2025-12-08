@@ -33,9 +33,9 @@ class CommandMapping {
   void AddCommand(std::shared_ptr<Command<Env>> command) {
     auto command_invocation_string = command->invocation_string();
     auto it = command_map_.find(command_invocation_string);
-    CHECK_FATAL_ERROR_CODE(it == command_map_.end(),
+    CHECK_FATAL_PARAM_ERROR(it == command_map_.end(),
                "Cannot add a command with existing name `"
-            << command_invocation_string << "'. Program exits.", ErrorCodes::InvalidParameter);
+            << command_invocation_string << "'. Program exits.");
 
     command_map_[command_invocation_string] = command;
   }

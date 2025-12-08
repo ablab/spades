@@ -272,7 +272,7 @@ public:
                            std::shared_ptr<IdealInfoProvider> ideal_provider = nullptr) :
             WeightCounter(g, lib, normalize_weight, ideal_provider),
             single_threshold_(single_threshold) {
-        CHECK_FATAL_ERROR_CODE(math::gr(single_threshold_, 0.), "Threshold value not initialized", ErrorCodes::InvalidParameter);
+        CHECK_FATAL_PARAM_ERROR(math::gr(single_threshold_, 0.), "Threshold value not initialized");
     }
 
     double CountWeight(const BidirectionalPath &path, EdgeId e,

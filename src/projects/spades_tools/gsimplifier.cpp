@@ -87,7 +87,7 @@ size_t DetermineSampleCnt(const std::filesystem::path &profile_fn) {
     std::ifstream is(profile_fn);
     std::string line;
     std::getline(is, line);
-    CHECK_FATAL_ERROR_CODE(is, "I/O problem while reading " << profile_fn, ErrorCodes::IOError);
+    CHECK_FATAL_IO_ERROR(is, "I/O problem while reading " << profile_fn);
     std::istringstream ss(line);
     std::string token;
     size_t i = 0;
@@ -201,8 +201,8 @@ int main(int argc, char** argv) {
         std::unique_ptr<ProfileStorage> profile_storage;
         if (!cfg.edge_profile_fn.empty()) {
             INFO("Loading edge profiles from " << cfg.edge_profile_fn);
-            CHECK_FATAL_ERROR_CODE(exists(cfg.edge_profile_fn),
-                              "File " << cfg.edge_profile_fn << " doesn't exist or can't be read!", ErrorCodes::InputFileNotFound);
+            CHECK_FATAL_FILE_NOT_FOUND_ERROR(exists(cfg.edge_profile_fn),
+                              "File " << cfg.edge_profile_fn << " doesn't exist or can't be read!");
             size_t sample_cnt = DetermineSampleCnt(cfg.edge_profile_fn);
             INFO("Sample count determined as " << sample_cnt);
             profile_storage = std::make_unique<ProfileStorage>(graph, sample_cnt);
@@ -215,8 +215,8 @@ int main(int argc, char** argv) {
         std::unique_ptr<PositionStorage> stop_codons_storage;
         if (!cfg.stop_codons_fn.empty()) {
             INFO("Loading stop codon positions from " << cfg.stop_codons_fn);
-            CHECK_FATAL_ERROR_CODE(exists(cfg.stop_codons_fn),
-                              "File " << cfg.stop_codons_fn << " doesn't exist or can't be read!", ErrorCodes::InputFileNotFound);
+            CHECK_FATAL_FILE_NOT_FOUND_ERROR(exists(cfg.stop_codons_fn),
+                              "File " << cfg.stop_codons_fn << " doesn't exist or can't be read!");
             stop_codons_storage = std::make_unique<PositionStorage>(graph);
             std::ifstream is(cfg.stop_codons_fn);
             stop_codons_storage->Load(is, label_helper);
@@ -230,9 +230,9 @@ int main(int argc, char** argv) {
             INFO("Estimated mean coverage was specified as " << cfg.bin_cov_str)
             if (cfg.bin_cov_str == "auto") {
                 INFO("Trying to determine from coverage of sources and sinks");
-                CHECK_FATAL_ERROR_CODE(!cfg.deadends_fn.empty(),
+                CHECK_FATAL_PARAM_ERROR(!cfg.deadends_fn.empty(),
                            "Deadends option (-d/--dead-ends) was not specified. "
-                           "Can only determine coverage while working with subgraphs!", ErrorCodes::InvalidParameter);
+                           "Can only determine coverage while working with subgraphs!");
                 bin_cov = DetermineAvgCoverage(graph, undeadends);
             } else {
                 bin_cov = std::stod(cfg.bin_cov_str);
