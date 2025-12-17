@@ -7,6 +7,8 @@
 
 import os
 import sys
+from .. import support
+from ..support import ErrorCode
 
 
 def StringStartsFromPrefix(string, prefix):
@@ -96,8 +98,8 @@ class SAM_entry:
         splits = alignment_string.split()
 
         if len(splits) < self.sam_config.num_mand_fields:
-            sys.stderr.write("ERROR: Mandatory fields of alignment were not specified!\n")
-            sys.exit(1)
+            support.error("Mandatory fields of alignment were not specified!",
+                          exit_code=ErrorCode.InvalidInputFormat)
 
         self.query_name = splits[self.sam_config.query_index]
         self.flag = int(splits[self.sam_config.flag_index])
@@ -221,8 +223,8 @@ class Samfile:
 
     def __init__(self, filename):
         if not os.path.exists(filename):
-            sys.stderr.write("ERROR: SAM file " + filename + " was not found\n")
-            sys.exit(1)
+            support.error(f"SAM file {filename} was not found",
+                          exit_code=ErrorCode.InputFileNotFound)
 
         self.InitFields()
 

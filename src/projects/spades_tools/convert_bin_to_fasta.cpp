@@ -70,15 +70,12 @@ void process_cmdline(int argc, char **argv, convert_bin_to_fasta::Args &args) {
         if (print_help) {
             exit(0);
         } else {
-            exit(1);
+            FATAL_PARAM_ERROR("Invalid command line arguments");
         }
     }
 
     if (args.prefix_file.empty() || args.info_file.empty()) {
-        std::cerr << "ERROR: No binary file were specified (you should specify info file and prefix to .off and .seq)"
-                  << std::endl << std::endl;
-        std::cout << help_message << std::endl;
-        exit(-1);
+        FATAL_PARAM_ERROR("No binary file were specified (you should specify info file and prefix to .off and .seq");
     }
     args.prefix_file = prefix_file;
     args.info_file = info_file;

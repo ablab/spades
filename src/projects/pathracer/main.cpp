@@ -206,7 +206,7 @@ void process_cmdline(int argc, char **argv, PathracerConfig &cfg) {
 
   if (!parse(argc, argv, cli)) {
     std::cout << make_man_page(cli, argv[0]);
-    exit(1);
+    FATAL_PARAM_ERROR("Invalid command line arguments");
   }
 
   cfg.output_dir = output_dir;
@@ -1141,8 +1141,7 @@ int pathracer_main(int argc, char* argv[]) {
         if (errno == EEXIST) {
             WARN("Output directory exists: " << cfg.output_dir);
         } else {
-            ERROR("Cannot create output directory: " << cfg.output_dir);
-            std::exit(1);
+            FATAL_IO_ERROR("Cannot create output directory: " << cfg.output_dir);
         }
     }
 
@@ -1349,7 +1348,7 @@ void process_cmdline_seq_fs(int argc, char **argv, PathracerSeqFsConfig &cfg) {
 
   if (!parse(argc, argv, cli)) {
       std::cout << make_man_page(cli, argv[0]);
-      exit(1);
+      FATAL_PARAM_ERROR("Invalid command line arguments");
   }
 }
 
@@ -1416,8 +1415,7 @@ int aling_fs(int argc, char* argv[]) {
         if (errno == EEXIST) {
             WARN("Output directory exists: " << cfg.output_dir);
         } else {
-            ERROR("Cannot create output directory: " << cfg.output_dir);
-            std::exit(1);
+            FATAL_IO_ERROR("Cannot create output directory: " << cfg.output_dir);
         }
     }
 
@@ -1648,7 +1646,7 @@ int aling_kmers_main(int argc, char* argv[]) {
 
     if (!parse(argc, argv, cli)) {
         std::cout << make_man_page(cli, argv[0]);
-        exit(1);
+        FATAL_PARAM_ERROR("Invalid command line arguments");
     }
 
     auto hmms = ParseHMMFile(hmm_file);

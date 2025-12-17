@@ -302,7 +302,7 @@ static void process_cmdline(int argc, char **argv, gcfg &cfg) {
     auto result = parse(argc, argv, cli);
     if (!result) {
         std::cout << make_man_page(cli, argv[0]);
-        exit(1);
+        FATAL_PARAM_ERROR("Invalid command line arguments");
     }
 }
 

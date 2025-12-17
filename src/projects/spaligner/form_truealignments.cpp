@@ -195,7 +195,7 @@ void LoadGraph(const filesystem::path &saves_path,
                debruijn_graph::ConjugateDeBruijnGraph &g, io::IdMapper<std::string> &id_mapper) {
     if (saves_path.extension() == ".gfa") {
         DEBUG("Load gfa")
-        CHECK_FATAL_ERROR_CODE(is_regular_file(saves_path), "GFA-file " << saves_path << " doesn't exist", ErrorCodes::InputFileNotFound);
+        CHECK_FATAL_FILE_NOT_FOUND_ERROR(is_regular_file(saves_path), "GFA-file " << saves_path << " doesn't exist");
         gfa::GFAReader gfa(saves_path);
         DEBUG("Segments: " << gfa.num_edges() << ", links: " << gfa.num_links());
         gfa.to_graph(g, &id_mapper);
@@ -254,7 +254,7 @@ int main(int argc, char **argv) {
     if (argc < 5) {
         cout << "Usage: idealreads_aligner <K>"
              << " <saves path> <long reads file (fasta)> <ouput-prefix>" << endl;
-        exit(1);
+        FATAL_PARAM_ERROR("Invalid command line arguments");
     }
     create_console_logger();
     size_t K = stoll(argv[1]);

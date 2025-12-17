@@ -106,7 +106,7 @@ void process_cmdline(int argc, char **argv, gcfg &cfg) {
                  .merge_alternative_flags_with_common_prefix(true);
 
       std::cout << make_man_page(cli, argv[0], fmt);
-      exit(1);
+      FATAL_PARAM_ERROR("Invalid command line arguments");
   }
 
   cfg.file = file;

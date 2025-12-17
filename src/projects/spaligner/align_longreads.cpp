@@ -247,7 +247,7 @@ void process_cmdline(int argc, char **argv,
     auto result = parse(argc, argv, cli);
     if (!result) {
       std::cout << make_man_page(cli, argv[0]);
-      exit(1);
+      FATAL_PARAM_ERROR("Invalid command line arguments");
     }
 
     if (seq_type == "nanopore")
@@ -255,9 +255,7 @@ void process_cmdline(int argc, char **argv,
     else if (seq_type == "pacbio")
         config.data_type = alignment::BWAIndex::AlignmentMode::PacBio;
     else {
-        cerr << "You need to provied a supported datatype - nanopore or pacbio" << endl;
-        std::cout << make_man_page(cli, argv[0]);
-        exit(-1);
+        FATAL_PARAM_ERROR("You need to provied a supported datatype - nanopore or pacbio");
     }
     if (!output_dir_.empty())
         output_dir = output_dir_;

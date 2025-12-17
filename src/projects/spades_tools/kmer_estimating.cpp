@@ -54,7 +54,7 @@ void process_cmdline(int argc, char **argv, kmer_estimating::Args &args) {
         if (print_help) {
             exit(0);
         } else {
-            exit(1);
+            FATAL_PARAM_ERROR("Invalid command line arguments");
         }
     }
 }
