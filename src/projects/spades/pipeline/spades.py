@@ -694,7 +694,12 @@ def main(args):
     except Exception:
         exc_type, exc_value, _ = sys.exc_info()
         if exc_type == SystemExit:
-            sys.exit(exc_value)
+            # If SystemExit carries a numeric code, propagate it; otherwise map to a general error
+            try:
+                code = int(exc_value)
+                sys.exit(code)
+            except Exception:
+                support.error(str(exc_value), exit_code=support.ErrorCode.GeneralError)
         else:
             import errno
             if exc_type == OSError and exc_value.errno == errno.ENOEXEC:  # Exec format error
@@ -706,7 +711,12 @@ def main(args):
     except BaseException:
         exc_type, exc_value, _ = sys.exc_info()
         if exc_type == SystemExit:
-            sys.exit(exc_value)
+            # If SystemExit carries a numeric code, propagate it; otherwise map to a general error
+            try:
+                code = int(exc_value)
+                sys.exit(code)
+            except Exception:
+                support.error(str(exc_value), exit_code=support.ErrorCode.GeneralError)
         else:
             log.exception(exc_value)
             support.error("exception caught: %s" % exc_type, log)

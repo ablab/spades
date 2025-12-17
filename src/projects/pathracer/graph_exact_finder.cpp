@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
 
     if (!parse(argc, argv, cli)) {
         std::cout << make_man_page(cli, argv[0]);
-        exit(1);
+        FATAL_PARAM_ERROR("Invalid command line arguments");
     }
 
     create_console_logger();

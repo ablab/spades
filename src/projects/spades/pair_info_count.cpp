@@ -97,7 +97,7 @@ bool ShouldObtainSingleReadsPaths(size_t ilib) {
         case single_read_resolving_mode::none:
             break;
         default:
-            CHECK_FATAL_ERROR_CODE(false, "Invalid mode value", ErrorCodes::InvalidParameter);
+            CHECK_FATAL_PARAM_ERROR(false, "Invalid mode value");
     }
     return false;
 }

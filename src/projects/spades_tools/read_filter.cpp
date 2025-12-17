@@ -72,7 +72,7 @@ void process_cmdline(int argc, char **argv, read_filter::Args &args) {
         if (print_help) {
             exit(0);
         } else {
-            exit(1);
+            FATAL_PARAM_ERROR("Invalid command line arguments");
         }
     }
     args.dataset_desc = dataset_desc;

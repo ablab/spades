@@ -174,7 +174,7 @@ void process_cmdline(int argc, char **argv, kmer_count::Args &args) {
         if (print_help) {
             exit(0);
         } else {
-            exit(1);
+            FATAL_PARAM_ERROR("Invalid command line arguments");
         }
     }
     args.workdir = workdir;
@@ -184,9 +184,7 @@ void process_cmdline(int argc, char **argv, kmer_count::Args &args) {
     }
 
     if (args.input.size() == 0 && args.dataset == "") {
-        std::cerr << "ERROR: No input files were specified" << std::endl << std::endl;
-        std::cout << help_message << std::endl;
-        exit(-1);
+        FATAL_PARAM_ERROR("No input files were specified");
     }
 }
 

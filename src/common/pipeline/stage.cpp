@@ -102,8 +102,7 @@ void CompositeStageBase::run(graph_pack::GraphPack& gp,
         started_from == strstr(started_from, id())) {
         start_phase = std::find_if(phases_.begin(), phases_.end(), PhaseIdComparator(started_from));
         if (start_phase == phases_.end()) {
-            ERROR("Invalid start stage / phase combination specified: " << started_from);
-            exit(-1);
+            FATAL_PARAM_ERROR("Invalid start stage / phase combination specified: " << started_from);
         }
         if (start_phase != phases_.begin()) {
             PhaseBase * prev_phase = std::prev(start_phase)->get();
@@ -165,8 +164,7 @@ StageManager::prepare_run(graph_pack::GraphPack& g,
         } else {
             start_stage = std::find_if(stages_.begin(), stages_.end(), StageIdComparator(start_from));
             if (start_stage == stages_.end()) {
-                ERROR("Invalid start stage specified: " << start_from);
-                exit(-1);
+                FATAL_PARAM_ERROR("Invalid start stage specified: " << start_from);
             }
         }
 
