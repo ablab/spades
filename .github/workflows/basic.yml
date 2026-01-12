@@ -61,7 +61,7 @@ jobs:
           cmake
           --build ${{env.BUILD_DIR}}
           -j16
-          -t package include_test debruijn_test
+          -t package include_test debruijn_test utils_test
 
       - name: '📦 Package'
         uses: actions/upload-artifact@v4
@@ -71,6 +71,7 @@ jobs:
             ${{env.BUILD_DIR}}/${{env.PKG_LINUX}}.tar.gz
             ${{env.BUILD_DIR}}/bin/debruijn_test
             ${{env.BUILD_DIR}}/bin/include_test
+            ${{env.BUILD_DIR}}/bin/utils_test
 
   spades-1k-checks-linux:
     name: '🚬 E. coli 1k smoke checks'
@@ -148,11 +149,27 @@ jobs:
           chmod +x $BUILD_DIR/bin/include_test &&
           $BUILD_DIR/bin/include_test
 
+      - name: '🔎 Utils tests'
+        working-directory: ${{github.workspace}}
+        run: >
+          chmod +x $BUILD_DIR/bin/utils_test &&
+          $BUILD_DIR/bin/utils_test
+
       - name: '🔎 De-Bruijn tests'
         working-directory: ${{github.workspace}}
         run: >
           chmod +x $BUILD_DIR/bin/debruijn_test &&
           $BUILD_DIR/bin/debruijn_test
+
+      - name: '🔎 Python unit tests'
+        working-directory: ${{github.workspace}}
+        run: >
+          python3 -m pytest src/projects/spades/pipeline/spades_pipeline/tests/test_error_codes.py
+
+      - name: '🔎 Python integration tests'
+        working-directory: ${{github.workspace}}
+        run: >
+          python3 -m pytest src/test/integration/test_error_codes.py
 
   spades-mpi-1k-checks-linux:
     name: '🚬 E. coli 1k smoke checks (MPI)'
