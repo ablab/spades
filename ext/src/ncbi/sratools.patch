@@ -1,20 +1,8 @@
-diff --git a/tools/external/driver-tool/file-path.posix.cpp b/tools/external/driver-tool/file-path.posix.cpp
-index 95b08c3..f26023d 100644
---- a/tools/external/driver-tool/file-path.posix.cpp
-+++ b/tools/external/driver-tool/file-path.posix.cpp
-@@ -34,6 +34,7 @@
- #else
- #include <limits.h>
- #include <stdlib.h>
-+#include <string.h>
- #include <unistd.h>
- #include <fcntl.h>
- #include <sys/stat.h>
 diff --git a/build/env.cmake b/build/env.cmake
-index dbf87221..a0321295 100644
+index 5c5b6e4b..e5213f14 100644
 --- a/build/env.cmake
 +++ b/build/env.cmake
-@@ -78,18 +78,22 @@ else()
+@@ -96,20 +96,24 @@ else()
  endif()
  
  # determine architecture
@@ -34,6 +22,9 @@ index dbf87221..a0321295 100644
 -elseif ( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
 +elseif ( ${_system_processor} STREQUAL "x86_64")
      set(ARCH "x86_64")
+-elseif ( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "amd64")
++elseif ( ${_system_processor} STREQUAL "amd64")
+     set(ARCH "x86_64")
 -elseif ( ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "AMD64")
 +elseif ( ${_system_processor} STREQUAL "AMD64")
      set(ARCH "x86_64")
@@ -42,4 +33,16 @@ index dbf87221..a0321295 100644
 +    message ( FATAL_ERROR "unknown architecture " ${_system_processor})
  endif ()
  
- # create variables based entirely upon OS
+ if( "arm64" STREQUAL "${ARCH}" )
+diff --git a/tools/external/driver-tool/file-path.posix.cpp b/tools/external/driver-tool/file-path.posix.cpp
+index 73d558b4..abe3220f 100644
+--- a/tools/external/driver-tool/file-path.posix.cpp
++++ b/tools/external/driver-tool/file-path.posix.cpp
+@@ -34,6 +34,7 @@
+ #else
+ #include <limits.h>
+ #include <stdlib.h>
++#include <string.h>
+ #include <unistd.h>
+ #include <string.h>
+ #include <fcntl.h>
