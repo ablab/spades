@@ -143,6 +143,9 @@ jobs:
           name: build-artifacts-linux
           path: ${{env.BUILD_DIR}}
 
+      - name: '⚙️ Install pytest'
+        run: pip install pytest
+
       - name: '🔎 Include tests'
         working-directory: ${{github.workspace}}
         run: >
