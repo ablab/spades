@@ -56,8 +56,8 @@ PathExtendLauncher::ConstructPairedConnectionConditions(const ScaffoldingUniqueE
     return conditions;
 }
 
-std::shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructScaffoldGraph(const ScaffoldingUniqueEdgeStorage &edge_storage) const {
-    using namespace scaffold_graph;
+std::shared_ptr<scaffolder::ScaffoldGraph> PathExtendLauncher::ConstructScaffoldGraph(const ScaffoldingUniqueEdgeStorage &edge_storage) const {
+    using namespace scaffolder;
 
     const pe_config::ParamSetT::ScaffoldGraphParamsT &params = params_.pset.scaffold_graph_params;
 
@@ -84,11 +84,11 @@ std::shared_ptr<scaffold_graph::ScaffoldGraph> PathExtendLauncher::ConstructScaf
     return scaffold_graph;
 }
 
-void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph &scaffold_graph,
+void PathExtendLauncher::PrintScaffoldGraph(const scaffolder::ScaffoldGraph &scaffold_graph,
                                             const std::set<EdgeId> &main_edge_set,
                                             const debruijn_graph::GenomeConsistenceChecker &genome_checker,
                                             const std::filesystem::path &filename) const {
-    using namespace scaffold_graph;
+    using namespace scaffolder;
 
     auto vertex_colorer = std::make_shared<ScaffoldVertexSetColorer>(main_edge_set);
     auto edge_colorer = std::make_shared<ScaffoldEdgeColorer>();

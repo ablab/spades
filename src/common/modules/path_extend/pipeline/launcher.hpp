@@ -37,10 +37,10 @@ class PathExtendLauncher {
     std::vector<std::shared_ptr<ConnectionCondition>>
         ConstructPairedConnectionConditions(const ScaffoldingUniqueEdgeStorage &edge_storage) const;
 
-    std::shared_ptr<scaffold_graph::ScaffoldGraph>
+    std::shared_ptr<scaffolder::ScaffoldGraph>
         ConstructScaffoldGraph(const ScaffoldingUniqueEdgeStorage &edge_storage) const;
 
-    void PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph &scaffold_graph,
+    void PrintScaffoldGraph(const scaffolder::ScaffoldGraph &scaffold_graph,
                             const std::set<EdgeId> &main_edge_set,
                             const debruijn_graph::GenomeConsistenceChecker &genome_checker,
                             const std::filesystem::path &filename) const;

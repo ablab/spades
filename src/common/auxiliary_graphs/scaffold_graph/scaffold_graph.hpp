@@ -10,14 +10,15 @@
 //
 #pragma once
 
-#include "utils/logger/logger.hpp"
+#include "scaffold_vertex.hpp"
 #include "assembly_graph/core/graph.hpp"
-#include "modules/path_extend/paired_library.hpp"
-#include "connection_condition2015.hpp"
+#include "utils/logger/logger.hpp"
+
 #include "adt/iterator_range.hpp"
 
-namespace path_extend {
-namespace scaffolder {
+#include <utility>
+
+namespace scaffold_graph {
 
 //do NOT add "using namespace debruijn_graph" in order not to confuse between EdgeId typdefs
 
@@ -25,7 +26,7 @@ class ScaffoldGraph {
 
 public:
     //EdgeId in de Bruijn graph is vertex in scaffolding graph
-    typedef debruijn_graph::EdgeId ScaffoldVertex;
+    typedef ScaffoldVertex ScaffoldGraphVertex;
 
     //Unique edge id
     typedef size_t ScaffoldEdgeIdT;
@@ -38,21 +39,30 @@ public:
         //id counter
         static std::atomic<ScaffoldEdgeIdT> scaffold_edge_id_;
 
-        ScaffoldVertex start_;
-        ScaffoldVertex end_;
+        ScaffoldGraphVertex start_;
+        ScaffoldGraphVertex end_;
         //color = lib#
         size_t color_;
         //read pair weight or anything else
         double weight_;
+        //todo discuss (distance between vertices by default)
+        size_t length_;
 
     public:
 
-        ScaffoldEdge(ScaffoldVertex start, ScaffoldVertex end, size_t lib_id = (size_t) -1, double weight = 0) :
+        ScaffoldEdge(ScaffoldVertex start, ScaffoldVertex end, size_t lib_id = (size_t) -1, double weight = 0, size_t length = 0) :
             id_(scaffold_edge_id_++),
             start_(start), end_(end),
             color_(lib_id),
-            weight_(weight) {
+            weight_(weight),
+            length_(length){
         }
+        //for consistency with dijkstra
+        explicit ScaffoldEdge(size_t ): id_(scaffold_edge_id_++), start_(nullptr), end_(nullptr),
+                                        color_((size_t) -1), weight_(0), length_(0) {}
+
+        ScaffoldEdge(): id_(scaffold_edge_id_++), start_(nullptr), end_(nullptr),
+                        color_((size_t) -1), weight_(0), length_(0) {}
 
         ScaffoldEdgeIdT getId() const {
             return id_;
@@ -67,33 +77,36 @@ public:
             return weight_;
         }
 
-        const ScaffoldVertex getStart() const {
+        size_t getLength() const {
+            return length_;
+        }
+
+        const ScaffoldGraphVertex getStart() const {
             return start_;
         }
 
-        const ScaffoldVertex getEnd() const {
+        const ScaffoldGraphVertex getEnd() const {
             return end_;
         }
 
-        bool operator==(const ScaffoldEdge &e) const {
-            return color_ == e.color_ && weight_ == e.weight_ && start_ == e.start_ && end_ == e.end_;
-        }
+        bool operator==(const ScaffoldEdge &e) const;
 
-        bool operator==(const ScaffoldEdge &e) {
-            return color_ == e.color_ && weight_ == e.weight_ && start_ == e.start_ && end_ == e.end_;
-        }
+        bool operator<(const ScaffoldEdge& rhs) const;
+        bool operator>(const ScaffoldEdge& rhs) const;
+        bool operator<=(const ScaffoldEdge& rhs) const;
+        bool operator>=(const ScaffoldEdge& rhs) const;
     };
 
-    //typedef for possibility to use in templated graph visualizers
+    //typedef to use in templated graph algorithms
     typedef ScaffoldVertex VertexId;
     typedef ScaffoldEdge EdgeId;
 
     //All vertices are stored in set
-    typedef std::set<ScaffoldVertex> VertexStorage;
+    typedef std::set<ScaffoldGraphVertex> VertexStorage;
     //Edges are stored in map: Id -> Edge Information
     typedef std::unordered_map<ScaffoldEdgeIdT, ScaffoldEdge> EdgeStorage;
     //Adjacency list contains vertrx and edge id (instead of whole edge information)
-    typedef std::unordered_multimap<ScaffoldVertex, ScaffoldEdgeIdT> AdjacencyStorage;
+    typedef std::multimap<ScaffoldGraphVertex, ScaffoldEdgeIdT> AdjacencyStorage;
 
     struct ConstScaffoldEdgeIterator: public boost::iterator_facade<ConstScaffoldEdgeIterator,
                                                                     const ScaffoldEdge,
@@ -133,8 +146,6 @@ private:
 
     AdjacencyStorage incoming_edges_;
 
-    void AddEdgeSimple(const ScaffoldEdge &e);
-
     //Delete outgoing edge from adjancecy list without checks
     void DeleteOutgoing(const ScaffoldEdge &e);
 
@@ -145,32 +156,39 @@ private:
     void DeleteEdgeFromStorage(const ScaffoldEdge &e);
 
     //Detelte all outgoing from v edges from  adjacency lists
-    void DeleteAllOutgoingEdgesSimple(ScaffoldVertex v);
+    void DeleteAllOutgoingEdgesSimple(ScaffoldGraphVertex v);
 
     //Detelte all incoming from v edges from  adjacency lists
-    void DeleteAllIncomingEdgesSimple(ScaffoldVertex v);
+    void DeleteAllIncomingEdgesSimple(ScaffoldGraphVertex v);
 
 public:
     ScaffoldGraph(const debruijn_graph::Graph &g) : assembly_graph_(g) {
     }
 
-    bool Exists(ScaffoldVertex assembly_graph_edge) const;
+    ScaffoldGraph(const ScaffoldGraph& other) = default;
+
+    ScaffoldGraph(ScaffoldGraph&& other) = default;
+
+    bool Exists(ScaffoldGraphVertex assembly_graph_edge) const;
 
     bool Exists(const ScaffoldEdge &e) const;
 
-    ScaffoldVertex conjugate(ScaffoldVertex assembly_graph_edge) const;
+    ScaffoldGraphVertex conjugate(ScaffoldGraphVertex scaffold_vertex) const;
+
+    //fixme move back to private
+    void AddEdgeSimple(const ScaffoldEdge &e);
 
     //Return structure thay is equal to conjugate of e (not exactrly the same structure as in graph)
     ScaffoldEdge conjugate(const ScaffoldEdge &e) const;
 
     //Add isolated vertex to the graph if not exitsts
-    bool AddVertex(ScaffoldVertex assembly_graph_edge);
+    bool AddVertex(ScaffoldGraphVertex scaffold_vertex);
 
     void AddVertices(const std::set<ScaffoldVertex> &vertices);
 
     //Add edge (and conjugate) if not exists
     //v1 and v2 must exist
-    bool AddEdge(ScaffoldVertex v1, ScaffoldVertex v2, size_t lib_id, double weight);
+    bool AddEdge(ScaffoldGraphVertex v1, ScaffoldGraphVertex v2, size_t lib_id, double weight, size_t length);
 
     bool AddEdge(const ScaffoldEdge &e);
 
@@ -178,9 +196,9 @@ public:
     bool RemoveEdge(const ScaffoldEdge &e);
 
     //Remove vertex and all adjacent edges
-    bool RemoveVertex(ScaffoldVertex assembly_graph_edge);
+    bool RemoveVertex(ScaffoldGraphVertex scaffold_vertex);
 
-    bool IsVertexIsolated(ScaffoldVertex assembly_graph_edge) const;
+    bool IsVertexIsolated(ScaffoldGraphVertex assembly_graph_edge) const;
 
     VertexStorage::const_iterator vbegin() const;
 
@@ -194,13 +212,13 @@ public:
 
     adt::iterator_range<ScaffoldGraph::ConstScaffoldEdgeIterator> edges() const;
 
-    size_t int_id(ScaffoldVertex v) const;
+    size_t int_id(ScaffoldGraphVertex v) const;
 
     size_t int_id(ScaffoldEdge e) const;
 
-    ScaffoldVertex EdgeStart(ScaffoldEdge e) const;
+    ScaffoldGraphVertex EdgeStart(ScaffoldEdge e) const;
 
-    ScaffoldVertex EdgeEnd(ScaffoldEdge e) const;
+    ScaffoldGraphVertex EdgeEnd(ScaffoldEdge e) const;
 
     size_t VertexCount() const;
 
@@ -212,22 +230,33 @@ public:
 
     std::vector<ScaffoldEdge> IncomingEdges(ScaffoldVertex assembly_graph_edge) const;
 
-    size_t OutgoingEdgeCount(ScaffoldVertex assembly_graph_edge) const;
+    size_t OutgoingEdgeCount(ScaffoldGraphVertex assembly_graph_edge) const;
 
-    size_t IncomingEdgeCount(ScaffoldVertex assembly_graph_edge) const;
+    size_t IncomingEdgeCount(ScaffoldGraphVertex assembly_graph_edge) const;
 
-    bool HasUniqueOutgoing(ScaffoldVertex assembly_graph_edge) const;
+    bool HasUniqueOutgoing(ScaffoldGraphVertex assembly_graph_edge) const;
 
-    bool HasUniqueIncoming(ScaffoldVertex assembly_graph_edge) const;
+    bool HasUniqueIncoming(ScaffoldGraphVertex assembly_graph_edge) const;
 
-    ScaffoldEdge UniqueOutgoing(ScaffoldVertex assembly_graph_edge) const;
+    ScaffoldEdge UniqueOutgoing(ScaffoldGraphVertex assembly_graph_edge) const;
 
-    ScaffoldEdge UniqueIncoming(ScaffoldVertex assembly_graph_edge) const;
+    ScaffoldEdge UniqueIncoming(ScaffoldGraphVertex assembly_graph_edge) const;
 
     void Print(std::ostream &os) const;
 
+    std::string str(const ScaffoldGraphVertex &vertex) const;
+
+    std::string str(const ScaffoldGraph::ScaffoldEdge &edge) const;
+
+    size_t length(const ScaffoldGraphVertex &vertex) const;
+    size_t length(const ScaffoldGraph::ScaffoldEdge &edge) const;
+
+    double coverage(const ScaffoldGraphVertex &vertex) const;
+
+    ScaffoldGraph& operator =(ScaffoldGraph other);
+
+    void swap(ScaffoldGraph& other);
 };
 
 } //scaffold_graph
-} //path_extend
 
