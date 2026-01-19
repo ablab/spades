@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include "barcode_info_extractor.hpp"
 #include "auxiliary_graphs/scaffold_graph/scaffold_vertex.hpp"
 #include "assembly_graph/core/graph.hpp"
 #include "adt/iterator_range.hpp"
+#include "barcode_index/barcode_info_extractor.hpp"
 
 namespace barcode_index {
 

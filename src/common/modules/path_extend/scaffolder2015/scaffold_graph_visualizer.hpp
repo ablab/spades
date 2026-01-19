@@ -12,27 +12,27 @@
 #ifndef PROJECT_SCAFFOLD_GRAPH_VISUALIZER_HPP
 #define PROJECT_SCAFFOLD_GRAPH_VISUALIZER_HPP
 
-#include "scaffold_graph.hpp"
+#include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 #include "visualization/graph_colorer.hpp"
-#include "visualization/graph_labeler.hpp"
 #include "visualization/graph_printer.hpp"
 
 namespace path_extend {
 
-namespace scaffold_graph {
+namespace scaffolder {
 
 using namespace visualization;
 
 
-class ScaffoldGraphLabeler : public graph_labeler::GraphLabeler<ScaffoldGraph> {
+  class ScaffoldGraphLabeler : public graph_labeler::GraphLabeler<scaffold_graph::ScaffoldGraph> {
 
 private:
-    const ScaffoldGraph &graph_;
+    const scaffold_graph::ScaffoldGraph &graph_;
 
     const std::map<VertexId, std::string> &additional_vertex_labels_;
 
 public:
-    ScaffoldGraphLabeler(const ScaffoldGraph &graph, const std::map<VertexId, std::string> &additional_vertex_labels):
+    ScaffoldGraphLabeler(const scaffold_graph::ScaffoldGraph &graph,
+                         const std::map<VertexId, std::string> &additional_vertex_labels):
         graph_(graph), additional_vertex_labels_(additional_vertex_labels) {
     }
 
@@ -42,44 +42,44 @@ public:
 };
 
 
-class ScaffoldEdgeColorer : public graph_colorer::ElementColorer<ScaffoldGraph::EdgeId> {
+class ScaffoldEdgeColorer : public graph_colorer::ElementColorer<scaffold_graph::ScaffoldGraph::EdgeId> {
 private:
     static const std::map<size_t, std::string> color_map;
 
     static const std::string default_color;
 
 public:
-    std::string GetValue(ScaffoldGraph::EdgeId e) const;
+    std::string GetValue(scaffold_graph::ScaffoldGraph::EdgeId e) const;
 };
 
 
-class ScaffoldVertexSetColorer : public graph_colorer::ElementColorer<ScaffoldGraph::VertexId> {
+class ScaffoldVertexSetColorer : public graph_colorer::ElementColorer<scaffold_graph::ScaffoldGraph::VertexId> {
 private:
-    std::set<ScaffoldGraph::VertexId> vertex_set_;
+    std::set<scaffold_graph::ScaffoldGraph::VertexId> vertex_set_;
 
 public:
-    ScaffoldVertexSetColorer(const std::set<ScaffoldGraph::VertexId> &vertex_set): vertex_set_(vertex_set) {
+    ScaffoldVertexSetColorer(const std::set<scaffold_graph::ScaffoldGraph::VertexId> &vertex_set): vertex_set_(vertex_set) {
     }
-    std::string GetValue(ScaffoldGraph::VertexId v) const;
+    std::string GetValue(scaffold_graph::ScaffoldGraph::VertexId v) const;
 };
 
 class ScaffoldGraphVisualizer {
 private:
-    const ScaffoldGraph &graph_;
+    const scaffold_graph::ScaffoldGraph &graph_;
 
-    const std::map<ScaffoldGraph::VertexId, std::string> &additional_vertex_labels_;
+    const std::map<scaffold_graph::ScaffoldGraph::VertexId, std::string> &additional_vertex_labels_;
 
 private:
-    void Visualize(graph_printer::GraphPrinter<ScaffoldGraph> &printer);
+    void Visualize(graph_printer::GraphPrinter<scaffold_graph::ScaffoldGraph> &printer);
 
 public:
-    ScaffoldGraphVisualizer(const ScaffoldGraph &graph,
-                            const std::map<ScaffoldGraph::VertexId, std::string> &additional_vertex_labels) :
+    ScaffoldGraphVisualizer(const scaffold_graph::ScaffoldGraph &graph,
+                            const std::map<scaffold_graph::ScaffoldGraph::VertexId, std::string> &additional_vertex_labels) :
             graph_(graph),
             additional_vertex_labels_(additional_vertex_labels){
     }
 
-    void Visualize(std::ostream &os, graph_colorer::CompositeGraphColorer<ScaffoldGraph> &colorer);
+    void Visualize(std::ostream &os, graph_colorer::CompositeGraphColorer<scaffold_graph::ScaffoldGraph> &colorer);
 };
 
 } //scaffold_graph
