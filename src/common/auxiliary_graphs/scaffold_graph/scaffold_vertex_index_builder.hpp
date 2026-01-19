@@ -7,8 +7,8 @@
 
 #pragma once
 
+#include "barcode_index/barcode_info_extractor.hpp"
 #include "scaffold_vertex_index.hpp"
-#include "barcode_info_extractor.hpp"
 
 namespace barcode_index {
 
