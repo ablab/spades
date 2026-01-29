@@ -27,6 +27,7 @@ class Executor(executor_base.ExecutorCluster):
     grid_engine_nodes = "--nodes={NNODES} --ntasks={NNODES}"
     grid_engine_kill_command = "scancel {JOB_NAME}"
     grid_engine_srun_args = "--cpus-per-task {NCPUS}"
+    grid_engine_credentials = "-p {QUEUE}"
 
     def join(self, job_name):
         log_file = options_storage.args.output_dir + "/spades.log"
