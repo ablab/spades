@@ -198,29 +198,6 @@ class ScoreFunctionScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
     DECL_LOGGER("ScoreFunctionScaffoldGraphConstructor")
 };
 
-class ScoreFunctionScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
-    typedef read_cloud::ScaffoldEdgeScoreFunction EdgePairScoreFunction;
-    using BaseScaffoldGraphConstructor::ScaffoldGraph;
-    using BaseScaffoldGraphConstructor::ScaffoldVertex;
-
- protected:
-    const std::set<ScaffoldVertex> scaffold_vertices_;
-    const std::shared_ptr<EdgePairScoreFunction> score_function_;
-    const double score_threshold_;
-    const size_t num_threads_;
-
- public:
-    ScoreFunctionScaffoldGraphConstructor(const Graph &assembly_graph,
-                                          const std::set<ScaffoldVertex> &scaffold_vertices,
-                                          const std::shared_ptr<EdgePairScoreFunction> &score_function,
-                                          double score_threshold,
-                                          size_t num_threads);
-
-    std::shared_ptr<ScaffoldGraph> Construct() override;
-
-    DECL_LOGGER("ScoreFunctionScaffoldGraphConstructor");
-};
-
 } //scaffold_graph
 } //path_extend
 
