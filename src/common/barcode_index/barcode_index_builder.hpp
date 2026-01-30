@@ -220,7 +220,7 @@ class FrameBarcodeIndexBuilder {
         INFO("Barcode id range: " << min_barcode << ", " << max_barcode);
         double barcode_thr = static_cast<double>(max_barcode - min_barcode) * sampling_factor;
         for (const auto &barcode: barcodes) {
-            if (math::le(barcode - min_barcode, barcode_thr)) {
+            if (math::le(static_cast<double>(barcode - min_barcode), barcode_thr)) {
                 passed_barcodes.insert(barcode);
             }
         }
