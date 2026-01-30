@@ -312,9 +312,9 @@ std::shared_ptr<scaffold_graph::ScaffoldGraph> InternalScoreScaffoldGraphFilter:
     }
     return graph_;
 }
-boost::optional<scaffold_graph::ScaffoldGraph::ScaffoldEdge> InternalScoreScaffoldGraphFilter::GetWinnerVertex(
+std::optional<scaffold_graph::ScaffoldGraph::ScaffoldEdge> InternalScoreScaffoldGraphFilter::GetWinnerVertex(
         std::vector<ScaffoldGraph::ScaffoldEdge> &edges) const {
-    boost::optional<ScaffoldEdge> result;
+    std::optional<ScaffoldEdge> result;
     if (edges.size() < 2) {
         return result;
     }
@@ -329,9 +329,9 @@ boost::optional<scaffold_graph::ScaffoldGraph::ScaffoldEdge> InternalScoreScaffo
     return result;
 }
 void InternalScoreScaffoldGraphFilter::ProcessEdges(std::vector<InternalScoreScaffoldGraphFilter::ScaffoldEdge> &edges) {
-    boost::optional<ScaffoldEdge> incoming_winner = GetWinnerVertex(edges);
-    if (incoming_winner.is_initialized()) {
-        graph_->AddEdge(incoming_winner.get());
+    std::optional<ScaffoldEdge> incoming_winner = GetWinnerVertex(edges);
+    if (incoming_winner.has_value()) {
+        graph_->AddEdge(*incoming_winner);
     } else {
         for (const auto &edge: edges) {
             graph_->AddEdge(edge);
