@@ -12,11 +12,12 @@
 #include "launch_support.hpp"
 
 #include "modules/path_extend/pe_resolver.hpp"
-#include "modules/path_extend/scaffolder2015/scaffold_graph.hpp"
+#include "modules/path_extend/scaffolder2015/connection_condition2015.hpp"
 #include "modules/genome_consistance_checker.hpp"
 
 #include "alignment/rna/ss_coverage.hpp"
 #include "assembly_graph/paths/bidirectional_path_io/bidirectional_path_output.hpp"
+#include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
 
 namespace path_extend {
 
@@ -37,10 +38,10 @@ class PathExtendLauncher {
     std::vector<std::shared_ptr<ConnectionCondition>>
         ConstructPairedConnectionConditions(const ScaffoldingUniqueEdgeStorage &edge_storage) const;
 
-    std::shared_ptr<scaffolder::ScaffoldGraph>
+    std::shared_ptr<scaffold_graph::ScaffoldGraph>
         ConstructScaffoldGraph(const ScaffoldingUniqueEdgeStorage &edge_storage) const;
 
-    void PrintScaffoldGraph(const scaffolder::ScaffoldGraph &scaffold_graph,
+    void PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph &scaffold_graph,
                             const std::set<EdgeId> &main_edge_set,
                             const debruijn_graph::GenomeConsistenceChecker &genome_checker,
                             const std::filesystem::path &filename) const;

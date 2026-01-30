@@ -171,7 +171,7 @@ ReverseBarcodeIndexConstructor::ReverseBarcodeIndexConstructor(const debruijn_gr
     tail_threshold_(tail_threshold),
     count_threshold_(count_threshold),
     max_threads_(max_threads) {}
-scaffold_graph::ScaffoldGraph ScaffoldGraphSerializer::ReadGraph(const string &path_to_graph) {
+scaffold_graph::ScaffoldGraph ScaffoldGraphSerializer::ReadGraph(const std::string &path_to_graph) {
     scaffold_graph::ScaffoldGraph result(g_);
     std::unordered_map<std::string, scaffold_graph::ScaffoldVertex> id_to_vertex;
     for (const debruijn_graph::EdgeId &edge: g_.canonical_edges()) {
@@ -213,7 +213,7 @@ void ScaffoldGraphSerializer::WriteGraph(const scaffold_graph::ScaffoldGraph &sc
         os << (*id_mapper_)[edge.getStart().int_id()] << "\t" << (*id_mapper_)[edge.getEnd().int_id()] << "\t" << edge.getWeight() << "\n";
     }
 }
-ScaffoldGraphSerializer::ScaffoldGraphSerializer(const debruijn_graph::Graph &g, io::IdMapper<string> *id_mapper) :
+ScaffoldGraphSerializer::ScaffoldGraphSerializer(const debruijn_graph::Graph &g, io::IdMapper<std::string> *id_mapper) :
     g_(g), id_mapper_(id_mapper) {}
 scaffold_graph::ScaffoldGraph GetTellSeqScaffoldGraph(const debruijn_graph::Graph &g,
                                                       BarcodeExtractorPtr barcode_extractor,

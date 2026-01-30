@@ -235,7 +235,7 @@ namespace barcode_index {
             }
 
             bool operator!= (const const_intersection_iterator& other) {
-                return *this != other;
+                return !(*this == other);
             }
 
         private:

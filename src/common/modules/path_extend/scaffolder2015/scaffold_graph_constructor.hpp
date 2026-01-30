@@ -16,6 +16,7 @@
 #include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
 
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace path_extend {
@@ -216,7 +217,7 @@ class InternalScoreScaffoldGraphFilter: public BaseScaffoldGraphConstructor {
  private:
     void ProcessEdges(std::vector<ScaffoldEdge> &edges);
 
-    boost::optional<ScaffoldEdge> GetWinnerVertex(std::vector<ScaffoldEdge> &edges) const;
+    std::optional<ScaffoldEdge> GetWinnerVertex(std::vector<ScaffoldEdge> &edges) const;
 };
 
 class ScoreFunctionScaffoldGraphConstructor: public BaseScaffoldGraphConstructor {
