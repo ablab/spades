@@ -13,4 +13,4 @@ add_library(modules STATIC
             genome_consistance_checker.cpp
             path_extend/scaff_supplementary.cpp)
 
-target_link_libraries(modules sequence bwa assembly_graph alignment)
+target_link_libraries(modules sequence bwa assembly_graph alignment auxiliary_graphs)

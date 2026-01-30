@@ -11,7 +11,7 @@
 namespace path_extend {
 namespace read_cloud {
 
-double NormalizedBarcodeScoreFunction::GetScore(const scaffolder::ScaffoldGraph::ScaffoldEdge &edge) const {
+double NormalizedBarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &edge) const {
     auto first = edge.getStart();
     auto second = edge.getEnd();
     DEBUG("Checking edge " << edge.getStart().int_id() << " -> " << edge.getEnd().int_id());
@@ -44,7 +44,7 @@ NormalizedBarcodeScoreFunction::NormalizedBarcodeScoreFunction(
         std::shared_ptr<barcode_index::ScaffoldVertexIndexInfoExtractor> barcode_extractor_) :
     AbstractBarcodeScoreFunction(graph_, barcode_extractor_) {}
 
-TransitiveEdgesPredicate::TransitiveEdgesPredicate(const scaffolder::ScaffoldGraph &graph,
+TransitiveEdgesPredicate::TransitiveEdgesPredicate(const scaffold_graph::ScaffoldGraph &graph,
                                                    const Graph &g,
                                                    size_t distance_threshold) :
     scaffold_graph_(graph), g_(g), distance_threshold_(distance_threshold) {}
@@ -64,7 +64,7 @@ bool TransitiveEdgesPredicate::Check(const ScaffoldEdgePredicate::ScaffoldEdge &
     DEBUG("True");
     return true;
 }
-SimpleSearcher::SimpleSearcher(const scaffolder::ScaffoldGraph &graph, const Graph &g, size_t distance)
+SimpleSearcher::SimpleSearcher(const scaffold_graph::ScaffoldGraph &graph, const Graph &g, size_t distance)
     : scaff_graph_(graph), g_(g), distance_threshold_(distance) {}
 std::vector<SimpleSearcher::ScaffoldVertex> SimpleSearcher::GetReachableVertices(
         const SimpleSearcher::ScaffoldVertex &vertex,
@@ -109,8 +109,8 @@ void SimpleSearcher::ProcessVertex(std::queue<VertexWithDistance> &vertex_queue,
         }
     }
 }
-bool SimpleSearcher::AreEqual(const scaffolder::ScaffoldGraph::ScaffoldEdge &first,
-                              const scaffolder::ScaffoldGraph::ScaffoldEdge &second) {
+bool SimpleSearcher::AreEqual(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &first,
+                              const scaffold_graph::ScaffoldGraph::ScaffoldEdge &second) {
     return first.getStart() == second.getStart() and first.getEnd() == second.getEnd();
 }
 
@@ -131,7 +131,7 @@ TrivialBarcodeScoreFunction::TrivialBarcodeScoreFunction(
                                                                  barcode_extractor_),
                                     read_count_threshold_(read_count_threshold_),
                                     tail_threshold_(tail_threshold_) {}
-double TrivialBarcodeScoreFunction::GetScore(const scaffolder::ScaffoldGraph::ScaffoldEdge &edge) const {
+double TrivialBarcodeScoreFunction::GetScore(const scaffold_graph::ScaffoldGraph::ScaffoldEdge &edge) const {
     size_t shared_count = barcode_extractor_->GetIntersectionSize(edge.getStart(), edge.getEnd());
 
     return static_cast<double>(shared_count);
