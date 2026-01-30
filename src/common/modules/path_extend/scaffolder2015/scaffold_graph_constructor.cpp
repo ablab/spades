@@ -249,56 +249,5 @@ ScaffoldSubgraphConstructor::ScaffoldSubgraphConstructor(const Graph &assembly_g
       vertex_condition_(vertex_condition),
       large_graph_(large_graph),
       distance_threshold_(distance_threshold) {}
-ScoreFunctionScaffoldGraphConstructor::ScoreFunctionScaffoldGraphConstructor(
-        const Graph &assembly_graph,
-        const std::set<ScaffoldVertex> &scaffold_vertices,
-        const std::shared_ptr<ScoreFunctionScaffoldGraphConstructor::EdgePairScoreFunction> &score_function,
-        double score_threshold,
-        size_t num_threads)
-    : BaseScaffoldGraphConstructor(assembly_graph),
-      scaffold_vertices_(scaffold_vertices),
-      score_function_(score_function),
-      score_threshold_(score_threshold),
-      num_threads_(num_threads) {}
-
-std::shared_ptr<scaffold_graph::ScaffoldGraph> ScoreFunctionScaffoldGraphConstructor::Construct() {
-    for (const auto& vertex: scaffold_vertices_) {
-        graph_->AddVertex(vertex);
-    }
-    //fixme switch to tbb or use chunk splitter
-    std::vector<ScaffoldGraph::ScaffoldGraphVertex> scaffold_vertex_vec;
-    for (const auto& vertex: scaffold_vertices_) {
-        scaffold_vertex_vec.push_back(vertex);
-    }
-    size_t counter = 0;
-    size_t edges_size = scaffold_vertices_.size() * scaffold_vertices_.size();
-    const size_t block_size = edges_size / 10;
-#pragma omp parallel for num_threads(num_threads_)
-    for (size_t i = 0; i < scaffold_vertex_vec.size(); ++i) {
-        for (size_t j = 0; j < scaffold_vertex_vec.size(); ++j) {
-            const ScaffoldVertex& from = scaffold_vertex_vec[i];
-            const ScaffoldVertex& to = scaffold_vertex_vec[j];
-            ScaffoldGraph::ScaffoldEdge edge(from, to);
-            double score = score_function_->GetScore(edge);
-#pragma omp critical
-            {
-                TRACE("Checking edge " << edge.getStart().int_id() << " -> " << edge.getEnd().int_id());
-                TRACE("Score: " << score);
-                TRACE("Score threshold: " << score_threshold_);
-                bool are_conjugate = from == to.GetConjugateFromGraph(graph_->AssemblyGraph());
-                if (math::ge(score, score_threshold_) and from != to and not are_conjugate) {
-                    TRACE("Success");
-                    graph_->AddEdge(edge.getStart(), edge.getEnd(), edge.getColor(), score, edge.getLength());
-                }
-                TRACE("Edge added");
-                ++counter;
-                if (block_size != 0 and counter % block_size == 0) {
-                    DEBUG("Processed " << counter << " edges out of " << edges_size);
-                }
-            }
-        }
-    }
-    return graph_;
-}
 } //scaffold_graph
 } //path_extend
