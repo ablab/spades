@@ -85,6 +85,7 @@ template <class VertexEntryT>
 class IntersectingScaffoldVertexIndexInfoExtractor : public ScaffoldVertexIndexInfoExtractor {
 public:
     using ScaffoldVertexIndexInfoExtractor::ScaffoldVertex;
+    using ScaffoldVertexIndexInfoExtractor::GetIntersectionSize;
 
 public:
     virtual SimpleVertexEntry GetIntersection(const VertexEntryT &first, const VertexEntryT &second) const = 0;
@@ -93,7 +94,7 @@ public:
      * @note second is supposed to be between first and third
      */
     virtual size_t GetIntersectionSize(const ScaffoldVertex &middle, const VertexEntryT &entry) const = 0;
-    size_t GetIntersectionSize(const VertexEntryT &first, const VertexEntryT &second) {
+    virtual size_t GetIntersectionSize(const VertexEntryT &first, const VertexEntryT &second) {
         return GetIntersection(first, second).size();
     }
 
