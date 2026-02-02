@@ -103,7 +103,7 @@ class ScaffoldBarcodedPathPutChecker {
     std::shared_ptr<scaffolder::ScaffoldVertexPredicate> predicate_;
 
   public:
-    ScaffoldBarcodedPathPutChecker(const Graph &g, const VertexId &first, const VertexId &second,
+    ScaffoldBarcodedPathPutChecker(const Graph &g, VertexId first, VertexId second,
                                    std::shared_ptr<scaffolder::ScaffoldVertexPredicate> predicate) :
         g_(g),
         first_(first),
@@ -140,7 +140,7 @@ class StartPredicateProcessChecker {
     const func::TypedPredicate<VertexId> &predicate_;
   public:
     StartPredicateProcessChecker(const Graph &g,
-                                 const VertexId &start,
+                                 VertexId start,
                                  const func::TypedPredicate<VertexId> &predicate)
         : g_(g), start_(start), predicate_(predicate) {}
 

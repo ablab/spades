@@ -112,7 +112,7 @@ class VertexResolver {
         std::unordered_set<debruijn_graph::VertexId> covered_vertices;
         double LINK_BONUS = 1000000;
 
-        for (const EdgeId &sc_in_edge: graph_.IncomingEdges(vertex)) {
+        for (EdgeId sc_in_edge: graph_.IncomingEdges(vertex)) {
             //convert to dbg EdgeId
             scaffold_graph::ScaffoldVertex sc_in_vertex(sc_in_edge);
             scaffold_graph::EdgeGetter edge_getter;
@@ -122,7 +122,7 @@ class VertexResolver {
             std::pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId> second_pair(0, 0);
             size_t max_links = 0;
             size_t second_links = 0;
-            for (const EdgeId &sc_out_edge: graph_.OutgoingEdges(vertex)) {
+            for (EdgeId sc_out_edge: graph_.OutgoingEdges(vertex)) {
                 scaffold_graph::ScaffoldVertex sc_out_vertex(sc_out_edge);
                 debruijn_graph::EdgeId out_edge = edge_getter.GetEdgeFromScaffoldVertex(sc_out_vertex);
                 if (in_edge == out_edge or in_edge == assembly_graph_.conjugate(out_edge)) {
@@ -216,10 +216,10 @@ class VertexResolver {
             answer_string += (*id_mapper)[entry.first.int_id()] + "#" + (*id_mapper)[entry.second.int_id()] + ",";
         }
         std::string in_edge_string, out_edge_string;
-        for (const EdgeId &edge: graph_.IncomingEdges(vertex)) {
+        for (EdgeId edge: graph_.IncomingEdges(vertex)) {
             in_edge_string += (*id_mapper)[edge.int_id()] + ",";
         }
-        for (const EdgeId &edge: graph_.OutgoingEdges(vertex)) {
+        for (EdgeId edge: graph_.OutgoingEdges(vertex)) {
             out_edge_string += (*id_mapper)[edge.int_id()] + ",";
         }
         in_edge_string = in_edge_string.substr(0, in_edge_string.size() - 1);
