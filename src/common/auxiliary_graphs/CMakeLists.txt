@@ -15,6 +15,7 @@ add_library(auxiliary_graphs STATIC
             contracted_graph/contracted_statistics.cpp
             scaffold_graph/scaffold_vertex.cpp
             scaffold_graph/scaffold_graph.cpp
+            scaffold_graph/scaffold_vertex_predicates.cpp
 )
 
 target_link_libraries(auxiliary_graphs assembly_graph)
