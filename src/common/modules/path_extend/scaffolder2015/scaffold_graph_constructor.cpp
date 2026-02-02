@@ -9,9 +9,8 @@
 // Created by andrey on 04.12.15.
 //
 
-#include "common/modules/path_extend/scaffolder2015/scaffold_graph_dijkstra.hpp"
+#include "auxiliary_graphs/scaffold_graph/scaffold_graph_dijkstra.hpp"
 #include "scaffold_graph_constructor.hpp"
-#include "scaffold_graph_dijkstra.hpp"
 
 namespace path_extend {
 

@@ -7,8 +7,8 @@
 #pragma once
 
 #include "assembly_graph/dijkstra/dijkstra_helper.hpp"
-#include "auxiliary_graphs/scaffold_graph/scaffold_graph.hpp"
-#include "modules/path_extend/scaffolder2015/scaffold_vertex_predicates.hpp"
+#include "scaffold_graph.hpp"
+#include "scaffold_vertex_predicates.hpp"
 
 namespace omnigraph {
 template<>
