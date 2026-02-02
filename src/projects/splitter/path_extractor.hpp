@@ -42,7 +42,6 @@ class PathExtractor {
             vertex_link_storage(vertex_link_storage) {}
     };
 
-    bool IsConjugatePair(const SimplePath &first, const SimplePath &second) const;
     bool IsGraphLink(debruijn_graph::EdgeId first,
                      debruijn_graph::EdgeId second,
                      const VertexLinkStorage &vertex_storage) const;

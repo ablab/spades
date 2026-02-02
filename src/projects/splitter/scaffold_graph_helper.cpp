@@ -38,32 +38,10 @@ scaffold_graph::ScaffoldGraph LinkIndexGraphConstructor::ConstructGraph() const 
         result.AddVertex(vertex);
     }
 
-//    ReverseBarcodeIndexConstructor reverse_index_constructor(g_, barcode_extractor_, length_threshold_, tail_threshold_,
-//                                                             count_threshold_, max_threads_);
-//    auto reverse_index = reverse_index_constructor.ConstructReverseIndex(scaffold_vertices);
-//
-//    size_t total_head_size = 0;
-//    size_t total_tail_size = 0;
-//    for (const auto &vertex: scaffold_vertices) {
-//        total_head_size += scaffold_index_extractor->GetHeadSize(vertex);
-//        total_tail_size += scaffold_index_extractor->GetTailSize(vertex);
-//    }
-//    INFO("Total head size: " << total_head_size);
-//    INFO("Total tail size: " << total_tail_size);
-//    size_t total_pairs = 0;
-//    for (const auto &entry: reverse_index) {
-//        total_pairs += entry.second.size() * entry.second.size();
-//    }
-
     std::vector<path_extend::scaffolder::ScaffoldVertexPairChunk> chunks;
     for (const auto &first: scaffold_vertices) {
         chunks.emplace_back(first, scaffold_vertices.begin(), scaffold_vertices.end());
     }
-//    for (const auto &entry: reverse_index) {
-//        for (const auto &first: entry.second) {
-//            chunks.emplace_back(first, entry.second.begin(), entry.second.end());
-//        }
-//    }
     INFO(chunks.size() << " chunks");
     auto score_filter = std::make_shared<path_extend::scaffolder::ScoreFunctionGraphConstructor>(g_, chunks,
                                                                                                  score_function,
@@ -109,68 +87,7 @@ LinkIndexGraphConstructor::BarcodeScoreFunctionPtr LinkIndexGraphConstructor::Co
                                                                                count_threshold_, tail_threshold_);
     return score_function;
 }
-GFAGraphConstructor::GFAGraphConstructor(const debruijn_graph::Graph &g,
-                                         const gfa::GFAReader &gfa,
-                                         io::IdMapper<std::string> *id_mapper) :
-    g_(g), gfa_(gfa), id_mapper_(id_mapper) {}
-scaffold_graph::ScaffoldGraph GFAGraphConstructor::ConstructGraphFromDBG() const {
-    scaffold_graph::ScaffoldGraph scaffold_graph(g_);
-    for (const EdgeId &edge: g_.canonical_edges()) {
-        scaffold_graph.AddVertex(edge);
-    }
-    for (const auto &vertex: g_.vertices()) {
-        for (const auto &outgoing: g_.OutgoingEdges(vertex)) {
-            for (const auto &incoming: g_.IncomingEdges(vertex)) {
-                scaffold_graph.AddEdge(incoming, outgoing, 0, 1.0, 0);
-            }
-        }
-    }
-    return scaffold_graph;
-}
 
-ReverseBarcodeIndex ReverseBarcodeIndexConstructor::ConstructReverseIndex(const std::set<ScaffoldVertex> &scaffold_vertices) const {
-    barcode_index::SimpleScaffoldVertexIndexBuilderHelper helper;
-    auto tail_threshold_getter = std::make_shared<barcode_index::ConstTailThresholdGetter>(tail_threshold_);
-    auto scaffold_vertex_index = helper.ConstructScaffoldVertexIndex(g_, *barcode_extractor_, tail_threshold_getter,
-                                                                     count_threshold_, length_threshold_,
-                                                                     max_threads_, scaffold_vertices);
-    auto scaffold_index_extractor =
-        std::make_shared<barcode_index::SimpleScaffoldVertexIndexInfoExtractor>(scaffold_vertex_index);
-    ReverseBarcodeIndex result;
-    for (const auto &vertex: scaffold_vertices) {
-        for (const auto &barcode: scaffold_index_extractor->GetHeadEntry(vertex)) {
-            result[barcode].insert(vertex);
-        }
-        for (const auto &barcode: scaffold_index_extractor->GetTailEntry(vertex)) {
-            result[barcode].insert(vertex);
-        }
-    }
-    double mean_barcode_size = .0;
-    double barcode_size_m2 = .0;
-    for (const auto &entry: result) {
-        auto entry_size = static_cast<double>(entry.second.size());
-        mean_barcode_size += entry_size;
-        barcode_size_m2 += entry_size * entry_size;
-    }
-    mean_barcode_size /= static_cast<double>(result.size());
-    barcode_size_m2 /= static_cast<double>(result.size());
-    INFO("Number of barcodes: " << result.size());
-    INFO("Mean edges in barcode: " << mean_barcode_size);
-    INFO("Raw second moment of barcode edges: " << barcode_size_m2);
-    return result;
-}
-ReverseBarcodeIndexConstructor::ReverseBarcodeIndexConstructor(const debruijn_graph::Graph &g,
-                                                               BarcodeExtractorPtr barcode_extractor,
-                                                               const size_t length_threshold,
-                                                               const size_t tail_threshold,
-                                                               const size_t count_threshold,
-                                                               size_t max_threads) :
-    g_(g),
-    barcode_extractor_(barcode_extractor),
-    length_threshold_(length_threshold),
-    tail_threshold_(tail_threshold),
-    count_threshold_(count_threshold),
-    max_threads_(max_threads) {}
 scaffold_graph::ScaffoldGraph ScaffoldGraphSerializer::ReadGraph(const std::string &path_to_graph) {
     scaffold_graph::ScaffoldGraph result(g_);
     std::unordered_map<std::string, scaffold_graph::ScaffoldVertex> id_to_vertex;

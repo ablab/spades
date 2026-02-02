@@ -75,19 +75,7 @@ void PathExtractor::ExtractPaths(path_extend::PathContainer &paths,
     INFO("Total path overlap: " << total_path_overlap);
     INFO("Edges visited by several paths: " << visited_edges);
 }
-bool PathExtractor::IsConjugatePair(const PathExtractor::SimplePath &first,
-                                    const PathExtractor::SimplePath &second) const {
-    if (first.size() != second.size()) {
-        return false;
-    }
-    for (auto it1 = first.begin(), it2 = second.end(); it1 != first.end(); ++it1) {
-        --it2;
-        if (*it1 != graph_.conjugate(*it2)) {
-            return false;
-        }
-    }
-    return true;
-}
+
 bool PathExtractor::IsGraphLink(debruijn_graph::EdgeId first,
                                 debruijn_graph::EdgeId second,
                                 const PathExtractor::VertexLinkStorage &vertex_storage) const {
