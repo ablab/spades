@@ -17,7 +17,7 @@ GraphResolver::GraphResolverInfo::VertexMap GraphResolver::SplitVertices(debruij
     GraphResolver::GraphResolverInfo::VertexMap transformed_vertex_to_original;
     auto helper = graph.GetConstructionHelper();
     for (const auto &vertex_entry: vertex_results.vertex_to_result) {
-        const VertexId &vertex = vertex_entry.first;
+        VertexId vertex = vertex_entry.first;
         DEBUG("Conjugate: " << graph.conjugate(vertex).int_id());
         const auto &vertex_result = vertex_entry.second;
 
