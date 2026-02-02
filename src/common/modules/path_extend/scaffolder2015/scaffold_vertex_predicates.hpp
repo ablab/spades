@@ -20,32 +20,5 @@ class ScaffoldVertexPredicate
     virtual ~ScaffoldVertexPredicate() = default;
 };
 
-class LengthChecker : public ScaffoldVertexPredicate {
-  public:
-    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
-    typedef debruijn_graph::Graph Graph;
-
-    LengthChecker(size_t length_threshold, const Graph &g);
-
-    bool Check(const ScaffoldVertex &vertex) const override;
-
-  private:
-    const size_t length_threshold_;
-    const Graph &g_;
-};
-
-class AndPredicate : public ScaffoldVertexPredicate {
-  public:
-    typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
-
-    AndPredicate(std::shared_ptr<ScaffoldVertexPredicate> first, std::shared_ptr<ScaffoldVertexPredicate> second);
-
-    bool Check(const ScaffoldVertex &scaffold_vertex) const override;
-
-  private:
-    std::shared_ptr<ScaffoldVertexPredicate> first_;
-    std::shared_ptr<ScaffoldVertexPredicate> second_;
-};
-
 }
 }
