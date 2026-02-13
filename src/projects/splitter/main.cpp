@@ -47,7 +47,7 @@ struct gcfg {
   unsigned nthreads = (omp_get_max_threads() / 2 + 1);
   std::filesystem::path file = "";
   std::filesystem::path tmpdir = "saves";
-  unsigned libindex = 0;
+  unsigned libindex = -1u;
   GraphType graph_type = GraphType::Multiplexed;
   ResolutionMode mode = ResolutionMode::Diploid;
   bool bin_load = false;
@@ -78,42 +78,49 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
     std::string output_dir;
     std::string refpath;
     std::string file;
-    std::string tmpdir;
+    std::string tmpdir = "saves";
     std::string assembly_info;
 
     auto cli = (
         graph << value("graph (in binary or GFA)"),
-            file << value("SLR library description (in YAML)"),
-            output_dir << value("path to output directory"),
-            (option("--dataset") & value("yaml", file)) % "dataset description (in YAML)",
-            (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
-            (option("--assembly-info") & value("assembly-info", assembly_info))
-                % "Path to metaflye assembly_info.txt file (meta mode, metaFlye graphs only)",
-            (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
-            (option("--mapping-k") & integer("value", cfg.mapping_k)) % "k for read mapping",
-            (option("--tmp-dir") & value("tmp", tmpdir)) % "scratch directory to use",
-            (option("--ref") & value("reference", refpath)) % "Reference path for repeat resolution evaluation (developer option)",
-            (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir (developer option)",
-            (option("--debug").set(cfg.debug)) % "produce lots of debug data (developer option)",
-            (option("--sampling-factor") & value("sampling-factor", cfg.sampling_factor)) % "Sampling factor for read downsampling",
-            (with_prefix("-G",
-                         option("mdbg").set(cfg.graph_type, GraphType::Multiplexed) |
-                             option("blunt").set(cfg.graph_type, GraphType::Blunted)) % "assembly graph type (mDBG or blunted)"),
+        file << value("SLR library description (in YAML)"),
+        output_dir << value("path to output directory"),
+        // (option("--dataset") & value("yaml", file)) % "dataset description (in YAML)",
+        (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
+        (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
+        (option("--sampling-factor") & value("sampling-factor", cfg.sampling_factor)) % "Sampling factor for read downsampling",
+        (option("--assembly-info") & value("assembly-info", assembly_info))
+            % "Path to metaflye assembly_info.txt file (meta mode, metaFlye graphs only)",
+        (with_prefix("-G",
+                option("mdbg").set(cfg.graph_type, GraphType::Multiplexed) |
+                option("blunt").set(cfg.graph_type, GraphType::Blunted)) % "assembly graph type (mDBG or blunted)"),
+        "Repeat resolution options" % (
             (with_prefix("-M",
-                         option("diploid").set(cfg.mode, ResolutionMode::Diploid) |
-                             option("meta").set(cfg.mode, ResolutionMode::Meta)) % "repeat resolution mode (diploid or meta)"),
-            (option("--frame-size") & value("frame-size", cfg.frame_size)) % "Resolution of barcode index",
-            (option("--linkage-distance") & value("read-linkage-distance", cfg.read_linkage_distance)) %
-                "Reads are assigned to the same fragment based on linkage distance",
+                    option("diploid").set(cfg.mode, ResolutionMode::Diploid) |
+                    option("meta").set(cfg.mode, ResolutionMode::Meta)) % "repeat resolution mode (diploid or meta)"),
             (option("--score") & value("score", cfg.graph_score_threshold)) % "Score threshold for link index",
             (option("--rel-threshold") & value("rel-threshold", cfg.rel_threshold)) % "Relative score threshold for vertex resolution",
-            (option("--tail-threshold") & value("tail-threshold", cfg.tail_threshold)) %
-                "Barcodes are assigned to the first and last <tail_threshold> nucleotides of the edge",
-            (option("--count-threshold") & value("count-threshold", cfg.count_threshold))
-                % "Minimum number of reads for barcode index",
             (option("--scaffold-links").set(cfg.scaffold_links)) % "Use scaffold links in addition to graph links for repeat resolution",
             (option("--length-threshold") & value("length-threshold", cfg.length_threshold))
                 % "Minimum scaffold graph edge length (meta mode option)"
+        ),
+        "Index options" % (
+            (option("--mapping-k") & integer("value", cfg.mapping_k)) % "k for read mapping",
+            (option("--frame-size") & value("frame-size", cfg.frame_size)) % 
+                "Resolution of barcode index",
+            (option("--linkage-distance") & value("read-linkage-distance", cfg.read_linkage_distance)) %
+                "Reads are assigned to the same fragment based on linkage distance",
+            (option("--tail-threshold") & value("tail-threshold", cfg.tail_threshold)) %
+                "Barcodes are assigned to the first and last <tail_threshold> nucleotides of the edge",
+            (option("--count-threshold") & value("count-threshold", cfg.count_threshold)) % 
+                "Minimum number of reads for barcode index"
+        ),
+        "Developer options:" % (
+            (option("--bin-load").set(cfg.bin_load)) % "load binary-converted reads from tmpdir",
+            (option("--debug").set(cfg.debug)) % "produce lots of debug data",
+            (option("--tmp-dir") & value("dir", tmpdir)) % "scratch directory to use",
+            (option("--ref") & value("reference", refpath)) % "Reference path for repeat resolution evaluation"
+        )
     );
 
     auto result = parse(argc, argv, cli);
@@ -343,10 +350,12 @@ int main(int argc, char** argv) {
     START_BANNER("SpLitteR");
 
     cfg.nthreads = spades_set_omp_threads(cfg.nthreads);
-    INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg.nthreads);
+    INFO("Maximum # of threads to use (adjusted due cfgto OMP capabilities): " << cfg.nthreads);
 
-    std::filesystem::create_directory(cfg.output_dir);
-    std::filesystem::create_directory(cfg.tmpdir);
+    if (!std::filesystem::create_directories(cfg.output_dir))
+      FATAL_IO_ERROR("Failed to create output directory: " << cfg.output_dir);
+    if (!std::filesystem::create_directories(cfg.tmpdir))
+      FATAL_IO_ERROR("Failed to create temporary directory: " << cfg.tmpdir);
 
     INFO("Loading graph");
     std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
@@ -361,43 +370,40 @@ int main(int argc, char** argv) {
     gfa_writer.WriteSegmentsAndLinks();
 
     INFO("Building barcode index");
-    if (cfg.libindex != -1u) {
-        INFO("Processing paired-end reads");
-        DataSet dataset;
-        if (cfg.file != "") {
-            dataset.load(cfg.file);
-            if (cfg.libindex == -1u)
-                cfg.libindex = 0;
-            CHECK_FATAL_ERROR(cfg.libindex < dataset.lib_count(), "invalid library index");
-        }
-
-        debruijn_graph::config::init_libs(dataset, cfg.nthreads, cfg.tmpdir);
-        barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> barcode_index(graph, cfg.frame_size);
-        using BarcodeExtractor = barcode_index::FrameBarcodeIndexInfoExtractor;
-        auto barcode_extractor_ptr = std::make_shared<BarcodeExtractor>(barcode_index, graph);
-
-        std::unique_ptr<TimeTracerRAII> traceraii;
-        traceraii.reset(new TimeTracerRAII(argv[0], 500));
-        INFO("Time tracing is enabled");
-
-        TIME_TRACE_SCOPE("Containment index");
-
-        auto &lib = dataset[cfg.libindex];
-        if (lib.type() == io::LibraryType::Clouds10x or lib.type() == io::LibraryType::TellSeqReads) {
-            cont_index::ConstructBarcodeIndex(barcode_index, lib, graph, cfg.tmpdir, cfg.nthreads, cfg.frame_size,
-                                              cfg.mapping_k, cfg.bin_load, cfg.debug);
-        } else {
-            ERROR("Only read cloud libraries with barcode tags are supported for links");
-        }
-
-        barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> downsampled_index(graph, cfg.frame_size);
-        if (not math::eq(cfg.sampling_factor, 1.0)) {
-            INFO("Downsampling the barcode index with factor " << cfg.sampling_factor);
-            cont_index::DownsampleBarcodeIndex(graph, cfg.nthreads, barcode_index, downsampled_index,
-                                               cfg.sampling_factor);
-            barcode_extractor_ptr = std::make_shared<BarcodeExtractor>(downsampled_index, graph);
-        }
-
-        ResolveComplexVertices(cfg, graph, barcode_extractor_ptr, id_mapper.get(), gfa, gfa_writer);
+    DataSet dataset;
+    if (cfg.file != "") {
+        dataset.load(cfg.file);
+        if (cfg.libindex == -1u)
+            cfg.libindex = 0;
+        CHECK_FATAL_ERROR(cfg.libindex < dataset.lib_count(), "invalid library index");
     }
+
+    debruijn_graph::config::init_libs(dataset, cfg.nthreads, cfg.tmpdir);
+    barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> barcode_index(graph, cfg.frame_size);
+    using BarcodeExtractor = barcode_index::FrameBarcodeIndexInfoExtractor;
+    auto barcode_extractor_ptr = std::make_shared<BarcodeExtractor>(barcode_index, graph);
+
+    std::unique_ptr<TimeTracerRAII> traceraii;
+    traceraii.reset(new TimeTracerRAII(argv[0], 500));
+    INFO("Time tracing is enabled");
+
+    TIME_TRACE_SCOPE("Containment index");
+
+    auto &lib = dataset[cfg.libindex];
+    if (lib.type() == io::LibraryType::Clouds10x or lib.type() == io::LibraryType::TellSeqReads) {
+        cont_index::ConstructBarcodeIndex(barcode_index, lib, graph, cfg.tmpdir, cfg.nthreads, cfg.frame_size,
+                                            cfg.mapping_k, cfg.bin_load, cfg.debug);
+    } else {
+        ERROR("Only read cloud libraries with barcode tags are supported for links");
+    }
+
+    barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> downsampled_index(graph, cfg.frame_size);
+    if (not math::eq(cfg.sampling_factor, 1.0)) {
+        INFO("Downsampling the barcode index with factor " << cfg.sampling_factor);
+        cont_index::DownsampleBarcodeIndex(graph, cfg.nthreads, barcode_index, downsampled_index,
+                                            cfg.sampling_factor);
+        barcode_extractor_ptr = std::make_shared<BarcodeExtractor>(downsampled_index, graph);
+    }
+
+    ResolveComplexVertices(cfg, graph, barcode_extractor_ptr, id_mapper.get(), gfa, gfa_writer);
 }
