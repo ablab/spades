@@ -208,8 +208,8 @@ class Sequence {
     // This way we can use buffer up to 120 bits for short strings, so we can store inline up to 60 nucls
     // The metadata is as follows:
     //  - [ size: 6, short_rtl : 1, is_short : 1 |
-    // When is_short == 1, then it is expected that all other bits are zero, so the "is short" check is simply
-    // check that the upper byte of the pointer is zero w/o any bitfield layout implications.
+    // When is_short == 0, then it is expected that all other bits are zero, so the "is short" check is simply
+    // check that the upper byte of the pointer is not zero w/o any bitfield layout implications.
 
     static_assert(CHAR_BIT == 8, "This implementation assumes that one byte contains 8 bits");
 
