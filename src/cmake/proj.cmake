@@ -43,6 +43,13 @@ if (SPADES_BUILD_INTERNAL)
 endif()
 
 # Some inter-project dependencies
+if ("hpcspades" IN_LIST SPADES_ENABLE_PROJECTS)
+  if (NOT "spades" IN_LIST SPADES_ENABLE_PROJECTS)
+    message(STATUS "Enabling SPAdes as a dependency to hpcSPAdes")
+    list(APPEND SPADES_ENABLE_PROJECTS "spades")
+  endif()
+endif()
+
 if ("spades" IN_LIST SPADES_ENABLE_PROJECTS)
   if (NOT "hammer" IN_LIST SPADES_ENABLE_PROJECTS)
     message(STATUS "Enabling BayesHammer as a dependency to SPAdes")
