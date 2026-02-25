@@ -29,6 +29,16 @@
 # include <jemalloc/jemalloc.h>
 #endif
 
+#if defined(SPADES_USE_MIMALLOC)
+extern "C" {
+    void mi_collect(bool);
+    size_t mi_stats_total_mem();
+    int mi_reserve_os_memory(size_t	size, bool commit, bool	allow_large);
+    void mi_debug_show_arenas();
+
+};
+#endif
+
 namespace utils {
 
 void limit_memory(size_t limit) {
@@ -54,6 +64,15 @@ void limit_memory(size_t limit) {
     } else {
         INFO("Memory limit set to " << GB << " Gb");
     }
+
+    #if defined(SPADES_USE_MIMALLOC)
+    // Reserve half of the limit memory
+    res = mi_reserve_os_memory(rl.rlim_cur / 2, false, true);
+    if (res != 0) {
+        WARN("Failed to reserve OS memory of " << GB << " Gb, mi_reserve_os_memory() call failed, errno = "
+             << errno << " (" << strerror(errno) << "). Watch your memory consumption!");
+    }
+    #endif
 }
 
 size_t get_memory_limit() {
@@ -86,13 +105,6 @@ size_t get_max_rss() {
     return ru.ru_maxrss;
 }
 
-#endif
-
-#if defined(SPADES_USE_MIMALLOC)
-extern "C" {
-    void mi_collect(bool);
-    size_t mi_stats_total_mem();
-};
 #endif
 
 size_t get_used_memory() {
