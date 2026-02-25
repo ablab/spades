@@ -90,7 +90,6 @@ size_t get_max_rss() {
 
 #if defined(SPADES_USE_MIMALLOC)
 extern "C" {
-    void mi_stats_merge(void);
     void mi_collect(bool);
     size_t mi_stats_total_mem();
 };
@@ -121,13 +120,12 @@ size_t get_used_memory() {
     // The statistics is also collected per pool. So we essentially need to propagate
     // the stats from per-thread pool into main one
     if (omp_get_thread_num() > 0) {
-        mi_stats_merge();
+        mi_collect(true); // FIXME: hack-hack-hack
     } else {
         unsigned nthreads = omp_get_max_threads();
 #       pragma omp parallel for
         for (unsigned i = 0; i < 2*nthreads; ++i) {
             mi_collect(true); // FIXME: hack-hack-hack
-            mi_stats_merge();
         }
     }
     return mi_stats_total_mem();
