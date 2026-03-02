@@ -3,7 +3,7 @@
 Running software on high-performance computational clusters usually involves
 many options including, for example, the grid engine used, queue, resource allocation
 among others. It is notoriously hard to support all these options in a
-generic way. Essentially each cluster requires its unique configuration and
+generic way. Essentially, each cluster requires its unique configuration and
 settings that cannot be predicted reasonably.
 
 The grid mode of SPAdes handles all these details via a so-called 'Executor'. By
@@ -32,9 +32,9 @@ There are a few important notes that should be taken into account here:
   memory consumption of a single node could be comparable to running SPAdes
   alone on a single node. Essentially, while the total assembly time could be
   reduced by spreading the workload across multiple nodes, the memory
-  consumption normally becomes the same.
+  consumption normally remains the same.
 * The first node is the main one, combining all the data from worker
-  nodes. Usually, it is the master node that consumes more memory, etc., and
+  nodes. Usually, it is the master node, which consumes more memory, etc., and
   could benefit from, for example, `high-memory` nodes that are sometimes present
   on certain clusters. However, binding nodes in a non-uniform way across
   different available hardware resources usually requires some arcane settings
@@ -45,10 +45,10 @@ There are a few important notes that should be taken into account here:
 To enable SPAdes HPC mode run
 
 ```
-./spades_compile -SPADES_ENABLE_PROJECTS=hpcspades
+./spades_compile.sh -SPADES_ENABLE_PROJECTS=hpcspades
 ```
 
-As SPAdes HPC mode relies on MPI to split tasks across jobs sufficiently
+As SPAdes HPC mode relies on MPI to split tasks across jobs, sufficiently
 sane MPI implementation is required. We only tested using OpenMPI. OpenMPI 3.x series
 are known to contain important bugs resulting in deadlocks. OpenMPI 4.x and 
 5.x worked fine in our tests.
@@ -56,7 +56,7 @@ are known to contain important bugs resulting in deadlocks. OpenMPI 4.x and
 After the compilation is complete, `spades-hpc` executable will be located in 
 the `bin` folder.
 
-It is recommended to always build hpcSPAdes using local MPI runtime, therefore
+It is recommended to always build hpcSPAdes using local MPI runtime. Therefore,
 hpcSPAdes binaries are excluded from binary release snapshots.
 
 ## Command line options
@@ -84,12 +84,12 @@ to a particular computational cluster and job submission system.
 `--grid-wait` By default SPAdes submits all jobs and exits. This option would
 make it wait for completion of the results
 
-The following addtition options are specific to SLURM executor:
+The following additional options are specific to SLURM executor:
 
 `--grid-time <value>` Time limit for the job (corresponds to `--time` option of
 `sbatch`)
 
-`--grid-extra <options>` Any extra options to pass to job submission system
+`--grid-extra <options>` Any extra options to pass to the job submission system
 
 ## Troubleshooting
 
