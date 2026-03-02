@@ -1024,6 +1024,7 @@ def add_to_cfg(cfg, bin_home, spades_home, args):
     cfg["common"].__dict__["developer_mode"] = args.developer_mode
     cfg["common"].__dict__["sewage"] = args.sewage
     cfg["common"].__dict__["sewage_matrix"] = os.path.join(spades_home, "sewage/usher_barcodes.csv")
+    cfg["common"].__dict__["mpi_engine"] = args.grid_engine
 
     cfg["common"].__dict__["time_tracer"] = args.time_tracer
     if args.series_analysis:

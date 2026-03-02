@@ -182,5 +182,5 @@ class IterationStage(stage.Stage):
             args=args,
             config_dir=os.path.relpath(data_dir, options_storage.args.output_dir),
             short_name=self.short_name,
-            mpi_support=True)]
+            mpi_support=not cfg.__dict__["mpi_engine"] == "local")]
         return command

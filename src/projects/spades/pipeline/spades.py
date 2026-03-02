@@ -259,8 +259,6 @@ def get_options_from_params(params_filename, running_script):
 def parse_args(args):
     options, cfg, dataset_data = options_parser.parse_args(bin_home, spades_home,
                                                            secondary_filling=False, restart_from=False)
-    print(options_storage.args.rna)
-
     command_line = ""
 
     if options_storage.args.continue_mode:
