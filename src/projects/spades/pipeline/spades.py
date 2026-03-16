@@ -711,7 +711,7 @@ def main(args):
         if exc_type == SystemExit:
             # If SystemExit carries a numeric code, propagate it; otherwise map to a general error
             try:
-                code = int(exc_value)
+                code = int(str(exc_value))
                 sys.exit(code)
             except Exception:
                 support.error(str(exc_value), exit_code=support.ErrorCode.GeneralError)
