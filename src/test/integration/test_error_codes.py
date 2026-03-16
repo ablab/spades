@@ -23,6 +23,7 @@ Error codes tested:
 """
 
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -43,6 +44,13 @@ elif os.path.exists(INSTALL_BIN):
     BIN_DIR = INSTALL_BIN
 else:
     BIN_DIR = None
+
+# Find spades.py
+SPADES_PY_CANDIDATES = [
+    os.path.join(SPADES_ROOT, "build_spades", "bin", "spades.py"),
+    os.path.join(SPADES_ROOT, "bin", "spades.py"),
+]
+SPADES_PY = next((p for p in SPADES_PY_CANDIDATES if os.path.exists(p)), None)
 
 # Test data directory
 TEST_DATA = os.path.join(SPADES_SRC, "test", "data")
@@ -295,9 +303,70 @@ class TestErrorCodeConstants(unittest.TestCase):
             self.skipTest("Pipeline path not found")
 
 
+@unittest.skipIf(SPADES_PY is None, "spades.py not found")
+class TestSpadespyErrorCodes(unittest.TestCase):
+    """Tests that invoke spades.py directly and check exit codes and messages."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _run(self, args, timeout=60):
+        cmd = [sys.executable, SPADES_PY] + args
+        return run_command(cmd, timeout=timeout)
+
+    def test_nonexistent_input_file_exit_code(self):
+        """spades.py with non-existent -1 file should exit with 65 (InputFileNotFound)."""
+        exit_code, _, stderr = self._run(["-1", "/nonexistent/reads.fastq", "-o", self.tmp])
+        self.assertEqual(exit_code, 65,
+                         f"Expected 65 (InputFileNotFound), got {exit_code}\nstderr: {stderr}")
+
+    def test_nonexistent_input_file_no_report_message(self):
+        """File not found is a user-end error — should not suggest reporting a bug."""
+        _, stdout, stderr = self._run(["-1", "/nonexistent/reads.fastq", "-o", self.tmp])
+        self.assertFalse(has_report_bug_message(stdout + stderr),
+                         f"User-end error should not contain report bug message\nOutput: {stdout + stderr}")
+
+    def test_nonexistent_input_file_user_error_message(self):
+        """File not found should contain the 'check the error message' indicator."""
+        _, stdout, stderr = self._run(["-1", "/nonexistent/reads.fastq", "-o", self.tmp])
+        self.assertTrue(has_user_error_message(stdout + stderr),
+                        f"Expected user-end error message\nOutput: {stdout + stderr}")
+
+    def test_no_input_files_exit_code(self):
+        """spades.py with no input files should exit with 67 (InvalidParameter)."""
+        exit_code, _, stderr = self._run(["-o", self.tmp])
+        self.assertEqual(exit_code, 67,
+                         f"Expected 67 (InvalidParameter), got {exit_code}\nstderr: {stderr}")
+
+    def test_no_input_files_no_report_message(self):
+        """Missing input files is a user-end error — should not suggest reporting a bug."""
+        _, stdout, stderr = self._run(["-o", self.tmp])
+        self.assertFalse(has_report_bug_message(stdout + stderr),
+                         f"User-end error should not contain report bug message\nOutput: {stdout + stderr}")
+
+    @unittest.skipIf(BIN_DIR is None, "SPAdes binaries not found (needed for --test)")
+    def test_oom_exit_code(self):
+        """spades.py --test -m 1 should trigger OOM and exit with 68 (MemoryLimitExceeded)."""
+        exit_code, stdout, stderr = self._run(["--test", "-m", "1", "-o", self.tmp], timeout=120)
+        self.assertEqual(exit_code, 68,
+                         f"Expected 68 (MemoryLimitExceeded), got {exit_code}\nstdout: {stdout}\nstderr: {stderr}")
+
+    @unittest.skipIf(BIN_DIR is None, "SPAdes binaries not found (needed for --test)")
+    def test_oom_no_report_message(self):
+        """OOM (exit 68) is a user-end error — should not suggest reporting a bug."""
+        exit_code, stdout, stderr = self._run(["--test", "-m", "1", "-o", self.tmp], timeout=120)
+        if exit_code == 68:
+            self.assertFalse(has_report_bug_message(stdout + stderr),
+                             f"OOM error should not suggest reporting\nOutput: {stdout + stderr}")
+
+
 if __name__ == "__main__":
     # Print diagnostic info
     print(f"BIN_DIR: {BIN_DIR}")
+    print(f"SPADES_PY: {SPADES_PY}")
     print(f"TEST_DATA: {TEST_DATA}")
     if BIN_DIR:
         print(f"Binaries exist: {os.path.exists(BIN_DIR)}")
