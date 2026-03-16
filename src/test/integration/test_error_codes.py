@@ -34,23 +34,33 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SPADES_SRC = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 SPADES_ROOT = os.path.dirname(SPADES_SRC)
 
-# Try to find binaries in build directory or installed location
-BUILD_BIN = os.path.join(SPADES_ROOT, "build_spades", "bin")
-INSTALL_BIN = os.path.join(SPADES_ROOT, "bin")
+# Try to find binaries: SPADES_BUILD_DIR env var takes priority, then common local paths
+_env_build_dir = os.environ.get("SPADES_BUILD_DIR")
 
-if os.path.exists(BUILD_BIN):
-    BIN_DIR = BUILD_BIN
-elif os.path.exists(INSTALL_BIN):
-    BIN_DIR = INSTALL_BIN
-else:
-    BIN_DIR = None
-
-# Find spades.py
-SPADES_PY_CANDIDATES = [
-    os.path.join(SPADES_ROOT, "build_spades", "bin", "spades.py"),
-    os.path.join(SPADES_ROOT, "bin", "spades.py"),
+_candidates = []
+if _env_build_dir:
+    _candidates.append((_env_build_dir, os.path.join(SPADES_ROOT, "src/projects/")))
+_candidates += [
+    (os.path.join(SPADES_ROOT, "build_spades"), os.path.join(SPADES_ROOT, "src/projects/")),
+    (SPADES_ROOT, os.path.join(SPADES_ROOT, "share/")),
 ]
-SPADES_PY = next((p for p in SPADES_PY_CANDIDATES if os.path.exists(p)), None)
+
+BIN_DIR = None
+SHARE_DIR = None
+for _build, _share in _candidates:
+    _bin = os.path.join(_build, "bin")
+    if os.path.exists(_bin):
+        BIN_DIR = _bin
+        SHARE_DIR = _share
+        break
+
+# Find spades.py using the same search order
+SPADES_PY = None
+for _build, _ in _candidates:
+    _candidate = os.path.join(_build, "bin", "spades.py")
+    if os.path.exists(_candidate):
+        SPADES_PY = _candidate
+        break
 
 # Test data directory
 TEST_DATA = os.path.join(SPADES_SRC, "test", "data")
@@ -350,14 +360,18 @@ class TestSpadespyErrorCodes(unittest.TestCase):
     @unittest.skipIf(BIN_DIR is None, "SPAdes binaries not found (needed for --test)")
     def test_oom_exit_code(self):
         """spades.py --test -m 1 should trigger OOM and exit with 68 (MemoryLimitExceeded)."""
-        exit_code, stdout, stderr = self._run(["--test", "-m", "1", "-o", self.tmp], timeout=120)
+        exit_code, stdout, stderr = self._run(["-1", os.path.join(SHARE_DIR, "spades/test_dataset/ecoli_1K_1.fq.gz"),
+                                               "-2", os.path.join(SHARE_DIR, "spades/test_dataset/ecoli_1K_2.fq.gz"),
+                                               "-m", "1", "-o", self.tmp], timeout=120)
         self.assertEqual(exit_code, 68,
                          f"Expected 68 (MemoryLimitExceeded), got {exit_code}\nstdout: {stdout}\nstderr: {stderr}")
 
     @unittest.skipIf(BIN_DIR is None, "SPAdes binaries not found (needed for --test)")
     def test_oom_no_report_message(self):
         """OOM (exit 68) is a user-end error — should not suggest reporting a bug."""
-        exit_code, stdout, stderr = self._run(["--test", "-m", "1", "-o", self.tmp], timeout=120)
+        exit_code, stdout, stderr = self._run(["-1", os.path.join(SHARE_DIR, "spades/test_dataset/ecoli_1K_1.fq.gz"),
+                                               "-2", os.path.join(SHARE_DIR, "spades/test_dataset/ecoli_1K_2.fq.gz"),
+                                               "-m", "1", "-o", self.tmp], timeout=120)
         if exit_code == 68:
             self.assertFalse(has_report_bug_message(stdout + stderr),
                              f"OOM error should not suggest reporting\nOutput: {stdout + stderr}")

@@ -136,28 +136,28 @@ class TestErrorMessages(unittest.TestCase):
 
     def test_report_issue_message_contains_github(self):
         """Internal errors should suggest reporting on GitHub."""
-        messages = report_issue_error_message("SPAdes")
+        messages = report_issue_error_message("SPAdes", 0)
         combined = " ".join(messages)
         self.assertIn("github.com/ablab/spades", combined)
         self.assertIn("report", combined.lower())
 
     def test_report_issue_message_requests_files(self):
         """Internal errors should request log files for debugging."""
-        messages = report_issue_error_message("SPAdes")
+        messages = report_issue_error_message("SPAdes", 0)
         combined = " ".join(messages)
         self.assertIn("params.txt", combined)
         self.assertIn(".log", combined)
 
     def test_no_report_message_no_github(self):
         """User-end errors should NOT mention GitHub reporting."""
-        messages = no_report_error_message("SPAdes")
+        messages = no_report_error_message("SPAdes", 0)
         combined = " ".join(messages)
         self.assertNotIn("github", combined.lower())
         self.assertNotIn("report", combined.lower())
 
     def test_no_report_message_check_error(self):
         """User-end errors should tell user to check the error message."""
-        messages = no_report_error_message("SPAdes")
+        messages = no_report_error_message("SPAdes", 0)
         combined = " ".join(messages)
         self.assertIn("check the error message", combined.lower())
 

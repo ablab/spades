@@ -171,6 +171,8 @@ jobs:
 
       - name: '🔎 Python integration tests'
         working-directory: ${{github.workspace}}
+        env:
+          SPADES_BUILD_DIR: ${{env.BUILD_DIR}}
         run: >
           python3 -m pytest src/test/integration/test_error_codes.py
 
