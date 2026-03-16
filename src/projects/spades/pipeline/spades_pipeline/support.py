@@ -53,23 +53,23 @@ class ErrorCode(Enum):
         return 64 <= self.value <= 127
 
 
-def report_issue_error_message(binary_name):
-    return ["In case you have troubles running %s, you can report an issue on our GitHub repository github.com/ablab/spades\n" % binary_name,
-            "Please provide us with params.txt and %s.log files from the output directory." % binary_name.lower()]
+def report_issue_error_message(binary_name, error_code):
+    return ["%s finished with the following error code: %d.\n" % (binary_name, error_code),
+            "If the reason for this error is unclear, you can report an issue on our GitHub repository github.com/ablab/spades\n",
+            "Please provide us with params.txt and %s.log files from the output directory.\n" % binary_name.lower() ]
 
 
-def no_report_error_message(binary_name):
-    return ["%s finished with the following error code. Please, check the error message above." % binary_name]
+def no_report_error_message(binary_name, error_code):
+    return ["%s finished with the following error code: %d. Please, check the error message above.\n" % (binary_name, error_code)]
 
 
 def error(err_str, logger_instance=None, prefix=SPADES_PY_ERROR_MESSAGE, exit_code:ErrorCode=ErrorCode.GeneralError):
     binary_name = "SPAdes"
 
     if exit_code.user_end_error():
-        error_message = no_report_error_message(binary_name)
+        error_message = no_report_error_message(binary_name, exit_code.value)
     else:
-        error_message = report_issue_error_message(binary_name)
-
+        error_message = report_issue_error_message(binary_name, exit_code.value)
     if logger_instance:
         logger_instance.error("\n\n%s %s" % (prefix, err_str))
         log_warnings(logger_instance, with_error=True)
@@ -82,7 +82,7 @@ def error(err_str, logger_instance=None, prefix=SPADES_PY_ERROR_MESSAGE, exit_co
         sys.stderr.flush()
     if current_tmp_dir and os.path.isdir(current_tmp_dir):
         shutil.rmtree(current_tmp_dir)
-    sys.exit(exit_code.value)
+    sys.exit(int(exit_code.value))
 
 
 def warning(warn_str, logger_instance=None, prefix=SPADES_PY_WARN_MESSAGE):
