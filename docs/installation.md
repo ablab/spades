@@ -58,7 +58,7 @@ Just as in Linux, SPAdes is ready to use and no further installation steps are r
 If you wish to compile SPAdes by yourself you will need the following libraries to be pre-installed:
 
 -   g++ (version 9 or higher)
--   cmake (version 3.16 or higher)
+-   cmake (version 3.18 or higher)
 -   zlib
 -   libbz2
 
