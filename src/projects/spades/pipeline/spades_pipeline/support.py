@@ -45,6 +45,10 @@ class ErrorCode(Enum):
     InvalidParameter = 67
     MemoryLimitExceeded = 68
 
+    @classmethod
+    def _missing_(cls, value):
+        return cls.GeneralError
+
     def user_end_error(self):
         return 64 <= self.value <= 127
 
