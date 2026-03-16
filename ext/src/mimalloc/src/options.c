@@ -13,6 +13,7 @@ terms of the MIT license. A copy of the license can be found in the file
 #include <string.h> // strncpy, strncat, strlen, strstr
 #include <ctype.h>  // toupper
 #include <stdarg.h>
+#include <unistd.h> // _exit
 
 #ifdef _MSC_VER
 #pragma warning(disable:4996)   // strncpy, strncat
@@ -431,7 +432,9 @@ static void mi_error_default(int err) {
     _mi_fprintf(NULL, NULL, "%10s: current: %lu, peak: %lu\n", "rss", current_rss, peak_rss);
     _mi_fprintf(NULL, NULL, "%10s: current: %lu, peak: %lu\n", "commit", current_commit, peak_commit);
 
-    abort();
+    // abort();
+    // to comply with SPAdes error codes
+    _exit(68);
   }
 #endif
 }
