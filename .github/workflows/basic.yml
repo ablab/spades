@@ -169,10 +169,16 @@ jobs:
         run: >
           python3 -m pytest src/projects/spades/pipeline/spades_pipeline/tests/test_error_codes.py
 
+      - name: '📦 Unpack package for integration tests'
+        run: |
+          mkdir -p $INSTALL_DIR
+          tar -zxf $BUILD_DIR/$PKG_LINUX.tar.gz -C $INSTALL_DIR
+          echo "SPADES_PKG_DIR=$INSTALL_DIR/$(ls $INSTALL_DIR)" >> $GITHUB_ENV
+
       - name: '🔎 Python integration tests'
         working-directory: ${{github.workspace}}
         env:
-          SPADES_BUILD_DIR: ${{env.BUILD_DIR}}
+          SPADES_BUILD_DIR: ${{env.SPADES_PKG_DIR}}
         run: >
           python3 -m pytest src/test/integration/test_error_codes.py
 
