@@ -66,14 +66,15 @@ for _build, _ in _candidates:
 TEST_DATA = os.path.join(SPADES_SRC, "test", "data")
 
 
-def run_command(cmd, timeout=30):
+def run_command(cmd, timeout=30, cwd=None):
     """Run a command and return (exit_code, stdout, stderr)."""
     try:
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
-            timeout=timeout
+            timeout=timeout,
+            cwd=cwd
         )
         return result.returncode, result.stdout, result.stderr
     except subprocess.TimeoutExpired:
@@ -325,7 +326,7 @@ class TestSpadespyErrorCodes(unittest.TestCase):
 
     def _run(self, args, timeout=60):
         cmd = [sys.executable, SPADES_PY] + args
-        return run_command(cmd, timeout=timeout)
+        return run_command(cmd, timeout=timeout, cwd=self.tmp)
 
     def test_nonexistent_input_file_exit_code(self):
         """spades.py with non-existent -1 file should exit with 65 (InputFileNotFound)."""
