@@ -24,6 +24,7 @@ Error codes tested:
 
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -171,14 +172,21 @@ class TestInvalidFormatErrors(unittest.TestCase):
 class TestInvalidParameterErrors(unittest.TestCase):
     """Test that invalid parameter errors return exit code 67."""
 
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
     def test_kmercount_invalid_kmer(self):
         """spades-kmercount with invalid k-mer should exit with error."""
-        # Using an even k-mer value which is invalid
+        # Using an even k-mer value which is invalid.
+        # Run in temp_dir so kmer_splitter_*/kmer_counter_* dirs are created there and cleaned up.
         cmd = [os.path.join(BIN_DIR, "spades-kmercount"),
                "-k", "32",  # Even k is invalid
-               "-o", "/tmp/test_out",
+               "-o", os.path.join(self.temp_dir, "test_out"),
                "/nonexistent/reads.fastq"]
-        exit_code, stdout, stderr = run_command(cmd)
+        exit_code, stdout, stderr = run_command(cmd, cwd=self.temp_dir)
         # Should fail with parameter error (67) or file not found (65)
         self.assertNotEqual(exit_code, 0,
                             f"Expected error, but command succeeded\nstdout: {stdout}")
@@ -325,8 +333,24 @@ class TestSpadespyErrorCodes(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def _run(self, args, timeout=60):
+        """Run spades.py in its own process group so all children can be killed on timeout."""
         cmd = [sys.executable, SPADES_PY] + args
-        return run_command(cmd, timeout=timeout, cwd=self.tmp)
+        try:
+            proc = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                text=True,
+                start_new_session=True  # new process group → kill whole tree on timeout
+            )
+            try:
+                stdout, stderr = proc.communicate(timeout=timeout)
+                return proc.returncode, stdout, stderr
+            except subprocess.TimeoutExpired:
+                os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                proc.wait()
+                return -1, "", "Command timed out"
+        except Exception as e:
+            return -1, "", str(e)
 
     def test_nonexistent_input_file_exit_code(self):
         """spades.py with non-existent -1 file should exit with 65 (InputFileNotFound)."""
