@@ -160,6 +160,10 @@ public:
 
     size_t link_size() const { return lstorage_.size(); }
 
+    VertexData ConjugateData(const VertexData &data) const {
+        return master().conjugate(data, [this](LinkId lid) { return conjugate(lid); });
+    }
+
     using base::AddVertex;
     using base::AddEdge;
 

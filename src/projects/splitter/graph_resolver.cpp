@@ -34,7 +34,9 @@ GraphResolver::GraphResolverInfo::VertexMap GraphResolver::SplitVertices(debruij
                 helper.DeleteLink(vertex, out_edge);
                 helper.DeleteLink(graph.conjugate(vertex), graph.conjugate(in_edge));
                 std::vector<LinkId> links {link};
-                VertexId new_vertex = helper.CreateVertex(debruijn_graph::DeBruijnVertexData(links));
+                auto data = debruijn_graph::DeBruijnVertexData(links);
+                auto cdata = graph.ConjugateData(data);
+                VertexId new_vertex = helper.CreateVertex(std::move(data), std::move(cdata));
                 transformed_vertex_to_original[new_vertex] = vertex;
                 helper.LinkIncomingEdge(new_vertex, in_edge);
                 helper.LinkOutgoingEdge(new_vertex, out_edge);
@@ -52,7 +54,9 @@ GraphResolver::GraphResolverInfo::VertexMap GraphResolver::SplitVertices(debruij
                         new_links.push_back(link_id);
                     }
                 }
-                VertexId new_vertex = helper.CreateVertex(debruijn_graph::DeBruijnVertexData(new_links));
+                auto data = debruijn_graph::DeBruijnVertexData(new_links);
+                auto cdata = graph.ConjugateData(data);
+                VertexId new_vertex = helper.CreateVertex(std::move(data), std::move(cdata));
                 for (const auto &in_edge: graph.IncomingEdges(vertex)) {
                     helper.DeleteLink(graph.conjugate(vertex), graph.conjugate(in_edge));
                     helper.LinkIncomingEdge(new_vertex, in_edge);
