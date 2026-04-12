@@ -108,9 +108,8 @@ private:
                     unsigned ovl;
                     str >> e1 >> e2 >> e1_conj >> e2_conj >> ovl;
                     auto link_id = graph.add_link(e1, e2, ovl);
-                    auto conj_link_id = graph.add_link(e2_conj, e1_conj, ovl);
                     link_ids.push_back(link_id);
-                    conj_link_ids.push_back(conj_link_id);
+                    conj_link_ids.push_back(graph.conjugate(link_id));
                 }
                 std::vector<debruijn_graph::LinkId> empty_links;
                 new_id = graph.AddVertex(debruijn_graph::DeBruijnVertexData(empty_links), ids[0], ids[1]);

@@ -98,17 +98,15 @@ void CheckLinks(std::ifstream &graph_stream, const Graph &graph, const IdMapper 
         if (graph.is_complex(vertex)) {
             bool link_found = false;
             bool conj_link_found = false;
-            for (const auto &link: graph.links(vertex)) {
-                auto link_in_edge = graph.link(link).link.first;
-                auto link_out_edge = graph.link(link).link.second;
+            for (const auto &link_id: graph.links(vertex)) {
+                auto link_in_edge = graph.link(link_id).link.first;
+                auto link_out_edge = graph.link(link_id).link.second;
                 if (link_in_edge == in_edge and link_out_edge == out_edge) {
                     link_found = true;
-                }
-            }
-            for (const auto &link: graph.links(graph.conjugate(vertex))) {
-                auto link_in_edge = graph.link(link).link.first;
-                auto link_out_edge = graph.link(link).link.second;
-                if (link_in_edge == out_conjugate and link_out_edge == in_conjugate) {
+                    // Verify conjugate links
+                    LinkId conj_link_id = graph.conjugate(link_id);
+                    EXPECT_EQ(graph.link(conj_link_id).link.first, out_conjugate);
+                    EXPECT_EQ(graph.link(conj_link_id).link.second, in_conjugate);
                     conj_link_found = true;
                 }
             }
@@ -135,24 +133,16 @@ void PerformSplits(debruijn_graph::Graph &graph, std::ifstream &ops_stream, cons
                                                                  " are not incident, operations are not consistent with the graph");
         VertexId new_vertex;
         if (graph.is_complex(vertex)) {
-            LinkId split_link, conj_split_link;
+            LinkId split_link;
             bool link_found = false;
-            bool conj_link_found = false;
             for (auto &link_id: graph.links(vertex)) {
                 if (graph.link(link_id).link.first == in_edge && graph.link(link_id).link.second == out_edge) {
                     split_link = link_id;
                     link_found = true;
                 }
             }
-            for (auto &link_id: graph.links(graph.conjugate(vertex))) {
-                if (graph.link(link_id).link.first == graph.conjugate(out_edge) &&
-                    graph.link(link_id).link.second == graph.conjugate(in_edge)) {
-                    conj_split_link = link_id;
-                    conj_link_found = true;
-                }
-            }
-
-            EXPECT_TRUE(link_found && conj_link_found);
+            EXPECT_TRUE(link_found);
+            LinkId conj_split_link = graph.conjugate(split_link);
             std::vector<debruijn_graph::LinkId> empty;
             new_vertex = helper.CreateVertex(debruijn_graph::DeBruijnVertexData(empty));
             graph.add_link(new_vertex, split_link);
