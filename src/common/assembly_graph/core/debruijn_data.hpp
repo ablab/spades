@@ -26,7 +26,7 @@ class DeBruijnDataMaster;
 
 class DeBruijnVertexData {
     friend class DeBruijnDataMaster;
-    typedef size_t LinkId;
+    typedef omnigraph::impl::LinkId LinkId;
 
     enum OverlapKind {
         ComplexOverlap,
