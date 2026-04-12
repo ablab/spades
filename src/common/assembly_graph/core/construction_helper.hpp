@@ -137,6 +137,11 @@ public:
         return graph_.CreateVertex(std::move(data), id1, id2);
     }
 
+    VertexId CreateVertex(VertexData data, VertexData cdata, VertexId id1 = 0, VertexId id2 = 0) {
+        return graph_.CreateVertex(std::move(data), std::move(cdata), id1, id2);
+    }
+
+
 };
 
 }

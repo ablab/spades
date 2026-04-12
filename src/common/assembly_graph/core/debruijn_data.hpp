@@ -262,6 +262,17 @@ public:
         VERIFY_MSG(false, "Conjugation of complex overlap data is not implemented")
     }
 
+    template<class LinkConjugate>
+    VertexData conjugate(const VertexData &data, LinkConjugate &&link_conjugate) const {
+        if (!data.has_complex_overlap() || data.links().empty())
+            return data.clone();
+        std::vector<LinkId> conjugated_links;
+        conjugated_links.reserve(data.links().size());
+        for (const auto &lid : data.links())
+            conjugated_links.push_back(link_conjugate(lid));
+        return VertexData(conjugated_links);
+    }
+
     size_t length(const EdgeData& data) const {
         return data.nucls().size() - k_;
     }
