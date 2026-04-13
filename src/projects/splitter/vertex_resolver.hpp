@@ -24,17 +24,19 @@ enum class VertexState {
 
 struct VertexResult {
     VertexResult(VertexState state,
-                 const size_t &total_links,
-                 const size_t &supporting_links,
+                 const size_t &total_score,
+                 const size_t &supporting_score,
                  const std::unordered_map<debruijn_graph::EdgeId, debruijn_graph::EdgeId> &supported_pairs) :
                     state(state),
-                    total_links(total_links),
-                    supporting_links(supporting_links),
+                    total_score(total_score),
+                    supporting_score(supporting_score),
                     supported_pairs(supported_pairs) {}
 
     VertexState state;
-    size_t total_links;
-    size_t supporting_links;
+    // Total score between all pairs of in- and out- edges
+    size_t total_score;
+    // Total score between resolved pairs of in- and out- edges
+    size_t supporting_score;
     std::unordered_map<debruijn_graph::EdgeId, debruijn_graph::EdgeId> supported_pairs;
 };
 
@@ -105,12 +107,12 @@ class VertexResolver {
 
     VertexResult ResolveVertex(debruijn_graph::VertexId vertex,
                                LinkIndexGraphConstructor::BarcodeScoreFunctionPtr score_function) const {
-        size_t total_links = 0;
-        size_t answer_links = 0;
+        size_t total_score = 0;
+        size_t total_supporting_score = 0;
         std::unordered_map<debruijn_graph::EdgeId, debruijn_graph::EdgeId> in_to_out;
         bool is_ambiguous = false;
         std::unordered_set<debruijn_graph::VertexId> covered_vertices;
-        double LINK_BONUS = 1000000;
+        const double TRUSTED_LINK_BONUS = 1000000;
 
         for (EdgeId sc_in_edge: graph_.IncomingEdges(vertex)) {
             //convert to dbg EdgeId
@@ -119,9 +121,9 @@ class VertexResolver {
             debruijn_graph::EdgeId in_edge = edge_getter.GetEdgeFromScaffoldVertex(sc_in_vertex);
 
             std::pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId> max_pair(0, 0);
-            std::pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId> second_pair(0, 0);
-            size_t max_links = 0;
-            size_t second_links = 0;
+            std::pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId> contender_pair(0, 0);
+            size_t max_score = 0;
+            size_t contender_score = 0;
             for (EdgeId sc_out_edge: graph_.OutgoingEdges(vertex)) {
                 scaffold_graph::ScaffoldVertex sc_out_vertex(sc_out_edge);
                 debruijn_graph::EdgeId out_edge = edge_getter.GetEdgeFromScaffoldVertex(sc_out_vertex);
@@ -133,29 +135,29 @@ class VertexResolver {
                 auto score = score_function->GetScore(sc_edge);
                 auto link_result = links_.find(in_edge);
                 if (link_result != links_.end() and link_result->second.find(out_edge) != link_result->second.end()) {
-                    score += LINK_BONUS;
+                    score += TRUSTED_LINK_BONUS;
                 }
-                total_links += static_cast<size_t>(score);
+                total_score += static_cast<size_t>(score);
                 if (math::ge(score, score_threshold_)) {
                     covered_vertices.insert(vertex);
-                    if (score > static_cast<double>(max_links)) {
-                        second_pair = max_pair;
-                        second_links = max_links;
-                        max_links = static_cast<size_t>(score);
+                    if (score > static_cast<double>(max_score)) {
+                        contender_pair = max_pair;
+                        contender_score = max_score;
+                        max_score = static_cast<size_t>(score);
                         max_pair = std::make_pair(in_edge, out_edge);
                     }
                 }
             }
-            if (static_cast<double>(max_links) < static_cast<double>(second_links) * rel_threshold_) {
+            if (static_cast<double>(max_score) < static_cast<double>(contender_score) * rel_threshold_) {
                 is_ambiguous = true;
-            } else if (static_cast<double>(max_links) >= score_threshold_) {
+            } else if (static_cast<double>(max_score) >= score_threshold_) {
                 in_to_out[max_pair.first] = max_pair.second;
-                answer_links += max_links;
+                total_supporting_score += max_score;
             }
         }
         bool is_covered = covered_vertices.find(vertex) != covered_vertices.end();
         VertexState state = GetState(in_to_out, vertex, is_ambiguous, is_covered);
-        VertexResult result(state, total_links, answer_links, in_to_out);
+        VertexResult result(state, total_score, total_supporting_score, in_to_out);
         return result;
     }
 
@@ -232,8 +234,8 @@ class VertexResolver {
         vertex_string +=
             std::to_string(graph_.OutgoingEdgeCount(vertex)) + "\t" + out_edge_string + "\t" + result_string + "\t";
         vertex_string +=
-            std::to_string(vertex_result.supported_pairs.size()) + "\t" + std::to_string(vertex_result.total_links);
-        vertex_string += "\t" + std::to_string(vertex_result.supporting_links) + "\t" + answer_string;
+            std::to_string(vertex_result.supported_pairs.size()) + "\t" + std::to_string(vertex_result.total_score);
+        vertex_string += "\t" + std::to_string(vertex_result.supporting_score) + "\t" + answer_string;
         return vertex_string;
     }
   private:
@@ -279,6 +281,7 @@ class VertexResolver {
 
     Graph &graph_;
     const debruijn_graph::Graph &assembly_graph_;
+    // Trusted link map (for meta mode)
     const LinkMap links_;
     std::shared_ptr<barcode_index::FrameBarcodeIndexInfoExtractor> barcode_extractor_ptr_;
     size_t count_threshold_;

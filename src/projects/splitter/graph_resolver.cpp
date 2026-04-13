@@ -22,14 +22,14 @@ GraphResolver::GraphResolverInfo::VertexMap GraphResolver::SplitVertices(debruij
         const auto &vertex_result = vertex_entry.second;
 
         if (vertex_result.state == VertexState::Completely or vertex_result.state == VertexState::Partially) {
-            auto in_to_correct_link = GetLinkMap(graph, vertex, vertex_result);
-            VERIFY_DEV(in_to_correct_link.size() == vertex_entry.second.supported_pairs.size());
+            auto in_to_link = GetLinkMap(graph, vertex, vertex_result);
+            VERIFY_MSG(in_to_link.size() == vertex_entry.second.supported_pairs.size(), "Some barcode-supported pairs do not have a GFA link");
             std::unordered_set<EdgeId> resolved_in_edges;
             std::unordered_set<EdgeId> resolved_out_edges;
             for (const auto &entry: vertex_result.supported_pairs) {
                 EdgeId in_edge = entry.first;
                 EdgeId out_edge = entry.second;
-                LinkId link = in_to_correct_link.at(in_edge);
+                LinkId link = in_to_link.at(in_edge);
                 DEBUG("In edge: " << in_edge.int_id() << ", out edge: " << out_edge.int_id() << ", vertex: " << vertex.int_id());
                 helper.DeleteLink(vertex, out_edge);
                 helper.DeleteLink(graph.conjugate(vertex), graph.conjugate(in_edge));
@@ -50,7 +50,8 @@ GraphResolver::GraphResolverInfo::VertexMap GraphResolver::SplitVertices(debruij
                 std::vector<LinkId> new_links;
                 for (const auto &link_id: links) {
                     auto link = graph.link(link_id);
-                    if (resolved_in_edges.find(link.link.first) == resolved_in_edges.end() and resolved_out_edges.find(link.link.second) == resolved_out_edges.end()) {
+                    if (resolved_in_edges.find(link.link.first) == resolved_in_edges.end() &&
+                            resolved_out_edges.find(link.link.second) == resolved_out_edges.end()) {
                         new_links.push_back(link_id);
                     }
                 }
@@ -83,7 +84,7 @@ GraphResolver::GraphResolverInfo::EdgeMap GraphResolver::MergePaths(debruijn_gra
         std::vector<uint32_t> overlaps;
         const auto &first_path = *(path.first);
         for (size_t i = 0; i < first_path.Size(); ++i) {
-            if (i > 0 and graph.is_complex(graph.EdgeStart(first_path[i]))) {
+            if (i > 0 && graph.is_complex(graph.EdgeStart(first_path[i]))) {
                 size_t overlap = graph.link_length(graph.EdgeStart(first_path[i]), first_path[i - 1], first_path[i]);
                 overlaps.push_back(static_cast<uint32_t>(overlap));
             }
@@ -109,18 +110,20 @@ GraphResolver::GraphResolverInfo GraphResolver::TransformGraph(debruijn_graph::G
 GraphResolver::LinkMap GraphResolver::GetLinkMap(const debruijn_graph::Graph &graph,
                                                  GraphResolver::VertexId vertex,
                                                  const VertexResult &vertex_result) const {
-    std::unordered_map<EdgeId, EdgeId> in_to_out;
+    std::unordered_map<EdgeId, EdgeId> in_to_link;
     std::unordered_map<EdgeId, LinkId> in_to_correct_link;
     for (const auto &entry: vertex_result.supported_pairs) {
         EdgeId in_edge = entry.first;
         EdgeId out_edge = entry.second;
-        VERIFY_DEV(in_to_out.find(in_edge) == in_to_out.end());
-        in_to_out[in_edge] = out_edge;
+        VERIFY_MSG(in_to_link.find(in_edge) == in_to_link.end(), 
+                   "Barcode supported pair " << std::to_string(in_edge.int_id()) << ", " << 
+                   std::to_string(out_edge.int_id()) << " does not have a corresponding GFA link");
+        in_to_link[in_edge] = out_edge;
     }
     for (const LinkId &link_id: graph.links(vertex)) {
         const auto &link = graph.link(link_id);
-        auto in_result = in_to_out.find(link.link.first);
-        if (in_result == in_to_out.end()) {
+        auto in_result = in_to_link.find(link.link.first);
+        if (in_result == in_to_link.end()) {
             continue;
 	}
         if (in_result->second == link.link.second) {

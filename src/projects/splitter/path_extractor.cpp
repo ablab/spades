@@ -125,7 +125,7 @@ PathExtractor::ScaffoldLinks PathExtractor::GetScaffoldLinks(const VertexResults
         }
         DEBUG("Constructing path map");
         for (const auto &entry: vertex_result.supported_pairs) {
-            if (vertex_result.state == VertexState::Completely or vertex_result.state == VertexState::Partially) {
+            if (vertex_result.state == VertexState::Completely || vertex_result.state == VertexState::Partially) {
                 if (in_to_out.find(entry.first) == in_to_out.end()) {
                     TRACE(entry.first.int_id() << "," << entry.second.int_id());
                     if (IsGraphLink(entry.first, entry.second, vertex_link_storage)) {
