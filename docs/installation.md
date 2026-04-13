@@ -102,14 +102,15 @@ SPAdes algorithms. This includes:
  - MPI-aware version of SPAdes pipeline hpcSPAdes
 
 These tools are not built by default and therefore must be built separately. One
-can pass `-SPADES_ENABLE_PROJECTS="semicolon-separated list of projects"` to enable building only
+can pass `-DSPADES_ENABLE_PROJECTS="semicolon-separated list of projects"` to enable building only
 subset of SPAdes components. The components are:
 
   - `spades`
   - [`spades_tools`](standalone.md)
-  - [`binspareader`](binspreader.md)
+  - [`binspreader`](binspreader.md)
   - [`pathracer`](pathracer.md)
   - [`spaligner`](spaligner.md)
+  - [`splitter`](splitter.md)
   - [`hpcspades`](hpc.md)
 
 By default, only SPAdes and SPAdes tools are enabled (so
