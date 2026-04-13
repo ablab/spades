@@ -255,21 +255,20 @@ public:
         return EdgeData(!(data.nucls()));
     }
 
-    // FIXME: support complex overlaps
     VertexData conjugate(const VertexData &data) const {
         if (!data.has_complex_overlap() or data.links().empty())
             return data.clone();
-        VERIFY_MSG(false, "Conjugation of complex overlap data is not implemented")
+        VERIFY_MSG(false, "Conjugate overlap data has to be provided separately for complex vertices")
     }
 
-    template<class LinkConjugate>
-    VertexData conjugate(const VertexData &data, LinkConjugate &&link_conjugate) const {
+    template<class LinkConjugator>
+    VertexData conjugate(const VertexData &data, LinkConjugator &&link_conjugator) const {
         if (!data.has_complex_overlap() || data.links().empty())
             return data.clone();
         std::vector<LinkId> conjugated_links;
         conjugated_links.reserve(data.links().size());
         for (const auto &lid : data.links())
-            conjugated_links.push_back(link_conjugate(lid));
+            conjugated_links.push_back(link_conjugator(lid));
         return VertexData(conjugated_links);
     }
 
