@@ -7,7 +7,7 @@ SPlitteR is a tool that uses synthetic long reads (SLRs) to improve the contigui
 To compile SPlitteR, run
 
 ```
-./spades_compile -SPADES_ENABLE_PROJECTS=splitter
+./spades_compile.sh -DSPADES_ENABLE_PROJECTS=splitter
 ```
 
 ## Input
@@ -124,7 +124,7 @@ Developer options:
 
 Example command lines:
 
-- Assembly produced LJA from HiFi diploid human dataset, with 10X SLR library (HPC compressed)\
+- Assembly produced by LJA from HiFi diploid human dataset, with 10X SLR library (HPC compressed)\
  `splitter lja_output/mdbg/mdbg.hpc.gfa 10x_dataset.yaml output -Mdiploid -Gmdbg`
 - Assembly produced by metaFlye from metagenomic dataset, with TELL-Seq SLR library\
   `splitter metaflye_output/assembly_graph.gfa tellseq_dataset.yaml output --assembly-info metaflye_output/assembly_info.txt -Mmeta -Gblunt`
@@ -146,6 +146,6 @@ In addition
 
 ## References
 
-If you are using **BinSPreader** in your research, please cite:
+If you are using **SPlitteR** in your research, please cite:
 
 [Tolstoganov et al., 2024](https://doi.org/10.7717/peerj.18050)
