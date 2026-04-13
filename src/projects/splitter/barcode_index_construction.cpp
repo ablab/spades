@@ -34,7 +34,7 @@ void ConstructBarcodeIndex(barcode_index::FrameBarcodeIndex<debruijn_graph::Grap
         FrameConcurrentBarcodeIndexBuffer<debruijn_graph::Graph> buffer(graph, frame_size);
         FrameBarcodeIndexBuilder barcode_index_builder(graph, mapper, barcode_prefices, frame_size, nthreads);
         bool is_tellseq = lib.type() == io::LibraryType::TellSeqReads;
-        if (not is_tellseq) {
+        if (!is_tellseq) {
             barcode_index_builder.ConstructBarcodeIndex(io::paired_easy_readers(lib, false, 0), barcode_index, lib, is_tellseq);
         }
         if (is_tellseq) {
@@ -69,14 +69,14 @@ void DownsampleBarcodeIndex(const debruijn_graph::Graph &graph,
                             unsigned nthreads,
                             barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> &barcode_index,
                             barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> &downsampled_index,
-                            double sampling_factor) {
-    VERIFY_DEV(math::ls(sampling_factor, 1.0));
+                            double sampling_fraction) {
+    VERIFY_MSG(math::ls(sampling_fraction, 1.0), "Sampling fraction must be less than 1");
     const size_t mapping_k = 31;
     const std::vector<std::string> barcode_prefices = {"BC:Z:", "BX:Z:"};
     debruijn_graph::Graph empty_graph(mapping_k);
     alignment::BWAReadMapper<debruijn_graph::Graph> mapper(empty_graph);
     FrameBarcodeIndexBuilder barcode_index_builder(graph, mapper, barcode_prefices, barcode_index.GetFrameSize(), nthreads);
-    barcode_index_builder.DownsampleBarcodeIndex(downsampled_index, barcode_index, sampling_factor);
+    barcode_index_builder.DownsampleBarcodeIndex(downsampled_index, barcode_index, sampling_fraction);
 }
 
 }

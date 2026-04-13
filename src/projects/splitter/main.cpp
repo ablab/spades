@@ -251,9 +251,9 @@ cont_index::VertexResolver<debruijn_graph::Graph>::LinkMap GetTrustedContigLinks
             trusted_link_map[graph.conjugate(next)].insert(graph.conjugate(current));
         }
     }
-    size_t total_links = 0;
+    size_t total_score = 0;
     for (const auto &entry: trusted_link_map) {
-        total_links += entry.second.size();
+        total_score += entry.second.size();
     }
     return trusted_link_map;
 }

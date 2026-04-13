@@ -145,7 +145,7 @@ scaffold_graph::ScaffoldGraph GetTellSeqScaffoldGraph(const debruijn_graph::Grap
                                                       io::IdMapper<std::string> *id_mapper) {
     auto path_to_scaffold_graph = output_dir / "tellseq_links.scg";
     scaffold_graph::ScaffoldGraph scaffold_graph(g);
-    if (!bin_load or !std::filesystem::exists(path_to_scaffold_graph)) {
+    if (!bin_load || !std::filesystem::exists(path_to_scaffold_graph)) {
         LinkIndexGraphConstructor link_index_constructor(g,
                                                          barcode_extractor,
                                                          score_threshold,
