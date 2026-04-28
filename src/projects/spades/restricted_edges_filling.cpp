@@ -43,7 +43,7 @@ static void MapRestrictedEdgesFromTrustedContigs(graph_pack::GraphPack &gp) {
     if (!gp.get_mutable<KmerMapper<Graph>>().IsAttached())
         gp.get_mutable<KmerMapper<Graph>>().Attach();
 
-    EnsureBasicMapping(gp);
+    EnsureBasicMapping(gp, !cfg::get().frugal);
     std::vector<size_t> trusted_contigs;
     for (size_t lib_id = 0; lib_id < cfg::get().ds.reads.lib_count(); ++lib_id) {
         if (cfg::get().ds.reads[lib_id].type() == io::LibraryType::TrustedContigs)

@@ -180,7 +180,7 @@ static void AddSimplificationStages(spades::StageManager &SPAdes) {
 
     SPAdes.add<debruijn_graph::SimplificationCleanup>();
 
-    if (cfg::get().correct_mismatches)
+    if (cfg::get().correct_mismatches && !cfg::get().frugal)
         SPAdes.add<debruijn_graph::MismatchCorrectionMPI>();
 
     if (cfg::get().ss_coverage_splitter.enabled)

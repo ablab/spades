@@ -153,7 +153,7 @@ void PairInfoCountBase::execute(graph_pack::GraphPack &gp, const char *,
                                 const MapLibBase &map_lib_func,
                                 size_t num_readers) {
     InitRRIndices(gp);
-    EnsureBasicMapping(gp);
+    EnsureBasicMapping(gp, !cfg::get().frugal);
 
     const auto &graph = gp.get<Graph>();
 

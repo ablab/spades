@@ -724,6 +724,7 @@ void load_launch_info(debruijn_config &cfg, boost::property_tree::ptree const &p
 
     load(cfg.rr_enable, pt, "rr_enable");
     load(cfg.gfa11, pt, "gfa11");
+    load(cfg.frugal, pt, "frugal");
 
     load(cfg.temp_bin_reads_dir, pt, "temp_bin_reads_dir");
 
@@ -880,10 +881,16 @@ void load(debruijn_config &cfg, const std::vector<std::filesystem::path> &cfg_fn
         cfg.pe_params.param_set.scaffolder_options.enabled = false;
     }
 
-    cfg.need_mapping = cfg.developer_mode || cfg.correct_mismatches ||
-                       cfg.gap_closer_enable || cfg.rr_enable ||
-                       cfg.ss_coverage_splitter.enabled;
-
+    // K-mer mapper is always attached in developer mode or in the case when read
+    // mapping would be needed (unless in frugal mode).
+    cfg.need_mapping = cfg.developer_mode ||
+                       (!cfg.frugal &&
+                        (cfg.correct_mismatches || // uses k-mer mapper directly
+                         cfg.gap_closer_enable || // maps reads
+                         cfg.rr_enable || // maps reads
+                         cfg.ss_coverage_splitter.enabled  // maps reads
+                         )
+                        );
     cfg.output_dir = cfg.output_base / ("K" + std::to_string(cfg.K));
 
     cfg.output_saves = cfg.output_dir / "saves";
