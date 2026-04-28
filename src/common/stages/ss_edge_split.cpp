@@ -25,7 +25,7 @@ void SSEdgeSplit::run(graph_pack::GraphPack& gp, const char *) {
         return;
     }
 
-    EnsureBasicMapping(gp);
+    EnsureBasicMapping(gp, !cfg::get().frugal);
 
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         auto &lib = cfg::get_writable().ds.reads[i];

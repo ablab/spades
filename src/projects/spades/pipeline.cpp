@@ -179,7 +179,7 @@ static void AddSimplificationStages(StageManager &SPAdes) {
 
     SPAdes.add<debruijn_graph::SimplificationCleanup>();
 
-    if (cfg::get().correct_mismatches)
+    if (cfg::get().correct_mismatches && !cfg::get().frugal)
         SPAdes.add<debruijn_graph::MismatchCorrection>();
 
     if (cfg::get().ss_coverage_splitter.enabled)
@@ -255,6 +255,8 @@ void assemble_genome() {
     if (cfg::get().need_mapping) {
         INFO("Will need read mapping, kmer mapper will be attached");
         conj_gp.get_mutable<debruijn_graph::KmerMapper<debruijn_graph::Graph>>().Attach();
+    } else if (cfg::get().frugal) {
+        INFO("Memory frugal model is enabled, will NOT attach kmer mapper");
     }
 
     // Build the pipeline

@@ -356,7 +356,7 @@ void HybridLibrariesAligning::run(graph_pack::GraphPack& gp, const char*) {
                                    path_storage, gap_storage,
                                    cfg::get().max_threads, cfg::get().pb);
             } else {
-                EnsureBasicMapping(gp);
+                EnsureBasicMapping(gp, !cfg::get().frugal);
                 gap_closing::GapTrackingListener mapping_listener(graph, gap_storage);
                 INFO("Processing reads from hybrid library " << lib_id);
 

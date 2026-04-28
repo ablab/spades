@@ -5,9 +5,8 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
+#include "graph_pack_helpers.h"
 #include "graph_pack.hpp"
-
-#include "genomic_info.hpp"
 
 #include "alignment/edge_index.hpp"
 #include "alignment/kmer_mapper.hpp"
@@ -46,14 +45,17 @@ void EnsureIndex(GraphPack& gp) {
     index.Attach();
 }
 
-void EnsureBasicMapping(GraphPack& gp) {
-    auto &kmer_mapper = gp.get_mutable<KmerMapper<Graph>>();
-
-    VERIFY(kmer_mapper.IsAttached());
+void EnsureBasicMapping(GraphPack& gp, bool check_mapper) {
     EnsureIndex(gp);
-    INFO("Normalizing k-mer map. Total " << kmer_mapper.size() << " kmers to process");
-    kmer_mapper.Normalize();
-    INFO("Normalizing done");
+
+    if (check_mapper) {
+        auto &kmer_mapper = gp.get_mutable<KmerMapper<Graph>>();
+        VERIFY(kmer_mapper.IsAttached());
+
+        INFO("Normalizing k-mer map. Total " << kmer_mapper.size() << " kmers to process");
+        kmer_mapper.Normalize();
+        INFO("Normalizing done");
+    }
 }
 
 void EnsureQuality(GraphPack& gp) {

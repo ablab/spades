@@ -16,7 +16,8 @@ void FillQuality(graph_pack::GraphPack& gp);
 void ClearQuality(graph_pack::GraphPack& gp);
 
 void EnsureIndex(graph_pack::GraphPack& gp);
-void EnsureBasicMapping(graph_pack::GraphPack& gp);
+void EnsureBasicMapping(graph_pack::GraphPack& gp,
+                        bool check_mapper = true);
 void EnsureQuality(graph_pack::GraphPack& gp);
 void EnsurePos(graph_pack::GraphPack& gp);
 void EnsureDebugInfo(graph_pack::GraphPack& gp);

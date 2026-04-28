@@ -51,6 +51,9 @@ min_edge_length_for_is_count 0
 ; Whether GFA v1.2 (jump links) or GFA v1.1 (scaffold segments) graphs is written
 gfa11 false
 
+; Enable / Disable memory frugal mode
+frugal false
+
 ;preserve raw paired index after distance estimation
 preserve_raw_paired_index false
 

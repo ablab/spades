@@ -517,6 +517,7 @@ struct debruijn_config {
     time_tracing tt;
 
     bool need_mapping;
+    bool frugal = false;
 
     debruijn_config() :
             use_single_reads(false) {
