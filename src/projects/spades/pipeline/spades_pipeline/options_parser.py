@@ -1104,7 +1104,8 @@ def add_to_cfg(cfg, bin_home, spades_home, args):
         if args.read_buffer_size:
             cfg["assembly"].__dict__["read_buffer_size"] = args.read_buffer_size
         cfg["assembly"].__dict__["gfa11"] = args.gfa11
-        cfg["assembly"].__dict__["frugal"] = args.frugal
+        # Default value depends on grid engine : local / non-local
+        cfg["assembly"].__dict__["frugal"] = args.frugal if args.frugal else args.grid_engine != "local"
 
     # corrector can work only if contigs exist (not only error correction)
     if (not args.only_error_correction) and args.mismatch_corrector:
