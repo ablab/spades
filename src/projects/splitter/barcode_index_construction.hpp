@@ -36,5 +36,6 @@ void DownsampleBarcodeIndex(const debruijn_graph::Graph &graph,
                             unsigned nthreads,
                             barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> &barcode_index,
                             barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> &downsampled_index,
-                            double sampling_factor);
+                            double sampling_factor,
+                            int seed);
 }
