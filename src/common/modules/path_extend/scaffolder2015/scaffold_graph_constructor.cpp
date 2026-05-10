@@ -32,7 +32,7 @@ void BaseScaffoldGraphConstructor::ConstructFromSet(const EdgeSet &edge_set,
     for (const auto &v: edge_set) {
         graph_->AddVertex(v);
     }
-    INFO("Added vertices")
+    INFO("Added vertices");
     ConstructFromConditions(connection_conditions, use_terminal_vertices_only);
 }
 
@@ -90,34 +90,23 @@ PredicateScaffoldGraphFilter::PredicateScaffoldGraphFilter(const Graph &assembly
 
 void PredicateScaffoldGraphFilter::ConstructFromGraphAndPredicate(const ScaffoldGraph &old_graph,
                                                                   std::shared_ptr<EdgePairPredicate> predicate) {
+    using ScEdge = ScaffoldGraph::ScaffoldEdge;
     for (const auto& vertex: old_graph.vertices()) {
         graph_->AddVertex(vertex);
     }
-    std::vector<ScaffoldGraph::ScaffoldEdge> scaffold_edges;
-    for (const auto& edge: old_graph.edges()) {
-        scaffold_edges.push_back(edge);
-    }
-    size_t counter = 0;
-    const size_t block_size = scaffold_edges.size() / 10;
-    size_t threads = max_threads_;
-    DEBUG("Number of threads: " << threads);
-#pragma omp parallel for num_threads(threads)
-    for (size_t i = 0; i < scaffold_edges.size(); ++i) {
-        auto edge = scaffold_edges[i];
-        TRACE("Checking");
-        bool check_predicate = (*predicate)(edge);
-        TRACE("Check result: " << check_predicate);
-#pragma omp critical
-        {
-            if (check_predicate) {
-                graph_->AddEdge(edge);
-            }
-            ++counter;
-            if (block_size != 0 and counter % block_size == 0) {
-                DEBUG("Processed " << counter << " edges out of " << scaffold_edges.size());
-            }
-        }
-    }
+    std::vector<ScEdge> scaffold_edges(old_graph.edges().begin(),
+                                                            old_graph.edges().end());
+    DEBUG("Number of threads: " << max_threads_);
+    size_t num_blocks = 10;
+    auto kept_edges = FilterEdgesParallel(scaffold_edges, max_threads_, num_blocks,
+        [&](const ScEdge &edge) -> std::optional<ScEdge> {
+            if ((*predicate)(edge)) return edge;
+            return std::nullopt;
+        },
+        [&](size_t done, size_t total) {
+            DEBUG("Processed " << done << " edges out of " << total);
+        });
+    for (const auto &edge : kept_edges) graph_->AddEdge(edge);
 }
 
 std::shared_ptr<scaffold_graph::ScaffoldGraph> PredicateScaffoldGraphFilter::Construct() {
@@ -134,35 +123,28 @@ ScoreFunctionScaffoldGraphFilter::ScoreFunctionScaffoldGraphFilter(const Graph &
 void ScoreFunctionScaffoldGraphFilter::ConstructFromGraphAndScore(const ScaffoldGraph &graph,
                                                                   std::shared_ptr<EdgePairScoreFunction> score_function,
                                                                   double score_threshold, size_t threads) {
+    using ScEdge = ScaffoldGraph::ScaffoldEdge;
     for (const auto& vertex: graph.vertices()) {
         graph_->AddVertex(vertex);
     }
-    std::vector<ScaffoldGraph::ScaffoldEdge> scaffold_edges;
-    for (const auto& edge: graph.edges()) {
-        scaffold_edges.push_back(edge);
-    }
-    size_t counter = 0;
-    const size_t block_size = scaffold_edges.size() / 25;
-    #pragma omp parallel for num_threads(threads)
-    for (size_t i = 0; i < scaffold_edges.size(); ++i) {
-        ScaffoldGraph::ScaffoldEdge edge = scaffold_edges[i];
-        double score = score_function->GetScore(edge);
-    #pragma omp critical
-        {
-            TRACE("Checking edge " << edge.getStart().int_id() << " -> " << edge.getEnd().int_id());
-            TRACE("Score: " << score);
-            TRACE("Score threshold: " << score_threshold);
-            if (math::ge(score, score_threshold)) {
-                TRACE("Success");
-                graph_->AddEdge(edge.getStart(), edge.getEnd(), edge.getColor(), score, edge.getLength());
+    size_t num_blocks = 25;
+    std::vector<ScEdge> scaffold_edges(graph.edges().begin(), graph.edges().end());
+    auto kept_edges = FilterEdgesParallel(scaffold_edges, threads, num_blocks,
+        [&](const ScEdge &edge) -> std::optional<ScEdge> {
+            double score = score_function->GetScore(edge);
+            if (!math::ge(score, score_threshold)) {
+                return std::nullopt;
             }
-            TRACE("Edge added");
-            ++counter;
-            if (counter % block_size == 0) {
-                INFO("Processed " << counter << " edges out of " << scaffold_edges.size());
-            }
-        }
-    }
+            return ScEdge(edge.getStart(), 
+                          edge.getEnd(),
+                          edge.getColor(), 
+                          score, 
+                          edge.getLength());
+        },
+        [&](size_t done, size_t total) {
+            INFO("Processed " << done << " edges out of " << total);
+        });
+    for (const auto &edge : kept_edges) graph_->AddEdge(edge);
 }
 std::shared_ptr<scaffold_graph::ScaffoldGraph> ScoreFunctionScaffoldGraphFilter::Construct() {
     ConstructFromGraphAndScore(old_graph_, score_function_, score_threshold_, num_threads_);
@@ -187,35 +169,30 @@ void ScoreFunctionGraphConstructor::ConstructFromScore(std::shared_ptr<EdgePairS
     for (const auto &chunk: chunks_) {
         graph_->AddVertex(chunk.vertex_);
     }
-    size_t approx_block_counter = 0;
-    const size_t NUM_BLOCKS = 100;
-    const size_t block_size = chunks_.size() / NUM_BLOCKS;
-#pragma omp parallel for schedule(guided)
-    for (size_t i = 0; i < chunks_.size(); ++i) {
-        for (auto it = chunks_[i].begin_; it != chunks_[i].end_; ++it) {
-            const ScaffoldVertex &first = chunks_[i].vertex_;
+    std::vector<std::pair<ScaffoldVertex, ScaffoldVertex>> pairs;
+    for (const auto &chunk : chunks_) {
+        const ScaffoldVertex &first = chunk.vertex_;
+        const auto &conjugate = first.GetConjugateFromGraph(graph_->AssemblyGraph());
+        for (auto it = chunk.begin_; it != chunk.end_; ++it) {
             //todo move this check elsewhere
-            if (first != *it and first.GetConjugateFromGraph(graph_->AssemblyGraph()) != *it) {
-                ScaffoldGraph::ScaffoldEdge edge(first, *it, 0, .0, 0);
-                double score = score_function->GetScore(edge);
-                if (math::ge(score, score_threshold)) {
-                    #pragma omp critical
-                    {
-                        TRACE("Success");
-			            ScaffoldGraph::ScaffoldEdge new_edge(first, *it, 0, score, 0);
-                        graph_->AddEdgeSimple(new_edge);
-                    }
-                }
-            }
-        }
-        if (i % block_size == 0 and i != 0) {
-#pragma omp critical
-        {
-            ++approx_block_counter;
-            INFO("Processed " << approx_block_counter << " out of " << NUM_BLOCKS << " blocks");
-        }
+            if (first != *it and conjugate != *it)
+                pairs.emplace_back(first, *it);
         }
     }
+    size_t num_blocks = 100;
+    auto kept_edges = FilterEdgesParallel(pairs, num_threads_, num_blocks,
+        [&](const std::pair<ScaffoldVertex, ScaffoldVertex> &p) -> std::optional<ScaffoldGraph::ScaffoldEdge> {
+            ScaffoldGraph::ScaffoldEdge probe(p.first, p.second, 0, .0, 0);
+            double score = score_function->GetScore(probe);
+            if (!math::ge(score, score_threshold)) { 
+                return std::nullopt;
+            }
+            return ScaffoldGraph::ScaffoldEdge(p.first, p.second, 0, score, 0);
+        },
+        [&](size_t done, size_t total) {
+            INFO("Processed " << done << " pairs out of " << total);
+        });
+    for (const auto &edge : kept_edges) graph_->AddEdgeSimple(edge);
 }
 
 std::shared_ptr<scaffold_graph::ScaffoldGraph> ScaffoldSubgraphConstructor::Construct() {

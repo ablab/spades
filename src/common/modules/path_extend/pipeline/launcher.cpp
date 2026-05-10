@@ -89,10 +89,7 @@ void PathExtendLauncher::PrintScaffoldGraph(const scaffold_graph::ScaffoldGraph 
                                             const debruijn_graph::GenomeConsistenceChecker &genome_checker,
                                             const std::filesystem::path &filename) const {
     using namespace scaffolder;
-    std::set<scaffold_graph::ScaffoldVertex> scaff_vertex_set;
-    for (const auto& edge: main_edge_set) {
-        scaff_vertex_set.insert(edge);
-    }
+    std::set<scaffold_graph::ScaffoldVertex> scaff_vertex_set(main_edge_set.begin(), main_edge_set.end());
     auto vertex_colorer = std::make_shared<ScaffoldVertexSetColorer>(scaff_vertex_set);
     auto edge_colorer = std::make_shared<ScaffoldEdgeColorer>();
     graph_colorer::CompositeGraphColorer<scaffold_graph::ScaffoldGraph> colorer(vertex_colorer, edge_colorer);
