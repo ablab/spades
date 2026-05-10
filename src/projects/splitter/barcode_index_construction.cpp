@@ -35,11 +35,11 @@ void ConstructBarcodeIndex(barcode_index::FrameBarcodeIndex<debruijn_graph::Grap
         FrameBarcodeIndexBuilder barcode_index_builder(graph, mapper, barcode_prefices, frame_size, nthreads);
         bool is_tellseq = lib.type() == io::LibraryType::TellSeqReads;
         if (!is_tellseq) {
-            barcode_index_builder.ConstructBarcodeIndex(io::paired_easy_readers(lib, false, 0), barcode_index, lib, is_tellseq);
+            barcode_index_builder.ConstructBarcodeIndex(io::paired_easy_readers(lib, false, 0), barcode_index, is_tellseq);
         }
-        if (is_tellseq) {
+        else {
             INFO("Constructing from tellseq lib");
-            barcode_index_builder.ConstructBarcodeIndex(io::tellseq_easy_readers(lib, false, 0), barcode_index, lib, is_tellseq);
+            barcode_index_builder.ConstructBarcodeIndex(io::tellseq_easy_readers(lib, false, 0), barcode_index, is_tellseq);
         }
         INFO("Barcode index construction finished.");
 
@@ -69,14 +69,15 @@ void DownsampleBarcodeIndex(const debruijn_graph::Graph &graph,
                             unsigned nthreads,
                             barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> &barcode_index,
                             barcode_index::FrameBarcodeIndex<debruijn_graph::Graph> &downsampled_index,
-                            double sampling_fraction) {
+                            double sampling_fraction,
+                            int seed) {
     VERIFY_MSG(math::ls(sampling_fraction, 1.0), "Sampling fraction must be less than 1");
     const size_t mapping_k = 31;
     const std::vector<std::string> barcode_prefices = {"BC:Z:", "BX:Z:"};
     debruijn_graph::Graph empty_graph(mapping_k);
     alignment::BWAReadMapper<debruijn_graph::Graph> mapper(empty_graph);
     FrameBarcodeIndexBuilder barcode_index_builder(graph, mapper, barcode_prefices, barcode_index.GetFrameSize(), nthreads);
-    barcode_index_builder.DownsampleBarcodeIndex(downsampled_index, barcode_index, sampling_fraction);
+    barcode_index_builder.DownsampleBarcodeIndex(downsampled_index, barcode_index, sampling_fraction, seed);
 }
 
 }

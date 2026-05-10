@@ -57,6 +57,7 @@ struct gcfg {
   size_t frame_size = 40000;
   size_t read_linkage_distance = 40000;
   double sampling_factor = 1.0;
+  int seed = 999;
 
   //graph construction
   double graph_score_threshold = 2.0;
@@ -89,6 +90,7 @@ static void process_cmdline(int argc, char** argv, gcfg& cfg) {
         (option("-l") & integer("value", cfg.libindex)) % "library index (0-based, default: 0)",
         (option("-t") & integer("value", cfg.nthreads)) % "# of threads to use",
         (option("--sampling-factor") & value("sampling-factor", cfg.sampling_factor)) % "Sampling factor for read downsampling",
+        (option("--seed") & value("seed", cfg.seed)) % "Seed for barcode downsampling",
         (option("--assembly-info") & value("assembly-info", assembly_info))
             % "Path to metaflye assembly_info.txt file (meta mode, metaFlye graphs only)",
         (with_prefix("-G",
@@ -162,11 +164,11 @@ struct TimeTracerRAII {
 gfa::GFAReader ReadGraph(const gcfg &cfg,
                          debruijn_graph::Graph &graph,
                          io::IdMapper<std::string> *id_mapper) {
-        gfa::GFAReader gfa(cfg.graph);
-        gfa.to_graph(graph, id_mapper);
-        INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: "
-                              << gfa.num_paths());
-        return gfa;
+    gfa::GFAReader gfa(cfg.graph);
+    gfa.to_graph(graph, id_mapper);
+    INFO("GFA segments: " << gfa.num_edges() << ", links: " << gfa.num_links() << ", paths: "
+                            << gfa.num_paths());
+    return gfa;
 }
 
 std::unordered_set<debruijn_graph::EdgeId> ParseRepetitiveEdges(const debruijn_graph::Graph &graph,
@@ -401,7 +403,7 @@ int main(int argc, char** argv) {
     if (not math::eq(cfg.sampling_factor, 1.0)) {
         INFO("Downsampling the barcode index with factor " << cfg.sampling_factor);
         cont_index::DownsampleBarcodeIndex(graph, cfg.nthreads, barcode_index, downsampled_index,
-                                            cfg.sampling_factor);
+                                            cfg.sampling_factor, cfg.seed);
         barcode_extractor_ptr = std::make_shared<BarcodeExtractor>(downsampled_index, graph);
     }
 
