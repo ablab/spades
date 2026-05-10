@@ -15,6 +15,7 @@
 #include "connection_condition2015.hpp"
 #include "modules/path_extend/read_cloud_path_extend/scaffold_graph_construction/read_cloud_connection_conditions.hpp"
 
+#include <atomic>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -58,6 +59,33 @@ protected:
     void ConstructFromEdgeConditions(func::TypedPredicate<typename Graph::EdgeId> edge_condition,
                                      ConnectionConditions &connection_conditions,
                                      bool use_terminal_vertices_only = false);
+
+    template <typename InEdge, typename EdgeConstructor, typename LogProgress>
+    static std::vector<scaffold_graph::ScaffoldGraph::ScaffoldEdge>
+    FilterEdgesParallel(const std::vector<InEdge> &in_edges, size_t threads,
+                        size_t num_log_blocks, EdgeConstructor edge_constructor,
+                        LogProgress log_progress) {
+        using ScEdge = scaffold_graph::ScaffoldGraph::ScaffoldEdge;
+        std::vector<std::optional<ScEdge>> kept_edges(in_edges.size());
+        std::atomic<size_t> counter = 0;
+        const size_t block_size = num_log_blocks ? in_edges.size() / num_log_blocks : 0;
+
+#pragma omp parallel for num_threads(threads) schedule(guided)
+        for (size_t i = 0; i < in_edges.size(); ++i) {
+            kept_edges[i] = edge_constructor(in_edges[i]);
+            size_t done = ++counter;
+            if (block_size != 0 && done % block_size == 0) {
+                log_progress(done, in_edges.size());
+            }
+        }
+
+        std::vector<ScEdge> result;
+        for (auto &k : kept_edges)
+            if (k) {
+                result.push_back(std::move(*k));
+            }
+        return result;
+    }
 
     DECL_LOGGER("BaseScaffoldGraphConstructor");
 };
