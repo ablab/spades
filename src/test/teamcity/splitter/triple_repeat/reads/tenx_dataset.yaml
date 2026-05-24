@@ -1,0 +1,6 @@
+- "left reads":
+  - "simulated_1.fastq.gz"
+  "orientation": "fr"
+  "right reads":
+  - "simulated_2.fastq.gz"
+  "type": "clouds10x"
