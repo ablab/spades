@@ -37,14 +37,14 @@ class ConcurrentBufferFiller {
       public:
         explicit BarcodeEncoder(size_t start):
             barcodes_map_(),
-            start_(start)
+            next_id_(start)
         { }
 
         BarcodeId find_or_insert(const std::string &barcode_string) {
             BarcodeId result;
             barcodes_map_.upsert(barcode_string, [&result, this](BarcodeId &value, libcuckoo::UpsertContext context) {
               if (context != libcuckoo::UpsertContext::ALREADY_EXISTED) {
-                  value = barcodes_map_.size() + start_;
+                  value = next_id_.fetch_add(1);
               }
               result = value;
               return false;
@@ -62,11 +62,11 @@ class ConcurrentBufferFiller {
             return barcodes_map_.find(barcode);
         }
         size_t size() const {
-            return barcodes_map_.size();
+            return next_id_.load();
         }
       private:
         BarcodeMap barcodes_map_;
-        const size_t start_;
+        std::atomic<size_t> next_id_;
     };
 
     ConcurrentBufferFiller(const Graph &g,
