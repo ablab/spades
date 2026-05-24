@@ -135,6 +135,12 @@ class VertexResolver {
 
                 scaffold_graph::ScaffoldGraph::ScaffoldEdge sc_edge(in_edge, out_edge);
                 auto score = score_function->GetScore(sc_edge);
+                DEBUG("Vertex: " << vertex.int_id() 
+                                << ", in edge: " 
+                                << in_edge.int_id() 
+                                << ", out edge "
+                                << out_edge.int_id() 
+                                << ", score: " << score);
                 auto link_result = links_.find(in_edge);
                 if (link_result != links_.end() and link_result->second.find(out_edge) != link_result->second.end()) {
                     score += TRUSTED_LINK_BONUS;
