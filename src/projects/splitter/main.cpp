@@ -352,12 +352,15 @@ int main(int argc, char** argv) {
     START_BANNER("SpLitteR");
 
     cfg.nthreads = spades_set_omp_threads(cfg.nthreads);
-    INFO("Maximum # of threads to use (adjusted due cfgto OMP capabilities): " << cfg.nthreads);
+    INFO("Maximum # of threads to use (adjusted due to OMP capabilities): " << cfg.nthreads);
 
-    if (!std::filesystem::create_directories(cfg.output_dir))
-      FATAL_IO_ERROR("Failed to create output directory: " << cfg.output_dir);
+    if (!std::filesystem::create_directories(cfg.output_dir)) {
+      INFO("Located existing output directory: " << cfg.output_dir << ", removing");
+      std::filesystem::remove_all(cfg.output_dir);
+      std::filesystem::create_directories(cfg.output_dir);
+    }
     if (!std::filesystem::create_directories(cfg.tmpdir))
-      FATAL_IO_ERROR("Failed to create temporary directory: " << cfg.tmpdir);
+      INFO("Located saves directory: " << cfg.tmpdir);
 
     INFO("Loading graph");
     std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());

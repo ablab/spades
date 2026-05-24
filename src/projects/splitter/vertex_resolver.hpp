@@ -80,10 +80,12 @@ class VertexResolver {
         size_t total_in_edges = 0;
         size_t total_out_edges = 0;
         for (const auto &vertex: graph_.vertices()) {
+            // Only resolve canonical vertices
             if (vertex.int_id() > graph_.conjugate(vertex).int_id()) {
                 continue;
             }
             //todo use predicate iterator
+            DEBUG(graph_.OutgoingEdgeCount(vertex) << ", " << graph_.IncomingEdgeCount(vertex));
             if (graph_.OutgoingEdgeCount(vertex) >= 2 and graph_.IncomingEdgeCount(vertex) >= 2) {
                 interesting_vertices.insert(vertex);
                 total_in_edges += graph_.IncomingEdgeCount(vertex);
