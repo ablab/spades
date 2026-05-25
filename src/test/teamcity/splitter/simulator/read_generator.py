@@ -105,11 +105,11 @@ def createparser():
     parser.add_argument("--output", required=True,
                         help="Output directory for reads_1.fastq / reads_2.fastq")
     parser.add_argument("--read-density", type=float, default=0.2)
-    parser.add_argument("--barcode-density", type=float, default=0.9)
+    parser.add_argument("--barcode-density", type=float, default=0.99)
     parser.add_argument("--read-length", type=int, default=60)
     parser.add_argument("--insert-left", type=int, default=50)
     parser.add_argument("--insert-right", type=int, default=70)
-    parser.add_argument("--barcode-collisions", type=float, default=1.1)
+    parser.add_argument("--barcode-collisions", type=float, default=1.05)
     parser.add_argument("--barcode-length", type=int, default=16)
     parser.add_argument("--seed", type=int, default=None)
     return parser
