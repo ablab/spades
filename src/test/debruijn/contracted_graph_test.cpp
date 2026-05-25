@@ -123,7 +123,7 @@ TEST(ContractedGraph, Subgraph) {
     for (const auto& vertex: vertex_it_helper) {
         vertex_map.insert({vertex.int_id(), vertex});
     }
-    ContractedGraphFactoryHelper helper(g);
+    ContractedGraphFactoryHelper helper;
 
     std::unordered_set<VertexId> no_fourth_subset({vertex_map.at(first_id),
                                                    vertex_map.at(second_id),
