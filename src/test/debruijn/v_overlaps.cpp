@@ -238,12 +238,10 @@ void CheckBinaryIO(const std::string &path_to_save,
     gfa_path += ".gfa";
     graph_path += ".graph";
 
-    size_t K = 55;
     std::unique_ptr<io::IdMapper<std::string>> id_mapper(new io::IdMapper<std::string>());
     gfa::GFAReader gfa_reader(gfa_path);
     Graph graph(0);
     gfa_reader.to_graph(graph, id_mapper.get());
-    size_t local_k = gfa_reader.to_graph(graph, id_mapper.get());
 
     io::binary::Save(path_to_save, graph);
     io::binary::Load(path_to_save, graph);

@@ -19,7 +19,7 @@ using namespace debruijn_graph;
 using namespace barcode_index;
 
 TEST(BarcodeIndex, BasicConstruction) {
-    size_t K = 55;
+    uint K = 55;
     Graph graph(K);
     size_t frame_size = 100;
 
@@ -31,7 +31,7 @@ TEST(BarcodeIndex, BasicConstruction) {
 }
 
 TEST(BarcodeIndex, InitialFillMap) {
-    size_t K = 55;
+    uint K = 55;
     Graph graph(K);
 
     auto v1 = graph.AddVertex();
@@ -55,7 +55,7 @@ TEST(BarcodeIndex, InitialFillMap) {
 }
 
 TEST(BarcodeIndex, EdgeEntryConstruction) {
-    size_t K = 55;
+    uint K = 55;
     Graph graph(K);
     auto v1 = graph.AddVertex();
     auto v2 = graph.AddVertex();
@@ -97,7 +97,7 @@ TEST(BarcodeIndex, BarcodeInfoUpdate) {
 }
 
 TEST(BarcodeIndex, ConcurrentBufferIO) {
-    size_t K = 55;
+    uint K = 55;
     Graph graph(K);
 
     auto v1 = graph.AddVertex();
@@ -136,7 +136,7 @@ TEST(BarcodeIndex, ConcurrentBufferIO) {
 }
 
 TEST(BarcodeIndex, BarcodeFiltering) {
-    size_t K = 55;
+    uint K = 55;
     Graph graph(K);
 
     auto v1 = graph.AddVertex();
@@ -169,10 +169,10 @@ TEST(BarcodeIndex, BarcodeFiltering) {
 TEST(BarcodeIndex, BarcodeEncoder) {
     barcode_index::ConcurrentBufferFiller::BarcodeEncoder encoder(0);
 
-    EXPECT_EQ(encoder.find_or_insert("ACGTA"), 1);
-    EXPECT_EQ(encoder.find_or_insert("ACGTC"), 2);
-    EXPECT_EQ(encoder.find_or_insert("ACGTGGG"), 3);
-    EXPECT_EQ(encoder.find_or_insert("ACGTA"), 1);
+    EXPECT_EQ(encoder.find_or_insert("ACGTA"), 0);
+    EXPECT_EQ(encoder.find_or_insert("ACGTC"), 1);
+    EXPECT_EQ(encoder.find_or_insert("ACGTGGG"), 2);
+    EXPECT_EQ(encoder.find_or_insert("ACGTA"), 0);
 
     EXPECT_EQ(encoder.size(), 3);
 }
