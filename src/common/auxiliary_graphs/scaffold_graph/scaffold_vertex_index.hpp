@@ -104,6 +104,7 @@ public:
 
 class BarcodeIndexInfoExtractorWrapper : public IntersectingScaffoldVertexIndexInfoExtractor<SimpleVertexEntry> {
 public:
+    using IntersectingScaffoldVertexIndexInfoExtractor::GetIntersectionSize;
     using Graph = debruijn_graph::Graph;
 
     BarcodeIndexInfoExtractorWrapper(const Graph &g, std::shared_ptr<FrameBarcodeIndexInfoExtractor> barcode_index_)
@@ -156,6 +157,7 @@ private:
 
 class SimpleScaffoldVertexIndexInfoExtractor : public IntersectingScaffoldVertexIndexInfoExtractor<SimpleVertexEntry> {
 public:
+    using IntersectingScaffoldVertexIndexInfoExtractor::GetIntersectionSize;
     typedef scaffold_graph::ScaffoldVertex ScaffoldVertex;
 
     explicit SimpleScaffoldVertexIndexInfoExtractor(std::shared_ptr<ScaffoldVertexIndex<SimpleVertexEntry>> index_)

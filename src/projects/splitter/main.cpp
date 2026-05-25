@@ -230,14 +230,12 @@ cont_index::VertexResolver<debruijn_graph::Graph>::LinkMap GetTrustedContigLinks
                                                                                  const gfa::GFAReader &gfa) {
     cont_index::VertexResolver<debruijn_graph::Graph>::LinkMap trusted_link_map;
     std::unordered_set<EdgeId> non_unique_starts;
-    size_t total_path_edges = 0;
     std::vector<std::vector<EdgeId>> non_repetitive_paths;
     for (const auto &path: gfa.paths()) {
         std::vector<EdgeId> non_repetitive_path;
         for (const auto &edge: path.edges) {
             if (repetitive_edges.find(edge) == repetitive_edges.end()) {
                 non_repetitive_path.push_back(edge);
-                ++total_path_edges;
             }
         }
         non_repetitive_paths.push_back(non_repetitive_path);
@@ -252,10 +250,6 @@ cont_index::VertexResolver<debruijn_graph::Graph>::LinkMap GetTrustedContigLinks
             trusted_link_map[current].insert(next);
             trusted_link_map[graph.conjugate(next)].insert(graph.conjugate(current));
         }
-    }
-    size_t total_score = 0;
-    for (const auto &entry: trusted_link_map) {
-        total_score += entry.second.size();
     }
     return trusted_link_map;
 }
