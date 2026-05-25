@@ -31,6 +31,7 @@ class ScaffoldGraphConstructor {
 public:
     typedef scaffold_graph::ScaffoldGraph ScaffoldGraph;
 
+    virtual ~ScaffoldGraphConstructor() = default;
     virtual std::shared_ptr<ScaffoldGraph> Construct() = 0;
 };
 

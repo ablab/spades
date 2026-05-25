@@ -68,6 +68,8 @@ class ScaffoldVertexIndexInfoExtractor {
 public:
     typedef typename scaffold_graph::ScaffoldVertex ScaffoldVertex;
 
+    virtual ~ScaffoldVertexIndexInfoExtractor() = default;
+
 public:
     virtual size_t GetHeadSize(const ScaffoldVertex &vertex) const = 0;
     virtual size_t GetTailSize(const ScaffoldVertex &vertex) const = 0;

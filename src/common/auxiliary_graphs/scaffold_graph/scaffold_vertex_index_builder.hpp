@@ -15,11 +15,13 @@ namespace barcode_index {
     template <class EdgeEntryT>
     class AbstractScaffoldVertexEntryExtractor {
      public:
+        virtual ~AbstractScaffoldVertexEntryExtractor() = default;
         virtual EdgeEntryT ExtractEntry(const scaffold_graph::ScaffoldVertex &vertex) const = 0;
     };
 
     class TailThresholdGetter {
      public:
+        virtual ~TailThresholdGetter() = default;
         virtual size_t GetTailThreshold(const scaffold_graph::ScaffoldVertex &vertex) const = 0;
     };
 
@@ -213,7 +215,6 @@ namespace barcode_index {
                                                      const ContainerT& vertex_container, size_t count_threshold,
                                                      size_t max_threads) {
             const size_t length_threshold = 1000;
-            const size_t linkage_distance = 10;
             const double EDGE_LENGTH_FRACTION = 0.5;
             auto threshold_getter = std::make_shared<barcode_index::FractionTailThresholdGetter>(g, EDGE_LENGTH_FRACTION);
             auto split_scaffold_vertex_index = ConstructScaffoldVertexIndex(g, extractor,

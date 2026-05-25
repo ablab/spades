@@ -32,6 +32,8 @@ namespace barcode_index {
         BarcodeIndexInfoExtractor(const BarcodeIndexT &index, const Graph &g) :
                 index_(index), g_(g) {}
 
+        virtual ~BarcodeIndexInfoExtractor() = default;
+
         /**
          *
          * @param edge
