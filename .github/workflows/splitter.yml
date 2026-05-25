@@ -1,0 +1,155 @@
+name: Splitter tests
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - '*'
+    paths-ignore:
+      - 'docs/**'
+      - 'mkdocs.yml'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - 'mkdocs.yml'
+
+env:
+  BUILD_TYPE: Release
+  BUILD_DIR: './build'
+  SRC_DIR: './src'
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    name: 'Build splitter for Linux'
+
+    steps:
+      - name: 'Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: 'Install dependencies'
+        run: >
+          sudo apt-get update &&
+          sudo apt-get install -y libbz2-dev
+
+      - name: 'Install ccache'
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+          key: sccache-splitter-${{env.BUILD_TYPE}}-ubuntu-latest
+
+      - name: 'Configure CMake'
+        run: >
+          cmake
+          -B $BUILD_DIR
+          -S $SRC_DIR
+          -DSPADES_ENABLE_PROJECTS=splitter
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+      - name: 'Build'
+        run: >
+          cmake
+          --build $BUILD_DIR
+          -j16
+
+      - name: 'Package'
+        uses: actions/upload-artifact@v4
+        with:
+          name: splitter-linux
+          path: ${{env.BUILD_DIR}}/bin/splitter
+
+  build-mac:
+    strategy:
+      matrix:
+        include:
+          - os: macos-15-intel
+            arch: x86_64
+          - os: macos-14
+            arch: arm64
+
+    name: 'Build splitter for macOS'
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: 'Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: 'Install dependencies'
+        run: >
+          brew install llvm libomp bzip2
+
+      - name: 'Install ccache'
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+          key: sccache-splitter-${{env.BUILD_TYPE}}-${{ matrix.os }}
+
+      - name: 'Configure CMake'
+        run: >
+          cmake
+          -B $BUILD_DIR
+          -S $SRC_DIR
+          -DSPADES_ENABLE_PROJECTS=splitter
+          -DCMAKE_C_COMPILER=$(brew --prefix llvm)/bin/clang
+          -DCMAKE_CXX_COMPILER=$(brew --prefix llvm)/bin/clang++
+          -DCMAKE_EXE_LINKER_FLAGS=-L$(brew --prefix llvm)/lib/c++
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+      - name: 'Build'
+        run: >
+          cmake
+          --build $BUILD_DIR
+          -j16
+
+      - name: 'Package'
+        uses: actions/upload-artifact@v4
+        with:
+          name: splitter-mac-${{ matrix.arch }}
+          path: ${{env.BUILD_DIR}}/bin/splitter
+
+  splitter-triple-repeat:
+    name: 'Triple repeat test'
+    runs-on: ubuntu-latest
+    needs: build-linux
+
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: 'Download splitter binary'
+        uses: actions/download-artifact@v4
+        with:
+          name: splitter-linux
+          path: ${{env.BUILD_DIR}}/bin
+
+      - name: 'Run splitter on triple_repeat'
+        run: >
+          chmod +x $BUILD_DIR/bin/splitter &&
+          $BUILD_DIR/bin/splitter
+          src/test/teamcity/splitter/triple_repeat/triple_repeat.gfa
+          src/test/teamcity/splitter/triple_repeat/reads/tenx_dataset.yaml
+          splitter_output
+
+      - name: 'Run splitter assessment'
+        run: >
+          python3 src/test/teamcity/splitter/splitter_assessment.py
+          --splitter-output splitter_output
+          --dataset-gfa src/test/teamcity/splitter/triple_repeat/triple_repeat.gfa
