@@ -130,6 +130,28 @@ public:
                                    }), links.end());
     }
 
+    void replace_outedge_in_links(VertexId v, EdgeId old_edge, EdgeId new_edge) {
+        for (const LinkId &link_id : data(v).links()) {
+            auto &lnk = lstorage_.at(link_id.int_id());
+            if (lnk.link.second == old_edge) {
+                lnk.link.second = new_edge;
+                auto &conj_lnk = lstorage_.at(lnk.conjugate_.int_id());
+                conj_lnk.link.first = this->conjugate(new_edge);
+            }
+        }
+    }
+
+    void replace_inedge_in_links(VertexId v, EdgeId old_edge, EdgeId new_edge) {
+        for (const LinkId &link_id : data(v).links()) {
+            auto &lnk = lstorage_.at(link_id.int_id());
+            if (lnk.link.first == old_edge) {
+                lnk.link.first = new_edge;
+                auto &conj_lnk = lstorage_.at(lnk.conjugate_.int_id());
+                conj_lnk.link.second = this->conjugate(new_edge);
+            }
+        }
+    }
+
     auto links(VertexId v) const {
         return data(v).links();
     }
@@ -162,6 +184,30 @@ public:
 
     VertexData ConjugateData(const VertexData &data) const {
         return master().conjugate(data, [this](LinkId lid) { return conjugate(lid); });
+    }
+
+    EdgeId MergePath(const std::vector<EdgeId> &path,
+                     bool safe_merging = true,
+                     std::vector<uint32_t> overlaps = std::vector<uint32_t>()) {
+        EdgeId first_edge = path.front();
+        EdgeId last_edge = path.back();
+        VertexId orig_start = this->EdgeStart(first_edge);
+        VertexId orig_end = this->EdgeEnd(last_edge);
+
+        EdgeId result = base::MergePath(path, safe_merging, std::move(overlaps));
+
+        // CorrectMergePath may conjugate-reverse the path; detect via start vertex.
+        VertexId v_start = this->EdgeStart(result);
+        EdgeId replaced_out = (v_start == orig_start) ? first_edge : this->conjugate(last_edge);
+        if (is_complex(v_start))
+            replace_outedge_in_links(v_start, replaced_out, result);
+
+        VertexId v_end = this->EdgeEnd(result);
+        EdgeId replaced_in = (v_end == orig_end) ? last_edge : this->conjugate(first_edge);
+        if (is_complex(v_end))
+            replace_inedge_in_links(v_end, replaced_in, result);
+
+        return result;
     }
 
     using base::AddVertex;
