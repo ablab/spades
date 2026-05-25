@@ -174,7 +174,7 @@ class VertexResolver {
                             io::IdMapper<std::string> *id_mapper) const {
         std::ofstream ver_stream(output_path);
         ver_stream <<
-                   "Vertex Id\tInDegree\tInEdges\tOutDegree\tOutEdges\tCovered edges\tVertex result\tSupported paths\tTotal links\tAnswer links\tAnswer\n";
+                   "Vertex Id\tInDegree\tInEdges\tOutDegree\tOutEdges\tVertex result\tSupported paths\tTotal links\tAnswer links\tAnswer\n";
         size_t uncovered = 0;
         size_t ambiguous = 0;
         size_t partially = 0;
