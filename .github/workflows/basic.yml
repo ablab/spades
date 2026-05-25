@@ -29,8 +29,10 @@ jobs:
   build-linux:
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04, ubuntu-24.04-arm]
         include:
+          - os: ubuntu-latest
+          - os: ubuntu-24.04
+          - os: ubuntu-24.04-arm
           - os: self-hosted
     runs-on: ${{ matrix.os }}
     name: '🐧 Build SPAdes for Linux'
@@ -76,7 +78,7 @@ jobs:
       - name: '📦 Package'
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts-linux
+          name: build-artifacts-linux-${{ matrix.os }}
           path: |
             ${{env.BUILD_DIR}}/${{env.PKG_LINUX}}.tar.gz
             ${{env.BUILD_DIR}}/bin/debruijn_test
@@ -85,7 +87,14 @@ jobs:
 
   spades-1k-checks-linux:
     name: '🚬 E. coli 1k smoke checks'
-    runs-on: self-hosted
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: ubuntu-24.04
+          - os: ubuntu-24.04-arm
+          - os: self-hosted
+    runs-on: ${{ matrix.os }}
     needs: build-linux
 
     steps:
@@ -95,10 +104,16 @@ jobs:
           shopt -s dotglob &&
           rm -rf *
 
+      - name: '⚙️ Install runtime deps'
+        if: matrix.os != 'self-hosted'
+        run: >
+          sudo apt-get update &&
+          sudo apt-get install -y libbz2-1.0 openmpi-bin libopenmpi3
+
       - name: '📦 Download package'
         uses: actions/download-artifact@v4
         with:
-          name: build-artifacts-linux
+          name: build-artifacts-linux-${{ matrix.os }}
           path: ${{env.INSTALL_DIR}}
 
       - name: '📦 Unpack package'
@@ -132,7 +147,14 @@ jobs:
 
   spades-unittests-linux:
     name: 'SPAdes unittests'
-    runs-on: self-hosted
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: ubuntu-24.04
+          - os: ubuntu-24.04-arm
+          - os: self-hosted
+    runs-on: ${{ matrix.os }}
     needs: build-linux
 
     steps:
@@ -147,14 +169,20 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: '⚙️ Install runtime deps'
+        if: matrix.os != 'self-hosted'
+        run: >
+          sudo apt-get update &&
+          sudo apt-get install -y libbz2-1.0 openmpi-bin libopenmpi3
+
       - name: '📦 Download package'
         uses: actions/download-artifact@v4
         with:
-          name: build-artifacts-linux
+          name: build-artifacts-linux-${{ matrix.os }}
           path: ${{env.BUILD_DIR}}
 
       - name: '⚙️ Install pytest'
-        run: pip install pytest
+        run: pip install --break-system-packages pytest
 
       - name: '🔎 Include tests'
         working-directory: ${{github.workspace}}
@@ -194,7 +222,14 @@ jobs:
 
   spades-mpi-1k-checks-linux:
     name: '🚬 E. coli 1k smoke checks (MPI)'
-    runs-on: self-hosted
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: ubuntu-24.04
+          - os: ubuntu-24.04-arm
+          - os: self-hosted
+    runs-on: ${{ matrix.os }}
     needs: build-linux
 
     steps:
@@ -204,10 +239,16 @@ jobs:
           shopt -s dotglob &&
           rm -rf *
 
+      - name: '⚙️ Install runtime deps'
+        if: matrix.os != 'self-hosted'
+        run: >
+          sudo apt-get update &&
+          sudo apt-get install -y libbz2-1.0 openmpi-bin libopenmpi3
+
       - name: '📦 Download package'
         uses: actions/download-artifact@v4
         with:
-          name: build-artifacts-linux
+          name: build-artifacts-linux-${{ matrix.os }}
           path: ${{env.INSTALL_DIR}}
 
       - name: '📦 Unpack package'
