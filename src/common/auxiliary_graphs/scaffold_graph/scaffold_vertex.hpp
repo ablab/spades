@@ -113,8 +113,6 @@ class ScaffoldVertex {
 
     explicit ScaffoldVertex(std::shared_ptr<InnerScaffoldVertex> vertex_ptr_);
 
-    ScaffoldVertex(const ScaffoldVertex& other) = default;
-
     //make implicit for easy scaffold edge construction
     ScaffoldVertex(EdgeId edge);
     ScaffoldVertex(path_extend::BidirectionalPath *path);

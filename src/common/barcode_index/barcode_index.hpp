@@ -116,7 +116,7 @@ public:
 
     virtual ~BarcodeIndex() {}
 
-    size_t size() const {
+    size_t size() const override {
         return edge_to_entry_.size();
     }
 

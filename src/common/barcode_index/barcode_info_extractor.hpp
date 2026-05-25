@@ -93,7 +93,7 @@ namespace barcode_index {
                 }
             }
             DEBUG("tails: " + std::to_string(barcodes_overall));
-            DEBUG("Long edges" + long_edges);
+            DEBUG("Long edges" + std::to_string(long_edges));
             return static_cast <double> (barcodes_overall) / static_cast <double> (long_edges);
         }
 

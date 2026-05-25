@@ -118,7 +118,7 @@ Connections LongReadsLibConnectionCondition::ConnectedWith(debruijn_graph::EdgeI
     DEBUG("Before prefiltering " << res.size());
     auto iter = res.begin();
     while (iter != res.end()) {
-        if (iter->second < min_read_count_) {
+        if (static_cast<size_t>(iter->second) < min_read_count_) {
             iter = res.erase(iter);
         } else {
             iter++;
