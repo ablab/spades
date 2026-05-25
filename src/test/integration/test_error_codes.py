@@ -384,10 +384,10 @@ class TestSpadespyErrorCodes(unittest.TestCase):
 
     @unittest.skipIf(BIN_DIR is None, "SPAdes binaries not found (needed for --test)")
     def test_oom_exit_code(self):
-        """spades.py --test -m 1 should trigger OOM and exit with 68 (MemoryLimitExceeded)."""
+        """spades.py --test -m 0 should trigger OOM and exit with 68 (MemoryLimitExceeded)."""
         exit_code, stdout, stderr = self._run(["-1", os.path.join(SHARE_DIR, "spades/test_dataset/ecoli_1K_1.fq.gz"),
                                                "-2", os.path.join(SHARE_DIR, "spades/test_dataset/ecoli_1K_2.fq.gz"),
-                                               "-m", "1", "-o", self.tmp], timeout=120)
+                                               "-m", "0", "-o", self.tmp], timeout=120)
         self.assertEqual(exit_code, 68,
                          f"Expected 68 (MemoryLimitExceeded), got {exit_code}\nstdout: {stdout}\nstderr: {stderr}")
 
@@ -396,7 +396,7 @@ class TestSpadespyErrorCodes(unittest.TestCase):
         """OOM (exit 68) is a user-end error — should not suggest reporting a bug."""
         exit_code, stdout, stderr = self._run(["-1", os.path.join(SHARE_DIR, "spades/test_dataset/ecoli_1K_1.fq.gz"),
                                                "-2", os.path.join(SHARE_DIR, "spades/test_dataset/ecoli_1K_2.fq.gz"),
-                                               "-m", "1", "-o", self.tmp], timeout=120)
+                                               "-m", "0", "-o", self.tmp], timeout=120)
         if exit_code == 68:
             self.assertFalse(has_report_bug_message(stdout + stderr),
                              f"OOM error should not suggest reporting\nOutput: {stdout + stderr}")
