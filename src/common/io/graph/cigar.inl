@@ -35,13 +35,13 @@ namespace cigar::grammar {
                 auto integer = dsl::if_(dsl::lit_c < '-' > ) + dsl::digits<>.no_leading_zero();
                 auto fraction = dsl::lit_c < '.' > >> dsl::digits<>;
                 auto exp_char = dsl::lit_c < 'e' > | dsl::lit_c<'E'>;
-                auto exponent = exp_char >> (dsl::lit_c < '+' > | dsl::lit_c < '-' > ) + dsl::digits<>;
+                auto exponent = exp_char >> ((dsl::lit_c < '+' > | dsl::lit_c < '-' > ) + dsl::digits<>);
                 return dsl::peek(dsl::lit_c < '-' > / dsl::digit<>) >>
-                                                                    dsl::position +
+                                                                   (dsl::position +
                                                                     integer +
                                                                     dsl::if_(fraction) +
                                                                     dsl::if_(exponent) +
-                                                                    dsl::position;
+                                                                    dsl::position);
             }();
 
             static constexpr auto value = lexy::callback<float>(
@@ -64,17 +64,17 @@ namespace cigar::grammar {
 
         static constexpr auto rule = [] {
             auto colon = dsl::lit_c<':'>;
-            return dsl::p<tag_name> >> colon +
-                   (
-                           dsl::capture(LEXY_LIT("A")) >> colon + dsl::p < tag_character > |
-                           dsl::capture(LEXY_LIT("i")) >> colon + dsl::p < tag_integer > |
-                           dsl::capture(LEXY_LIT("f")) >> colon + dsl::p < tag_float > |
-                           dsl::capture(LEXY_LIT("Z")) >> colon + dsl::p < tag_string > |
-                           dsl::capture(LEXY_LIT("J")) >> colon + dsl::p < tag_string > |
-                           dsl::capture(LEXY_LIT("H")) >> colon + dsl::p < tag_string > |
-                           dsl::capture(LEXY_LIT("B")) >> colon + dsl::p < tag_string > |
+            return dsl::p<tag_name> >> (
+                   colon + (
+                           dsl::capture(LEXY_LIT("A")) >> (colon + dsl::p < tag_character >) |
+                           dsl::capture(LEXY_LIT("i")) >> (colon + dsl::p < tag_integer >) |
+                           dsl::capture(LEXY_LIT("f")) >> (colon + dsl::p < tag_float >) |
+                           dsl::capture(LEXY_LIT("Z")) >> (colon + dsl::p < tag_string >) |
+                           dsl::capture(LEXY_LIT("J")) >> (colon + dsl::p < tag_string >) |
+                           dsl::capture(LEXY_LIT("H")) >> (colon + dsl::p < tag_string >) |
+                           dsl::capture(LEXY_LIT("B")) >> (colon + dsl::p < tag_string >) |
                            dsl::error<invalid_tag_type>
-                   );
+                   ));
         }();
 
         static constexpr auto value = lexy::callback<cigar::tag>(
@@ -101,7 +101,7 @@ namespace cigar::grammar {
             static constexpr auto value = lexy::callback<cigar::cigarop>(
                     []() { return cigar::cigarop{0, 0}; },
                     [](std::uint32_t cnt, auto lexeme) {
-                        return cigar::cigarop{cnt, lexeme[0]};
+                        return cigar::cigarop{cnt & 0xFFFFFF, lexeme[0]};
                     });
         };
 
@@ -116,7 +116,7 @@ namespace cigar::grammar {
 
         static constexpr auto rule = [] {
             auto tags = dsl::list(dsl::p<tag>, dsl::trailing_sep(tab));
-            return dsl::eof | (tab >> tags + dsl::eof);
+            return dsl::eof | (tab >> (tags + dsl::eof));
         }();
         static constexpr auto value = lexy::as_list<std::vector<cigar::tag>>;
     };

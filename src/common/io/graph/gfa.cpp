@@ -80,11 +80,11 @@ struct segment {
     static constexpr auto name = "GFA segment";
 
     static constexpr auto rule =
-            LEXY_LIT("S") >>
+            LEXY_LIT("S") >> (
             tab + dsl::p<segment_name> +
             tab + (LEXY_LIT("*") |
                    dsl::identifier(dsl::ascii::alpha)) +
-            dsl::p<opt_tags>;
+            dsl::p<opt_tags>);
     static constexpr auto value = lexy::construct<gfa::segment>;
 };
 
@@ -103,13 +103,13 @@ struct link {
     static constexpr auto name = "GFA link line";
 
     static constexpr auto rule =
-            LEXY_LIT("L") >>
+            LEXY_LIT("L") >> (
             tab + dsl::p<segment_name> +
             tab + dsl::p<segment_orientation> +
             tab + dsl::p<segment_name> +
             tab + dsl::p<segment_orientation> +
             tab + (LEXY_LIT("*") | dsl::p<cigar_string>) +
-            dsl::p<opt_tags>;
+            dsl::p<opt_tags>);
     static constexpr auto value = lexy::construct<gfa::link>;
 };
 
@@ -127,13 +127,13 @@ struct gaplink {
     static constexpr auto name = "GFA jump line";
 
     static constexpr auto rule =
-            LEXY_LIT("J") >>
+            LEXY_LIT("J") >> (
             tab + dsl::p<segment_name> +
             tab + dsl::p<segment_orientation> +
             tab + dsl::p<segment_name> +
             tab + dsl::p<segment_orientation> +
             tab + (LEXY_LIT("*") | (dsl::else_ >> dsl::p<segment_distance>)) +
-            dsl::p<opt_tags>;
+            dsl::p<opt_tags>);
     static constexpr auto value = lexy::construct<gfa::gaplink>;
 };
 
@@ -159,11 +159,11 @@ struct path {
     };
 
     static constexpr auto rule =
-            LEXY_LIT("P") >>
+            LEXY_LIT("P") >> (
             tab + dsl::p<segment_name> +
             tab + dsl::p<segments> +
             tab + (LEXY_LIT("*") | dsl::p<overlaps>) +
-            dsl::p<opt_tags>;
+            dsl::p<opt_tags>);
     static constexpr auto value = lexy::construct<gfa::path>;
 };
 
@@ -209,14 +209,14 @@ struct walk {
     };
 
     static constexpr auto rule =
-            LEXY_LIT("W") >>
+            LEXY_LIT("W") >> (
             tab + dsl::p<sample_id> + // SampleId
             tab + dsl::integer<unsigned> + // HapIndex
             tab + dsl::p<sequence_id> + // SeqId
             tab + dsl::p<opt_uint64_t> + // SeqStart
             tab + dsl::p<opt_uint64_t> + // SeqEnd
             tab + dsl::p<wsegments> + // Walk
-            dsl::p<opt_tags>;
+            dsl::p<opt_tags>);
     static constexpr auto value = lexy::construct<gfa::walk>;
 };
 
@@ -241,7 +241,7 @@ struct record {
                dsl::p<walk> |
                comment |
                // Explicitly ignore all other records (though require proper tab-delimited format)
-               dsl::ascii::alpha >> tab + dsl::until(dsl::newline).or_eof() |
+               dsl::ascii::alpha >> (tab + dsl::until(dsl::newline).or_eof()) |
                dsl::error<expected_gfa_record>;
      }();
 

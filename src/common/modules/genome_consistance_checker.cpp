@@ -432,7 +432,7 @@ void GenomeConsistenceChecker::Fill() {
     }
 
     vector<size_t> theoretic_lens;
-    for (const auto &prefix: vector<std::string>{"0_", "1_"}) {
+    for (auto prefix: {"0_", "1_"}) {
         for (const auto &chr: genome.GetChromosomes()) {
             string label = prefix + chr.name;
             INFO("Spelling label " << label);
