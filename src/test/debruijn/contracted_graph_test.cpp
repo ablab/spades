@@ -42,10 +42,10 @@ TEST(ContractedGraph, Construction) {
         EXPECT_TRUE(contracted_graph->ContainsVertex(vertex));
     }
 
-    const size_t first_id = 132238743;
-    const size_t second_id = 102357497;
-    const size_t third_id = 243148631;
-    const size_t fourth_id = 170924699;
+    const size_t first_id = 743;
+    const size_t second_id = 497;
+    const size_t third_id = 631;
+    const size_t fourth_id = 699;
 
     std::map<size_t, VertexId> simple_vertex_map;
     for (const auto& vertex: vertex_it_helper) {
@@ -98,7 +98,7 @@ TEST(ContractedGraph, Construction) {
     EXPECT_EQ(contracted_graph->GetInDegree(simple_vertex_map.at(first_id)), 0);
 
     contraction_threshold = 25000;
-    contracted_graph = std::move(CreateContractedGraph(g, contraction_threshold));
+    contracted_graph = CreateContractedGraph(g, contraction_threshold);
     EXPECT_EQ(contracted_graph->size(), 2);
     EXPECT_EQ(contracted_graph->CountEdges(), 0);
 }
@@ -112,10 +112,10 @@ TEST(ContractedGraph, Subgraph) {
     size_t contraction_threshold = 80;
     auto contracted_graph = CreateContractedGraph(g, contraction_threshold);
 
-    const size_t first_id = 132238743;
-    const size_t second_id = 102357497;
-    const size_t third_id = 243148631;
-    const size_t fourth_id = 170924699;
+    const size_t first_id = 743;
+    const size_t second_id = 497;
+    const size_t third_id = 631;
+    const size_t fourth_id = 699;
 
     omnigraph::IterationHelper<Graph, VertexId> vertex_it_helper(g);
 
