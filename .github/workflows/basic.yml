@@ -29,11 +29,7 @@ jobs:
   build-linux:
     strategy:
       matrix:
-        include:
-          - os: ubuntu-latest
-          - os: ubuntu-24.04
-          - os: ubuntu-24.04-arm
-          - os: self-hosted
+        os: [ubuntu-latest, ubuntu-24.04, ubuntu-24.04-arm, self-hosted]
     runs-on: ${{ matrix.os }}
     name: '🐧 Build SPAdes for Linux'
 
@@ -89,11 +85,7 @@ jobs:
     name: '🚬 E. coli 1k smoke checks'
     strategy:
       matrix:
-        include:
-          - os: ubuntu-latest
-          - os: ubuntu-24.04
-          - os: ubuntu-24.04-arm
-          - os: self-hosted
+        os: [ubuntu-latest, ubuntu-24.04, ubuntu-24.04-arm, self-hosted]
     runs-on: ${{ matrix.os }}
     needs: build-linux
 
@@ -149,11 +141,7 @@ jobs:
     name: 'SPAdes unittests'
     strategy:
       matrix:
-        include:
-          - os: ubuntu-latest
-          - os: ubuntu-24.04
-          - os: ubuntu-24.04-arm
-          - os: self-hosted
+        os: [ubuntu-latest, ubuntu-24.04, ubuntu-24.04-arm, self-hosted]
     runs-on: ${{ matrix.os }}
     needs: build-linux
 
@@ -224,11 +212,7 @@ jobs:
     name: '🚬 E. coli 1k smoke checks (MPI)'
     strategy:
       matrix:
-        include:
-          - os: ubuntu-latest
-          - os: ubuntu-24.04
-          - os: ubuntu-24.04-arm
-          - os: self-hosted
+        os: [ubuntu-latest, ubuntu-24.04, ubuntu-24.04-arm, self-hosted]
     runs-on: ${{ matrix.os }}
     needs: build-linux
 
