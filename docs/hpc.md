@@ -61,6 +61,9 @@ hpcSPAdes binaries are excluded from binary release snapshots.
 
 ## Command line options
 
+hpcSPAdes defaults to `--frugal` in order to conserve local node memory.
+Disable, if necessary, with `--frugal:false`.
+
 The options specific to SPAdes support for computational clusters are:
 
 `--grid-engine <engine>` The grid engine to use. `engine` might be one of:

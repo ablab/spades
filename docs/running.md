@@ -132,6 +132,9 @@ Results of wastewaterSPAdes are stored in `lineages.csv` file. First column cont
 `--careful`
     Tries to reduce the number of mismatches and short indels. Also runs MismatchCorrector - a post processing tool, which uses [BWA](http://bio-bwa.sourceforge.net) tool (comes with SPAdes). This option is recommended only for assembly of small genomes. We strongly recommend not to use it for large and medium-size eukaryotic genomes. Note that this option is not supported by metaSPAdes and rnaSPAdes.
 
+`--frugal`
+    Memory frugal mode. Tries to sacrifice some assembly result contiguity in exchange for reduced memory consumption. Mostly recommended for complex metagenomes with elevated levels of strain variation. Overall affects the assembly results in an unpredictable way.
+
 `--continue`
     Continues SPAdes run from the specified output folder starting from the last available check-point. Check-points are made after:
 
