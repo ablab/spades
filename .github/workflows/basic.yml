@@ -100,7 +100,7 @@ jobs:
         if: matrix.os != 'self-hosted'
         run: >
           sudo apt-get update &&
-          sudo apt-get install -y libbz2-1.0 openmpi-bin libopenmpi3
+          sudo apt-get install -y libbz2-1.0 openmpi-bin libopenmpi-dev
 
       - name: '📦 Download package'
         uses: actions/download-artifact@v4
@@ -161,7 +161,7 @@ jobs:
         if: matrix.os != 'self-hosted'
         run: >
           sudo apt-get update &&
-          sudo apt-get install -y libbz2-1.0 openmpi-bin libopenmpi3
+          sudo apt-get install -y libbz2-1.0 openmpi-bin libopenmpi-dev
 
       - name: '📦 Download package'
         uses: actions/download-artifact@v4
@@ -227,7 +227,7 @@ jobs:
         if: matrix.os != 'self-hosted'
         run: >
           sudo apt-get update &&
-          sudo apt-get install -y libbz2-1.0 openmpi-bin libopenmpi3
+          sudo apt-get install -y libbz2-1.0 openmpi-bin libopenmpi-dev
 
       - name: '📦 Download package'
         uses: actions/download-artifact@v4
