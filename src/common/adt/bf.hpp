@@ -111,7 +111,7 @@ public:
     void merge(const bloom_filter<T> &other) {
         VERIFY(data_.size() == other.data_.size());
         VERIFY(num_hashes_ == other.num_hashes_);
-        VERIFY(cells_ = other.cells_);
+        VERIFY(cells_ == other.cells_);
 
         for (size_t cell_id = 0; cell_id < cells_; ++cell_id) {
             size_t pos = cell_id / cells_per_entry_;
