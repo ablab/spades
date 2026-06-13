@@ -1,5 +1,15 @@
 # SPAdes Genome Assembler changelog
 
+## SPAdes 4.3.0, 15 June 2026
+
+- New memory-saving frugal mode: `--frugal`;
+- New SPlitteR module for improving PacBio HiFi assemblies with synthetic long reads (SLRs);
+- Introduced the proper error-code system with clear exit codes and error messages, fixed the error handling mechanism;
+- Bumped minimal versions for several dependencies;
+- Fixed GFA reading for ARM;
+- Several fixes for hpcSPAdes and grid engines;
+- Multiple small fixes and improvements.
+
 ## SPAdes 4.2.0, 2 May 2025
 
 - New [hpcSPAdes](https://ablab.github.io/spades/hpc.html) for high-performance computational clusters; 
