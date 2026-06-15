@@ -3,10 +3,11 @@
 ## SPAdes 4.3.0, 15 June 2026
 
 - New memory-saving frugal mode: `--frugal`;
-- New SPlitteR module for improving PacBio HiFi assemblies with synthetic long reads (SLRs);
+- New [SPlitteR](https://peerj.com/articles/18050/) module for improving PacBio HiFi assemblies with synthetic long reads (SLRs);
+- Improved overall RAM consumption for all pipelines; 
 - Introduced the proper error-code system with clear exit codes and error messages, fixed the error handling mechanism;
 - Bumped minimal versions for several dependencies;
-- Fixed GFA reading for ARM;
+- Fixed gzipped GFA reading on ARM/Linux platforms;
 - Several fixes for hpcSPAdes and grid engines;
 - Multiple small fixes and improvements.
 
