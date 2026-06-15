@@ -113,6 +113,85 @@ jobs:
         run: >
           $INSTALL_DIR/$PKG_LINUX/bin/coronaspades.py --test
 
+  # Build the source snapshot the way an end-user would: make the src tarball,
+  # unpack it, compile via spades_compile.sh and run the same smoke checks.
+  src-snapshot:
+    name: '📦 Build & test source snapshot inside ManyLinux 2.28 x86-64 container'
+
+    runs-on: self-hosted
+    # We use userns-remap on VM side
+    container:
+      image: quay.io/pypa/manylinux_2_28_x86_64
+
+    steps:
+      - name: '🧹 Cleanup'
+        run: >
+          set -e &&
+          shopt -s dotglob &&
+          rm -rf *
+
+      - name: '🧰 Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: '⚙️ Install dependencies'
+        run: >
+          dnf install -y bzip2-devel python3
+
+      - name: '🏷  Determine source package name'
+        run: echo "SRC_NAME=SPAdes-$(cat VERSION)" >> "$GITHUB_ENV"
+
+      - name: '🗜  Create source snapshot'
+        run: >
+          bash make-targz.sh
+
+      - name: '📦 Unpack source snapshot'
+        run: >
+          tar -zxf ${SRC_NAME}.tar.gz
+
+      - name: '🚧 Compile with spades_compile.sh'
+        working-directory: ${{env.SRC_NAME}}
+        run: >
+          ./spades_compile.sh -j16
+
+      - name: '1k multi-cell'
+        working-directory: ${{env.SRC_NAME}}
+        run: >
+          bin/spades.py --test
+
+      - name: '1k single-cell'
+        working-directory: ${{env.SRC_NAME}}
+        run: >
+          bin/spades.py --sc --test
+
+      - name: '1k meta'
+        working-directory: ${{env.SRC_NAME}}
+        run: >
+          bin/metaspades.py --test
+
+      - name: '1k plasmid'
+        working-directory: ${{env.SRC_NAME}}
+        run: >
+          bin/plasmidspades.py --test
+
+      - name: '1k rna'
+        working-directory: ${{env.SRC_NAME}}
+        run: >
+          bin/rnaspades.py --test
+
+      - name: '1k corona'
+        working-directory: ${{env.SRC_NAME}}
+        run: >
+          bin/coronaspades.py --test
+
+      - name: '📦 Package source snapshot'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-src
+          path: |
+            ${{env.SRC_NAME}}.tar.gz
+
   build-mac:
     strategy:
       matrix:
@@ -243,6 +322,7 @@ jobs:
       needs:
         - spades-1k-checks-mac
         - spades-1k-checks-linux
+        - src-snapshot
       runs-on: ubuntu-latest
       steps:
       - name: '⚙️ Install dependencies'
@@ -257,4 +337,4 @@ jobs:
         run: |
             wget -q https://github.com/TheAssassin/pyuploadtool/releases/download/continuous/pyuploadtool-x86_64.AppImage
             chmod +x pyuploadtool-x86_64.AppImage
-            ./pyuploadtool-x86_64.AppImage **/${{env.PKG_MAC}}*.tar.gz **/${{env.PKG_LINUX}}*.tar.gz
+            ./pyuploadtool-x86_64.AppImage **/${{env.PKG_MAC}}*.tar.gz **/${{env.PKG_LINUX}}*.tar.gz build-artifacts-src/*.tar.gz
