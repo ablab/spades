@@ -1,0 +1,89 @@
+name: SPAdes container tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - main
+      - next
+    tags:
+      - '*'
+    paths-ignore:
+      - 'docs/**'
+      - 'mkdocs.yml'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - 'mkdocs.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: container-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  container:
+    name: Container (${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            platform: linux/amd64
+            architecture: amd64
+          - runner: ubuntu-24.04-arm
+            platform: linux/arm64
+            architecture: arm64
+
+    steps:
+      - name: Check out SPAdes
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build container
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          load: true
+          push: false
+          tags: spades:ci-${{ matrix.architecture }}
+          cache-from: type=gha,scope=spades-container-${{ matrix.architecture }}
+          cache-to: type=gha,mode=max,scope=spades-container-${{ matrix.architecture }}
+
+      - name: Check runtime environment
+        env:
+          IMAGE_TAG: spades:ci-${{ matrix.architecture }}
+        run: |
+          set -euo pipefail
+
+          expected_version="$(tr -d '\n' < VERSION)"
+          actual_version="$(docker run --rm "${IMAGE_TAG}" spades.py --version)"
+          grep -F "${expected_version}" <<< "${actual_version}"
+
+          docker run --rm "${IMAGE_TAG}" bash -euc '
+            test "$(id -u)" -ne 0
+            touch /work/write-test
+            rm /work/write-test
+            command -v spades.py
+            command -v pigz
+            ! command -v cmake
+            ! command -v g++
+            pigz --version
+          '
+
+      - name: Run SPAdes smoke test
+        env:
+          IMAGE_TAG: spades:ci-${{ matrix.architecture }}
+        run: |
+          docker run --rm "${IMAGE_TAG}" bash -euc '
+            spades.py -t 4 --test
+            grep -F "Compressing corrected reads (with pigz)" spades_test/spades.log
+          '
