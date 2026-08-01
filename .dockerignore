@@ -1,0 +1,10 @@
+.git
+.github
+docs
+.DS_Store
+**/__pycache__/
+**/*.py[cod]
+/bin/
+/build*/
+/spades_test/
+*.tar.gz
