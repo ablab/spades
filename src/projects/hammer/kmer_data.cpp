@@ -190,12 +190,15 @@ class KMerDataFiller {
 class KMerMultiplicityCounter {
   qf::cqf_with_hasher<KMer> cqf_;
 
+  // k-mers seen fewer times than this are treated as errors and dropped.
+  const unsigned min_multiplicity_;
+
   public:
-  KMerMultiplicityCounter(size_t size)
+  KMerMultiplicityCounter(size_t size, unsigned min_multiplicity)
       : cqf_(size, [](const KMer &k) {
         auto h = k.GetHash();
         return h;
-      }) {}
+      }), min_multiplicity_(min_multiplicity) {}
 
   ~KMerMultiplicityCounter() {}
 
@@ -213,15 +216,34 @@ class KMerMultiplicityCounter {
       for (; gen.HasMore(); gen.Next()) {
           KMer kmer = gen.kmer();
 
-          cqf_.add(kmer);
-          cqf_.add(!kmer);
+          count_up_to_limit(kmer);
+          count_up_to_limit(!kmer);
       }
 
-      return false;
+      // Asks ReadProcessor to stop sending reads when the underlying
+      // CQF is full.
+      return full();
   }
 
-  size_t count(const KMer &k) const {
-      return cqf_.lookup(k);
+  bool full() const { return cqf_.full(); }
+  uint64_t occupied_slots() const { return cqf_.occupied_slots(); }
+  uint64_t slots() const { return cqf_.slots(); }
+
+  bool frequent_enough(const KMer &k) const {
+      return cqf_.lookup(k) >= min_multiplicity_;
+  }
+
+  private:
+  // We only need to answer frequent_enough(k), so we can stop
+  // inserting once we've seen an element at least min_multiplicity times.
+  // Bounds the size of the CQF; with min_multiplicity=2 we only need 2
+  // slots per k-mer (race conditions might mean we actually use more
+  // in practice), and can avoid situations where a full or nearly full CQF
+  // degrades catastrophically towards O(n) insertions and eventually out-
+  // of-bounds writes.
+  void count_up_to_limit(const KMer &k) {
+      if (cqf_.lookup(k, /* lock */ true) < min_multiplicity_)
+          cqf_.add(k);
   }
 };
 
@@ -309,7 +331,8 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
 
       INFO("Filtering singleton k-mers");
 
-      KMerMultiplicityCounter mcounter(buffer_size);
+      const unsigned min_multiplicity = 2;
+      KMerMultiplicityCounter mcounter(buffer_size, min_multiplicity);
 
       size_t n = 15, processed = 0;
       for (const auto &reads : cfg::get().dataset.reads()) {
@@ -320,6 +343,16 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
               rp.Run(irs, mcounter);
               VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
               processed += rp.processed();
+
+              CHECK_FATAL_ERROR(!mcounter.full(),
+                                "k-mer multiplicity filter overflowed after "
+                                << processed << " reads (" << mcounter.occupied_slots()
+                                << " of " << mcounter.slots() << " slots used). This "
+                                "should not happen; please report it at "
+                                "https://github.com/ablab/spades/issues along with "
+                                "this message. To get an assembly meanwhile, re-run "
+                                "with --only-assembler, which skips read error "
+                                "correction entirely.");
 
               if (processed >> n) {
                   INFO("Processed " << processed << " reads");
@@ -332,7 +365,7 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
       kmer_storage =
           kmers::KMerDiskCounter<hammer::KMer>(workdir,
                                                HammerFilteringKMerSplitter(workdir,
-                                                                           [&] (const KMer &k) { return mcounter.count(k) > 1; }))
+                                                                           [&] (const KMer &k) { return mcounter.frequent_enough(k); }))
           .Count(num_files_, omp_get_max_threads());
   } else {
       kmer_storage =
