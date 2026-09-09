@@ -29,7 +29,7 @@ six frame translation + `hmmsearch` from **HMMer** package is more than enough.
 To compile PathRacer, run
 
 ```
-./spades_compile -SPADES_ENABLE_PROJECTS=pathracer
+./spades_compile.sh -DSPADES_ENABLE_PROJECTS=pathracer
 ```
 
 After the compilation is complete, `pathracer` executable will be located in the `bin` folder.

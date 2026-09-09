@@ -45,7 +45,7 @@ There are a few important notes that should be taken into account here:
 To enable SPAdes HPC mode run
 
 ```
-./spades_compile.sh -SPADES_ENABLE_PROJECTS=hpcspades
+./spades_compile.sh -DSPADES_ENABLE_PROJECTS=hpcspades
 ```
 
 As SPAdes HPC mode relies on MPI to split tasks across jobs, sufficiently

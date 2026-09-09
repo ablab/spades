@@ -21,7 +21,7 @@ instructions on installing and running BinSPreader.
 To compile BinSPreader, run
 
 ```
-./spades_compile -SPADES_ENABLE_PROJECTS=binspreader
+./spades_compile.sh -DSPADES_ENABLE_PROJECTS=binspreader
 ```
 
 After the compilation is complete, `binspreader` executable will be located in the `bin` folder.
