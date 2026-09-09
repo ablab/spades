@@ -5,14 +5,14 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#define BOOST_TEST_MODULE loser_tree_test
-#include <boost/test/included/unit_test.hpp>
-
 #include "adt/loser_tree.hpp"
+#include "utils/stl_utils.hpp"
+
+#include <gtest/gtest.h>
+
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include "utils/stl_utils.hpp"
 
 template <typename LoserTree>
 auto get(LoserTree &lt, size_t n = size_t(-1)) {
@@ -27,93 +27,93 @@ auto make_vector(T0 &&first, Ts &&... args) {
     return std::vector<first_type>{std::forward<T0>(first), std::forward<Ts>(args)...};
 }
 
-BOOST_AUTO_TEST_CASE(empty_test) {
+TEST(LoserTree, empty_test) {
     std::vector<int> v1 = {};
     std::vector<int> v2 = {};
     auto lt = adt::make_loser_tree({adt::make_range(v1.cbegin(), v1.cend()), adt::make_range(v2.cbegin(), v2.cend())});
-    BOOST_CHECK(lt.empty());
+    EXPECT_TRUE(lt.empty());
 
-    BOOST_CHECK_EQUAL(get(lt, 0), std::vector<int>());
-    BOOST_CHECK_EQUAL(get(lt, 0), std::vector<int>());
-    BOOST_CHECK_EQUAL(get(lt, 1), std::vector<int>());
-    BOOST_CHECK_EQUAL(get(lt, 100), std::vector<int>());
-    BOOST_CHECK(lt.empty());
+    EXPECT_EQ(get(lt, 0), std::vector<int>());
+    EXPECT_EQ(get(lt, 0), std::vector<int>());
+    EXPECT_EQ(get(lt, 1), std::vector<int>());
+    EXPECT_EQ(get(lt, 100), std::vector<int>());
+    EXPECT_TRUE(lt.empty());
 }
 
-BOOST_AUTO_TEST_CASE(one_empty) {
+TEST(LoserTree, one_empty) {
     std::vector<int> v1 = {1, 2, 2, 2, 3, 5};
     std::vector<int> v2 = {};
     auto lt = adt::make_loser_tree({adt::make_range(v1.cbegin(), v1.cend()), adt::make_range(v2.cbegin(), v2.cend())});
 
-    BOOST_CHECK_EQUAL(get(lt, 0), std::vector<int>());
-    BOOST_CHECK_EQUAL(get(lt, 0), std::vector<int>());
-    BOOST_CHECK_EQUAL(get(lt, 1), std::vector<int>({1}));
-    BOOST_CHECK_EQUAL(get(lt, 2), std::vector<int>({2, 3}));
-    BOOST_CHECK_EQUAL(get(lt, 100), std::vector<int>({5}));
-    BOOST_CHECK(lt.empty());
+    EXPECT_EQ(get(lt, 0), std::vector<int>());
+    EXPECT_EQ(get(lt, 0), std::vector<int>());
+    EXPECT_EQ(get(lt, 1), std::vector<int>({1}));
+    EXPECT_EQ(get(lt, 2), std::vector<int>({2, 3}));
+    EXPECT_EQ(get(lt, 100), std::vector<int>({5}));
+    EXPECT_TRUE(lt.empty());
 }
 
-BOOST_AUTO_TEST_CASE(common1) {
+TEST(LoserTree, common1) {
     std::vector<int> v1 = {1, 1, 1, 1, 5, 5, 5};
     std::vector<int> v2 = {1, 2, 5};
     auto lt = adt::make_loser_tree({adt::make_range(v1.cbegin(), v1.cend()), adt::make_range(v2.cbegin(), v2.cend())});
 
-    BOOST_CHECK_EQUAL(get(lt, 0), std::vector<int>());
-    BOOST_CHECK_EQUAL(get(lt, 0), std::vector<int>());
-    BOOST_CHECK_EQUAL(get(lt, 1), std::vector<int>({1}));
-    BOOST_CHECK_EQUAL(get(lt, 2), std::vector<int>({2, 5}));
-    BOOST_CHECK_EQUAL(get(lt, 100), std::vector<int>({}));
-    BOOST_CHECK(lt.empty());
+    EXPECT_EQ(get(lt, 0), std::vector<int>());
+    EXPECT_EQ(get(lt, 0), std::vector<int>());
+    EXPECT_EQ(get(lt, 1), std::vector<int>({1}));
+    EXPECT_EQ(get(lt, 2), std::vector<int>({2, 5}));
+    EXPECT_EQ(get(lt, 100), std::vector<int>({}));
+    EXPECT_TRUE(lt.empty());
 }
 
-BOOST_AUTO_TEST_CASE(repeated) {
+TEST(LoserTree, repeated) {
     std::vector<int> v1 = {1, 1, 1, 1, 3, 3, 3, 3, 3, 5, 5, 5};
     std::vector<int> v2 = {1, 2, 5};
     auto lt = adt::make_loser_tree({adt::make_range(v1.cbegin(), v1.cend()), adt::make_range(v2.cbegin(), v2.cend())});
 
-    BOOST_CHECK_EQUAL(get(lt, 0), std::vector<int>());
-    BOOST_CHECK_EQUAL(get(lt, 0), std::vector<int>());
-    BOOST_CHECK_EQUAL(get(lt, 1), std::vector<int>({1}));
-    BOOST_CHECK_EQUAL(get(lt, 2), std::vector<int>({2, 3}));
-    BOOST_CHECK_EQUAL(get(lt, 2), std::vector<int>({5}));
-    BOOST_CHECK_EQUAL(get(lt, 2), std::vector<int>({}));
-    BOOST_CHECK_EQUAL(get(lt, 2), std::vector<int>({}));
-    BOOST_CHECK(lt.empty());
+    EXPECT_EQ(get(lt, 0), std::vector<int>());
+    EXPECT_EQ(get(lt, 0), std::vector<int>());
+    EXPECT_EQ(get(lt, 1), std::vector<int>({1}));
+    EXPECT_EQ(get(lt, 2), std::vector<int>({2, 3}));
+    EXPECT_EQ(get(lt, 2), std::vector<int>({5}));
+    EXPECT_EQ(get(lt, 2), std::vector<int>({}));
+    EXPECT_EQ(get(lt, 2), std::vector<int>({}));
+    EXPECT_TRUE(lt.empty());
 }
 
-BOOST_AUTO_TEST_CASE(get_all) {
+TEST(LoserTree, get_all) {
     std::vector<int> v1 = {1, 1, 1, 1, 3, 3, 3, 3, 3, 5, 5, 5};
     std::vector<int> v2 = {1, 2, 5};
     auto lt = adt::make_loser_tree({adt::make_range(v1.cbegin(), v1.cend()), adt::make_range(v2.cbegin(), v2.cend())});
 
-    BOOST_CHECK_EQUAL(get(lt), std::vector<int>({1, 2, 3, 5}));
-    BOOST_CHECK(lt.empty());
+    EXPECT_EQ(get(lt), std::vector<int>({1, 2, 3, 5}));
+    EXPECT_TRUE(lt.empty());
 
-    BOOST_CHECK_EQUAL(get(lt), std::vector<int>({}));
-    BOOST_CHECK_EQUAL(get(lt, 2), std::vector<int>({}));
-    BOOST_CHECK_EQUAL(get(lt, 2), std::vector<int>({}));
-    BOOST_CHECK_EQUAL(get(lt), std::vector<int>({}));
-    BOOST_CHECK_EQUAL(get(lt, 2), std::vector<int>({}));
-    BOOST_CHECK(lt.empty());
+    EXPECT_EQ(get(lt), std::vector<int>({}));
+    EXPECT_EQ(get(lt, 2), std::vector<int>({}));
+    EXPECT_EQ(get(lt, 2), std::vector<int>({}));
+    EXPECT_EQ(get(lt), std::vector<int>({}));
+    EXPECT_EQ(get(lt, 2), std::vector<int>({}));
+    EXPECT_TRUE(lt.empty());
 }
 
-BOOST_AUTO_TEST_CASE(get_all2) {
+TEST(LoserTree, get_all2) {
     std::vector<int> v1 = {1, 1, 1, 1, 3, 3, 3, 3, 3, 5, 5, 5};
     std::vector<int> v2 = {2, 5};
     auto lt = adt::make_loser_tree({adt::make_range(v1.cbegin(), v1.cend()), adt::make_range(v2.cbegin(), v2.cend())});
 
-    BOOST_CHECK_EQUAL(get(lt, 4), std::vector<int>({1, 2, 3, 5}));
-    BOOST_CHECK(lt.empty());
+    EXPECT_EQ(get(lt, 4), std::vector<int>({1, 2, 3, 5}));
+    EXPECT_TRUE(lt.empty());
 
-    BOOST_CHECK_EQUAL(get(lt), std::vector<int>({}));
-    BOOST_CHECK_EQUAL(get(lt, 2), std::vector<int>({}));
-    BOOST_CHECK_EQUAL(get(lt, 2), std::vector<int>({}));
-    BOOST_CHECK_EQUAL(get(lt), std::vector<int>({}));
-    BOOST_CHECK_EQUAL(get(lt, 2), std::vector<int>({}));
-    BOOST_CHECK(lt.empty());
+    EXPECT_EQ(get(lt), std::vector<int>({}));
+    EXPECT_EQ(get(lt, 2), std::vector<int>({}));
+    EXPECT_EQ(get(lt, 2), std::vector<int>({}));
+    EXPECT_EQ(get(lt), std::vector<int>({}));
+    EXPECT_EQ(get(lt, 2), std::vector<int>({}));
+    EXPECT_TRUE(lt.empty());
 }
 
-BOOST_AUTO_TEST_CASE(threeway) {
+TEST(LoserTree, threeway) {
     std::vector<int> v1 = {1, 1, 1, 1, 3, 3, 3, 3, 3, 5, 5, 5, 30};
     std::vector<int> v2 = {2, 5, 29, 29, 29};
     std::vector<int> v3 = {-1, 4, 28, 28, 29, 30};
@@ -121,15 +121,15 @@ BOOST_AUTO_TEST_CASE(threeway) {
                                     adt::make_range(v2.cbegin(), v2.cend()),
                                     adt::make_range(v3.cbegin(), v3.cend())});
 
-    BOOST_CHECK_EQUAL(get(lt, 4), std::vector<int>({-1, 1, 2, 3}));
-    BOOST_CHECK_EQUAL(get(lt, 4), std::vector<int>({4, 5, 28, 29}));
-    BOOST_CHECK_EQUAL(get(lt, 4), std::vector<int>({30}));
-    BOOST_CHECK(lt.empty());
-    BOOST_CHECK_EQUAL(get(lt), std::vector<int>({}));
-    BOOST_CHECK_EQUAL(get(lt, 2), std::vector<int>({}));
+    EXPECT_EQ(get(lt, 4), std::vector<int>({-1, 1, 2, 3}));
+    EXPECT_EQ(get(lt, 4), std::vector<int>({4, 5, 28, 29}));
+    EXPECT_EQ(get(lt, 4), std::vector<int>({30}));
+    EXPECT_TRUE(lt.empty());
+    EXPECT_EQ(get(lt), std::vector<int>({}));
+    EXPECT_EQ(get(lt, 2), std::vector<int>({}));
 }
 
-BOOST_AUTO_TEST_CASE(threeway2) {
+TEST(LoserTree, threeway2) {
     std::vector<int> v1 = {1, 1, 1, 1, 3, 3, 3, 3, 3, 5, 5, 5, 30};
     std::vector<int> v2 = {2, 5, 29, 29, 29};
     std::vector<int> v3 = {-1, 4, 28, 28, 29, 30};
@@ -137,15 +137,15 @@ BOOST_AUTO_TEST_CASE(threeway2) {
                                     adt::make_range(v2.cbegin(), v2.cend()),
                                     adt::make_range(v3.cbegin(), v3.cend())});
 
-    BOOST_CHECK_EQUAL(get(lt, 1), std::vector<int>({-1}));
-    BOOST_CHECK_EQUAL(get(lt, 1), std::vector<int>({1}));
-    BOOST_CHECK_EQUAL(get(lt, 1), std::vector<int>({2}));
-    BOOST_CHECK_EQUAL(get(lt, 1), std::vector<int>({3}));
-    BOOST_CHECK_EQUAL(get(lt, 1), std::vector<int>({4}));
-    BOOST_CHECK_EQUAL(get(lt, 1), std::vector<int>({5}));
-    BOOST_CHECK_EQUAL(get(lt, 1), std::vector<int>({28}));
-    BOOST_CHECK_EQUAL(get(lt, 1), std::vector<int>({29}));
-    BOOST_CHECK_EQUAL(get(lt, 1), std::vector<int>({30}));
-    BOOST_CHECK_EQUAL(get(lt, 1), std::vector<int>({}));
-    BOOST_CHECK(lt.empty());
+    EXPECT_EQ(get(lt, 1), std::vector<int>({-1}));
+    EXPECT_EQ(get(lt, 1), std::vector<int>({1}));
+    EXPECT_EQ(get(lt, 1), std::vector<int>({2}));
+    EXPECT_EQ(get(lt, 1), std::vector<int>({3}));
+    EXPECT_EQ(get(lt, 1), std::vector<int>({4}));
+    EXPECT_EQ(get(lt, 1), std::vector<int>({5}));
+    EXPECT_EQ(get(lt, 1), std::vector<int>({28}));
+    EXPECT_EQ(get(lt, 1), std::vector<int>({29}));
+    EXPECT_EQ(get(lt, 1), std::vector<int>({30}));
+    EXPECT_EQ(get(lt, 1), std::vector<int>({}));
+    EXPECT_TRUE(lt.empty());
 }

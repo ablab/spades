@@ -11,10 +11,9 @@ add_executable(pack_demo
                pack_demo.cpp)
 target_link_libraries(pack_demo ${COMMON_LIBRARIES})
 
-add_executable(loser_tree_test
-               loser_tree_test.cpp)
-target_link_libraries(loser_tree_test ${COMMON_LIBRARIES})
+add_executable(adt_test
+               loser_tree_test.cpp phm_test.cpp
+               test.cpp)
+target_link_libraries(adt_test utils ${COMMON_LIBRARIES} teamcity_gtest gtest)
 
-add_executable(phm_test
-               phm_test.cpp)
-target_link_libraries(phm_test utils ${COMMON_LIBRARIES} gtest)
+add_test(NAME adt_test COMMAND adt_test)
