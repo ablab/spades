@@ -6,7 +6,6 @@
 //***************************************************************************
 
 #include "utils/logger/logger.hpp"
-#include "utils/logger/log_writers.hpp"
 #include "utils/stl_utils.hpp"
 #include "boomphf/BooPHF.h"
 
@@ -76,19 +75,4 @@ TEST_F(PHMTest, collision_test) {
         EXPECT_NE(marks[idx], true);
         marks[idx] = true;
     }
-}
-
-void create_console_logger() {
-    using namespace logging;
-
-    logger *lg = create_logger("");
-    lg->add_writer(std::make_shared<console_writer>());
-    attach_logger(lg);
-}
-
-GTEST_API_ int main(int argc, char **argv) {
-  create_console_logger();
-
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
 }
