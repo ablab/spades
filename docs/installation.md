@@ -115,7 +115,7 @@ subset of SPAdes components. The components are:
 
 By default, only SPAdes and SPAdes tools are enabled (so
 `-DSPADES_ENABLE_PROJECTS="spades;spades_tools"` is the default). Alternatively,
-one can simply enable building everything via specifying `SPADES_ENABLE_PROJECTS="all"`.
+one can simply enable building everything via specifying `-DSPADES_ENABLE_PROJECTS="all"`.
 
 ## Enabling NCBI SRA input file support
 
