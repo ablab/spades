@@ -231,7 +231,9 @@ if [ $RUN_TESTS = "y" ]; then
   cd "$BASEDIR"
   if [ $BUILD_INTERNAL = "y" ]; then
     "$WORK_DIR/bin/include_test"   ; set -e
+    "$WORK_DIR/bin/adt_test"   ; set -e
     "$WORK_DIR/bin/debruijn_test"  ; set -e
+    "$WORK_DIR/bin/utils_test"   ; set -e
   fi
   SPADES="$BASEDIR"/bin/spades.py
   "$SPADES" -t $AMOUNT_OF_THREADS --test              ; set -e
