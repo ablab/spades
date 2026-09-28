@@ -74,31 +74,27 @@ namespace _detail
 
         parse_context_var_base* vars;
 
-        int  cur_depth, max_depth;
-        bool enable_whitespace_skipping;
+        int cur_depth, max_depth;
 
         constexpr parse_context_control_block(Handler&& handler, State* state,
                                               std::size_t max_depth)
-        : parse_handler(LEXY_MOV(handler)), parse_state(state), //
-          vars(nullptr),                                        //
-          cur_depth(0), max_depth(static_cast<int>(max_depth)), enable_whitespace_skipping(true)
+        : parse_handler(LEXY_MOV(handler)), parse_state(state), vars(nullptr), cur_depth(0),
+          max_depth(static_cast<int>(max_depth))
         {}
 
         template <typename OtherHandler>
         constexpr parse_context_control_block(Handler&& handler,
                                               parse_context_control_block<OtherHandler, State>* cb)
         : parse_handler(LEXY_MOV(handler)), parse_state(cb->parse_state), //
-          vars(cb->vars), cur_depth(cb->cur_depth), max_depth(cb->max_depth),
-          enable_whitespace_skipping(cb->enable_whitespace_skipping)
+          vars(cb->vars), cur_depth(cb->cur_depth), max_depth(cb->max_depth)
         {}
 
         template <typename OtherHandler>
         constexpr void copy_vars_from(parse_context_control_block<OtherHandler, State>* cb)
         {
-            vars                       = cb->vars;
-            cur_depth                  = cb->cur_depth;
-            max_depth                  = cb->max_depth;
-            enable_whitespace_skipping = cb->enable_whitespace_skipping;
+            vars      = cb->vars;
+            cur_depth = cb->cur_depth;
+            max_depth = cb->max_depth;
         }
     };
 } // namespace _detail
@@ -127,6 +123,7 @@ struct _pc
     typename Handler::event_handler                       handler;
     _detail::parse_context_control_block<Handler, State>* control_block;
     _detail::lazy_init<value_type>                        value;
+    int                                                   whitespace_disable_count = 0;
 
     constexpr explicit _pc(_detail::parse_context_control_block<Handler, State>* cb)
     : handler(Production{}), control_block(cb)
