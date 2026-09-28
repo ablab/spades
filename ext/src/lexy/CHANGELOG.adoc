@@ -2,6 +2,18 @@
 
 == Upcoming
 
+=== New features
+
+* Add `dsl::context_counter::is<Pred>()` and convenience overloads to check whether the value matches some predicate (#238, #239).
+
+=== Bug fixes
+
+* `dsl::no_whitespace` did not handle nested `dsl::no_whitespace` correctly.
+* `dsl::no_whitespace` did not re-enable whitespace in child productions.
+* Improve compiler support (#254) and CMake (#244).
+
+== Release 2025.05.0
+
 === Potential breaking changes
 
 * `scanner-common::capture_token` was renamed to `scanner-common::capture`, and old `scanner-common::capture` removed.
@@ -13,7 +25,7 @@
 * Deprecate the `lexy::parse_tree::builder::finish()` overload that does not take a `remaining_input`.
 * The typo `lexy::code_point::spaing_mark` was fixed to `spacing_mark`.
 
-=== New Features
+=== New features
 
 * **Experimental**: Add `lexy::parse_tree_input` and `lexy::dsl::tnode`/`lexy::dsl::pnode` to support multi-pass parsing.
 * Add `lexy::dsl::byte.if_`/`set`/`range`/`ascii` methods to match specific bytes.
@@ -36,8 +48,10 @@
 * Fix bug where `lexy_ext::report_error` unconditionally wrote to `stderr`, ignoring the output iterator.
 * Fix bug with missing `lexy::error_context::position` in `lexy::parse_as_tree` (#184).
 * Fix `static_assert` in `lexy::parse_tree` (#190).
+* Fix bugs in `lexy::input_location::operator<` (#228).
+* Fix bugs in examples (#183)
 * Add missing `&&` in `lexy::bind_sink` (#221).
-* Workaround compiler bugs and improve documentation.
+* Workaround compiler bugs and improve documentation (#128, #129, #146, #181, #197, #216, #227).
 
 == Release 2022.12.1
 
