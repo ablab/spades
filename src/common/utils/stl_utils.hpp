@@ -11,6 +11,7 @@
 #include "utils/verify.hpp"
 
 #include <algorithm>
+#include <iterator>
 #include <memory>
 #include <map>
 #include <string>

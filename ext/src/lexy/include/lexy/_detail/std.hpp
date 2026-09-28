@@ -19,10 +19,13 @@ _GLIBCXX_END_NAMESPACE_VERSION
 
 #elif defined(_LIBCPP_VERSION)
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpragma-clang-attribute"
 _LIBCPP_BEGIN_NAMESPACE_STD
 struct forward_iterator_tag;
 struct bidirectional_iterator_tag;
 _LIBCPP_END_NAMESPACE_STD
+#pragma clang diagnostic pop
 
 #else
 
