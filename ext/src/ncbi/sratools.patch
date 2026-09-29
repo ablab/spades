@@ -46,3 +46,27 @@ index 73d558b4..abe3220f 100644
  #include <unistd.h>
  #include <string.h>
  #include <fcntl.h>
+diff --git a/tools/external/driver-tool/util.posix.hpp b/tools/external/driver-tool/util.posix.hpp
+index a9b6b980..6a17e153 100644
+--- a/tools/external/driver-tool/util.posix.hpp
++++ b/tools/external/driver-tool/util.posix.hpp
+@@ -32,6 +32,7 @@
+ #include <system_error>
+ #include <unistd.h>
+ #include <cerrno>
++#include <cstdlib>
+ #include <string>
+ #include <utility>
+ #include "opt_string.hpp"
+diff --git a/tools/external/sra-search/searchblock.cpp b/tools/external/sra-search/searchblock.cpp
+index 4169412d..dfae813c 100644
+--- a/tools/external/sra-search/searchblock.cpp
++++ b/tools/external/sra-search/searchblock.cpp
+@@ -26,6 +26,7 @@
+
+ #include "searchblock.hpp"
+
++#include <algorithm>
+ #include <cstring>
+
+ #include <klib/rc.h>
