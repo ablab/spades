@@ -1,50 +1,40 @@
 #ifndef CRC32_BRAID_P_H_
 #define CRC32_BRAID_P_H_
 
-#include "zbuild.h"
 #include "zendian.h"
 
-/* Define N */
-#ifdef Z_TESTN
-#  define N Z_TESTN
+/* Define BRAID_N, valid range is 1..6 */
+#define BRAID_N 5
+
+/* Define BRAID_W and the associated z_word_t type. If BRAID_W is not defined, then a braided
+   calculation is not used, and the associated tables and code are not compiled.
+ */
+#if defined(__x86_64__) || defined(_M_AMD64) || defined(__aarch64__) || defined(_M_ARM64) || defined(__powerpc64__)
+#  define BRAID_W 8
+    typedef uint64_t z_word_t;
 #else
-#  define N 5
-#endif
-#if N < 1 || N > 6
-#  error N must be in 1..6
+#  define BRAID_W 4
+    typedef uint32_t z_word_t;
 #endif
 
-/*
-  Define W and the associated z_word_t type. If W is not defined, then a
-  braided calculation is not used, and the associated tables and code are not
-  compiled.
- */
-#ifdef Z_TESTW
-#  if Z_TESTW-1 != -1
-#    define W Z_TESTW
+#if BYTE_ORDER == LITTLE_ENDIAN
+#  define ZSWAPWORD(word) (word)
+#  define BRAID_TABLE crc_braid_table
+#elif BYTE_ORDER == BIG_ENDIAN
+#  if BRAID_W == 8
+#    define ZSWAPWORD(word) ZSWAP64(word)
+#  elif BRAID_W == 4
+#    define ZSWAPWORD(word) ZSWAP32(word)
 #  endif
+#  define BRAID_TABLE crc_braid_big_table
 #else
-#  ifndef W
-#    if defined(__x86_64__) || defined(__aarch64__) || defined(__powerpc64__)
-#      define W 8
-#    else
-#      define W 4
-#    endif
-#  endif
+#  error "No endian defined"
 #endif
-#ifdef W
-#  if W == 8
-     typedef uint64_t z_word_t;
-#  else
-#    undef W
-#    define W 4
-     typedef uint32_t z_word_t;
-#  endif
-#endif
+
+#define CRC_DO1 c = crc_table[(c ^ *buf++) & 0xff] ^ (c >> 8)
+#define CRC_DO8 CRC_DO1; CRC_DO1; CRC_DO1; CRC_DO1; CRC_DO1; CRC_DO1; CRC_DO1; CRC_DO1
 
 /* CRC polynomial. */
 #define POLY 0xedb88320         /* p(x) reflected, with x^32 implied */
-
-extern uint32_t PREFIX(crc32_braid)(uint32_t crc, const uint8_t *buf, size_t len);
 
 #endif /* CRC32_BRAID_P_H_ */

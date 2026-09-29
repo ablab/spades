@@ -17,17 +17,15 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-#include "../../zbuild.h"
+#include "zbuild.h"
 
 #include <immintrin.h>
 #include <wmmintrin.h>
 #include <smmintrin.h> // _mm_extract_epi32
-#ifdef X86_VPCLMULQDQ
-#  include <immintrin.h>
-#endif
 
-#include "../../crc32_fold.h"
-#include "../../crc32_braid_p.h"
+#include "crc32.h"
+#include "crc32_braid_p.h"
+#include "crc32_braid_tbl.h"
 #include "x86_intrins.h"
 #include <assert.h>
 
@@ -157,6 +155,48 @@ static void fold_4(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m1
 
     *xmm_crc3 = _mm_clmulepi64_si128(*xmm_crc3, xmm_fold4, 0x01);
     x_tmp3 = _mm_clmulepi64_si128(x_tmp3, xmm_fold4, 0x10);
+    ps_crc3 = _mm_castsi128_ps(*xmm_crc3);
+    ps_t3 = _mm_castsi128_ps(x_tmp3);
+    ps_res3 = _mm_xor_ps(ps_crc3, ps_t3);
+
+    *xmm_crc0 = _mm_castps_si128(ps_res0);
+    *xmm_crc1 = _mm_castps_si128(ps_res1);
+    *xmm_crc2 = _mm_castps_si128(ps_res2);
+    *xmm_crc3 = _mm_castps_si128(ps_res3);
+}
+
+static void fold_12(__m128i *xmm_crc0, __m128i *xmm_crc1, __m128i *xmm_crc2, __m128i *xmm_crc3) {
+    const __m128i xmm_fold12 = _mm_set_epi64x(0x596C8D81, 0xF5E48C85);
+    __m128i x_tmp0, x_tmp1, x_tmp2, x_tmp3;
+    __m128 ps_crc0, ps_crc1, ps_crc2, ps_crc3;
+    __m128 ps_t0, ps_t1, ps_t2, ps_t3;
+    __m128 ps_res0, ps_res1, ps_res2, ps_res3;
+
+    x_tmp0 = *xmm_crc0;
+    x_tmp1 = *xmm_crc1;
+    x_tmp2 = *xmm_crc2;
+    x_tmp3 = *xmm_crc3;
+
+    *xmm_crc0 = _mm_clmulepi64_si128(*xmm_crc0, xmm_fold12, 0x01);
+    x_tmp0 = _mm_clmulepi64_si128(x_tmp0, xmm_fold12, 0x10);
+    ps_crc0 = _mm_castsi128_ps(*xmm_crc0);
+    ps_t0 = _mm_castsi128_ps(x_tmp0);
+    ps_res0 = _mm_xor_ps(ps_crc0, ps_t0);
+
+    *xmm_crc1 = _mm_clmulepi64_si128(*xmm_crc1, xmm_fold12, 0x01);
+    x_tmp1 = _mm_clmulepi64_si128(x_tmp1, xmm_fold12, 0x10);
+    ps_crc1 = _mm_castsi128_ps(*xmm_crc1);
+    ps_t1 = _mm_castsi128_ps(x_tmp1);
+    ps_res1 = _mm_xor_ps(ps_crc1, ps_t1);
+
+    *xmm_crc2 = _mm_clmulepi64_si128(*xmm_crc2, xmm_fold12, 0x01);
+    x_tmp2 = _mm_clmulepi64_si128(x_tmp2, xmm_fold12, 0x10);
+    ps_crc2 = _mm_castsi128_ps(*xmm_crc2);
+    ps_t2 = _mm_castsi128_ps(x_tmp2);
+    ps_res2 = _mm_xor_ps(ps_crc2, ps_t2);
+
+    *xmm_crc3 = _mm_clmulepi64_si128(*xmm_crc3, xmm_fold12, 0x01);
+    x_tmp3 = _mm_clmulepi64_si128(x_tmp3, xmm_fold12, 0x10);
     ps_crc3 = _mm_castsi128_ps(*xmm_crc3);
     ps_t3 = _mm_castsi128_ps(x_tmp3);
     ps_res3 = _mm_xor_ps(ps_crc3, ps_t3);
@@ -350,11 +390,22 @@ Z_INTERNAL uint32_t CRC32_FOLD_FINAL(crc32_fold *crc) {
     return crc->value;
 }
 
+static inline uint32_t crc32_small(uint32_t crc, const uint8_t *buf, size_t len) {
+    uint32_t c = (~crc) & 0xffffffff;
+
+    while (len) {
+        len--;
+        CRC_DO1;
+    }
+
+    return c ^ 0xffffffff;
+}
+
 Z_INTERNAL uint32_t CRC32(uint32_t crc32, const uint8_t *buf, size_t len) {
-    /* For lens < 64, crc32_braid method is faster. The CRC32 instruction for
-     * these short lengths might also prove to be effective */
-    if (len < 64)
-        return PREFIX(crc32_braid)(crc32, buf, len);
+    /* For lens smaller than ~12, crc32_small method is faster.
+     * But there are also minimum requirements for the pclmul functions due to alignment */
+    if (len < 16)
+        return crc32_small(crc32, buf, len);
 
     crc32_fold ALIGNED_(16) crc_state;
     CRC32_FOLD_RESET(&crc_state);

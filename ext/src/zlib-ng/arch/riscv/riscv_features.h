@@ -6,13 +6,14 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-#ifndef RISCV_H_
-#define RISCV_H_
+#ifndef RISCV_FEATURES_H_
+#define RISCV_FEATURES_H_
 
 struct riscv_cpu_features {
     int has_rvv;
+    int has_zbc;
 };
 
 void Z_INTERNAL riscv_check_features(struct riscv_cpu_features *features);
 
-#endif /* RISCV_H_ */
+#endif /* RISCV_FEATURES_H_ */

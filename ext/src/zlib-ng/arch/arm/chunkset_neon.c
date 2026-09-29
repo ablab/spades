@@ -4,50 +4,28 @@
 
 #ifdef ARM_NEON
 #include "neon_intrins.h"
-#include "../../zbuild.h"
-#include "../generic/chunk_permute_table.h"
+#include "zbuild.h"
+#include "zmemory.h"
+#include "arch/generic/chunk_128bit_perm_idx_lut.h"
 
 typedef uint8x16_t chunk_t;
-
-#define CHUNK_SIZE 16
 
 #define HAVE_CHUNKMEMSET_2
 #define HAVE_CHUNKMEMSET_4
 #define HAVE_CHUNKMEMSET_8
 #define HAVE_CHUNK_MAG
 
-static const lut_rem_pair perm_idx_lut[13] = {
-    {0, 1},      /* 3 */
-    {0, 0},      /* don't care */
-    {1 * 32, 1}, /* 5 */
-    {2 * 32, 4}, /* 6 */
-    {3 * 32, 2}, /* 7 */
-    {0 * 32, 0}, /* don't care */
-    {4 * 32, 7}, /* 9 */
-    {5 * 32, 6}, /* 10 */
-    {6 * 32, 5}, /* 11 */
-    {7 * 32, 4}, /* 12 */
-    {8 * 32, 3}, /* 13 */
-    {9 * 32, 2}, /* 14 */
-    {10 * 32, 1},/* 15 */
-};
 
 static inline void chunkmemset_2(uint8_t *from, chunk_t *chunk) {
-    uint16_t tmp;
-    memcpy(&tmp, from, sizeof(tmp));
-    *chunk = vreinterpretq_u8_u16(vdupq_n_u16(tmp));
+    *chunk = vreinterpretq_u8_u16(vdupq_n_u16(zng_memread_2(from)));
 }
 
 static inline void chunkmemset_4(uint8_t *from, chunk_t *chunk) {
-    uint32_t tmp;
-    memcpy(&tmp, from, sizeof(tmp));
-    *chunk = vreinterpretq_u8_u32(vdupq_n_u32(tmp));
+    *chunk = vreinterpretq_u8_u32(vdupq_n_u32(zng_memread_4(from)));
 }
 
 static inline void chunkmemset_8(uint8_t *from, chunk_t *chunk) {
-    uint64_t tmp;
-    memcpy(&tmp, from, sizeof(tmp));
-    *chunk = vreinterpretq_u8_u64(vdupq_n_u64(tmp));
+    *chunk = vreinterpretq_u8_u64(vdupq_n_u64(zng_memread_8(from)));
 }
 
 #define CHUNKSIZE        chunksize_neon
@@ -84,7 +62,9 @@ static inline chunk_t GET_CHUNK_MAG(uint8_t *buf, uint32_t *chunk_rem, uint32_t 
     a = vld1_u8(buf);
     b = vld1_u8(buf + 8);
     ret0 = vtbl1_u8(a, perm_vec0);
-    uint8x8x2_t ab = {{a, b}};
+    uint8x8x2_t ab;
+    ab.val[0] = a;
+    ab.val[1] = b;
     ret1 = vtbl2_u8(ab, perm_vec1);
     return vcombine_u8(ret0, ret1);
 #endif
