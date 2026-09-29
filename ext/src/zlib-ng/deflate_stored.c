@@ -1,6 +1,6 @@
 /* deflate_stored.c -- store data without compression using deflation algorithm
  *
- * Copyright (C) 1995-2013 Jean-loup Gailly and Mark Adler
+ * Copyright (C) 1995-2024 Jean-loup Gailly and Mark Adler
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
@@ -22,7 +22,7 @@
  *
  * deflate_stored() is written to minimize the number of times an input byte is
  * copied. It is most efficient with large input and output buffers, which
- * maximizes the opportunites to have a single copy from next_in to next_out.
+ * maximizes the opportunities to have a single copy from next_in to next_out.
  */
 Z_INTERNAL block_state deflate_stored(deflate_state *s, int flush) {
     /* Smallest worthy block size when not flushing or finishing. By default
@@ -94,7 +94,7 @@ Z_INTERNAL block_state deflate_stored(deflate_state *s, int flush) {
          * the check value.
          */
         if (len) {
-            PREFIX(read_buf)(s->strm, s->strm->next_out, len);
+            read_buf(s->strm, s->strm->next_out, len);
             s->strm->next_out += len;
             s->strm->avail_out -= len;
             s->strm->total_out += len;
@@ -157,7 +157,7 @@ Z_INTERNAL block_state deflate_stored(deflate_state *s, int flush) {
 
     have = MIN(have, s->strm->avail_in);
     if (have) {
-        PREFIX(read_buf)(s->strm, s->window + s->strstart, have);
+        read_buf(s->strm, s->window + s->strstart, have);
         s->strstart += have;
         s->insert += MIN(have, s->w_size - s->insert);
     }
