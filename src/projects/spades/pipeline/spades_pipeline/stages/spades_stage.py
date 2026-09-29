@@ -15,7 +15,7 @@ import logging
 
 from ..commands_parser import Command
 from ..process_cfg import process_spaces, merge_configs
-from ..support import warning, get_tmp_dir
+from ..support import warning, error, get_tmp_dir, ErrorCode
 from ..file_operations import get_reads_length, get_primary_max_reads_length
 from . import stage
 from .spades_iteration_stage import IterationStage
@@ -159,6 +159,15 @@ def generateK(cfg, dataset_data, silent=False):
                     cfg.iterative_K = options_storage.K_MERS_150
         if RL <= max(cfg.iterative_K):
             new_k_mers = [k for k in cfg.iterative_K if k < RL]
+            if not new_k_mers:
+                error("All k-mer sizes (%s) are greater than or equal to the estimated read length (%d), "
+                      "nothing to assemble with.\n"
+                      "Note that the read length is estimated using only a sample of reads taken from the "
+                      "beginning of each input file.\n "
+                      "Make sure that the the input files are correct and "
+                      "longest reads are not located at the end of the input files." %
+                      (str(cfg.iterative_K), RL),
+                      logger_instance=log, exit_code=ErrorCode.InvalidParameter)
             if not silent:
                 log.info("K-mer sizes were set to %s because estimated "
                          "read length (%d) is less than %d" % (str(new_k_mers), RL, max(cfg.iterative_K)))

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cassert>
 #include <fstream>
+#include <iterator>
 #include <stack>
 #include <stdexcept>
 #include <unordered_set>

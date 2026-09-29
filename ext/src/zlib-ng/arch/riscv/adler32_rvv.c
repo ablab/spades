@@ -9,26 +9,28 @@
 #include <riscv_vector.h>
 #include <stdint.h>
 
-#include "../../zbuild.h"
-#include "../../adler32_p.h"
+#include "zbuild.h"
+#include "adler32_p.h"
 
-Z_INTERNAL uint32_t adler32_rvv(uint32_t adler, const uint8_t *buf, size_t len) {
+static inline uint32_t adler32_rvv_impl(uint32_t adler, uint8_t* restrict dst, const uint8_t *src, size_t len, int COPY) {
     /* split Adler-32 into component sums */
     uint32_t sum2 = (adler >> 16) & 0xffff;
     adler &= 0xffff;
 
     /* in case user likes doing a byte at a time, keep it fast */
     if (len == 1) {
-        return adler32_len_1(adler, buf, sum2);
+        if (COPY) memcpy(dst, src, 1);
+        return adler32_len_1(adler, src, sum2);
     }
 
     /* initial Adler-32 value (deferred check for len == 1 speed) */
-    if (buf == NULL)
+    if (src == NULL)
         return 1L;
 
     /* in case short lengths are provided, keep it somewhat fast */
     if (len < 16) {
-        return adler32_len_16(adler, buf, len, sum2);
+        if (COPY) memcpy(dst, src, len);
+        return adler32_len_16(adler, src, len, sum2);
     }
 
     size_t left = len;
@@ -56,10 +58,12 @@ Z_INTERNAL uint32_t adler32_rvv(uint32_t adler, const uint8_t *buf, size_t len) 
         v_buf16_accu = __riscv_vmv_v_x_u16m2(0, vl);
         size_t subprob = block_size;
         while (subprob > 0) {
-            vuint8m1_t v_buf8 = __riscv_vle8_v_u8m1(buf, vl);
+            vuint8m1_t v_buf8 = __riscv_vle8_v_u8m1(src, vl);
+            if (COPY) __riscv_vse8_v_u8m1(dst, v_buf8, vl);
             v_adler32_prev_accu = __riscv_vwaddu_wv_u32m4(v_adler32_prev_accu, v_buf16_accu, vl);
             v_buf16_accu = __riscv_vwaddu_wv_u16m2(v_buf16_accu, v_buf8, vl);
-            buf += vl;
+            src += vl;
+            if (COPY) dst += vl;
             subprob -= vl;
         }
         v_adler32_prev_accu = __riscv_vmacc_vx_u32m4(v_adler32_prev_accu, block_size / vl, v_buf32_accu, vl);
@@ -68,6 +72,7 @@ Z_INTERNAL uint32_t adler32_rvv(uint32_t adler, const uint8_t *buf, size_t len) 
         /* do modulo once each block of NMAX size */
         if (++cnt >= nmax_limit) {
             v_adler32_prev_accu = __riscv_vremu_vx_u32m4(v_adler32_prev_accu, BASE, vl);
+            v_buf32_accu = __riscv_vremu_vx_u32m4(v_buf32_accu, BASE, vl);
             cnt = 0;
         }
     }
@@ -75,10 +80,12 @@ Z_INTERNAL uint32_t adler32_rvv(uint32_t adler, const uint8_t *buf, size_t len) 
     v_buf16_accu = __riscv_vmv_v_x_u16m2(0, vl);
     size_t res = left;
     while (left >= vl) {
-        vuint8m1_t v_buf8 = __riscv_vle8_v_u8m1(buf, vl);
+        vuint8m1_t v_buf8 = __riscv_vle8_v_u8m1(src, vl);
+        if (COPY) __riscv_vse8_v_u8m1(dst, v_buf8, vl);
         v_adler32_prev_accu = __riscv_vwaddu_wv_u32m4(v_adler32_prev_accu, v_buf16_accu, vl);
         v_buf16_accu = __riscv_vwaddu_wv_u16m2(v_buf16_accu, v_buf8, vl);
-        buf += vl;
+        src += vl;
+        if (COPY) dst += vl;
         left -= vl;
     }
     v_adler32_prev_accu = __riscv_vmacc_vx_u32m4(v_adler32_prev_accu, res / vl, v_buf32_accu, vl);
@@ -93,18 +100,22 @@ Z_INTERNAL uint32_t adler32_rvv(uint32_t adler, const uint8_t *buf, size_t len) 
 
     vuint32m1_t v_sum2_sum = __riscv_vmv_s_x_u32m1(0, vl);
     v_sum2_sum = __riscv_vredsum_vs_u32m4_u32m1(v_sum32_accu, v_sum2_sum, vl);
-    uint32_t sum2_sum = __riscv_vmv_x_s_u32m1_u32(v_sum2_sum);
+    uint32_t sum2_sum = __riscv_vmv_x_s_u32m1_u32(v_sum2_sum) % BASE;
 
-    sum2 += (sum2_sum + adler * (len - left));
+    sum2 += (sum2_sum + adler * ((len - left) % BASE));
 
     vuint32m1_t v_adler_sum = __riscv_vmv_s_x_u32m1(0, vl);
     v_adler_sum = __riscv_vredsum_vs_u32m4_u32m1(v_buf32_accu, v_adler_sum, vl);
-    uint32_t adler_sum = __riscv_vmv_x_s_u32m1_u32(v_adler_sum);
+    uint32_t adler_sum = __riscv_vmv_x_s_u32m1_u32(v_adler_sum) % BASE;
 
     adler += adler_sum;
 
+    sum2 %= BASE;
+    adler %= BASE;
+
     while (left--) {
-        adler += *buf++;
+        if (COPY) *dst++ = *src;
+        adler += *src++;
         sum2 += adler;
     }
 
@@ -112,6 +123,14 @@ Z_INTERNAL uint32_t adler32_rvv(uint32_t adler, const uint8_t *buf, size_t len) 
     adler %= BASE;
 
     return adler | (sum2 << 16);
+}
+
+Z_INTERNAL uint32_t adler32_fold_copy_rvv(uint32_t adler, uint8_t *dst, const uint8_t *src, size_t len) {
+    return adler32_rvv_impl(adler, dst, src, len, 1);
+}
+
+Z_INTERNAL uint32_t adler32_rvv(uint32_t adler, const uint8_t *buf, size_t len) {
+    return adler32_rvv_impl(adler, NULL, buf, len, 0);
 }
 
 #endif // RISCV_RVV

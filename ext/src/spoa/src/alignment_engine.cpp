@@ -6,6 +6,7 @@
 #include <exception>
 #include <limits>
 #include <stdexcept>
+#include <cstdlib>
 
 #include "sisd_alignment_engine.hpp"
 #include "simd_alignment_engine.hpp"

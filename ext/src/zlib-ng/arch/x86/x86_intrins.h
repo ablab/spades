@@ -7,7 +7,7 @@
 #ifdef __AVX2__
 #include <immintrin.h>
 
-#if (!defined(__clang__) && defined(__GNUC__) && __GNUC__ < 10) \
+#if (!defined(__clang__) && !defined(__NVCOMPILER) && defined(__GNUC__) && __GNUC__ < 10) \
     || (defined(__apple_build_version__) && __apple_build_version__ < 9020039)
 static inline __m256i _mm256_zextsi128_si256(__m128i a) {
     __m128i r;
@@ -29,7 +29,7 @@ static inline __m512i _mm512_zextsi128_si512(__m128i a) {
 /* GCC <9 is missing some AVX512 intrinsics.
  */
 #ifdef __AVX512F__
-#if (!defined(__clang__) && defined(__GNUC__) && __GNUC__ < 9)
+#if (!defined(__clang__) && !defined(__NVCOMPILER) && defined(__GNUC__) && __GNUC__ < 9)
 #include <immintrin.h>
 
 #define PACK(c0, c1, c2, c3) (((int)(unsigned char)(c0) << 24) | ((int)(unsigned char)(c1) << 16) | \
@@ -83,5 +83,40 @@ static inline __m512i _mm512_zextsi128_si512(__m128i a) {
 }
 #endif // __AVX512F__
 #endif // defined(_MSC_VER) && _MSC_VER < 1914
+
+/* Visual C++ toolchains before v142 have constant overflow in AVX512 intrinsics */
+#if defined(_MSC_VER) && defined(__AVX512F__) && !defined(_MM_K0_REG8)
+#  undef _mm512_extracti32x4_epi32
+#  define _mm512_extracti32x4_epi32(v1, e1) _mm512_maskz_extracti32x4_epi32(UINT8_MAX, v1, e1)
+#endif
+
+#if defined(_MSC_VER) && !defined(__clang__)
+#include <intrin.h>
+/* For whatever reason this intrinsic is 64 bit only with MSVC?
+ * While we don't have 64 bit GPRs, it should at least be able to move it to stack
+ * or shuffle it over 2 registers */
+#if !defined(_M_AMD64)
+/* So, while we can't move directly to a GPR, hopefully this move to
+ * a stack resident variable doesn't equate to something awful */
+static inline int64_t _mm_cvtsi128_si64(__m128i a) {
+    union { __m128i v; int64_t i; } u;
+    u.v = a;
+    return u.i;
+}
+
+static inline __m128i _mm_cvtsi64_si128(int64_t a) {
+   return _mm_set_epi64x(0, a);
+}
+#endif
+#endif
+
+#if defined(__GNUC__) && defined(__i386__) && !defined(__clang__)
+static inline int64_t _mm_cvtsi128_si64(__m128i a) {
+    union { __m128i v; int64_t i; } u;
+    u.v = a;
+    return u.i;
+}
+#define _mm_cvtsi64_si128(a) _mm_set_epi64x(0, a)
+#endif
 
 #endif // include guard X86_INTRINS_H

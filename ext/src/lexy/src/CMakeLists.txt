@@ -1,8 +1,8 @@
 # Copyright (C) 2020-2025 Jonathan Müller and lexy contributors
 # SPDX-License-Identifier: BSL-1.0
 
-get_filename_component(include_dir ${CMAKE_CURRENT_SOURCE_DIR}/../include/lexy ABSOLUTE)
-get_filename_component(ext_include_dir ${CMAKE_CURRENT_SOURCE_DIR}/../include/lexy_ext ABSOLUTE)
+set(include_dir "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/lexy>$<INSTALL_INTERFACE:include/lexy>")
+set(ext_include_dir "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/lexy_ext>$<INSTALL_INTERFACE:include/lexy_ext>")
 set(header_files
         ${include_dir}/_detail/any_ref.hpp
         ${include_dir}/_detail/assert.hpp
@@ -73,6 +73,8 @@ set(header_files
         ${include_dir}/dsl/identifier.hpp
         ${include_dir}/dsl/if.hpp
         ${include_dir}/dsl/integer.hpp
+        ${include_dir}/dsl/list.hpp
+        ${include_dir}/dsl/literal.hpp
         ${include_dir}/dsl/lookahead.hpp
         ${include_dir}/dsl/loop.hpp
         ${include_dir}/dsl/member.hpp
@@ -120,15 +122,13 @@ set(header_files
         ${include_dir}/lexeme.hpp
         ${include_dir}/parse_tree.hpp
         ${include_dir}/token.hpp
-        ${include_dir}/visualize.hpp
-        PARENT_SCOPE)
+        ${include_dir}/visualize.hpp)
 set(ext_header_files
         ${ext_include_dir}/compiler_explorer.hpp
         ${ext_include_dir}/parse_tree_algorithm.hpp
         ${ext_include_dir}/parse_tree_doctest.hpp
         ${ext_include_dir}/report_error.hpp
-        ${ext_include_dir}/shell.hpp
-        PARENT_SCOPE)
+        ${ext_include_dir}/shell.hpp)
 
 # Base target for common options.
 add_library(_lexy_base INTERFACE)
@@ -208,7 +208,7 @@ endif()
 add_library(lexy_file STATIC)
 add_alias(lexy::file lexy_file)
 target_link_libraries(lexy_file PRIVATE foonathan::lexy::dev)
-target_sources(lexy_file PRIVATE input/file.cpp)
+target_sources(lexy_file PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/input/file.cpp)
 
 # Link to enable unicode database.
 add_library(lexy_unicode INTERFACE)
@@ -218,7 +218,7 @@ target_compile_definitions(lexy_unicode INTERFACE LEXY_HAS_UNICODE_DATABASE=1)
 # Link to have extension headers.
 add_library(lexy_ext INTERFACE)
 add_alias(lexy::ext lexy_ext)
-target_sources(lexy_ext INTERFACE ${ext_headers_files})
+target_sources(lexy_ext INTERFACE ${ext_header_files})
 
 # Umbrella target with all components.
 add_library(lexy INTERFACE)

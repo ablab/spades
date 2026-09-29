@@ -178,7 +178,7 @@ struct automatic_ws_parser
     LEXY_PARSER_FUNC static bool parse(Context& context, Reader& reader, Args&&... args)
     {
         if (!std::is_base_of_v<disable_whitespace_skipping, NextParser> //
-            && context.control_block->enable_whitespace_skipping)
+            && context.whitespace_disable_count == 0)
         {
             using whitespace = lexy::production_whitespace<typename Context::production,
                                                            typename Context::whitespace_production>;
@@ -243,8 +243,8 @@ struct _wsn : _copy_base<Rule>
         template <typename Context, typename Reader, typename... Args>
         LEXY_PARSER_FUNC static bool parse(Context& context, Reader& reader, Args&&... args)
         {
-            // Enable automatic whitespace skipping again.
-            context.control_block->enable_whitespace_skipping = true;
+            // Potentially enable automatic whitespace skipping again.
+            --context.whitespace_disable_count;
             // And skip whitespace once.
             return lexy::whitespace_parser<Context, NextParser>::parse(context, reader,
                                                                        LEXY_FWD(args)...);
@@ -274,7 +274,7 @@ struct _wsn : _copy_base<Rule>
         LEXY_PARSER_FUNC auto finish(Context& context, Reader& reader, Args&&... args)
         {
             // Finish the rule with whitespace skipping disabled.
-            context.control_block->enable_whitespace_skipping = false;
+            ++context.whitespace_disable_count;
             return rule.template finish<_pc<NextParser>>(context, reader, LEXY_FWD(args)...);
         }
     };
@@ -296,7 +296,7 @@ struct _wsn : _copy_base<Rule>
             else
             {
                 // Parse the rule with whitespace skipping disabled.
-                context.control_block->enable_whitespace_skipping = false;
+                ++context.whitespace_disable_count;
                 using parser = lexy::parser_for<Rule, _pc<NextParser>>;
                 return parser::parse(context, reader, LEXY_FWD(args)...);
             }
