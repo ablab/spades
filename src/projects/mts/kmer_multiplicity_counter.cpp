@@ -47,16 +47,16 @@ class KmerMultiplicityCounter {
         while (kmcFile.ReadNextKmer(kmer, count)) {
             RtSeq seq(k_, kmer.to_string());
             seq.BinWrite(output);
-            seq_element_type tmp = count;
-            output.write((char*) &(tmp), sizeof(seq_element_type));
+            seq::seq_element_type tmp = count;
+            output.write((char*) &(tmp), sizeof(seq::seq_element_type));
         }
         output.close();
         return parsed_filename;
     }
 
     filesystem::path SortKmersCountFile(const filesystem::path& filename) {
-        MMappedRecordArrayReader<seq_element_type> ins(filename, RtSeq::GetDataSize(k_) + 1, false);
-        pdqsort_branchless(ins.begin(), ins.end(), adt::array_less<seq_element_type>());
+        MMappedRecordArrayReader<seq::seq_element_type> ins(filename, RtSeq::GetDataSize(k_) + 1, false);
+        pdqsort_branchless(ins.begin(), ins.end(), adt::array_less<seq::seq_element_type>());
         std::filesystem::path sorted_filename = filename.native() + KMER_SORTED_EXTENSION;
         std::ofstream out(sorted_filename);
         out.write((char*) ins.data(), ins.data_size());
@@ -70,8 +70,8 @@ class KmerMultiplicityCounter {
         if (!seq.BinRead(infile)) {
             return false;
         }
-        seq_element_type tmp;
-        infile.read((char*) &tmp, sizeof(seq_element_type));
+        seq::seq_element_type tmp;
+        infile.read((char*) &tmp, sizeof(seq::seq_element_type));
         res = {seq, (uint32) tmp};
         return true;
     }
