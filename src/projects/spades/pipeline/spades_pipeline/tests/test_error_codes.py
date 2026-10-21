@@ -13,18 +13,25 @@ Tests verify that:
 1. ErrorCode enum values match the C++ error_codes.hpp values
 2. user_end_error() correctly identifies user-end vs internal errors
 3. error() function displays appropriate messages based on error type
+4. Dataset validation explains unsupported PacBio-only libraries
 """
 
 import io
+import os
 import sys
+import tempfile
 import unittest
 from unittest.mock import patch, MagicMock
 
 # Add parent directory to path for imports
-import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SPADES_PIPELINE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SPADES_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..", ".."))
+sys.path.insert(0, SPADES_PIPELINE_DIR)
+sys.path.insert(0, os.path.join(SPADES_REPO_ROOT, "ext", "src", "python_libs"))
 
 from support import ErrorCode, error, report_issue_error_message, no_report_error_message
+from spades_pipeline import options_parser
 
 
 class TestErrorCodeValues(unittest.TestCase):
@@ -288,6 +295,57 @@ class TestErrorFunctionWithLogger(unittest.TestCase):
         self.assertIn("github", logged_messages.lower())
 
         mock_exit.assert_called_once_with(-1)
+
+
+class TestDatasetLibraryDiagnostic(unittest.TestCase):
+    """Check parser guidance with metadata and a sequence-free placeholder file."""
+
+    def test_pacbio_only_dataset_suggests_single_for_ccs_reads(self):
+        storage = options_parser.options_storage
+        previous_state = {
+            "args": storage.args,
+            "first_command_line": storage.first_command_line,
+            "original_dataset_data": storage.original_dataset_data,
+            "dict_of_rel2abs": storage.dict_of_rel2abs.copy(),
+            "dict_of_prefixes": storage.dict_of_prefixes.copy(),
+        }
+
+        try:
+            with tempfile.TemporaryDirectory(dir=SPADES_REPO_ROOT) as temp_dir:
+                dataset_file = os.path.join(temp_dir, "dataset.yaml")
+                reads_file = os.path.join(temp_dir, "empty.fastq")
+                output_dir = os.path.join(temp_dir, "output")
+                with open(dataset_file, "w", encoding="utf-8") as stream:
+                    stream.write('- type: pacbio\n  single reads:\n    - "empty.fastq"\n')
+                with open(reads_file, "w", encoding="utf-8"):
+                    pass
+
+                options = ["--isolate", "--dataset", dataset_file, "-o", output_dir]
+                storage.first_command_line = ["spades.py"] + options
+                captured = {}
+
+                def capture_error(message, *args, **kwargs):
+                    captured["message"] = message
+                    captured["exit_code"] = kwargs.get("exit_code")
+                    raise RuntimeError(message)
+
+                with patch.object(options_parser.support, "error", side_effect=capture_error):
+                    with self.assertRaises(RuntimeError):
+                        options_parser.parse_args("", "", secondary_filling=False, options=options)
+
+                self.assertEqual(captured["exit_code"], options_parser.support.ErrorCode.InvalidParameter)
+                self.assertIn("'paired-end', 'single', 'hq-mate-pairs'", captured["message"])
+                self.assertIn("'pacbio'", captured["message"])
+                self.assertIn("PacBio CCS reads should use type 'single'", captured["message"])
+                self.assertIn("supplementary PacBio CLR reads", captured["message"])
+        finally:
+            storage.args = previous_state["args"]
+            storage.first_command_line = previous_state["first_command_line"]
+            storage.original_dataset_data = previous_state["original_dataset_data"]
+            storage.dict_of_rel2abs.clear()
+            storage.dict_of_rel2abs.update(previous_state["dict_of_rel2abs"])
+            storage.dict_of_prefixes.clear()
+            storage.dict_of_prefixes.update(previous_state["dict_of_prefixes"])
 
 
 if __name__ == "__main__":

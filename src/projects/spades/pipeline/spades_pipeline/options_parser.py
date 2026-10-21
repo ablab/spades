@@ -1219,9 +1219,19 @@ def postprocessing(args, dataset_data, spades_home, load_processed_dataset, rest
     args.dataset_yaml_filename = processed_dataset_fpath
 
     file_operations.check_dataset_reads(dataset_data, (args.only_assembler or args.rna), args.iontorrent)
-    if not file_operations.get_lib_ids_by_type(dataset_data, options_storage.READS_TYPES_USED_IN_CONSTRUCTION):
-        support.error("you should specify at least one unpaired, paired-end, or high-quality mate-pairs library!",
-                      exit_code=support.ErrorCode.InvalidParameter)
+    primary_read_types = options_storage.READS_TYPES_USED_IN_CONSTRUCTION
+    if not file_operations.get_lib_ids_by_type(dataset_data, primary_read_types):
+        found_types = sorted(set(reads_library["type"] for reads_library in dataset_data))
+        primary_types_description = ", ".join("'%s'" % read_type for read_type in primary_read_types)
+        found_types_description = ", ".join("'%s'" % read_type for read_type in found_types)
+        error_message = (
+            "dataset must contain at least one primary read library of type %s; "
+            "found library type(s): %s." % (primary_types_description, found_types_description)
+        )
+        if "pacbio" in found_types:
+            error_message += (" PacBio CCS reads should use type 'single'; the 'pacbio' type is for "
+                              "supplementary PacBio CLR reads.")
+        support.error(error_message, exit_code=support.ErrorCode.InvalidParameter)
     if args.rna:
         if len(dataset_data) != len(
                 file_operations.get_lib_ids_by_type(dataset_data, options_storage.READS_TYPES_USED_IN_RNA_SEQ)):
