@@ -13,25 +13,21 @@ Tests verify that:
 1. ErrorCode enum values match the C++ error_codes.hpp values
 2. user_end_error() correctly identifies user-end vs internal errors
 3. error() function displays appropriate messages based on error type
-4. Dataset validation explains unsupported PacBio-only libraries
+4. Dataset validation explains missing primary libraries
 """
 
 import io
 import os
 import sys
-import tempfile
 import unittest
 from unittest.mock import patch, MagicMock
 
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SPADES_PIPELINE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SPADES_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..", ".."))
-sys.path.insert(0, SPADES_PIPELINE_DIR)
-sys.path.insert(0, os.path.join(SPADES_REPO_ROOT, "ext", "src", "python_libs"))
+# Make spades_pipeline importable as a package when run as a script
+# (works both from the source tree and from the installed share/spades)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from support import ErrorCode, error, report_issue_error_message, no_report_error_message
 from spades_pipeline import options_parser
+from spades_pipeline.support import ErrorCode, error, report_issue_error_message, no_report_error_message
 
 
 class TestErrorCodeValues(unittest.TestCase):
@@ -172,27 +168,27 @@ class TestErrorMessages(unittest.TestCase):
 class TestErrorFunction(unittest.TestCase):
     """Test the error() function behavior with different error codes."""
 
-    @patch('support.sys.exit')
-    @patch('support.shutil.rmtree')
-    @patch('support.os.path.isdir', return_value=False)
+    @patch('spades_pipeline.support.sys.exit')
+    @patch('spades_pipeline.support.shutil.rmtree')
+    @patch('spades_pipeline.support.os.path.isdir', return_value=False)
     def test_error_with_user_end_code_exits_correctly(self, mock_isdir, mock_rmtree, mock_exit):
         """error() with user-end code should exit with that code's value."""
         with patch('sys.stderr', new_callable=io.StringIO):
             error("Test error", exit_code=ErrorCode.InvalidInputFormat)
         mock_exit.assert_called_once_with(64)
 
-    @patch('support.sys.exit')
-    @patch('support.shutil.rmtree')
-    @patch('support.os.path.isdir', return_value=False)
+    @patch('spades_pipeline.support.sys.exit')
+    @patch('spades_pipeline.support.shutil.rmtree')
+    @patch('spades_pipeline.support.os.path.isdir', return_value=False)
     def test_error_with_internal_code_exits_correctly(self, mock_isdir, mock_rmtree, mock_exit):
         """error() with internal code should exit with that code's value."""
         with patch('sys.stderr', new_callable=io.StringIO):
             error("Test error", exit_code=ErrorCode.GeneralError)
         mock_exit.assert_called_once_with(-1)
 
-    @patch('support.sys.exit')
-    @patch('support.shutil.rmtree')
-    @patch('support.os.path.isdir', return_value=False)
+    @patch('spades_pipeline.support.sys.exit')
+    @patch('spades_pipeline.support.shutil.rmtree')
+    @patch('spades_pipeline.support.os.path.isdir', return_value=False)
     def test_error_user_end_no_report_message(self, mock_isdir, mock_rmtree, mock_exit):
         """error() with user-end code should NOT show 'report issue' message."""
         stderr_capture = io.StringIO()
@@ -202,9 +198,9 @@ class TestErrorFunction(unittest.TestCase):
         self.assertNotIn("github", output.lower())
         self.assertNotIn("report an issue", output.lower())
 
-    @patch('support.sys.exit')
-    @patch('support.shutil.rmtree')
-    @patch('support.os.path.isdir', return_value=False)
+    @patch('spades_pipeline.support.sys.exit')
+    @patch('spades_pipeline.support.shutil.rmtree')
+    @patch('spades_pipeline.support.os.path.isdir', return_value=False)
     def test_error_internal_shows_report_message(self, mock_isdir, mock_rmtree, mock_exit):
         """error() with internal code SHOULD show 'report issue' message."""
         stderr_capture = io.StringIO()
@@ -213,9 +209,9 @@ class TestErrorFunction(unittest.TestCase):
         output = stderr_capture.getvalue()
         self.assertIn("github.com/ablab/spades", output)
 
-    @patch('support.sys.exit')
-    @patch('support.shutil.rmtree')
-    @patch('support.os.path.isdir', return_value=False)
+    @patch('spades_pipeline.support.sys.exit')
+    @patch('spades_pipeline.support.shutil.rmtree')
+    @patch('spades_pipeline.support.os.path.isdir', return_value=False)
     def test_error_file_not_found_message(self, mock_isdir, mock_rmtree, mock_exit):
         """error() with InputFileNotFound should not suggest reporting."""
         stderr_capture = io.StringIO()
@@ -226,9 +222,9 @@ class TestErrorFunction(unittest.TestCase):
         self.assertNotIn("report an issue", output.lower())
         mock_exit.assert_called_once_with(65)
 
-    @patch('support.sys.exit')
-    @patch('support.shutil.rmtree')
-    @patch('support.os.path.isdir', return_value=False)
+    @patch('spades_pipeline.support.sys.exit')
+    @patch('spades_pipeline.support.shutil.rmtree')
+    @patch('spades_pipeline.support.os.path.isdir', return_value=False)
     def test_error_invalid_param_message(self, mock_isdir, mock_rmtree, mock_exit):
         """error() with InvalidParameter should not suggest reporting."""
         stderr_capture = io.StringIO()
@@ -239,9 +235,9 @@ class TestErrorFunction(unittest.TestCase):
         self.assertNotIn("report an issue", output.lower())
         mock_exit.assert_called_once_with(67)
 
-    @patch('support.sys.exit')
-    @patch('support.shutil.rmtree')
-    @patch('support.os.path.isdir', return_value=False)
+    @patch('spades_pipeline.support.sys.exit')
+    @patch('spades_pipeline.support.shutil.rmtree')
+    @patch('spades_pipeline.support.os.path.isdir', return_value=False)
     def test_error_memory_exceeded_message(self, mock_isdir, mock_rmtree, mock_exit):
         """error() with MemoryLimitExceeded should not suggest reporting."""
         stderr_capture = io.StringIO()
@@ -256,10 +252,10 @@ class TestErrorFunction(unittest.TestCase):
 class TestErrorFunctionWithLogger(unittest.TestCase):
     """Test error() function behavior when a logger is provided."""
 
-    @patch('support.sys.exit')
-    @patch('support.shutil.rmtree')
-    @patch('support.os.path.isdir', return_value=False)
-    @patch('support.log_warnings')
+    @patch('spades_pipeline.support.sys.exit')
+    @patch('spades_pipeline.support.shutil.rmtree')
+    @patch('spades_pipeline.support.os.path.isdir', return_value=False)
+    @patch('spades_pipeline.support.log_warnings')
     def test_error_with_logger_user_end(self, mock_log_warnings, mock_isdir, mock_rmtree, mock_exit):
         """error() with logger and user-end code should log without report message."""
         mock_logger = MagicMock()
@@ -276,10 +272,10 @@ class TestErrorFunctionWithLogger(unittest.TestCase):
 
         mock_exit.assert_called_once_with(64)
 
-    @patch('support.sys.exit')
-    @patch('support.shutil.rmtree')
-    @patch('support.os.path.isdir', return_value=False)
-    @patch('support.log_warnings')
+    @patch('spades_pipeline.support.sys.exit')
+    @patch('spades_pipeline.support.shutil.rmtree')
+    @patch('spades_pipeline.support.os.path.isdir', return_value=False)
+    @patch('spades_pipeline.support.log_warnings')
     def test_error_with_logger_internal(self, mock_log_warnings, mock_isdir, mock_rmtree, mock_exit):
         """error() with logger and internal code should log with report message."""
         mock_logger = MagicMock()
@@ -297,55 +293,37 @@ class TestErrorFunctionWithLogger(unittest.TestCase):
         mock_exit.assert_called_once_with(-1)
 
 
-class TestDatasetLibraryDiagnostic(unittest.TestCase):
-    """Check parser guidance with metadata and a sequence-free placeholder file."""
+class TestPrimaryLibrariesCheck(unittest.TestCase):
+    """Test the diagnostic for datasets without primary (short read) libraries."""
 
-    def test_pacbio_only_dataset_suggests_single_for_ccs_reads(self):
-        storage = options_parser.options_storage
-        previous_state = {
-            "args": storage.args,
-            "first_command_line": storage.first_command_line,
-            "original_dataset_data": storage.original_dataset_data,
-            "dict_of_rel2abs": storage.dict_of_rel2abs.copy(),
-            "dict_of_prefixes": storage.dict_of_prefixes.copy(),
-        }
+    def check(self, dataset_data):
+        with patch("spades_pipeline.options_parser.support.error", side_effect=SystemExit) as mock_error:
+            try:
+                options_parser.check_primary_libraries(dataset_data)
+            except SystemExit:
+                pass
+        return mock_error
 
-        try:
-            with tempfile.TemporaryDirectory(dir=SPADES_REPO_ROOT) as temp_dir:
-                dataset_file = os.path.join(temp_dir, "dataset.yaml")
-                reads_file = os.path.join(temp_dir, "empty.fastq")
-                output_dir = os.path.join(temp_dir, "output")
-                with open(dataset_file, "w", encoding="utf-8") as stream:
-                    stream.write('- type: pacbio\n  single reads:\n    - "empty.fastq"\n')
-                with open(reads_file, "w", encoding="utf-8"):
-                    pass
+    def test_primary_library_present(self):
+        for lib_type in ["paired-end", "single", "hq-mate-pairs"]:
+            self.check([{"type": "pacbio"}, {"type": lib_type}]).assert_not_called()
 
-                options = ["--isolate", "--dataset", dataset_file, "-o", output_dir]
-                storage.first_command_line = ["spades.py"] + options
-                captured = {}
+    def test_no_primary_library(self):
+        mock_error = self.check([{"type": "mate-pairs"}, {"type": "trusted-contigs"}])
+        mock_error.assert_called_once()
+        message = mock_error.call_args[0][0]
+        self.assertEqual(mock_error.call_args[1]["exit_code"], ErrorCode.InvalidParameter)
+        self.assertIn("paired-end, single, hq-mate-pairs", message)
+        self.assertIn("found library type(s): mate-pairs, trusted-contigs.", message)
+        self.assertNotIn("single reads", message)
 
-                def capture_error(message, *args, **kwargs):
-                    captured["message"] = message
-                    captured["exit_code"] = kwargs.get("exit_code")
-                    raise RuntimeError(message)
-
-                with patch.object(options_parser.support, "error", side_effect=capture_error):
-                    with self.assertRaises(RuntimeError):
-                        options_parser.parse_args("", "", secondary_filling=False, options=options)
-
-                self.assertEqual(captured["exit_code"], options_parser.support.ErrorCode.InvalidParameter)
-                self.assertIn("'paired-end', 'single', 'hq-mate-pairs'", captured["message"])
-                self.assertIn("'pacbio'", captured["message"])
-                self.assertIn("PacBio CCS reads should use type 'single'", captured["message"])
-                self.assertIn("supplementary PacBio CLR reads", captured["message"])
-        finally:
-            storage.args = previous_state["args"]
-            storage.first_command_line = previous_state["first_command_line"]
-            storage.original_dataset_data = previous_state["original_dataset_data"]
-            storage.dict_of_rel2abs.clear()
-            storage.dict_of_rel2abs.update(previous_state["dict_of_rel2abs"])
-            storage.dict_of_prefixes.clear()
-            storage.dict_of_prefixes.update(previous_state["dict_of_prefixes"])
+    def test_long_reads_only(self):
+        for lib_type in ["pacbio", "nanopore"]:
+            mock_error = self.check([{"type": lib_type}])
+            mock_error.assert_called_once()
+            message = mock_error.call_args[0][0]
+            self.assertIn("found library type(s): %s." % lib_type, message)
+            self.assertIn("should be provided as single reads", message)
 
 
 if __name__ == "__main__":

@@ -1116,6 +1116,21 @@ def add_to_cfg(cfg, bin_home, spades_home, args):
         cfg["mismatch_corrector"].__dict__["output-dir"] = args.output_dir
 
 
+def check_primary_libraries(dataset_data):
+    primary_types = options_storage.READS_TYPES_USED_IN_CONSTRUCTION
+    if file_operations.get_lib_ids_by_type(dataset_data, primary_types):
+        return
+
+    found_types = sorted(set(reads_library["type"] for reads_library in dataset_data))
+    message = "you should specify at least one primary library (%s); found library type(s): %s." % \
+              (", ".join(primary_types), ", ".join(found_types) if found_types else "none")
+    if "pacbio" in found_types or "nanopore" in found_types:
+        message += " Note that PacBio CCS/HiFi reads and pre-corrected long reads should be provided as " \
+                   "single reads (-s option or 'single' type in YAML); 'pacbio' and 'nanopore' types " \
+                   "are only for supplementary uncorrected long reads in hybrid assembly."
+    support.error(message, exit_code=support.ErrorCode.InvalidParameter)
+
+
 def postprocessing(args, dataset_data, spades_home, load_processed_dataset, restart_from, options=None):
     import pyyaml3 as pyyaml
 
@@ -1219,19 +1234,7 @@ def postprocessing(args, dataset_data, spades_home, load_processed_dataset, rest
     args.dataset_yaml_filename = processed_dataset_fpath
 
     file_operations.check_dataset_reads(dataset_data, (args.only_assembler or args.rna), args.iontorrent)
-    primary_read_types = options_storage.READS_TYPES_USED_IN_CONSTRUCTION
-    if not file_operations.get_lib_ids_by_type(dataset_data, primary_read_types):
-        found_types = sorted(set(reads_library["type"] for reads_library in dataset_data))
-        primary_types_description = ", ".join("'%s'" % read_type for read_type in primary_read_types)
-        found_types_description = ", ".join("'%s'" % read_type for read_type in found_types)
-        error_message = (
-            "dataset must contain at least one primary read library of type %s; "
-            "found library type(s): %s." % (primary_types_description, found_types_description)
-        )
-        if "pacbio" in found_types:
-            error_message += (" PacBio CCS reads should use type 'single'; the 'pacbio' type is for "
-                              "supplementary PacBio CLR reads.")
-        support.error(error_message, exit_code=support.ErrorCode.InvalidParameter)
+    check_primary_libraries(dataset_data)
     if args.rna:
         if len(dataset_data) != len(
                 file_operations.get_lib_ids_by_type(dataset_data, options_storage.READS_TYPES_USED_IN_RNA_SEQ)):
