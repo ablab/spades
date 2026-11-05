@@ -20,6 +20,8 @@
 #include "kmer_index/kmer_mph/kmer_index_builder.hpp"
 #include "utils/logger/logger.hpp"
 
+#include <atomic>
+
 using namespace hammer;
 
 class BufferFiller;
@@ -187,17 +189,37 @@ class KMerDataFiller {
   }
 };
 
+// Only answers "was this k-mer seen more than once?".
+//
+// In a CQF a k-mer seen once takes 1 slot, twice 2 slots, three or more
+// times 3+ slots.  Counting every occurrence of high-coverage k-mers used to
+// overfill the filter: inserts then became quadratically slow (the
+// "stuck at K-mer counting" hang, ablab/spades#318) and finally wrote past
+// the end of the table.  We therefore stop counting at 2 and size the filter
+// so that even if every k-mer reaches 2 it stays well below full.
 class KMerMultiplicityCounter {
+  static constexpr size_t kSolidThreshold = 2;
+  // nslots = 2^(ceil(log2(size * kHeadroom)) + 1) >= 2.4 * size, so with at
+  // most ~2 slots per k-mer the load stays <= ~83%.
+  static constexpr double kHeadroom = 1.2;
+
   qf::cqf_with_hasher<KMer> cqf_;
+  std::atomic<bool> overflow_{false};
 
   public:
   KMerMultiplicityCounter(size_t size)
-      : cqf_(size, [](const KMer &k) {
+      : cqf_(size_t(double(size) * kHeadroom) + 1, [](const KMer &k) {
         auto h = k.GetHash();
         return h;
       }) {}
 
   ~KMerMultiplicityCounter() {}
+
+  void add(const KMer &kmer) {
+      // Count check and insert happen under a single lock.
+      if (!cqf_.add_capped(kmer, kSolidThreshold))
+          overflow_.store(true, std::memory_order_relaxed);
+  }
 
     bool operator()(std::unique_ptr<Read> r) {
       uint8_t trim_quality = (uint8_t)cfg::get().input_trim_quality;
@@ -213,15 +235,19 @@ class KMerMultiplicityCounter {
       for (; gen.HasMore(); gen.Next()) {
           KMer kmer = gen.kmer();
 
-          cqf_.add(kmer);
-          cqf_.add(!kmer);
+          add(kmer);
+          add(!kmer);
       }
 
       return false;
   }
 
-  size_t count(const KMer &k) const {
-      return cqf_.lookup(k);
+  // If the estimate was badly off and the filter filled up anyway, some
+  // counts are missing; then we must not drop anything as a "singleton".
+  bool overflowed() const { return overflow_.load(std::memory_order_relaxed); }
+
+  bool solid(const KMer &k) const {
+      return overflowed() || cqf_.lookup(k) >= kSolidThreshold;
   }
 };
 
@@ -328,11 +354,14 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
           }
       }
       INFO("Total " << processed << " reads processed");
+      if (mcounter.overflowed())
+          WARN("K-mer multiplicity filter is full (k-mer count was underestimated); "
+               "singleton k-mer filtering is disabled for this run");
 
       kmer_storage =
           kmers::KMerDiskCounter<hammer::KMer>(workdir,
                                                HammerFilteringKMerSplitter(workdir,
-                                                                           [&] (const KMer &k) { return mcounter.count(k) > 1; }))
+                                                                           [&] (const KMer &k) { return mcounter.solid(k); }))
           .Count(num_files_, omp_get_max_threads());
   } else {
       kmer_storage =

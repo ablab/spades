@@ -86,6 +86,13 @@ extern "C" {
 	bool qf_insert(QF *qf, uint64_t key, uint64_t value, uint64_t count,
 								 bool lock, bool spin);
 
+	/* Increment the counter for key by one, unless it already is >= cap
+		 (then nothing is changed).  The count check and the insert happen
+		 under one lock.  Returns false only if the key had to be inserted
+		 but could not be (lock not acquired with spin == false, or the
+		 filter is full). */
+	bool qf_insert_capped(QF *qf, uint64_t key, uint64_t cap, bool lock, bool spin);
+
 	/* Remove count instances of this key/value combination. */
 	void qf_remove(QF *qf, uint64_t key, uint64_t value, uint64_t count);
 
