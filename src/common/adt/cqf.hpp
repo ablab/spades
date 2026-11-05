@@ -63,6 +63,14 @@ class cqf {
         return res;
     }
 
+    /// Count d once more unless its count already reached cap.  Returns
+    /// false if d needed inserting but could not be (lock busy with
+    /// spin == false, or filter full).
+    bool add_capped(digest d, uint64_t cap,
+                    bool lock = true, bool spin = true) {
+        return qf_insert_capped(&qf_, d & range_mask_, cap, lock, spin);
+    }
+
     void expand() {
         // Create new QF having the same hash bits, but double the slots
         QF nqf;
@@ -148,6 +156,11 @@ class cqf_with_hasher : public cqf {
              bool lock = true, bool spin = true) {
         digest d = hasher_(o);
         return add(d, count, lock, spin);
+    }
+
+    bool add_capped(const T &o, uint64_t cap,
+                    bool lock = true, bool spin = true) {
+        return cqf::add_capped(hasher_(o), cap, lock, spin);
     }
 
     size_t lookup(const T &o, bool lock = false) const {

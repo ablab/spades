@@ -35,8 +35,11 @@
 #define SLOTS_PER_BLOCK (1ULL << BLOCK_OFFSET_BITS)
 #define METADATA_WORDS_PER_BLOCK ((SLOTS_PER_BLOCK + 63) / 64)
 
+/* The table is protected by one spin lock per region of NUM_SLOTS_TO_LOCK
+   slots.  Operations lock exactly the regions they touch (see
+   qf_lockrange below), so the region size only affects contention, not
+   correctness. */
 #define NUM_SLOTS_TO_LOCK (1ULL<<12)
-#define CLUSTER_SIZE (1ULL<<8)
 
 #define METADATA_WORD(qf,field,slot_index) (get_block((qf), (slot_index) / SLOTS_PER_BLOCK)->field[((slot_index) % SLOTS_PER_BLOCK) / 64])
 #define BITMASK(nbits) ((nbits) == 64 ? 0xffffffffffffffff : (1ULL << (nbits)) - 1ULL)
@@ -154,6 +157,75 @@ static inline void qf_spin_unlock(volatile int *lock)
 {
 	__sync_lock_release(lock);
 	return;
+}
+
+/* ---- Lock ranges -----------------------------------------------------
+   The old code locked the region of the hash bucket (plus the next one if
+   the bucket was near the region end) and assumed that no insert would
+   ever shift slots past that.  Near full, clusters get long, inserts do
+   shift past it, and two threads end up shifting the same slots: the
+   filter is silently corrupted.
+
+   Now a locking operation holds a contiguous range of regions [lo, hi]
+   and never touches a block outside it:
+   - forward: get_block() checks every block access and, if the block lies
+     past `hi`, first locks the regions up to it (lr_touch).  The range
+     grows exactly as far as the operation actually goes.  Locks are only
+     ever waited for in ascending order, so this cannot deadlock.
+   - backward: run_end()/block_offset() read a few blocks before the hash
+     bucket.  lr_acquire() works out which ones up front and only
+     try-locks those lower regions; if that fails it releases everything
+     and starts again from the lower region, in ascending order.
+   The range being held is kept in a thread-local pointer, so the check
+   in get_block() needs no extra arguments. */
+typedef struct {
+	const QF *qf;
+	uint64_t lo, hi;   /* held regions */
+} qf_lockrange;
+
+static __thread qf_lockrange *qf_cur_lr = NULL;
+
+static inline bool qf_lock_region(QF *qf, uint64_t region, bool spin)
+{
+#ifdef LOG_WAIT_TIME
+	return qf_spin_lock(qf, &qf->mem->locks[region], region, spin);
+#else
+	(void)qf;
+	return qf_spin_lock(&qf->mem->locks[region], spin);
+#endif
+}
+
+static void lr_extend(qf_lockrange *lr, uint64_t region)
+{
+	if (region < lr->lo) {
+		/* Cannot wait for a lower lock while holding higher ones.
+		   lr_acquire() takes every lower region an operation reads, so
+		   getting here would be a bug in this file. */
+		fprintf(stderr, "gqf: block access below the locked range\n");
+		abort();
+	}
+	while (lr->hi < region) {
+		lr->hi++;
+		qf_lock_region((QF *)lr->qf, lr->hi, true);
+	}
+}
+
+static inline void lr_touch(const QF *qf, uint64_t block_index)
+{
+	qf_lockrange *lr = qf_cur_lr;
+	if (lr && lr->qf == qf) {
+		uint64_t region = block_index * SLOTS_PER_BLOCK / NUM_SLOTS_TO_LOCK;
+		if (region > lr->hi || region < lr->lo)
+			lr_extend(lr, region);
+	}
+}
+
+static inline void lr_release(QF *qf, qf_lockrange *lr)
+{
+	uint64_t r;
+	qf_cur_lr = NULL;
+	for (r = lr->lo; r <= lr->hi; r++)
+		qf_spin_unlock(&qf->mem->locks[r]);
 }
 
 /*
@@ -304,11 +376,13 @@ static inline uint64_t bitselectv(const uint64_t val, int ignore, int rank)
 #if BITS_PER_SLOT > 0
 static inline qfblock * get_block(const QF *qf, uint64_t block_index)
 {
+	lr_touch(qf, block_index);
 	return &qf->blocks[block_index];
 }
 #else
 static inline qfblock * get_block(const QF *qf, uint64_t block_index)
 {
+	lr_touch(qf, block_index);
 	return (qfblock *)(((char *)qf->blocks) + block_index * (sizeof(qfblock) +
 																													 SLOTS_PER_BLOCK *
 																													 qf->metadata->bits_per_slot /
@@ -400,6 +474,11 @@ static inline void set_slot(const QF *qf, uint64_t index, uint64_t value)
 																			 SLOTS_PER_BLOCK)->slots[(index %
 																																SLOTS_PER_BLOCK)
 																			 * qf->metadata->bits_per_slot / 8];
+	/* This read-modify-write of 8 bytes can reach into the header of the
+	   next block, which must then be locked as well. */
+	if ((index % SLOTS_PER_BLOCK) * qf->metadata->bits_per_slot / 8 + 8 >
+			SLOTS_PER_BLOCK * qf->metadata->bits_per_slot / 8)
+		lr_touch(qf, index / SLOTS_PER_BLOCK + 1);
 	uint64_t t = *p;
 	uint64_t mask = BITMASK(qf->metadata->bits_per_slot);
 	uint64_t v = value;
@@ -415,12 +494,21 @@ static inline void set_slot(const QF *qf, uint64_t index, uint64_t value)
 
 static inline uint64_t run_end(const QF *qf, uint64_t hash_bucket_index);
 
+/* Saturating add to a block's offset field.  A saturated offset means
+   "too large to store"; block_offset() then recomputes the real value. */
+static inline void block_offset_add(const QF *qf, uint64_t blockidx, uint64_t delta)
+{
+	const uint64_t max = BITMASK(8*sizeof(qf->blocks[0].offset));
+	uint64_t cur = get_block(qf, blockidx)->offset;
+	get_block(qf, blockidx)->offset = (cur + delta < max) ? cur + delta : max;
+}
+
 static inline uint64_t block_offset(const QF *qf, uint64_t blockidx)
 {
 	/* If we have extended counters and a 16-bit (or larger) offset
 		 field, then we can safely ignore the possibility of overflowing
 		 that field. */
-	if (sizeof(qf->blocks[0].offset > 1) || 
+	if (sizeof(qf->blocks[0].offset) > 1 || 
 			get_block(qf, blockidx)->offset < BITMASK(8*sizeof(qf->blocks[0].offset)))
 		return get_block(qf, blockidx)->offset;
 
@@ -522,18 +610,77 @@ static inline int probably_is_empty(const QF *qf, uint64_t slot_index)
 		&& !is_runend(qf, slot_index);
 }
 
+/* Returns the first empty slot at or after `from`, or a value >=
+   xnslots if there is no empty slot left (the filter is full). */
 static inline uint64_t find_first_empty_slot(QF *qf, uint64_t from)
 {
-	do {
-		/* while (!probably_is_empty(qf, from)) */
-		/*   from++; */
+	while (from < qf->metadata->xnslots) {
 		int t = offset_lower_bound(qf, from);
 		assert(t>=0);
 		if (t == 0)
+			return from;
+		/* t < 0 would mean inconsistent metadata; never step backwards */
+		from += (t > 0 ? (uint64_t)t : 1);
+	}
+	return qf->metadata->xnslots;
+}
+
+/* Start a locked operation on `bucket`: lock its region and every lower
+   region the operation will read.  Those are the block holding bucket-1
+   (run_end(bucket-1)) and, while that block's 8-bit offset is saturated,
+   the block before it (block_offset() then falls back to run_end() of the
+   previous block).  Everything at or after the bucket is locked on demand
+   by get_block().  Returns false (holding nothing) only if !spin and a
+   lock was busy. */
+static bool lr_acquire(QF *qf, qf_lockrange *lr, uint64_t bucket, bool spin)
+{
+	const uint64_t top = bucket / NUM_SLOTS_TO_LOCK;
+	const uint64_t saturated = BITMASK(8*sizeof(qf->blocks[0].offset));
+	uint64_t lo = top, r;
+
+	for (;;) {
+		for (r = lo; r <= top; r++) {
+			if (!qf_lock_region(qf, r, spin)) {
+				while (r > lo)
+					qf_spin_unlock(&qf->mem->locks[--r]);
+				return false;
+			}
+		}
+		lr->lo = lo;
+		lr->hi = top;
+
+		uint64_t blk = bucket ? (bucket - 1) / SLOTS_PER_BLOCK : 0;
+		bool restart = false;
+		for (;;) {
+			const uint64_t need = blk * SLOTS_PER_BLOCK / NUM_SLOTS_TO_LOCK;
+			/* Going down against the lock order: only try. */
+			while (need < lr->lo) {
+				if (!qf_lock_region(qf, lr->lo - 1, false)) {
+					restart = true;
+					break;
+				}
+				lr->lo--;
+			}
+			if (restart)
+				break;
+			if (blk == 0 || sizeof(qf->blocks[0].offset) > 1 ||
+					get_block(qf, blk)->offset < saturated)
+				break;
+			blk--;
+		}
+		if (!restart)
 			break;
-		from = from + t;
-	} while(1);
-	return from;
+		/* Someone holds a region we need below ours.  Drop everything and
+		   take the locks again in ascending order, starting lower. */
+		lo = blk * SLOTS_PER_BLOCK / NUM_SLOTS_TO_LOCK;
+		lr_release(qf, lr);
+		if (!spin)
+			return false;
+	}
+
+	lr->qf = qf;
+	qf_cur_lr = lr;
+	return true;
 }
 
 static inline uint64_t shift_into_b(const uint64_t a, const uint64_t b,
@@ -700,7 +847,7 @@ static inline void shift_runends(QF *qf, int64_t first, uint64_t last,
 
 }
 
-static inline void insert_replace_slots_and_shift_remainders_and_runends_and_offsets(QF		*qf, 
+static inline bool insert_replace_slots_and_shift_remainders_and_runends_and_offsets(QF		*qf, 
 																																										 int		 operation, 
 																																										 uint64_t		 bucket_index,
 																																										 uint64_t		 overwrite_index,
@@ -716,6 +863,10 @@ static inline void insert_replace_slots_and_shift_remainders_and_runends_and_off
 	if (ninserts > 0) {
 		/* First, shift things to create n empty spaces where we need them. */
 		find_next_n_empty_slots(qf, insert_index, ninserts, empties);
+		/* empties[0] is the largest index; if it is past the end, the filter
+		   is full.  Nothing has been modified yet, so just report failure. */
+		if (empties[0] >= qf->metadata->xnslots)
+			return false;
 
 		for (i = 0; i < ninserts - 1; i++)
 			shift_slots(qf, empties[i+1] + 1, empties[i] - 1, i + 1);
@@ -763,14 +914,12 @@ static inline void insert_replace_slots_and_shift_remainders_and_runends_and_off
 		if (ninserts > 0) {
 			for (i = bucket_index / SLOTS_PER_BLOCK + 1; i <= empties[ninserts -
 					 1]/SLOTS_PER_BLOCK; i++) {
-				if (get_block(qf, i)->offset < BITMASK(8*sizeof(qf->blocks[0].offset)))
-					get_block(qf, i)->offset += ninserts;
+				block_offset_add(qf, i, ninserts);
 			}
 			for (j = 0; j < ninserts -1 ; j++)
 				for (i = empties[ninserts - j - 1] / SLOTS_PER_BLOCK + 1; i <=
 						 empties[ninserts - j - 2]/SLOTS_PER_BLOCK; i++) {
-					if (get_block(qf, i)->offset < BITMASK(8*sizeof(qf->blocks[0].offset)))
-						get_block(qf, i)->offset += ninserts - j - 1;
+					block_offset_add(qf, i, ninserts - j - 1);
 				}
 		}
 	}
@@ -778,6 +927,7 @@ static inline void insert_replace_slots_and_shift_remainders_and_runends_and_off
 		set_slot(qf, overwrite_index + i, remainders[i]);
 
 	modify_metadata(qf, &qf->metadata->noccupied_slots, ninserts);
+	return true;
 }
 
 static inline void remove_replace_slots_and_shift_remainders_and_runends_and_offsets(QF	*qf, 
@@ -996,37 +1146,14 @@ static inline uint64_t next_slot(QF *qf, uint64_t current)
 	return current;
 }
 
-static inline bool insert1(QF *qf, uint64_t hash, bool lock, bool spin)
+/* Insert one copy of `hash`.  Takes no locks: the caller either holds a
+   lock range from lr_acquire() on this hash's bucket or runs unlocked. */
+static inline bool insert1_nolock(QF *qf, uint64_t hash)
 {
 	uint64_t hash_remainder           = hash & BITMASK(qf->metadata->bits_per_slot);
 	uint64_t hash_bucket_index        = hash >> qf->metadata->bits_per_slot;
 	uint64_t hash_bucket_block_offset = hash_bucket_index % SLOTS_PER_BLOCK;
-	uint64_t hash_bucket_lock_offset  = hash_bucket_index % NUM_SLOTS_TO_LOCK;
 
-	if (lock) {
-#ifdef LOG_WAIT_TIME
-		if (!qf_spin_lock(qf, &qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK],
-											hash_bucket_index/NUM_SLOTS_TO_LOCK, spin))
-			return false;
-		if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE)) {
-			if (!qf_spin_lock(qf, &qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1],
-												hash_bucket_index/NUM_SLOTS_TO_LOCK+1, spin)) {
-				qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-				return false;
-			}
-		}
-#else
-		if (!qf_spin_lock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK], spin))
-			return false;
-		if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE)) {
-			if (!qf_spin_lock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1],
-												spin)) {
-				qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-				return false;
-			}
-		}
-#endif
-	}
 	if (is_empty(qf, hash_bucket_index) /* might_be_empty(qf, hash_bucket_index) && runend_index == hash_bucket_index */) {
 		METADATA_WORD(qf, runends, hash_bucket_index) |= 1ULL <<
 			(hash_bucket_block_offset % 64);
@@ -1039,6 +1166,13 @@ static inline bool insert1(QF *qf, uint64_t hash, bool lock, bool spin)
 		modify_metadata(qf, &qf->metadata->nelts, 1);
 	} else {
 		uint64_t runend_index              = run_end(qf, hash_bucket_index);
+		/* Any insertion below shifts into the first empty slot after the
+		   run.  Look for it before modifying anything (extended counters
+		   are incremented in place further down), so a full filter is
+		   reported instead of writing past the end of the table. */
+		uint64_t empty_slot_index = find_first_empty_slot(qf, runend_index+1);
+		if (empty_slot_index >= qf->metadata->xnslots)
+			return false;
 		int operation = 0; /* Insert into empty bucket */
 		uint64_t insert_index = runend_index + 1;
 		uint64_t new_value = hash_remainder;
@@ -1200,8 +1334,6 @@ static inline bool insert1(QF *qf, uint64_t hash, bool lock, bool spin)
 		}
 
 		if (operation >= 0) {
-			uint64_t empty_slot_index = find_first_empty_slot(qf, runend_index+1);
-
 			assert(insert_index <= empty_slot_index);
 			shift_remainders(qf, insert_index, empty_slot_index);
 
@@ -1242,9 +1374,7 @@ static inline bool insert1(QF *qf, uint64_t hash, bool lock, bool spin)
 			uint64_t i;
 			for (i = hash_bucket_index / SLOTS_PER_BLOCK + 1; i <=
 					 empty_slot_index/SLOTS_PER_BLOCK; i++) {
-				if (get_block(qf, i)->offset < BITMASK(8*sizeof(qf->blocks[0].offset)))
-					get_block(qf, i)->offset++;
-				//assert(get_block(qf, i)->offset != 0);
+				block_offset_add(qf, i, 1);
 			}
 			modify_metadata(qf, &qf->metadata->noccupied_slots, 1);
 		}
@@ -1253,50 +1383,30 @@ static inline bool insert1(QF *qf, uint64_t hash, bool lock, bool spin)
 			(hash_bucket_block_offset % 64);
 	}
 
-	if (lock) {
-		qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-		if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE))
-			qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1]);
-	}
-
 	return true;
 }
 
-static inline bool insert(QF *qf,uint64_t hash, uint64_t count, bool lock,
-                          bool spin)
+static inline bool insert1(QF *qf, uint64_t hash, bool lock, bool spin)
+{
+	qf_lockrange lr;
+	if (lock && !lr_acquire(qf, &lr, hash >> qf->metadata->bits_per_slot, spin))
+		return false;
+	bool ok = insert1_nolock(qf, hash);
+	if (lock)
+		lr_release(qf, &lr);
+	return ok;
+}
+
+/* Insert `count` copies of `hash`.  Locking as for insert1_nolock(). */
+static inline bool insert_nolock(QF *qf, uint64_t hash, uint64_t count)
 {
 	uint64_t hash_remainder           = hash & BITMASK(qf->metadata->bits_per_slot);
 	uint64_t hash_bucket_index        = hash >> qf->metadata->bits_per_slot;
 	uint64_t hash_bucket_block_offset = hash_bucket_index % SLOTS_PER_BLOCK;
+	bool ok = true;
+
 	uint64_t runend_index             = run_end(qf, hash_bucket_index);
-	uint64_t hash_bucket_lock_offset  = hash_bucket_index % NUM_SLOTS_TO_LOCK;
 
-	if (lock) {
-		/* take the lock for two lock-blocks; the lock-block in which the
-		 * hash_bucket_index falls and the next lock-block */
-
-#ifdef LOG_WAIT_TIME
-		if (!qf_spin_lock(qf, &qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK],
-											hash_bucket_index/NUM_SLOTS_TO_LOCK, spin))
-			return false;
-		if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE)) {
-			if (!qf_spin_lock(qf, &qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1],
-												hash_bucket_index/NUM_SLOTS_TO_LOCK+1, spin)) {
-				qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-				return false;
-			}
-		}
-#else
-		if (!qf_spin_lock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK], spin))
-			return false;
-		if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE)) {
-			if (!qf_spin_lock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1], spin)) {
-				qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-				return false;
-			}
-		}
-#endif
-	}
 	/* Empty slot */
 	if (might_be_empty(qf, hash_bucket_index) && runend_index ==
 			hash_bucket_index) {
@@ -1310,12 +1420,10 @@ static inline bool insert(QF *qf,uint64_t hash, uint64_t count, bool lock,
 		modify_metadata(qf, &qf->metadata->noccupied_slots, 1);
 		modify_metadata(qf, &qf->metadata->nelts, 1);
 		/* This trick will, I hope, keep the fast case fast. */
-		if (count > 1) {
-			qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-			if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE))
-				qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1]);
-			insert(qf, hash, count - 1, lock, spin);
-		}
+		/* Same lock range: the old code released the locks here and then
+		   released them again below. */
+		if (count > 1)
+			ok = insert_nolock(qf, hash, count - 1);
 	} else { /* Non-empty slot */
 		uint64_t new_values[67];
 		int64_t runstart_index = hash_bucket_index == 0 ? 0 : run_end(qf,
@@ -1324,14 +1432,14 @@ static inline bool insert(QF *qf,uint64_t hash, uint64_t count, bool lock,
 
 		if (!is_occupied(qf, hash_bucket_index)) { /* Empty bucket, but its slot is occupied. */
 			uint64_t *p = encode_counter(qf, hash_remainder, count, &new_values[67]);
-			insert_replace_slots_and_shift_remainders_and_runends_and_offsets(qf, 
+			ok = insert_replace_slots_and_shift_remainders_and_runends_and_offsets(qf, 
                                                                               0, 
                                                                               hash_bucket_index, 
                                                                               runstart_index, 
                                                                               p, 
                                                                               &new_values[67] - p, 
                                                                               0);
-			modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);
+			if (ok) modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);
 		} else { /* Non-empty bucket */
 
 			uint64_t current_remainder, current_count, current_end;
@@ -1349,18 +1457,18 @@ static inline bool insert(QF *qf,uint64_t hash, uint64_t count, bool lock,
 				 then append a counter for this remainder to the run. */
 			if (current_remainder < hash_remainder) {
 				uint64_t *p = encode_counter(qf, hash_remainder, count, &new_values[67]);
-				insert_replace_slots_and_shift_remainders_and_runends_and_offsets(qf, 
+				ok = insert_replace_slots_and_shift_remainders_and_runends_and_offsets(qf, 
 																																					1, /* Append to bucket */
 																																					hash_bucket_index, 
 																																					current_end + 1, 
 																																					p, 
 																																					&new_values[67] - p, 
 																																					0);
-				modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);
+				if (ok) modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);
 				/* Found a counter for this remainder.  Add in the new count. */
 			} else if (current_remainder == hash_remainder) {
 				uint64_t *p = encode_counter(qf, hash_remainder, current_count + count, &new_values[67]);
-				insert_replace_slots_and_shift_remainders_and_runends_and_offsets(qf, 
+				ok = insert_replace_slots_and_shift_remainders_and_runends_and_offsets(qf, 
 																																					is_runend(qf, current_end) ? 1 : 2, 
 																																					hash_bucket_index, 
 																																					runstart_index, 
@@ -1371,28 +1479,35 @@ static inline bool insert(QF *qf,uint64_t hash, uint64_t count, bool lock,
 					 remainders, so we're not appending to the bucket. */
 			} else {
 				uint64_t *p = encode_counter(qf, hash_remainder, count, &new_values[67]);
-				insert_replace_slots_and_shift_remainders_and_runends_and_offsets(qf, 
+				ok = insert_replace_slots_and_shift_remainders_and_runends_and_offsets(qf, 
 																																					2, /* Insert to bucket */
 																																					hash_bucket_index, 
 																																					runstart_index, 
 																																					p, 
 																																					&new_values[67] - p, 
 																																					0);	
-				modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);
+				if (ok) modify_metadata(qf, &qf->metadata->ndistinct_elts, 1);
 			}
 		}
-		METADATA_WORD(qf, occupieds, hash_bucket_index) |= 1ULL << (hash_bucket_block_offset % 64);
-		
-		modify_metadata(qf, &qf->metadata->nelts, count);
+		if (ok) {
+			METADATA_WORD(qf, occupieds, hash_bucket_index) |= 1ULL << (hash_bucket_block_offset % 64);
+			modify_metadata(qf, &qf->metadata->nelts, count);
+		}
 	}
 
-	if (lock) {
-		qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-		if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE))
-			qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1]);
-	}
+	return ok;
+}
 
-	return true;
+static inline bool insert(QF *qf, uint64_t hash, uint64_t count, bool lock,
+                          bool spin)
+{
+	qf_lockrange lr;
+	if (lock && !lr_acquire(qf, &lr, hash >> qf->metadata->bits_per_slot, spin))
+		return false;
+	bool ok = insert_nolock(qf, hash, count);
+	if (lock)
+		lr_release(qf, &lr);
+	return ok;
 }
 
 /* inline static void _qf_remove(QF *qf, __uint128_t hash, uint64_t count) */
@@ -1513,6 +1628,7 @@ void qf_copy(QF *dest, QF *src)
 void qf_destroy(QF *qf)
 {
     if (qf->blocks) {
+        free((void *)qf->mem->locks);
         free(qf->mem);
         free(qf->metadata);
         free(qf->blocks);
@@ -1624,10 +1740,36 @@ bool qf_insert(QF *qf, uint64_t key, uint64_t value, uint64_t count, bool
 							 lock, bool spin)
 {
 	/*uint64_t hash = (key << qf->metadata->value_bits) | (value & BITMASK(qf->metadata->value_bits));*/
+	/* Refuse inserts once the filter is 95% full.  Past that point clusters
+	   grow so long that every insert shifts a large part of the table
+	   (inserts become effectively O(n) and the program looks hung), and
+	   eventually there is no empty slot left at all.  Callers get `false`
+	   and must handle it (cf. qf::cqf::full()). */
+	if (qf->metadata->noccupied_slots >= qf->metadata->nslots - qf->metadata->nslots / 20)
+		return false;
 	if (count == 1)
 		return insert1(qf, key, lock, spin);
 	else
 		return insert(qf, key, count, lock, spin);
+}
+
+bool qf_insert_capped(QF *qf, uint64_t key, uint64_t cap, bool lock, bool spin)
+{
+	qf_lockrange lr;
+	bool res = true;
+
+	/* Same load limit as qf_insert(). */
+	if (qf->metadata->noccupied_slots >= qf->metadata->nslots - qf->metadata->nslots / 20)
+		return false;
+	if (lock && !lr_acquire(qf, &lr, key >> qf->metadata->bits_per_slot, spin))
+		return false;
+	/* Count and insert under one lock range, so no other thread can slip
+	   an insert of the same key in between. */
+	if (qf_count_key_value(qf, key, 0, false) < cap)
+		res = insert1_nolock(qf, key);
+	if (lock)
+		lr_release(qf, &lr);
+	return res;
 }
 
 uint64_t qf_count_key_value(const QF *qf, uint64_t key, uint64_t value,
@@ -1636,22 +1778,12 @@ uint64_t qf_count_key_value(const QF *qf, uint64_t key, uint64_t value,
 	uint64_t hash = key;
 	uint64_t hash_remainder   = hash & BITMASK(qf->metadata->bits_per_slot);
 	int64_t hash_bucket_index = hash >> qf->metadata->bits_per_slot;
-	uint64_t hash_bucket_lock_offset  = hash_bucket_index % NUM_SLOTS_TO_LOCK;
     uint64_t res = 0;
+	qf_lockrange lr;
 
-	if (lock) {
-		/* take the lock for two lock-blocks; the lock-block in which the
-		 * hash_bucket_index falls and the next lock-block */
-
-		if (!qf_spin_lock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK], lock))
-			return 0;
-		if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE)) {
-			if (!qf_spin_lock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1], lock)) {
-				qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-				return 0;
-			}
-		}
-	}
+	/* The lock array is runtime state, not part of the filter's contents. */
+	if (lock && !lr_acquire((QF *)qf, &lr, hash_bucket_index, true))
+		return 0;
     
 	if (!is_occupied(qf, hash_bucket_index)) {
         res = 0;
@@ -1680,11 +1812,8 @@ uint64_t qf_count_key_value(const QF *qf, uint64_t key, uint64_t value,
     res = 0;
 
 end:
-    if (lock) {
-		qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK]);
-		if (hash_bucket_lock_offset > (NUM_SLOTS_TO_LOCK - CLUSTER_SIZE))
-			qf_spin_unlock(&qf->mem->locks[hash_bucket_index/NUM_SLOTS_TO_LOCK+1]);
-	}
+    if (lock)
+		lr_release((QF *)qf, &lr);
 
     return res;
 }
